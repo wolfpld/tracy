@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <chrono>
 
 #include "TracyProfiler.hpp"
 #include "TracySystem.hpp"
@@ -8,6 +9,12 @@ namespace tracy
 
 extern const char* PointerCheckA;
 const char* PointerCheckB = "tracy";
+
+static inline int64_t GetTime()
+{
+    return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
+}
+
 
 static Profiler* s_instance = nullptr;
 

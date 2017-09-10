@@ -1,6 +1,7 @@
 #include <assert.h>
 
 #include "TracyProfiler.hpp"
+#include "TracySystem.hpp"
 
 namespace tracy
 {
@@ -14,6 +15,7 @@ Profiler::Profiler()
     s_instance = this;
 
     m_thread = std::thread( [this] { Worker(); } );
+    SetThreadName( m_thread, "Tracy Profiler" );
 }
 
 Profiler::~Profiler()

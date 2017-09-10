@@ -1,0 +1,10 @@
+.vs
+*.opendb
+*.db
+*.vcxproj.user
+x64
+Release
+Debug
+*.d
+*.o
+*.swp

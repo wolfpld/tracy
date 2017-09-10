@@ -25,6 +25,7 @@ public:
 private:
     void Worker();
 
+    int64_t m_timeBegin;
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
     moodycamel::ConcurrentQueue<QueueItem> m_queue;

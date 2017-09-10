@@ -19,7 +19,8 @@ static inline int64_t GetTime()
 static Profiler* s_instance = nullptr;
 
 Profiler::Profiler()
-    : m_shutdown( false )
+    : m_timeBegin( GetTime() )
+    , m_shutdown( false )
     , m_id( 0 )
 {
     assert( PointerCheckA == PointerCheckB );

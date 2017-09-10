@@ -25,6 +25,13 @@ public:
 private:
     void Worker();
 
+    static Profiler* Instance();
+    static moodycamel::ProducerToken& GetToken()
+    {
+        static thread_local moodycamel::ProducerToken token( Instance()->m_queue );
+        return token;
+    }
+
     int64_t m_timeBegin;
     std::thread m_thread;
     std::atomic<bool> m_shutdown;

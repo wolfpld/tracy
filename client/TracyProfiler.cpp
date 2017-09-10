@@ -49,14 +49,19 @@ void Profiler::ZoneBegin( QueueZoneBegin&& data )
 {
     QueueItem item { QueueType::ZoneBegin, GetTime() };
     item.zoneBegin = std::move( data );
-    s_instance->m_queue.enqueue( std::move( item ) );
+    s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
 }
 
 void Profiler::ZoneEnd( QueueZoneEnd&& data )
 {
     QueueItem item { QueueType::ZoneEnd, GetTime() };
     item.zoneEnd = std::move( data );
-    s_instance->m_queue.enqueue( std::move( item ) );
+    s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
+}
+
+Profiler* Profiler::Instance()
+{
+    return s_instance;
 }
 
 void Profiler::Worker()

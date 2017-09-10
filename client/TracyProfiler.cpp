@@ -20,6 +20,7 @@ static Profiler* s_instance = nullptr;
 
 Profiler::Profiler()
     : m_shutdown( false )
+    , m_id( 0 )
 {
     assert( PointerCheckA == PointerCheckB );
     assert( !s_instance );
@@ -36,6 +37,11 @@ Profiler::~Profiler()
 
     m_shutdown.store( true, std::memory_order_relaxed );
     m_thread.join();
+}
+
+uint64_t Profiler::GetNewId()
+{
+    return s_instance->m_id.fetch_add( 1, std::memory_order_relaxed );
 }
 
 void Profiler::Worker()

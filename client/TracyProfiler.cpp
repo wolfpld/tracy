@@ -61,9 +61,22 @@ void Profiler::ZoneEnd( QueueZoneEnd&& data )
 
 void Profiler::Worker()
 {
+    enum { BulkSize = 32 };
+    moodycamel::ConsumerToken token( m_queue );
+
     for(;;)
     {
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+
+        QueueItem item[BulkSize];
+        const auto sz = m_queue.try_dequeue_bulk( token, item, BulkSize );
+        if( sz > 0 )
+        {
+        }
+        else
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        }
     }
 }
 

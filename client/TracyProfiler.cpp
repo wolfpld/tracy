@@ -6,11 +6,15 @@
 namespace tracy
 {
 
+extern const char* PointerCheckA;
+const char* PointerCheckB = "tracy";
+
 static Profiler* s_instance = nullptr;
 
 Profiler::Profiler()
     : m_shutdown( false )
 {
+    assert( PointerCheckA == PointerCheckB );
     assert( !s_instance );
     s_instance = this;
 

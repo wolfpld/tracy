@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <thread>
 
+#include "concurrentqueue.h"
+#include "TracyQueue.hpp"
+
 namespace tracy
 {
 
@@ -16,11 +19,15 @@ public:
 
     static uint64_t GetNewId();
 
+    static void ZoneBegin( QueueZoneBegin&& data );
+    static void ZoneEnd( QueueZoneEnd&& data );
+
 private:
     void Worker();
 
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
+    moodycamel::ConcurrentQueue<QueueItem> m_queue;
     std::atomic<uint64_t> m_id;
 };
 

@@ -44,6 +44,20 @@ uint64_t Profiler::GetNewId()
     return s_instance->m_id.fetch_add( 1, std::memory_order_relaxed );
 }
 
+void Profiler::ZoneBegin( QueueZoneBegin&& data )
+{
+    QueueItem item { QueueType::ZoneBegin, GetTime() };
+    item.zoneBegin = std::move( data );
+    s_instance->m_queue.enqueue( std::move( item ) );
+}
+
+void Profiler::ZoneEnd( QueueZoneEnd&& data )
+{
+    QueueItem item { QueueType::ZoneEnd, GetTime() };
+    item.zoneEnd = std::move( data );
+    s_instance->m_queue.enqueue( std::move( item ) );
+}
+
 void Profiler::Worker()
 {
     for(;;)

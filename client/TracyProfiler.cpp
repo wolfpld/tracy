@@ -61,7 +61,7 @@ void Profiler::ZoneEnd( QueueZoneEnd&& data )
 
 void Profiler::Worker()
 {
-    enum { BulkSize = 32 };
+    enum { BulkSize = 1024 };
     moodycamel::ConsumerToken token( m_queue );
 
     for(;;)

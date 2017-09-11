@@ -49,14 +49,18 @@ uint64_t Profiler::GetNewId()
 
 void Profiler::ZoneBegin( QueueZoneBegin&& data )
 {
-    QueueItem item { QueueType::ZoneBegin, GetTime() };
+    QueueItem item;
+    item.hdr.type = QueueType::ZoneBegin;
+    item.hdr.time = GetTime();
     item.zoneBegin = std::move( data );
     s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
 }
 
 void Profiler::ZoneEnd( QueueZoneEnd&& data )
 {
-    QueueItem item { QueueType::ZoneEnd, GetTime() };
+    QueueItem item;
+    item.hdr.type = QueueType::ZoneEnd;
+    item.hdr.time = GetTime();
     item.zoneEnd = std::move( data );
     s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
 }

@@ -27,10 +27,15 @@ struct QueueZoneEnd
     uint64_t id;
 };
 
-struct QueueItem
+struct QueueHeader
 {
     QueueType type;
     int64_t time;
+};
+
+struct QueueItem
+{
+    QueueHeader hdr;
     union
     {
         QueueZoneBegin zoneBegin;

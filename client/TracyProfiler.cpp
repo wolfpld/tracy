@@ -68,7 +68,8 @@ Profiler* Profiler::Instance()
 
 void Profiler::Worker()
 {
-    enum { BulkSize = 64000 / QueueItemSize };
+    enum { TargetFrameSize = 64000 };
+    enum { BulkSize = TargetFrameSize / QueueItemSize };
     moodycamel::ConsumerToken token( m_queue );
 
     ListenSocket listen;

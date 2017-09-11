@@ -68,7 +68,7 @@ Profiler* Profiler::Instance()
 
 void Profiler::Worker()
 {
-    enum { BulkSize = 1024 };
+    enum { BulkSize = 64000 / QueueItemSize };
     moodycamel::ConsumerToken token( m_queue );
 
     ListenSocket listen;

@@ -88,7 +88,7 @@
 /*-************************************
 *  Dependency
 **************************************/
-#include "tracy_lz4.h"
+#include "tracy_lz4.hpp"
 /* see also "memory routines" below */
 
 
@@ -141,7 +141,6 @@
 *  Basic Types
 **************************************/
 #if defined(__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
-# include <stdint.h>
   typedef  uint8_t BYTE;
   typedef uint16_t U16;
   typedef uint32_t U32;
@@ -162,6 +161,9 @@
 #else
   typedef size_t reg_t;   /* 32-bits in x32 mode */
 #endif
+
+namespace tracy
+{
 
 /*-************************************
 *  Reading and writing into memory
@@ -1478,3 +1480,5 @@ int LZ4_decompress_fast_withPrefix64k(const char* source, char* dest, int origin
 }
 
 #endif   /* LZ4_COMMONDEFS_ONLY */
+
+}

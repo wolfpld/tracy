@@ -303,7 +303,7 @@ struct ConcurrentQueueDefaultTraits
 	// Note that the hash is resized every time it becomes half full.
 	// Must be a power of two, and either 0 or at least 1. If 0, implicit production
 	// (using the enqueue methods without an explicit producer token) is disabled.
-	static const size_t INITIAL_IMPLICIT_PRODUCER_HASH_SIZE = 32;
+	static const size_t INITIAL_IMPLICIT_PRODUCER_HASH_SIZE = 0;
 	
 	// Controls the number of items that an explicit consumer (i.e. one with a token)
 	// must consume before it causes all consumers to rotate and move on to the next

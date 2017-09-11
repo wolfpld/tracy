@@ -82,7 +82,6 @@ void Profiler::Worker()
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
             sock = listen.Accept();
             if( sock ) break;
-            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
 
         sock->Send( &m_timeBegin, sizeof( m_timeBegin ) );

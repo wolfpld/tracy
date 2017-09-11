@@ -1,0 +1,52 @@
+#ifndef __TRACYSOCKET_HPP__
+#define __TRACYSOCKET_HPP__
+
+#include <memory>
+
+namespace tracy
+{
+
+class Socket
+{
+public:
+    Socket();
+    Socket( int sock );
+    ~Socket();
+
+    bool Connect( const char* addr, const char* port );
+    void Close();
+
+    int Send( const void* buf, int len );
+    int Recv( void* buf, int len );
+
+    Socket( const Socket& ) = delete;
+    Socket( Socket&& ) = delete;
+    Socket& operator=( const Socket& ) = delete;
+    Socket& operator=( Socket&& ) = delete;
+
+private:
+    int m_sock;
+};
+
+class ListenSocket
+{
+public:
+    ListenSocket();
+    ~ListenSocket();
+
+    bool Listen( const char* port, int backlog );
+    std::unique_ptr<Socket> Accept();
+    void Close();
+
+    ListenSocket( const ListenSocket& ) = delete;
+    ListenSocket( ListenSocket&& ) = delete;
+    ListenSocket& operator=( const ListenSocket& ) = delete;
+    ListenSocket& operator=( ListenSocket&& ) = delete;
+
+private:
+    int m_sock;
+};
+
+}
+
+#endif

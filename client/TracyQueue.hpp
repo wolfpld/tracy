@@ -12,6 +12,8 @@ enum class QueueType : uint8_t
     ZoneEnd
 };
 
+#pragma pack( 1 )
+
 struct QueueZoneBegin
 {
     uint64_t id;
@@ -35,6 +37,8 @@ struct QueueItem
         QueueZoneEnd zoneEnd;
     };
 };
+
+#pragma pack()
 
 enum { QueueItemSize = sizeof( QueueItem ) };
 

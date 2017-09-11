@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <chrono>
+#include <memory>
 
+#include "../common/TracySocket.hpp"
 #include "TracyProfiler.hpp"
 #include "TracySystem.hpp"
 
@@ -69,18 +71,36 @@ void Profiler::Worker()
     enum { BulkSize = 1024 };
     moodycamel::ConsumerToken token( m_queue );
 
+    ListenSocket listen;
+    listen.Listen( "8086", 8 );
+
     for(;;)
     {
-        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-
-        QueueItem item[BulkSize];
-        const auto sz = m_queue.try_dequeue_bulk( token, item, BulkSize );
-        if( sz > 0 )
+        std::unique_ptr<Socket> sock;
+        for(;;)
         {
-        }
-        else
-        {
+            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+            sock = listen.Accept();
+            if( sock ) break;
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        }
+
+        sock->Send( &m_timeBegin, sizeof( m_timeBegin ) );
+
+        for(;;)
+        {
+            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+
+            QueueItem item[BulkSize];
+            const auto sz = m_queue.try_dequeue_bulk( token, item, BulkSize );
+            if( sz > 0 )
+            {
+                if( sock->Send( item, sz * sizeof( QueueItem ) ) == -1 ) break;
+            }
+            else
+            {
+                std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+            }
         }
     }
 }

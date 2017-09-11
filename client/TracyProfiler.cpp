@@ -99,7 +99,15 @@ void Profiler::Worker()
             const auto sz = m_queue.try_dequeue_bulk( token, item, BulkSize );
             if( sz > 0 )
             {
-                if( sock->Send( item, sz * sizeof( QueueItem ) ) == -1 ) break;
+                char buf[TargetFrameSize];
+                char* ptr = buf;
+                for( int i=0; i<sz; i++ )
+                {
+                    const auto dsz = QueueDataSize[(uint8_t)item[i].hdr.type];
+                    memcpy( ptr, item+i, dsz );
+                    ptr += dsz;
+                }
+                if( sock->Send( buf, ptr - buf ) == -1 ) break;
             }
             else
             {

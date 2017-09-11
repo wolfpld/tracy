@@ -1,7 +1,9 @@
 #include <assert.h>
 #include <chrono>
+#include <limits>
 #include <memory>
 
+#include "../common/tracy_lz4.hpp"
 #include "../common/TracySocket.hpp"
 #include "TracyProfiler.hpp"
 #include "TracySystem.hpp"
@@ -74,6 +76,9 @@ void Profiler::Worker()
 {
     enum { TargetFrameSize = 64000 };
     enum { BulkSize = TargetFrameSize / QueueItemSize };
+    enum { LZ4Size = LZ4_COMPRESSBOUND( TargetFrameSize ) };
+    static_assert( LZ4Size <= std::numeric_limits<uint16_t>::max(), "LZ4Size greater than uint16_t" );
+
     moodycamel::ConsumerToken token( m_queue );
 
     ListenSocket listen;
@@ -107,7 +112,10 @@ void Profiler::Worker()
                     memcpy( ptr, item+i, dsz );
                     ptr += dsz;
                 }
-                if( sock->Send( buf, ptr - buf ) == -1 ) break;
+                char lz4[LZ4Size + sizeof( uint16_t )];
+                const uint16_t lz4sz = LZ4_compress_default( buf, lz4+2, ptr - buf, LZ4Size );
+                memcpy( lz4, &lz4sz, sizeof( uint16_t ) );
+                if( sock->Send( lz4, lz4sz ) == -1 ) break;
             }
             else
             {

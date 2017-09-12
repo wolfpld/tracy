@@ -5,8 +5,8 @@
 
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracySocket.hpp"
+#include "../common/TracySystem.hpp"
 #include "TracyProfiler.hpp"
-#include "TracySystem.hpp"
 
 namespace tracy
 {

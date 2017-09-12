@@ -95,6 +95,14 @@ void Profiler::Worker()
         }
 
         sock->Send( &m_timeBegin, sizeof( m_timeBegin ) );
+#ifdef _DEBUG
+        // notify client that lz4 compression is disabled (too slow in debug builds)
+        char val = 0;
+        sock->Send( &val, 1 );
+#else
+        char val = 1;
+        sock->Send( &val, 1 );
+#endif
 
         for(;;)
         {
@@ -112,10 +120,14 @@ void Profiler::Worker()
                     memcpy( ptr, item+i, dsz );
                     ptr += dsz;
                 }
+#ifdef _DEBUG
+                if( sock->Send( buf, ptr - buf ) == -1 ) break;
+#else
                 char lz4[LZ4Size + sizeof( uint16_t )];
                 const uint16_t lz4sz = LZ4_compress_default( buf, lz4+2, ptr - buf, LZ4Size );
                 memcpy( lz4, &lz4sz, sizeof( uint16_t ) );
                 if( sock->Send( lz4, lz4sz ) == -1 ) break;
+#endif
             }
             else
             {

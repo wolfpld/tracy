@@ -1,5 +1,12 @@
+#ifdef _MSC_VER
+#  include <winsock2.h>
+#else
+#  include <sys/time.h>
+#endif
+
 #include <assert.h>
 
+#include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
 #include "TracyView.hpp"
 
@@ -30,10 +37,30 @@ View::~View()
 
 void View::Worker()
 {
+    Socket sock;
+
+    timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 10000;
+
     for(;;)
     {
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-        std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        if( !sock.Connect( m_addr.c_str(), "8086" ) ) continue;
+
+        sock.Recv( &m_timeBegin, sizeof( m_timeBegin ), nullptr );
+
+        uint8_t lz4;
+        sock.Recv( &lz4, 1, nullptr );
+
+        for(;;)
+        {
+            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+            char buf[16*1024];
+            if( sock.Recv( buf, 16*1024, &tv ) == 0 ) break;
+        }
+
+        sock.Close();
     }
 }
 

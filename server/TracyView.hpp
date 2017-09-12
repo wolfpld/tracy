@@ -22,6 +22,8 @@ private:
 
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
+
+    int64_t m_timeBegin;
 };
 
 }

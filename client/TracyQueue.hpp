@@ -18,8 +18,8 @@ enum class QueueType : uint8_t
 struct QueueZoneBegin
 {
     uint64_t id;
-    const char* filename;
-    const char* function;
+    uint64_t filename;  // ptr
+    uint64_t function;  // ptr
     uint32_t line;
 };
 
@@ -54,6 +54,7 @@ static const size_t QueueDataSize[] = {
 };
 
 static_assert( sizeof( QueueDataSize ) / sizeof( size_t ) == (uint8_t)QueueType::NUM_TYPES, "QueueDataSize mismatch" );
+static_assert( sizeof( void* ) <= sizeof( uint64_t ), "Pointer size > 8 bytes" );
 
 };
 

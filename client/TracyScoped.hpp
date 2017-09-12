@@ -14,7 +14,7 @@ public:
     ScopedZone( const char* file, const char* function, uint32_t line )
         : m_id( Profiler::GetNewId() )
     {
-        Profiler::ZoneBegin( QueueZoneBegin { m_id, file, function, line } );
+        Profiler::ZoneBegin( QueueZoneBegin { m_id, (uint64_t)file, (uint64_t)function, line } );
     }
 
     ~ScopedZone()

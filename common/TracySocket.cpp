@@ -119,17 +119,23 @@ int Socket::Send( const void* _buf, int len )
     return buf - start;
 }
 
-int Socket::Recv( void* _buf, int len )
+int Socket::Recv( void* _buf, int len, const timeval* tv )
 {
     auto buf = (char*)_buf;
-    assert( m_sock != -1 );
-    int size;
-    do
+
+    fd_set fds;
+    FD_ZERO( &fds );
+    FD_SET( m_sock, &fds );
+
+    select( m_sock+1, &fds, nullptr, nullptr, tv );
+    if( FD_ISSET( m_sock, &fds ) )
     {
-        size = recv( m_sock, buf, len, 0 );
+        return recv( m_sock, buf, len, 0 );
     }
-    while( size == -1 );
-    return size;
+    else
+    {
+        return -1;
+    }
 }
 
 

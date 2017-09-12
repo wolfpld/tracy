@@ -3,6 +3,8 @@
 
 #include <memory>
 
+struct timeval;
+
 namespace tracy
 {
 
@@ -17,7 +19,7 @@ public:
     void Close();
 
     int Send( const void* buf, int len );
-    int Recv( void* buf, int len );
+    int Recv( void* buf, int len, const timeval* tv );
 
     Socket( const Socket& ) = delete;
     Socket( Socket&& ) = delete;

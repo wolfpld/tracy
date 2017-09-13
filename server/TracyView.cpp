@@ -87,10 +87,10 @@ void View::Worker()
             }
             else
             {
-                QueueItem hdr;
-                if( !sock.Read( &hdr.hdr, sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
-                if( !sock.Read( ((char*)&hdr) + sizeof( QueueHeader ), QueueDataSize[hdr.hdr.idx] - sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
-                Process( hdr );
+                QueueItem ev;
+                if( !sock.Read( &ev.hdr, sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
+                if( !sock.Read( ((char*)&ev) + sizeof( QueueHeader ), QueueDataSize[ev.hdr.idx] - sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
+                Process( ev );
             }
         }
 

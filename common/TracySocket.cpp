@@ -146,8 +146,17 @@ bool Socket::Read( void* _buf, int len, const timeval* tv, bool(*exitCb)() )
     {
         if( exitCb() ) return false;
         const auto sz = Recv( buf, len, tv );
-        len -= sz;
-        buf += sz;
+        switch( sz )
+        {
+        case 0:
+            return false;
+        case -1:
+            break;
+        default:
+            len -= sz;
+            buf += sz;
+            break;
+        }
     }
 
     return true;

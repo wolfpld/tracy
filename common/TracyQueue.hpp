@@ -17,7 +17,7 @@ enum class QueueType : uint8_t
 
 struct QueueZoneBegin
 {
-    uint64_t id;
+    int64_t time;
     uint64_t filename;  // ptr
     uint64_t function;  // ptr
     uint32_t line;
@@ -25,7 +25,7 @@ struct QueueZoneBegin
 
 struct QueueZoneEnd
 {
-    uint64_t id;
+    int64_t time;
 };
 
 struct QueueHeader
@@ -35,7 +35,7 @@ struct QueueHeader
         QueueType type;
         uint8_t idx;
     };
-    int64_t time;
+    uint64_t id;
 };
 
 struct QueueItem

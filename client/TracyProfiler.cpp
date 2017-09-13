@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <chrono>
 #include <memory>
 
 #include "../common/tracy_lz4.hpp"
@@ -13,11 +12,6 @@ namespace tracy
 
 extern const char* PointerCheckA;
 const char* PointerCheckB = "tracy";
-
-static inline int64_t GetTime()
-{
-    return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-}
 
 
 static Profiler* s_instance = nullptr;
@@ -50,20 +44,22 @@ uint64_t Profiler::GetNewId()
     return s_instance->m_id.fetch_add( 1, std::memory_order_relaxed );
 }
 
-void Profiler::ZoneBegin( QueueZoneBegin&& data )
+uint64_t Profiler::ZoneBegin( QueueZoneBegin&& data )
 {
+    auto id = GetNewId();
     QueueItem item;
     item.hdr.type = QueueType::ZoneBegin;
-    item.hdr.time = GetTime();
+    item.hdr.id = id;
     item.zoneBegin = std::move( data );
     s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
+    return id;
 }
 
-void Profiler::ZoneEnd( QueueZoneEnd&& data )
+void Profiler::ZoneEnd( uint64_t id, QueueZoneEnd&& data )
 {
     QueueItem item;
     item.hdr.type = QueueType::ZoneEnd;
-    item.hdr.time = GetTime();
+    item.hdr.id = id;
     item.zoneEnd = std::move( data );
     s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
 }

@@ -12,14 +12,13 @@ class ScopedZone
 {
 public:
     ScopedZone( const char* file, const char* function, uint32_t line )
-        : m_id( Profiler::GetNewId() )
+        : m_id( Profiler::ZoneBegin( QueueZoneBegin { GetTime(), (uint64_t)file, (uint64_t)function, line } ) )
     {
-        Profiler::ZoneBegin( QueueZoneBegin { m_id, (uint64_t)file, (uint64_t)function, line } );
     }
 
     ~ScopedZone()
     {
-        Profiler::ZoneEnd( QueueZoneEnd { m_id } );
+        Profiler::ZoneEnd( m_id, QueueZoneEnd { GetTime() } );
     }
 
 private:

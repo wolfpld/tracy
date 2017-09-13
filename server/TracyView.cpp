@@ -48,10 +48,26 @@ void View::Worker()
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
         if( !sock.Connect( m_addr.c_str(), "8086" ) ) continue;
 
-        sock.Recv( &m_timeBegin, sizeof( m_timeBegin ), nullptr );
+        auto left = sizeof( m_timeBegin );
+        auto ptr = (char*)&m_timeBegin;
+        do
+        {
+            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+            auto sz = sock.Recv( ptr, left, &tv );
+            if( sz == 0 ) goto close;
+            if( sz > 0 )
+            {
+                left -= sz;
+                ptr += sz;
+            }
+        }
+        while( left > 0 );
 
         uint8_t lz4;
-        sock.Recv( &lz4, 1, nullptr );
+        while( sock.Recv( &lz4, 1, nullptr ) == -1 )
+        {
+            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+        }
 
         for(;;)
         {
@@ -60,6 +76,7 @@ void View::Worker()
             if( sock.Recv( buf, 16*1024, &tv ) == 0 ) break;
         }
 
+close:
         sock.Close();
     }
 }

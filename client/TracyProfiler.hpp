@@ -6,7 +6,7 @@
 #include <thread>
 
 #include "concurrentqueue.h"
-#include "TracyQueue.hpp"
+#include "../common/TracyQueue.hpp"
 
 namespace tracy
 {

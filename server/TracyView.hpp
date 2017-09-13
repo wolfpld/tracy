@@ -15,6 +15,8 @@ public:
     View( const char* addr );
     ~View();
 
+    static bool ShouldExit();
+
 private:
     void Worker();
 

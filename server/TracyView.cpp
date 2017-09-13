@@ -35,6 +35,11 @@ View::~View()
     m_thread.join();
 }
 
+bool View::ShouldExit()
+{
+    return s_instance->m_shutdown.load( std::memory_order_relaxed );
+}
+
 void View::Worker()
 {
     Socket sock;
@@ -48,26 +53,10 @@ void View::Worker()
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
         if( !sock.Connect( m_addr.c_str(), "8086" ) ) continue;
 
-        auto left = sizeof( m_timeBegin );
-        auto ptr = (char*)&m_timeBegin;
-        do
-        {
-            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-            auto sz = sock.Recv( ptr, left, &tv );
-            if( sz == 0 ) goto close;
-            if( sz > 0 )
-            {
-                left -= sz;
-                ptr += sz;
-            }
-        }
-        while( left > 0 );
-
         uint8_t lz4;
-        while( sock.Recv( &lz4, 1, nullptr ) == -1 )
-        {
-            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-        }
+
+        if( !sock.Read( &m_timeBegin, sizeof( m_timeBegin ), &tv, ShouldExit ) ) goto close;
+        if( !sock.Read( &lz4, sizeof( lz4 ), &tv, ShouldExit ) ) goto close;
 
         for(;;)
         {

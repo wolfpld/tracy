@@ -21,6 +21,8 @@ public:
     int Send( const void* buf, int len );
     int Recv( void* buf, int len, const timeval* tv );
 
+    bool Read( void* buf, int len, const timeval* tv, bool(*exitCb)() );
+
     Socket( const Socket& ) = delete;
     Socket( Socket&& ) = delete;
     Socket& operator=( const Socket& ) = delete;

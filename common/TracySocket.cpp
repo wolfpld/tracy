@@ -138,6 +138,21 @@ int Socket::Recv( void* _buf, int len, const timeval* tv )
     }
 }
 
+bool Socket::Read( void* _buf, int len, const timeval* tv, bool(*exitCb)() )
+{
+    auto buf = (char*)_buf;
+
+    while( len > 0 )
+    {
+        if( exitCb() ) return false;
+        const auto sz = Recv( buf, len, tv );
+        len -= sz;
+        buf += sz;
+    }
+
+    return true;
+}
+
 
 ListenSocket::ListenSocket()
     : m_sock( -1 )

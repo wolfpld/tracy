@@ -1,9 +1,9 @@
 #include <assert.h>
 #include <chrono>
-#include <limits>
 #include <memory>
 
 #include "../common/tracy_lz4.hpp"
+#include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
 #include "TracyProfiler.hpp"
@@ -74,10 +74,7 @@ Profiler* Profiler::Instance()
 
 void Profiler::Worker()
 {
-    enum { TargetFrameSize = 64000 };
     enum { BulkSize = TargetFrameSize / QueueItemSize };
-    enum { LZ4Size = LZ4_COMPRESSBOUND( TargetFrameSize ) };
-    static_assert( LZ4Size <= std::numeric_limits<uint16_t>::max(), "LZ4Size greater than uint16_t" );
 
     moodycamel::ConsumerToken token( m_queue );
 

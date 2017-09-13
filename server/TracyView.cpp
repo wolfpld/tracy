@@ -28,11 +28,11 @@ View::View( const char* addr )
 
 View::~View()
 {
-    assert( s_instance != nullptr );
-    s_instance = nullptr;
-
     m_shutdown.store( true, std::memory_order_relaxed );
     m_thread.join();
+
+    assert( s_instance != nullptr );
+    s_instance = nullptr;
 }
 
 bool View::ShouldExit()

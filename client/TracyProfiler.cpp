@@ -37,11 +37,12 @@ Profiler::Profiler()
 
 Profiler::~Profiler()
 {
+    m_shutdown.store( true, std::memory_order_relaxed );
+    m_thread.join();
+
     assert( s_instance );
     s_instance = nullptr;
 
-    m_shutdown.store( true, std::memory_order_relaxed );
-    m_thread.join();
 }
 
 uint64_t Profiler::GetNewId()

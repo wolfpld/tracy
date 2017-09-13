@@ -82,14 +82,14 @@ void View::Worker()
                 {
                     auto ev = (QueueItem*)ptr;
                     Process( *ev );
-                    ptr += QueueDataSize[(uint8_t)ev->hdr.type];
+                    ptr += QueueDataSize[ev->hdr.idx];
                 }
             }
             else
             {
                 QueueItem hdr;
                 if( !sock.Read( &hdr.hdr, sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
-                if( !sock.Read( ((char*)&hdr) + sizeof( QueueHeader ), QueueDataSize[(uint8_t)hdr.hdr.type] - sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
+                if( !sock.Read( ((char*)&hdr) + sizeof( QueueHeader ), QueueDataSize[hdr.hdr.idx] - sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
                 Process( hdr );
             }
         }

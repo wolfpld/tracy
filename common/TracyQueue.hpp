@@ -30,7 +30,11 @@ struct QueueZoneEnd
 
 struct QueueHeader
 {
-    QueueType type;
+    union
+    {
+        QueueType type;
+        uint8_t idx;
+    };
     int64_t time;
 };
 

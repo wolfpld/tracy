@@ -114,7 +114,7 @@ void Profiler::Worker()
                 char* ptr = buf;
                 for( int i=0; i<sz; i++ )
                 {
-                    const auto dsz = QueueDataSize[(uint8_t)item[i].hdr.type];
+                    const auto dsz = QueueDataSize[item[i].hdr.idx];
                     memcpy( ptr, item+i, dsz );
                     ptr += dsz;
                 }

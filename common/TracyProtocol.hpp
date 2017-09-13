@@ -9,9 +9,11 @@
 namespace tracy
 {
 
+using lz4sz_t = uint16_t;
+
 enum { TargetFrameSize = 64000 };
 enum { LZ4Size = LZ4_COMPRESSBOUND( TargetFrameSize ) };
-static_assert( LZ4Size <= std::numeric_limits<uint16_t>::max(), "LZ4Size greater than uint16_t" );
+static_assert( LZ4Size <= std::numeric_limits<lz4sz_t>::max(), "LZ4Size greater than lz4sz_t" );
 
 }
 

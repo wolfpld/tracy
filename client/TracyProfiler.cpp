@@ -120,10 +120,10 @@ void Profiler::Worker()
 #ifdef _DEBUG
                 if( sock->Send( buf, ptr - buf ) == -1 ) break;
 #else
-                char lz4[LZ4Size + sizeof( uint16_t )];
-                const uint16_t lz4sz = LZ4_compress_default( buf, lz4+2, ptr - buf, LZ4Size );
-                memcpy( lz4, &lz4sz, sizeof( uint16_t ) );
-                if( sock->Send( lz4, lz4sz ) == -1 ) break;
+                char lz4[LZ4Size + sizeof( lz4sz_t )];
+                const lz4sz_t lz4sz = LZ4_compress_default( buf, lz4 + sizeof( lz4sz_t ), ptr - buf, LZ4Size );
+                memcpy( lz4, &lz4sz, sizeof( lz4sz ) );
+                if( sock->Send( lz4, lz4sz + sizeof( lz4sz_t ) ) == -1 ) break;
 #endif
             }
             else

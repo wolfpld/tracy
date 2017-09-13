@@ -22,6 +22,7 @@ public:
     int Recv( void* buf, int len, const timeval* tv );
 
     bool Read( void* buf, int len, const timeval* tv, bool(*exitCb)() );
+    bool HasData();
 
     Socket( const Socket& ) = delete;
     Socket( Socket&& ) = delete;

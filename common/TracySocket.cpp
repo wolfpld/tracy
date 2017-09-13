@@ -162,6 +162,19 @@ bool Socket::Read( void* _buf, int len, const timeval* tv, bool(*exitCb)() )
     return true;
 }
 
+bool Socket::HasData()
+{
+    struct timeval tv;
+    memset( &tv, 0, sizeof( tv ) );
+
+    fd_set fds;
+    FD_ZERO( &fds );
+    FD_SET( m_sock, &fds );
+
+    select( m_sock+1, &fds, nullptr, nullptr, &tv );
+    return FD_ISSET( m_sock, &fds );
+}
+
 
 ListenSocket::ListenSocket()
     : m_sock( -1 )

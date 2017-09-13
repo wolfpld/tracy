@@ -6,8 +6,11 @@
 
 #include <assert.h>
 
+#include "../common/tracy_lz4.hpp"
+#include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
+#include "../common/TracyQueue.hpp"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -61,13 +64,44 @@ void View::Worker()
         for(;;)
         {
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-            char buf[16*1024];
-            if( sock.Recv( buf, 16*1024, &tv ) == 0 ) break;
+
+            if( lz4 )
+            {
+                char buf[TargetFrameSize];
+                char lz4buf[LZ4Size];
+                lz4sz_t lz4sz;
+                if( !sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
+                if( !sock.Read( lz4buf, lz4sz, &tv, ShouldExit ) ) goto close;
+
+                auto sz = LZ4_decompress_safe( lz4buf, buf, lz4sz, TargetFrameSize );
+                assert( sz >= 0 );
+
+                const char* ptr = buf;
+                const char* end = buf + sz;
+                while( ptr < end )
+                {
+                    auto ev = (QueueItem*)ptr;
+                    Process( *ev );
+                    ptr += QueueDataSize[(uint8_t)ev->hdr.type];
+                }
+            }
+            else
+            {
+                QueueItem hdr;
+                if( !sock.Read( &hdr.hdr, sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
+                if( !sock.Read( ((char*)&hdr) + sizeof( QueueHeader ), QueueDataSize[(uint8_t)hdr.hdr.type] - sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
+                Process( hdr );
+            }
         }
 
 close:
         sock.Close();
     }
+}
+
+void View::Process( const QueueItem& ev )
+{
+
 }
 
 }

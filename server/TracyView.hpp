@@ -8,6 +8,8 @@
 namespace tracy
 {
 
+struct QueueItem;
+
 class View
 {
 public:
@@ -19,6 +21,7 @@ public:
 
 private:
     void Worker();
+    void Process( const QueueItem& ev );
 
     std::string m_addr;
 

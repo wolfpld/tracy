@@ -185,9 +185,10 @@ void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
     }
     else
     {
+        const auto idx = it->second;
         std::unique_lock<std::mutex> lock( m_lock );
-        assert( ev.time >= m_data[it->second].start );
-        m_data[it->second].end = ev.time;
+        assert( ev.time >= m_data[idx].start );
+        m_data[idx].end = ev.time;
         lock.unlock();
 
         m_openZones.erase( it );

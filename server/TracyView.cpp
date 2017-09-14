@@ -78,21 +78,61 @@ void View::Worker()
                 while( ptr < end )
                 {
                     auto ev = (QueueItem*)ptr;
-                    Process( *ev );
-                    ptr += QueueDataSize[ev->hdr.idx];
+                    DispatchProcess( *ev, ptr );
                 }
             }
             else
             {
                 QueueItem ev;
                 if( !m_sock.Read( &ev.hdr, sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
-                if( !m_sock.Read( ((char*)&ev) + sizeof( QueueHeader ), QueueDataSize[ev.hdr.idx] - sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
-                Process( ev );
+                const auto payload = QueueDataSize[ev.hdr.idx] - sizeof( QueueHeader );
+                if( payload > 0 )
+                {
+                    if( !m_sock.Read( ((char*)&ev) + sizeof( QueueHeader ), payload, &tv, ShouldExit ) ) goto close;
+                }
+                DispatchProcess( ev );
             }
         }
 
 close:
         m_sock.Close();
+    }
+}
+
+void View::DispatchProcess( const QueueItem& ev )
+{
+    if( ev.hdr.type == QueueType::StringData )
+    {
+        timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = 10000;
+
+        char buf[TargetFrameSize];
+        uint16_t sz;
+        m_sock.Read( &sz, sizeof( sz ), &tv, ShouldExit );
+        m_sock.Read( buf, sz, &tv, ShouldExit );
+        AddString( ev.hdr.id, std::string( buf, buf+sz ) );
+    }
+    else
+    {
+        Process( ev );
+    }
+}
+
+void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
+{
+    ptr += QueueDataSize[ev.hdr.idx];
+    if( ev.hdr.type == QueueType::StringData )
+    {
+        uint16_t sz;
+        memcpy( &sz, ptr, sizeof( sz ) );
+        ptr += sizeof( sz );
+        AddString( ev.hdr.id, std::string( ptr, ptr+sz ) );
+        ptr += sz;
+    }
+    else
+    {
+        Process( ev );
     }
 }
 

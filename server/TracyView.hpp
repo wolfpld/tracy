@@ -29,8 +29,11 @@ public:
 
 private:
     void Worker();
-    void Process( const QueueItem& ev );
 
+    void DispatchProcess( const QueueItem& ev );
+    void DispatchProcess( const QueueItem& ev, const char*& ptr );
+
+    void Process( const QueueItem& ev );
     void ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev );
     void ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev );
 

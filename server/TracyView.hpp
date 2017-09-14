@@ -35,6 +35,7 @@ private:
     void ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev );
 
     void CheckString( uint64_t ptr );
+    void AddString( uint64_t ptr, std::string&& str );
 
     std::string m_addr;
 
@@ -44,6 +45,7 @@ private:
 
     int64_t m_timeBegin;
 
+    // this block must be locked
     std::mutex m_lock;
     std::vector<Event> m_data;
     std::vector<uint64_t> m_timeline;

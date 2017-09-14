@@ -163,4 +163,14 @@ void View::CheckString( uint64_t ptr )
     m_sock.Send( &ptr, sizeof( ptr ) );
 }
 
+void View::AddString( uint64_t ptr, std::string&& str )
+{
+    assert( m_strings.find( ptr ) == m_strings.end( ptr ) );
+    auto it = m_pendingStrings.find( ptr );
+    assert( it != m_pendingStrings.end() );
+    m_pendingStrings.erase( it );
+    std::lock_guard<std::mutex> lock( m_lock );
+    m_strings.emplace( ptr, std::move( str ) );
+}
+
 }

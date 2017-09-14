@@ -10,6 +10,7 @@ enum class QueueType : uint8_t
 {
     ZoneBegin,
     ZoneEnd,
+    StringData,
     NUM_TYPES
 };
 
@@ -55,6 +56,7 @@ enum { QueueItemSize = sizeof( QueueItem ) };
 static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
+    sizeof( QueueHeader ),
 };
 
 static_assert( sizeof( QueueDataSize ) / sizeof( size_t ) == (uint8_t)QueueType::NUM_TYPES, "QueueDataSize mismatch" );

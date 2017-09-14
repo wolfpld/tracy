@@ -36,6 +36,7 @@ private:
     void Worker();
 
     bool SendData( const char* data, size_t len );
+    bool SendString( uint64_t ptr );
 
     static Profiler* Instance();
     static moodycamel::ProducerToken& GetToken()

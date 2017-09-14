@@ -145,4 +145,25 @@ bool Profiler::SendData( const char* data, size_t len )
     return true;
 }
 
+bool Profiler::SendString( uint64_t str )
+{
+    auto ptr = (const char*)str;
+
+    QueueHeader hdr;
+    hdr.type = QueueType::StringData;
+    hdr.id = str;
+
+    char buf[TargetFrameSize];
+    memcpy( buf, &hdr, sizeof( hdr ) );
+
+    auto len = strlen( ptr );
+    assert( len < TargetFrameSize - sizeof( hdr ) - sizeof( uint16_t ) );
+    assert( len <= std::numeric_limits<uint16_t>::max() );
+    uint16_t l16 = len;
+    memcpy( buf + sizeof( hdr ), &l16, sizeof( l16 ) );
+    memcpy( buf + sizeof( hdr ) + sizeof( l16 ), ptr, l16 );
+
+    return SendData( buf, sizeof( hdr ) + sizeof( l16 ) + l16 );
+}
+
 }

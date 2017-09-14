@@ -1,5 +1,12 @@
+#ifdef _MSC_VER
+#  include <winsock2.h>
+#else
+#  include <sys/time.h>
+#endif
+
 #include <assert.h>
 #include <memory>
+#include <limits>
 
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyProtocol.hpp"
@@ -82,6 +89,10 @@ void Profiler::Worker()
 {
     enum { BulkSize = TargetFrameSize / QueueItemSize };
 
+    timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 10000;
+
     moodycamel::ConsumerToken token( m_queue );
 
     ListenSocket listen;
@@ -127,6 +138,13 @@ void Profiler::Worker()
             else
             {
                 std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+            }
+
+            while( m_sock->HasData() )
+            {
+                uint64_t ptr;
+                if( !m_sock->Read( &ptr, sizeof( ptr ), &tv, ShouldExit ) ) break;
+                SendString( ptr );
             }
         }
     }

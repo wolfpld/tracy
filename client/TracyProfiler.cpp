@@ -80,22 +80,21 @@ void Profiler::Worker()
 
     for(;;)
     {
-        std::unique_ptr<Socket> sock;
         for(;;)
         {
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-            sock = listen.Accept();
-            if( sock ) break;
+            m_sock = listen.Accept();
+            if( m_sock ) break;
         }
 
-        sock->Send( &m_timeBegin, sizeof( m_timeBegin ) );
+        m_sock->Send( &m_timeBegin, sizeof( m_timeBegin ) );
 #ifdef _DEBUG
         // notify client that lz4 compression is disabled (too slow in debug builds)
         char val = 0;
-        sock->Send( &val, 1 );
+        m_sock->Send( &val, 1 );
 #else
         char val = 1;
-        sock->Send( &val, 1 );
+        m_sock->Send( &val, 1 );
 #endif
 
         for(;;)
@@ -114,14 +113,7 @@ void Profiler::Worker()
                     memcpy( ptr, item+i, dsz );
                     ptr += dsz;
                 }
-#ifdef _DEBUG
-                if( sock->Send( buf, ptr - buf ) == -1 ) break;
-#else
-                char lz4[LZ4Size + sizeof( lz4sz_t )];
-                const lz4sz_t lz4sz = LZ4_compress_default( buf, lz4 + sizeof( lz4sz_t ), ptr - buf, LZ4Size );
-                memcpy( lz4, &lz4sz, sizeof( lz4sz ) );
-                if( sock->Send( lz4, lz4sz + sizeof( lz4sz_t ) ) == -1 ) break;
-#endif
+                if( !SendData( buf, ptr - buf ) ) break;
             }
             else
             {
@@ -129,6 +121,19 @@ void Profiler::Worker()
             }
         }
     }
+}
+
+bool Profiler::SendData( const char* data, size_t len )
+{
+#ifdef _DEBUG
+    if( m_sock->Send( data, len ) == -1 ) return false;
+#else
+    char lz4[LZ4Size + sizeof( lz4sz_t )];
+    const lz4sz_t lz4sz = LZ4_compress_default( data, lz4 + sizeof( lz4sz_t ), len, LZ4Size );
+    memcpy( lz4, &lz4sz, sizeof( lz4sz ) );
+    if( m_sock->Send( lz4, lz4sz + sizeof( lz4sz_t ) ) == -1 ) return false;
+#endif
+    return true;
 }
 
 }

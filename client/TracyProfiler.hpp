@@ -12,6 +12,8 @@
 namespace tracy
 {
 
+class Socket;
+
 static inline int64_t GetTime()
 {
     return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
@@ -31,6 +33,8 @@ public:
 private:
     void Worker();
 
+    bool SendData( const char* data, size_t len );
+
     static Profiler* Instance();
     static moodycamel::ProducerToken& GetToken()
     {
@@ -43,6 +47,7 @@ private:
     std::atomic<bool> m_shutdown;
     moodycamel::ConcurrentQueue<QueueItem> m_queue;
     std::atomic<uint64_t> m_id;
+    std::unique_ptr<Socket> m_sock;
 };
 
 };

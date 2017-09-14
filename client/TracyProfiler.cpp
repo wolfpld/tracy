@@ -7,6 +7,10 @@
 #include "../common/TracySystem.hpp"
 #include "TracyProfiler.hpp"
 
+#ifdef _DEBUG
+#  define DISABLE_LZ4
+#endif
+
 namespace tracy
 {
 
@@ -88,7 +92,7 @@ void Profiler::Worker()
         }
 
         m_sock->Send( &m_timeBegin, sizeof( m_timeBegin ) );
-#ifdef _DEBUG
+#ifdef DISABLE_LZ4
         // notify client that lz4 compression is disabled (too slow in debug builds)
         char val = 0;
         m_sock->Send( &val, 1 );
@@ -125,7 +129,7 @@ void Profiler::Worker()
 
 bool Profiler::SendData( const char* data, size_t len )
 {
-#ifdef _DEBUG
+#ifdef DISABLE_LZ4
     if( m_sock->Send( data, len ) == -1 ) return false;
 #else
     char lz4[LZ4Size + sizeof( lz4sz_t )];

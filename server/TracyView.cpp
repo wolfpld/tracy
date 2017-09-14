@@ -101,7 +101,58 @@ close:
 
 void View::Process( const QueueItem& ev )
 {
+    switch( ev.hdr.type )
+    {
+    case QueueType::ZoneBegin:
+        ProcessZoneBegin( ev.hdr.id, ev.zoneBegin );
+        break;
+    case QueueType::ZoneEnd:
+        ProcessZoneEnd( ev.hdr.id, ev.zoneEnd );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+}
 
+void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
+{
+    auto it = m_pendingEndZone.find( id );
+    const auto idx = m_data.size();
+    std::unique_lock<std::mutex> lock( m_lock );
+    if( it == m_pendingEndZone.end() )
+    {
+        m_data.emplace_back( Event { ev.time, -1 } );
+        lock.unlock();
+
+        m_openZones.emplace( id, idx );
+    }
+    else
+    {
+        assert( ev.time <= it->second.time );
+        m_data.emplace_back( Event { ev.time, it->second.time } );
+        lock.unlock();
+
+        m_pendingEndZone.erase( it );
+    }
+}
+
+void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
+{
+    auto it = m_openZones.find( id );
+    if( it == m_openZones.end() )
+    {
+        m_pendingEndZone.emplace( id, ev );
+    }
+    else
+    {
+        std::unique_lock<std::mutex> lock( m_lock );
+        assert( ev.time >= m_data[it->second].start );
+        m_data[it->second].end = ev.time;
+        lock.unlock();
+
+        m_openZones.erase( it );
+    }
 }
 
 }

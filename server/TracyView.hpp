@@ -2,8 +2,14 @@
 #define __TRACYVIEW_HPP__
 
 #include <atomic>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <unordered_map>
+#include <vector>
+
+#include "../common/TracyQueue.hpp"
+#include "TracyEvent.hpp"
 
 namespace tracy
 {
@@ -23,12 +29,23 @@ private:
     void Worker();
     void Process( const QueueItem& ev );
 
+    void ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev );
+    void ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev );
+
     std::string m_addr;
 
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
 
     int64_t m_timeBegin;
+
+    std::mutex m_lock;
+    std::vector<Event> m_data;
+    std::vector<uint64_t> m_timeline;
+
+    // not used for vis - no need to lock
+    std::unordered_map<uint64_t, QueueZoneEnd> m_pendingEndZone;
+    std::unordered_map<uint64_t, uint64_t> m_openZones;
 };
 
 }

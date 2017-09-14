@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "../common/TracySocket.hpp"
 #include "../common/TracyQueue.hpp"
 #include "TracyEvent.hpp"
 
@@ -34,6 +35,7 @@ private:
 
     std::string m_addr;
 
+    Socket m_sock;
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
 

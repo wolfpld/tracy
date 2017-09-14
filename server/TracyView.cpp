@@ -4,6 +4,7 @@
 #  include <sys/time.h>
 #endif
 
+#include <algorithm>
 #include <assert.h>
 
 #include "../common/tracy_lz4.hpp"
@@ -216,10 +217,29 @@ void View::AddString( uint64_t ptr, std::string&& str )
 
 void View::NewZone( uint64_t idx )
 {
+    if( !m_timeline.empty() )
+    {
+        auto& zone = m_data[idx];
+        const auto lastend = m_data[m_timeline.back()].end;
+        if( lastend != -1 && lastend < zone.start )
+        {
+            m_timeline.emplace_back( idx );
+        }
+        else
+        {
+
+        }
+    }
+    else
+    {
+        m_timeline.emplace_back( idx );
+    }
 }
 
 void View::UpdateZone( uint64_t idx )
 {
+    auto& zone = m_data[idx++];
+    assert( zone.end != -1 );
 }
 
 }

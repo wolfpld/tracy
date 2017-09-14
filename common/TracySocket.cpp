@@ -19,12 +19,10 @@ namespace tracy
 {
 
 #ifdef _MSC_VER
-static bool initDone = false;
-static void InitWinSock()
+struct __wsinit
 {
-    if( !initDone )
+    __wsinit()
     {
-        initDone = true;
         WSADATA wsaData;
         if( WSAStartup( MAKEWORD( 2, 2 ), &wsaData ) != 0 )
         {
@@ -32,23 +30,17 @@ static void InitWinSock()
             exit( 1 );
         }
     }
-}
+} ___wsinit;
 #endif
 
 Socket::Socket()
     : m_sock( -1 )
 {
-#ifdef _MSC_VER
-    InitWinSock();
-#endif
 }
 
 Socket::Socket( int sock )
     : m_sock( sock )
 {
-#ifdef _MSC_VER
-    assert( initDone );
-#endif
 }
 
 Socket::~Socket()
@@ -179,9 +171,6 @@ bool Socket::HasData()
 ListenSocket::ListenSocket()
     : m_sock( -1 )
 {
-#ifdef _MSC_VER
-    InitWinSock();
-#endif
 }
 
 ListenSocket::~ListenSocket()

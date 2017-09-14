@@ -116,6 +116,8 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 {
     auto it = m_pendingEndZone.find( id );
     const auto idx = m_data.size();
+    CheckString( ev.filename );
+    CheckString( ev.function );
     std::unique_lock<std::mutex> lock( m_lock );
     if( it == m_pendingEndZone.end() )
     {
@@ -150,6 +152,15 @@ void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
 
         m_openZones.erase( it );
     }
+}
+
+void View::CheckString( uint64_t ptr )
+{
+    if( m_strings.find( ptr ) != m_strings.end() ) return;
+    if( m_pendingStrings.find( ptr ) != m_pendingStrings.end() ) return;
+
+    m_pendingStrings.emplace( ptr );
+    m_sock.Send( &ptr, sizeof( ptr ) );
 }
 
 }

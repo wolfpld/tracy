@@ -40,6 +40,9 @@ private:
     void CheckString( uint64_t ptr );
     void AddString( uint64_t ptr, std::string&& str );
 
+    void NewZone( uint64_t idx );
+    void UpdateZone( uint64_t idx );
+
     std::string m_addr;
 
     Socket m_sock;

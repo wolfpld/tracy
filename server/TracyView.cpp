@@ -162,16 +162,16 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
     if( it == m_pendingEndZone.end() )
     {
         m_data.emplace_back( Event { ev.time, -1 } );
+        NewZone( idx );
         lock.unlock();
-
         m_openZones.emplace( id, idx );
     }
     else
     {
         assert( ev.time <= it->second.time );
         m_data.emplace_back( Event { ev.time, it->second.time } );
+        NewZone( idx );
         lock.unlock();
-
         m_pendingEndZone.erase( it );
     }
 }
@@ -189,8 +189,8 @@ void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
         std::unique_lock<std::mutex> lock( m_lock );
         assert( ev.time >= m_data[idx].start );
         m_data[idx].end = ev.time;
+        UpdateZone( idx );
         lock.unlock();
-
         m_openZones.erase( it );
     }
 }
@@ -212,6 +212,14 @@ void View::AddString( uint64_t ptr, std::string&& str )
     m_pendingStrings.erase( it );
     std::lock_guard<std::mutex> lock( m_lock );
     m_strings.emplace( ptr, std::move( str ) );
+}
+
+void View::NewZone( uint64_t idx )
+{
+}
+
+void View::UpdateZone( uint64_t idx )
+{
 }
 
 }

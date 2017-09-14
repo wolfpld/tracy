@@ -73,6 +73,11 @@ Profiler* Profiler::Instance()
     return s_instance;
 }
 
+bool Profiler::ShouldExit()
+{
+    return s_instance->m_shutdown.load( std::memory_order_relaxed );
+}
+
 void Profiler::Worker()
 {
     enum { BulkSize = TargetFrameSize / QueueItemSize };

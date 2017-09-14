@@ -30,6 +30,8 @@ public:
     static uint64_t ZoneBegin( QueueZoneBegin&& data );
     static void ZoneEnd( uint64_t id, QueueZoneEnd&& data );
 
+    static bool ShouldExit();
+
 private:
     void Worker();
 

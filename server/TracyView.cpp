@@ -56,12 +56,14 @@ void View::Worker()
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
         if( !m_sock.Connect( m_addr.c_str(), "8086" ) ) continue;
 
+        std::chrono::time_point<std::chrono::high_resolution_clock> t0;
+
         uint8_t lz4;
 
         if( !m_sock.Read( &m_timeBegin, sizeof( m_timeBegin ), &tv, ShouldExit ) ) goto close;
         if( !m_sock.Read( &lz4, sizeof( lz4 ), &tv, ShouldExit ) ) goto close;
 
-        auto t0 = std::chrono::high_resolution_clock::now();
+        t0 = std::chrono::high_resolution_clock::now();
         uint64_t bytes = 0;
 
         for(;;)

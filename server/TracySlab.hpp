@@ -42,7 +42,7 @@ public:
     template<typename T>
     T* Alloc()
     {
-        return (T*)Alloc( sizeof( T ) );
+        return new( Alloc( sizeof( T ) ) ) T;
     }
 
     void Unalloc( size_t size )

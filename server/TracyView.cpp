@@ -106,6 +106,7 @@ void View::Worker()
             enum { MbpsUpdateTime = 200 };
             if( td > MbpsUpdateTime )
             {
+                std::lock_guard<std::mutex> lock( m_lock );
                 m_mbps.erase( m_mbps.begin() );
                 m_mbps.emplace_back( 8.f * MbpsUpdateTime * bytes / ( td * 1000 * 1000 ) );
                 t0 = t1;
@@ -267,6 +268,8 @@ void View::Draw()
 
 void View::DrawImpl()
 {
+    std::lock_guard<std::mutex> lock( m_lock );
+
     // Connection window
     {
         const auto mbps = m_mbps.back();

@@ -59,12 +59,12 @@ void View::Worker()
         std::chrono::time_point<std::chrono::high_resolution_clock> t0;
 
         uint8_t lz4;
+        uint64_t bytes = 0;
 
         if( !m_sock.Read( &m_timeBegin, sizeof( m_timeBegin ), &tv, ShouldExit ) ) goto close;
         if( !m_sock.Read( &lz4, sizeof( lz4 ), &tv, ShouldExit ) ) goto close;
 
         t0 = std::chrono::high_resolution_clock::now();
-        uint64_t bytes = 0;
 
         for(;;)
         {

@@ -21,6 +21,7 @@ static View* s_instance = nullptr;
 View::View( const char* addr )
     : m_addr( addr )
     , m_shutdown( false )
+    , m_mbps( 64 )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -59,6 +60,9 @@ void View::Worker()
         if( !m_sock.Read( &m_timeBegin, sizeof( m_timeBegin ), &tv, ShouldExit ) ) goto close;
         if( !m_sock.Read( &lz4, sizeof( lz4 ), &tv, ShouldExit ) ) goto close;
 
+        auto t0 = std::chrono::high_resolution_clock::now();
+        uint64_t bytes = 0;
+
         for(;;)
         {
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
@@ -70,6 +74,7 @@ void View::Worker()
                 lz4sz_t lz4sz;
                 if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
                 if( !m_sock.Read( lz4buf, lz4sz, &tv, ShouldExit ) ) goto close;
+                bytes += sizeof( lz4sz ) + lz4sz;
 
                 auto sz = LZ4_decompress_safe( lz4buf, buf, lz4sz, TargetFrameSize );
                 assert( sz >= 0 );
@@ -91,7 +96,19 @@ void View::Worker()
                 {
                     if( !m_sock.Read( ((char*)&ev) + sizeof( QueueHeader ), payload, &tv, ShouldExit ) ) goto close;
                 }
+                bytes += sizeof( QueueHeader ) + payload;   // ignores string transfer
                 DispatchProcess( ev );
+            }
+
+            auto t1 = std::chrono::high_resolution_clock::now();
+            auto td = std::chrono::duration_cast<std::chrono::milliseconds>( t1 - t0 ).count();
+            enum { MbpsUpdateTime = 200 };
+            if( td > MbpsUpdateTime )
+            {
+                m_mbps.erase( m_mbps.begin() );
+                m_mbps.emplace_back( 8.f * MbpsUpdateTime * bytes / ( td * 1000 * 1000 ) );
+                t0 = t1;
+                bytes = 0;
             }
         }
 

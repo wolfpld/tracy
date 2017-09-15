@@ -53,6 +53,7 @@ private:
 
     // this block must be locked
     std::mutex m_lock;
+    std::vector<float> m_mbps;
     std::vector<Event> m_data;
     std::vector<uint64_t> m_timeline;
     std::unordered_map<uint64_t, std::string> m_strings;

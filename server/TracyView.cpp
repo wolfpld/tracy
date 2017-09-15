@@ -113,7 +113,7 @@ void View::Worker()
             {
                 std::lock_guard<std::mutex> lock( m_mbpslock );
                 m_mbps.erase( m_mbps.begin() );
-                m_mbps.emplace_back( 8.f * MbpsUpdateTime * bytes / ( td * 1000 * 1000 ) );
+                m_mbps.emplace_back( bytes / ( td * 125.f ) );
                 t0 = t1;
                 bytes = 0;
             }

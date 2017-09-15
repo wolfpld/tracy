@@ -60,9 +60,12 @@ void View::Worker()
 
         uint8_t lz4;
         uint64_t bytes = 0;
+        uint64_t timeStart;
 
-        if( !m_sock.Read( &m_timeBegin, sizeof( m_timeBegin ), &tv, ShouldExit ) ) goto close;
+        if( !m_sock.Read( &timeStart, sizeof( timeStart ), &tv, ShouldExit ) ) goto close;
         if( !m_sock.Read( &lz4, sizeof( lz4 ), &tv, ShouldExit ) ) goto close;
+
+        m_frames.push_back( timeStart );
 
         t0 = std::chrono::high_resolution_clock::now();
 
@@ -169,6 +172,7 @@ void View::Process( const QueueItem& ev )
         ProcessZoneEnd( ev.hdr.id, ev.zoneEnd );
         break;
     case QueueType::FrameMark:
+        ProcessFrameMark( ev.hdr.id );
         break;
     default:
         assert( false );
@@ -217,6 +221,23 @@ void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
         UpdateZone( zone );
         lock.unlock();
         m_openZones.erase( it );
+    }
+}
+
+void View::ProcessFrameMark( uint64_t id )
+{
+    assert( !m_frames.empty() );
+    const auto lastframe = m_frames.back();
+    if( lastframe < id )
+    {
+        std::unique_lock<std::mutex> lock( m_lock );
+        m_frames.push_back( id );
+    }
+    else
+    {
+        auto it = std::lower_bound( m_frames.begin(), m_frames.end(), id );
+        std::unique_lock<std::mutex> lock( m_lock );
+        m_frames.insert( it, id );
     }
 }
 

@@ -39,6 +39,7 @@ private:
     void Process( const QueueItem& ev );
     void ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev );
     void ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev );
+    void ProcessFrameMark( uint64_t id );
 
     void CheckString( uint64_t ptr );
     void AddString( uint64_t ptr, std::string&& str );
@@ -54,11 +55,10 @@ private:
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
 
-    int64_t m_timeBegin;
-
     // this block must be locked
     std::mutex m_lock;
     Vector<Event*> m_timeline;
+    Vector<uint64_t> m_frames;
     std::unordered_map<uint64_t, std::string> m_strings;
 
     std::mutex m_mbpslock;

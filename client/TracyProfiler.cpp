@@ -75,6 +75,14 @@ void Profiler::ZoneEnd( uint64_t id, QueueZoneEnd&& data )
     s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
 }
 
+void Profiler::FrameMark()
+{
+    QueueItem item;
+    item.hdr.type = QueueType::FrameMark;
+    item.hdr.id = (uint64_t)GetTime();
+    s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
+}
+
 Profiler* Profiler::Instance()
 {
     return s_instance;

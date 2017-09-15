@@ -168,6 +168,8 @@ void View::Process( const QueueItem& ev )
     case QueueType::ZoneEnd:
         ProcessZoneEnd( ev.hdr.id, ev.zoneEnd );
         break;
+    case QueueType::FrameMark:
+        break;
     default:
         assert( false );
         break;

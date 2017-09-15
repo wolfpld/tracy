@@ -242,7 +242,7 @@ void View::NewZone( Event* zone )
         const auto lastend = m_timeline.back()->end;
         if( lastend != -1 && lastend < zone->start )
         {
-            m_timeline.emplace_back( zone );
+            m_timeline.push_back( zone );
         }
         else
         {
@@ -251,7 +251,7 @@ void View::NewZone( Event* zone )
     }
     else
     {
-        m_timeline.emplace_back( zone );
+        m_timeline.push_back( zone );
     }
 }
 

@@ -13,6 +13,7 @@
 #include "../common/TracyQueue.hpp"
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
+#include "TracyVector.hpp"
 
 namespace tracy
 {
@@ -58,7 +59,7 @@ private:
     // this block must be locked
     std::mutex m_lock;
     std::vector<float> m_mbps;
-    std::vector<Event*> m_timeline;
+    Vector<Event*> m_timeline;
     std::unordered_map<uint64_t, std::string> m_strings;
 
     // not used for vis - no need to lock

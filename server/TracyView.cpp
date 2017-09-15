@@ -293,6 +293,7 @@ void View::Draw()
 void View::DrawImpl()
 {
     // Connection window
+    ImGui::Begin( m_addr.c_str() );
     {
         std::lock_guard<std::mutex> lock( m_mbpslock );
         const auto mbps = m_mbps.back();
@@ -305,12 +306,21 @@ void View::DrawImpl()
         {
             sprintf( buf, "%.2f Mbps", mbps );
         }
-        ImGui::Begin( m_addr.c_str() );
         ImGui::PlotLines( buf, m_mbps.data(), m_mbps.size(), 0, nullptr, 0 );
-        ImGui::End();
     }
 
     std::lock_guard<std::mutex> lock( m_lock );
+    {
+        const auto sz = m_frames.size();
+        if( sz > 1 )
+        {
+            const auto dt = m_frames[sz-1] - m_frames[sz-2];
+            const auto dtm = dt / 1000000.f;
+            const auto fps = 1000.f / dtm;
+            ImGui::Text( "FPS: %.1f  Frame time: %.2f ms", fps, dtm );
+        }
+    }
+    ImGui::End();
 }
 
 }

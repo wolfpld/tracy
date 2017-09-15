@@ -119,7 +119,12 @@ int Socket::Recv( void* _buf, int len, const timeval* tv )
     FD_ZERO( &fds );
     FD_SET( m_sock, &fds );
 
+#ifndef _WIN32
+    timeval _tv = *tv;
+    select( m_sock+1, &fds, nullptr, nullptr, &_tv );
+#else
     select( m_sock+1, &fds, nullptr, nullptr, tv );
+#endif
     if( FD_ISSET( m_sock, &fds ) )
     {
         return recv( m_sock, buf, len, 0 );

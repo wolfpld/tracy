@@ -39,6 +39,12 @@ public:
         return ret;
     }
 
+    template<typename T>
+    T* Alloc()
+    {
+        return (T*)Alloc( sizeof( T ) );
+    }
+
     void Unalloc( size_t size )
     {
         assert( size <= m_offset );

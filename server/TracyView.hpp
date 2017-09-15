@@ -12,6 +12,7 @@
 #include "../common/TracySocket.hpp"
 #include "../common/TracyQueue.hpp"
 #include "TracyEvent.hpp"
+#include "TracySlab.hpp"
 
 namespace tracy
 {
@@ -41,8 +42,8 @@ private:
     void CheckString( uint64_t ptr );
     void AddString( uint64_t ptr, std::string&& str );
 
-    void NewZone( uint64_t idx );
-    void UpdateZone( uint64_t idx );
+    void NewZone( Event* zone );
+    void UpdateZone( Event* zone );
 
     void DrawImpl();
 
@@ -57,14 +58,15 @@ private:
     // this block must be locked
     std::mutex m_lock;
     std::vector<float> m_mbps;
-    std::vector<Event> m_data;
-    std::vector<uint64_t> m_timeline;
+    std::vector<Event*> m_timeline;
     std::unordered_map<uint64_t, std::string> m_strings;
 
     // not used for vis - no need to lock
     std::unordered_map<uint64_t, QueueZoneEnd> m_pendingEndZone;
-    std::unordered_map<uint64_t, uint64_t> m_openZones;
+    std::unordered_map<uint64_t, Event*> m_openZones;
     std::unordered_set<uint64_t> m_pendingStrings;
+
+    Slab<EventSize*1024*1024> m_slab;
 };
 
 }

@@ -11,7 +11,7 @@ struct Event
     int64_t start;
     int64_t end;
 
-    std::vector<uint64_t> child;
+    std::vector<Event*> child;
 };
 
 enum { EventSize = sizeof( Event ) };

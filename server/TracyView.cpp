@@ -175,22 +175,23 @@ void View::Process( const QueueItem& ev )
 void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 {
     auto it = m_pendingEndZone.find( id );
-    const auto idx = m_data.size();
+    auto zone = m_slab.Alloc<Event>();
     CheckString( ev.filename );
     CheckString( ev.function );
+    zone->start = ev.time;
     std::unique_lock<std::mutex> lock( m_lock );
     if( it == m_pendingEndZone.end() )
     {
-        m_data.emplace_back( Event { ev.time, -1 } );
-        NewZone( idx );
+        zone->end = -1;
+        NewZone( zone );
         lock.unlock();
-        m_openZones.emplace( id, idx );
+        m_openZones.emplace( id, zone );
     }
     else
     {
         assert( ev.time <= it->second.time );
-        m_data.emplace_back( Event { ev.time, it->second.time } );
-        NewZone( idx );
+        zone->end = it->second.time;
+        NewZone( zone );
         lock.unlock();
         m_pendingEndZone.erase( it );
     }
@@ -205,11 +206,11 @@ void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
     }
     else
     {
-        const auto idx = it->second;
+        auto zone = it->second;
         std::unique_lock<std::mutex> lock( m_lock );
-        assert( ev.time >= m_data[idx].start );
-        m_data[idx].end = ev.time;
-        UpdateZone( idx );
+        assert( ev.time >= zone->start );
+        zone->end = ev.time;
+        UpdateZone( zone );
         lock.unlock();
         m_openZones.erase( it );
     }
@@ -234,15 +235,14 @@ void View::AddString( uint64_t ptr, std::string&& str )
     m_strings.emplace( ptr, std::move( str ) );
 }
 
-void View::NewZone( uint64_t idx )
+void View::NewZone( Event* zone )
 {
     if( !m_timeline.empty() )
     {
-        auto& zone = m_data[idx];
-        const auto lastend = m_data[m_timeline.back()].end;
-        if( lastend != -1 && lastend < zone.start )
+        const auto lastend = m_timeline.back()->end;
+        if( lastend != -1 && lastend < zone->start )
         {
-            m_timeline.emplace_back( idx );
+            m_timeline.emplace_back( zone );
         }
         else
         {
@@ -251,14 +251,13 @@ void View::NewZone( uint64_t idx )
     }
     else
     {
-        m_timeline.emplace_back( idx );
+        m_timeline.emplace_back( zone );
     }
 }
 
-void View::UpdateZone( uint64_t idx )
+void View::UpdateZone( Event* zone )
 {
-    auto& zone = m_data[idx++];
-    assert( zone.end != -1 );
+    assert( zone->end != -1 );
 }
 
 void View::Draw()

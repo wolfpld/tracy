@@ -143,6 +143,12 @@ bool Socket::Read( void* _buf, int len, const timeval* tv, bool(*exitCb)() )
         case 0:
             return false;
         case -1:
+#ifdef _WIN32
+        {
+            auto err = WSAGetLastError();
+            if( err == WSAECONNABORTED ) return false;
+        }
+#endif
             break;
         default:
             len -= sz;

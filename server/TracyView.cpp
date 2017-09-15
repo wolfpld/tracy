@@ -106,7 +106,7 @@ void View::Worker()
             enum { MbpsUpdateTime = 200 };
             if( td > MbpsUpdateTime )
             {
-                std::lock_guard<std::mutex> lock( m_lock );
+                std::lock_guard<std::mutex> lock( m_mbpslock );
                 m_mbps.erase( m_mbps.begin() );
                 m_mbps.emplace_back( 8.f * MbpsUpdateTime * bytes / ( td * 1000 * 1000 ) );
                 t0 = t1;
@@ -267,10 +267,9 @@ void View::Draw()
 
 void View::DrawImpl()
 {
-    std::lock_guard<std::mutex> lock( m_lock );
-
     // Connection window
     {
+        std::lock_guard<std::mutex> lock( m_mbpslock );
         const auto mbps = m_mbps.back();
         char buf[64];
         if( mbps < 0.1f )
@@ -285,6 +284,8 @@ void View::DrawImpl()
         ImGui::PlotLines( buf, m_mbps.data(), m_mbps.size(), 0, nullptr, 0 );
         ImGui::End();
     }
+
+    std::lock_guard<std::mutex> lock( m_lock );
 }
 
 }

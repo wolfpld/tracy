@@ -58,9 +58,11 @@ private:
 
     // this block must be locked
     std::mutex m_lock;
-    std::vector<float> m_mbps;
     Vector<Event*> m_timeline;
     std::unordered_map<uint64_t, std::string> m_strings;
+
+    std::mutex m_mbpslock;
+    std::vector<float> m_mbps;
 
     // not used for vis - no need to lock
     std::unordered_map<uint64_t, QueueZoneEnd> m_pendingEndZone;

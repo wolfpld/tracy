@@ -8,3 +8,4 @@ Debug
 *.d
 *.o
 *.swp
+imgui.ini

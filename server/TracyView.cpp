@@ -11,6 +11,7 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "../common/TracyQueue.hpp"
+#include "../imgui/imgui.h"
 #include "TracyView.hpp"
 
 namespace tracy
@@ -257,6 +258,31 @@ void View::UpdateZone( uint64_t idx )
 {
     auto& zone = m_data[idx++];
     assert( zone.end != -1 );
+}
+
+void View::Draw()
+{
+    s_instance->DrawImpl();
+}
+
+void View::DrawImpl()
+{
+    // Connection window
+    {
+        const auto mbps = m_mbps.back();
+        char buf[64];
+        if( mbps < 0.1f )
+        {
+            sprintf( buf, "%.2f Kbps", mbps * 1000.f );
+        }
+        else
+        {
+            sprintf( buf, "%.2f Mbps", mbps );
+        }
+        ImGui::Begin( m_addr.c_str() );
+        ImGui::PlotLines( buf, m_mbps.data(), m_mbps.size(), 0, nullptr, 0 );
+        ImGui::End();
+    }
 }
 
 }

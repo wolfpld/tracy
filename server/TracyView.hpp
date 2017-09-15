@@ -26,6 +26,7 @@ public:
     ~View();
 
     static bool ShouldExit();
+    static void Draw();
 
 private:
     void Worker();
@@ -42,6 +43,8 @@ private:
 
     void NewZone( uint64_t idx );
     void UpdateZone( uint64_t idx );
+
+    void DrawImpl();
 
     std::string m_addr;
 

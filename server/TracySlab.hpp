@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <vector>
 
+#include "TracyMemory.hpp"
+
 namespace tracy
 {
 
@@ -15,10 +17,13 @@ public:
         : m_ptr( new char[BlockSize] )
         , m_buffer( { m_ptr } )
         , m_offset( 0 )
-    {}
+    {
+        memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
+    }
 
     ~Slab()
     {
+        memUsage.fetch_sub( BlockSize * m_buffer.size(), std::memory_order_relaxed );
         for( auto& v : m_buffer )
         {
             delete[] v;
@@ -33,6 +38,7 @@ public:
             m_ptr = new char[BlockSize];
             m_offset = 0;
             m_buffer.emplace_back( m_ptr );
+            memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
         }
         void* ret = m_ptr + m_offset;
         m_offset += size;
@@ -55,6 +61,7 @@ public:
     {
         if( m_buffer.size() > 1 )
         {
+            memUsage.fetch_sub( BlockSize * ( m_buffer.size() - 1 ), std::memory_order_relaxed );
             for( int i=1; i<m_buffer.size(); i++ )
             {
                 delete[] m_buffer[i];

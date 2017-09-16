@@ -309,6 +309,8 @@ void View::DrawImpl()
         ImGui::PlotLines( buf, m_mbps.data(), m_mbps.size(), 0, nullptr, 0 );
     }
 
+    ImGui::Text( "Memory usage: %.2f MB", memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ) );
+
     std::lock_guard<std::mutex> lock( m_lock );
     {
         const auto sz = m_frames.size();

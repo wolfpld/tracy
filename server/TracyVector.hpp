@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include "TracyMemory.hpp"
+
 namespace tracy
 {
 
@@ -24,6 +26,7 @@ public:
 
     ~Vector()
     {
+        memUsage.fetch_sub( m_capacity * sizeof( T ), std::memory_order_relaxed );
         delete[] m_ptr;
     }
 
@@ -77,9 +80,11 @@ private:
         if( m_capacity == 0 )
         {
             m_capacity = 64;
+            memUsage.fetch_add( m_capacity * sizeof( T ), std::memory_order_relaxed );
         }
         else
         {
+            memUsage.fetch_add( m_capacity * sizeof( T ), std::memory_order_relaxed );
             m_capacity *= 2;
         }
         T* ptr = new T[m_capacity];

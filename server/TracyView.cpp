@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <limits>
 
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyProtocol.hpp"
@@ -293,20 +294,20 @@ void View::Draw()
 void View::DrawImpl()
 {
     // Connection window
-    ImGui::Begin( m_addr.c_str() );
+    ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     {
         std::lock_guard<std::mutex> lock( m_mbpslock );
         const auto mbps = m_mbps.back();
         char buf[64];
         if( mbps < 0.1f )
         {
-            sprintf( buf, "%.2f Kbps", mbps * 1000.f );
+            sprintf( buf, "%6.2f Kbps", mbps * 1000.f );
         }
         else
         {
-            sprintf( buf, "%.2f Mbps", mbps );
+            sprintf( buf, "%6.2f Mbps", mbps );
         }
-        ImGui::PlotLines( buf, m_mbps.data(), m_mbps.size(), 0, nullptr, 0 );
+        ImGui::PlotLines( buf, m_mbps.data(), m_mbps.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 160, 0 ) );
     }
 
     ImGui::Text( "Memory usage: %.2f MB", memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ) );
@@ -319,7 +320,7 @@ void View::DrawImpl()
             const auto dt = m_frames[sz-1] - m_frames[sz-2];
             const auto dtm = dt / 1000000.f;
             const auto fps = 1000.f / dtm;
-            ImGui::Text( "FPS: %.1f  Frame time: %.2f ms", fps, dtm );
+            ImGui::Text( "FPS: %6.1f  Frame time: %.2f ms", fps, dtm );
         }
     }
     ImGui::End();

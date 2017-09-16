@@ -28,6 +28,7 @@ public:
     }
 
     bool empty() const { return m_size == 0; }
+    size_t size() const { return m_size; }
 
     T* begin() { return m_ptr; }
     const T* begin() const { return m_ptr; }
@@ -36,6 +37,9 @@ public:
 
     T& back() { assert( m_size > 0 ); return m_ptr[m_size - 1]; }
     const T& back() const { assert( m_size > 0 ); return m_ptr[m_size - 1]; }
+
+    T& operator[]( size_t idx ) { return m_ptr[idx]; }
+    const T& operator[]( size_t idx ) const { return m_ptr[idx]; }
 
     void push_back( const T& v )
     {
@@ -47,6 +51,24 @@ public:
     {
         if( m_size == m_capacity ) AllocMore();
         m_ptr[m_size++] = std::move( v );
+    }
+
+    void insert( T* it, const T& v )
+    {
+        assert( it >= m_ptr && it <= m_ptr + m_size );
+        if( m_size == m_capacity ) AllocMore();
+        if( it != m_ptr + m_size ) memmove( it+1, it, ( m_size - ( it - m_ptr ) ) * sizeof( T ) );
+        m_size++;
+        *it = v;
+    }
+
+    void insert( T* it, T&& v )
+    {
+        assert( it >= m_ptr && it <= m_ptr + m_size );
+        if( m_size == m_capacity ) AllocMore();
+        if( it != m_ptr + m_size ) memmove( it+1, it, ( m_size - ( it - m_ptr ) ) * sizeof( T ) );
+        m_size++;
+        *it = std::move( v );
     }
 
 private:

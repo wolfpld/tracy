@@ -11,7 +11,7 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "../common/TracyQueue.hpp"
-#include "../imgui/imgui.h"
+#include "TracyImGui.hpp"
 #include "TracyView.hpp"
 
 namespace tracy

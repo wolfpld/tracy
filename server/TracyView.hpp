@@ -55,6 +55,7 @@ private:
     Socket m_sock;
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
+    std::atomic<bool> m_connected;
 
     // this block must be locked
     std::mutex m_lock;

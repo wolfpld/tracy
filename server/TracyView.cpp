@@ -22,6 +22,7 @@ static View* s_instance = nullptr;
 View::View( const char* addr )
     : m_addr( addr )
     , m_shutdown( false )
+    , m_connected( false )
     , m_mbps( 64 )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3] )
@@ -73,6 +74,8 @@ void View::Worker()
 
         m_frames.push_back( timeStart );
         LZ4_setStreamDecode( m_stream, nullptr, 0 );
+
+        m_connected.store( true, std::memory_order_relaxed );
 
         t0 = std::chrono::high_resolution_clock::now();
 
@@ -131,6 +134,7 @@ void View::Worker()
 
 close:
         m_sock.Close();
+        m_connected.store( false, std::memory_order_relaxed );
     }
 }
 

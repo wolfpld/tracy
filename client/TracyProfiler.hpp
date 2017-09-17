@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "concurrentqueue.h"
+#include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
 
 namespace tracy
@@ -52,6 +53,10 @@ private:
     moodycamel::ConcurrentQueue<QueueItem> m_queue;
     std::atomic<uint64_t> m_id;
     std::unique_ptr<Socket> m_sock;
+
+    LZ4_stream_t* m_stream;
+    char* m_buffer;
+    int m_bufferOffset;
 };
 
 };

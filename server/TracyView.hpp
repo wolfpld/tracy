@@ -9,6 +9,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "../common/tracy_lz4.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracyQueue.hpp"
 #include "TracyEvent.hpp"
@@ -70,6 +71,10 @@ private:
     std::unordered_set<uint64_t> m_pendingStrings;
 
     Slab<EventSize*1024*1024> m_slab;
+
+    LZ4_streamDecode_t* m_stream;
+    char* m_buffer;
+    int m_bufferOffset;
 };
 
 }

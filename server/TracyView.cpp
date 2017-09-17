@@ -8,7 +8,6 @@
 #include <assert.h>
 #include <limits>
 
-#include "../common/tracy_lz4.hpp"
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "../common/TracyQueue.hpp"
@@ -24,6 +23,9 @@ View::View( const char* addr )
     : m_addr( addr )
     , m_shutdown( false )
     , m_mbps( 64 )
+    , m_stream( LZ4_createStreamDecode() )
+    , m_buffer( new char[TargetFrameSize*3] )
+    , m_bufferOffset( 0 )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -36,6 +38,9 @@ View::~View()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
     m_thread.join();
+
+    delete[] m_buffer;
+    LZ4_freeStreamDecode( m_stream );
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
@@ -67,6 +72,7 @@ void View::Worker()
         if( !m_sock.Read( &lz4, sizeof( lz4 ), &tv, ShouldExit ) ) goto close;
 
         m_frames.push_back( timeStart );
+        LZ4_setStreamDecode( m_stream, nullptr, 0 );
 
         t0 = std::chrono::high_resolution_clock::now();
 
@@ -76,14 +82,14 @@ void View::Worker()
 
             if( lz4 )
             {
-                char buf[TargetFrameSize];
+                auto buf = m_buffer + m_bufferOffset;
                 char lz4buf[LZ4Size];
                 lz4sz_t lz4sz;
                 if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
                 if( !m_sock.Read( lz4buf, lz4sz, &tv, ShouldExit ) ) goto close;
                 bytes += sizeof( lz4sz ) + lz4sz;
 
-                auto sz = LZ4_decompress_safe( lz4buf, buf, lz4sz, TargetFrameSize );
+                auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf, buf, lz4sz, TargetFrameSize );
                 assert( sz >= 0 );
 
                 const char* ptr = buf;
@@ -93,6 +99,9 @@ void View::Worker()
                     auto ev = (QueueItem*)ptr;
                     DispatchProcess( *ev, ptr );
                 }
+
+                m_bufferOffset += sz;
+                if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
             }
             else
             {

@@ -8,7 +8,6 @@
 #include <memory>
 #include <limits>
 
-#include "../common/tracy_lz4.hpp"
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
@@ -31,6 +30,9 @@ Profiler::Profiler()
     : m_timeBegin( GetTime() )
     , m_shutdown( false )
     , m_id( 0 )
+    , m_stream( LZ4_createStream() )
+    , m_buffer( new char[TargetFrameSize*3] )
+    , m_bufferOffset( 0 )
 {
     assert( PointerCheckA == PointerCheckB );
     assert( !s_instance );
@@ -45,9 +47,11 @@ Profiler::~Profiler()
     m_shutdown.store( true, std::memory_order_relaxed );
     m_thread.join();
 
+    delete[] m_buffer;
+    LZ4_freeStream( m_stream );
+
     assert( s_instance );
     s_instance = nullptr;
-
 }
 
 uint64_t Profiler::GetNewId()
@@ -125,6 +129,8 @@ void Profiler::Worker()
         m_sock->Send( &val, 1 );
 #endif
 
+        LZ4_resetStream( m_stream );
+
         for(;;)
         {
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
@@ -133,8 +139,8 @@ void Profiler::Worker()
             const auto sz = m_queue.try_dequeue_bulk( token, item, BulkSize );
             if( sz > 0 )
             {
-                char buf[TargetFrameSize];
-                char* ptr = buf;
+                auto buf = m_buffer + m_bufferOffset;
+                auto ptr = buf;
                 for( int i=0; i<sz; i++ )
                 {
                     const auto dsz = QueueDataSize[item[i].hdr.idx];
@@ -142,6 +148,8 @@ void Profiler::Worker()
                     ptr += dsz;
                 }
                 if( !SendData( buf, ptr - buf ) ) break;
+                m_bufferOffset += ptr - buf;
+                if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
             }
             else
             {
@@ -164,7 +172,7 @@ bool Profiler::SendData( const char* data, size_t len )
     if( m_sock->Send( data, len ) == -1 ) return false;
 #else
     char lz4[LZ4Size + sizeof( lz4sz_t )];
-    const lz4sz_t lz4sz = LZ4_compress_default( data, lz4 + sizeof( lz4sz_t ), len, LZ4Size );
+    const lz4sz_t lz4sz = LZ4_compress_fast_continue( m_stream, data, lz4 + sizeof( lz4sz_t ), len, LZ4Size, 1 );
     memcpy( lz4, &lz4sz, sizeof( lz4sz ) );
     if( m_sock->Send( lz4, lz4sz + sizeof( lz4sz_t ) ) == -1 ) return false;
 #endif
@@ -179,7 +187,7 @@ bool Profiler::SendString( uint64_t str )
     hdr.type = QueueType::StringData;
     hdr.id = str;
 
-    char buf[TargetFrameSize];
+    auto buf = m_buffer + m_bufferOffset;
     memcpy( buf, &hdr, sizeof( hdr ) );
 
     auto len = strlen( ptr );
@@ -188,6 +196,9 @@ bool Profiler::SendString( uint64_t str )
     uint16_t l16 = len;
     memcpy( buf + sizeof( hdr ), &l16, sizeof( l16 ) );
     memcpy( buf + sizeof( hdr ) + sizeof( l16 ), ptr, l16 );
+
+    m_bufferOffset += sizeof( hdr ) + sizeof( l16 ) + l16;
+    if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
 
     return SendData( buf, sizeof( hdr ) + sizeof( l16 ) + l16 );
 }

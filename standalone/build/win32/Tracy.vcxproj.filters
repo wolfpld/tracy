@@ -48,6 +48,9 @@
     <ClCompile Include="..\..\libs\gl3w\GL\gl3w.c">
       <Filter>gl3w</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyMemory.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -103,6 +106,12 @@
     </ClInclude>
     <ClInclude Include="..\..\libs\gl3w\GL\glcorearb.h">
       <Filter>gl3w</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyImGui.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyMemory.hpp">
+      <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

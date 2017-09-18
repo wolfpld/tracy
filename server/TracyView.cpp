@@ -371,9 +371,9 @@ static ImU32 GetFrameColor( uint64_t frameTime )
     enum { GoodTime = 1000 * 1000 * 1000 / 59 };
     enum { BadTime = 1000 * 1000 * 1000 / 29 };
 
-    return frameTime > BadTime  ? 0xFF0000FF :
-           frameTime > GoodTime ? 0xFF00FFFF :
-           frameTime > BestTime ? 0xFF00FF00 : 0xFFFFBB00;
+    return frameTime > BadTime  ? 0xFF2222DD :
+           frameTime > GoodTime ? 0xFF22DDDD :
+           frameTime > BestTime ? 0xFF22DD22 : 0xFFDD9900;
 }
 
 void View::DrawFrames()

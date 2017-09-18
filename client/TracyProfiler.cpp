@@ -11,6 +11,7 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
+#include "concurrentqueue.h"
 #include "TracyProfiler.hpp"
 
 #ifdef _DEBUG
@@ -20,9 +21,16 @@
 namespace tracy
 {
 
+static moodycamel::ConcurrentQueue<QueueItem> s_queue;
+
+static moodycamel::ProducerToken& GetToken()
+{
+    static thread_local moodycamel::ProducerToken token( s_queue );
+    return token;
+}
+
 extern const char* PointerCheckA;
 const char* PointerCheckB = "tracy";
-
 
 static Profiler* s_instance = nullptr;
 
@@ -66,7 +74,7 @@ uint64_t Profiler::ZoneBegin( QueueZoneBegin&& data )
     item.hdr.type = QueueType::ZoneBegin;
     item.hdr.id = id;
     item.zoneBegin = std::move( data );
-    s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
+    s_queue.enqueue( GetToken(), std::move( item ) );
     return id;
 }
 
@@ -76,7 +84,7 @@ void Profiler::ZoneEnd( uint64_t id, QueueZoneEnd&& data )
     item.hdr.type = QueueType::ZoneEnd;
     item.hdr.id = id;
     item.zoneEnd = std::move( data );
-    s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
+    s_queue.enqueue( GetToken(), std::move( item ) );
 }
 
 void Profiler::FrameMark()
@@ -84,12 +92,7 @@ void Profiler::FrameMark()
     QueueItem item;
     item.hdr.type = QueueType::FrameMark;
     item.hdr.id = (uint64_t)GetTime();
-    s_instance->m_queue.enqueue( GetToken(), std::move( item ) );
-}
-
-Profiler* Profiler::Instance()
-{
-    return s_instance;
+    s_queue.enqueue( GetToken(), std::move( item ) );
 }
 
 bool Profiler::ShouldExit()
@@ -105,7 +108,7 @@ void Profiler::Worker()
     tv.tv_sec = 0;
     tv.tv_usec = 10000;
 
-    moodycamel::ConsumerToken token( m_queue );
+    moodycamel::ConsumerToken token( s_queue );
 
     ListenSocket listen;
     listen.Listen( "8086", 8 );
@@ -136,7 +139,7 @@ void Profiler::Worker()
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
 
             QueueItem item[BulkSize];
-            const auto sz = m_queue.try_dequeue_bulk( token, item, BulkSize );
+            const auto sz = s_queue.try_dequeue_bulk( token, item, BulkSize );
             if( sz > 0 )
             {
                 auto buf = m_buffer + m_bufferOffset;

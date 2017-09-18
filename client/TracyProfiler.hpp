@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <thread>
 
-#include "concurrentqueue.h"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
 
@@ -40,17 +39,9 @@ private:
     bool SendData( const char* data, size_t len );
     bool SendString( uint64_t ptr );
 
-    static Profiler* Instance();
-    static moodycamel::ProducerToken& GetToken()
-    {
-        static thread_local moodycamel::ProducerToken token( Instance()->m_queue );
-        return token;
-    }
-
     int64_t m_timeBegin;
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
-    moodycamel::ConcurrentQueue<QueueItem> m_queue;
     std::atomic<uint64_t> m_id;
     std::unique_ptr<Socket> m_sock;
 

@@ -32,6 +32,10 @@ static moodycamel::ProducerToken& GetToken()
 extern const char* PointerCheckA;
 const char* PointerCheckB = "tracy";
 
+#ifndef TRACY_DISABLE
+Profiler s_profiler;
+#endif
+
 static Profiler* s_instance = nullptr;
 
 Profiler::Profiler()

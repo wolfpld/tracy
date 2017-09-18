@@ -417,15 +417,24 @@ void View::DrawFrames()
     }
 
     const int fwidth = m_frameScale == 0 ? 4 : 1;
-    //const int group = m_frameScale < 2 ? 1 : ( 1 << ( m_frameScale - 1 ) );
+    const int group = m_frameScale < 2 ? 1 : ( 1 << ( m_frameScale - 1 ) );
     const int total = m_frames.size();
-    const int onScreen = ( w + fwidth-1 ) / fwidth;
+    const int onScreen = ( w + fwidth-1 ) / fwidth * group;
     const int start = total < onScreen ? 0 : total - onScreen;
 
-    int i = 0;
-    while( i < onScreen && start + i < total )
+    int i = 0, idx = 0;
+    while( i < onScreen && start + idx < total )
     {
-        uint64_t f = GetFrameTime( start + i );
+        uint64_t f = GetFrameTime( start + idx );
+        if( group > 1 )
+        {
+            const auto g = std::min( group, total - ( start + idx ) );
+            for( int j=1; j<g; j++ )
+            {
+                f = std::max( f, GetFrameTime( start + idx + j ) );
+            }
+        }
+
         const auto h = float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 );
         if( fwidth != 1 )
         {
@@ -436,6 +445,7 @@ void View::DrawFrames()
             draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2 ), GetFrameColor( f ) );
         }
         i++;
+        idx += group;
     }
 }
 

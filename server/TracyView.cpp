@@ -332,17 +332,23 @@ const char* View::TimeToString( uint64_t ns ) const
     {
         sprintf( buf, "%i ns", ns );
     }
-    else if( ns < 1000 * 1000 )
+    else if( ns < 1000ull * 1000 )
     {
-        sprintf( buf, "%.2f us", ns / 1024.f );
+        sprintf( buf, "%.2f us", ns / 1000. );
     }
-    else if( ns < 1000 * 1000 * 1000 )
+    else if( ns < 1000ull * 1000 * 1000 )
     {
-        sprintf( buf, "%.2f ms", ns / ( 1024.f * 1024 ) );
+        sprintf( buf, "%.2f ms", ns / ( 1000. * 1000. ) );
+    }
+    else if( ns < 1000ull * 1000 * 1000 * 60 )
+    {
+        sprintf( buf, "%.2f s", ns / ( 1000. * 1000. * 1000. ) );
     }
     else
     {
-        sprintf( buf, "%.2f s", ns / ( 1024.f * 1024 * 1024 ) );
+        const auto m = ns / ( 1000ull * 1000 * 1000 * 60 );
+        const auto s = ns - m * ( 1000ull * 1000 * 1000 * 60 );
+        sprintf( buf, "%i:%04.1f", m, s / ( 1000. * 1000. * 1000. ) );
     }
     return buf;
 }

@@ -454,7 +454,7 @@ void View::DrawFrames()
     const int fwidth = m_frameScale == 0 ? 4 : 1;
     const int group = m_frameScale < 2 ? 1 : ( 1 << ( m_frameScale - 1 ) );
     const int total = m_frames.size();
-    const int onScreen = ( w + fwidth-1 ) / fwidth * group;
+    const int onScreen = ( w - 2 ) / fwidth * group;
     if( !m_pause ) m_frameStart = total < onScreen ? 0 : total - onScreen;
 
     int i = 0, idx = 0;

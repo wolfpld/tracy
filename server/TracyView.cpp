@@ -400,6 +400,7 @@ void View::DrawImpl()
 
     // Profiler window
     ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
+    ImGui::Text( "Frames: %-7i Time span: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ) );
     DrawFrames();
     ImGui::End();
 
@@ -419,13 +420,14 @@ static ImU32 GetFrameColor( uint64_t frameTime )
 
 void View::DrawFrames()
 {
+    enum { Offset = 25 };
     enum { Height = 40 };
     enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
 
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if( window->SkipItems ) return;
 
-    const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
+    const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin() + ImVec2( 0, Offset );
     const auto wspace = ImGui::GetWindowContentRegionMax() - ImGui::GetWindowContentRegionMin();
     const auto w = wspace.x;
     auto draw = ImGui::GetWindowDrawList();

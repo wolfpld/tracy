@@ -51,6 +51,7 @@ private:
     uint64_t GetLastTime();
 
     void DrawImpl();
+    void DrawFrames();
 
     std::string m_addr;
 
@@ -78,6 +79,8 @@ private:
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;
+
+    int m_frameScale;
 };
 
 }

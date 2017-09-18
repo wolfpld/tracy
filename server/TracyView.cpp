@@ -27,6 +27,7 @@ View::View( const char* addr )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3] )
     , m_bufferOffset( 0 )
+    , m_frameScale( 0 )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -353,7 +354,82 @@ void View::DrawImpl()
             ImGui::Text( "FPS: %6.1f  Frame time: %.2f ms", fps, dtm );
         }
     }
+
     ImGui::End();
+
+    // Profiler window
+    ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
+    DrawFrames();
+    ImGui::End();
+
+    ImGui::ShowTestWindow();
+}
+
+static ImU32 GetFrameColor( uint64_t frameTime )
+{
+    enum { BestTime = 1000 * 1000 * 1000 / 143 };
+    enum { GoodTime = 1000 * 1000 * 1000 / 59 };
+    enum { BadTime = 1000 * 1000 * 1000 / 29 };
+
+    return frameTime > BadTime  ? 0xFF0000FF :
+           frameTime > GoodTime ? 0xFF00FFFF :
+           frameTime > BestTime ? 0xFF00FF00 : 0xFFFFBB00;
+}
+
+void View::DrawFrames()
+{
+    enum { Height = 40 };
+    enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
+
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if( window->SkipItems ) return;
+
+    const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
+    const auto wspace = ImGui::GetWindowContentRegionMax() - ImGui::GetWindowContentRegionMin();
+    const auto w = wspace.x;
+    auto draw = ImGui::GetWindowDrawList();
+
+    draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x33FFFFFF );
+    if( ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, 60 ) ) )
+    {
+        const auto wheel = ImGui::GetIO().MouseWheel;
+        if( wheel > 0 )
+        {
+            if( m_frameScale > 0 ) m_frameScale--;
+        }
+        else if( wheel < 0 )
+        {
+            if( m_frameScale < 10 ) m_frameScale++;
+        }
+    }
+    const int fwidth = m_frameScale == 0 ? 4 : 1;
+    //const int group = m_frameScale < 2 ? 1 : ( 1 << ( m_frameScale - 1 ) );
+    const int total = m_frames.size();
+    const int onScreen = ( w + fwidth-1 ) / fwidth;
+    const int start = total < onScreen ? 0 : total - onScreen;
+    for( int i=0; i<onScreen; i++ )
+    {
+        if( start + i == total ) break;
+        uint64_t f;
+        if( start + i < total-1 )
+        {
+            f = m_frames[start+i+1] - m_frames[start+i];
+        }
+        else
+        {
+            const auto last = GetLastTime();
+            f = last == 0 ? 0 : last - m_frames.back();
+        }
+        const auto h = float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 );
+        if( fwidth != 1 )
+        {
+            draw->AddRectFilled( wpos + ImVec2( 1 + i*4, Height-1-h ), wpos + ImVec2( 4 + i*4, Height-1 ), GetFrameColor( f ) );
+        }
+        else
+        {
+            draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2 ), GetFrameColor( f ) );
+        }
+    }
 }
 
 }

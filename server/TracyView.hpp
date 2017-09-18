@@ -48,6 +48,8 @@ private:
     void NewZone( Event* zone );
     void UpdateZone( Event* zone );
 
+    uint64_t GetLastTime();
+
     void DrawImpl();
 
     std::string m_addr;

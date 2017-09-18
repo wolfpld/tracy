@@ -299,6 +299,18 @@ void View::UpdateZone( Event* zone )
     assert( zone->end != -1 );
 }
 
+uint64_t View::GetLastTime()
+{
+    uint64_t last = 0;
+    if( !m_frames.empty() ) last = m_frames.back();
+    if( !m_timeline.empty() )
+    {
+        auto ev = m_timeline.back();
+        if( ev->end > (int64_t)last ) last = ev->end;
+    }
+    return last;
+}
+
 void View::Draw()
 {
     s_instance->DrawImpl();

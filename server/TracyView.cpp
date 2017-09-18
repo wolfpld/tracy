@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <limits>
+#include <stdlib.h>
 
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
@@ -431,6 +432,8 @@ void View::DrawFrames()
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if( window->SkipItems ) return;
 
+    auto& io = ImGui::GetIO();
+
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin() + ImVec2( 0, Offset );
     const auto wspace = ImGui::GetWindowContentRegionMax() - ImGui::GetWindowContentRegionMin();
     const auto w = wspace.x;
@@ -440,7 +443,7 @@ void View::DrawFrames()
     bool hover = ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, 60 ) );
     if( hover )
     {
-        const auto wheel = ImGui::GetIO().MouseWheel;
+        const auto wheel = io.MouseWheel;
         if( wheel > 0 )
         {
             if( m_frameScale > 0 ) m_frameScale--;
@@ -456,6 +459,18 @@ void View::DrawFrames()
     const int total = m_frames.size();
     const int onScreen = ( w - 2 ) / fwidth;
     if( !m_pause ) m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
+
+    if( hover && ImGui::IsMouseDragging( 1, 0 ) )
+    {
+        m_pause = true;
+        const auto delta = ImGui::GetMouseDragDelta( 1, 0 ).x;
+        if( abs( delta ) >= fwidth )
+        {
+            const auto d = (int)delta / fwidth;
+            m_frameStart = std::max( 0, m_frameStart - d * group );
+            io.MouseClickedPos[1].x = io.MousePos.x + d * fwidth - delta;
+        }
+    }
 
     int i = 0, idx = 0;
     while( i < onScreen && m_frameStart + idx < total )

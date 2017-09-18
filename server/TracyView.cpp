@@ -325,6 +325,28 @@ uint64_t View::GetLastTime() const
     return last;
 }
 
+const char* View::TimeToString( uint64_t ns ) const
+{
+    static char buf[64];
+    if( ns < 1000 )
+    {
+        sprintf( buf, "%i ns", ns );
+    }
+    else if( ns < 1000 * 1000 )
+    {
+        sprintf( buf, "%.2f us", ns / 1024.f );
+    }
+    else if( ns < 1000 * 1000 * 1000 )
+    {
+        sprintf( buf, "%.2f ms", ns / ( 1024.f * 1024 ) );
+    }
+    else
+    {
+        sprintf( buf, "%.2f s", ns / ( 1024.f * 1024 * 1024 ) );
+    }
+    return buf;
+}
+
 void View::Draw()
 {
     s_instance->DrawImpl();

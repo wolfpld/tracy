@@ -48,7 +48,8 @@ private:
     void NewZone( Event* zone );
     void UpdateZone( Event* zone );
 
-    uint64_t GetLastTime();
+    uint64_t GetFrameTime( size_t idx ) const;
+    uint64_t GetLastTime() const;
 
     void DrawImpl();
     void DrawFrames();

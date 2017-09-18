@@ -300,7 +300,20 @@ void View::UpdateZone( Event* zone )
     assert( zone->end != -1 );
 }
 
-uint64_t View::GetLastTime()
+uint64_t View::GetFrameTime( size_t idx ) const
+{
+    if( idx < m_frames.size() - 1 )
+    {
+        return m_frames[idx+1] - m_frames[idx];
+    }
+    else
+    {
+        const auto last = GetLastTime();
+        return last == 0 ? 0 : last - m_frames.back();
+    }
+}
+
+uint64_t View::GetLastTime() const
 {
     uint64_t last = 0;
     if( !m_frames.empty() ) last = m_frames.back();
@@ -402,24 +415,17 @@ void View::DrawFrames()
             if( m_frameScale < 10 ) m_frameScale++;
         }
     }
+
     const int fwidth = m_frameScale == 0 ? 4 : 1;
     //const int group = m_frameScale < 2 ? 1 : ( 1 << ( m_frameScale - 1 ) );
     const int total = m_frames.size();
     const int onScreen = ( w + fwidth-1 ) / fwidth;
     const int start = total < onScreen ? 0 : total - onScreen;
-    for( int i=0; i<onScreen; i++ )
+
+    int i = 0;
+    while( i < onScreen && start + i < total )
     {
-        if( start + i == total ) break;
-        uint64_t f;
-        if( start + i < total-1 )
-        {
-            f = m_frames[start+i+1] - m_frames[start+i];
-        }
-        else
-        {
-            const auto last = GetLastTime();
-            f = last == 0 ? 0 : last - m_frames.back();
-        }
+        uint64_t f = GetFrameTime( start + i );
         const auto h = float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 );
         if( fwidth != 1 )
         {
@@ -429,6 +435,7 @@ void View::DrawFrames()
         {
             draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2 ), GetFrameColor( f ) );
         }
+        i++;
     }
 }
 

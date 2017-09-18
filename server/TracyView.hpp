@@ -83,6 +83,8 @@ private:
     int m_bufferOffset;
 
     int m_frameScale;
+    bool m_pause;
+    int m_frameStart;
 };
 
 }

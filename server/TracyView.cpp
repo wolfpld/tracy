@@ -28,6 +28,8 @@ View::View( const char* addr )
     , m_buffer( new char[TargetFrameSize*3] )
     , m_bufferOffset( 0 )
     , m_frameScale( 0 )
+    , m_pause( false )
+    , m_frameStart( 0 )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -400,6 +402,8 @@ void View::DrawImpl()
 
     // Profiler window
     ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
+    if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 80, 0 ) ) ) m_pause = !m_pause;
+    ImGui::SameLine();
     ImGui::Text( "Frames: %-7i Time span: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ) );
     DrawFrames();
     ImGui::End();
@@ -451,19 +455,19 @@ void View::DrawFrames()
     const int group = m_frameScale < 2 ? 1 : ( 1 << ( m_frameScale - 1 ) );
     const int total = m_frames.size();
     const int onScreen = ( w + fwidth-1 ) / fwidth * group;
-    const int start = total < onScreen ? 0 : total - onScreen;
+    if( !m_pause ) m_frameStart = total < onScreen ? 0 : total - onScreen;
 
     int i = 0, idx = 0;
-    while( i < onScreen && start + idx < total )
+    while( i < onScreen && m_frameStart + idx < total )
     {
-        uint64_t f = GetFrameTime( start + idx );
+        uint64_t f = GetFrameTime( m_frameStart + idx );
         int g;
         if( group > 1 )
         {
-            g = std::min( group, total - ( start + idx ) );
+            g = std::min( group, total - ( m_frameStart + idx ) );
             for( int j=1; j<g; j++ )
             {
-                f = std::max( f, GetFrameTime( start + idx + j ) );
+                f = std::max( f, GetFrameTime( m_frameStart + idx + j ) );
             }
         }
 
@@ -485,12 +489,12 @@ void View::DrawFrames()
             ImGui::BeginTooltip();
             if( group > 1 )
             {
-                ImGui::Text( "Frames: %i - %i (%i)", start + idx, start + idx + g - 1, g );
+                ImGui::Text( "Frames: %i - %i (%i)", m_frameStart + idx, m_frameStart + idx + g - 1, g );
                 ImGui::Text( "Max frame time: %s", TimeToString( f ) );
             }
             else
             {
-                ImGui::Text( "Frame: %i", start + idx );
+                ImGui::Text( "Frame: %i", m_frameStart + idx );
                 ImGui::Text( "Frame time: %s", TimeToString( f ) );
             }
             ImGui::EndTooltip();

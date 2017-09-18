@@ -425,7 +425,8 @@ void View::DrawFrames()
     auto draw = ImGui::GetWindowDrawList();
 
     draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x33FFFFFF );
-    if( ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, 60 ) ) )
+    bool hover = ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, 60 ) );
+    if( hover )
     {
         const auto wheel = ImGui::GetIO().MouseWheel;
         if( wheel > 0 )
@@ -448,23 +449,43 @@ void View::DrawFrames()
     while( i < onScreen && start + idx < total )
     {
         uint64_t f = GetFrameTime( start + idx );
+        int g;
         if( group > 1 )
         {
-            const auto g = std::min( group, total - ( start + idx ) );
+            g = std::min( group, total - ( start + idx ) );
             for( int j=1; j<g; j++ )
             {
                 f = std::max( f, GetFrameTime( start + idx + j ) );
             }
         }
 
+        bool fhover = false;
         const auto h = float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 );
         if( fwidth != 1 )
         {
             draw->AddRectFilled( wpos + ImVec2( 1 + i*4, Height-1-h ), wpos + ImVec2( 4 + i*4, Height-1 ), GetFrameColor( f ) );
+            if( hover ) fhover = ImGui::IsMouseHoveringRect( wpos + ImVec2( 1 + i*4, 1 ), wpos + ImVec2( 5 + i*4, Height - 1 ) );
         }
         else
         {
             draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2 ), GetFrameColor( f ) );
+            if( hover ) fhover = ImGui::IsMouseHoveringRect( wpos + ImVec2( 1+i, 1 ), wpos + ImVec2( 2+i, Height - 1 ) );
+        }
+        if( fhover )
+        {
+            hover = false;
+            ImGui::BeginTooltip();
+            if( group > 1 )
+            {
+                ImGui::Text( "Frames: %i - %i (%i)", start + idx, start + idx + g - 1, g );
+                ImGui::Text( "Max frame time: %s", TimeToString( f ) );
+            }
+            else
+            {
+                ImGui::Text( "Frame: %i", start + idx );
+                ImGui::Text( "Frame time: %s", TimeToString( f ) );
+            }
+            ImGui::EndTooltip();
         }
         i++;
         idx += group;

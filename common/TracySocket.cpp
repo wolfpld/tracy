@@ -30,12 +30,22 @@ struct __wsinit
             exit( 1 );
         }
     }
-} ___wsinit;
+};
+
+static __wsinit InitWinSock()
+{
+    static __wsinit init;
+    return init;
+}
+
 #endif
 
 Socket::Socket()
     : m_sock( -1 )
 {
+#ifdef _MSC_VER
+    InitWinSock();
+#endif
 }
 
 Socket::Socket( int sock )
@@ -182,6 +192,9 @@ bool Socket::HasData()
 ListenSocket::ListenSocket()
     : m_sock( -1 )
 {
+#ifdef _MSC_VER
+    InitWinSock();
+#endif
 }
 
 ListenSocket::~ListenSocket()

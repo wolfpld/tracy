@@ -460,15 +460,51 @@ void View::DrawFrames()
     const int onScreen = ( w - 2 ) / fwidth;
     if( !m_pause ) m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
 
-    if( hover && ImGui::IsMouseDragging( 1, 0 ) )
+    int sel = -1;
+    if( hover )
     {
-        m_pause = true;
-        const auto delta = ImGui::GetMouseDragDelta( 1, 0 ).x;
-        if( abs( delta ) >= fwidth )
+        if( ImGui::IsMouseDragging( 1, 0 ) )
         {
-            const auto d = (int)delta / fwidth;
-            m_frameStart = std::max( 0, m_frameStart - d * group );
-            io.MouseClickedPos[1].x = io.MousePos.x + d * fwidth - delta;
+            m_pause = true;
+            const auto delta = ImGui::GetMouseDragDelta( 1, 0 ).x;
+            if( abs( delta ) >= fwidth )
+            {
+                const auto d = (int)delta / fwidth;
+                m_frameStart = std::max( 0, m_frameStart - d * group );
+                io.MouseClickedPos[1].x = io.MousePos.x + d * fwidth - delta;
+            }
+        }
+
+        const auto mx = io.MousePos.x;
+        if( mx > wpos.x && mx < wpos.x + w - 1 )
+        {
+            const auto mo = mx - ( wpos.x + 1 );
+            const auto off = mo * group / fwidth;
+            if( m_frameStart + off < total )
+            {
+                sel = m_frameStart + off;
+
+                ImGui::BeginTooltip();
+
+                if( group > 1 )
+                {
+                    uint64_t f = GetFrameTime( sel );
+                    auto g = std::min( group, total - sel );
+                    for( int j=1; j<g; j++ )
+                    {
+                        f = std::max( f, GetFrameTime( sel + j ) );
+                    }
+
+                    ImGui::Text( "Frames: %i - %i (%i)", sel, sel + g - 1, g );
+                    ImGui::Text( "Max frame time: %s", TimeToString( f ) );
+                }
+                else
+                {
+                    ImGui::Text( "Frame: %i", sel );
+                    ImGui::Text( "Frame time: %s", TimeToString( GetFrameTime( sel ) ) );
+                }
+                ImGui::EndTooltip();
+            }
         }
     }
 
@@ -486,34 +522,16 @@ void View::DrawFrames()
             }
         }
 
-        bool fhover = false;
         const auto h = float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 );
         if( fwidth != 1 )
         {
-            draw->AddRectFilled( wpos + ImVec2( 1 + i*4, Height-1-h ), wpos + ImVec2( 4 + i*4, Height-1 ), GetFrameColor( f ) );
-            if( hover ) fhover = ImGui::IsMouseHoveringRect( wpos + ImVec2( 1 + i*4, 1 ), wpos + ImVec2( 5 + i*4, Height - 1 ) );
+            draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-h ), wpos + ImVec2( fwidth + i*fwidth, Height-1 ), GetFrameColor( f ) );
         }
         else
         {
             draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2 ), GetFrameColor( f ) );
-            if( hover ) fhover = ImGui::IsMouseHoveringRect( wpos + ImVec2( 1+i, 1 ), wpos + ImVec2( 2+i, Height - 1 ) );
         }
-        if( fhover )
-        {
-            hover = false;
-            ImGui::BeginTooltip();
-            if( group > 1 )
-            {
-                ImGui::Text( "Frames: %i - %i (%i)", m_frameStart + idx, m_frameStart + idx + g - 1, g );
-                ImGui::Text( "Max frame time: %s", TimeToString( f ) );
-            }
-            else
-            {
-                ImGui::Text( "Frame: %i", m_frameStart + idx );
-                ImGui::Text( "Frame time: %s", TimeToString( f ) );
-            }
-            ImGui::EndTooltip();
-        }
+
         i++;
         idx += group;
     }

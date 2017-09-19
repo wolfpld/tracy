@@ -47,7 +47,13 @@ Profiler::Profiler()
     , m_buffer( new char[TargetFrameSize*3] )
     , m_bufferOffset( 0 )
 {
+    // This check verifies that the string literals from different compilation units are placed at the
+    // same address by the linker.
+    // MSVC: make sure "Enable String Pooling" is active (/GF).
+    // gcc: make sure -fmerge-constants is enabled (it is automatically enabled only in optimized builds).
+    // clang: seems to be enabled by default.
     assert( PointerCheckA == PointerCheckB );
+
     assert( !s_instance );
     s_instance = this;
 

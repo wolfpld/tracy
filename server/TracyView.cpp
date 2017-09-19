@@ -453,7 +453,7 @@ void View::DrawFrames()
     auto draw = ImGui::GetWindowDrawList();
 
     draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x33FFFFFF );
-    bool hover = ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, 60 ) );
+    bool hover = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, 60 ) );
     const auto wheel = io.MouseWheel;
     const auto prevScale = m_frameScale;
     if( hover )

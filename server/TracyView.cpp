@@ -446,7 +446,7 @@ void View::DrawFrames()
         const auto wheel = io.MouseWheel;
         if( wheel > 0 )
         {
-            if( m_frameScale > 0 ) m_frameScale--;
+            if( m_frameScale > -1 ) m_frameScale--;
         }
         else if( wheel < 0 )
         {
@@ -454,7 +454,7 @@ void View::DrawFrames()
         }
     }
 
-    const int fwidth = m_frameScale == 0 ? 4 : 1;
+    const int fwidth = m_frameScale == 0 ? 4 : ( m_frameScale == -1 ? 6 : 1 );
     const int group = m_frameScale < 2 ? 1 : ( 1 << ( m_frameScale - 1 ) );
     const int total = m_frames.size();
     const int onScreen = ( w - 2 ) / fwidth;

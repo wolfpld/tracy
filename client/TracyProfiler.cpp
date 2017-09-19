@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <memory>
 #include <limits>
+#include <string.h>
 
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"

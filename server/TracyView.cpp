@@ -423,6 +423,16 @@ static ImU32 GetFrameColor( uint64_t frameTime )
            frameTime > BestTime ? 0xFF22DD22 : 0xFFDD9900;
 }
 
+static int GetFrameWidth( int frameScale )
+{
+    return frameScale == 0 ? 4 : ( frameScale == -1 ? 6 : 1 );
+}
+
+static int GetFrameGroup( int frameScale )
+{
+    return frameScale < 2 ? 1 : ( 1 << ( frameScale - 1 ) );
+}
+
 void View::DrawFrames()
 {
     enum { Offset = 25 };
@@ -454,8 +464,8 @@ void View::DrawFrames()
         }
     }
 
-    const int fwidth = m_frameScale == 0 ? 4 : ( m_frameScale == -1 ? 6 : 1 );
-    const int group = m_frameScale < 2 ? 1 : ( 1 << ( m_frameScale - 1 ) );
+    const int fwidth = GetFrameWidth( m_frameScale );
+    const int group = GetFrameGroup( m_frameScale );
     const int total = m_frames.size();
     const int onScreen = ( w - 2 ) / fwidth;
     if( !m_pause ) m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;

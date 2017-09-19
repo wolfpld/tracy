@@ -35,6 +35,9 @@ View::View( const char* addr )
     assert( s_instance == nullptr );
     s_instance = this;
 
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.FrameRounding = 2.f;
+
     m_thread = std::thread( [this] { Worker(); } );
     SetThreadName( m_thread, "Tracy View" );
 }

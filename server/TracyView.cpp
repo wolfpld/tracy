@@ -451,9 +451,10 @@ void View::DrawFrames()
 
     draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x33FFFFFF );
     bool hover = ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, 60 ) );
+    const auto wheel = io.MouseWheel;
+    const auto prevScale = m_frameScale;
     if( hover )
     {
-        const auto wheel = io.MouseWheel;
         if( wheel > 0 )
         {
             if( m_frameScale > -1 ) m_frameScale--;
@@ -470,7 +471,6 @@ void View::DrawFrames()
     const int onScreen = ( w - 2 ) / fwidth;
     if( !m_pause ) m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
 
-    int sel = -1;
     if( hover )
     {
         if( ImGui::IsMouseDragging( 1, 0 ) )
@@ -490,12 +490,11 @@ void View::DrawFrames()
         {
             const auto mo = mx - ( wpos.x + 1 );
             const auto off = mo * group / fwidth;
-            if( m_frameStart + off < total )
+
+            const int sel = m_frameStart + off;
+            if( sel < total )
             {
-                sel = m_frameStart + off;
-
                 ImGui::BeginTooltip();
-
                 if( group > 1 )
                 {
                     uint64_t f = GetFrameTime( sel );
@@ -514,6 +513,15 @@ void View::DrawFrames()
                     ImGui::Text( "Frame time: %s", TimeToString( GetFrameTime( sel ) ) );
                 }
                 ImGui::EndTooltip();
+            }
+
+            if( m_pause && wheel != 0 )
+            {
+                const int pfwidth = GetFrameWidth( prevScale );
+                const int pgroup = GetFrameGroup( prevScale );
+
+                const auto oldoff = mo * pgroup / pfwidth;
+                m_frameStart = std::min( total, std::max( 0, m_frameStart - int( off - oldoff ) ) );
             }
         }
     }

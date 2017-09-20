@@ -323,6 +323,24 @@ uint64_t View::GetFrameTime( size_t idx ) const
     }
 }
 
+uint64_t View::GetFrameBegin( size_t idx ) const
+{
+    assert( idx < m_frames.size() );
+    return m_frames[idx];
+}
+
+uint64_t View::GetFrameEnd( size_t idx ) const
+{
+    if( idx < m_frames.size() - 1 )
+    {
+        return m_frames[idx+1];
+    }
+    else
+    {
+        return GetLastTime();
+    }
+}
+
 uint64_t View::GetLastTime() const
 {
     uint64_t last = 0;

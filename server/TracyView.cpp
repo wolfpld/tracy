@@ -513,7 +513,7 @@ void View::DrawFrames()
     if( !m_pause )
     {
         m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
-        m_zvStart = m_frames[std::max( 0, (int)m_frames.size() - 3 )];
+        m_zvStart = m_frames[std::max( 0, (int)m_frames.size() - 4 )];
         m_zvEnd = m_frames.back();
     }
 
@@ -601,7 +601,7 @@ void View::DrawFrames()
     }
 
     const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
-    const auto zitend = std::upper_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
+    const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
 
     const auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
     const auto zend = (int)std::distance( m_frames.begin(), zitend );

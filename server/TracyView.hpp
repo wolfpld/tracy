@@ -90,8 +90,8 @@ private:
     bool m_pause;
     int m_frameStart;
 
-    uint64_t m_zvStart;
-    uint64_t m_zvEnd;
+    int64_t m_zvStart;
+    int64_t m_zvEnd;
 };
 
 }

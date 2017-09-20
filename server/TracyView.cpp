@@ -604,7 +604,8 @@ void View::DrawFrames()
     const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
     const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
 
-    const auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
+    auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
+    if( zbegin > 0 && *zitbegin != m_zvStart ) zbegin--;
     const auto zend = (int)std::distance( m_frames.begin(), zitend );
 
     if( zend > m_frameStart && zbegin < m_frameStart + onScreen * group )
@@ -632,6 +633,8 @@ void View::DrawZones()
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if( window->SkipItems ) return;
 
+    auto& io = ImGui::GetIO();
+
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto w = ImGui::GetWindowContentRegionWidth();
     const auto h = ImGui::GetContentRegionAvail().y;
@@ -645,17 +648,31 @@ void View::DrawZones()
     const auto timespan = m_zvEnd - m_zvStart;
     const auto pxns = w / double( timespan );
 
+    if( hover )
+    {
+        if( ImGui::IsMouseDragging( 1, 0 ) )
+        {
+            m_pause = true;
+            const auto delta = ImGui::GetMouseDragDelta( 1, 0 ).x;
+            const auto nspx = double( timespan ) / w;
+            m_zvStart -= delta * nspx;
+            m_zvEnd -= delta * nspx;
+            io.MouseClickedPos[1].x = io.MousePos.x;
+        }
+    }
+
     const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
     const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
 
-    const auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
+    auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
+    if( zbegin > 0 && *zitbegin != m_zvStart ) zbegin--;
     const auto zend = (int)std::distance( m_frames.begin(), zitend );
 
     for( int i=zbegin; i<zend; i++ )
     {
         const auto ftime = GetFrameTime( i );
-        const auto fbegin = GetFrameBegin( i );
-        const auto fend = GetFrameEnd( i );
+        const auto fbegin = (int64_t)GetFrameBegin( i );
+        const auto fend = (int64_t)GetFrameEnd( i );
 
         char buf[128];
         sprintf( buf, "Frame %i (%s)", i, TimeToString( ftime ) );

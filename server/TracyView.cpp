@@ -337,7 +337,12 @@ uint64_t View::GetLastTime() const
 
 const char* View::TimeToString( uint64_t ns ) const
 {
-    static char buf[64];
+    enum { Pool = 4 };
+    static char bufpool[Pool][64];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
     if( ns < 1000 )
     {
         sprintf( buf, "%i ns", ns );

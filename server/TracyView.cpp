@@ -445,6 +445,7 @@ void View::DrawImpl()
     ImGui::SameLine();
     ImGui::Text( "Frames: %-7i Time span: %-10s View span: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ) );
     DrawFrames();
+    DrawZones();
     ImGui::End();
 
     ImGui::ShowTestWindow();
@@ -614,6 +615,86 @@ void View::DrawFrames()
         if( x0 == x1 ) x1 = x0 + 1;
 
         draw->AddRectFilled( wpos + ImVec2( 1+x0, 0 ), wpos + ImVec2( 1+x1, Height ), 0x55DD22DD );
+    }
+}
+
+struct TimeScale
+{
+    uint64_t div;
+    const char* fmt;
+};
+
+void View::DrawZones()
+{
+    if( m_zvStart == m_zvEnd ) return;
+    assert( m_zvStart < m_zvEnd );
+
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if( window->SkipItems ) return;
+
+    const auto wpos = ImGui::GetCursorScreenPos();
+    const auto w = ImGui::GetWindowContentRegionWidth();
+    const auto h = ImGui::GetContentRegionAvail().y;
+    auto draw = ImGui::GetWindowDrawList();
+
+    enum { TimeHeight = 50 };
+
+    ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
+    bool hover = ImGui::IsItemHovered();
+
+    const auto timespan = m_zvEnd - m_zvStart;
+    const auto pxns = w / double( timespan );
+
+    const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
+    const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
+
+    const auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
+    const auto zend = (int)std::distance( m_frames.begin(), zitend );
+
+    for( int i=zbegin; i<zend; i++ )
+    {
+        const auto ftime = GetFrameTime( i );
+        const auto fbegin = GetFrameBegin( i );
+        const auto fend = GetFrameEnd( i );
+
+        char buf[128];
+        sprintf( buf, "Frame %i (%s)", i, TimeToString( ftime ) );
+        const auto tsz = ImGui::CalcTextSize( buf );
+        const auto fsz = pxns * ftime;
+
+        if( fbegin >= m_zvStart )
+        {
+            draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, h ), 0x22FFFFFF );
+        }
+
+        if( fsz >= 5 )
+        {
+            if( fbegin >= m_zvStart )
+            {
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y - 1 ), 0xFFFFFFFF );
+            }
+            if( fend <= m_zvEnd )
+            {
+                draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y - 1 ), 0xFFFFFFFF );
+            }
+            if( fsz - 5 > tsz.x )
+            {
+                const auto part = ( fsz - 5 - tsz.x ) / 2;
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + part, tsz.y / 2 ), 0xFFFFFFFF );
+                draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), 0xFFFFFFFF, buf );
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part + tsz.x, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), 0xFFFFFFFF );
+            }
+            else
+            {
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), 0xFFFFFFFF );
+            }
+        }
+    }
+
+    const auto fend = GetFrameEnd( zend-1 );
+    if( fend == m_zvEnd )
+    {
+        draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, h ), 0x22FFFFFF );
     }
 }
 

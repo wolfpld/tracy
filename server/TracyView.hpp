@@ -56,6 +56,7 @@ private:
 
     void DrawImpl();
     void DrawFrames();
+    void DrawZones();
 
     std::string m_addr;
 

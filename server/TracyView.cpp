@@ -438,7 +438,6 @@ static int GetFrameGroup( int frameScale )
 
 void View::DrawFrames()
 {
-    enum { Offset = 25 };
     enum { Height = 40 };
     enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
 
@@ -447,13 +446,15 @@ void View::DrawFrames()
 
     auto& io = ImGui::GetIO();
 
-    const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin() + ImVec2( 0, Offset );
+    const auto wpos = ImGui::GetCursorScreenPos();
     const auto wspace = ImGui::GetWindowContentRegionMax() - ImGui::GetWindowContentRegionMin();
     const auto w = wspace.x;
     auto draw = ImGui::GetWindowDrawList();
 
+    ImGui::InvisibleButton( "##frames", ImVec2( w, Height ) );
+    bool hover = ImGui::IsItemHovered();
+
     draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x33FFFFFF );
-    bool hover = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, 60 ) );
     const auto wheel = io.MouseWheel;
     const auto prevScale = m_frameScale;
     if( hover )

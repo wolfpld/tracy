@@ -684,65 +684,68 @@ void View::DrawZones()
         }
     }
 
-    const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
-    if( zitbegin == m_frames.end() ) return;
-    const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
-
-    auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
-    if( zbegin > 0 && *zitbegin != m_zvStart ) zbegin--;
-    const auto zend = (int)std::distance( m_frames.begin(), zitend );
-
-    for( int i=zbegin; i<zend; i++ )
+    // frames
     {
-        const auto ftime = GetFrameTime( i );
-        const auto fbegin = (int64_t)GetFrameBegin( i );
-        const auto fend = (int64_t)GetFrameEnd( i );
+        const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
+        if( zitbegin == m_frames.end() ) return;
+        const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
 
-        char buf[128];
-        sprintf( buf, "Frame %i (%s)", i, TimeToString( ftime ) );
-        const auto tsz = ImGui::CalcTextSize( buf );
-        const auto fsz = pxns * ftime;
+        auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
+        if( zbegin > 0 && *zitbegin != m_zvStart ) zbegin--;
+        const auto zend = (int)std::distance( m_frames.begin(), zitend );
 
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, tsz.y ) ) )
+        for( int i=zbegin; i<zend; i++ )
         {
-            ImGui::BeginTooltip();
-            ImGui::Text( buf );
-            ImGui::EndTooltip();
-        }
+            const auto ftime = GetFrameTime( i );
+            const auto fbegin = (int64_t)GetFrameBegin( i );
+            const auto fend = (int64_t)GetFrameEnd( i );
 
-        if( fbegin >= m_zvStart )
-        {
-            draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, h ), 0x22FFFFFF );
-        }
+            char buf[128];
+            sprintf( buf, "Frame %i (%s)", i, TimeToString( ftime ) );
+            const auto tsz = ImGui::CalcTextSize( buf );
+            const auto fsz = pxns * ftime;
 
-        if( fsz >= 5 )
-        {
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, tsz.y ) ) )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( buf );
+                ImGui::EndTooltip();
+            }
+
             if( fbegin >= m_zvStart )
             {
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y - 1 ), 0xFFFFFFFF );
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, h ), 0x22FFFFFF );
             }
-            if( fend <= m_zvEnd )
+
+            if( fsz >= 5 )
             {
-                draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y - 1 ), 0xFFFFFFFF );
-            }
-            if( fsz - 5 > tsz.x )
-            {
-                const auto part = ( fsz - 5 - tsz.x ) / 2;
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + part, tsz.y / 2 ), 0xFFFFFFFF );
-                draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), 0xFFFFFFFF, buf );
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part + tsz.x, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), 0xFFFFFFFF );
-            }
-            else
-            {
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), 0xFFFFFFFF );
+                if( fbegin >= m_zvStart )
+                {
+                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y - 1 ), 0xFFFFFFFF );
+                }
+                if( fend <= m_zvEnd )
+                {
+                    draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y - 1 ), 0xFFFFFFFF );
+                }
+                if( fsz - 5 > tsz.x )
+                {
+                    const auto part = ( fsz - 5 - tsz.x ) / 2;
+                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + part, tsz.y / 2 ), 0xFFFFFFFF );
+                    draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), 0xFFFFFFFF, buf );
+                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part + tsz.x, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), 0xFFFFFFFF );
+                }
+                else
+                {
+                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), 0xFFFFFFFF );
+                }
             }
         }
-    }
 
-    const auto fend = GetFrameEnd( zend-1 );
-    if( fend == m_zvEnd )
-    {
-        draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, h ), 0x22FFFFFF );
+        const auto fend = GetFrameEnd( zend-1 );
+        if( fend == m_zvEnd )
+        {
+            draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, h ), 0x22FFFFFF );
+        }
     }
 }
 

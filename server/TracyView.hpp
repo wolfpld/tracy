@@ -61,6 +61,7 @@ private:
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
     std::atomic<bool> m_connected;
+    std::atomic<bool> m_hasData;
 
     // this block must be locked
     std::mutex m_lock;

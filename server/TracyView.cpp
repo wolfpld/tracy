@@ -24,6 +24,7 @@ View::View( const char* addr )
     : m_addr( addr )
     , m_shutdown( false )
     , m_connected( false )
+    , m_hasData( false )
     , m_mbps( 64 )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3] )
@@ -80,8 +81,9 @@ void View::Worker()
         if( !m_sock.Read( &lz4, sizeof( lz4 ), &tv, ShouldExit ) ) goto close;
 
         m_frames.push_back( timeStart );
-        LZ4_setStreamDecode( m_stream, nullptr, 0 );
+        m_hasData.store( true, std::memory_order_release );
 
+        LZ4_setStreamDecode( m_stream, nullptr, 0 );
         m_connected.store( true, std::memory_order_relaxed );
 
         t0 = std::chrono::high_resolution_clock::now();
@@ -366,6 +368,14 @@ void View::Draw()
 
 void View::DrawImpl()
 {
+    if( !m_hasData.load( std::memory_order_acquire ) )
+    {
+        ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+        ImGui::Text( "Waiting for connection..." );
+        ImGui::End();
+        return;
+    }
+
     // Connection window
     ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     {

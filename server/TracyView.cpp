@@ -602,6 +602,7 @@ void View::DrawFrames()
     }
 
     const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
+    if( zitbegin == m_frames.end() ) return;
     const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
 
     auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
@@ -684,6 +685,7 @@ void View::DrawZones()
     }
 
     const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
+    if( zitbegin == m_frames.end() ) return;
     const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
 
     auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );

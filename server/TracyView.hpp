@@ -86,6 +86,9 @@ private:
     int m_frameScale;
     bool m_pause;
     int m_frameStart;
+
+    uint64_t m_zvStart;
+    uint64_t m_zvEnd;
 };
 
 }

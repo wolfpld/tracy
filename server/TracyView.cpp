@@ -32,6 +32,8 @@ View::View( const char* addr )
     , m_frameScale( 0 )
     , m_pause( false )
     , m_frameStart( 0 )
+    , m_zvStart( 0 )
+    , m_zvEnd( 0 )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -448,6 +450,8 @@ static int GetFrameGroup( int frameScale )
 
 void View::DrawFrames()
 {
+    assert( !m_frames.empty() );
+
     enum { Height = 40 };
     enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
 
@@ -483,7 +487,12 @@ void View::DrawFrames()
     const int group = GetFrameGroup( m_frameScale );
     const int total = m_frames.size();
     const int onScreen = ( w - 2 ) / fwidth;
-    if( !m_pause ) m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
+    if( !m_pause )
+    {
+        m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
+        m_zvStart = m_frames[std::max( 0, (int)m_frames.size() - 3 )];
+        m_zvEnd = m_frames.back();
+    }
 
     if( hover )
     {

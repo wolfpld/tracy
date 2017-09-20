@@ -425,7 +425,7 @@ void View::DrawImpl()
     ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
     if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 80, 0 ) ) ) m_pause = !m_pause;
     ImGui::SameLine();
-    ImGui::Text( "Frames: %-7i Time span: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ) );
+    ImGui::Text( "Frames: %-7i Time span: %-10s View span: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ) );
     DrawFrames();
     ImGui::End();
 

@@ -679,6 +679,13 @@ void View::DrawZones()
         const auto tsz = ImGui::CalcTextSize( buf );
         const auto fsz = pxns * ftime;
 
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, tsz.y ) ) )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( buf );
+            ImGui::EndTooltip();
+        }
+
         if( fbegin >= m_zvStart )
         {
             draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, h ), 0x22FFFFFF );

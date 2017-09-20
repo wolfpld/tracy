@@ -576,6 +576,22 @@ void View::DrawFrames()
         i++;
         idx += group;
     }
+
+    auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
+    auto zitend = std::upper_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
+
+    auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
+    auto zend = (int)std::distance( m_frames.begin(), zitend );
+
+    if( zend > m_frameStart && zbegin < m_frameStart + onScreen * group )
+    {
+        auto x0 = std::max( 0, ( zbegin - m_frameStart ) * fwidth / group );
+        auto x1 = std::min( onScreen * fwidth, ( zend - m_frameStart ) * fwidth / group );
+
+        if( x0 == x1 ) x1 = x0 + 1;
+
+        draw->AddRectFilled( wpos + ImVec2( 1+x0, 0 ), wpos + ImVec2( 1+x1, Height ), 0x55DD22DD );
+    }
 }
 
 }

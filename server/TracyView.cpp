@@ -645,8 +645,8 @@ void View::DrawZones()
     ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
     bool hover = ImGui::IsItemHovered();
 
-    const auto timespan = m_zvEnd - m_zvStart;
-    const auto pxns = w / double( timespan );
+    auto timespan = m_zvEnd - m_zvStart;
+    auto pxns = w / double( timespan );
 
     if( hover )
     {
@@ -658,6 +658,28 @@ void View::DrawZones()
             m_zvStart -= delta * nspx;
             m_zvEnd -= delta * nspx;
             io.MouseClickedPos[1].x = io.MousePos.x;
+        }
+
+        const auto wheel = io.MouseWheel;
+        if( wheel != 0 )
+        {
+            m_pause = true;
+            const double mouse = io.MousePos.x - wpos.x;
+            const auto p = mouse / w;
+            const auto p1 = timespan * p;
+            const auto p2 = timespan - p1;
+            if( wheel > 0 )
+            {
+                m_zvStart += int64_t( p1 * 0.1f );
+                m_zvEnd -= int64_t( p2 * 0.1f );
+            }
+            else if( timespan < 1000ull * 1000 * 1000 * 60 )
+            {
+                m_zvStart -= std::max( 1ll, int64_t( p1 * 0.1f ) );
+                m_zvEnd += std::max( 1ll, int64_t( p2 * 0.1f ) );
+            }
+            timespan = m_zvEnd - m_zvStart;
+            pxns = w / double( timespan );
         }
     }
 

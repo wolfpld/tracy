@@ -35,6 +35,7 @@ public:
 private:
     struct ThreadData
     {
+        uint64_t id;
         Vector<Event*> timeline;
     };
 

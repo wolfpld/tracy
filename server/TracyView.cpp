@@ -698,9 +698,10 @@ void View::DrawZones()
     }
 
     // frames
+    do
     {
         const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
-        if( zitbegin == m_frames.end() ) return;
+        if( zitbegin == m_frames.end() ) break;
         const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
 
         auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
@@ -760,6 +761,37 @@ void View::DrawZones()
             draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, h ), 0x22FFFFFF );
         }
     }
+    while( false );
+
+    // zones
+    do
+    {
+        auto it = std::lower_bound( m_timeline.begin(), m_timeline.end(), m_zvStart, [] ( const auto& l, const auto& r ) { return l->end < r; } );
+        if( it == m_timeline.end() ) break;
+        const auto zitend = std::lower_bound( m_timeline.begin(), m_timeline.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+
+        while( it < zitend )
+        {
+            auto& ev = **it;
+            const char* func = "func";
+            const auto tsz = ImGui::CalcTextSize( func );
+            draw->AddRectFilled( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), 0xDDDD6666, 2.f );
+            draw->AddRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), 0xAAAAAAAA, 2.f );
+            draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( ev.end - ev.start ) * pxns - tsz.x ) / 2, 20 ), 0xFFFFFFFF, func );
+
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ) ) )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "func()" );
+                ImGui::Text( "func.cpp:123" );
+                ImGui::Text( "Execution time: %s", TimeToString( ev.end - ev.start ) );
+                ImGui::EndTooltip();
+            }
+
+            it++;
+        }
+    }
+    while( false );
 }
 
 }

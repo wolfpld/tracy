@@ -5,8 +5,8 @@
 #endif
 
 #include <assert.h>
-#include <memory>
 #include <limits>
+#include <memory>
 #include <string.h>
 
 #include "../common/TracyProtocol.hpp"

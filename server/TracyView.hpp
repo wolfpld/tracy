@@ -49,7 +49,9 @@ private:
     void ProcessFrameMark( uint64_t id );
 
     void CheckString( uint64_t ptr );
+    void CheckThreadString( uint64_t id );
     void AddString( uint64_t ptr, std::string&& str );
+    void AddThreadString( uint64_t id, std::string&& str );
 
     void NewZone( Event* zone, uint64_t thread );
     void UpdateZone( Event* zone );
@@ -60,6 +62,7 @@ private:
     uint64_t GetLastTime() const;
     const char* TimeToString( uint64_t ns ) const;
     const char* GetString( uint64_t ptr ) const;
+    const char* GetThreadString( uint64_t id ) const;
 
     void DrawImpl();
     void DrawFrames();
@@ -79,6 +82,7 @@ private:
     Vector<SourceLocation> m_srcFile;
     Vector<ThreadData> m_threads;
     std::unordered_map<uint64_t, std::string> m_strings;
+    std::unordered_map<uint64_t, std::string> m_threadNames;
 
     std::mutex m_mbpslock;
     std::vector<float> m_mbps;
@@ -87,6 +91,7 @@ private:
     std::unordered_map<uint64_t, QueueZoneEnd> m_pendingEndZone;
     std::unordered_map<uint64_t, Event*> m_openZones;
     std::unordered_set<uint64_t> m_pendingStrings;
+    std::unordered_set<uint64_t> m_pendingThreads;
     std::unordered_map<SourceLocation, uint32_t, SourceLocation::Hasher, SourceLocation::Comparator> m_locationRef;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
 

@@ -212,6 +212,7 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 
     CheckString( ev.filename );
     CheckString( ev.function );
+    CheckThreadString( ev.thread );
     zone->start = ev.time;
 
     SourceLocation srcloc { ev.filename, ev.function, ev.line };
@@ -292,6 +293,15 @@ void View::CheckString( uint64_t ptr )
     m_sock.Send( &ptr, sizeof( ptr ) );
 }
 
+void View::CheckThreadString( uint64_t id )
+{
+    if( m_threadNames.find( id ) != m_threadNames.end() ) return;
+    if( m_pendingThreads.find( id ) != m_pendingThreads.end() ) return;
+
+    m_pendingThreads.emplace( id );
+    // TODO send
+}
+
 void View::AddString( uint64_t ptr, std::string&& str )
 {
     assert( m_strings.find( ptr ) == m_strings.end() );
@@ -301,6 +311,17 @@ void View::AddString( uint64_t ptr, std::string&& str )
     std::lock_guard<std::mutex> lock( m_lock );
     m_strings.emplace( ptr, std::move( str ) );
 }
+
+void View::AddThreadString( uint64_t id, std::string&& str )
+{
+    assert( m_threadNames.find( id ) == m_threadNames.end() );
+    auto it = m_pendingThreads.find( id );
+    assert( it != m_pendingThreads.end() );
+    m_pendingThreads.erase( it );
+    std::lock_guard<std::mutex> lock( m_lock );
+    m_threadNames.emplace( id, std::move( str ) );
+}
+
 
 void View::NewZone( Event* zone, uint64_t thread )
 {
@@ -423,6 +444,19 @@ const char* View::GetString( uint64_t ptr ) const
 {
     const auto it = m_strings.find( ptr );
     if( it == m_strings.end() )
+    {
+        return "???";
+    }
+    else
+    {
+        return it->second.c_str();
+    }
+}
+
+const char* View::GetThreadString( uint64_t id ) const
+{
+    const auto it = m_threadNames.find( id );
+    if( it == m_threadNames.end() )
     {
         return "???";
     }

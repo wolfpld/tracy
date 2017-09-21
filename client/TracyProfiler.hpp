@@ -37,7 +37,9 @@ private:
     void Worker();
 
     bool SendData( const char* data, size_t len );
-    bool SendString( uint64_t ptr );
+    bool SendString( uint64_t ptr, const char* str, QueueType type );
+
+    bool HandleServerQuery();
 
     int64_t m_timeBegin;
     std::thread m_thread;

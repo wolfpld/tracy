@@ -290,6 +290,9 @@ void View::CheckString( uint64_t ptr )
     if( m_pendingStrings.find( ptr ) != m_pendingStrings.end() ) return;
 
     m_pendingStrings.emplace( ptr );
+
+    uint8_t type = ServerQueryString;
+    m_sock.Send( &type, sizeof( type ) );
     m_sock.Send( &ptr, sizeof( ptr ) );
 }
 

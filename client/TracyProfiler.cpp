@@ -115,10 +115,6 @@ void Profiler::Worker()
 {
     enum { BulkSize = TargetFrameSize / QueueItemSize };
 
-    timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 10000;
-
     moodycamel::ConsumerToken token( s_queue );
 
     ListenSocket listen;
@@ -172,9 +168,7 @@ void Profiler::Worker()
 
             while( m_sock->HasData() )
             {
-                uint64_t ptr;
-                if( !m_sock->Read( &ptr, sizeof( ptr ), &tv, ShouldExit ) ) break;
-                SendString( ptr );
+                if( !HandleServerQuery() ) break;
             }
         }
     }
@@ -193,12 +187,12 @@ bool Profiler::SendData( const char* data, size_t len )
     return true;
 }
 
-bool Profiler::SendString( uint64_t str )
+bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
-    auto ptr = (const char*)str;
+    assert( type == QueueType::StringData );
 
     QueueHeader hdr;
-    hdr.type = QueueType::StringData;
+    hdr.type = type;
     hdr.id = str;
 
     auto buf = m_buffer + m_bufferOffset;
@@ -215,6 +209,31 @@ bool Profiler::SendString( uint64_t str )
     if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
 
     return SendData( buf, sizeof( hdr ) + sizeof( l16 ) + l16 );
+}
+
+bool Profiler::HandleServerQuery()
+{
+    timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 10000;
+
+    uint8_t type;
+    if( !m_sock->Read( &type, sizeof( type ), &tv, ShouldExit ) ) return false;
+
+    uint64_t ptr;
+    if( !m_sock->Read( &ptr, sizeof( ptr ), &tv, ShouldExit ) ) return false;
+
+    switch( type )
+    {
+    case ServerQueryString:
+        SendString( ptr, (const char*)ptr, QueueType::StringData );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+
+    return true;
 }
 
 }

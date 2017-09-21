@@ -10,6 +10,7 @@ struct Event
 {
     int64_t start;
     int64_t end;
+    uint32_t srcloc;
 
     Vector<Event*> child;
 };

@@ -209,10 +209,27 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 {
     auto it = m_pendingEndZone.find( id );
     auto zone = m_slab.Alloc<Event>();
+
     CheckString( ev.filename );
     CheckString( ev.function );
     zone->start = ev.time;
+
+    SourceLocation srcloc { ev.filename, ev.function, ev.line };
+    auto lit = m_locationRef.find( srcloc );
+
     std::unique_lock<std::mutex> lock( m_lock );
+    if( lit == m_locationRef.end() )
+    {
+        const auto ref = uint32_t( m_srcFile.size() );
+        zone->srcloc = ref;
+        m_locationRef.emplace( srcloc, ref );
+        m_srcFile.push_back( srcloc );
+    }
+    else
+    {
+        zone->srcloc = lit->second;
+    }
+
     if( it == m_pendingEndZone.end() )
     {
         zone->end = -1;

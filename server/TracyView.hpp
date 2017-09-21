@@ -14,6 +14,7 @@
 #include "../common/TracyQueue.hpp"
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
+#include "TracySourceLocation.hpp"
 #include "TracyVector.hpp"
 
 namespace tracy
@@ -71,6 +72,7 @@ private:
     std::mutex m_lock;
     Vector<Event*> m_timeline;
     Vector<uint64_t> m_frames;
+    Vector<SourceLocation> m_srcFile;
     std::unordered_map<uint64_t, std::string> m_strings;
 
     std::mutex m_mbpslock;
@@ -80,6 +82,7 @@ private:
     std::unordered_map<uint64_t, QueueZoneEnd> m_pendingEndZone;
     std::unordered_map<uint64_t, Event*> m_openZones;
     std::unordered_set<uint64_t> m_pendingStrings;
+    std::unordered_map<SourceLocation, uint32_t, SourceLocation::Hasher, SourceLocation::Comparator> m_locationRef;
 
     Slab<EventSize*1024*1024> m_slab;
 

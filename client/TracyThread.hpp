@@ -1,6 +1,7 @@
 #ifndef __TRACYTHREAD_HPP__
 #define __TRACYTHREAD_HPP__
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <thread>
 
@@ -22,6 +23,13 @@ namespace tracy
         static_assert( sizeof( decltype( pthread_self() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
         return uint64_t( pthread_self() );
 #endif
+    }
+
+    static inline const char* GetThreadName( uint64_t id )
+    {
+        static char buf[64];
+        sprintf( buf, "%" PRIu64, id );
+        return buf;
     }
 
 }

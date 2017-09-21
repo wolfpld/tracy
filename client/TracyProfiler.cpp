@@ -14,6 +14,7 @@
 #include "../common/TracySystem.hpp"
 #include "concurrentqueue.h"
 #include "TracyProfiler.hpp"
+#include "TracyThread.hpp"
 
 #ifdef _DEBUG
 #  define DISABLE_LZ4
@@ -189,7 +190,7 @@ bool Profiler::SendData( const char* data, size_t len )
 
 bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
-    assert( type == QueueType::StringData );
+    assert( type == QueueType::StringData || type == QueueType::ThreadName );
 
     QueueHeader hdr;
     hdr.type = type;
@@ -227,6 +228,9 @@ bool Profiler::HandleServerQuery()
     {
     case ServerQueryString:
         SendString( ptr, (const char*)ptr, QueueType::StringData );
+        break;
+    case ServerQueryThreadString:
+        SendString( ptr, GetThreadName( ptr ), QueueType::ThreadName );
         break;
     default:
         assert( false );

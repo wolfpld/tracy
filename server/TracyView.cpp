@@ -151,7 +151,7 @@ close:
 
 void View::DispatchProcess( const QueueItem& ev )
 {
-    if( ev.hdr.type == QueueType::StringData )
+    if( ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName )
     {
         timeval tv;
         tv.tv_sec = 0;
@@ -161,7 +161,14 @@ void View::DispatchProcess( const QueueItem& ev )
         uint16_t sz;
         m_sock.Read( &sz, sizeof( sz ), &tv, ShouldExit );
         m_sock.Read( buf, sz, &tv, ShouldExit );
-        AddString( ev.hdr.id, std::string( buf, buf+sz ) );
+        if( ev.hdr.type == QueueType::StringData )
+        {
+            AddString( ev.hdr.id, std::string( buf, buf+sz ) );
+        }
+        else
+        {
+            AddThreadString( ev.hdr.id, std::string( buf, buf+sz ) );
+        }
     }
     else
     {
@@ -172,12 +179,19 @@ void View::DispatchProcess( const QueueItem& ev )
 void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
 {
     ptr += QueueDataSize[ev.hdr.idx];
-    if( ev.hdr.type == QueueType::StringData )
+    if( ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName )
     {
         uint16_t sz;
         memcpy( &sz, ptr, sizeof( sz ) );
         ptr += sizeof( sz );
-        AddString( ev.hdr.id, std::string( ptr, ptr+sz ) );
+        if( ev.hdr.type == QueueType::StringData )
+        {
+            AddString( ev.hdr.id, std::string( ptr, ptr+sz ) );
+        }
+        else
+        {
+            AddThreadString( ev.hdr.id, std::string( ptr, ptr+sz ) );
+        }
         ptr += sz;
     }
     else
@@ -302,7 +316,10 @@ void View::CheckThreadString( uint64_t id )
     if( m_pendingThreads.find( id ) != m_pendingThreads.end() ) return;
 
     m_pendingThreads.emplace( id );
-    // TODO send
+
+    uint8_t type = ServerQueryThreadString;
+    m_sock.Send( &type, sizeof( type ) );
+    m_sock.Send( &id, sizeof( id ) );
 }
 
 void View::AddString( uint64_t ptr, std::string&& str )

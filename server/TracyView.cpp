@@ -233,7 +233,7 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
     if( it == m_pendingEndZone.end() )
     {
         zone->end = -1;
-        NewZone( zone );
+        NewZone( zone, ev.thread );
         lock.unlock();
         m_openZones.emplace( id, zone );
     }
@@ -241,7 +241,7 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
     {
         assert( ev.time <= it->second.time );
         zone->end = it->second.time;
-        NewZone( zone );
+        NewZone( zone, ev.thread );
         lock.unlock();
         m_pendingEndZone.erase( it );
     }
@@ -302,14 +302,27 @@ void View::AddString( uint64_t ptr, std::string&& str )
     m_strings.emplace( ptr, std::move( str ) );
 }
 
-void View::NewZone( Event* zone )
+void View::NewZone( Event* zone, uint64_t thread )
 {
-    if( !m_timeline.empty() )
+    Vector<Event*>* timeline;
+    auto it = m_threadMap.find( thread );
+    if( it == m_threadMap.end() )
     {
-        const auto lastend = m_timeline.back()->end;
+        m_threadMap.emplace( thread, m_threads.size() );
+        m_threads.emplace_back();
+        timeline = &m_threads.back().timeline;
+    }
+    else
+    {
+        timeline = &m_threads[it->second].timeline;
+    }
+
+    if( !timeline->empty() )
+    {
+        const auto lastend = timeline->back()->end;
         if( lastend != -1 && lastend < zone->start )
         {
-            m_timeline.push_back( zone );
+            timeline->push_back( zone );
         }
         else
         {
@@ -318,7 +331,7 @@ void View::NewZone( Event* zone )
     }
     else
     {
-        m_timeline.push_back( zone );
+        timeline->push_back( zone );
     }
 }
 
@@ -362,10 +375,13 @@ uint64_t View::GetLastTime() const
 {
     uint64_t last = 0;
     if( !m_frames.empty() ) last = m_frames.back();
-    if( !m_timeline.empty() )
+    for( auto& v : m_threads )
     {
-        auto ev = m_timeline.back();
-        if( ev->end > (int64_t)last ) last = ev->end;
+        if( !v.timeline.empty() )
+        {
+            auto ev = v.timeline.back();
+            if( ev->end > (int64_t)last ) last = ev->end;
+        }
     }
     return last;
 }
@@ -783,11 +799,13 @@ void View::DrawZones()
     while( false );
 
     // zones
-    do
+    int offset = 20;
+    for( auto& v : m_threads )
     {
-        auto it = std::lower_bound( m_timeline.begin(), m_timeline.end(), m_zvStart, [] ( const auto& l, const auto& r ) { return l->end < r; } );
-        if( it == m_timeline.end() ) break;
-        const auto zitend = std::lower_bound( m_timeline.begin(), m_timeline.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+        auto& timeline = v.timeline;
+        auto it = std::lower_bound( timeline.begin(), timeline.end(), m_zvStart, [] ( const auto& l, const auto& r ) { return l->end < r; } );
+        if( it == timeline.end() ) continue;
+        const auto zitend = std::lower_bound( timeline.begin(), timeline.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l->start < r; } );
 
         while( it < zitend )
         {
@@ -796,20 +814,20 @@ void View::DrawZones()
             const char* func = GetString( srcFile.function );
             const auto zsz = ( ev.end - ev.start ) * pxns;
             const auto tsz = ImGui::CalcTextSize( func );
-            draw->AddRectFilled( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), 0xDDDD6666, 2.f );
-            draw->AddRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), 0xAAAAAAAA, 2.f );
+            draw->AddRectFilled( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, offset + tsz.y ), 0xDDDD6666, 2.f );
+            draw->AddRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, offset + tsz.y ), 0xAAAAAAAA, 2.f );
             if( tsz.x < zsz )
             {
-                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( ev.end - ev.start ) * pxns - tsz.x ) / 2, 20 ), 0xFFFFFFFF, func );
+                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( ev.end - ev.start ) * pxns - tsz.x ) / 2, offset ), 0xFFFFFFFF, func );
             }
             else
             {
-                ImGui::PushClipRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), true );
-                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), 0xFFFFFFFF, func );
+                ImGui::PushClipRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, offset + tsz.y ), true );
+                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, func );
                 ImGui::PopClipRect();
             }
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ) ) )
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, offset + tsz.y ) ) )
             {
                 ImGui::BeginTooltip();
                 ImGui::Text( func );
@@ -820,8 +838,9 @@ void View::DrawZones()
 
             it++;
         }
+
+        offset += 20;
     }
-    while( false );
 }
 
 }

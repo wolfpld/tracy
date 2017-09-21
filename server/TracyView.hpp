@@ -33,6 +33,11 @@ public:
     static void Draw();
 
 private:
+    struct ThreadData
+    {
+        Vector<Event*> timeline;
+    };
+
     void Worker();
 
     void DispatchProcess( const QueueItem& ev );
@@ -46,7 +51,7 @@ private:
     void CheckString( uint64_t ptr );
     void AddString( uint64_t ptr, std::string&& str );
 
-    void NewZone( Event* zone );
+    void NewZone( Event* zone, uint64_t thread );
     void UpdateZone( Event* zone );
 
     uint64_t GetFrameTime( size_t idx ) const;
@@ -70,9 +75,9 @@ private:
 
     // this block must be locked
     std::mutex m_lock;
-    Vector<Event*> m_timeline;
     Vector<uint64_t> m_frames;
     Vector<SourceLocation> m_srcFile;
+    Vector<ThreadData> m_threads;
     std::unordered_map<uint64_t, std::string> m_strings;
 
     std::mutex m_mbpslock;
@@ -83,6 +88,7 @@ private:
     std::unordered_map<uint64_t, Event*> m_openZones;
     std::unordered_set<uint64_t> m_pendingStrings;
     std::unordered_map<SourceLocation, uint32_t, SourceLocation::Hasher, SourceLocation::Comparator> m_locationRef;
+    std::unordered_map<uint64_t, uint32_t> m_threadMap;
 
     Slab<EventSize*1024*1024> m_slab;
 

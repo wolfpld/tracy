@@ -11,6 +11,7 @@ enum class QueueType : uint8_t
     ZoneBegin,
     ZoneEnd,
     StringData,
+    ThreadName,
     FrameMark,
     NUM_TYPES
 };
@@ -58,6 +59,7 @@ enum { QueueItemSize = sizeof( QueueItem ) };
 static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
+    sizeof( QueueHeader ),
     sizeof( QueueHeader ),
     sizeof( QueueHeader ),
 };

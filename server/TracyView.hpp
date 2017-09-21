@@ -53,6 +53,7 @@ private:
     uint64_t GetFrameEnd( size_t idx ) const;
     uint64_t GetLastTime() const;
     const char* TimeToString( uint64_t ns ) const;
+    const char* GetString( uint64_t ptr ) const;
 
     void DrawImpl();
     void DrawFrames();

@@ -386,6 +386,19 @@ const char* View::TimeToString( uint64_t ns ) const
     return buf;
 }
 
+const char* View::GetString( uint64_t ptr ) const
+{
+    const auto it = m_strings.find( ptr );
+    if( it == m_strings.end() )
+    {
+        return "???";
+    }
+    else
+    {
+        return it->second.c_str();
+    }
+}
+
 void View::Draw()
 {
     s_instance->DrawImpl();

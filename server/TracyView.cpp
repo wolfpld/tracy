@@ -794,10 +794,20 @@ void View::DrawZones()
             auto& ev = **it;
             const auto& srcFile = m_srcFile[ev.srcloc];
             const char* func = GetString( srcFile.function );
+            const auto zsz = ( ev.end - ev.start ) * pxns;
             const auto tsz = ImGui::CalcTextSize( func );
             draw->AddRectFilled( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), 0xDDDD6666, 2.f );
             draw->AddRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), 0xAAAAAAAA, 2.f );
-            draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( ev.end - ev.start ) * pxns - tsz.x ) / 2, 20 ), 0xFFFFFFFF, func );
+            if( tsz.x < zsz )
+            {
+                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( ev.end - ev.start ) * pxns - tsz.x ) / 2, 20 ), 0xFFFFFFFF, func );
+            }
+            else
+            {
+                ImGui::PushClipRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), true );
+                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), 0xFFFFFFFF, func );
+                ImGui::PopClipRect();
+            }
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ) ) )
             {

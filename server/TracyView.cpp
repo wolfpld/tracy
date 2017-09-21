@@ -893,6 +893,8 @@ void View::DrawZones()
             it++;
         }
 
+        draw->AddText( wpos + ImVec2( 0, offset ), 0xFFFFFFFF, GetThreadString( v.id ) );
+
         offset += 20;
     }
 }

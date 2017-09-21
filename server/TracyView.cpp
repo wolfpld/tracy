@@ -572,6 +572,7 @@ void View::DrawFrames()
                     ImGui::Text( "Frame: %i", sel );
                     ImGui::Text( "Frame time: %s", TimeToString( GetFrameTime( sel ) ) );
                 }
+                ImGui::Text( "Time from start of program: %s", TimeToString( m_frames[sel] - m_frames[0] ) );
                 ImGui::EndTooltip();
             }
 
@@ -723,6 +724,7 @@ void View::DrawZones()
             {
                 ImGui::BeginTooltip();
                 ImGui::Text( buf );
+                ImGui::Text( "Time from start of program: %s", TimeToString( m_frames[i] - m_frames[0] ) );
                 ImGui::EndTooltip();
             }
 

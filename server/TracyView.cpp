@@ -792,7 +792,8 @@ void View::DrawZones()
         while( it < zitend )
         {
             auto& ev = **it;
-            const char* func = "func";
+            const auto& srcFile = m_srcFile[ev.srcloc];
+            const char* func = GetString( srcFile.function );
             const auto tsz = ImGui::CalcTextSize( func );
             draw->AddRectFilled( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), 0xDDDD6666, 2.f );
             draw->AddRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ), 0xAAAAAAAA, 2.f );
@@ -801,8 +802,8 @@ void View::DrawZones()
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, 20 ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, 20 + tsz.y ) ) )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( "func()" );
-                ImGui::Text( "func.cpp:123" );
+                ImGui::Text( func );
+                ImGui::Text( "%s:%i", GetString( srcFile.filename ), srcFile.line );
                 ImGui::Text( "Execution time: %s", TimeToString( ev.end - ev.start ) );
                 ImGui::EndTooltip();
             }

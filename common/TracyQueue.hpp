@@ -23,6 +23,7 @@ struct QueueZoneBegin
     uint64_t filename;  // ptr
     uint64_t function;  // ptr
     uint32_t line;
+    uint64_t thread;
 };
 
 struct QueueZoneEnd

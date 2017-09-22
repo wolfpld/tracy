@@ -24,10 +24,30 @@ public:
     {
     }
 
+    Vector( const Vector& ) = delete;
+    Vector( Vector&& src )
+        : m_ptr( src.m_ptr )
+        , m_size( src.m_size )
+        , m_capacity( src.m_capacity )
+    {
+        src.m_ptr = nullptr;
+    }
+
     ~Vector()
     {
         memUsage.fetch_sub( m_capacity * sizeof( T ), std::memory_order_relaxed );
         delete[] m_ptr;
+    }
+
+    Vector& operator=( const Vector& ) = delete;
+    Vector& operator=( Vector&& src )
+    {
+        delete[] m_ptr;
+        m_ptr = src.m_ptr;
+        m_size = src.m_size;
+        m_capacity = src.m_capacity;
+        src.m_ptr = nullptr;
+        return *this;
     }
 
     bool empty() const { return m_size == 0; }

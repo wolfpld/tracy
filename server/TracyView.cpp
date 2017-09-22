@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <inttypes.h>
 #include <limits>
 #include <stdlib.h>
 
@@ -437,7 +438,7 @@ const char* View::TimeToString( uint64_t ns ) const
 
     if( ns < 1000 )
     {
-        sprintf( buf, "%i ns", ns );
+        sprintf( buf, "%" PRIu64 " ns", ns );
     }
     else if( ns < 1000ull * 1000 )
     {
@@ -455,7 +456,7 @@ const char* View::TimeToString( uint64_t ns ) const
     {
         const auto m = ns / ( 1000ull * 1000 * 1000 * 60 );
         const auto s = ns - m * ( 1000ull * 1000 * 1000 * 60 );
-        sprintf( buf, "%i:%04.1f", m, s / ( 1000. * 1000. * 1000. ) );
+        sprintf( buf, "%" PRIu64 ":%04.1f", m, s / ( 1000. * 1000. * 1000. ) );
     }
     return buf;
 }
@@ -543,7 +544,7 @@ void View::DrawImpl()
     ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
     if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 80, 0 ) ) ) m_pause = !m_pause;
     ImGui::SameLine();
-    ImGui::Text( "Frames: %-7i Time span: %-10s View span: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ) );
+    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ) );
     DrawFrames();
     DrawZones();
     ImGui::End();

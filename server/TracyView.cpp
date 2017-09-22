@@ -755,9 +755,13 @@ void View::DrawZones()
             m_pause = true;
             const auto delta = ImGui::GetMouseDragDelta( 1, 0 ).x;
             const auto nspx = double( timespan ) / w;
-            m_zvStart -= int64_t( delta * nspx );
-            m_zvEnd -= int64_t( delta * nspx );
-            io.MouseClickedPos[1].x = io.MousePos.x;
+            const auto dpx = int64_t( delta * nspx );
+            if( dpx != 0 )
+            {
+                m_zvStart -= dpx;
+                m_zvEnd -= dpx;
+                io.MouseClickedPos[1].x = io.MousePos.x;
+            }
         }
 
         const auto wheel = io.MouseWheel;

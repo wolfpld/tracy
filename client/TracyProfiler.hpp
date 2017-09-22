@@ -42,6 +42,7 @@ private:
     bool HandleServerQuery();
 
     int64_t m_timeBegin;
+    uint64_t m_mainThread;
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
     std::atomic<uint64_t> m_id;

@@ -42,6 +42,7 @@ static Profiler* s_instance = nullptr;
 
 Profiler::Profiler()
     : m_timeBegin( GetTime() )
+    , m_mainThread( GetThreadHandle() )
     , m_shutdown( false )
     , m_id( 0 )
     , m_stream( LZ4_createStream() )

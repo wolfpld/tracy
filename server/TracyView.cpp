@@ -662,6 +662,19 @@ void View::DrawFrames()
                 }
                 ImGui::Text( "Time from start of program: %s", TimeToString( m_frames[sel] - m_frames[0] ) );
                 ImGui::EndTooltip();
+
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    m_pause = true;
+                    m_zvStart = GetFrameBegin( sel );
+                    m_zvEnd = GetFrameEnd( sel + group - 1 );
+                    if( m_zvStart == m_zvEnd ) m_zvStart--;
+                }
+                else if( ImGui::IsMouseDragging( 0 ) )
+                {
+                    m_zvStart = std::min( m_zvStart, (int64_t)GetFrameBegin( sel ) );
+                    m_zvEnd = std::max( m_zvEnd, (int64_t)GetFrameEnd( sel + group - 1 ) );
+                }
             }
 
             if( m_pause && wheel != 0 )

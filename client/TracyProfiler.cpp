@@ -231,7 +231,14 @@ bool Profiler::HandleServerQuery()
         SendString( ptr, (const char*)ptr, QueueType::StringData );
         break;
     case ServerQueryThreadString:
-        SendString( ptr, GetThreadName( ptr ), QueueType::ThreadName );
+        if( ptr == m_mainThread )
+        {
+            SendString( ptr, "Main thread", QueueType::ThreadName );
+        }
+        else
+        {
+            SendString( ptr, GetThreadName( ptr ), QueueType::ThreadName );
+        }
         break;
     default:
         assert( false );

@@ -813,7 +813,7 @@ void View::DrawZones()
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, tsz.y ) ) )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( buf );
+                ImGui::Text( "%s", buf );
                 ImGui::Text( "Time from start of program: %s", TimeToString( m_frames[i] - m_frames[0] ) );
                 ImGui::EndTooltip();
             }
@@ -887,7 +887,7 @@ void View::DrawZones()
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, offset + tsz.y ) ) )
                 {
                     ImGui::BeginTooltip();
-                    ImGui::Text( func );
+                    ImGui::Text( "%s", func );
                     ImGui::Text( "%s:%i", GetString( srcFile.filename ), srcFile.line );
                     ImGui::Text( "Execution time: %s", TimeToString( ev.end - ev.start ) );
                     ImGui::EndTooltip();

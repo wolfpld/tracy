@@ -351,7 +351,7 @@ void View::NewZone( Event* zone, uint64_t thread )
     if( it == m_threadMap.end() )
     {
         m_threadMap.emplace( thread, m_threads.size() );
-        m_threads.emplace_back( ThreadData { thread } );
+        m_threads.push_back( ThreadData { thread } );
         timeline = &m_threads.back().timeline;
     }
     else

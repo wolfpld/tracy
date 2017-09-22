@@ -3,6 +3,6 @@
 namespace tracy
 {
 
-std::atomic<size_t> memUsage = 0;
+std::atomic<size_t> memUsage( 0 );
 
 }

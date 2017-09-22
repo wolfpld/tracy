@@ -2,6 +2,7 @@
 #  include <windows.h>
 #else
 #  include <pthread.h>
+#  include <string.h>
 #  include <unistd.h>
 #endif
 
@@ -58,7 +59,7 @@ void SetThreadName( std::thread& thread, const char* name )
         char buf[16];
         memcpy( buf, name, 15 );
         buf[15] = '\0';
-        pthread_setname_np( thread.native_handle(), sz );
+        pthread_setname_np( thread.native_handle(), buf );
     }
 #endif
 }

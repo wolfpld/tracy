@@ -19,6 +19,7 @@ namespace tracy
 {
 
 #ifdef _MSC_VER
+#  define MSG_NOSIGNAL 0
 struct __wsinit
 {
     __wsinit()
@@ -113,7 +114,7 @@ int Socket::Send( const void* _buf, int len )
     auto start = buf;
     while( len > 0 )
     {
-        auto ret = send( m_sock, buf, len, 0 );
+        auto ret = send( m_sock, buf, len, MSG_NOSIGNAL );
         if( ret == -1 ) return -1;
         len -= ret;
         buf += ret;

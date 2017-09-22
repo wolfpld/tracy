@@ -780,8 +780,8 @@ void View::DrawZones()
             }
             else if( timespan < 1000ull * 1000 * 1000 * 60 )
             {
-                m_zvStart -= std::max( 1ll, int64_t( p1 * 0.1f ) );
-                m_zvEnd += std::max( 1ll, int64_t( p2 * 0.1f ) );
+                m_zvStart -= std::max( int64_t( 1 ), int64_t( p1 * 0.1f ) );
+                m_zvEnd += std::max( int64_t( 1 ), int64_t( p2 * 0.1f ) );
             }
             timespan = m_zvEnd - m_zvStart;
             pxns = w / double( timespan );

@@ -869,9 +869,14 @@ void View::DrawZones()
     while( false );
 
     // zones
+    const auto ostep = ImGui::GetFontSize();
     int offset = 20;
     for( auto& v : m_threads )
     {
+        draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
+        draw->AddText( wpos + ImVec2( 0, offset ), 0xFFFFFFFF, GetThreadString( v.id ) );
+        offset += ostep;
+
         auto& timeline = v.timeline;
         auto it = std::lower_bound( timeline.begin(), timeline.end(), m_zvStart, [] ( const auto& l, const auto& r ) { return l->end < r; } );
         if( it != timeline.end() )
@@ -910,9 +915,7 @@ void View::DrawZones()
             }
         }
 
-        draw->AddText( wpos + ImVec2( 0, offset ), 0xFFFFFFFF, GetThreadString( v.id ) );
-
-        offset += 20;
+        offset += ostep * 1.2f;
     }
 }
 

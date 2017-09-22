@@ -742,8 +742,6 @@ void View::DrawZones()
     const auto h = ImGui::GetContentRegionAvail().y;
     auto draw = ImGui::GetWindowDrawList();
 
-    enum { TimeHeight = 50 };
-
     ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
     bool hover = ImGui::IsItemHovered();
 

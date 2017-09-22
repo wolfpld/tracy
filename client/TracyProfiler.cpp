@@ -152,7 +152,7 @@ void Profiler::Worker()
             {
                 auto buf = m_buffer + m_bufferOffset;
                 auto ptr = buf;
-                for( int i=0; i<sz; i++ )
+                for( size_t i=0; i<sz; i++ )
                 {
                     const auto dsz = QueueDataSize[item[i].hdr.idx];
                     memcpy( ptr, item+i, dsz );

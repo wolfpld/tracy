@@ -48,7 +48,18 @@ void SetThreadName( std::thread& thread, const char* name )
     }
 #  endif
 #else
-    pthread_setname_np( thread.native_handle(), name );
+    const auto sz = strlen( name );
+    if( sz <= 15 )
+    {
+        pthread_setname_np( thread.native_handle(), name );
+    }
+    else
+    {
+        char buf[16];
+        memcpy( buf, name, 15 );
+        buf[15] = '\0';
+        pthread_setname_np( thread.native_handle(), sz );
+    }
 #endif
 }
 

@@ -27,7 +27,25 @@ namespace tracy
 
     static inline const char* GetThreadName( uint64_t id )
     {
-        static char buf[64];
+        static char buf[256];
+#ifdef _MSC_VER
+#  ifdef NTDDI_WIN10_RS2
+        auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, id );
+        PWSTR tmp;
+        GetThreadDescription( hnd, &tmp );
+        auto ret = wcstombs( buf, tmp, 256 );
+        CloseHandle( hnd );
+        if( ret != 0 )
+        {
+            return buf;
+        }
+#  endif
+#else
+        if( pthread_getname_np( (pthread_t)id, buf, 256 ) == 0 )
+        {
+            return buf;
+        }
+#endif
         sprintf( buf, "%" PRIu64, id );
         return buf;
     }

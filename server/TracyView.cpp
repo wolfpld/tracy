@@ -901,27 +901,28 @@ void View::DrawZones()
                 auto& ev = **it;
                 const auto& srcFile = m_srcFile[ev.srcloc];
                 const char* func = GetString( srcFile.function );
+                const auto end = ev.end != -1 ? ev.end : ev.start;
                 const auto zsz = ( ev.end - ev.start ) * pxns;
                 const auto tsz = ImGui::CalcTextSize( func );
-                draw->AddRectFilled( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, offset + tsz.y ), 0xDDDD6666, 2.f );
-                draw->AddRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, offset + tsz.y ), 0xAAAAAAAA, 2.f );
+                draw->AddRectFilled( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( end - m_zvStart ) * pxns, offset + tsz.y ), 0xDDDD6666, 2.f );
+                draw->AddRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( end - m_zvStart ) * pxns, offset + tsz.y ), 0xAAAAAAAA, 2.f );
                 if( tsz.x < zsz )
                 {
-                    draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( ev.end - ev.start ) * pxns - tsz.x ) / 2, offset ), 0xFFFFFFFF, func );
+                    draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2, offset ), 0xFFFFFFFF, func );
                 }
                 else
                 {
-                    ImGui::PushClipRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, offset + tsz.y ), true );
+                    ImGui::PushClipRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( end - m_zvStart ) * pxns, offset + tsz.y ), true );
                     draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, func );
                     ImGui::PopClipRect();
                 }
 
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( ev.end - m_zvStart ) * pxns, offset + tsz.y ) ) )
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( end - m_zvStart ) * pxns, offset + tsz.y ) ) )
                 {
                     ImGui::BeginTooltip();
                     ImGui::Text( "%s", func );
                     ImGui::Text( "%s:%i", GetString( srcFile.filename ), srcFile.line );
-                    ImGui::Text( "Execution time: %s", TimeToString( ev.end - ev.start ) );
+                    ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
                     ImGui::EndTooltip();
                 }
 

@@ -217,8 +217,8 @@ bool ListenSocket::Listen( const char* port, int backlog )
     if( getaddrinfo( nullptr, port, &hints, &res ) != 0 ) return false;
 
     m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
-#ifdef _MSC_VER
-    DWORD val = 0;
+#if defined _MSC_VER || defined __CYGWIN__
+    unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
 #endif
     if( bind( m_sock, res->ai_addr, res->ai_addrlen ) == -1 ) return false;

@@ -437,9 +437,13 @@ uint64_t View::GetLastTime() const
 
 uint64_t View::GetZoneEnd( const Event& ev ) const
 {
-    if( ev.end != -1 ) return ev.end;
-    if( ev.child.empty() ) return ev.start;
-    return GetZoneEnd( *ev.child.back() );
+    auto ptr = &ev;
+    for(;;)
+    {
+        if( ptr->end != -1 ) return ptr->end;
+        if( ptr->child.empty() ) return ptr->start;
+        ptr = ptr->child.back();
+    }
 }
 
 const char* View::TimeToString( uint64_t ns ) const

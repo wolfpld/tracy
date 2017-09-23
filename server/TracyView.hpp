@@ -17,6 +17,8 @@
 #include "TracySourceLocation.hpp"
 #include "TracyVector.hpp"
 
+struct ImVec2;
+
 namespace tracy
 {
 
@@ -71,6 +73,7 @@ private:
     void DrawImpl();
     void DrawFrames();
     void DrawZones();
+    void DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset );
 
     std::string m_addr;
 

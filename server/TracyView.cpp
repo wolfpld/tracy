@@ -224,7 +224,6 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 {
     auto it = m_pendingEndZone.find( id );
     auto zone = m_slab.Alloc<Event>();
-    zone->parent = nullptr;
 
     CheckString( ev.filename );
     CheckString( ev.function );
@@ -360,27 +359,43 @@ void View::NewZone( Event* zone, uint64_t thread )
         timeline = &m_threads[it->second].timeline;
     }
 
-    if( !timeline->empty() )
-    {
-        const auto lastend = timeline->back()->end;
-        if( lastend != -1 && lastend < zone->start )
-        {
-            timeline->push_back( zone );
-        }
-        else
-        {
-
-        }
-    }
-    else
-    {
-        timeline->push_back( zone );
-    }
+    InsertZone( zone, nullptr, *timeline );
 }
 
 void View::UpdateZone( Event* zone )
 {
     assert( zone->end != -1 );
+}
+
+void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
+{
+    if( !vec.empty() )
+    {
+        const auto lastend = vec.back()->end;
+        if( lastend != -1 && lastend < zone->start )
+        {
+            zone->parent = parent;
+            vec.push_back( zone );
+        }
+        else
+        {
+            auto it = std::upper_bound( vec.begin(), vec.end(), zone->start, [] ( const auto& l, const auto& r ) { return l < r->start; } );
+            if( it == vec.end() )
+            {
+                assert( vec.back()->end == -1 );
+                InsertZone( zone, vec.back(), vec.back()->child );
+            }
+            else
+            {
+
+            }
+        }
+    }
+    else
+    {
+        zone->parent = parent;
+        vec.push_back( zone );
+    }
 }
 
 uint64_t View::GetFrameTime( size_t idx ) const

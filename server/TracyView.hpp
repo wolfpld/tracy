@@ -57,6 +57,8 @@ private:
     void NewZone( Event* zone, uint64_t thread );
     void UpdateZone( Event* zone );
 
+    void InsertZone( Event* zone, Event* parent, Vector<Event*>& vec );
+
     uint64_t GetFrameTime( size_t idx ) const;
     uint64_t GetFrameBegin( size_t idx ) const;
     uint64_t GetFrameEnd( size_t idx ) const;

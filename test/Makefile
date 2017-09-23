@@ -1,4 +1,4 @@
-CFLAGS := -g3 -Wall -fmerge-constants
+CFLAGS := -g3 -Wall -fmerge-constants -D_GNU_SOURCE
 CXXFLAGS := $(CFLAGS) -std=gnu++14
 DEFINES +=
 INCLUDES :=

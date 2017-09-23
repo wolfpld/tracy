@@ -422,7 +422,14 @@ uint64_t View::GetLastTime() const
         if( !v.timeline.empty() )
         {
             auto ev = v.timeline.back();
-            if( ev->end > (int64_t)last ) last = ev->end;
+            if( ev->end == -1 )
+            {
+                if( ev->start > last ) last = ev->start;
+            }
+            else if( ev->end > last )
+            {
+                last = ev->end;
+            }
         }
     }
     return last;

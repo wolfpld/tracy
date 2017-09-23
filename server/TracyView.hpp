@@ -73,7 +73,7 @@ private:
     void DrawImpl();
     void DrawFrames();
     void DrawZones();
-    void DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset );
+    int DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
 
     std::string m_addr;
 

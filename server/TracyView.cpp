@@ -918,17 +918,20 @@ void View::DrawZones()
         draw->AddText( wpos + ImVec2( 0, offset ), 0xFFFFFFFF, GetThreadString( v.id ) );
         offset += ostep;
 
-        DrawZoneLevel( v.timeline, hover, pxns, wpos, offset );
+        const auto depth = DrawZoneLevel( v.timeline, hover, pxns, wpos, offset, 0 );
 
-        offset += ostep * 1.2f;
+        offset += ostep * ( depth + 1.2f );
     }
 }
 
-void View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset )
+int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
 {
+    int maxdepth = depth;
     auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart, [] ( const auto& l, const auto& r ) { return l->end < r; } );
     if( it != vec.end() )
     {
+        const auto ostep = ImGui::GetFontSize();
+        const auto offset = _offset + ostep * depth;
         auto draw = ImGui::GetWindowDrawList();
 
         const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l->start < r; } );
@@ -962,9 +965,16 @@ void View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, co
                 ImGui::EndTooltip();
             }
 
+            if( !ev.child.empty() )
+            {
+                const auto d = DrawZoneLevel( ev.child, hover, pxns, wpos, _offset, depth+1 );
+                if( d > maxdepth ) maxdepth = d;
+            }
+
             it++;
         }
     }
+    return maxdepth;
 }
 
 }

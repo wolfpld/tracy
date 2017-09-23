@@ -435,6 +435,13 @@ uint64_t View::GetLastTime() const
     return last;
 }
 
+uint64_t View::GetZoneEnd( const Event& ev ) const
+{
+    if( ev.end != -1 ) return ev.end;
+    if( ev.child.empty() ) return ev.start;
+    return GetZoneEnd( *ev.child.back() );
+}
+
 const char* View::TimeToString( uint64_t ns ) const
 {
     enum { Pool = 4 };
@@ -901,7 +908,7 @@ void View::DrawZones()
                 auto& ev = **it;
                 const auto& srcFile = m_srcFile[ev.srcloc];
                 const char* func = GetString( srcFile.function );
-                const auto end = ev.end != -1 ? ev.end : ev.start;
+                const auto end = GetZoneEnd( ev );
                 const auto zsz = ( ev.end - ev.start ) * pxns;
                 const auto tsz = ImGui::CalcTextSize( func );
                 draw->AddRectFilled( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( end - m_zvStart ) * pxns, offset + tsz.y ), 0xDDDD6666, 2.f );

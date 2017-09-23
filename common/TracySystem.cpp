@@ -12,8 +12,6 @@
 namespace tracy
 {
 
-const char* PointerCheckA = "tracy";
-
 void SetThreadName( std::thread& thread, const char* name )
 {
 #ifdef _WIN32

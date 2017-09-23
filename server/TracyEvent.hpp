@@ -12,6 +12,7 @@ struct Event
     int64_t end;
     uint32_t srcloc;
 
+    Event* parent;
     Vector<Event*> child;
 };
 

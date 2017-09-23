@@ -224,6 +224,7 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 {
     auto it = m_pendingEndZone.find( id );
     auto zone = m_slab.Alloc<Event>();
+    zone->parent = nullptr;
 
     CheckString( ev.filename );
     CheckString( ev.function );

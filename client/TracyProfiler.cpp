@@ -4,6 +4,11 @@
 #  include <sys/time.h>
 #endif
 
+#if defined _MSC_VER || defined __CYGWIN__
+#  include <intrin.h>
+#endif
+
+#include <atomic>
 #include <assert.h>
 #include <chrono>
 #include <limits>
@@ -40,8 +45,7 @@ Profiler s_profiler;
 static Profiler* s_instance = nullptr;
 
 Profiler::Profiler()
-    : m_timeBegin( GetTime() )
-    , m_mainThread( GetThreadHandle() )
+    : m_mainThread( GetThreadHandle() )
     , m_shutdown( false )
     , m_id( 0 )
     , m_stream( LZ4_createStream() )
@@ -50,6 +54,9 @@ Profiler::Profiler()
 {
     assert( !s_instance );
     s_instance = this;
+
+    CalibrateTimer();
+    m_timeBegin = GetTime();
 
     m_thread = std::thread( [this] { Worker(); } );
     SetThreadName( m_thread, "Tracy Profiler" );
@@ -74,7 +81,12 @@ uint64_t Profiler::GetNewId()
 
 int64_t Profiler::GetTime()
 {
+#if defined _MSC_VER || defined __CYGWIN__
+    unsigned int ui;
+    return int64_t( __rdtscp( &ui ) * s_instance->m_timerMul );
+#else
     return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
+#endif
 }
 
 uint64_t Profiler::ZoneBegin( QueueZoneBegin&& data )
@@ -243,6 +255,27 @@ bool Profiler::HandleServerQuery()
     }
 
     return true;
+}
+
+void Profiler::CalibrateTimer()
+{
+#if defined _MSC_VER || defined __CYGWIN__
+    unsigned int ui;
+    std::atomic_signal_fence( std::memory_order_acq_rel );
+    const auto t0 = std::chrono::high_resolution_clock::now();
+    const auto r0 = __rdtscp( &ui );
+    std::atomic_signal_fence( std::memory_order_acq_rel );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+    std::atomic_signal_fence( std::memory_order_acq_rel );
+    const auto t1 = std::chrono::high_resolution_clock::now();
+    const auto r1 = __rdtscp( &ui );
+    std::atomic_signal_fence( std::memory_order_acq_rel );
+
+    const auto dt = std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count();
+    const auto dr = r1 - r0;
+
+    m_timerMul = double( dt ) / double( dr );
+#endif
 }
 
 }

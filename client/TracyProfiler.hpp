@@ -36,6 +36,9 @@ private:
 
     bool HandleServerQuery();
 
+    void CalibrateTimer();
+
+    double m_timerMul;
     int64_t m_timeBegin;
     uint64_t m_mainThread;
     std::thread m_thread;

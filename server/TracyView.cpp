@@ -623,7 +623,14 @@ void View::DrawFrames()
     {
         m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
         m_zvStart = m_frames[std::max( 0, (int)m_frames.size() - 4 )];
-        m_zvEnd = m_frames.back();
+        if( m_frames.size() == 1 )
+        {
+            m_zvEnd = GetLastTime();
+        }
+        else
+        {
+            m_zvEnd = m_frames.back();
+        }
     }
 
     if( hover )

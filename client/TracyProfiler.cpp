@@ -5,6 +5,7 @@
 #endif
 
 #include <assert.h>
+#include <chrono>
 #include <limits>
 #include <memory>
 #include <string.h>
@@ -69,6 +70,11 @@ Profiler::~Profiler()
 uint64_t Profiler::GetNewId()
 {
     return s_instance->m_id.fetch_add( 1, std::memory_order_relaxed );
+}
+
+int64_t Profiler::GetTime()
+{
+    return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
 }
 
 uint64_t Profiler::ZoneBegin( QueueZoneBegin&& data )

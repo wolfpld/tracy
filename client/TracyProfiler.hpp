@@ -2,7 +2,6 @@
 #define __TRACYPROFILER_HPP__
 
 #include <atomic>
-#include <chrono>
 #include <stdint.h>
 #include <thread>
 
@@ -14,11 +13,6 @@ namespace tracy
 
 class Socket;
 
-static inline int64_t GetTime()
-{
-    return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-}
-
 class Profiler
 {
 public:
@@ -26,6 +20,7 @@ public:
     ~Profiler();
 
     static uint64_t GetNewId();
+    static int64_t GetTime();
 
     static uint64_t ZoneBegin( QueueZoneBegin&& data );
     static void ZoneEnd( uint64_t id, QueueZoneEnd&& data );

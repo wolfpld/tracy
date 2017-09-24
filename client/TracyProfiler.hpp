@@ -37,8 +37,10 @@ private:
     bool HandleServerQuery();
 
     void CalibrateTimer();
+    void CalibrateDelay();
 
     double m_timerMul;
+    uint64_t m_delay;
     int64_t m_timeBegin;
     uint64_t m_mainThread;
     std::thread m_thread;

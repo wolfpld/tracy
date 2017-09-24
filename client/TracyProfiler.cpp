@@ -19,6 +19,7 @@
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
 #include "concurrentqueue.h"
+#include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
 
@@ -58,6 +59,7 @@ Profiler::Profiler()
     s_instance = this;
 
     CalibrateTimer();
+    CalibrateDelay();
     m_timeBegin = GetTime();
 
     m_thread = std::thread( [this] { Worker(); } );
@@ -278,6 +280,52 @@ void Profiler::CalibrateTimer()
 
     m_timerMul = double( dt ) / double( dr );
 #endif
+}
+
+class FakeZone
+{
+public:
+    FakeZone( const char* file, const char* function, uint32_t line ) {}
+    ~FakeZone() {}
+
+private:
+    uint64_t m_id;
+};
+
+void Profiler::CalibrateDelay()
+{
+    enum { Iterations = 50000 };
+    enum { Events = Iterations * 2 };   // start + end
+    static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
+    for( int i=0; i<Iterations; i++ )
+    {
+        ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__ );
+    }
+    const auto f0 = GetTime();
+    for( int i=0; i<Iterations; i++ )
+    {
+        FakeZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__ );
+    }
+    const auto t0 = GetTime();
+    for( int i=0; i<Iterations; i++ )
+    {
+        ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__ );
+    }
+    const auto t1 = GetTime();
+    const auto dt = t1 - t0;
+    const auto df = t0 - f0;
+    m_delay = ( dt - df ) / Events;
+
+    enum { Bulk = 1000 };
+    moodycamel::ConsumerToken token( s_queue );
+    int left = Events * 2;
+    QueueItem item[Bulk];
+    while( left != 0 )
+    {
+        const auto sz = s_queue.try_dequeue_bulk( token, item, std::min( left, (int)Bulk ) );
+        assert( sz > 0 );
+        left -= sz;
+    }
 }
 
 }

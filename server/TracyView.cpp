@@ -400,7 +400,7 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
             auto it = std::upper_bound( vec.begin(), vec.end(), zone->start, [] ( const auto& l, const auto& r ) { return l < r->start; } );
             if( it == vec.end() )
             {
-                assert( vec.back()->end == -1 );
+                assert( vec.back()->end == -1 || vec.back()->end >= zone->end );
                 InsertZone( zone, vec.back(), vec.back()->child );
             }
             else

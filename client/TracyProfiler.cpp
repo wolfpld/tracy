@@ -29,7 +29,9 @@
 namespace tracy
 {
 
-static moodycamel::ConcurrentQueue<QueueItem> s_queue( QueueItemSize * 64 * 1024 );
+enum { QueuePrealloc = 256 * 1024 };
+
+static moodycamel::ConcurrentQueue<QueueItem> s_queue( QueueItemSize * QueuePrealloc );
 
 static moodycamel::ProducerToken& GetToken()
 {

@@ -78,12 +78,15 @@ void View::Worker()
 
         uint8_t lz4;
         uint64_t bytes = 0;
-        uint64_t timeStart;
 
-        if( !m_sock.Read( &timeStart, sizeof( timeStart ), &tv, ShouldExit ) ) goto close;
-        if( !m_sock.Read( &lz4, sizeof( lz4 ), &tv, ShouldExit ) ) goto close;
+        {
+            WelcomeMessage welcome;
+            if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
+            lz4 = welcome.lz4;
+            m_frames.push_back( welcome.timeBegin );
+            m_delay = welcome.delay;
+        }
 
-        m_frames.push_back( timeStart );
         m_hasData.store( true, std::memory_order_release );
 
         LZ4_setStreamDecode( m_stream, nullptr, 0 );

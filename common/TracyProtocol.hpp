@@ -22,6 +22,15 @@ enum ServerQuery : uint8_t
     ServerQueryThreadString
 };
 
+#pragma pack( 1 )
+struct WelcomeMessage
+{
+    uint8_t lz4;
+    uint64_t timeBegin;
+    uint64_t delay;
+};
+#pragma pack()
+
 }
 
 #endif

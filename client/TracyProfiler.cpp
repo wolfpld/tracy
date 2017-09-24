@@ -144,15 +144,19 @@ void Profiler::Worker()
             if( m_sock ) break;
         }
 
-        m_sock->Send( &m_timeBegin, sizeof( m_timeBegin ) );
+        {
+            WelcomeMessage welcome;
 #ifdef DISABLE_LZ4
-        // notify client that lz4 compression is disabled (too slow in debug builds)
-        char val = 0;
-        m_sock->Send( &val, 1 );
+            // notify client that lz4 compression is disabled (too slow in debug builds)
+            welcome.lz4 = 0;
 #else
-        char val = 1;
-        m_sock->Send( &val, 1 );
+            welcome.lz4 = 1;
 #endif
+            welcome.timeBegin = m_timeBegin;
+            welcome.delay = m_delay;
+
+            m_sock->Send( &welcome, sizeof( welcome ) );
+        }
 
         LZ4_resetStream( m_stream );
 

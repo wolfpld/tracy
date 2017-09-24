@@ -988,6 +988,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
     auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart, [] ( const auto& l, const auto& r ) { return l->end < r; } );
     if( it != vec.end() )
     {
+        const auto w = ImGui::GetWindowContentRegionWidth();
         const auto ostep = ImGui::GetFontSize();
         const auto offset = _offset + ostep * depth;
         auto draw = ImGui::GetWindowDrawList();
@@ -1001,20 +1002,22 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
             const auto end = GetZoneEnd( ev );
             const auto zsz = ( ev.end - ev.start ) * pxns;
             const auto tsz = ImGui::CalcTextSize( func );
-            draw->AddRectFilled( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( end - m_zvStart ) * pxns, offset + tsz.y ), 0xDDDD6666, 2.f );
-            draw->AddRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( end - m_zvStart ) * pxns, offset + tsz.y ), 0xAAAAAAAA, 2.f );
+            const auto px0 = std::max( ( ev.start - m_zvStart ) * pxns, -10.0 );
+            const auto px1 = std::min( ( end - m_zvStart ) * pxns, double( w + 10 ) );
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xDDDD6666, 2.f );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xAAAAAAAA, 2.f );
             if( tsz.x < zsz )
             {
                 draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2, offset ), 0xFFFFFFFF, func );
             }
             else
             {
-                ImGui::PushClipRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( end - m_zvStart ) * pxns, offset + tsz.y ), true );
+                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), true );
                 draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, func );
                 ImGui::PopClipRect();
             }
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), wpos + ImVec2( ( end - m_zvStart ) * pxns, offset + tsz.y ) ) )
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
             {
                 ImGui::BeginTooltip();
                 ImGui::Text( "%s", func );

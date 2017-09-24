@@ -492,7 +492,7 @@ uint64_t View::GetLastTime() const
     return last;
 }
 
-uint64_t View::GetZoneEnd( const Event& ev ) const
+int64_t View::GetZoneEnd( const Event& ev ) const
 {
     auto ptr = &ev;
     for(;;)
@@ -987,14 +987,16 @@ void View::DrawZones()
 
 int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
 {
+    enum { MinVisSize = 3 };
     int maxdepth = depth;
-    auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart, [] ( const auto& l, const auto& r ) { return l->end < r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->end < r; } );
     if( it != vec.end() )
     {
         const auto w = ImGui::GetWindowContentRegionWidth();
         const auto ostep = ImGui::GetFontSize();
         const auto offset = _offset + ostep * depth;
         auto draw = ImGui::GetWindowDrawList();
+        const auto dsz = m_delay * pxns;
 
         const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l->start < r; } );
         while( it < zitend )
@@ -1002,7 +1004,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
             auto& ev = **it;
             const auto end = GetZoneEnd( ev );
             const auto zsz = ( ev.end - ev.start ) * pxns;
-            if( zsz < 2. )
+            if( zsz < MinVisSize )
             {
                 const auto px0 = ( ev.start - m_zvStart ) * pxns;
                 auto px1 = ( end - m_zvStart ) * pxns;
@@ -1011,7 +1013,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     ++it;
                     if( it == zitend ) break;
                     const auto pxnext = ( GetZoneEnd( **it ) - m_zvStart ) * pxns;
-                    if( pxnext - px1 >= 4. ) break;
+                    if( pxnext - px1 >= MinVisSize * 2 ) break;
                     px1 = pxnext;
                 }
                 draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ostep ), 0xDDDD6666, 2.f );
@@ -1021,10 +1023,17 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 const auto& srcFile = m_srcFile[ev.srcloc];
                 const char* func = GetString( srcFile.function );
                 const auto tsz = ImGui::CalcTextSize( func );
-                const auto px0 = std::max( ( ev.start - m_zvStart ) * pxns, -10.0 );
-                const auto px1 = std::min( ( end - m_zvStart ) * pxns, double( w + 10 ) );
+                const auto pr0 = ( ev.start - m_zvStart ) * pxns;
+                const auto pr1 = ( end - m_zvStart ) * pxns;
+                const auto px0 = std::max( pr0, -10.0 );
+                const auto px1 = std::min( pr1, double( w + 10 ) );
                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xDDDD6666, 2.f );
                 draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xAAAAAAAA, 2.f );
+                if( dsz >= MinVisSize )
+                {
+                    draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz, pr1 ), offset + tsz.y ), 0x882222DD, 2.f );
+                    draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), 0x882222DD, 2.f );
+                }
                 if( tsz.x < zsz )
                 {
                     draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2, offset ), 0xFFFFFFFF, func );

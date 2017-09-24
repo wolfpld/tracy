@@ -67,7 +67,7 @@ private:
     uint64_t GetLastTime() const;
     int64_t GetZoneEnd( const Event& ev ) const;
     Vector<Event*>& GetParentVector( const Event& ev );
-    const char* TimeToString( uint64_t ns ) const;
+    const char* TimeToString( int64_t ns ) const;
     const char* GetString( uint64_t ptr ) const;
     const char* GetThreadString( uint64_t id ) const;
 

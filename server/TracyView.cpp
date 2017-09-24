@@ -523,7 +523,7 @@ Vector<Event*>& View::GetParentVector( const Event& ev )
     }
 }
 
-const char* View::TimeToString( uint64_t ns ) const
+const char* View::TimeToString( int64_t ns ) const
 {
     enum { Pool = 4 };
     static char bufpool[Pool][64];
@@ -531,27 +531,34 @@ const char* View::TimeToString( uint64_t ns ) const
     char* buf = bufpool[bufsel];
     bufsel = ( bufsel + 1 ) % Pool;
 
+    const char* sign = "";
+    if( ns < 0 )
+    {
+        sign = "-";
+        ns = -ns;
+    }
+
     if( ns < 1000 )
     {
-        sprintf( buf, "%" PRIu64 " ns", ns );
+        sprintf( buf, "%s%" PRIu64 " ns", sign, ns );
     }
     else if( ns < 1000ull * 1000 )
     {
-        sprintf( buf, "%.2f us", ns / 1000. );
+        sprintf( buf, "%s%.2f us", sign, ns / 1000. );
     }
     else if( ns < 1000ull * 1000 * 1000 )
     {
-        sprintf( buf, "%.2f ms", ns / ( 1000. * 1000. ) );
+        sprintf( buf, "%s%.2f ms", sign, ns / ( 1000. * 1000. ) );
     }
     else if( ns < 1000ull * 1000 * 1000 * 60 )
     {
-        sprintf( buf, "%.2f s", ns / ( 1000. * 1000. * 1000. ) );
+        sprintf( buf, "%s%.2f s", sign, ns / ( 1000. * 1000. * 1000. ) );
     }
     else
     {
         const auto m = ns / ( 1000ull * 1000 * 1000 * 60 );
         const auto s = ns - m * ( 1000ull * 1000 * 1000 * 60 );
-        sprintf( buf, "%" PRIu64 ":%04.1f", m, s / ( 1000. * 1000. * 1000. ) );
+        sprintf( buf, "%s%" PRIu64 ":%04.1f", sign, m, s / ( 1000. * 1000. * 1000. ) );
     }
     return buf;
 }

@@ -1000,42 +1000,59 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
         while( it < zitend )
         {
             auto& ev = **it;
-            const auto& srcFile = m_srcFile[ev.srcloc];
-            const char* func = GetString( srcFile.function );
             const auto end = GetZoneEnd( ev );
             const auto zsz = ( ev.end - ev.start ) * pxns;
-            const auto tsz = ImGui::CalcTextSize( func );
-            const auto px0 = std::max( ( ev.start - m_zvStart ) * pxns, -10.0 );
-            const auto px1 = std::min( ( end - m_zvStart ) * pxns, double( w + 10 ) );
-            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xDDDD6666, 2.f );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xAAAAAAAA, 2.f );
-            if( tsz.x < zsz )
+            if( zsz < 2. )
             {
-                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2, offset ), 0xFFFFFFFF, func );
+                const auto px0 = ( ev.start - m_zvStart ) * pxns;
+                auto px1 = ( end - m_zvStart ) * pxns;
+                for(;;)
+                {
+                    ++it;
+                    if( it == zitend ) break;
+                    const auto pxnext = ( GetZoneEnd( **it ) - m_zvStart ) * pxns;
+                    if( pxnext - px1 >= 4. ) break;
+                    px1 = pxnext;
+                }
+                draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ostep ), 0xDDDD6666, 2.f );
             }
             else
             {
-                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), true );
-                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, func );
-                ImGui::PopClipRect();
-            }
+                const auto& srcFile = m_srcFile[ev.srcloc];
+                const char* func = GetString( srcFile.function );
+                const auto tsz = ImGui::CalcTextSize( func );
+                const auto px0 = std::max( ( ev.start - m_zvStart ) * pxns, -10.0 );
+                const auto px1 = std::min( ( end - m_zvStart ) * pxns, double( w + 10 ) );
+                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xDDDD6666, 2.f );
+                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xAAAAAAAA, 2.f );
+                if( tsz.x < zsz )
+                {
+                    draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2, offset ), 0xFFFFFFFF, func );
+                }
+                else
+                {
+                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), true );
+                    draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, func );
+                    ImGui::PopClipRect();
+                }
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
-            {
-                ImGui::BeginTooltip();
-                ImGui::Text( "%s", func );
-                ImGui::Text( "%s:%i", GetString( srcFile.filename ), srcFile.line );
-                ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
-                ImGui::EndTooltip();
-            }
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "%s", func );
+                    ImGui::Text( "%s:%i", GetString( srcFile.filename ), srcFile.line );
+                    ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
+                    ImGui::EndTooltip();
+                }
 
-            if( !ev.child.empty() )
-            {
-                const auto d = DrawZoneLevel( ev.child, hover, pxns, wpos, _offset, depth+1 );
-                if( d > maxdepth ) maxdepth = d;
-            }
+                if( !ev.child.empty() )
+                {
+                    const auto d = DrawZoneLevel( ev.child, hover, pxns, wpos, _offset, depth+1 );
+                    if( d > maxdepth ) maxdepth = d;
+                }
 
-            it++;
+                ++it;
+            }
         }
     }
     return maxdepth;

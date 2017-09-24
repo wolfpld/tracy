@@ -387,7 +387,31 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
             }
             else
             {
+                zone->parent = parent;
 
+                // here be dragons
+                // this code is not tested, as it's a fallback for edge cases, which haven't happened
+                if( zone->end == -1 )
+                {
+                    for( auto zit = it; zit != vec.end(); ++zit )
+                    {
+                        (*zit)->parent = zone;
+                        zone->child.push_back( zone );
+                    }
+                    vec.erase( it, vec.end() );
+                    vec.push_back( zone );
+                }
+                else
+                {
+                    auto eit = std::lower_bound( it, vec.end(), zone->end, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+                    for( auto zit = it; zit != eit; zit++ )
+                    {
+                        (*zit)->parent = zone;
+                        zone->child.push_back( zone );
+                    }
+                    auto nit = vec.erase( it, eit );
+                    vec.insert( nit, zone );
+                }
             }
         }
     }

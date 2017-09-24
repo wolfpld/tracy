@@ -389,7 +389,7 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
     if( !vec.empty() )
     {
         const auto lastend = vec.back()->end;
-        if( lastend != -1 && lastend < zone->start )
+        if( lastend != -1 && lastend <= zone->start )
         {
             zone->parent = parent;
             vec.push_back( zone );

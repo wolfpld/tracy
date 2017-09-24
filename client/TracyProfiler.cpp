@@ -29,7 +29,7 @@
 namespace tracy
 {
 
-static moodycamel::ConcurrentQueue<QueueItem> s_queue;
+static moodycamel::ConcurrentQueue<QueueItem> s_queue( QueueItemSize * 64 * 1024 );
 
 static moodycamel::ProducerToken& GetToken()
 {

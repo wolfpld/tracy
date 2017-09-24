@@ -1013,17 +1013,29 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
             const auto zsz = ( ev.end - ev.start ) * pxns;
             if( zsz < MinVisSize )
             {
+                int num = 1;
                 const auto px0 = ( ev.start - m_zvStart ) * pxns;
                 auto px1 = ( end - m_zvStart ) * pxns;
+                auto rend = end;
                 for(;;)
                 {
                     ++it;
                     if( it == zitend ) break;
-                    const auto pxnext = ( GetZoneEnd( **it ) - m_zvStart ) * pxns;
+                    const auto nend = GetZoneEnd( **it );
+                    const auto pxnext = ( nend - m_zvStart ) * pxns;
                     if( pxnext - px1 >= MinVisSize * 2 ) break;
                     px1 = pxnext;
+                    rend = nend;
+                    num++;
                 }
                 draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ostep ), 0xDDDD6666, 2.f );
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ostep ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Zones too small to display: %i", num );
+                    ImGui::Text( "Execution time: %s", TimeToString( rend - ev.start ) );
+                    ImGui::EndTooltip();
+                }
             }
             else
             {

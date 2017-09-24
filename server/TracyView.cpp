@@ -380,6 +380,7 @@ void View::UpdateZone( Event* zone )
     {
         (*eit)->parent = zone->parent;
         pit = pvec.insert( pit, *eit );
+        ++pit;
     }
     zone->child.erase( it, zone->child.end() );
 }

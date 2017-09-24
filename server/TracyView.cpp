@@ -486,6 +486,26 @@ uint64_t View::GetZoneEnd( const Event& ev ) const
     }
 }
 
+Vector<Event*>& View::GetParentVector( const Event& ev )
+{
+    // here be dragons
+    if( ev.parent )
+    {
+        return ev.parent->child;
+    }
+    else
+    {
+        for( auto& t : m_threads )
+        {
+            auto it = std::lower_bound( t.timeline.begin(), t.timeline.end(), ev.start, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+            if( it != t.timeline.end() && *it == &ev ) return t.timeline;
+        }
+        assert( false );
+        static Vector<Event*> empty;
+        return empty;
+    }
+}
+
 const char* View::TimeToString( uint64_t ns ) const
 {
     enum { Pool = 4 };

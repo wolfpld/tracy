@@ -408,8 +408,6 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
 
                 if( zone->end == -1 )
                 {
-                    // here be dragons
-                    // this code is not tested, as it's a fallback for edge cases, which haven't happened
                     for( auto zit = it; zit != vec.end(); ++zit )
                     {
                         (*zit)->parent = zone;
@@ -505,7 +503,6 @@ int64_t View::GetZoneEnd( const Event& ev ) const
 
 Vector<Event*>& View::GetParentVector( const Event& ev )
 {
-    // here be dragons
     if( ev.parent )
     {
         return ev.parent->child;

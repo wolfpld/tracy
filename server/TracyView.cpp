@@ -365,6 +365,20 @@ void View::NewZone( Event* zone, uint64_t thread )
 void View::UpdateZone( Event* zone )
 {
     assert( zone->end != -1 );
+    auto it = std::upper_bound( zone->child.begin(), zone->child.end(), zone->end, [] ( const auto& l, const auto& r ) { return l < r->start; } );
+    if( it == zone->child.end() ) return;
+
+    // here be dragons
+    auto& pvec = GetParentVector( *zone );
+    auto pit = std::lower_bound( pvec.begin(), pvec.end(), zone->start, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+    assert( *pit == zone );
+    ++pit;
+    for( auto eit = it; eit != zone->child.end(); ++eit )
+    {
+        (*eit)->parent = zone->parent;
+        pit = pvec.insert( pit, *eit );
+    }
+    zone->child.erase( it, zone->child.end() );
 }
 
 void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )

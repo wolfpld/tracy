@@ -21,7 +21,6 @@
 #include "concurrentqueue.h"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
-#include "TracyThread.hpp"
 
 #ifdef _DEBUG
 #  define DISABLE_LZ4

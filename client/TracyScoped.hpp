@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
+#include "../common/TracySystem.hpp"
 #include "TracyProfiler.hpp"
-#include "TracyThread.hpp"
 
 namespace tracy
 {

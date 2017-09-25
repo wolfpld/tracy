@@ -1053,7 +1053,17 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 }
                 if( tsz.x < zsz )
                 {
-                    draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2, offset ), 0xFFFFFFFF, func );
+                    const auto x = ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2;
+                    if( x < 0 || x > w - tsz.x )
+                    {
+                        ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), true );
+                        draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, func );
+                        ImGui::PopClipRect();
+                    }
+                    else
+                    {
+                        draw->AddText( wpos + ImVec2( x, offset ), 0xFFFFFFFF, func );
+                    }
                 }
                 else
                 {

@@ -649,8 +649,6 @@ void View::DrawImpl()
     DrawFrames();
     DrawZones();
     ImGui::End();
-
-    ImGui::ShowTestWindow();
 }
 
 static ImU32 GetFrameColor( uint64_t frameTime )

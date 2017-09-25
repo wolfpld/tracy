@@ -91,6 +91,7 @@ private:
     Vector<ThreadData> m_threads;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
+    uint64_t m_zonesCnt;
 
     std::mutex m_mbpslock;
     std::vector<float> m_mbps;

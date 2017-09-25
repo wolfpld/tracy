@@ -26,6 +26,7 @@ View::View( const char* addr )
     , m_shutdown( false )
     , m_connected( false )
     , m_hasData( false )
+    , m_zonesCnt( 0 )
     , m_mbps( 64 )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3] )
@@ -350,6 +351,7 @@ void View::AddThreadString( uint64_t id, std::string&& str )
 
 void View::NewZone( Event* zone, uint64_t thread )
 {
+    m_zonesCnt++;
     Vector<Event*>* timeline;
     auto it = m_threadMap.find( thread );
     if( it == m_threadMap.end() )
@@ -645,7 +647,7 @@ void View::DrawImpl()
     ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
     if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 80, 0 ) ) ) m_pause = !m_pause;
     ImGui::SameLine();
-    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ) );
+    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %" PRIu64, m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt );
     DrawFrames();
     DrawZones();
     ImGui::End();

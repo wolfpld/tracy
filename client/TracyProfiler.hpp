@@ -2,11 +2,16 @@
 #define __TRACYPROFILER_HPP__
 
 #include <atomic>
+#include <chrono>
 #include <stdint.h>
 #include <thread>
 
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
+
+#if defined _MSC_VER || defined __CYGWIN__
+#  include <intrin.h>
+#endif
 
 namespace tracy
 {
@@ -20,7 +25,15 @@ public:
     ~Profiler();
 
     static uint64_t GetNewId();
-    static int64_t GetTime();
+    static int64_t GetTime()
+    {
+#if defined _MSC_VER || defined __CYGWIN__
+        unsigned int ui;
+        return int64_t( __rdtscp( &ui ) );
+#else
+        return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
+#endif
+    }
 
     static uint64_t ZoneBegin( QueueZoneBegin&& data );
     static void ZoneEnd( uint64_t id, QueueZoneEnd&& data );

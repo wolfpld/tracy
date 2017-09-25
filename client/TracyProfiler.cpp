@@ -4,10 +4,6 @@
 #  include <sys/time.h>
 #endif
 
-#if defined _MSC_VER || defined __CYGWIN__
-#  include <intrin.h>
-#endif
-
 #include <atomic>
 #include <assert.h>
 #include <chrono>
@@ -80,16 +76,6 @@ Profiler::~Profiler()
 uint64_t Profiler::GetNewId()
 {
     return s_instance->m_id.fetch_add( 1, std::memory_order_relaxed );
-}
-
-int64_t Profiler::GetTime()
-{
-#if defined _MSC_VER || defined __CYGWIN__
-    unsigned int ui;
-    return int64_t( __rdtscp( &ui ) );
-#else
-    return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-#endif
 }
 
 uint64_t Profiler::ZoneBegin( QueueZoneBegin&& data )

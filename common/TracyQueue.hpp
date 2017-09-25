@@ -25,6 +25,7 @@ struct QueueZoneBegin
     uint64_t function;  // ptr
     uint32_t line;
     uint64_t thread;
+    uint32_t color;
 };
 
 struct QueueZoneEnd

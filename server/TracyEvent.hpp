@@ -11,6 +11,7 @@ struct Event
     int64_t start;
     int64_t end;
     uint32_t srcloc;
+    uint32_t color;
 
     Event* parent;
     Vector<Event*> child;

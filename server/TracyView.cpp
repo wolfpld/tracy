@@ -232,6 +232,7 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
     CheckString( ev.function );
     CheckThreadString( ev.thread );
     zone->start = ev.time;
+    zone->color = ev.color;
 
     SourceLocation srcloc { ev.filename, ev.function, ev.line };
     auto lit = m_locationRef.find( srcloc );
@@ -1007,6 +1008,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
         while( it < zitend )
         {
             auto& ev = **it;
+            const auto color = ev.color != 0 ? ( ev.color | 0xFF000000 ) : 0xDDDD6666;
             const auto end = GetZoneEnd( ev );
             const auto zsz = ( ev.end - ev.start ) * pxns;
             if( zsz < MinVisSize )
@@ -1026,7 +1028,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     rend = nend;
                     num++;
                 }
-                draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ostep ), 0xDDDD6666, 2.f );
+                draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ostep ), color, 2.f );
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ostep ) ) )
                 {
                     ImGui::BeginTooltip();
@@ -1044,7 +1046,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 const auto pr1 = ( end - m_zvStart ) * pxns;
                 const auto px0 = std::max( pr0, -10.0 );
                 const auto px1 = std::min( pr1, double( w + 10 ) );
-                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xDDDD6666, 2.f );
+                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color, 2.f );
                 draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xAAAAAAAA, 2.f );
                 if( dsz >= MinVisSize )
                 {

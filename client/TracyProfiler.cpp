@@ -288,7 +288,7 @@ void Profiler::CalibrateTimer()
 class FakeZone
 {
 public:
-    FakeZone( const char* file, const char* function, uint32_t line ) {}
+    FakeZone( const char* file, const char* function, uint32_t line, uint32_t color ) {}
     ~FakeZone() {}
 
 private:
@@ -302,17 +302,17 @@ void Profiler::CalibrateDelay()
     static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
     for( int i=0; i<Iterations; i++ )
     {
-        ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__ );
+        ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__, 0 );
     }
     const auto f0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        FakeZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__ );
+        FakeZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__, 0 );
     }
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__ );
+        ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__, 0 );
     }
     const auto t1 = GetTime();
     const auto dt = t1 - t0;

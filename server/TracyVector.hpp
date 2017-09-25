@@ -76,22 +76,26 @@ public:
         m_ptr[m_size++] = std::move( v );
     }
 
-    void insert( T* it, const T& v )
+    T* insert( T* it, const T& v )
     {
         assert( it >= m_ptr && it <= m_ptr + m_size );
+        const auto dist = it - m_ptr;
         if( m_size == m_capacity ) AllocMore();
-        if( it != m_ptr + m_size ) memmove( it+1, it, ( m_size - ( it - m_ptr ) ) * sizeof( T ) );
+        if( dist != m_size ) memmove( m_ptr + dist + 1, m_ptr + dist, ( m_size - dist ) * sizeof( T ) );
         m_size++;
-        *it = v;
+        m_ptr[dist] = v;
+        return m_ptr + dist;
     }
 
-    void insert( T* it, T&& v )
+    T* insert( T* it, T&& v )
     {
         assert( it >= m_ptr && it <= m_ptr + m_size );
+        const auto dist = it - m_ptr;
         if( m_size == m_capacity ) AllocMore();
-        if( it != m_ptr + m_size ) memmove( it+1, it, ( m_size - ( it - m_ptr ) ) * sizeof( T ) );
+        if( dist != m_size ) memmove( m_ptr + dist + 1, m_ptr + dist, ( m_size - dist ) * sizeof( T ) );
         m_size++;
-        *it = std::move( v );
+        m_ptr[dist] = std::move( v );
+        return m_ptr + dist;
     }
 
 private:

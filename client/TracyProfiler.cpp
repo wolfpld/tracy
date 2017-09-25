@@ -86,7 +86,7 @@ int64_t Profiler::GetTime()
 {
 #if defined _MSC_VER || defined __CYGWIN__
     unsigned int ui;
-    return int64_t( __rdtscp( &ui ) * s_instance->m_timerMul );
+    return int64_t( __rdtscp( &ui ) );
 #else
     return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
 #endif
@@ -151,6 +151,7 @@ void Profiler::Worker()
 #else
             welcome.lz4 = 1;
 #endif
+            welcome.timerMul = m_timerMul;
             welcome.timeBegin = m_timeBegin;
             welcome.delay = m_delay;
 
@@ -282,6 +283,8 @@ void Profiler::CalibrateTimer()
     const auto dr = r1 - r0;
 
     m_timerMul = double( dt ) / double( dr );
+#else
+    m_timerMul = 1.;
 #endif
 }
 

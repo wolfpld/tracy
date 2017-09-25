@@ -118,6 +118,7 @@ private:
     int64_t m_zvEnd;
 
     uint64_t m_delay;
+    double m_timerMul;
 };
 
 }

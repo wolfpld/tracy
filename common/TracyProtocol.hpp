@@ -26,6 +26,7 @@ enum ServerQuery : uint8_t
 struct WelcomeMessage
 {
     uint8_t lz4;
+    double timerMul;
     uint64_t timeBegin;
     uint64_t delay;
 };

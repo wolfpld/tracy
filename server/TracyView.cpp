@@ -84,8 +84,9 @@ void View::Worker()
             WelcomeMessage welcome;
             if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
             lz4 = welcome.lz4;
-            m_frames.push_back( welcome.timeBegin );
-            m_delay = welcome.delay;
+            m_timerMul = welcome.timerMul;
+            m_frames.push_back( welcome.timeBegin * m_timerMul );
+            m_delay = welcome.delay * m_timerMul;
         }
 
         m_hasData.store( true, std::memory_order_release );
@@ -232,7 +233,7 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
     CheckString( ev.filename );
     CheckString( ev.function );
     CheckThreadString( ev.thread );
-    zone->start = ev.time;
+    zone->start = ev.time * m_timerMul;
     zone->color = ev.color;
 
     SourceLocation srcloc { ev.filename, ev.function, ev.line };
@@ -260,8 +261,8 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
     }
     else
     {
-        assert( ev.time <= it->second.time );
-        zone->end = it->second.time;
+        zone->end = it->second.time * m_timerMul;
+        assert( zone->start <= zone->end );
         NewZone( zone, ev.thread );
         lock.unlock();
         m_pendingEndZone.erase( it );
@@ -279,8 +280,9 @@ void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
     {
         auto zone = it->second;
         std::unique_lock<std::mutex> lock( m_lock );
-        assert( ev.time >= zone->start );
-        zone->end = ev.time;
+        assert( zone->end == -1 );
+        zone->end = ev.time * m_timerMul;
+        assert( zone->end >= zone->start );
         UpdateZone( zone );
         lock.unlock();
         m_openZones.erase( it );
@@ -291,16 +293,17 @@ void View::ProcessFrameMark( uint64_t id )
 {
     assert( !m_frames.empty() );
     const auto lastframe = m_frames.back();
-    if( lastframe < id )
+    const auto time = id * m_timerMul;
+    if( lastframe < time )
     {
         std::unique_lock<std::mutex> lock( m_lock );
-        m_frames.push_back( id );
+        m_frames.push_back( time );
     }
     else
     {
-        auto it = std::lower_bound( m_frames.begin(), m_frames.end(), id );
+        auto it = std::lower_bound( m_frames.begin(), m_frames.end(), time );
         std::unique_lock<std::mutex> lock( m_lock );
-        m_frames.insert( it, id );
+        m_frames.insert( it, time );
     }
 }
 

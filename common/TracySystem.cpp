@@ -77,7 +77,7 @@ void SetThreadName( std::thread& thread, const char* name )
 const char* GetThreadName( uint64_t id )
 {
     static char buf[256];
-#ifdef _MSC_VER
+#ifdef _WIN32
 #  ifdef NTDDI_WIN10_RS2
     auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)id );
     PWSTR tmp;

@@ -1019,6 +1019,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 {
                     ++it;
                     if( it == zitend ) break;
+                    if( (*it)->color != ev.color ) break;
                     const auto nend = GetZoneEnd( **it );
                     const auto pxnext = ( nend - m_zvStart ) * pxns;
                     if( pxnext - px1 >= MinVisSize * 2 ) break;

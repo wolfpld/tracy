@@ -98,6 +98,21 @@ public:
         return m_ptr + dist;
     }
 
+    T* erase( T* begin, T* end )
+    {
+        assert( begin >= m_ptr && begin <= m_ptr + m_size );
+        assert( end >= m_ptr && end <= m_ptr + m_size );
+        assert( begin <= end );
+
+        const auto dist = end - begin;
+        if( dist > 0 )
+        {
+            memmove( begin, end, ( m_size - ( end - m_ptr ) ) * sizeof( T ) );
+            m_size -= dist;
+        }
+        return begin;
+    }
+
 private:
     void AllocMore()
     {

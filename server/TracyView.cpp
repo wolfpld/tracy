@@ -1019,6 +1019,7 @@ void View::DrawZones()
     {
         m_zvStart = m_zvStartNext;
         m_zvEnd = m_zvEndNext;
+        m_pause = true;
     }
 }
 

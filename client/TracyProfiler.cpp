@@ -28,12 +28,7 @@ namespace tracy
 enum { QueuePrealloc = 256 * 1024 };
 
 static moodycamel::ConcurrentQueue<QueueItem> s_queue( QueueItemSize * QueuePrealloc );
-
-static moodycamel::ProducerToken& GetToken()
-{
-    static thread_local moodycamel::ProducerToken token( s_queue );
-    return token;
-}
+static thread_local moodycamel::ProducerToken s_token( s_queue );
 
 static std::atomic<uint64_t> s_id( 0 );
 
@@ -47,6 +42,26 @@ static Profiler s_profiler;
 #endif
 
 static Profiler* s_instance = nullptr;
+
+static inline uint64_t ZoneBeginImpl( moodycamel::ProducerToken& token, QueueZoneBegin&& data )
+{
+    auto id = GetNewId();
+    QueueItem item;
+    item.hdr.type = QueueType::ZoneBegin;
+    item.hdr.id = id;
+    item.zoneBegin = std::move( data );
+    s_queue.enqueue( token, std::move( item ) );
+    return id;
+}
+
+static inline void ZoneEndImpl( moodycamel::ProducerToken& token, uint64_t id, QueueZoneEnd&& data )
+{
+    QueueItem item;
+    item.hdr.type = QueueType::ZoneEnd;
+    item.hdr.id = id;
+    item.zoneEnd = std::move( data );
+    s_queue.enqueue( token, std::move( item ) );
+}
 
 Profiler::Profiler()
     : m_mainThread( GetThreadHandle() )
@@ -80,22 +95,12 @@ Profiler::~Profiler()
 
 uint64_t Profiler::ZoneBegin( QueueZoneBegin&& data )
 {
-    auto id = GetNewId();
-    QueueItem item;
-    item.hdr.type = QueueType::ZoneBegin;
-    item.hdr.id = id;
-    item.zoneBegin = std::move( data );
-    s_queue.enqueue( GetToken(), std::move( item ) );
-    return id;
+    return ZoneBeginImpl( s_token, std::move( data ) );
 }
 
 void Profiler::ZoneEnd( uint64_t id, QueueZoneEnd&& data )
 {
-    QueueItem item;
-    item.hdr.type = QueueType::ZoneEnd;
-    item.hdr.id = id;
-    item.zoneEnd = std::move( data );
-    s_queue.enqueue( GetToken(), std::move( item ) );
+    ZoneEndImpl( s_token, id, std::move( data ) );
 }
 
 void Profiler::FrameMark()
@@ -103,7 +108,7 @@ void Profiler::FrameMark()
     QueueItem item;
     item.hdr.type = QueueType::FrameMark;
     item.hdr.id = (uint64_t)GetTime();
-    s_queue.enqueue( GetToken(), std::move( item ) );
+    s_queue.enqueue( s_token, std::move( item ) );
 }
 
 bool Profiler::ShouldExit()
@@ -226,7 +231,7 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     item.srcloc.function = (uint64_t)srcloc->function;
     item.srcloc.line = srcloc->line;
     item.srcloc.color = srcloc->color;
-    s_queue.enqueue( GetToken(), std::move( item ) );
+    s_queue.enqueue( s_token, std::move( item ) );
 }
 
 bool Profiler::HandleServerQuery()
@@ -305,10 +310,13 @@ void Profiler::CalibrateDelay()
     enum { Iterations = 50000 };
     enum { Events = Iterations * 2 };   // start + end
     static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
+
+    moodycamel::ProducerToken ptoken( s_queue );
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__, 0 };
-        ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
+        const auto id = ZoneBeginImpl( ptoken, QueueZoneBegin { Profiler::GetTime(), (uint64_t)&__tracy_source_location, GetThreadHandle() } );
+        ZoneEndImpl( ptoken, id, QueueZoneEnd { Profiler::GetTime() } );
     }
     const auto f0 = GetTime();
     for( int i=0; i<Iterations; i++ )
@@ -320,7 +328,8 @@ void Profiler::CalibrateDelay()
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__, 0 };
-        ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
+        const auto id = ZoneBeginImpl( ptoken, QueueZoneBegin { Profiler::GetTime(), (uint64_t)&__tracy_source_location, GetThreadHandle() } );
+        ZoneEndImpl( ptoken, id, QueueZoneEnd { Profiler::GetTime() } );
     }
     const auto t1 = GetTime();
     const auto dt = t1 - t0;

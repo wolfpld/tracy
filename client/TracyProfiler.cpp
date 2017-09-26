@@ -35,6 +35,8 @@ static moodycamel::ProducerToken& GetToken()
     return token;
 }
 
+static std::atomic<uint64_t> s_id( 0 );
+
 
 #ifndef TRACY_DISABLE
 Profiler s_profiler;
@@ -45,7 +47,6 @@ static Profiler* s_instance = nullptr;
 Profiler::Profiler()
     : m_mainThread( GetThreadHandle() )
     , m_shutdown( false )
-    , m_id( 0 )
     , m_stream( LZ4_createStream() )
     , m_buffer( new char[TargetFrameSize*3] )
     , m_bufferOffset( 0 )
@@ -75,7 +76,7 @@ Profiler::~Profiler()
 
 uint64_t Profiler::GetNewId()
 {
-    return s_instance->m_id.fetch_add( 1, std::memory_order_relaxed );
+    return s_id.fetch_add( 1, std::memory_order_relaxed );
 }
 
 uint64_t Profiler::ZoneBegin( QueueZoneBegin&& data )

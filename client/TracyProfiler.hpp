@@ -67,7 +67,6 @@ private:
     uint64_t m_mainThread;
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
-    std::atomic<uint64_t> m_id;
     std::unique_ptr<Socket> m_sock;
 
     LZ4_stream_t* m_stream;

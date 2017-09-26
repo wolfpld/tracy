@@ -32,7 +32,6 @@ public:
     Profiler();
     ~Profiler();
 
-    static uint64_t GetNewId();
     static int64_t GetTime()
     {
 #if defined _MSC_VER || defined __CYGWIN__

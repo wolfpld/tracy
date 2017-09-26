@@ -37,6 +37,10 @@ static moodycamel::ProducerToken& GetToken()
 
 static std::atomic<uint64_t> s_id( 0 );
 
+static inline uint64_t GetNewId()
+{
+    return s_id.fetch_add( 1, std::memory_order_relaxed );
+}
 
 #ifndef TRACY_DISABLE
 Profiler s_profiler;
@@ -72,11 +76,6 @@ Profiler::~Profiler()
 
     assert( s_instance );
     s_instance = nullptr;
-}
-
-uint64_t Profiler::GetNewId()
-{
-    return s_id.fetch_add( 1, std::memory_order_relaxed );
 }
 
 uint64_t Profiler::ZoneBegin( QueueZoneBegin&& data )

@@ -219,6 +219,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::FrameMark:
         ProcessFrameMark( ev.hdr.id );
         break;
+    case QueueType::SourceLocation:
+        AddSourceLocation( ev.hdr.id, ev.srcloc );
+        break;
     default:
         assert( false );
         break;
@@ -230,27 +233,14 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
     auto it = m_pendingEndZone.find( id );
     auto zone = m_slab.Alloc<Event>();
 
-    CheckString( ev.filename );
-    CheckString( ev.function );
+    CheckSourceLocation( ev.srcloc );
     CheckThreadString( ev.thread );
+
     zone->start = ev.time * m_timerMul;
+    zone->srcloc = ev.srcloc;
     zone->color = ev.color;
 
-    SourceLocation srcloc { ev.filename, ev.function, ev.line };
-    auto lit = m_locationRef.find( srcloc );
-
     std::unique_lock<std::mutex> lock( m_lock );
-    if( lit == m_locationRef.end() )
-    {
-        const auto ref = uint32_t( m_srcFile.size() );
-        zone->srcloc = ref;
-        m_locationRef.emplace( srcloc, ref );
-        m_srcFile.push_back( srcloc );
-    }
-    else
-    {
-        zone->srcloc = lit->second;
-    }
 
     if( it == m_pendingEndZone.end() )
     {
@@ -331,6 +321,18 @@ void View::CheckThreadString( uint64_t id )
     m_sock.Send( &id, sizeof( id ) );
 }
 
+void View::CheckSourceLocation( uint64_t ptr )
+{
+    if( m_sourceLocation.find( ptr ) != m_sourceLocation.end() ) return;
+    if( m_pendingSourceLocation.find( ptr ) != m_pendingSourceLocation.end() ) return;
+
+    m_pendingSourceLocation.emplace( ptr );
+
+    uint8_t type = ServerQuerySourceLocation;
+    m_sock.Send( &type, sizeof( type ) );
+    m_sock.Send( &ptr, sizeof( ptr ) );
+}
+
 void View::AddString( uint64_t ptr, std::string&& str )
 {
     assert( m_strings.find( ptr ) == m_strings.end() );
@@ -351,6 +353,17 @@ void View::AddThreadString( uint64_t id, std::string&& str )
     m_threadNames.emplace( id, std::move( str ) );
 }
 
+void View::AddSourceLocation( uint64_t ptr, const QueueSourceLocation& srcloc )
+{
+    assert( m_sourceLocation.find( ptr ) == m_sourceLocation.end() );
+    auto it = m_pendingSourceLocation.find( ptr );
+    assert( it != m_pendingSourceLocation.end() );
+    m_pendingSourceLocation.erase( it );
+    CheckString( srcloc.file );
+    CheckString( srcloc.function );
+    std::lock_guard<std::mutex> lock( m_lock );
+    m_sourceLocation.emplace( ptr, srcloc );
+}
 
 void View::NewZone( Event* zone, uint64_t thread )
 {
@@ -1043,8 +1056,17 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
             }
             else
             {
-                const auto& srcFile = m_srcFile[ev.srcloc];
-                const char* func = GetString( srcFile.function );
+                const char* func = "???";
+                const char* filename = "???";
+                uint32_t line = 0;
+                auto srcit = m_sourceLocation.find( ev.srcloc );
+                if( srcit != m_sourceLocation.end() )
+                {
+                    func = GetString( srcit->second.function );
+                    filename = GetString( srcit->second.file );
+                    line = srcit->second.line;
+                }
+
                 const auto tsz = ImGui::CalcTextSize( func );
                 const auto pr0 = ( ev.start - m_zvStart ) * pxns;
                 const auto pr1 = ( end - m_zvStart ) * pxns;
@@ -1082,7 +1104,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 {
                     ImGui::BeginTooltip();
                     ImGui::Text( "%s", func );
-                    ImGui::Text( "%s:%i", GetString( srcFile.filename ), srcFile.line );
+                    ImGui::Text( "%s:%i", filename, line );
                     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
                     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay ) );
                     ImGui::EndTooltip();

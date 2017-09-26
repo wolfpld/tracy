@@ -18,6 +18,13 @@ namespace tracy
 
 class Socket;
 
+struct SourceLocation
+{
+    const char* function;
+    const char* file;
+    uint32_t line;
+};
+
 class Profiler
 {
 public:
@@ -46,6 +53,7 @@ private:
 
     bool SendData( const char* data, size_t len );
     bool SendString( uint64_t ptr, const char* str, QueueType type );
+    bool SendSourceLocation( uint64_t ptr );
 
     bool HandleServerQuery();
 

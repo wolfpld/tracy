@@ -13,8 +13,8 @@
 #include "TracyProfiler.hpp"
 #include "TracyScoped.hpp"
 
-#define ZoneScoped tracy::ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__, 0 );
-#define ZoneScopedC( color ) tracy::ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__, color );
+#define ZoneScoped static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__ }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location, 0 );
+#define ZoneScopedC( color ) static const tracy::SourceLocation __tracy_source_location {  __FUNCTION__,  __FILE__, __LINE__ }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location, color );
 
 #define FrameMark tracy::Profiler::FrameMark();
 

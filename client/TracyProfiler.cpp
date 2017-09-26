@@ -216,6 +216,27 @@ bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     return SendData( buf, sizeof( hdr ) + sizeof( l16 ) + l16 );
 }
 
+bool Profiler::SendSourceLocation( uint64_t ptr )
+{
+    auto srcloc = (const SourceLocation*)ptr;
+    QueueItem item;
+    item.hdr.type = QueueType::SourceLocation;
+    item.hdr.id = ptr;
+    item.srcloc.file = (uint64_t)srcloc->file;
+    item.srcloc.function = (uint64_t)srcloc->function;
+    item.srcloc.line = srcloc->line;
+
+    const auto sz = QueueDataSize[item.hdr.idx];
+
+    auto buf = m_buffer + m_bufferOffset;
+    memcpy( buf, &item, sz );
+
+    m_bufferOffset += sz;
+    if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
+
+    return SendData( buf, sz );
+}
+
 bool Profiler::HandleServerQuery()
 {
     timeval tv;
@@ -242,6 +263,9 @@ bool Profiler::HandleServerQuery()
         {
             SendString( ptr, GetThreadName( ptr ), QueueType::ThreadName );
         }
+        break;
+    case ServerQuerySourceLocation:
+        SendSourceLocation( ptr );
         break;
     default:
         assert( false );
@@ -277,7 +301,7 @@ void Profiler::CalibrateTimer()
 class FakeZone
 {
 public:
-    FakeZone( const char* file, const char* function, uint32_t line, uint32_t color ) {}
+    FakeZone( const SourceLocation* srcloc, uint32_t color ) {}
     ~FakeZone() {}
 
 private:
@@ -291,17 +315,20 @@ void Profiler::CalibrateDelay()
     static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
     for( int i=0; i<Iterations; i++ )
     {
-        ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__, 0 );
+        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__ };
+        ScopedZone ___tracy_scoped_zone( &__tracy_source_location, 0 );
     }
     const auto f0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        FakeZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__, 0 );
+        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__ };
+        FakeZone ___tracy_scoped_zone( &__tracy_source_location, 0 );
     }
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        ScopedZone ___tracy_scoped_zone( __FILE__, __FUNCTION__, __LINE__, 0 );
+        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__ };
+        ScopedZone ___tracy_scoped_zone( &__tracy_source_location, 0 );
     }
     const auto t1 = GetTime();
     const auto dt = t1 - t0;

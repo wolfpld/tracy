@@ -14,7 +14,6 @@
 #include "../common/TracyQueue.hpp"
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
-#include "TracySourceLocation.hpp"
 #include "TracyVector.hpp"
 
 struct ImVec2;
@@ -53,8 +52,11 @@ private:
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
+    void CheckSourceLocation( uint64_t ptr );
+
     void AddString( uint64_t ptr, std::string&& str );
     void AddThreadString( uint64_t id, std::string&& str );
+    void AddSourceLocation( uint64_t id, const QueueSourceLocation& srcloc );
 
     void NewZone( Event* zone, uint64_t thread );
     void UpdateZone( Event* zone );
@@ -87,10 +89,10 @@ private:
     // this block must be locked
     std::mutex m_lock;
     Vector<uint64_t> m_frames;
-    Vector<SourceLocation> m_srcFile;
     Vector<ThreadData> m_threads;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
+    std::unordered_map<uint64_t, QueueSourceLocation> m_sourceLocation;
     uint64_t m_zonesCnt;
 
     std::mutex m_mbpslock;
@@ -101,7 +103,7 @@ private:
     std::unordered_map<uint64_t, Event*> m_openZones;
     std::unordered_set<uint64_t> m_pendingStrings;
     std::unordered_set<uint64_t> m_pendingThreads;
-    std::unordered_map<SourceLocation, uint32_t, SourceLocation::Hasher, SourceLocation::Comparator> m_locationRef;
+    std::unordered_set<uint64_t> m_pendingSourceLocation;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
 
     Slab<EventSize*1024*1024> m_slab;

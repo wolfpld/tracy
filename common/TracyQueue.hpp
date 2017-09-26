@@ -13,6 +13,7 @@ enum class QueueType : uint8_t
     StringData,
     ThreadName,
     FrameMark,
+    SourceLocation,
     NUM_TYPES
 };
 
@@ -21,9 +22,7 @@ enum class QueueType : uint8_t
 struct QueueZoneBegin
 {
     int64_t time;
-    uint64_t filename;  // ptr
-    uint64_t function;  // ptr
-    uint32_t line;
+    uint64_t srcloc;    // ptr
     uint64_t thread;
     uint32_t color;
 };
@@ -31,6 +30,13 @@ struct QueueZoneBegin
 struct QueueZoneEnd
 {
     int64_t time;
+};
+
+struct QueueSourceLocation
+{
+    uint64_t function;  // ptr
+    uint64_t file;      // ptr
+    uint32_t line;
 };
 
 struct QueueHeader
@@ -50,6 +56,7 @@ struct QueueItem
     {
         QueueZoneBegin zoneBegin;
         QueueZoneEnd zoneEnd;
+        QueueSourceLocation srcloc;
     };
 };
 
@@ -63,6 +70,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ),
     sizeof( QueueHeader ),
     sizeof( QueueHeader ),
+    sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
 };
 
 static_assert( sizeof( QueueDataSize ) / sizeof( size_t ) == (uint8_t)QueueType::NUM_TYPES, "QueueDataSize mismatch" );

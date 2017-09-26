@@ -1070,6 +1070,12 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     ImGui::Text( "Zones too small to display: %i", num );
                     ImGui::Text( "Execution time: %s", TimeToString( rend - ev.start ) );
                     ImGui::EndTooltip();
+
+                    if( ImGui::IsMouseClicked( 2 ) && rend - ev.start > 0 )
+                    {
+                        m_zvStartNext = ev.start;
+                        m_zvEndNext = rend;
+                    }
                 }
             }
             else
@@ -1120,7 +1126,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay ) );
                     ImGui::EndTooltip();
 
-                    if( ImGui::IsMouseDown( 2 ) && ev.end - ev.start > 0 )
+                    if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) && ev.end - ev.start > 0 )
                     {
                         m_zvStartNext = ev.start;
                         m_zvEndNext = ev.end;

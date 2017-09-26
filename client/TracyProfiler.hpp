@@ -54,7 +54,7 @@ private:
 
     bool SendData( const char* data, size_t len );
     bool SendString( uint64_t ptr, const char* str, QueueType type );
-    bool SendSourceLocation( uint64_t ptr );
+    void SendSourceLocation( uint64_t ptr );
 
     bool HandleServerQuery();
 

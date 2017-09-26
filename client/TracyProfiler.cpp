@@ -216,7 +216,7 @@ bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     return SendData( buf, sizeof( hdr ) + sizeof( l16 ) + l16 );
 }
 
-bool Profiler::SendSourceLocation( uint64_t ptr )
+void Profiler::SendSourceLocation( uint64_t ptr )
 {
     auto srcloc = (const SourceLocation*)ptr;
     QueueItem item;
@@ -226,16 +226,7 @@ bool Profiler::SendSourceLocation( uint64_t ptr )
     item.srcloc.function = (uint64_t)srcloc->function;
     item.srcloc.line = srcloc->line;
     item.srcloc.color = srcloc->color;
-
-    const auto sz = QueueDataSize[item.hdr.idx];
-
-    auto buf = m_buffer + m_bufferOffset;
-    memcpy( buf, &item, sz );
-
-    m_bufferOffset += sz;
-    if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
-
-    return SendData( buf, sz );
+    s_queue.enqueue( GetToken(), std::move( item ) );
 }
 
 bool Profiler::HandleServerQuery()

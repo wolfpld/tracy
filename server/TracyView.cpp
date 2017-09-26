@@ -962,7 +962,7 @@ void View::DrawZones()
                 ImGui::EndTooltip();
             }
 
-            if( fbegin >= m_zvStart )
+            if( fbegin >= m_zvStart && fsz > 4 )
             {
                 draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, h ), 0x22FFFFFF );
             }

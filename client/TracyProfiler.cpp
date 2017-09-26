@@ -225,6 +225,7 @@ bool Profiler::SendSourceLocation( uint64_t ptr )
     item.srcloc.file = (uint64_t)srcloc->file;
     item.srcloc.function = (uint64_t)srcloc->function;
     item.srcloc.line = srcloc->line;
+    item.srcloc.color = srcloc->color;
 
     const auto sz = QueueDataSize[item.hdr.idx];
 
@@ -301,7 +302,7 @@ void Profiler::CalibrateTimer()
 class FakeZone
 {
 public:
-    FakeZone( const SourceLocation* srcloc, uint32_t color ) {}
+    FakeZone( const SourceLocation* srcloc ) {}
     ~FakeZone() {}
 
 private:
@@ -315,20 +316,20 @@ void Profiler::CalibrateDelay()
     static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__ };
-        ScopedZone ___tracy_scoped_zone( &__tracy_source_location, 0 );
+        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__, 0 };
+        ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
     }
     const auto f0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__ };
-        FakeZone ___tracy_scoped_zone( &__tracy_source_location, 0 );
+        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__, 0 };
+        FakeZone ___tracy_scoped_zone( &__tracy_source_location );
     }
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__ };
-        ScopedZone ___tracy_scoped_zone( &__tracy_source_location, 0 );
+        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__, 0 };
+        ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
     }
     const auto t1 = GetTime();
     const auto dt = t1 - t0;

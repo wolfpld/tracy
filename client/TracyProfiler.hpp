@@ -23,6 +23,7 @@ struct SourceLocation
     const char* function;
     const char* file;
     uint32_t line;
+    uint32_t color;
 };
 
 class Profiler

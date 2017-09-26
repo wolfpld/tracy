@@ -24,7 +24,6 @@ struct QueueZoneBegin
     int64_t time;
     uint64_t srcloc;    // ptr
     uint64_t thread;
-    uint32_t color;
 };
 
 struct QueueZoneEnd
@@ -37,6 +36,7 @@ struct QueueSourceLocation
     uint64_t function;  // ptr
     uint64_t file;      // ptr
     uint32_t line;
+    uint32_t color;
 };
 
 struct QueueHeader

@@ -238,7 +238,6 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 
     zone->start = ev.time * m_timerMul;
     zone->srcloc = ev.srcloc;
-    zone->color = ev.color;
 
     std::unique_lock<std::mutex> lock( m_lock );
 
@@ -604,6 +603,14 @@ const char* View::GetThreadString( uint64_t id ) const
     {
         return it->second.c_str();
     }
+}
+
+const QueueSourceLocation& View::GetSourceLocation( uint64_t srcloc ) const
+{
+    static const QueueSourceLocation empty = {};
+    const auto it = m_sourceLocation.find( srcloc );
+    if( it == m_sourceLocation.end() ) return empty;
+    return it->second;
 }
 
 void View::Draw()
@@ -1024,7 +1031,8 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
         while( it < zitend )
         {
             auto& ev = **it;
-            const auto color = ev.color != 0 ? ( ev.color | 0xFF000000 ) : 0xDDDD6666;
+            auto& srcloc = GetSourceLocation( ev.srcloc );
+            const auto color = srcloc.color != 0 ? ( srcloc.color | 0xFF000000 ) : 0xDDDD6666;
             const auto end = GetZoneEnd( ev );
             const auto zsz = ( ev.end - ev.start ) * pxns;
             if( zsz < MinVisSize )
@@ -1037,7 +1045,8 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 {
                     ++it;
                     if( it == zitend ) break;
-                    if( (*it)->color != ev.color ) break;
+                    auto& srcloc2 = GetSourceLocation( (*it)->srcloc );
+                    if( srcloc.color != srcloc2.color ) break;
                     const auto nend = GetZoneEnd( **it );
                     const auto pxnext = ( nend - m_zvStart ) * pxns;
                     if( pxnext - px1 >= MinVisSize * 2 ) break;
@@ -1056,16 +1065,9 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
             }
             else
             {
-                const char* func = "???";
-                const char* filename = "???";
-                uint32_t line = 0;
-                auto srcit = m_sourceLocation.find( ev.srcloc );
-                if( srcit != m_sourceLocation.end() )
-                {
-                    func = GetString( srcit->second.function );
-                    filename = GetString( srcit->second.file );
-                    line = srcit->second.line;
-                }
+                const auto func = GetString( srcloc.function );
+                const auto filename = GetString( srcloc.file );
+                const auto line = srcloc.line;
 
                 const auto tsz = ImGui::CalcTextSize( func );
                 const auto pr0 = ( ev.start - m_zvStart ) * pxns;

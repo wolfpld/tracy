@@ -12,8 +12,8 @@ namespace tracy
 class ScopedZone
 {
 public:
-    ScopedZone( const SourceLocation* srcloc, uint32_t color )
-        : m_id( Profiler::ZoneBegin( QueueZoneBegin { Profiler::GetTime(), (uint64_t)srcloc, GetThreadHandle(), color } ) )
+    ScopedZone( const SourceLocation* srcloc )
+        : m_id( Profiler::ZoneBegin( QueueZoneBegin { Profiler::GetTime(), (uint64_t)srcloc, GetThreadHandle() } ) )
     {
     }
 

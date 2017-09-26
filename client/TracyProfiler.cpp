@@ -43,7 +43,7 @@ static inline uint64_t GetNewId()
 }
 
 #ifndef TRACY_DISABLE
-Profiler s_profiler;
+static Profiler s_profiler;
 #endif
 
 static Profiler* s_instance = nullptr;

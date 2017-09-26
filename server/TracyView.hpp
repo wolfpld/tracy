@@ -120,6 +120,9 @@ private:
     int64_t m_zvStart;
     int64_t m_zvEnd;
 
+    int64_t m_zvStartNext;
+    int64_t m_zvEndNext;
+
     uint64_t m_delay;
     double m_timerMul;
 };

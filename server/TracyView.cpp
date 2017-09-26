@@ -999,6 +999,8 @@ void View::DrawZones()
     }
     while( false );
 
+    m_zvStartNext = 0;
+
     // zones
     const auto ostep = ImGui::GetFontSize();
     int offset = 20;
@@ -1011,6 +1013,12 @@ void View::DrawZones()
         const auto depth = DrawZoneLevel( v.timeline, hover, pxns, wpos, offset, 0 );
 
         offset += ostep * ( depth + 1.2f );
+    }
+
+    if( m_zvStartNext != 0 )
+    {
+        m_zvStart = m_zvStartNext;
+        m_zvEnd = m_zvEndNext;
     }
 }
 
@@ -1110,6 +1118,12 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
                     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay ) );
                     ImGui::EndTooltip();
+
+                    if( ImGui::IsMouseDown( 2 ) && ev.end - ev.start > 0 )
+                    {
+                        m_zvStartNext = ev.start;
+                        m_zvEndNext = ev.end;
+                    }
                 }
 
                 if( !ev.child.empty() )

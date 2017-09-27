@@ -12,6 +12,7 @@
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracyQueue.hpp"
+#include "TracyCharUtil.hpp"
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
 #include "TracyVector.hpp"
@@ -96,7 +97,7 @@ private:
     Vector<ThreadData> m_threads;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
-    std::unordered_set<std::string> m_customStrings;
+    std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;
     std::unordered_map<uint64_t, QueueSourceLocation> m_sourceLocation;
     uint64_t m_zonesCnt;
 

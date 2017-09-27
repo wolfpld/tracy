@@ -385,15 +385,19 @@ void View::AddCustomString( uint64_t ptr, std::string&& str )
 {
     auto pit = m_pendingCustomStrings.find( ptr );
     assert( pit != m_pendingCustomStrings.end() );
-    auto sit = m_customStrings.find( str );
+    auto sit = m_customStrings.find( str.c_str() );
     if( sit == m_customStrings.end() )
     {
-        pit->second->text = str.c_str();
-        m_customStrings.emplace( std::move( str ) );
+        const auto sz = str.size();
+        auto ptr = new char[sz+1];
+        memcpy( ptr, str.c_str(), sz );
+        ptr[sz] = '\0';
+        pit->second->text = ptr;
+        m_customStrings.emplace( ptr );
     }
     else
     {
-        pit->second->text = sit->c_str();
+        pit->second->text = *sit;
     }
     m_pendingCustomStrings.erase( pit );
 }

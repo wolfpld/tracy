@@ -22,6 +22,14 @@ public:
         Profiler::ZoneEnd( m_id, QueueZoneEnd { Profiler::GetTime() } );
     }
 
+    void Text( const char* txt, size_t size )
+    {
+        auto ptr = new char[size+1];
+        memcpy( ptr, txt, size );
+        ptr[size] = '\0';
+        Profiler::ZoneText( m_id, QueueZoneText { (uint64_t)ptr } );
+    }
+
 private:
     uint64_t m_id;
 };

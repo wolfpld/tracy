@@ -103,6 +103,15 @@ void Profiler::ZoneEnd( uint64_t id, QueueZoneEnd&& data )
     ZoneEndImpl( s_token, id, std::move( data ) );
 }
 
+void Profiler::ZoneText( uint64_t id, QueueZoneText&& data )
+{
+    QueueItem item;
+    item.hdr.type = QueueType::ZoneText;
+    item.hdr.id = id;
+    item.zoneText = std::move( data );
+    s_queue.enqueue( s_token, std::move( item ) );
+}
+
 void Profiler::FrameMark()
 {
     QueueItem item;
@@ -199,7 +208,7 @@ bool Profiler::SendData( const char* data, size_t len )
 
 bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
-    assert( type == QueueType::StringData || type == QueueType::ThreadName );
+    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData );
 
     QueueHeader hdr;
     hdr.type = type;
@@ -260,6 +269,10 @@ bool Profiler::HandleServerQuery()
         {
             SendString( ptr, GetThreadName( ptr ), QueueType::ThreadName );
         }
+        break;
+    case ServerQueryCustomString:
+        SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+        delete[] (const char*)ptr;
         break;
     case ServerQuerySourceLocation:
         SendSourceLocation( ptr );

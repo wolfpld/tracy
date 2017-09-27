@@ -49,13 +49,16 @@ private:
     void ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev );
     void ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev );
     void ProcessFrameMark( uint64_t id );
+    void ProcessZoneText( uint64_t id, const QueueZoneText& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
+    void CheckCustomString( uint64_t ptr, Event* dst );
     void CheckSourceLocation( uint64_t ptr );
 
     void AddString( uint64_t ptr, std::string&& str );
     void AddThreadString( uint64_t id, std::string&& str );
+    void AddCustomString( uint64_t ptr, std::string&& str );
     void AddSourceLocation( uint64_t id, const QueueSourceLocation& srcloc );
 
     void NewZone( Event* zone, uint64_t thread );
@@ -93,6 +96,7 @@ private:
     Vector<ThreadData> m_threads;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
+    std::unordered_set<std::string> m_customStrings;
     std::unordered_map<uint64_t, QueueSourceLocation> m_sourceLocation;
     uint64_t m_zonesCnt;
 
@@ -105,6 +109,7 @@ private:
     std::unordered_set<uint64_t> m_pendingStrings;
     std::unordered_set<uint64_t> m_pendingThreads;
     std::unordered_set<uint64_t> m_pendingSourceLocation;
+    std::unordered_map<uint64_t, Event*> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
 
     Slab<EventSize*1024*1024> m_slab;

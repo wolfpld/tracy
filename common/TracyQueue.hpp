@@ -12,8 +12,10 @@ enum class QueueType : uint8_t
     ZoneEnd,
     StringData,
     ThreadName,
+    CustomStringData,
     FrameMark,
     SourceLocation,
+    ZoneText,
     NUM_TYPES
 };
 
@@ -39,6 +41,11 @@ struct QueueSourceLocation
     uint32_t color;
 };
 
+struct QueueZoneText
+{
+    uint64_t text;      // ptr
+};
+
 struct QueueHeader
 {
     union
@@ -57,6 +64,7 @@ struct QueueItem
         QueueZoneBegin zoneBegin;
         QueueZoneEnd zoneEnd;
         QueueSourceLocation srcloc;
+        QueueZoneText zoneText;
     };
 };
 
@@ -70,7 +78,9 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ),
     sizeof( QueueHeader ),
     sizeof( QueueHeader ),
+    sizeof( QueueHeader ),
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneText ),
 };
 
 static_assert( sizeof( QueueDataSize ) / sizeof( size_t ) == (uint8_t)QueueType::NUM_TYPES, "QueueDataSize mismatch" );

@@ -157,7 +157,7 @@ close:
 
 void View::DispatchProcess( const QueueItem& ev )
 {
-    if( ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName )
+    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName )
     {
         timeval tv;
         tv.tv_sec = 0;
@@ -167,7 +167,11 @@ void View::DispatchProcess( const QueueItem& ev )
         uint16_t sz;
         m_sock.Read( &sz, sizeof( sz ), &tv, ShouldExit );
         m_sock.Read( buf, sz, &tv, ShouldExit );
-        if( ev.hdr.type == QueueType::StringData )
+        if( ev.hdr.type == QueueType::CustomStringData )
+        {
+            AddCustomString( ev.hdr.id, std::string( buf, buf+sz ) );
+        }
+        else if( ev.hdr.type == QueueType::StringData )
         {
             AddString( ev.hdr.id, std::string( buf, buf+sz ) );
         }
@@ -185,12 +189,16 @@ void View::DispatchProcess( const QueueItem& ev )
 void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
 {
     ptr += QueueDataSize[ev.hdr.idx];
-    if( ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName )
+    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName )
     {
         uint16_t sz;
         memcpy( &sz, ptr, sizeof( sz ) );
         ptr += sizeof( sz );
-        if( ev.hdr.type == QueueType::StringData )
+        if( ev.hdr.type == QueueType::CustomStringData )
+        {
+            AddCustomString( ev.hdr.id, std::string( ptr, ptr+sz ) );
+        }
+        else if( ev.hdr.type == QueueType::StringData )
         {
             AddString( ev.hdr.id, std::string( ptr, ptr+sz ) );
         }
@@ -222,6 +230,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::SourceLocation:
         AddSourceLocation( ev.hdr.id, ev.srcloc );
         break;
+    case QueueType::ZoneText:
+        ProcessZoneText( ev.hdr.id, ev.zoneText );
+        break;
     default:
         assert( false );
         break;
@@ -238,6 +249,7 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 
     zone->start = ev.time * m_timerMul;
     zone->srcloc = ev.srcloc;
+    zone->text = nullptr;
 
     std::unique_lock<std::mutex> lock( m_lock );
 
@@ -296,6 +308,13 @@ void View::ProcessFrameMark( uint64_t id )
     }
 }
 
+void View::ProcessZoneText( uint64_t id, const QueueZoneText& ev )
+{
+    auto it = m_openZones.find( id );
+    assert( it != m_openZones.end() );
+    CheckCustomString( ev.text, it->second );
+}
+
 void View::CheckString( uint64_t ptr )
 {
     if( m_strings.find( ptr ) != m_strings.end() ) return;
@@ -318,6 +337,16 @@ void View::CheckThreadString( uint64_t id )
     uint8_t type = ServerQueryThreadString;
     m_sock.Send( &type, sizeof( type ) );
     m_sock.Send( &id, sizeof( id ) );
+}
+
+void View::CheckCustomString( uint64_t ptr, Event* dst )
+{
+    assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
+    m_pendingCustomStrings.emplace( ptr, dst );
+
+    uint8_t type = ServerQueryCustomString;
+    m_sock.Send( &type, sizeof( type ) );
+    m_sock.Send( &ptr, sizeof( ptr ) );
 }
 
 void View::CheckSourceLocation( uint64_t ptr )
@@ -350,6 +379,23 @@ void View::AddThreadString( uint64_t id, std::string&& str )
     m_pendingThreads.erase( it );
     std::lock_guard<std::mutex> lock( m_lock );
     m_threadNames.emplace( id, std::move( str ) );
+}
+
+void View::AddCustomString( uint64_t ptr, std::string&& str )
+{
+    auto pit = m_pendingCustomStrings.find( ptr );
+    assert( pit != m_pendingCustomStrings.end() );
+    auto sit = m_customStrings.find( str );
+    if( sit == m_customStrings.end() )
+    {
+        pit->second->text = str.c_str();
+        m_customStrings.emplace( std::move( str ) );
+    }
+    else
+    {
+        pit->second->text = sit->c_str();
+    }
+    m_pendingCustomStrings.erase( pit );
 }
 
 void View::AddSourceLocation( uint64_t ptr, const QueueSourceLocation& srcloc )

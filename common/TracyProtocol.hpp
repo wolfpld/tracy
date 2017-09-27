@@ -20,7 +20,8 @@ enum ServerQuery : uint8_t
 {
     ServerQueryString,
     ServerQueryThreadString,
-    ServerQuerySourceLocation
+    ServerQueryCustomString,
+    ServerQuerySourceLocation,
 };
 
 #pragma pack( 1 )

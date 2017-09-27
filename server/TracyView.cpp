@@ -1170,6 +1170,12 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     ImGui::Text( "%s:%i", filename, line );
                     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
                     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay ) );
+                    if( ev.text )
+                    {
+                        ImGui::Text( "" );
+                        ImGui::Text( "%s", ev.text );
+                    }
+
                     ImGui::EndTooltip();
 
                     if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) && ev.end - ev.start > 0 )

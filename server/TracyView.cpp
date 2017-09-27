@@ -1177,7 +1177,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     if( ev.text )
                     {
                         ImGui::Text( "" );
-                        ImGui::Text( "%s", ev.text );
+                        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", ev.text );
                     }
 
                     ImGui::EndTooltip();

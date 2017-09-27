@@ -214,6 +214,15 @@ void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
     }
 }
 
+void View::ServerQuery( uint8_t type, uint64_t data )
+{
+    enum { DataSize = sizeof( type ) + sizeof( data ) };
+    char tmp[DataSize];
+    memcpy( tmp, &type, sizeof( type ) );
+    memcpy( tmp + sizeof( type ), &data, sizeof( data ) );
+    m_sock.Send( tmp, DataSize );
+}
+
 void View::Process( const QueueItem& ev )
 {
     switch( ev.hdr.type )
@@ -322,9 +331,7 @@ void View::CheckString( uint64_t ptr )
 
     m_pendingStrings.emplace( ptr );
 
-    uint8_t type = ServerQueryString;
-    m_sock.Send( &type, sizeof( type ) );
-    m_sock.Send( &ptr, sizeof( ptr ) );
+    ServerQuery( ServerQueryString, ptr );
 }
 
 void View::CheckThreadString( uint64_t id )
@@ -334,9 +341,7 @@ void View::CheckThreadString( uint64_t id )
 
     m_pendingThreads.emplace( id );
 
-    uint8_t type = ServerQueryThreadString;
-    m_sock.Send( &type, sizeof( type ) );
-    m_sock.Send( &id, sizeof( id ) );
+    ServerQuery( ServerQueryThreadString, id );
 }
 
 void View::CheckCustomString( uint64_t ptr, Event* dst )
@@ -344,9 +349,7 @@ void View::CheckCustomString( uint64_t ptr, Event* dst )
     assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
     m_pendingCustomStrings.emplace( ptr, dst );
 
-    uint8_t type = ServerQueryCustomString;
-    m_sock.Send( &type, sizeof( type ) );
-    m_sock.Send( &ptr, sizeof( ptr ) );
+    ServerQuery( ServerQueryCustomString, ptr );
 }
 
 void View::CheckSourceLocation( uint64_t ptr )
@@ -356,9 +359,7 @@ void View::CheckSourceLocation( uint64_t ptr )
 
     m_pendingSourceLocation.emplace( ptr );
 
-    uint8_t type = ServerQuerySourceLocation;
-    m_sock.Send( &type, sizeof( type ) );
-    m_sock.Send( &ptr, sizeof( ptr ) );
+    ServerQuery( ServerQuerySourceLocation, ptr );
 }
 
 void View::AddString( uint64_t ptr, std::string&& str )

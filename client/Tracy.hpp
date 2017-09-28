@@ -6,6 +6,8 @@
 #define ZoneScoped
 #define ZoneScopedC(x)
 
+#define ZoneText(x,y)
+
 #define FrameMark
 
 #else

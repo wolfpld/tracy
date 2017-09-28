@@ -239,7 +239,7 @@ void View::Process( const QueueItem& ev )
     case QueueType::ZoneEnd:
         ProcessZoneEnd( ev.hdr.id, ev.zoneEnd );
         break;
-    case QueueType::FrameMark:
+    case QueueType::FrameMarkMsg:
         ProcessFrameMark( ev.hdr.id );
         break;
     case QueueType::SourceLocation:

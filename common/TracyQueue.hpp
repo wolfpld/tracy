@@ -13,7 +13,7 @@ enum class QueueType : uint8_t
     StringData,
     ThreadName,
     CustomStringData,
-    FrameMark,
+    FrameMarkMsg,
     SourceLocation,
     ZoneText,
     ZoneName,

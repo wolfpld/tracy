@@ -124,7 +124,7 @@ void Profiler::ZoneName( uint64_t id, QueueZoneName&& data )
 void Profiler::FrameMark()
 {
     QueueItem item;
-    item.hdr.type = QueueType::FrameMark;
+    item.hdr.type = QueueType::FrameMarkMsg;
     item.hdr.id = (uint64_t)GetTime();
     s_queue.enqueue( s_token, std::move( item ) );
 }

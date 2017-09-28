@@ -75,10 +75,10 @@ enum { QueueItemSize = sizeof( QueueItem ) };
 static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
-    sizeof( QueueHeader ),
-    sizeof( QueueHeader ),
-    sizeof( QueueHeader ),
-    sizeof( QueueHeader ),
+    sizeof( QueueHeader ),  // string data
+    sizeof( QueueHeader ),  // thread name
+    sizeof( QueueHeader ),  // custom string data
+    sizeof( QueueHeader ),  // frame mark
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
 };

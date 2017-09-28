@@ -6,13 +6,18 @@
 namespace tracy
 {
 
+struct TextData
+{
+    const char* userText;
+};
+
 struct Event
 {
     int64_t start;
     int64_t end;
     uint64_t srcloc;
 
-    const char* text;
+    TextData* text;
     Event* parent;
     Vector<Event*> child;
 };

@@ -19,6 +19,12 @@
 namespace tracy
 {
 
+static TextData* GetTextData( Event& zone )
+{
+    if( !zone.text ) zone.text = new TextData {};
+    return zone.text;
+}
+
 static View* s_instance = nullptr;
 
 View::View( const char* addr )
@@ -393,12 +399,12 @@ void View::AddCustomString( uint64_t ptr, std::string&& str )
         auto ptr = new char[sz+1];
         memcpy( ptr, str.c_str(), sz );
         ptr[sz] = '\0';
-        pit->second->text = ptr;
+        GetTextData( *pit->second )->userText = ptr;
         m_customStrings.emplace( ptr );
     }
     else
     {
-        pit->second->text = *sit;
+        GetTextData( *pit->second )->userText = *sit;
     }
     m_pendingCustomStrings.erase( pit );
 }
@@ -1175,10 +1181,10 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     ImGui::Text( "%s:%i", filename, line );
                     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
                     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay ) );
-                    if( ev.text )
+                    if( ev.text && ev.text->userText )
                     {
                         ImGui::Text( "" );
-                        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", ev.text );
+                        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", ev.text->userText );
                     }
 
                     ImGui::EndTooltip();

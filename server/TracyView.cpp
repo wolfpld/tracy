@@ -248,6 +248,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::ZoneText:
         ProcessZoneText( ev.hdr.id, ev.zoneText );
         break;
+    case QueueType::ZoneName:
+        ProcessZoneName( ev.hdr.id, ev.zoneName );
+        break;
     default:
         assert( false );
         break;
@@ -328,6 +331,14 @@ void View::ProcessZoneText( uint64_t id, const QueueZoneText& ev )
     auto it = m_openZones.find( id );
     assert( it != m_openZones.end() );
     CheckCustomString( ev.text, it->second );
+}
+
+void View::ProcessZoneName( uint64_t id, const QueueZoneName& ev )
+{
+    auto it = m_openZones.find( id );
+    assert( it != m_openZones.end() );
+    CheckString( ev.name );
+    GetTextData( *it->second )->zoneName = ev.name;
 }
 
 void View::CheckString( uint64_t ptr )

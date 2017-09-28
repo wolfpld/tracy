@@ -9,6 +9,7 @@ namespace tracy
 struct TextData
 {
     const char* userText;
+    uint64_t zoneName;      // ptr
 };
 
 struct Event

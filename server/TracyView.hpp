@@ -53,6 +53,7 @@ private:
     void ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev );
     void ProcessFrameMark( uint64_t id );
     void ProcessZoneText( uint64_t id, const QueueZoneText& ev );
+    void ProcessZoneName( uint64_t id, const QueueZoneName& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );

@@ -112,6 +112,15 @@ void Profiler::ZoneText( uint64_t id, QueueZoneText&& data )
     s_queue.enqueue( s_token, std::move( item ) );
 }
 
+void Profiler::ZoneName( uint64_t id, QueueZoneName&& data )
+{
+    QueueItem item;
+    item.hdr.type = QueueType::ZoneName;
+    item.hdr.id = id;
+    item.zoneName = std::move( data );
+    s_queue.enqueue( s_token, std::move( item ) );
+}
+
 void Profiler::FrameMark()
 {
     QueueItem item;

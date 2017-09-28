@@ -30,6 +30,11 @@ public:
         Profiler::ZoneText( m_id, QueueZoneText { (uint64_t)ptr } );
     }
 
+    void Name( const char* name )
+    {
+        Profiler::ZoneName( m_id, QueueZoneName { (uint64_t)name } );
+    }
+
 private:
     uint64_t m_id;
 };

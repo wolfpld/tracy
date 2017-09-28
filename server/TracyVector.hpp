@@ -127,8 +127,11 @@ private:
             m_capacity *= 2;
         }
         T* ptr = new T[m_capacity];
-        memcpy( ptr, m_ptr, m_size * sizeof( T ) );
-        delete[] m_ptr;
+        if( m_size != 0 )
+        {
+            memcpy( ptr, m_ptr, m_size * sizeof( T ) );
+            delete[] m_ptr;
+        }
         m_ptr = ptr;
     }
 

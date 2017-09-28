@@ -50,6 +50,7 @@ Alternatively, you may want to embed the server in your application, the same wh
 ## Practical considerations
 
 Tracy's time measurement precision is not infinite. It's only as good as the system-provided timers are.
+
 - On the embedded ARM-based systems you can expect to have something around 1 µs time resolution.
 - On x86 (currently only implemented on Windows) the time resolution depends on the hardware implementation of the RDTSCP instruction and typically is in the low nanoseconds. This may vary from one micro-architecture to another and requires a fairly modern (Sandy Bridge) processor for reliable results.
 

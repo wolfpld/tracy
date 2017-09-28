@@ -1148,11 +1148,22 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
             }
             else
             {
-                const auto func = GetString( srcloc.function );
+                const char* func;
+                const char* zoneName;
+                if( ev.text && ev.text->zoneName )
+                {
+                    zoneName = GetString( ev.text->zoneName );
+                    func = GetString( srcloc.function );
+                }
+                else
+                {
+                    func = zoneName = GetString( srcloc.function );
+                }
+
                 const auto filename = GetString( srcloc.file );
                 const auto line = srcloc.line;
 
-                const auto tsz = ImGui::CalcTextSize( func );
+                const auto tsz = ImGui::CalcTextSize( zoneName );
                 const auto pr0 = ( ev.start - m_zvStart ) * pxns;
                 const auto pr1 = ( end - m_zvStart ) * pxns;
                 const auto px0 = std::max( pr0, -10.0 );
@@ -1170,18 +1181,18 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     if( x < 0 || x > w - tsz.x )
                     {
                         ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), true );
-                        draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, func );
+                        draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
                         ImGui::PopClipRect();
                     }
                     else
                     {
-                        draw->AddText( wpos + ImVec2( x, offset ), 0xFFFFFFFF, func );
+                        draw->AddText( wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
                     }
                 }
                 else
                 {
                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), true );
-                    draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, func );
+                    draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
                     ImGui::PopClipRect();
                 }
 

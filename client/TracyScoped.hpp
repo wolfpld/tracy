@@ -2,6 +2,7 @@
 #define __TRACYSCOPED_HPP__
 
 #include <stdint.h>
+#include <string.h>
 
 #include "../common/TracySystem.hpp"
 #include "TracyProfiler.hpp"

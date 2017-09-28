@@ -9,7 +9,7 @@
 namespace tracy
 {
 
-#if 1
+#if 0
 template<typename T>
 using Vector = std::vector<T>;
 #else

@@ -118,7 +118,7 @@ private:
     {
         if( m_capacity == 0 )
         {
-            m_capacity = 64;
+            m_capacity = 1;
             memUsage.fetch_add( m_capacity * sizeof( T ), std::memory_order_relaxed );
         }
         else

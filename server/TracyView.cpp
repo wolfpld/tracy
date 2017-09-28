@@ -440,12 +440,12 @@ void View::NewZone( Event* zone, uint64_t thread )
     if( it == m_threadMap.end() )
     {
         m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
-        m_threads.push_back( ThreadData { thread } );
-        timeline = &m_threads.back().timeline;
+        m_threads.push_back( new ThreadData { thread } );
+        timeline = &m_threads.back()->timeline;
     }
     else
     {
-        timeline = &m_threads[it->second].timeline;
+        timeline = &m_threads[it->second]->timeline;
     }
 
     InsertZone( zone, nullptr, *timeline );
@@ -561,9 +561,9 @@ uint64_t View::GetLastTime() const
     if( !m_frames.empty() ) last = m_frames.back();
     for( auto& v : m_threads )
     {
-        if( !v.timeline.empty() )
+        if( !v->timeline.empty() )
         {
-            auto ev = v.timeline.back();
+            auto ev = v->timeline.back();
             if( ev->end == -1 )
             {
                 if( ev->start > last ) last = ev->start;
@@ -598,8 +598,8 @@ Vector<Event*>& View::GetParentVector( const Event& ev )
     {
         for( auto& t : m_threads )
         {
-            auto it = std::lower_bound( t.timeline.begin(), t.timeline.end(), ev.start, [] ( const auto& l, const auto& r ) { return l->start < r; } );
-            if( it != t.timeline.end() && *it == &ev ) return t.timeline;
+            auto it = std::lower_bound( t->timeline.begin(), t->timeline.end(), ev.start, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+            if( it != t->timeline.end() && *it == &ev ) return t->timeline;
         }
         assert( false );
         static Vector<Event*> empty;
@@ -1075,10 +1075,10 @@ void View::DrawZones()
     for( auto& v : m_threads )
     {
         draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
-        draw->AddText( wpos + ImVec2( 0, offset ), 0xFFFFFFFF, GetThreadString( v.id ) );
+        draw->AddText( wpos + ImVec2( 0, offset ), 0xFFFFFFFF, GetThreadString( v->id ) );
         offset += ostep;
 
-        const auto depth = DrawZoneLevel( v.timeline, hover, pxns, wpos, offset, 0 );
+        const auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
 
         offset += ostep * ( depth + 1.2f );
     }

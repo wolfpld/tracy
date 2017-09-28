@@ -97,7 +97,7 @@ private:
     // this block must be locked
     std::mutex m_lock;
     Vector<uint64_t> m_frames;
-    Vector<ThreadData> m_threads;
+    Vector<ThreadData*> m_threads;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
     std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;

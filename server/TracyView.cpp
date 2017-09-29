@@ -1116,7 +1116,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
             auto& srcloc = GetSourceLocation( ev.srcloc );
             const auto color = srcloc.color != 0 ? ( srcloc.color | 0xFF000000 ) : 0xDDDD6666;
             const auto end = GetZoneEnd( ev );
-            const auto zsz = ( ev.end - ev.start ) * pxns;
+            const auto zsz = ( end - ev.start ) * pxns;
             if( zsz < MinVisSize )
             {
                 int num = 1;

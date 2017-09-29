@@ -42,6 +42,7 @@ View::View( const char* addr )
     , m_frameStart( 0 )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
+    , m_zoneInfoWindow( nullptr )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -742,6 +743,7 @@ void View::DrawImpl()
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-10" PRIu64" Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt, TimeToString( m_delay ), TimeToString( m_resolution ) );
     DrawFrames();
     DrawZones();
+    DrawZoneInfoWindow();
     ImGui::End();
 }
 
@@ -1243,6 +1245,10 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                         m_zvStartNext = ev.start;
                         m_zvEndNext = ev.end;
                     }
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_zoneInfoWindow = &ev;
+                    }
                 }
 
                 if( !ev.child.empty() )
@@ -1256,6 +1262,27 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
         }
     }
     return maxdepth;
+}
+
+void View::DrawZoneInfoWindow()
+{
+    if( !m_zoneInfoWindow ) return;
+    auto& ev = *m_zoneInfoWindow;
+    bool show = true;
+    ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+    if( ev.text && ev.text->zoneName )
+    {
+        ImGui::Text( "Zone name: %s", GetString( ev.text->zoneName ) );
+    }
+    auto& srcloc = GetSourceLocation( ev.srcloc );
+    ImGui::Text( "Function: %s", GetString( srcloc.function ) );
+    ImGui::Text( "Location: %s:%i", GetString( srcloc.file ), srcloc.line );
+    if( ev.text && ev.text->userText )
+    {
+        ImGui::Text( "User text: %s", ev.text->userText );
+    }
+    ImGui::End();
+    if( !show ) m_zoneInfoWindow = nullptr;
 }
 
 }

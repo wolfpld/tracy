@@ -85,6 +85,7 @@ private:
     void DrawFrames();
     void DrawZones();
     int DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
+    void DrawZoneInfoWindow();
 
     std::string m_addr;
 
@@ -135,6 +136,8 @@ private:
     uint64_t m_delay;
     uint64_t m_resolution;
     double m_timerMul;
+
+    const Event* m_zoneInfoWindow;
 };
 
 }

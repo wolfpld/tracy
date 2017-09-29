@@ -31,6 +31,7 @@ struct WelcomeMessage
     double timerMul;
     uint64_t timeBegin;
     uint64_t delay;
+    uint64_t resolution;
 };
 #pragma pack()
 

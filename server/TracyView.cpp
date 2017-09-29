@@ -93,6 +93,7 @@ void View::Worker()
             m_timerMul = welcome.timerMul;
             m_frames.push_back( welcome.timeBegin * m_timerMul );
             m_delay = welcome.delay * m_timerMul;
+            m_resolution = welcome.resolution * m_timerMul;
         }
 
         m_hasData.store( true, std::memory_order_release );

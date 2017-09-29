@@ -133,6 +133,7 @@ private:
     int64_t m_zvEndNext;
 
     uint64_t m_delay;
+    uint64_t m_resolution;
     double m_timerMul;
 };
 

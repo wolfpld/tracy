@@ -163,6 +163,7 @@ void Profiler::Worker()
             welcome.timerMul = m_timerMul;
             welcome.timeBegin = m_timeBegin;
             welcome.delay = m_delay;
+            welcome.resolution = m_resolution;
 
             m_sock->Send( &welcome, sizeof( welcome ) );
         }

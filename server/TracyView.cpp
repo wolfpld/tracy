@@ -1333,6 +1333,7 @@ void View::DrawZoneInfoWindow()
                 {
                     ZoomToZone( cev );
                 }
+                ZoneTooltip( cev );
             }
             ImGui::NextColumn();
             const auto part = double( ctt[cti[i]] ) / ztime;

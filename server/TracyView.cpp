@@ -1266,16 +1266,23 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
 void View::DrawZoneInfoWindow()
 {
     if( !m_zoneInfoWindow ) return;
+
     auto& ev = *m_zoneInfoWindow;
+    int dmul = 1;
+
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     if( ImGui::Button( "Zoom to zone" ) )
     {
         ZoomToZone( ev );
     }
+
+    ImGui::Separator();
+
     if( ev.text && ev.text->zoneName )
     {
         ImGui::Text( "Zone name: %s", GetString( ev.text->zoneName ) );
+        dmul++;
     }
     auto& srcloc = GetSourceLocation( ev.srcloc );
     ImGui::Text( "Function: %s", GetString( srcloc.function ) );
@@ -1283,8 +1290,17 @@ void View::DrawZoneInfoWindow()
     if( ev.text && ev.text->userText )
     {
         ImGui::Text( "User text: %s", ev.text->userText );
+        dmul++;
     }
+
+    ImGui::Separator();
+
+    const auto end = GetZoneEnd( ev );
+    ImGui::Text( "Time from start of program: %s", TimeToString( ev.start - m_frames[0] ) );
+    ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
+    ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay * dmul ) );
     ImGui::End();
+
     if( !show ) m_zoneInfoWindow = nullptr;
 }
 

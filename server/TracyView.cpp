@@ -1188,7 +1188,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 const auto px0 = std::max( pr0, -10.0 );
                 const auto px1 = std::min( pr1, double( w + 10 ) );
                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color, 2.f );
-                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xAAAAAAAA, 2.f );
+                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev ), 2.f );
                 if( dsz * dmul >= MinVisSize )
                 {
                     draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), 0x882222DD, 2.f );
@@ -1283,6 +1283,18 @@ void View::DrawZoneInfoWindow()
     }
     ImGui::End();
     if( !show ) m_zoneInfoWindow = nullptr;
+}
+
+uint32_t View::GetZoneHighlight( const Event& ev )
+{
+    if( m_zoneInfoWindow == &ev )
+    {
+        return 0xFF44DD44;
+    }
+    else
+    {
+        return 0xAAAAAAAA;
+    }
 }
 
 }

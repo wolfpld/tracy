@@ -1303,6 +1303,7 @@ void View::DrawZoneInfoWindow()
 
     if( !ev.child.empty() )
     {
+        const auto ty = ImGui::GetTextLineHeight();
         ImGui::Columns( 2 );
         ImGui::Separator();
         ImGui::Text( "Child zones: %" PRIu64, ev.child.size() );
@@ -1339,7 +1340,7 @@ void View::DrawZoneInfoWindow()
             const auto part = double( ctt[cti[i]] ) / ztime;
             char buf[128];
             sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
-            ImGui::ProgressBar( part, ImVec2( -1, 0 ), buf );
+            ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
         }
         ImGui::EndColumns();

@@ -1161,6 +1161,13 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     func = zoneName = GetString( srcloc.function );
                 }
 
+                int dmul = 1;
+                if( ev.text )
+                {
+                    if( ev.text->zoneName ) dmul++;
+                    if( ev.text->userText ) dmul++;
+                }
+
                 const auto filename = GetString( srcloc.file );
                 const auto line = srcloc.line;
 
@@ -1171,9 +1178,9 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 const auto px1 = std::min( pr1, double( w + 10 ) );
                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color, 2.f );
                 draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), 0xAAAAAAAA, 2.f );
-                if( dsz >= MinVisSize )
+                if( dsz * dmul >= MinVisSize )
                 {
-                    draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz, pr1 ), offset + tsz.y ), 0x882222DD, 2.f );
+                    draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), 0x882222DD, 2.f );
                     draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), 0x882222DD, 2.f );
                 }
                 if( tsz.x < zsz )
@@ -1203,7 +1210,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     ImGui::Text( "%s", func );
                     ImGui::Text( "%s:%i", filename, line );
                     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
-                    ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay ) );
+                    ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay * dmul ) );
                     if( ev.text && ev.text->userText )
                     {
                         ImGui::Text( "" );

@@ -141,6 +141,7 @@ private:
     double m_timerMul;
 
     const Event* m_zoneInfoWindow;
+    const Event* m_zoneHighlight;
 };
 
 }

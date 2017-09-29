@@ -743,6 +743,7 @@ void View::DrawImpl()
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-10" PRIu64" Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt, TimeToString( m_delay ), TimeToString( m_resolution ) );
     DrawFrames();
     DrawZones();
+    m_zoneHighlight = nullptr;
     DrawZoneInfoWindow();
     ImGui::End();
 
@@ -1342,6 +1343,18 @@ void View::DrawZoneInfoWindow()
                 auto& srcloc = GetSourceLocation( cev.srcloc );
                 ImGui::Text( "%s", GetString( srcloc.function ) );
             }
+            if( ImGui::IsItemHovered() )
+            {
+                m_zoneHighlight = &cev;
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    m_zoneInfoWindow = &cev;
+                }
+                if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( cev );
+                }
+            }
             ImGui::NextColumn();
             ImGui::Text( "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), double( ctt[cti[i]] ) / ztime );
             ImGui::NextColumn();
@@ -1359,6 +1372,10 @@ uint32_t View::GetZoneHighlight( const Event& ev )
     if( m_zoneInfoWindow == &ev )
     {
         return 0xFF44DD44;
+    }
+    else if( m_zoneHighlight == &ev )
+    {
+        return 0xFF4444FF;
     }
     else
     {

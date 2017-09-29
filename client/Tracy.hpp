@@ -16,8 +16,8 @@
 #include "TracyProfiler.hpp"
 #include "TracyScoped.hpp"
 
-#define ZoneScoped static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
-#define ZoneScopedC( color ) static const tracy::SourceLocation __tracy_source_location {  __FUNCTION__,  __FILE__, __LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
+#define ZoneScoped static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
+#define ZoneScopedC( color ) static const tracy::SourceLocation __tracy_source_location {  __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
 
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size );
 #define ZoneName( name ) ___tracy_scoped_zone.Name( name );

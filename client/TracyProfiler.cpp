@@ -358,6 +358,17 @@ void Profiler::CalibrateDelay()
     const auto df = t0 - f0;
     m_delay = ( dt - df ) / Events;
 
+    uint64_t mindiff = std::numeric_limits<uint64_t>::max();
+    for( int i=0; i<Iterations * 10; i++ )
+    {
+        const auto t0 = GetTime();
+        const auto t1 = GetTime();
+        const auto dt = t1 - t0;
+        if( dt > 0 && dt < mindiff ) mindiff = dt;
+    }
+
+    m_resolution = mindiff;
+
     enum { Bulk = 1000 };
     moodycamel::ConsumerToken token( s_queue );
     int left = Events * 2;

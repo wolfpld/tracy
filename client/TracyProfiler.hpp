@@ -63,6 +63,7 @@ private:
     void CalibrateDelay();
 
     double m_timerMul;
+    uint64_t m_resolution;
     uint64_t m_delay;
     int64_t m_timeBegin;
     uint64_t m_mainThread;

@@ -1161,16 +1161,14 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
             }
             else
             {
-                const char* func;
                 const char* zoneName;
                 if( ev.text && ev.text->zoneName )
                 {
                     zoneName = GetString( ev.text->zoneName );
-                    func = GetString( srcloc.function );
                 }
                 else
                 {
-                    func = zoneName = GetString( srcloc.function );
+                    zoneName = GetString( srcloc.function );
                 }
 
                 int dmul = 1;
@@ -1179,9 +1177,6 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     if( ev.text->zoneName ) dmul++;
                     if( ev.text->userText ) dmul++;
                 }
-
-                const auto filename = GetString( srcloc.file );
-                const auto line = srcloc.line;
 
                 const auto tsz = ImGui::CalcTextSize( zoneName );
                 const auto pr0 = ( ev.start - m_zvStart ) * pxns;
@@ -1228,18 +1223,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
 
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
                 {
-                    ImGui::BeginTooltip();
-                    ImGui::Text( "%s", func );
-                    ImGui::Text( "%s:%i", filename, line );
-                    ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
-                    ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay * dmul ) );
-                    if( ev.text && ev.text->userText )
-                    {
-                        ImGui::Text( "" );
-                        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", ev.text->userText );
-                    }
-
-                    ImGui::EndTooltip();
+                    ZoneTooltip( ev );
 
                     if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) )
                     {
@@ -1386,6 +1370,47 @@ void View::ZoomToZone( const Event& ev )
     if( ev.end - ev.start <= 0 ) return;
     m_zvStartNext = ev.start;
     m_zvEndNext = ev.end;
+}
+
+void View::ZoneTooltip( const Event& ev )
+{
+    int dmul = 1;
+    if( ev.text )
+    {
+        if( ev.text->zoneName ) dmul++;
+        if( ev.text->userText ) dmul++;
+    }
+
+    auto& srcloc = GetSourceLocation( ev.srcloc );
+
+    const auto filename = GetString( srcloc.file );
+    const auto line = srcloc.line;
+
+    const char* func;
+    const char* zoneName;
+    if( ev.text && ev.text->zoneName )
+    {
+        zoneName = GetString( ev.text->zoneName );
+        func = GetString( srcloc.function );
+    }
+    else
+    {
+        func = zoneName = GetString( srcloc.function );
+    }
+
+    const auto end = GetZoneEnd( ev );
+
+    ImGui::BeginTooltip();
+    ImGui::Text( "%s", func );
+    ImGui::Text( "%s:%i", filename, line );
+    ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
+    ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay * dmul ) );
+    if( ev.text && ev.text->userText )
+    {
+        ImGui::Text( "" );
+        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", ev.text->userText );
+    }
+    ImGui::EndTooltip();
 }
 
 }

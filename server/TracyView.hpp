@@ -88,6 +88,7 @@ private:
     void DrawZoneInfoWindow();
 
     uint32_t GetZoneHighlight( const Event& ev );
+    void ZoomToZone( const Event& ev );
 
     std::string m_addr;
 

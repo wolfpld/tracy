@@ -745,6 +745,13 @@ void View::DrawImpl()
     DrawZones();
     DrawZoneInfoWindow();
     ImGui::End();
+
+    if( m_zvStartNext != 0 )
+    {
+        m_zvStart = m_zvStartNext;
+        m_zvEnd = m_zvEndNext;
+        m_pause = true;
+    }
 }
 
 static ImU32 GetFrameColor( uint64_t frameTime )
@@ -1085,13 +1092,6 @@ void View::DrawZones()
 
         offset += ostep * ( depth + 1.2f );
     }
-
-    if( m_zvStartNext != 0 )
-    {
-        m_zvStart = m_zvStartNext;
-        m_zvEnd = m_zvEndNext;
-        m_pause = true;
-    }
 }
 
 int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
@@ -1240,10 +1240,9 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
 
                     ImGui::EndTooltip();
 
-                    if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) && ev.end - ev.start > 0 )
+                    if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) )
                     {
-                        m_zvStartNext = ev.start;
-                        m_zvEndNext = ev.end;
+                        ZoomToZone( ev );
                     }
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
@@ -1270,6 +1269,10 @@ void View::DrawZoneInfoWindow()
     auto& ev = *m_zoneInfoWindow;
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+    if( ImGui::Button( "Zoom to zone" ) )
+    {
+        ZoomToZone( ev );
+    }
     if( ev.text && ev.text->zoneName )
     {
         ImGui::Text( "Zone name: %s", GetString( ev.text->zoneName ) );
@@ -1295,6 +1298,13 @@ uint32_t View::GetZoneHighlight( const Event& ev )
     {
         return 0xAAAAAAAA;
     }
+}
+
+void View::ZoomToZone( const Event& ev )
+{
+    if( ev.end - ev.start <= 0 ) return;
+    m_zvStartNext = ev.start;
+    m_zvEndNext = ev.end;
 }
 
 }

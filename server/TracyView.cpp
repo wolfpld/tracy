@@ -739,7 +739,7 @@ void View::DrawImpl()
     ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
     if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 80, 0 ) ) ) m_pause = !m_pause;
     ImGui::SameLine();
-    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %" PRIu64, m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt );
+    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-10" PRIu64" Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt, TimeToString( m_delay ), TimeToString( m_resolution ) );
     DrawFrames();
     DrawZones();
     ImGui::End();

@@ -1104,8 +1104,9 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
         const auto offset = _offset + ostep * depth;
         auto draw = ImGui::GetWindowDrawList();
         const auto dsz = m_delay * pxns;
+        const auto rsz = m_resolution * pxns;
 
-        const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+        const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->start < r; } );
         while( it < zitend )
         {
             auto& ev = **it;
@@ -1182,6 +1183,16 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 {
                     draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), 0x882222DD, 2.f );
                     draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), 0x882222DD, 2.f );
+                }
+                if( rsz >= MinVisSize )
+                {
+                    draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + tsz.y/2 ), wpos + ImVec2( pr0 - rsz, offset + tsz.y/2 ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + tsz.y/4 ), wpos + ImVec2( pr0 + rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( pr0 - rsz, offset + tsz.y/4 ), wpos + ImVec2( pr0 - rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
+
+                    draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + tsz.y/2 ), wpos + ImVec2( pr1 - rsz, offset + tsz.y/2 ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + tsz.y/4 ), wpos + ImVec2( pr1 + rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( pr1 - rsz, offset + tsz.y/4 ), wpos + ImVec2( pr1 - rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
                 }
                 if( tsz.x < zsz )
                 {

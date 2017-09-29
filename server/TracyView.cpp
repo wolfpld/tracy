@@ -1011,6 +1011,8 @@ void View::DrawZones()
         }
     }
 
+    m_zvStartNext = 0;
+
     // frames
     do
     {
@@ -1039,6 +1041,13 @@ void View::DrawZones()
                 ImGui::Text( "%s", buf );
                 ImGui::Text( "Time from start of program: %s", TimeToString( m_frames[i] - m_frames[0] ) );
                 ImGui::EndTooltip();
+
+                if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    m_zvStartNext = fbegin;
+                    m_zvEndNext = fend;
+                    m_pause = true;
+                }
             }
 
             if( fbegin >= m_zvStart && fsz > 4 )
@@ -1077,8 +1086,6 @@ void View::DrawZones()
         }
     }
     while( false );
-
-    m_zvStartNext = 0;
 
     // zones
     const auto ostep = ImGui::GetFontSize();

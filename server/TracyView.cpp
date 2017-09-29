@@ -1271,7 +1271,7 @@ void View::DrawZoneInfoWindow()
     int dmul = 1;
 
     bool show = true;
-    ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+    ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_ShowBorders );
 
     if( ImGui::Button( "Zoom to zone" ) )
     {
@@ -1304,15 +1304,50 @@ void View::DrawZoneInfoWindow()
 
     ImGui::Separator();
 
+    auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
+    auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
     uint64_t ctime = 0;
-    for( auto& v : ev.child )
+    for( int i=0; i<ev.child.size(); i++ )
     {
-        const auto cend = GetZoneEnd( *v );
-        ctime += cend - v->start;
+        const auto cend = GetZoneEnd( *ev.child[i] );
+        const auto ct = cend - ev.child[i]->start;
+        ctime += ct;
+        ctt[i] = ct;
+        cti[i] = i;
     }
+
+    std::sort( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
     ImGui::Text( "Child zones: %" PRIu64, ev.child.size() );
     ImGui::Text( "Exclusive zone time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+
+    if( !ev.child.empty() )
+    {
+        ImGui::Columns( 2 );
+        ImGui::Separator();
+        ImGui::Text( "Child zone" );
+        ImGui::NextColumn();
+        ImGui::Text( "Time" );
+        ImGui::NextColumn();
+        ImGui::Separator();
+        for( int i=0; i<ev.child.size(); i++ )
+        {
+            auto& cev = *ev.child[cti[i]];
+            if( cev.text && cev.text->zoneName )
+            {
+                ImGui::Text( "%s", GetString( cev.text->zoneName ) );
+            }
+            else
+            {
+                auto& srcloc = GetSourceLocation( cev.srcloc );
+                ImGui::Text( "%s", GetString( srcloc.function ) );
+            }
+            ImGui::NextColumn();
+            ImGui::Text( "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), double( ctt[cti[i]] ) / ztime );
+            ImGui::NextColumn();
+        }
+        ImGui::EndColumns();
+    }
 
     ImGui::End();
 

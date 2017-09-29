@@ -1147,6 +1147,14 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                         m_zvEndNext = rend;
                     }
                 }
+                char tmp[32];
+                sprintf( tmp, "%i", num );
+                const auto tsz = ImGui::CalcTextSize( tmp );
+                if( tsz.x < px1 - px0 )
+                {
+                    const auto x = px0 + ( px1 - px0 - tsz.x ) / 2;
+                    draw->AddText( wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
+                }
             }
             else
             {

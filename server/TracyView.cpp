@@ -610,7 +610,7 @@ Vector<Event*>& View::GetParentVector( const Event& ev )
 
 const char* View::TimeToString( int64_t ns ) const
 {
-    enum { Pool = 4 };
+    enum { Pool = 8 };
     static char bufpool[Pool][64];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];

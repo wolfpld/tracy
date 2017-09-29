@@ -1272,6 +1272,7 @@ void View::DrawZoneInfoWindow()
 
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+
     if( ImGui::Button( "Zoom to zone" ) )
     {
         ZoomToZone( ev );
@@ -1296,9 +1297,23 @@ void View::DrawZoneInfoWindow()
     ImGui::Separator();
 
     const auto end = GetZoneEnd( ev );
+    const auto ztime = end - ev.start;
     ImGui::Text( "Time from start of program: %s", TimeToString( ev.start - m_frames[0] ) );
-    ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
-    ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay * dmul ) );
+    ImGui::Text( "Execution time: %s", TimeToString( ztime ) );
+    ImGui::Text( "Without profiling: %s", TimeToString( ztime - m_delay * dmul ) );
+
+    ImGui::Separator();
+
+    uint64_t ctime = 0;
+    for( auto& v : ev.child )
+    {
+        const auto cend = GetZoneEnd( *v );
+        ctime += cend - v->start;
+    }
+
+    ImGui::Text( "Child zones: %" PRIu64, ev.child.size() );
+    ImGui::Text( "Exclusive zone time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+
     ImGui::End();
 
     if( !show ) m_zoneInfoWindow = nullptr;

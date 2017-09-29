@@ -1303,8 +1303,6 @@ void View::DrawZoneInfoWindow()
     ImGui::Text( "Execution time: %s", TimeToString( ztime ) );
     ImGui::Text( "Without profiling: %s", TimeToString( ztime - m_delay * dmul ) );
 
-    ImGui::Separator();
-
     auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
     auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
     uint64_t ctime = 0;
@@ -1319,16 +1317,13 @@ void View::DrawZoneInfoWindow()
 
     std::sort( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
-    ImGui::Text( "Child zones: %" PRIu64, ev.child.size() );
-    ImGui::Text( "Exclusive zone time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
-
     if( !ev.child.empty() )
     {
         ImGui::Columns( 2 );
         ImGui::Separator();
-        ImGui::Text( "Child zone" );
+        ImGui::Text( "Child zones: %" PRIu64, ev.child.size() );
         ImGui::NextColumn();
-        ImGui::Text( "Time" );
+        ImGui::Text( "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::NextColumn();
         ImGui::Separator();
         for( int i=0; i<ev.child.size(); i++ )
@@ -1356,7 +1351,10 @@ void View::DrawZoneInfoWindow()
                 }
             }
             ImGui::NextColumn();
-            ImGui::Text( "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), double( ctt[cti[i]] ) / ztime );
+            const auto part = double( ctt[cti[i]] ) / ztime;
+            char buf[128];
+            sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+            ImGui::ProgressBar( part, ImVec2( -1, 0 ), buf );
             ImGui::NextColumn();
         }
         ImGui::EndColumns();

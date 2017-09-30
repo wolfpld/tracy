@@ -98,7 +98,7 @@ private:
 
     void Write( FileWrite& f );
     void WriteTimeline( FileWrite& f, const Vector<Event*>& vec );
-    void ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const std::unordered_map<uint64_t, const char*> stringMap );
+    void ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const std::unordered_map<uint64_t, const char*>& stringMap );
 
     std::string m_addr;
 

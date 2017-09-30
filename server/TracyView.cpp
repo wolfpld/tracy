@@ -1652,7 +1652,7 @@ void View::WriteTimeline( FileWrite& f, const Vector<Event*>& vec )
     }
 }
 
-void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const std::unordered_map<uint64_t, const char*> stringMap )
+void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const std::unordered_map<uint64_t, const char*>& stringMap )
 {
     uint64_t sz;
     f.Read( &sz, sizeof( sz ) );

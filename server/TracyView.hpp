@@ -82,6 +82,7 @@ private:
     const QueueSourceLocation& GetSourceLocation( uint64_t srcloc ) const;
 
     void DrawImpl();
+    void DrawConnection();
     void DrawFrames();
     void DrawZones();
     int DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );

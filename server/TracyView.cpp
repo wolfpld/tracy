@@ -698,7 +698,30 @@ void View::DrawImpl()
         return;
     }
 
-    // Connection window
+    DrawConnection();
+
+    std::lock_guard<std::mutex> lock( m_lock );
+    ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
+    if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 80, 0 ) ) ) m_pause = !m_pause;
+    ImGui::SameLine();
+    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-10" PRIu64" Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt, TimeToString( m_delay ), TimeToString( m_resolution ) );
+    DrawFrames();
+    DrawZones();
+    ImGui::End();
+
+    m_zoneHighlight = nullptr;
+    DrawZoneInfoWindow();
+
+    if( m_zvStartNext != 0 )
+    {
+        m_zvStart = m_zvStartNext;
+        m_zvEnd = m_zvEndNext;
+        m_pause = true;
+    }
+}
+
+void View::DrawConnection()
+{
     ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     {
         std::lock_guard<std::mutex> lock( m_mbpslock );
@@ -735,24 +758,6 @@ void View::DrawImpl()
     }
 
     ImGui::End();
-
-    // Profiler window
-    ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
-    if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 80, 0 ) ) ) m_pause = !m_pause;
-    ImGui::SameLine();
-    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-10" PRIu64" Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt, TimeToString( m_delay ), TimeToString( m_resolution ) );
-    DrawFrames();
-    DrawZones();
-    m_zoneHighlight = nullptr;
-    DrawZoneInfoWindow();
-    ImGui::End();
-
-    if( m_zvStartNext != 0 )
-    {
-        m_zvStart = m_zvStartNext;
-        m_zvEnd = m_zvEndNext;
-        m_pause = true;
-    }
 }
 
 static ImU32 GetFrameColor( uint64_t frameTime )

@@ -85,6 +85,7 @@ View::View( FileRead& f )
 
     uint64_t sz;
     f.Read( &sz, sizeof( sz ) );
+    m_frames.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
         uint64_t v;
@@ -143,6 +144,7 @@ View::View( FileRead& f )
     }
 
     f.Read( &sz, sizeof( sz ) );
+    m_threads.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
         auto td = new ThreadData;
@@ -1658,6 +1660,7 @@ void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const 
 {
     uint64_t sz;
     f.Read( &sz, sizeof( sz ) );
+    vec.reserve( sz );
 
     for( uint64_t i=0; i<sz; i++ )
     {

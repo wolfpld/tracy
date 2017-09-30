@@ -115,6 +115,14 @@ public:
         return begin;
     }
 
+    void reserve( size_t cap )
+    {
+        if( cap <= m_capacity ) return;
+        memUsage.fetch_add( ( cap - m_capacity ) * sizeof( T ), std::memory_order_relaxed );
+        m_capacity = cap;
+        Realloc();
+    }
+
 private:
     void AllocMore()
     {
@@ -128,6 +136,11 @@ private:
             memUsage.fetch_add( m_capacity * sizeof( T ), std::memory_order_relaxed );
             m_capacity *= 2;
         }
+        Realloc();
+    }
+
+    void Realloc()
+    {
         T* ptr = new T[m_capacity];
         if( m_size != 0 )
         {

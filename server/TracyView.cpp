@@ -16,6 +16,10 @@
 #include "TracyImGui.hpp"
 #include "TracyView.hpp"
 
+#ifdef TRACY_FILESELECTOR
+#  include "../nfd/nfd.h"
+#endif
+
 namespace tracy
 {
 
@@ -754,6 +758,20 @@ void View::DrawConnection()
             const auto dtm = dt / 1000000.f;
             const auto fps = 1000.f / dtm;
             ImGui::Text( "FPS: %6.1f  Frame time: %.2f ms", fps, dtm );
+        }
+    }
+
+    if( ImGui::Button( "Save trace" ) )
+    {
+#ifdef TRACY_FILESELECTOR
+        nfdchar_t* fn;
+        auto res = NFD_SaveDialog( "tracy", nullptr, &fn );
+        if( res == NFD_OKAY )
+#else
+        const char* fn = "trace.tracy";
+#endif
+        {
+
         }
     }
 

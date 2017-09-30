@@ -13,6 +13,7 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "../common/TracyQueue.hpp"
+#include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracyImGui.hpp"
 #include "TracyView.hpp"
@@ -37,6 +38,7 @@ View::View( const char* addr )
     , m_shutdown( false )
     , m_connected( false )
     , m_hasData( false )
+    , m_staticView( false )
     , m_zonesCnt( 0 )
     , m_mbps( 64 )
     , m_stream( LZ4_createStreamDecode() )
@@ -59,10 +61,102 @@ View::View( const char* addr )
     SetThreadName( m_thread, "Tracy View" );
 }
 
+View::View( FileRead& f )
+    : m_shutdown( false )
+    , m_connected( false )
+    , m_hasData( true )
+    , m_staticView( true )
+    , m_zonesCnt( 0 )
+    , m_frameScale( 0 )
+    , m_pause( false )
+    , m_frameStart( 0 )
+    , m_zvStart( 0 )
+    , m_zvEnd( 0 )
+    , m_zoneInfoWindow( nullptr )
+{
+    assert( s_instance == nullptr );
+    s_instance = this;
+
+    f.Read( &m_delay, sizeof( m_delay ) );
+    f.Read( &m_resolution, sizeof( m_resolution ) );
+    f.Read( &m_timerMul, sizeof( m_timerMul ) );
+
+    uint64_t sz;
+    f.Read( &sz, sizeof( sz ) );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint64_t v;
+        f.Read( &v, sizeof( v ) );
+        m_frames.push_back( v );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint64_t ptr;
+        f.Read( &ptr, sizeof( ptr ) );
+        uint64_t ssz;
+        f.Read( &ssz, sizeof( ssz ) );
+        char tmp[16*1024];
+        f.Read( tmp, ssz );
+        m_strings.emplace( ptr, std::string( tmp, tmp+ssz ) );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint64_t ptr;
+        f.Read( &ptr, sizeof( ptr ) );
+        uint64_t ssz;
+        f.Read( &ssz, sizeof( ssz ) );
+        char tmp[16*1024];
+        f.Read( tmp, ssz );
+        m_threadNames.emplace( ptr, std::string( tmp, tmp+ssz ) );
+    }
+
+    std::unordered_map<uint64_t, const char*> stringMap;
+
+    f.Read( &sz, sizeof( sz ) );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint64_t ptr;
+        f.Read( &ptr, sizeof( ptr ) );
+        uint64_t ssz;
+        f.Read( &ssz, sizeof( ssz ) );
+        auto dst = new char[ssz+1];
+        f.Read( dst, ssz );
+        dst[ssz] = '\0';
+        m_customStrings.emplace( dst );
+        stringMap.emplace( ptr, dst );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint64_t ptr;
+        f.Read( &ptr, sizeof( ptr ) );
+        QueueSourceLocation srcloc;
+        f.Read( &srcloc, sizeof( srcloc ) );
+        m_sourceLocation.emplace( ptr, srcloc );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        auto td = new ThreadData;
+        f.Read( &td->id, sizeof( td->id ) );
+        ReadTimeline( f, td->timeline, nullptr, stringMap );
+        m_threads.push_back( td );
+    }
+}
+
 View::~View()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
-    m_thread.join();
+    if( !m_staticView )
+    {
+        m_thread.join();
+    }
 
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );
@@ -703,7 +797,10 @@ void View::DrawImpl()
         return;
     }
 
-    DrawConnection();
+    if( !m_staticView )
+    {
+        DrawConnection();
+    }
 
     std::lock_guard<std::mutex> lock( m_lock );
     ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
@@ -1472,6 +1569,10 @@ void View::ZoneTooltip( const Event& ev )
 
 void View::Write( FileWrite& f )
 {
+    f.Write( &m_delay, sizeof( m_delay ) );
+    f.Write( &m_resolution, sizeof( m_resolution ) );
+    f.Write( &m_timerMul, sizeof( m_timerMul ) );
+
     uint64_t sz = m_frames.size();
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_frames.data(), sizeof( uint64_t ) * sz );
@@ -1548,6 +1649,41 @@ void View::WriteTimeline( FileWrite& f, const Vector<Event*>& vec )
         }
 
         WriteTimeline( f, v->child );
+    }
+}
+
+void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const std::unordered_map<uint64_t, const char*> stringMap )
+{
+    uint64_t sz;
+    f.Read( &sz, sizeof( sz ) );
+
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        auto zone = m_slab.Alloc<Event>();
+        vec.push_back( zone );
+
+        f.Read( &zone->start, sizeof( zone->start ) );
+        f.Read( &zone->end, sizeof( zone->end ) );
+        f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
+
+        uint8_t flag;
+        f.Read( &flag, sizeof( flag ) );
+        if( flag )
+        {
+            zone->text = new TextData;
+            uint64_t ptr;
+            f.Read( &ptr, sizeof( ptr ) );
+            zone->text->userText = ptr == 0 ? nullptr : stringMap.find( ptr )->second;
+            f.Read( &zone->text->zoneName, sizeof( zone->text->zoneName ) );
+        }
+        else
+        {
+            zone->text = nullptr;
+        }
+
+        zone->parent = parent;
+
+        ReadTimeline( f, zone->child, zone, stringMap );
     }
 }
 

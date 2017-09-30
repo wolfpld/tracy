@@ -6,6 +6,7 @@
 #include <memory>
 #include "../nfd/nfd.h"
 
+#include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyView.hpp"
 
 static void error_callback(int error, const char* description)
@@ -69,7 +70,11 @@ int main(int, char**)
                 auto res = NFD_OpenDialog( "tracy", nullptr, &fn );
                 if( res == NFD_OKAY )
                 {
-
+                    auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
+                    if( f )
+                    {
+                        view = std::make_unique<tracy::View>( *f );
+                    }
                 }
             }
             ImGui::End();

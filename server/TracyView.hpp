@@ -23,6 +23,7 @@ namespace tracy
 {
 
 struct QueueItem;
+class FileRead;
 class FileWrite;
 
 class View
@@ -30,6 +31,7 @@ class View
 public:
     View() : View( "127.0.0.1" ) {}
     View( const char* addr );
+    View( FileRead& f );
     ~View();
 
     static bool ShouldExit();
@@ -96,6 +98,7 @@ private:
 
     void Write( FileWrite& f );
     void WriteTimeline( FileWrite& f, const Vector<Event*>& vec );
+    void ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const std::unordered_map<uint64_t, const char*> stringMap );
 
     std::string m_addr;
 
@@ -104,6 +107,7 @@ private:
     std::atomic<bool> m_shutdown;
     std::atomic<bool> m_connected;
     std::atomic<bool> m_hasData;
+    bool m_staticView;
 
     // this block must be locked
     std::mutex m_lock;

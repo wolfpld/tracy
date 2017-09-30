@@ -13,6 +13,7 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "../common/TracyQueue.hpp"
+#include "TracyFileWrite.hpp"
 #include "TracyImGui.hpp"
 #include "TracyView.hpp"
 
@@ -771,7 +772,11 @@ void View::DrawConnection()
         const char* fn = "trace.tracy";
 #endif
         {
-
+            auto f = std::unique_ptr<FileWrite>( FileWrite::Open( fn ) );
+            if( f )
+            {
+                Write( *f );
+            }
         }
     }
 
@@ -1463,6 +1468,87 @@ void View::ZoneTooltip( const Event& ev )
         ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", ev.text->userText );
     }
     ImGui::EndTooltip();
+}
+
+void View::Write( FileWrite& f )
+{
+    uint64_t sz = m_frames.size();
+    f.Write( &sz, sizeof( sz ) );
+    f.Write( m_frames.data(), sizeof( uint64_t ) * sz );
+
+    sz = m_strings.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_strings )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        sz = v.second.size();
+        f.Write( &sz, sizeof( sz ) );
+        f.Write( v.second.c_str(), v.second.size() );
+    }
+
+    sz = m_threadNames.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_threadNames )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        sz = v.second.size();
+        f.Write( &sz, sizeof( sz ) );
+        f.Write( v.second.c_str(), v.second.size() );
+    }
+
+    sz = m_customStrings.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_customStrings )
+    {
+        uint64_t ptr = (uint64_t)v;
+        f.Write( &ptr, sizeof( ptr ) );
+        sz = strlen( v );
+        f.Write( &sz, sizeof( sz ) );
+        f.Write( v, sz );
+    }
+
+    sz = m_sourceLocation.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_sourceLocation )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second, sizeof( v.second ) );
+    }
+
+    sz = m_threads.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& thread : m_threads )
+    {
+        f.Write( &thread->id, sizeof( thread->id ) );
+        WriteTimeline( f, thread->timeline );
+    }
+}
+
+void View::WriteTimeline( FileWrite& f, const Vector<Event*>& vec )
+{
+    uint64_t sz = vec.size();
+    f.Write( &sz, sizeof( sz ) );
+
+    for( auto& v : vec )
+    {
+        f.Write( &v->start, sizeof( v->start ) );
+        f.Write( &v->end, sizeof( v->end ) );
+        f.Write( &v->srcloc, sizeof( v->srcloc ) );
+        if( v->text )
+        {
+            uint8_t flag = 1;
+            f.Write( &flag, sizeof( flag ) );
+            f.Write( &v->text->userText, sizeof( v->text->userText ) );
+            f.Write( &v->text->zoneName, sizeof( v->text->zoneName ) );
+        }
+        else
+        {
+            uint8_t flag = 0;
+            f.Write( &flag, sizeof( flag ) );
+        }
+
+        WriteTimeline( f, v->child );
+    }
 }
 
 }

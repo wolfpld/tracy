@@ -23,6 +23,7 @@ namespace tracy
 {
 
 struct QueueItem;
+class FileWrite;
 
 class View
 {
@@ -92,6 +93,9 @@ private:
     float GetZoneThickness( const Event& ev );
     void ZoomToZone( const Event& ev );
     void ZoneTooltip( const Event& ev );
+
+    void Write( FileWrite& f );
+    void WriteTimeline( FileWrite& f, const Vector<Event*>& vec );
 
     std::string m_addr;
 

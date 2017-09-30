@@ -26,25 +26,33 @@ public:
 
     void Read( void* ptr, size_t size )
     {
-        auto dst = (char*)ptr;
-        while( size > 0 )
+        if( size <= BufSize - m_offset )
         {
-            if( m_offset == BufSize )
+            memcpy( ptr, m_buf[m_active] + m_offset, size );
+            m_offset += size;
+        }
+        else
+        {
+            auto dst = (char*)ptr;
+            while( size > 0 )
             {
-                m_active = 1 - m_active;
-                m_offset = 0;
-                uint32_t sz;
-                fread( &sz, 1, sizeof( sz ), m_file );
-                char lz4[LZ4Size];
-                fread( lz4, 1, sz, m_file );
-                LZ4_decompress_safe_continue( m_stream, lz4, m_buf[m_active], sz, BufSize );
-            }
+                if( m_offset == BufSize )
+                {
+                    m_active = 1 - m_active;
+                    m_offset = 0;
+                    uint32_t sz;
+                    fread( &sz, 1, sizeof( sz ), m_file );
+                    char lz4[LZ4Size];
+                    fread( lz4, 1, sz, m_file );
+                    LZ4_decompress_safe_continue( m_stream, lz4, m_buf[m_active], sz, BufSize );
+                }
 
-            const auto sz = std::min( size, BufSize - m_offset );
-            memcpy( dst, m_buf[m_active] + m_offset, sz );
-            m_offset += sz;
-            dst += sz;
-            size -= sz;
+                const auto sz = std::min( size, BufSize - m_offset );
+                memcpy( dst, m_buf[m_active] + m_offset, sz );
+                m_offset += sz;
+                dst += sz;
+                size -= sz;
+            }
         }
     }
 

@@ -1660,6 +1660,7 @@ void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const 
     for( uint64_t i=0; i<sz; i++ )
     {
         auto zone = m_slab.Alloc<Event>();
+        m_zonesCnt++;
         vec.push_back( zone );
 
         f.Read( &zone->start, sizeof( zone->start ) );

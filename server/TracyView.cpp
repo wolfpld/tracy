@@ -1269,6 +1269,14 @@ void View::DrawZoneInfoWindow()
     {
         ZoomToZone( ev );
     }
+    ImGui::SameLine();
+    if( ImGui::Button( "Go to parent" ) )
+    {
+        if( ev.parent )
+        {
+            m_zoneInfoWindow = ev.parent;
+        }
+    }
 
     ImGui::Separator();
 

@@ -4,6 +4,7 @@
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <memory>
+#include "../nfd/nfd.h"
 
 #include "../../server/TracyView.hpp"
 
@@ -60,6 +61,16 @@ int main(int, char**)
             if( ImGui::Button( "Connect" ) && *addr )
             {
                 view = std::make_unique<tracy::View>( addr );
+            }
+            ImGui::Separator();
+            if( ImGui::Button( "Open saved trace" ) )
+            {
+                nfdchar_t* fn;
+                auto res = NFD_OpenDialog( "tracy", nullptr, &fn );
+                if( res == NFD_OKAY )
+                {
+
+                }
             }
             ImGui::End();
         }

@@ -80,6 +80,8 @@
     <ClCompile Include="..\..\..\imgui\imgui.cpp" />
     <ClCompile Include="..\..\..\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\..\..\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\..\..\nfd\nfd_common.c" />
+    <ClCompile Include="..\..\..\nfd\nfd_win.cpp" />
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
     <ClCompile Include="..\..\..\server\TracyView.cpp" />
     <ClCompile Include="..\..\libs\gl3w\GL\gl3w.c" />
@@ -98,6 +100,9 @@
     <ClInclude Include="..\..\..\imgui\stb_rect_pack.h" />
     <ClInclude Include="..\..\..\imgui\stb_textedit.h" />
     <ClInclude Include="..\..\..\imgui\stb_truetype.h" />
+    <ClInclude Include="..\..\..\nfd\common.h" />
+    <ClInclude Include="..\..\..\nfd\nfd.h" />
+    <ClInclude Include="..\..\..\nfd\nfd_common.h" />
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />
     <ClInclude Include="..\..\..\server\TracyImGui.hpp" />
     <ClInclude Include="..\..\..\server\TracyMemory.hpp" />

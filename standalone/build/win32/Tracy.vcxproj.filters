@@ -16,6 +16,9 @@
     <Filter Include="gl3w">
       <UniqueIdentifier>{ec4b32ba-a8c9-49e8-9625-8cb15feccd8a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="nfd">
+      <UniqueIdentifier>{46eb6aa0-de1c-447a-a6dd-aee2a06f85ef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp">
@@ -50,6 +53,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\server\TracyMemory.cpp">
       <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\nfd\nfd_common.c">
+      <Filter>nfd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\nfd\nfd_win.cpp">
+      <Filter>nfd</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +121,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyMemory.hpp">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\nfd\common.h">
+      <Filter>nfd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\nfd\nfd.h">
+      <Filter>nfd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\nfd\nfd_common.h">
+      <Filter>nfd</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

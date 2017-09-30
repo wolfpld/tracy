@@ -131,5 +131,11 @@
     <ClInclude Include="..\..\..\nfd\nfd_common.h">
       <Filter>nfd</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyFileRead.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyFileWrite.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -372,6 +372,7 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 
     zone->start = ev.time * m_timerMul;
     zone->srcloc = ev.srcloc;
+    zone->cpu_start = ev.cpu;
     zone->text = nullptr;
 
     std::unique_lock<std::mutex> lock( m_lock );
@@ -386,6 +387,7 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
     else
     {
         zone->end = it->second.time * m_timerMul;
+        zone->cpu_end = it->second.cpu;
         assert( zone->start <= zone->end );
         NewZone( zone, ev.thread );
         lock.unlock();
@@ -406,6 +408,7 @@ void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
         std::unique_lock<std::mutex> lock( m_lock );
         assert( zone->end == -1 );
         zone->end = ev.time * m_timerMul;
+        zone->cpu_end = ev.cpu;
         assert( zone->end >= zone->start );
         UpdateZone( zone );
         lock.unlock();
@@ -1639,6 +1642,9 @@ void View::WriteTimeline( FileWrite& f, const Vector<Event*>& vec )
         f.Write( &v->start, sizeof( v->start ) );
         f.Write( &v->end, sizeof( v->end ) );
         f.Write( &v->srcloc, sizeof( v->srcloc ) );
+        f.Write( &v->cpu_start, sizeof( v->cpu_start ) );
+        f.Write( &v->cpu_end, sizeof( v->cpu_end ) );
+
         if( v->text )
         {
             uint8_t flag = 1;
@@ -1671,6 +1677,8 @@ void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const 
         f.Read( &zone->start, sizeof( zone->start ) );
         f.Read( &zone->end, sizeof( zone->end ) );
         f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
+        f.Read( &zone->cpu_start, sizeof( zone->cpu_start ) );
+        f.Read( &zone->cpu_end, sizeof( zone->cpu_end ) );
 
         uint8_t flag;
         f.Read( &flag, sizeof( flag ) );

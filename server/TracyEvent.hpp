@@ -17,6 +17,8 @@ struct Event
     int64_t start;
     int64_t end;
     uint64_t srcloc;
+    int8_t cpu_start;
+    int8_t cpu_end;
 
     TextData* text;
     Event* parent;

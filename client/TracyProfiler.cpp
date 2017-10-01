@@ -321,11 +321,11 @@ void Profiler::CalibrateTimer()
 class FakeZone
 {
 public:
-    FakeZone( const SourceLocation* srcloc ) {}
+    FakeZone( const SourceLocation* srcloc ) : m_id( (uint64_t)srcloc ) {}
     ~FakeZone() {}
 
 private:
-    uint64_t m_id;
+    volatile uint64_t m_id;
 };
 
 void Profiler::CalibrateDelay()

@@ -1243,7 +1243,8 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
     if( it != vec.end() )
     {
         const auto w = ImGui::GetWindowContentRegionWidth();
-        const auto ostep = ImGui::GetFontSize() + 1;
+        const auto ty = ImGui::GetFontSize();
+        const auto ostep = ty + 1;
         const auto offset = _offset + ostep * depth;
         auto draw = ImGui::GetWindowDrawList();
         const auto dsz = m_delay * pxns;
@@ -1276,8 +1277,8 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     rend = nend;
                     num++;
                 }
-                draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ostep ), color, 2.f );
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ostep ) ) )
+                draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), color, 2.f );
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ) ) )
                 {
                     ImGui::BeginTooltip();
                     ImGui::Text( "Zones too small to display: %i", num );

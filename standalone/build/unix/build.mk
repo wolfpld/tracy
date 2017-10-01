@@ -1,17 +1,17 @@
 CFLAGS += 
 CXXFLAGS := $(CFLAGS) -std=c++14
 DEFINES +=
-INCLUDES := $(shell pkg-config --cflags glfw3) -I../../../imgui -I../../libs/gl3w
-LIBS := $(shell pkg-config --libs glfw3) -lpthread -ldl -lGL
+INCLUDES := $(shell pkg-config --cflags glfw3 gtk+-2.0) -I../../../imgui -I../../libs/gl3w
+LIBS := $(shell pkg-config --libs glfw3 gtk+-2.0) -lpthread -ldl -lGL
 IMAGE := Tracy
 
-FILTER :=
+FILTER := ../../../nfd/nfd_win.cpp
 
 BASE := $(shell egrep 'ClCompile.*cpp"' ../win32/$(IMAGE).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
 BASE2 := $(shell egrep 'ClCompile.*c"' ../win32/$(IMAGE).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
 
 SRC := $(filter-out $(FILTER),$(BASE))
-SRC2 := $(filter-out $(FILTER),$(BASE2))
+SRC2 := $(filter-out $(FILTER),$(BASE2)) ../../../nfd/nfd_gtk.c
 
 OBJ := $(SRC:%.cpp=%.o)
 OBJ2 := $(SRC2:%.c=%.o)

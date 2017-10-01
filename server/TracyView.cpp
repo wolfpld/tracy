@@ -1520,7 +1520,11 @@ uint32_t View::GetZoneHighlight( const Event& ev )
     }
     else
     {
-        return 0xFF888888;
+        const auto color = GetZoneColor( ev );
+        return 0xFF000000 |
+            ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + 25 ) ) << 16 ) |
+            ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + 25 ) ) << 8  ) |
+            ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + 25 ) )       );
     }
 }
 

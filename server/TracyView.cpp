@@ -1566,6 +1566,17 @@ void View::ZoneTooltip( const Event& ev )
     ImGui::Text( "%s:%i", filename, line );
     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay * dmul ) );
+    if( ev.cpu_start != -1 )
+    {
+        if( ev.end == -1 || ev.cpu_start == ev.cpu_end )
+        {
+            ImGui::Text( "CPU: %i", ev.cpu_start );
+        }
+        else
+        {
+            ImGui::Text( "CPU: %i -> %i", ev.cpu_start, ev.cpu_end );
+        }
+    }
     if( ev.text && ev.text->userText )
     {
         ImGui::Text( "" );

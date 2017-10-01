@@ -1253,7 +1253,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
         {
             auto& ev = **it;
             auto& srcloc = GetSourceLocation( ev.srcloc );
-            const auto color = srcloc.color != 0 ? ( srcloc.color | 0xFF000000 ) : 0xDDDD6666;
+            const auto color = GetZoneColor( srcloc );
             const auto end = GetZoneEnd( ev );
             const auto zsz = ( end - ev.start ) * pxns;
             if( zsz < MinVisSize )
@@ -1498,6 +1498,16 @@ void View::DrawZoneInfoWindow()
     if( !show ) m_zoneInfoWindow = nullptr;
 }
 
+uint32_t View::GetZoneColor( const Event& ev )
+{
+    return GetZoneColor( GetSourceLocation( ev.srcloc ) );
+}
+
+uint32_t View::GetZoneColor( const QueueSourceLocation& srcloc )
+{
+    return srcloc.color != 0 ? ( srcloc.color | 0xFF000000 ) : 0xDDDD6666;
+}
+
 uint32_t View::GetZoneHighlight( const Event& ev )
 {
     if( m_zoneInfoWindow == &ev )
@@ -1510,7 +1520,7 @@ uint32_t View::GetZoneHighlight( const Event& ev )
     }
     else
     {
-        return 0xAAAAAAAA;
+        return 0xFF888888;
     }
 }
 

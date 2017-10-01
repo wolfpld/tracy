@@ -91,8 +91,11 @@ private:
     int DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
     void DrawZoneInfoWindow();
 
+    uint32_t GetZoneColor( const Event& ev );
+    uint32_t GetZoneColor( const QueueSourceLocation& srcloc );
     uint32_t GetZoneHighlight( const Event& ev );
     float GetZoneThickness( const Event& ev );
+
     void ZoomToZone( const Event& ev );
     void ZoneTooltip( const Event& ev );
 

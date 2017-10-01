@@ -1242,7 +1242,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
     if( it != vec.end() )
     {
         const auto w = ImGui::GetWindowContentRegionWidth();
-        const auto ostep = ImGui::GetFontSize();
+        const auto ostep = ImGui::GetFontSize() + 1;
         const auto offset = _offset + ostep * depth;
         auto draw = ImGui::GetWindowDrawList();
         const auto dsz = m_delay * pxns;

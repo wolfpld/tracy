@@ -19,7 +19,7 @@ public:
         auto item = Profiler::StartItem();
         item->hdr.type = QueueType::ZoneBegin;
         item->hdr.id = m_id;
-        item->zoneBegin.time = Profiler::GetTime();
+        item->zoneBegin.time = Profiler::GetTime( item->zoneBegin.cpu );
         item->zoneBegin.srcloc = (uint64_t)srcloc;
         item->zoneBegin.thread = GetThreadHandle();
         Profiler::FinishItem();
@@ -30,7 +30,7 @@ public:
         auto item = Profiler::StartItem();
         item->hdr.type = QueueType::ZoneEnd;
         item->hdr.id = m_id;
-        item->zoneEnd.time = Profiler::GetTime();
+        item->zoneEnd.time = Profiler::GetTime( item->zoneEnd.cpu );
         Profiler::FinishItem();
     }
 

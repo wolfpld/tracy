@@ -32,12 +32,15 @@ public:
     Profiler();
     ~Profiler();
 
-    static int64_t GetTime()
+    static int64_t GetTime( int8_t& cpu )
     {
 #if defined _MSC_VER || defined __CYGWIN__
         unsigned int ui;
-        return int64_t( __rdtscp( &ui ) );
+        const auto t = int64_t( __rdtscp( &ui ) );
+        cpu = (int8_t)ui;
+        return t;
 #else
+        cpu = -1;
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
 #endif
     }

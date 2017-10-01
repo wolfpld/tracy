@@ -27,11 +27,13 @@ struct QueueZoneBegin
     int64_t time;
     uint64_t srcloc;    // ptr
     uint64_t thread;
+    int8_t cpu;
 };
 
 struct QueueZoneEnd
 {
     int64_t time;
+    int8_t cpu;
 };
 
 struct QueueSourceLocation

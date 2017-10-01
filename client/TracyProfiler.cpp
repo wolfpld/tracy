@@ -50,7 +50,8 @@ Profiler::Profiler()
 
     CalibrateTimer();
     CalibrateDelay();
-    m_timeBegin = GetTime();
+    int8_t cpu;
+    m_timeBegin = GetTime( cpu );
 
     m_thread = std::thread( [this] { Worker(); } );
     SetThreadName( m_thread, "Tracy Profiler" );
@@ -85,9 +86,10 @@ uint64_t Profiler::GetNewId()
 
 void Profiler::FrameMark()
 {
+    int8_t cpu;
     auto item = s_queue.enqueue_begin( s_token );
     item->hdr.type = QueueType::FrameMarkMsg;
-    item->hdr.id = (uint64_t)GetTime();
+    item->hdr.id = (uint64_t)GetTime( cpu );
     s_queue.enqueue_finish( s_token );
 }
 
@@ -296,6 +298,7 @@ void Profiler::CalibrateDelay()
     enum { Events = Iterations * 2 };   // start + end
     static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
+    int8_t cpu;
     moodycamel::ProducerToken ptoken( s_queue );
     for( int i=0; i<Iterations; i++ )
     {
@@ -305,7 +308,7 @@ void Profiler::CalibrateDelay()
             auto item = s_queue.enqueue_begin( ptoken );
             item->hdr.type = QueueType::ZoneBegin;
             item->hdr.id = id;
-            item->zoneBegin.time = GetTime();
+            item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
             item->zoneBegin.thread = GetThreadHandle();
             s_queue.enqueue_finish( ptoken );
@@ -314,17 +317,17 @@ void Profiler::CalibrateDelay()
             auto item = s_queue.enqueue_begin( ptoken );
             item->hdr.type = QueueType::ZoneEnd;
             item->hdr.id = id;
-            item->zoneEnd.time = GetTime();
+            item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
             s_queue.enqueue_finish( ptoken );
         }
     }
-    const auto f0 = GetTime();
+    const auto f0 = GetTime( cpu );
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__, 0 };
         FakeZone ___tracy_scoped_zone( &__tracy_source_location );
     }
-    const auto t0 = GetTime();
+    const auto t0 = GetTime( cpu );
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
@@ -333,7 +336,7 @@ void Profiler::CalibrateDelay()
             auto item = s_queue.enqueue_begin( ptoken );
             item->hdr.type = QueueType::ZoneBegin;
             item->hdr.id = id;
-            item->zoneBegin.time = GetTime();
+            item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
             item->zoneBegin.thread = GetThreadHandle();
             s_queue.enqueue_finish( ptoken );
@@ -342,11 +345,11 @@ void Profiler::CalibrateDelay()
             auto item = s_queue.enqueue_begin( ptoken );
             item->hdr.type = QueueType::ZoneEnd;
             item->hdr.id = id;
-            item->zoneEnd.time = GetTime();
+            item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
             s_queue.enqueue_finish( ptoken );
         }
     }
-    const auto t1 = GetTime();
+    const auto t1 = GetTime( cpu );
     const auto dt = t1 - t0;
     const auto df = t0 - f0;
     m_delay = ( dt - df ) / Events;
@@ -354,8 +357,8 @@ void Profiler::CalibrateDelay()
     uint64_t mindiff = std::numeric_limits<uint64_t>::max();
     for( int i=0; i<Iterations * 10; i++ )
     {
-        const auto t0 = GetTime();
-        const auto t1 = GetTime();
+        const auto t0 = GetTime( cpu );
+        const auto t1 = GetTime( cpu );
         const auto dt = t1 - t0;
         if( dt > 0 && dt < mindiff ) mindiff = dt;
     }

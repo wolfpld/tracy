@@ -93,7 +93,7 @@ private:
 
     uint32_t GetZoneColor( const Event& ev );
     uint32_t GetZoneColor( const QueueSourceLocation& srcloc );
-    uint32_t GetZoneHighlight( const Event& ev );
+    uint32_t GetZoneHighlight( const Event& ev, bool migration );
     float GetZoneThickness( const Event& ev );
 
     void ZoomToZone( const Event& ev );
@@ -153,6 +153,8 @@ private:
     uint64_t m_delay;
     uint64_t m_resolution;
     double m_timerMul;
+
+    int8_t m_lastCpu;
 
     const Event* m_zoneInfoWindow;
     const Event* m_zoneHighlight;

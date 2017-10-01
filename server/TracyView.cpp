@@ -1228,6 +1228,7 @@ void View::DrawZones()
         draw->AddText( wpos + ImVec2( 0, offset ), 0xFFFFFFFF, GetThreadString( v->id ) );
         offset += ostep;
 
+        m_lastCpu = -1;
         const auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
 
         offset += ostep * ( depth + 1.2f );
@@ -1317,13 +1318,35 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     if( ev.text->userText ) dmul++;
                 }
 
+                bool migration = false;
+                if( m_lastCpu != ev.cpu_start )
+                {
+                    if( m_lastCpu != -1 )
+                    {
+                        migration = true;
+                    }
+                    m_lastCpu = ev.cpu_start;
+                }
+
+                if( !ev.child.empty() )
+                {
+                    const auto d = DrawZoneLevel( ev.child, hover, pxns, wpos, _offset, depth+1 );
+                    if( d > maxdepth ) maxdepth = d;
+                }
+
+                if( ev.end != -1 && m_lastCpu != ev.cpu_end )
+                {
+                    m_lastCpu = ev.cpu_end;
+                    migration = true;
+                }
+
                 const auto tsz = ImGui::CalcTextSize( zoneName );
                 const auto pr0 = ( ev.start - m_zvStart ) * pxns;
                 const auto pr1 = ( end - m_zvStart ) * pxns;
                 const auto px0 = std::max( pr0, -10.0 );
                 const auto px1 = std::min( pr1, double( w + 10 ) );
                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color, 2.f );
-                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev ), 2.f, -1, GetZoneThickness( ev ) );
+                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev, migration ), 2.f, -1, GetZoneThickness( ev ) );
                 if( dsz * dmul >= MinVisSize )
                 {
                     draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), 0x882222DD, 2.f );
@@ -1372,12 +1395,6 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                     {
                         m_zoneInfoWindow = &ev;
                     }
-                }
-
-                if( !ev.child.empty() )
-                {
-                    const auto d = DrawZoneLevel( ev.child, hover, pxns, wpos, _offset, depth+1 );
-                    if( d > maxdepth ) maxdepth = d;
                 }
 
                 ++it;
@@ -1508,7 +1525,7 @@ uint32_t View::GetZoneColor( const QueueSourceLocation& srcloc )
     return srcloc.color != 0 ? ( srcloc.color | 0xFF000000 ) : 0xFFCC5555;
 }
 
-uint32_t View::GetZoneHighlight( const Event& ev )
+uint32_t View::GetZoneHighlight( const Event& ev, bool migration )
 {
     if( m_zoneInfoWindow == &ev )
     {
@@ -1517,6 +1534,10 @@ uint32_t View::GetZoneHighlight( const Event& ev )
     else if( m_zoneHighlight == &ev )
     {
         return 0xFF4444FF;
+    }
+    else if( migration )
+    {
+        return 0xFFDD22DD;
     }
     else
     {

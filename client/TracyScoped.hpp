@@ -14,13 +14,24 @@ class ScopedZone
 {
 public:
     ScopedZone( const SourceLocation* srcloc )
-        : m_id( Profiler::ZoneBegin( QueueZoneBegin { Profiler::GetTime(), (uint64_t)srcloc, GetThreadHandle() } ) )
+        : m_id( Profiler::GetNewId() )
     {
+        auto item = Profiler::StartItem();
+        item->hdr.type = QueueType::ZoneBegin;
+        item->hdr.id = m_id;
+        item->zoneBegin.time = Profiler::GetTime();
+        item->zoneBegin.srcloc = (uint64_t)srcloc;
+        item->zoneBegin.thread = GetThreadHandle();
+        Profiler::FinishItem();
     }
 
     ~ScopedZone()
     {
-        Profiler::ZoneEnd( m_id, QueueZoneEnd { Profiler::GetTime() } );
+        auto item = Profiler::StartItem();
+        item->hdr.type = QueueType::ZoneEnd;
+        item->hdr.id = m_id;
+        item->zoneEnd.time = Profiler::GetTime();
+        Profiler::FinishItem();
     }
 
     void Text( const char* txt, size_t size )
@@ -28,12 +39,20 @@ public:
         auto ptr = new char[size+1];
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        Profiler::ZoneText( m_id, QueueZoneText { (uint64_t)ptr } );
+        auto item = Profiler::StartItem();
+        item->hdr.type = QueueType::ZoneText;
+        item->hdr.id = m_id;
+        item->zoneText.text = (uint64_t)ptr;
+        Profiler::FinishItem();
     }
 
     void Name( const char* name )
     {
-        Profiler::ZoneName( m_id, QueueZoneName { (uint64_t)name } );
+        auto item = Profiler::StartItem();
+        item->hdr.type = QueueType::ZoneName;
+        item->hdr.id = m_id;
+        item->zoneName.name = (uint64_t)name;
+        Profiler::FinishItem();
     }
 
 private:

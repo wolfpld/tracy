@@ -42,10 +42,10 @@ public:
 #endif
     }
 
-    static uint64_t ZoneBegin( QueueZoneBegin&& data );
-    static void ZoneEnd( uint64_t id, QueueZoneEnd&& data );
-    static void ZoneText( uint64_t id, QueueZoneText&& data );
-    static void ZoneName( uint64_t id, QueueZoneName&& data );
+    static QueueItem* StartItem();
+    static void FinishItem();
+    static uint64_t GetNewId();
+
     static void FrameMark();
 
     static bool ShouldExit();

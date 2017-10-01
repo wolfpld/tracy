@@ -1220,7 +1220,7 @@ void View::DrawZones()
     while( false );
 
     // zones
-    const auto ostep = ImGui::GetFontSize();
+    const auto ostep = ImGui::GetFontSize() + 1;
     int offset = 20;
     for( auto& v : m_threads )
     {

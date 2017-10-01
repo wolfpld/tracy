@@ -1505,7 +1505,7 @@ uint32_t View::GetZoneColor( const Event& ev )
 
 uint32_t View::GetZoneColor( const QueueSourceLocation& srcloc )
 {
-    return srcloc.color != 0 ? ( srcloc.color | 0xFF000000 ) : 0xDDDD6666;
+    return srcloc.color != 0 ? ( srcloc.color | 0xFF000000 ) : 0xFFCC5555;
 }
 
 uint32_t View::GetZoneHighlight( const Event& ev )

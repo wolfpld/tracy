@@ -1903,9 +1903,8 @@ private:
         template<AllocationMode allocMode>
         inline T* enqueue_begin()
         {
-            index_t currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
-            pr_newTailIndex = 1 + currentTailIndex;
-            if ((currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0) {
+            pr_currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
+            if ((pr_currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0) {
                 // We reached the end of a block, start a new one
                 if (this->tailBlock != nullptr && this->tailBlock->next->ConcurrentQueue::Block::template is_empty<explicit_context>()) {
                     // We can re-use the block ahead of us, it's empty!					
@@ -1923,9 +1922,9 @@ private:
                     // and <= its current value. Since we have the most recent tail, the head must be
                     // <= to it.
                     auto head = this->headIndex.load(std::memory_order_relaxed);
-                    assert(!details::circular_less_than<index_t>(currentTailIndex, head));
-                    if (!details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE)
-                        || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))) {
+                    assert(!details::circular_less_than<index_t>(pr_currentTailIndex, head));
+                    if (!details::circular_less_than<index_t>(head, pr_currentTailIndex + BLOCK_SIZE)
+                        || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < pr_currentTailIndex - head))) {
                         // We can't enqueue in another block because there's not enough leeway -- the
                         // tail could surpass the head by the time the block fills up! (Or we'll exceed
                         // the size limit, if the second part of the condition was true.)
@@ -1964,19 +1963,19 @@ private:
 
                 // Add block to block index
                 auto& entry = blockIndex.load(std::memory_order_relaxed)->entries[pr_blockIndexFront];
-                entry.base = currentTailIndex;
+                entry.base = pr_currentTailIndex;
                 entry.block = this->tailBlock;
                 blockIndex.load(std::memory_order_relaxed)->front.store(pr_blockIndexFront, std::memory_order_release);
                 pr_blockIndexFront = (pr_blockIndexFront + 1) & (pr_blockIndexSize - 1);
             }
 
             // Enqueue
-            return (*this->tailBlock)[currentTailIndex];
+            return (*this->tailBlock)[pr_currentTailIndex];
         }
 
         inline void enqueue_finish()
         {
-            this->tailIndex.store(pr_newTailIndex, std::memory_order_release);
+            this->tailIndex.store(pr_currentTailIndex + 1, std::memory_order_release);
         }
 
 		template<typename U>
@@ -2416,7 +2415,7 @@ private:
 		std::atomic<BlockIndexHeader*> blockIndex;
 		
 		// To be used by producer only -- consumer must use the ones in referenced by blockIndex
-        index_t pr_newTailIndex;
+        index_t pr_currentTailIndex;
 		size_t pr_blockIndexSlotsUsed;
 		size_t pr_blockIndexSize;
 		size_t pr_blockIndexFront;		// Next slot (not current)

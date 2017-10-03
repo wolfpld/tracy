@@ -31,7 +31,7 @@ namespace tracy
 
 static const char* GetProcessName()
 {
-#if defined _MSC_VER || defined __CYGWIN__
+#if defined _MSC_VER
     static char buf[_MAX_PATH];
     GetModuleFileNameA( nullptr, buf, _MAX_PATH );
     const char* ptr = buf;

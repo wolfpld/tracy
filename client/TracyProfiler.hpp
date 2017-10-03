@@ -14,6 +14,10 @@
 #  include <intrin.h>
 #endif
 
+#if defined _MSC_VER || defined __CYGWIN__ || defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+#  define TRACY_RDTSCP_SUPPORTED
+#endif
+
 namespace tracy
 {
 
@@ -39,7 +43,8 @@ public:
     Profiler();
     ~Profiler();
 
-    static tracy_force_inline int64_t GetTime( int8_t& cpu )
+#ifdef TRACY_RDTSCP_SUPPORTED
+    static tracy_force_inline int64_t tracy_rdtscp( int8_t& cpu )
     {
 #if defined _MSC_VER || defined __CYGWIN__
         unsigned int ui;
@@ -52,6 +57,14 @@ public:
         asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx), "=c" (ui) :: );
         cpu = (int8_t)ui;
         return ( edx << 32 ) + eax;
+#endif
+    }
+#endif
+
+    static tracy_force_inline int64_t GetTime( int8_t& cpu )
+    {
+#ifdef TRACY_RDTSCP_SUPPORTED
+        return tracy_rdtscp( cpu );
 #else
         cpu = -1;
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();

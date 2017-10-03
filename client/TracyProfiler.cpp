@@ -236,16 +236,16 @@ bool Profiler::HandleServerQuery()
 
 void Profiler::CalibrateTimer()
 {
-#if defined _MSC_VER || defined __CYGWIN__
-    unsigned int ui;
+#ifdef TRACY_RDTSCP_SUPPORTED
+    int8_t cpu;
     std::atomic_signal_fence( std::memory_order_acq_rel );
     const auto t0 = std::chrono::high_resolution_clock::now();
-    const auto r0 = __rdtscp( &ui );
+    const auto r0 = tracy_rdtscp( cpu );
     std::atomic_signal_fence( std::memory_order_acq_rel );
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     std::atomic_signal_fence( std::memory_order_acq_rel );
     const auto t1 = std::chrono::high_resolution_clock::now();
-    const auto r1 = __rdtscp( &ui );
+    const auto r1 = tracy_rdtscp( cpu );
     std::atomic_signal_fence( std::memory_order_acq_rel );
 
     const auto dt = std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count();

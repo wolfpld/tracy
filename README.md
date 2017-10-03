@@ -52,7 +52,7 @@ Alternatively, you may want to embed the server in your application, the same wh
 Tracy's time measurement precision is not infinite. It's only as good as the system-provided timers are.
 
 - On the embedded ARM-based systems you can expect to have something around 1 µs time resolution.
-- On x86 (currently only implemented on Windows) the time resolution depends on the hardware implementation of the RDTSCP instruction and typically is in the low nanoseconds. This may vary from one micro-architecture to another and requires a fairly modern (Sandy Bridge) processor for reliable results.
+- On x86 the time resolution depends on the hardware implementation of the RDTSCP instruction and typically is in the low nanoseconds. This may vary from one micro-architecture to another and requires a fairly modern (Sandy Bridge) processor for reliable results.
 
 While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which tracy tries to calculate and display on the timeline view, as a red zone. Note that this is an *approximation* of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.
 

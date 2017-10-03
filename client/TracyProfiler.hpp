@@ -31,6 +31,8 @@ extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
 extern thread_local moodycamel::ProducerToken s_token;;
 extern std::atomic<uint64_t> s_id;
 
+using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
+
 class Profiler
 {
 public:
@@ -50,17 +52,18 @@ public:
 #endif
     }
 
-    static QueueItem* StartItem() { return s_queue.enqueue_begin( s_token ); }
-    static void FinishItem() { s_queue.enqueue_finish( s_token ); }
+    static QueueItem* StartItem( Magic& magic ) { return s_queue.enqueue_begin( s_token, magic ); }
+    static void FinishItem( Magic magic ) { s_queue.enqueue_finish( s_token, magic ); }
     static uint64_t GetNewId() { return s_id.fetch_add( 1, std::memory_order_relaxed ); }
 
     static void FrameMark()
     {
         int8_t cpu;
-        auto item = s_queue.enqueue_begin( s_token );
+        Magic magic;
+        auto item = s_queue.enqueue_begin( s_token, magic );
         item->hdr.type = QueueType::FrameMarkMsg;
         item->hdr.id = (uint64_t)GetTime( cpu );
-        s_queue.enqueue_finish( s_token );
+        s_queue.enqueue_finish( s_token, magic );
     }
 
     static bool ShouldExit();

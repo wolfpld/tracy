@@ -280,20 +280,22 @@ void Profiler::CalibrateDelay()
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         const auto id = GetNewId();
         {
-            auto item = s_queue.enqueue_begin( ptoken );
+            Magic magic;
+            auto item = s_queue.enqueue_begin( ptoken, magic );
             item->hdr.type = QueueType::ZoneBegin;
             item->hdr.id = id;
             item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
             item->zoneBegin.thread = GetThreadHandle();
-            s_queue.enqueue_finish( ptoken );
+            s_queue.enqueue_finish( ptoken, magic );
         }
         {
-            auto item = s_queue.enqueue_begin( ptoken );
+            Magic magic;
+            auto item = s_queue.enqueue_begin( ptoken, magic );
             item->hdr.type = QueueType::ZoneEnd;
             item->hdr.id = id;
             item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
-            s_queue.enqueue_finish( ptoken );
+            s_queue.enqueue_finish( ptoken, magic );
         }
     }
     const auto f0 = GetTime( cpu );
@@ -308,20 +310,22 @@ void Profiler::CalibrateDelay()
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         const auto id = GetNewId();
         {
-            auto item = s_queue.enqueue_begin( ptoken );
+            Magic magic;
+            auto item = s_queue.enqueue_begin( ptoken, magic );
             item->hdr.type = QueueType::ZoneBegin;
             item->hdr.id = id;
             item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
             item->zoneBegin.thread = GetThreadHandle();
-            s_queue.enqueue_finish( ptoken );
+            s_queue.enqueue_finish( ptoken, magic );
         }
         {
-            auto item = s_queue.enqueue_begin( ptoken );
+            Magic magic;
+            auto item = s_queue.enqueue_begin( ptoken, magic );
             item->hdr.type = QueueType::ZoneEnd;
             item->hdr.id = id;
             item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
-            s_queue.enqueue_finish( ptoken );
+            s_queue.enqueue_finish( ptoken, magic );
         }
     }
     const auto t1 = GetTime( cpu );

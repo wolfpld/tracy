@@ -951,14 +951,14 @@ public:
 		return inner_enqueue<CanAlloc>(token, std::move(item));
 	}
 
-    force_inline T* enqueue_begin(producer_token_t const& token)
+    force_inline T* enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
     {
-        return inner_enqueue_begin<CanAlloc>(token);
+        return inner_enqueue_begin<CanAlloc>(token, currentTailIndex);
     }
 
-    force_inline void enqueue_finish(producer_token_t const& token)
+    force_inline void enqueue_finish(producer_token_t const& token, index_t currentTailIndex)
     {
-        inner_enqueue_finish(token);
+        inner_enqueue_finish(token, currentTailIndex);
     }
 
 	// Enqueues several items.
@@ -1301,14 +1301,14 @@ private:
 	}
 
     template<AllocationMode canAlloc>
-    force_inline T* inner_enqueue_begin(producer_token_t const& token)
+    force_inline T* inner_enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
     {
-        return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_begin<canAlloc>();
+        return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_begin<canAlloc>(currentTailIndex);
     }
 
-    force_inline void inner_enqueue_finish(producer_token_t const& token)
+    force_inline void inner_enqueue_finish(producer_token_t const& token, index_t currentTailIndex)
     {
-        return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_finish();
+        return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_finish(currentTailIndex);
     }
 
 	template<AllocationMode canAlloc, typename U>
@@ -1909,7 +1909,7 @@ private:
 		}
 
         template<AllocationMode allocMode>
-        inline void enqueue_begin_alloc()
+        inline void enqueue_begin_alloc(index_t currentTailIndex)
         {
             // We reached the end of a block, start a new one
             if (this->tailBlock != nullptr && this->tailBlock->next->ConcurrentQueue::Block::template is_empty<explicit_context>()) {
@@ -1928,9 +1928,9 @@ private:
                 // and <= its current value. Since we have the most recent tail, the head must be
                 // <= to it.
                 auto head = this->headIndex.load(std::memory_order_relaxed);
-                assert(!details::circular_less_than<index_t>(pr_currentTailIndex, head));
-                if (!details::circular_less_than<index_t>(head, pr_currentTailIndex + BLOCK_SIZE)
-                    || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < pr_currentTailIndex - head))) {
+                assert(!details::circular_less_than<index_t>(currentTailIndex, head));
+                if (!details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE)
+                    || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))) {
                     // We can't enqueue in another block because there's not enough leeway -- the
                     // tail could surpass the head by the time the block fills up! (Or we'll exceed
                     // the size limit, if the second part of the condition was true.)
@@ -1969,28 +1969,28 @@ private:
 
             // Add block to block index
             auto& entry = blockIndex.load(std::memory_order_relaxed)->entries[pr_blockIndexFront];
-            entry.base = pr_currentTailIndex;
+            entry.base = currentTailIndex;
             entry.block = this->tailBlock;
             blockIndex.load(std::memory_order_relaxed)->front.store(pr_blockIndexFront, std::memory_order_release);
             pr_blockIndexFront = (pr_blockIndexFront + 1) & (pr_blockIndexSize - 1);
         }
 
         template<AllocationMode allocMode>
-        force_inline T* enqueue_begin()
+        force_inline T* enqueue_begin(index_t& currentTailIndex)
         {
-            pr_currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
-            if ((pr_currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) != 0) {
-                return (*this->tailBlock)[pr_currentTailIndex];
+            currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
+            if ((currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) != 0) {
+                return (*this->tailBlock)[currentTailIndex];
             }
             else {
-                this->enqueue_begin_alloc<allocMode>();
-                return (*this->tailBlock)[pr_currentTailIndex];
+                this->enqueue_begin_alloc<allocMode>(currentTailIndex);
+                return (*this->tailBlock)[currentTailIndex];
             }
         }
 
-        force_inline void enqueue_finish()
+        force_inline void enqueue_finish(index_t currentTailIndex)
         {
-            this->tailIndex.store(pr_currentTailIndex + 1, std::memory_order_release);
+            this->tailIndex.store(currentTailIndex + 1, std::memory_order_release);
         }
 
 		template<typename U>
@@ -2430,7 +2430,6 @@ private:
 		std::atomic<BlockIndexHeader*> blockIndex;
 		
 		// To be used by producer only -- consumer must use the ones in referenced by blockIndex
-        index_t pr_currentTailIndex;
 		size_t pr_blockIndexSlotsUsed;
 		size_t pr_blockIndexSize;
 		size_t pr_blockIndexFront;		// Next slot (not current)

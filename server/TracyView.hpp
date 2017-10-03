@@ -152,7 +152,7 @@ private:
     uint64_t m_delay;
     uint64_t m_resolution;
     double m_timerMul;
-    std::string m_programName;
+    std::string m_captureName;
 
     int8_t m_lastCpu;
 

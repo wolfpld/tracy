@@ -128,6 +128,7 @@ void Profiler::Worker()
             welcome.timeBegin = m_timeBegin;
             welcome.delay = m_delay;
             welcome.resolution = m_resolution;
+            welcome.epoch = std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
             memcpy( welcome.programName, procname, pnsz );
             memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
 

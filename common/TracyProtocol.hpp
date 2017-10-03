@@ -34,6 +34,7 @@ struct WelcomeMessage
     uint64_t timeBegin;
     uint64_t delay;
     uint64_t resolution;
+    uint64_t epoch;
     char programName[WelcomeMessageProgramNameSize];
 };
 #pragma pack()

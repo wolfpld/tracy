@@ -61,6 +61,7 @@ static Profiler* s_instance = nullptr;
 
 Profiler::Profiler()
     : m_mainThread( GetThreadHandle() )
+    , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
     , m_stream( LZ4_createStream() )
     , m_buffer( new char[TargetFrameSize*3] )
@@ -128,7 +129,7 @@ void Profiler::Worker()
             welcome.timeBegin = m_timeBegin;
             welcome.delay = m_delay;
             welcome.resolution = m_resolution;
-            welcome.epoch = std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+            welcome.epoch = m_epoch;
             memcpy( welcome.programName, procname, pnsz );
             memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
 

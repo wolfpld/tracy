@@ -100,6 +100,7 @@ private:
     uint64_t m_delay;
     int64_t m_timeBegin;
     uint64_t m_mainThread;
+    uint64_t m_epoch;
     std::thread m_thread;
     std::atomic<bool> m_shutdown;
     std::unique_ptr<Socket> m_sock;

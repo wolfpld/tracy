@@ -280,15 +280,15 @@ void View::DispatchProcess( const QueueItem& ev )
         m_sock.Read( buf, sz, &tv, ShouldExit );
         if( ev.hdr.type == QueueType::CustomStringData )
         {
-            AddCustomString( ev.hdr.id, std::string( buf, buf+sz ) );
+            AddCustomString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
         }
         else if( ev.hdr.type == QueueType::StringData )
         {
-            AddString( ev.hdr.id, std::string( buf, buf+sz ) );
+            AddString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
         }
         else
         {
-            AddThreadString( ev.hdr.id, std::string( buf, buf+sz ) );
+            AddThreadString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
         }
     }
     else
@@ -307,15 +307,15 @@ void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
         ptr += sizeof( sz );
         if( ev.hdr.type == QueueType::CustomStringData )
         {
-            AddCustomString( ev.hdr.id, std::string( ptr, ptr+sz ) );
+            AddCustomString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
         }
         else if( ev.hdr.type == QueueType::StringData )
         {
-            AddString( ev.hdr.id, std::string( ptr, ptr+sz ) );
+            AddString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
         }
         else
         {
-            AddThreadString( ev.hdr.id, std::string( ptr, ptr+sz ) );
+            AddThreadString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
         }
         ptr += sz;
     }
@@ -339,22 +339,22 @@ void View::Process( const QueueItem& ev )
     switch( ev.hdr.type )
     {
     case QueueType::ZoneBegin:
-        ProcessZoneBegin( ev.hdr.id, ev.zoneBegin );
+        ProcessZoneBegin( ev.zoneBegin );
         break;
     case QueueType::ZoneEnd:
-        ProcessZoneEnd( ev.hdr.id, ev.zoneEnd );
+        ProcessZoneEnd( ev.zoneEnd );
         break;
     case QueueType::FrameMarkMsg:
-        ProcessFrameMark( ev.hdr.id );
+        ProcessFrameMark( ev.frameMark );
         break;
     case QueueType::SourceLocation:
-        AddSourceLocation( ev.hdr.id, ev.srcloc );
+        AddSourceLocation( ev.srcloc );
         break;
     case QueueType::ZoneText:
-        ProcessZoneText( ev.hdr.id, ev.zoneText );
+        ProcessZoneText( ev.zoneText );
         break;
     case QueueType::ZoneName:
-        ProcessZoneName( ev.hdr.id, ev.zoneName );
+        ProcessZoneName( ev.zoneName );
         break;
     default:
         assert( false );
@@ -362,7 +362,7 @@ void View::Process( const QueueItem& ev )
     }
 }
 
-void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
+void View::ProcessZoneBegin( const QueueZoneBegin& ev )
 {
     auto zone = m_slab.Alloc<Event>();
 
@@ -378,47 +378,49 @@ void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
     std::unique_lock<std::mutex> lock( m_lock );
     NewZone( zone, ev.thread );
     lock.unlock();
-    m_openZones.emplace( id, zone );
+    m_zoneStack[ev.thread].push_back( zone );
 }
 
-void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
+void View::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
-    auto it = m_openZones.find( id );
-    assert( it != m_openZones.end() );
-    auto zone = it->second;
-    std::unique_lock<std::mutex> lock( m_lock );
+    auto& stack = m_zoneStack[ev.thread];
+    assert( !stack.empty() );
+    auto zone = stack.back();
+    stack.pop_back();
     assert( zone->end == -1 );
+    std::unique_lock<std::mutex> lock( m_lock );
     zone->end = ev.time * m_timerMul;
     zone->cpu_end = ev.cpu;
+    lock.unlock();
     assert( zone->end >= zone->start );
     UpdateZone( zone );
-    lock.unlock();
-    m_openZones.erase( it );
 }
 
-void View::ProcessFrameMark( uint64_t id )
+void View::ProcessFrameMark( const QueueFrameMark& ev )
 {
     assert( !m_frames.empty() );
     const auto lastframe = m_frames.back();
-    const auto time = id * m_timerMul;
+    const auto time = ev.time * m_timerMul;
     assert( lastframe < time );
     std::unique_lock<std::mutex> lock( m_lock );
     m_frames.push_back( time );
 }
 
-void View::ProcessZoneText( uint64_t id, const QueueZoneText& ev )
+void View::ProcessZoneText( const QueueZoneText& ev )
 {
-    auto it = m_openZones.find( id );
-    assert( it != m_openZones.end() );
-    CheckCustomString( ev.text, it->second );
+    auto& stack = m_zoneStack[ev.thread];
+    assert( !stack.empty() );
+    auto zone = stack.back();
+    CheckCustomString( ev.text, zone );
 }
 
-void View::ProcessZoneName( uint64_t id, const QueueZoneName& ev )
+void View::ProcessZoneName( const QueueZoneName& ev )
 {
-    auto it = m_openZones.find( id );
-    assert( it != m_openZones.end() );
+    auto& stack = m_zoneStack[ev.thread];
+    assert( !stack.empty() );
+    auto zone = stack.back();
     CheckString( ev.name );
-    GetTextData( *it->second )->zoneName = ev.name;
+    GetTextData( *zone )->zoneName = ev.name;
 }
 
 void View::CheckString( uint64_t ptr )
@@ -500,16 +502,16 @@ void View::AddCustomString( uint64_t ptr, std::string&& str )
     m_pendingCustomStrings.erase( pit );
 }
 
-void View::AddSourceLocation( uint64_t ptr, const QueueSourceLocation& srcloc )
+void View::AddSourceLocation( const QueueSourceLocation& srcloc )
 {
-    assert( m_sourceLocation.find( ptr ) == m_sourceLocation.end() );
-    auto it = m_pendingSourceLocation.find( ptr );
+    assert( m_sourceLocation.find( srcloc.ptr ) == m_sourceLocation.end() );
+    auto it = m_pendingSourceLocation.find( srcloc.ptr );
     assert( it != m_pendingSourceLocation.end() );
     m_pendingSourceLocation.erase( it );
     CheckString( srcloc.file );
     CheckString( srcloc.function );
     std::lock_guard<std::mutex> lock( m_lock );
-    m_sourceLocation.emplace( ptr, srcloc );
+    m_sourceLocation.emplace( srcloc.ptr, srcloc );
 }
 
 void View::NewZone( Event* zone, uint64_t thread )

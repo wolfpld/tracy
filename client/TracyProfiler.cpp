@@ -159,24 +159,26 @@ bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
     assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData );
 
-    QueueHeader hdr;
-    hdr.type = type;
-    hdr.id = str;
+    QueueItem item;
+    item.hdr.type = type;
+    item.stringTransfer.ptr = str;
+
+    const auto isz = QueueDataSize[item.hdr.idx];
 
     auto buf = m_buffer + m_bufferOffset;
-    memcpy( buf, &hdr, sizeof( hdr ) );
+    memcpy( buf, &item, isz );
 
     auto len = strlen( ptr );
-    assert( len < TargetFrameSize - sizeof( hdr ) - sizeof( uint16_t ) );
+    assert( len < TargetFrameSize - isz - sizeof( uint16_t ) );
     assert( len <= std::numeric_limits<uint16_t>::max() );
     uint16_t l16 = len;
-    memcpy( buf + sizeof( hdr ), &l16, sizeof( l16 ) );
-    memcpy( buf + sizeof( hdr ) + sizeof( l16 ), ptr, l16 );
+    memcpy( buf + isz, &l16, sizeof( l16 ) );
+    memcpy( buf + isz + sizeof( l16 ), ptr, l16 );
 
-    m_bufferOffset += sizeof( hdr ) + sizeof( l16 ) + l16;
+    m_bufferOffset += isz + sizeof( l16 ) + l16;
     if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
 
-    return SendData( buf, sizeof( hdr ) + sizeof( l16 ) + l16 );
+    return SendData( buf, isz + sizeof( l16 ) + l16 );
 }
 
 void Profiler::SendSourceLocation( uint64_t ptr )
@@ -184,7 +186,7 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     auto srcloc = (const SourceLocation*)ptr;
     QueueItem item;
     item.hdr.type = QueueType::SourceLocation;
-    item.hdr.id = ptr;
+    item.srcloc.ptr = ptr;
     item.srcloc.file = (uint64_t)srcloc->file;
     item.srcloc.function = (uint64_t)srcloc->function;
     item.srcloc.line = srcloc->line;
@@ -278,22 +280,20 @@ void Profiler::CalibrateDelay()
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
-        const auto id = GetNewId();
         {
             Magic magic;
             auto item = s_queue.enqueue_begin( ptoken, magic );
             item->hdr.type = QueueType::ZoneBegin;
-            item->hdr.id = id;
+            item->zoneBegin.thread = GetThreadHandle();
             item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
-            item->zoneBegin.thread = GetThreadHandle();
             s_queue.enqueue_finish( ptoken, magic );
         }
         {
             Magic magic;
             auto item = s_queue.enqueue_begin( ptoken, magic );
             item->hdr.type = QueueType::ZoneEnd;
-            item->hdr.id = id;
+            item->zoneEnd.thread = 0;
             item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
             s_queue.enqueue_finish( ptoken, magic );
         }
@@ -308,22 +308,20 @@ void Profiler::CalibrateDelay()
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
-        const auto id = GetNewId();
         {
             Magic magic;
             auto item = s_queue.enqueue_begin( ptoken, magic );
             item->hdr.type = QueueType::ZoneBegin;
-            item->hdr.id = id;
+            item->zoneBegin.thread = GetThreadHandle();
             item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
-            item->zoneBegin.thread = GetThreadHandle();
             s_queue.enqueue_finish( ptoken, magic );
         }
         {
             Magic magic;
             auto item = s_queue.enqueue_begin( ptoken, magic );
             item->hdr.type = QueueType::ZoneEnd;
-            item->hdr.id = id;
+            item->zoneEnd.thread = 0;
             item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
             s_queue.enqueue_finish( ptoken, magic );
         }

@@ -33,7 +33,6 @@ struct SourceLocation
 
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
 extern thread_local moodycamel::ProducerToken s_token;
-extern std::atomic<uint64_t> s_id;
 
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
@@ -73,7 +72,6 @@ public:
 
     static tracy_force_inline QueueItem* StartItem( Magic& magic ) { return s_queue.enqueue_begin( s_token, magic ); }
     static tracy_force_inline void FinishItem( Magic magic ) { s_queue.enqueue_finish( s_token, magic ); }
-    static tracy_force_inline uint64_t GetNewId() { return s_id.fetch_add( 1, std::memory_order_relaxed ); }
 
     static tracy_force_inline void FrameMark()
     {
@@ -81,7 +79,7 @@ public:
         Magic magic;
         auto item = s_queue.enqueue_begin( s_token, magic );
         item->hdr.type = QueueType::FrameMarkMsg;
-        item->hdr.id = (uint64_t)GetTime( cpu );
+        item->frameMark.time = GetTime( cpu );
         s_queue.enqueue_finish( s_token, magic );
     }
 

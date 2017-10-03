@@ -25,19 +25,31 @@ enum class QueueType : uint8_t
 struct QueueZoneBegin
 {
     int64_t time;
-    uint64_t srcloc;    // ptr
     uint64_t thread;
+    uint64_t srcloc;    // ptr
     int8_t cpu;
 };
 
 struct QueueZoneEnd
 {
     int64_t time;
+    uint64_t thread;
     int8_t cpu;
+};
+
+struct QueueStringTransfer
+{
+    uint64_t ptr;
+};
+
+struct QueueFrameMark
+{
+    int64_t time;
 };
 
 struct QueueSourceLocation
 {
+    uint64_t ptr;
     uint64_t function;  // ptr
     uint64_t file;      // ptr
     uint32_t line;
@@ -46,11 +58,13 @@ struct QueueSourceLocation
 
 struct QueueZoneText
 {
+    uint64_t thread;
     uint64_t text;      // ptr
 };
 
 struct QueueZoneName
 {
+    uint64_t thread;
     uint64_t name;      // ptr
 };
 
@@ -61,7 +75,6 @@ struct QueueHeader
         QueueType type;
         uint8_t idx;
     };
-    uint64_t id;
 };
 
 struct QueueItem
@@ -71,6 +84,8 @@ struct QueueItem
     {
         QueueZoneBegin zoneBegin;
         QueueZoneEnd zoneEnd;
+        QueueStringTransfer stringTransfer;
+        QueueFrameMark frameMark;
         QueueSourceLocation srcloc;
         QueueZoneText zoneText;
         QueueZoneName zoneName;
@@ -84,10 +99,10 @@ enum { QueueItemSize = sizeof( QueueItem ) };
 static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
-    sizeof( QueueHeader ),  // string data
-    sizeof( QueueHeader ),  // thread name
-    sizeof( QueueHeader ),  // custom string data
-    sizeof( QueueHeader ),  // frame mark
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // custom string data
+    sizeof( QueueHeader ) + sizeof( QueueFrameMark ),
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueZoneName ),

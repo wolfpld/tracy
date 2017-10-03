@@ -52,11 +52,11 @@ private:
     void ServerQuery( uint8_t type, uint64_t data );
 
     void Process( const QueueItem& ev );
-    void ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev );
-    void ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev );
-    void ProcessFrameMark( uint64_t id );
-    void ProcessZoneText( uint64_t id, const QueueZoneText& ev );
-    void ProcessZoneName( uint64_t id, const QueueZoneName& ev );
+    void ProcessZoneBegin( const QueueZoneBegin& ev );
+    void ProcessZoneEnd( const QueueZoneEnd& ev );
+    void ProcessFrameMark( const QueueFrameMark& ev );
+    void ProcessZoneText( const QueueZoneText& ev );
+    void ProcessZoneName( const QueueZoneName& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
@@ -66,7 +66,7 @@ private:
     void AddString( uint64_t ptr, std::string&& str );
     void AddThreadString( uint64_t id, std::string&& str );
     void AddCustomString( uint64_t ptr, std::string&& str );
-    void AddSourceLocation( uint64_t id, const QueueSourceLocation& srcloc );
+    void AddSourceLocation( const QueueSourceLocation& srcloc );
 
     void NewZone( Event* zone, uint64_t thread );
     void UpdateZone( Event* zone );
@@ -126,7 +126,7 @@ private:
     std::vector<float> m_mbps;
 
     // not used for vis - no need to lock
-    std::unordered_map<uint64_t, Event*> m_openZones;
+    std::unordered_map<uint64_t, std::vector<Event*>> m_zoneStack;
     std::unordered_set<uint64_t> m_pendingStrings;
     std::unordered_set<uint64_t> m_pendingThreads;
     std::unordered_set<uint64_t> m_pendingSourceLocation;

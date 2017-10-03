@@ -14,15 +14,15 @@ class ScopedZone
 {
 public:
     tracy_force_inline ScopedZone( const SourceLocation* srcloc )
-        : m_id( Profiler::GetNewId() )
     {
+        const auto thread = GetThreadHandle();
+        m_thread = thread;
         Magic magic;
         auto item = Profiler::StartItem( magic );
         item->hdr.type = QueueType::ZoneBegin;
-        item->hdr.id = m_id;
         item->zoneBegin.time = Profiler::GetTime( item->zoneBegin.cpu );
+        item->zoneBegin.thread = thread;
         item->zoneBegin.srcloc = (uint64_t)srcloc;
-        item->zoneBegin.thread = GetThreadHandle();
         Profiler::FinishItem( magic );
     }
 
@@ -31,8 +31,8 @@ public:
         Magic magic;
         auto item = Profiler::StartItem( magic );
         item->hdr.type = QueueType::ZoneEnd;
-        item->hdr.id = m_id;
         item->zoneEnd.time = Profiler::GetTime( item->zoneEnd.cpu );
+        item->zoneEnd.thread = m_thread;
         Profiler::FinishItem( magic );
     }
 
@@ -44,7 +44,7 @@ public:
         ptr[size] = '\0';
         auto item = Profiler::StartItem( magic );
         item->hdr.type = QueueType::ZoneText;
-        item->hdr.id = m_id;
+        item->zoneText.thread = m_thread;
         item->zoneText.text = (uint64_t)ptr;
         Profiler::FinishItem( magic );
     }
@@ -54,13 +54,13 @@ public:
         Magic magic;
         auto item = Profiler::StartItem( magic );
         item->hdr.type = QueueType::ZoneName;
-        item->hdr.id = m_id;
+        item->zoneName.thread = m_thread;
         item->zoneName.name = (uint64_t)name;
         Profiler::FinishItem( magic );
     }
 
 private:
-    uint64_t m_id;
+    uint64_t m_thread;
 };
 
 }

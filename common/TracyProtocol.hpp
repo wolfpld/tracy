@@ -24,6 +24,8 @@ enum ServerQuery : uint8_t
     ServerQuerySourceLocation,
 };
 
+enum { WelcomeMessageProgramNameSize = 64 };
+
 #pragma pack( 1 )
 struct WelcomeMessage
 {
@@ -32,8 +34,11 @@ struct WelcomeMessage
     uint64_t timeBegin;
     uint64_t delay;
     uint64_t resolution;
+    char programName[WelcomeMessageProgramNameSize];
 };
 #pragma pack()
+
+enum { WelcomeMessageSize = sizeof( WelcomeMessage ) };
 
 }
 

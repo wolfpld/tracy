@@ -114,6 +114,9 @@ void Profiler::Worker()
         }
 
         {
+            const auto procname = GetProcessName();
+            const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );
+
             WelcomeMessage welcome;
 #ifdef DISABLE_LZ4
             // notify client that lz4 compression is disabled (too slow in debug builds)
@@ -125,6 +128,8 @@ void Profiler::Worker()
             welcome.timeBegin = m_timeBegin;
             welcome.delay = m_delay;
             welcome.resolution = m_resolution;
+            memcpy( welcome.programName, procname, pnsz );
+            memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
 
             m_sock->Send( &welcome, sizeof( welcome ) );
         }

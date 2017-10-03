@@ -85,6 +85,14 @@ View::View( FileRead& f )
     f.Read( &m_timerMul, sizeof( m_timerMul ) );
 
     uint64_t sz;
+    {
+        f.Read( &sz, sizeof( sz ) );
+        assert( sz < 1024 );
+        char tmp[1024];
+        f.Read( tmp, sz );
+        m_captureName = std::string( tmp, tmp+sz );
+    }
+
     f.Read( &sz, sizeof( sz ) );
     m_frames.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -1567,7 +1575,11 @@ void View::Write( FileWrite& f )
     f.Write( &m_resolution, sizeof( m_resolution ) );
     f.Write( &m_timerMul, sizeof( m_timerMul ) );
 
-    uint64_t sz = m_frames.size();
+    uint64_t sz = m_captureName.size();
+    f.Write( &sz, sizeof( sz ) );
+    f.Write( m_captureName.c_str(), sz );
+
+    sz = m_frames.size();
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_frames.data(), sizeof( uint64_t ) * sz );
 

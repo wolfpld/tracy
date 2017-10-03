@@ -1907,8 +1907,6 @@ private:
             pr_newTailIndex = 1 + currentTailIndex;
             if ((currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0) {
                 // We reached the end of a block, start a new one
-                auto startBlock = this->tailBlock;
-                auto originalBlockIndexSlotsUsed = pr_blockIndexSlotsUsed;
                 if (this->tailBlock != nullptr && this->tailBlock->next->ConcurrentQueue::Block::template is_empty<explicit_context>()) {
                     // We can re-use the block ahead of us, it's empty!					
                     this->tailBlock = this->tailBlock->next;
@@ -1963,9 +1961,6 @@ private:
                     this->tailBlock = newBlock;
                     ++pr_blockIndexSlotsUsed;
                 }
-
-                (void)startBlock;
-                (void)originalBlockIndexSlotsUsed;
 
                 // Add block to block index
                 auto& entry = blockIndex.load(std::memory_order_relaxed)->entries[pr_blockIndexFront];

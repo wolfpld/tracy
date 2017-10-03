@@ -14,7 +14,6 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
-#include "concurrentqueue.h"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 
@@ -27,10 +26,10 @@ namespace tracy
 
 enum { QueuePrealloc = 256 * 1024 };
 
-static moodycamel::ConcurrentQueue<QueueItem> s_queue( QueueItemSize * QueuePrealloc );
-static thread_local moodycamel::ProducerToken s_token( s_queue );
+moodycamel::ConcurrentQueue<QueueItem> s_queue( QueueItemSize * QueuePrealloc );
+thread_local moodycamel::ProducerToken s_token( s_queue );
 
-static std::atomic<uint64_t> s_id( 0 );
+std::atomic<uint64_t> s_id( 0 );
 
 #ifndef TRACY_DISABLE
 static Profiler s_profiler;
@@ -67,30 +66,6 @@ Profiler::~Profiler()
 
     assert( s_instance );
     s_instance = nullptr;
-}
-
-QueueItem* Profiler::StartItem()
-{
-    return s_queue.enqueue_begin( s_token );
-}
-
-void Profiler::FinishItem()
-{
-    s_queue.enqueue_finish( s_token );
-}
-
-uint64_t Profiler::GetNewId()
-{
-    return s_id.fetch_add( 1, std::memory_order_relaxed );
-}
-
-void Profiler::FrameMark()
-{
-    int8_t cpu;
-    auto item = s_queue.enqueue_begin( s_token );
-    item->hdr.type = QueueType::FrameMarkMsg;
-    item->hdr.id = (uint64_t)GetTime( cpu );
-    s_queue.enqueue_finish( s_token );
 }
 
 bool Profiler::ShouldExit()

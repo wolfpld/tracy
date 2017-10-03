@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <thread>
 
+#include "concurrentqueue.h"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
 
@@ -26,6 +27,10 @@ struct SourceLocation
     uint32_t color;
 };
 
+extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
+extern thread_local moodycamel::ProducerToken s_token;;
+extern std::atomic<uint64_t> s_id;
+
 class Profiler
 {
 public:
@@ -45,11 +50,18 @@ public:
 #endif
     }
 
-    static QueueItem* StartItem();
-    static void FinishItem();
-    static uint64_t GetNewId();
+    static QueueItem* StartItem() { return s_queue.enqueue_begin( s_token ); }
+    static void FinishItem() { s_queue.enqueue_finish( s_token ); }
+    static uint64_t GetNewId() { return s_id.fetch_add( 1, std::memory_order_relaxed ); }
 
-    static void FrameMark();
+    static void FrameMark()
+    {
+        int8_t cpu;
+        auto item = s_queue.enqueue_begin( s_token );
+        item->hdr.type = QueueType::FrameMarkMsg;
+        item->hdr.id = (uint64_t)GetTime( cpu );
+        s_queue.enqueue_finish( s_token );
+    }
 
     static bool ShouldExit();
 

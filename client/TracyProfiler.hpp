@@ -39,7 +39,7 @@ public:
     Profiler();
     ~Profiler();
 
-    static int64_t GetTime( int8_t& cpu )
+    static tracy_force_inline int64_t GetTime( int8_t& cpu )
     {
 #if defined _MSC_VER || defined __CYGWIN__
         unsigned int ui;
@@ -52,11 +52,11 @@ public:
 #endif
     }
 
-    static QueueItem* StartItem( Magic& magic ) { return s_queue.enqueue_begin( s_token, magic ); }
-    static void FinishItem( Magic magic ) { s_queue.enqueue_finish( s_token, magic ); }
-    static uint64_t GetNewId() { return s_id.fetch_add( 1, std::memory_order_relaxed ); }
+    static tracy_force_inline QueueItem* StartItem( Magic& magic ) { return s_queue.enqueue_begin( s_token, magic ); }
+    static tracy_force_inline void FinishItem( Magic magic ) { s_queue.enqueue_finish( s_token, magic ); }
+    static tracy_force_inline uint64_t GetNewId() { return s_id.fetch_add( 1, std::memory_order_relaxed ); }
 
-    static void FrameMark()
+    static tracy_force_inline void FrameMark()
     {
         int8_t cpu;
         Magic magic;

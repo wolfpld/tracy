@@ -13,7 +13,7 @@ namespace tracy
 class ScopedZone
 {
 public:
-    ScopedZone( const SourceLocation* srcloc )
+    tracy_force_inline ScopedZone( const SourceLocation* srcloc )
         : m_id( Profiler::GetNewId() )
     {
         Magic magic;
@@ -26,7 +26,7 @@ public:
         Profiler::FinishItem( magic );
     }
 
-    ~ScopedZone()
+    tracy_force_inline ~ScopedZone()
     {
         Magic magic;
         auto item = Profiler::StartItem( magic );
@@ -36,7 +36,7 @@ public:
         Profiler::FinishItem( magic );
     }
 
-    void Text( const char* txt, size_t size )
+    tracy_force_inline void Text( const char* txt, size_t size )
     {
         Magic magic;
         auto ptr = new char[size+1];
@@ -49,7 +49,7 @@ public:
         Profiler::FinishItem( magic );
     }
 
-    void Name( const char* name )
+    tracy_force_inline void Name( const char* name )
     {
         Magic magic;
         auto item = Profiler::StartItem( magic );

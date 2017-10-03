@@ -70,17 +70,15 @@ public:
 #endif
     }
 
-    static tracy_force_inline QueueItem* StartItem( Magic& magic ) { return s_queue.enqueue_begin( s_token, magic ); }
-    static tracy_force_inline void FinishItem( Magic magic ) { s_queue.enqueue_finish( s_token, magic ); }
-
     static tracy_force_inline void FrameMark()
     {
         int8_t cpu;
         Magic magic;
-        auto item = s_queue.enqueue_begin( s_token, magic );
+        auto& token = s_token;
+        auto item = s_queue.enqueue_begin( token, magic );
         item->hdr.type = QueueType::FrameMarkMsg;
         item->frameMark.time = GetTime( cpu );
-        s_queue.enqueue_finish( s_token, magic );
+        s_queue.enqueue_finish( token, magic );
     }
 
     static bool ShouldExit();

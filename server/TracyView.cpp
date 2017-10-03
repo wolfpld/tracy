@@ -198,6 +198,7 @@ void View::Worker()
             m_frames.push_back( welcome.timeBegin * m_timerMul );
             m_delay = welcome.delay * m_timerMul;
             m_resolution = welcome.resolution * m_timerMul;
+            m_programName = welcome.programName;
         }
 
         m_hasData.store( true, std::memory_order_release );
@@ -740,8 +741,11 @@ void View::DrawImpl()
         DrawConnection();
     }
 
+    char title[1024];
+    sprintf( title, "%s###Profiler", m_programName.c_str() );
+
     std::lock_guard<std::mutex> lock( m_lock );
-    ImGui::Begin( "Profiler", nullptr, ImGuiWindowFlags_ShowBorders );
+    ImGui::Begin( title, nullptr, ImGuiWindowFlags_ShowBorders );
     if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 80, 0 ) ) ) m_pause = !m_pause;
     ImGui::SameLine();
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-10" PRIu64" Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt, TimeToString( m_delay ), TimeToString( m_resolution ) );

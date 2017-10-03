@@ -31,6 +31,14 @@
 #pragma once
 
 #if defined(__GNUC__)
+#  define force_inline __attribute__((always_inline))
+#elif defined(_MSC_VER)
+#  define force_inline __forceinline
+#else
+#  define force_inline inline
+#endif
+
+#if defined(__GNUC__)
 // Disable -Wconversion warnings (spuriously triggered when Traits::size_t and
 // Traits::index_t are set to < 32 bits, causing integer promotion, causing warnings
 // upon assigning any computed values)
@@ -943,12 +951,12 @@ public:
 		return inner_enqueue<CanAlloc>(token, std::move(item));
 	}
 
-    inline T* enqueue_begin(producer_token_t const& token)
+    force_inline T* enqueue_begin(producer_token_t const& token)
     {
         return inner_enqueue_begin<CanAlloc>(token);
     }
 
-    inline void enqueue_finish(producer_token_t const& token)
+    force_inline void enqueue_finish(producer_token_t const& token)
     {
         inner_enqueue_finish(token);
     }
@@ -1293,12 +1301,12 @@ private:
 	}
 
     template<AllocationMode canAlloc>
-    inline T* inner_enqueue_begin(producer_token_t const& token)
+    force_inline T* inner_enqueue_begin(producer_token_t const& token)
     {
         return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_begin<canAlloc>();
     }
 
-    inline void inner_enqueue_finish(producer_token_t const& token)
+    force_inline void inner_enqueue_finish(producer_token_t const& token)
     {
         return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_finish();
     }
@@ -1968,7 +1976,7 @@ private:
         }
 
         template<AllocationMode allocMode>
-        inline T* enqueue_begin()
+        force_inline T* enqueue_begin()
         {
             pr_currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
             if ((pr_currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) != 0) {
@@ -1980,7 +1988,7 @@ private:
             }
         }
 
-        inline void enqueue_finish()
+        force_inline void enqueue_finish()
         {
             this->tailIndex.store(pr_currentTailIndex + 1, std::memory_order_release);
         }

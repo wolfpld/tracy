@@ -46,6 +46,12 @@ public:
         const auto t = int64_t( __rdtscp( &ui ) );
         cpu = (int8_t)ui;
         return t;
+#elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+        uint64_t eax, edx;
+        unsigned int ui;
+        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx), "=c" (ui) :: );
+        cpu = (int8_t)ui;
+        return ( edx << 32 ) + eax;
 #else
         cpu = -1;
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();

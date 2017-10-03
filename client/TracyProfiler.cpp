@@ -1,7 +1,12 @@
 #ifdef _MSC_VER
 #  include <winsock2.h>
+#  include <windows.h>
 #else
 #  include <sys/time.h>
+#endif
+
+#ifdef _GNU_SOURCE
+#  include <errno.h>
 #endif
 
 #include <atomic>
@@ -23,6 +28,23 @@
 
 namespace tracy
 {
+
+static const char* GetProcessName()
+{
+#if defined _MSC_VER || defined __CYGWIN__
+    static char buf[_MAX_PATH];
+    GetModuleFileNameA( nullptr, buf, _MAX_PATH );
+    const char* ptr = buf;
+    while( *ptr != '\0' ) ptr++;
+    while( ptr > buf && *ptr != '\\' && *ptr != '/' ) ptr--;
+    if( ptr > buf ) ptr++;
+    return ptr;
+#elif defined _GNU_SOURCE
+    return program_invocation_short_name;
+#else
+    return "unknown";
+#endif
+}
 
 enum { QueuePrealloc = 256 * 1024 };
 

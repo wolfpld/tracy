@@ -31,11 +31,11 @@
 #pragma once
 
 #if defined(__GNUC__)
-#  define force_inline __attribute__((always_inline))
+#  define tracy_force_inline __attribute__((always_inline))
 #elif defined(_MSC_VER)
-#  define force_inline __forceinline
+#  define tracy_force_inline __forceinline
 #else
-#  define force_inline inline
+#  define tracy_force_inline inline
 #endif
 
 #if defined(__GNUC__)
@@ -951,12 +951,12 @@ public:
 		return inner_enqueue<CanAlloc>(token, std::move(item));
 	}
 
-    force_inline T* enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
+    tracy_force_inline T* enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
     {
         return inner_enqueue_begin<CanAlloc>(token, currentTailIndex);
     }
 
-    force_inline void enqueue_finish(producer_token_t const& token, index_t currentTailIndex)
+    tracy_force_inline void enqueue_finish(producer_token_t const& token, index_t currentTailIndex)
     {
         inner_enqueue_finish(token, currentTailIndex);
     }
@@ -1301,12 +1301,12 @@ private:
 	}
 
     template<AllocationMode canAlloc>
-    force_inline T* inner_enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
+    tracy_force_inline T* inner_enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
     {
         return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_begin<canAlloc>(currentTailIndex);
     }
 
-    force_inline void inner_enqueue_finish(producer_token_t const& token, index_t currentTailIndex)
+    tracy_force_inline void inner_enqueue_finish(producer_token_t const& token, index_t currentTailIndex)
     {
         return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_finish(currentTailIndex);
     }
@@ -1976,7 +1976,7 @@ private:
         }
 
         template<AllocationMode allocMode>
-        force_inline T* enqueue_begin(index_t& currentTailIndex)
+        tracy_force_inline T* enqueue_begin(index_t& currentTailIndex)
         {
             currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
             if ((currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) != 0) {
@@ -1988,7 +1988,7 @@ private:
             }
         }
 
-        force_inline void enqueue_finish(index_t currentTailIndex)
+        tracy_force_inline void enqueue_finish(index_t currentTailIndex)
         {
             this->tailIndex.store(currentTailIndex + 1, std::memory_order_release);
         }

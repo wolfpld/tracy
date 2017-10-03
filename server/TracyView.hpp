@@ -126,7 +126,6 @@ private:
     std::vector<float> m_mbps;
 
     // not used for vis - no need to lock
-    std::unordered_map<uint64_t, QueueZoneEnd> m_pendingEndZone;
     std::unordered_map<uint64_t, Event*> m_openZones;
     std::unordered_set<uint64_t> m_pendingStrings;
     std::unordered_set<uint64_t> m_pendingThreads;

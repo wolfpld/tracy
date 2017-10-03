@@ -364,56 +364,36 @@ void View::Process( const QueueItem& ev )
 
 void View::ProcessZoneBegin( uint64_t id, const QueueZoneBegin& ev )
 {
-    auto it = m_pendingEndZone.find( id );
     auto zone = m_slab.Alloc<Event>();
 
     CheckSourceLocation( ev.srcloc );
     CheckThreadString( ev.thread );
 
     zone->start = ev.time * m_timerMul;
+    zone->end = -1;
     zone->srcloc = ev.srcloc;
     zone->cpu_start = ev.cpu;
     zone->text = nullptr;
 
     std::unique_lock<std::mutex> lock( m_lock );
-
-    if( it == m_pendingEndZone.end() )
-    {
-        zone->end = -1;
-        NewZone( zone, ev.thread );
-        lock.unlock();
-        m_openZones.emplace( id, zone );
-    }
-    else
-    {
-        zone->end = it->second.time * m_timerMul;
-        zone->cpu_end = it->second.cpu;
-        assert( zone->start <= zone->end );
-        NewZone( zone, ev.thread );
-        lock.unlock();
-        m_pendingEndZone.erase( it );
-    }
+    NewZone( zone, ev.thread );
+    lock.unlock();
+    m_openZones.emplace( id, zone );
 }
 
 void View::ProcessZoneEnd( uint64_t id, const QueueZoneEnd& ev )
 {
     auto it = m_openZones.find( id );
-    if( it == m_openZones.end() )
-    {
-        m_pendingEndZone.emplace( id, ev );
-    }
-    else
-    {
-        auto zone = it->second;
-        std::unique_lock<std::mutex> lock( m_lock );
-        assert( zone->end == -1 );
-        zone->end = ev.time * m_timerMul;
-        zone->cpu_end = ev.cpu;
-        assert( zone->end >= zone->start );
-        UpdateZone( zone );
-        lock.unlock();
-        m_openZones.erase( it );
-    }
+    assert( it != m_openZones.end() );
+    auto zone = it->second;
+    std::unique_lock<std::mutex> lock( m_lock );
+    assert( zone->end == -1 );
+    zone->end = ev.time * m_timerMul;
+    zone->cpu_end = ev.cpu;
+    assert( zone->end >= zone->start );
+    UpdateZone( zone );
+    lock.unlock();
+    m_openZones.erase( it );
 }
 
 void View::ProcessFrameMark( uint64_t id )
@@ -421,17 +401,9 @@ void View::ProcessFrameMark( uint64_t id )
     assert( !m_frames.empty() );
     const auto lastframe = m_frames.back();
     const auto time = id * m_timerMul;
-    if( lastframe < time )
-    {
-        std::unique_lock<std::mutex> lock( m_lock );
-        m_frames.push_back( time );
-    }
-    else
-    {
-        auto it = std::lower_bound( m_frames.begin(), m_frames.end(), time );
-        std::unique_lock<std::mutex> lock( m_lock );
-        m_frames.insert( it, time );
-    }
+    assert( lastframe < time );
+    std::unique_lock<std::mutex> lock( m_lock );
+    m_frames.push_back( time );
 }
 
 void View::ProcessZoneText( uint64_t id, const QueueZoneText& ev )
@@ -591,38 +563,9 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
         }
         else
         {
-            auto it = std::upper_bound( vec.begin(), vec.end(), zone->start, [] ( const auto& l, const auto& r ) { return l < r->start; } );
-            if( it == vec.end() )
-            {
-                assert( vec.back()->end == -1 || vec.back()->end >= zone->end );
-                InsertZone( zone, vec.back(), vec.back()->child );
-            }
-            else
-            {
-                zone->parent = parent;
-
-                if( zone->end == -1 )
-                {
-                    for( auto zit = it; zit != vec.end(); ++zit )
-                    {
-                        (*zit)->parent = zone;
-                        zone->child.push_back( *zit );
-                    }
-                    vec.erase( it, vec.end() );
-                    vec.push_back( zone );
-                }
-                else
-                {
-                    auto eit = std::lower_bound( it, vec.end(), zone->end, [] ( const auto& l, const auto& r ) { return l->start < r; } );
-                    for( auto zit = it; zit != eit; zit++ )
-                    {
-                        (*zit)->parent = zone;
-                        zone->child.push_back( *zit );
-                    }
-                    auto nit = vec.erase( it, eit );
-                    vec.insert( nit, zone );
-                }
-            }
+            assert( std::upper_bound( vec.begin(), vec.end(), zone->start, [] ( const auto& l, const auto& r ) { return l < r->start; } ) == vec.end() );
+            assert( vec.back()->end == -1 || vec.back()->end >= zone->end );
+            InsertZone( zone, vec.back(), vec.back()->child );
         }
     }
     else

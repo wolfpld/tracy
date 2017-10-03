@@ -28,7 +28,7 @@ struct SourceLocation
 };
 
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
-extern thread_local moodycamel::ProducerToken s_token;;
+extern thread_local moodycamel::ProducerToken s_token;
 extern std::atomic<uint64_t> s_id;
 
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;

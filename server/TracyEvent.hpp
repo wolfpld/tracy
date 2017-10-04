@@ -41,6 +41,7 @@ struct LockEvent
 
     int64_t time;
     uint64_t thread;
+    uint8_t lockCount;
     Type type;
 };
 

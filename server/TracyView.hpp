@@ -85,6 +85,7 @@ private:
     void InsertZone( Event* zone, Event* parent, Vector<Event*>& vec );
 
     void InsertLockEvent( Vector<LockEvent*>& timeline, LockEvent* lev );
+    void UpdateLockCount( Vector<LockEvent*>& timeline, size_t pos );
 
     uint64_t GetFrameTime( size_t idx ) const;
     uint64_t GetFrameBegin( size_t idx ) const;

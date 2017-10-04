@@ -681,11 +681,38 @@ void View::InsertLockEvent( Vector<LockEvent*>& timeline, LockEvent* lev )
     if( timeline.empty() || timeline.back()->time < lev->time )
     {
         timeline.push_back( lev );
+        UpdateLockCount( timeline, timeline.size() - 1 );
     }
     else
     {
         auto it = std::lower_bound( timeline.begin(), timeline.end(), lev->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        timeline.insert( it, lev );
+        it = timeline.insert( it, lev );
+        UpdateLockCount( timeline, std::distance( timeline.begin(), it ) );
+    }
+}
+
+void View::UpdateLockCount( Vector<LockEvent*>& timeline, size_t pos )
+{
+    uint8_t count = pos == 0 ? 0 : timeline[pos-1]->lockCount;
+    const auto end = timeline.size();
+
+    while( pos != end )
+    {
+        switch( timeline[pos]->type )
+        {
+        case LockEvent::Type::Obtain:
+            assert( count < std::numeric_limits<uint8_t>::max() );
+            count++;
+            break;
+        case LockEvent::Type::Release:
+            assert( count > 0 );
+            count--;
+            break;
+        default:
+            break;
+        }
+        timeline[pos]->lockCount = count;
+        pos++;
     }
 }
 

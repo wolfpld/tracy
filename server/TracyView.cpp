@@ -376,6 +376,12 @@ void View::Process( const QueueItem& ev )
     case QueueType::LockAnnounce:
         ProcessLockAnnounce( ev.lockAnnounce );
         break;
+    case QueueType::LockWait:
+        break;
+    case QueueType::LockObtain:
+        break;
+    case QueueType::LockRelease:
+        break;
     default:
         assert( false );
         break;

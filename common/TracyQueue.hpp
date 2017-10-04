@@ -80,14 +80,23 @@ struct QueueLockAnnounce
 
 struct QueueLockWait
 {
+    uint64_t id;        // ptr
+    int64_t time;
+    uint64_t thread;
 };
 
 struct QueueLockObtain
 {
+    uint64_t id;        // ptr
+    int64_t time;
+    uint64_t thread;
 };
 
 struct QueueLockRelease
 {
+    uint64_t id;        // ptr
+    int64_t time;
+    uint64_t thread;
 };
 
 struct QueueHeader

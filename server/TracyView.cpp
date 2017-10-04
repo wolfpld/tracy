@@ -457,41 +457,80 @@ void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
 {
     CheckSourceLocation( ev.srcloc );
 
-    std::lock_guard<std::mutex> lock( m_lock );
     assert( m_lockMap.find( ev.id ) == m_lockMap.end() );
-    m_lockMap.emplace( ev.id, LockMap { ev.srcloc } );
+    auto it = m_pendingLocks.find( ev.id );
+
+    std::unique_lock<std::mutex> lock( m_lock );
+    auto& lockmap = m_lockMap.emplace( ev.id, LockMap { ev.id, ev.srcloc } ).first->second;
+
+    if( it != m_pendingLocks.end() )
+    {
+        for( auto& v : it->second )
+        {
+            InsertLockEvent( lockmap.timeline, v );
+        }
+        lock.unlock();
+        m_pendingLocks.erase( it );
+    }
 }
 
 void View::ProcessLockWait( const QueueLockWait& ev )
 {
+    auto lev = m_slab.Alloc<LockEvent>();
+    lev->time = ev.time;
+    lev->thread = ev.thread;
+    lev->type = LockEvent::Type::Wait;
+
     auto it = m_lockMap.find( ev.id );
     if( it == m_lockMap.end() )
     {
         auto& v = m_pendingLocks[ev.id];
-        v.push_back( LockEvent { ev.time, ev.thread, LockEvent::Type::Wait } );
-        return;
+        v.push_back( lev );
+    }
+    else
+    {
+        std::lock_guard<std::mutex> lock( m_lock );
+        InsertLockEvent( it->second.timeline, lev );
     }
 }
 
 void View::ProcessLockObtain( const QueueLockObtain& ev )
 {
+    auto lev = m_slab.Alloc<LockEvent>();
+    lev->time = ev.time;
+    lev->thread = ev.thread;
+    lev->type = LockEvent::Type::Obtain;
+
     auto it = m_lockMap.find( ev.id );
     if( it == m_lockMap.end() )
     {
         auto& v = m_pendingLocks[ev.id];
-        v.push_back( LockEvent { ev.time, ev.thread, LockEvent::Type::Obtain } );
-        return;
+        v.push_back( lev );
+    }
+    else
+    {
+        std::lock_guard<std::mutex> lock( m_lock );
+        InsertLockEvent( it->second.timeline, lev );
     }
 }
 
 void View::ProcessLockRelease( const QueueLockRelease& ev )
 {
+    auto lev = m_slab.Alloc<LockEvent>();
+    lev->time = ev.time;
+    lev->thread = ev.thread;
+    lev->type = LockEvent::Type::Release;
+
     auto it = m_lockMap.find( ev.id );
     if( it == m_lockMap.end() )
     {
         auto& v = m_pendingLocks[ev.id];
-        v.push_back( LockEvent { ev.time, ev.thread, LockEvent::Type::Release } );
-        return;
+        v.push_back( lev );
+    }
+    else
+    {
+        std::lock_guard<std::mutex> lock( m_lock );
+        InsertLockEvent( it->second.timeline, lev );
     }
 }
 
@@ -635,6 +674,10 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
         zone->parent = parent;
         vec.push_back( zone );
     }
+}
+
+void View::InsertLockEvent( Vector<LockEvent*>& timeline, const LockEvent* lev )
+{
 }
 
 uint64_t View::GetFrameTime( size_t idx ) const

@@ -46,15 +46,6 @@ struct LockEvent
 
 enum { LockEventSize = sizeof( LockEvent ) };
 
-
-struct LockTimeline
-{
-    uint64_t id;
-    Vector<LockEvent*> timeline;
-};
-
-enum { LockTimelineSize = sizeof( LockTimeline ) };
-
 #pragma pack()
 
 }

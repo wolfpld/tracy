@@ -46,8 +46,9 @@ private:
 
     struct LockMap
     {
+        uint64_t id;
         uint64_t srcloc;
-        LockTimeline ev;
+        Vector<LockEvent*> timeline;
     };
 
     void Worker();
@@ -82,6 +83,8 @@ private:
     void UpdateZone( Event* zone );
 
     void InsertZone( Event* zone, Event* parent, Vector<Event*>& vec );
+
+    void InsertLockEvent( Vector<LockEvent*>& timeline, const LockEvent* lev );
 
     uint64_t GetFrameTime( size_t idx ) const;
     uint64_t GetFrameBegin( size_t idx ) const;
@@ -143,7 +146,7 @@ private:
     std::unordered_set<uint64_t> m_pendingSourceLocation;
     std::unordered_map<uint64_t, Event*> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
-    std::unordered_map<uint64_t, std::vector<LockEvent>> m_pendingLocks;
+    std::unordered_map<uint64_t, std::vector<LockEvent*>> m_pendingLocks;
 
     Slab<EventSize*1024*1024> m_slab;
 

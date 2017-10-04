@@ -17,6 +17,10 @@ enum class QueueType : uint8_t
     SourceLocation,
     ZoneText,
     ZoneName,
+    LockAnnounce,
+    LockWait,
+    LockObtain,
+    LockRelease,
     NUM_TYPES
 };
 
@@ -68,6 +72,24 @@ struct QueueZoneName
     uint64_t name;      // ptr
 };
 
+struct QueueLockAnnounce
+{
+    uint64_t id;        // ptr
+    uint64_t srcloc;    // ptr
+};
+
+struct QueueLockWait
+{
+};
+
+struct QueueLockObtain
+{
+};
+
+struct QueueLockRelease
+{
+};
+
 struct QueueHeader
 {
     union
@@ -89,6 +111,10 @@ struct QueueItem
         QueueSourceLocation srcloc;
         QueueZoneText zoneText;
         QueueZoneName zoneName;
+        QueueLockAnnounce lockAnnounce;
+        QueueLockWait lockWait;
+        QueueLockObtain lockObtain;
+        QueueLockRelease lockRelease;
     };
 };
 
@@ -106,6 +132,10 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueZoneName ),
+    sizeof( QueueHeader ) + sizeof( QueueLockAnnounce ),
+    sizeof( QueueHeader ) + sizeof( QueueLockWait ),
+    sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
+    sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
 };
 
 static_assert( sizeof( QueueDataSize ) / sizeof( size_t ) == (uint8_t)QueueType::NUM_TYPES, "QueueDataSize mismatch" );

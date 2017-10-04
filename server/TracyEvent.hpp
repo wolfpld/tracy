@@ -32,10 +32,28 @@ enum { EventSize = sizeof( Event ) };
 
 struct LockEvent
 {
-    uint64_t srcloc;
+    enum class Type : uint8_t
+    {
+        Wait,
+        Obtain,
+        Release
+    };
+
+    int64_t time;
+    uint64_t thread;
+    Type type;
 };
 
 enum { LockEventSize = sizeof( LockEvent ) };
+
+
+struct LockTimeline
+{
+    uint64_t id;
+    Vector<LockEvent*> timeline;
+};
+
+enum { LockTimelineSize = sizeof( LockTimeline ) };
 
 #pragma pack()
 

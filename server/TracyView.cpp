@@ -454,14 +454,9 @@ void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
 {
     CheckSourceLocation( ev.srcloc );
 
-    auto ptr = m_slab.Alloc<LockEvent>();
-    ptr->srcloc = ev.srcloc;
-
-    assert( m_lockMap.find( ev.id ) == m_lockMap.end() );
-    m_lockMap.emplace( ev.id, ptr );
-
     std::lock_guard<std::mutex> lock( m_lock );
-    m_locks.push_back( ptr );
+    assert( m_lockMap.find( ev.id ) == m_lockMap.end() );
+    m_lockMap.emplace( ev.id, LockMap { ev.srcloc } );
 }
 
 void View::CheckString( uint64_t ptr )

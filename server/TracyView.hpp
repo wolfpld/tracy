@@ -44,6 +44,12 @@ private:
         Vector<Event*> timeline;
     };
 
+    struct LockMap
+    {
+        uint64_t srcloc;
+        LockTimeline ev;
+    };
+
     void Worker();
 
     void DispatchProcess( const QueueItem& ev );
@@ -117,11 +123,11 @@ private:
     std::mutex m_lock;
     Vector<uint64_t> m_frames;
     Vector<ThreadData*> m_threads;
-    Vector<LockEvent*> m_locks;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
     std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;
     std::unordered_map<uint64_t, QueueSourceLocation> m_sourceLocation;
+    std::unordered_map<uint64_t, LockMap> m_lockMap;
     uint64_t m_zonesCnt;
 
     std::mutex m_mbpslock;
@@ -134,7 +140,6 @@ private:
     std::unordered_set<uint64_t> m_pendingSourceLocation;
     std::unordered_map<uint64_t, Event*> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
-    std::unordered_map<uint64_t, LockEvent*> m_lockMap;
 
     Slab<EventSize*1024*1024> m_slab;
 

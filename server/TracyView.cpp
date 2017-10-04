@@ -676,8 +676,17 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
     }
 }
 
-void View::InsertLockEvent( Vector<LockEvent*>& timeline, const LockEvent* lev )
+void View::InsertLockEvent( Vector<LockEvent*>& timeline, LockEvent* lev )
 {
+    if( timeline.empty() || timeline.back()->time < lev->time )
+    {
+        timeline.push_back( lev );
+    }
+    else
+    {
+        auto it = std::lower_bound( timeline.begin(), timeline.end(), lev->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        timeline.insert( it, lev );
+    }
 }
 
 uint64_t View::GetFrameTime( size_t idx ) const

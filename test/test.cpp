@@ -39,14 +39,14 @@ void ScopeCheck()
     }
 }
 
-static std::mutex mutex;
+static TracyLockable( std::mutex, mutex );
 
 void Lock1()
 {
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
-        std::lock_guard<std::mutex> lock( mutex );
+        std::lock_guard<LockableBase( std::mutex )> lock( mutex );
         ZoneScoped;
         std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
     }
@@ -57,7 +57,7 @@ void Lock2()
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 3 ) );
-        std::unique_lock<std::mutex> lock( mutex );
+        std::unique_lock<LockableBase( std::mutex )> lock( mutex );
         ZoneScoped;
         std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
     }

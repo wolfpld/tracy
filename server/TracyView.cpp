@@ -377,10 +377,13 @@ void View::Process( const QueueItem& ev )
         ProcessLockAnnounce( ev.lockAnnounce );
         break;
     case QueueType::LockWait:
+        ProcessLockWait( ev.lockWait );
         break;
     case QueueType::LockObtain:
+        ProcessLockObtain( ev.lockObtain );
         break;
     case QueueType::LockRelease:
+        ProcessLockRelease( ev.lockRelease );
         break;
     default:
         assert( false );
@@ -457,6 +460,39 @@ void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     std::lock_guard<std::mutex> lock( m_lock );
     assert( m_lockMap.find( ev.id ) == m_lockMap.end() );
     m_lockMap.emplace( ev.id, LockMap { ev.srcloc } );
+}
+
+void View::ProcessLockWait( const QueueLockWait& ev )
+{
+    auto it = m_lockMap.find( ev.id );
+    if( it == m_lockMap.end() )
+    {
+        auto& v = m_pendingLocks[ev.id];
+        v.push_back( LockEvent { ev.time, ev.thread, LockEvent::Type::Wait } );
+        return;
+    }
+}
+
+void View::ProcessLockObtain( const QueueLockObtain& ev )
+{
+    auto it = m_lockMap.find( ev.id );
+    if( it == m_lockMap.end() )
+    {
+        auto& v = m_pendingLocks[ev.id];
+        v.push_back( LockEvent { ev.time, ev.thread, LockEvent::Type::Obtain } );
+        return;
+    }
+}
+
+void View::ProcessLockRelease( const QueueLockRelease& ev )
+{
+    auto it = m_lockMap.find( ev.id );
+    if( it == m_lockMap.end() )
+    {
+        auto& v = m_pendingLocks[ev.id];
+        v.push_back( LockEvent { ev.time, ev.thread, LockEvent::Type::Release } );
+        return;
+    }
 }
 
 void View::CheckString( uint64_t ptr )

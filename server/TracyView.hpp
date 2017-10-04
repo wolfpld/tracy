@@ -64,6 +64,9 @@ private:
     void ProcessZoneText( const QueueZoneText& ev );
     void ProcessZoneName( const QueueZoneName& ev );
     void ProcessLockAnnounce( const QueueLockAnnounce& ev );
+    void ProcessLockWait( const QueueLockWait& ev );
+    void ProcessLockObtain( const QueueLockObtain& ev );
+    void ProcessLockRelease( const QueueLockRelease& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
@@ -140,6 +143,7 @@ private:
     std::unordered_set<uint64_t> m_pendingSourceLocation;
     std::unordered_map<uint64_t, Event*> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
+    std::unordered_map<uint64_t, std::vector<LockEvent>> m_pendingLocks;
 
     Slab<EventSize*1024*1024> m_slab;
 

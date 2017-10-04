@@ -1338,9 +1338,11 @@ void View::DrawZones()
         offset += ostep;
 
         m_lastCpu = -1;
-        const auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
+        auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
+        offset += ostep * ( depth + 1 );
 
-        offset += ostep * ( depth + 1.2f );
+        depth = DrawLocks( v->id, hover, pxns, wpos, offset );
+        offset += ostep * ( depth + 0.2f );
     }
 }
 
@@ -1512,6 +1514,52 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
         }
     }
     return maxdepth;
+}
+
+int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset )
+{
+    int cnt = 0;
+    for( auto& v : m_lockMap )
+    {
+        auto& lockmap = v.second;
+        if( lockmap.threads.find( tid ) == lockmap.threads.end() ) continue;
+        auto& tl = lockmap.timeline;
+        auto it = std::lower_bound( tl.begin(), tl.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+        if( it != tl.end() )
+        {
+            const auto eit = std::lower_bound( tl.begin(), tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+            if( it != eit )
+            {
+                bool drawn = false;
+                const auto ty = ImGui::GetFontSize();
+                const auto ostep = ty + 1;
+                const auto offset = _offset + ostep * cnt;
+                auto draw = ImGui::GetWindowDrawList();
+                auto& srcloc = GetSourceLocation( lockmap.srcloc );
+
+                int64_t pos = std::distance( tl.begin(), it );
+                int64_t last = std::distance( tl.begin(), eit );
+
+                while( pos < last )
+                {
+                    if( tl[pos]->thread == tid )
+                    {
+                        const auto px0 = ( tl[pos]->time - m_zvStart ) * pxns;
+                        draw->AddCircle( wpos + ImVec2( px0, offset + ty / 2 ), 5.f, tl[pos]->type == LockEvent::Type::Wait ? 0xFF0000FF : ( tl[pos]->type == LockEvent::Type::Obtain ? 0xFF00FF00 : 0xFF00FFFF ) );
+                        drawn = true;
+                    }
+                    pos++;
+                }
+
+                if( drawn )
+                {
+                    draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, GetString( srcloc.function ) );
+                    cnt++;
+                }
+            }
+        }
+    }
+    return cnt;
 }
 
 void View::DrawZoneInfoWindow()

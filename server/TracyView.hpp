@@ -103,6 +103,7 @@ private:
     void DrawFrames();
     void DrawZones();
     int DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
+    int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset );
     void DrawZoneInfoWindow();
 
     uint32_t GetZoneColor( const Event& ev );

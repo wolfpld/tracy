@@ -419,7 +419,7 @@ void View::ProcessFrameMark( const QueueFrameMark& ev )
     const auto lastframe = m_frames.back();
     const auto time = ev.time * m_timerMul;
     assert( lastframe < time );
-    std::unique_lock<std::mutex> lock( m_lock );
+    std::lock_guard<std::mutex> lock( m_lock );
     m_frames.push_back( time );
 }
 
@@ -437,6 +437,7 @@ void View::ProcessZoneName( const QueueZoneName& ev )
     assert( !stack.empty() );
     auto zone = stack.back();
     CheckString( ev.name );
+    std::lock_guard<std::mutex> lock( m_lock );
     GetTextData( *zone )->zoneName = ev.name;
 }
 
@@ -502,6 +503,7 @@ void View::AddCustomString( uint64_t ptr, std::string&& str )
 {
     auto pit = m_pendingCustomStrings.find( ptr );
     assert( pit != m_pendingCustomStrings.end() );
+    std::unique_lock<std::mutex> lock( m_lock );
     auto sit = m_customStrings.find( str.c_str() );
     if( sit == m_customStrings.end() )
     {
@@ -516,6 +518,7 @@ void View::AddCustomString( uint64_t ptr, std::string&& str )
     {
         GetTextData( *pit->second )->userText = *sit;
     }
+    lock.unlock();
     m_pendingCustomStrings.erase( pit );
 }
 

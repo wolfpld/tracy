@@ -153,6 +153,29 @@ View::View( FileRead& f )
     }
 
     f.Read( &sz, sizeof( sz ) );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        LockMap lockmap;
+        uint64_t id, tsz;
+        f.Read( &id, sizeof( id ) );
+        f.Read( &tsz, sizeof( tsz ) );
+        for( uint64_t i=0; i<tsz; i++ )
+        {
+            uint64_t t;
+            f.Read( &t, sizeof( t ) );
+            lockmap.threads.emplace( t );
+        }
+        f.Read( &tsz, sizeof( tsz ) );
+        for( uint64_t i=0; i<tsz; i++ )
+        {
+            auto lev = m_slab.Alloc<LockEvent>();
+            f.Read( lev, sizeof( LockEvent ) );
+            lockmap.timeline.push_back( lev );
+        }
+        m_lockMap.emplace( id, std::move( lockmap ) );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
     m_threads.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
@@ -1758,6 +1781,25 @@ void View::Write( FileWrite& f )
     {
         f.Write( &v.first, sizeof( v.first ) );
         f.Write( &v.second, sizeof( v.second ) );
+    }
+
+    sz = m_lockMap.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_lockMap )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        sz = v.second.threads.size();
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& t : v.second.threads )
+        {
+            f.Write( &t, sizeof( t ) );
+        }
+        sz = v.second.timeline.size();
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& lev : v.second.timeline )
+        {
+            f.Write( lev, sizeof( LockEvent ) );
+        }
     }
 
     sz = m_threads.size();

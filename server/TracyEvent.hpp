@@ -27,6 +27,14 @@ struct Event
 
 enum { EventSize = sizeof( Event ) };
 
+
+struct LockEvent
+{
+    uint64_t srcloc;
+};
+
+enum { LockEventSize = sizeof( LockEvent ) };
+
 }
 
 #endif

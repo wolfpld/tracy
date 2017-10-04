@@ -12,6 +12,13 @@ class Lockable
 public:
     Lockable( const SourceLocation* srcloc )
     {
+        Magic magic;
+        auto& token = s_token;
+        auto item = s_queue.enqueue_begin( token, magic );
+        item->hdr.type = QueueType::LockAnnounce;
+        item->lockAnnounce.id = (uint64_t)&m_lockable;
+        item->lockAnnounce.srcloc = (uint64_t)srcloc;
+        s_queue.enqueue_finish( token, magic );
     }
 
     Lockable( const Lockable& ) = delete;

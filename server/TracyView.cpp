@@ -373,6 +373,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::ZoneName:
         ProcessZoneName( ev.zoneName );
         break;
+    case QueueType::LockAnnounce:
+        ProcessLockAnnounce( ev.lockAnnounce );
+        break;
     default:
         assert( false );
         break;
@@ -439,6 +442,27 @@ void View::ProcessZoneName( const QueueZoneName& ev )
     CheckString( ev.name );
     std::lock_guard<std::mutex> lock( m_lock );
     GetTextData( *zone )->zoneName = ev.name;
+}
+
+void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
+{
+    CheckSourceLocation( ev.srcloc );
+
+    auto ptr = m_slab.Alloc<LockEvent>();
+    ptr->srcloc = ev.srcloc;
+
+    auto it = m_lockMap.find( ev.id );
+    if( it == m_lockMap.end() )
+    {
+        m_lockMap.emplace( ev.id, ptr );
+    }
+    else
+    {
+        it->second = ptr;
+    }
+
+    std::lock_guard<std::mutex> lock( m_lock );
+    m_locks.push_back( ptr );
 }
 
 void View::CheckString( uint64_t ptr )

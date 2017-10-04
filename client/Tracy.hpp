@@ -11,8 +11,12 @@
 
 #define FrameMark
 
+#define TracyLockable( type, varname ) type varname;
+#define LockableBase( type ) type
+
 #else
 
+#include "TracyLock.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyScoped.hpp"
 
@@ -23,6 +27,9 @@
 #define ZoneName( name ) ___tracy_scoped_zone.Name( name );
 
 #define FrameMark tracy::Profiler::FrameMark();
+
+#define TracyLockable( type, varname ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { #varname, __FILE__, __LINE__, 0 }; return &srcloc; }() };
+#define LockableBase( type ) tracy::Lockable<type>
 
 #endif
 

@@ -12,6 +12,8 @@ struct TextData
     uint64_t zoneName;      // ptr
 };
 
+#pragma pack( 1 )
+
 struct Event
 {
     int64_t start;
@@ -34,6 +36,8 @@ struct LockEvent
 };
 
 enum { LockEventSize = sizeof( LockEvent ) };
+
+#pragma pack()
 
 }
 

@@ -1,23 +1,28 @@
 #ifndef __TRACYLOCK_HPP__
 #define __TRACYLOCK_HPP__
 
+#include <atomic>
+
 #include "../common/TracySystem.hpp"
 #include "TracyProfiler.hpp"
 
 namespace tracy
 {
 
+static std::atomic<uint64_t> s_lockCounter( 0 );
+
 template<class T>
 class Lockable
 {
 public:
     Lockable( const SourceLocation* srcloc )
+        : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
     {
         Magic magic;
         auto& token = s_token;
         auto item = s_queue.enqueue_begin( token, magic );
         item->hdr.type = QueueType::LockAnnounce;
-        item->lockAnnounce.id = (uint64_t)&m_lockable;
+        item->lockAnnounce.id = m_id;
         item->lockAnnounce.srcloc = (uint64_t)srcloc;
         s_queue.enqueue_finish( token, magic );
     }
@@ -34,7 +39,7 @@ public:
             auto& token = s_token;
             auto item = s_queue.enqueue_begin( token, magic );
             item->hdr.type = QueueType::LockWait;
-            item->lockWait.id = (uint64_t)&m_lockable;
+            item->lockWait.id = m_id;
             item->lockWait.thread = thread;
             item->lockWait.time = Profiler::GetTime( item->zoneBegin.cpu );
             s_queue.enqueue_finish( token, magic );
@@ -47,7 +52,7 @@ public:
             auto& token = s_token;
             auto item = s_queue.enqueue_begin( token, magic );
             item->hdr.type = QueueType::LockObtain;
-            item->lockObtain.id = (uint64_t)&m_lockable;
+            item->lockObtain.id = m_id;
             item->lockObtain.thread = thread;
             item->lockObtain.time = Profiler::GetTime( item->zoneBegin.cpu );
             s_queue.enqueue_finish( token, magic );
@@ -63,7 +68,7 @@ public:
         auto& token = s_token;
         auto item = s_queue.enqueue_begin( token, magic );
         item->hdr.type = QueueType::LockRelease;
-        item->lockRelease.id = (uint64_t)&m_lockable;
+        item->lockRelease.id = m_id;
         item->lockRelease.thread = GetThreadHandle();
         item->lockRelease.time = Profiler::GetTime( item->zoneBegin.cpu );
         s_queue.enqueue_finish( token, magic );
@@ -89,6 +94,7 @@ public:
 
 private:
     T m_lockable;
+    uint64_t m_id;
 };
 
 };

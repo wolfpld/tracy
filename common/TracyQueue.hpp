@@ -74,27 +74,27 @@ struct QueueZoneName
 
 struct QueueLockAnnounce
 {
-    uint64_t id;        // ptr
+    uint64_t id;
     uint64_t srcloc;    // ptr
 };
 
 struct QueueLockWait
 {
-    uint64_t id;        // ptr
+    uint64_t id;
     int64_t time;
     uint64_t thread;
 };
 
 struct QueueLockObtain
 {
-    uint64_t id;        // ptr
+    uint64_t id;
     int64_t time;
     uint64_t thread;
 };
 
 struct QueueLockRelease
 {
-    uint64_t id;        // ptr
+    uint64_t id;
     int64_t time;
     uint64_t thread;
 };

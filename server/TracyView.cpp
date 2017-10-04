@@ -457,15 +457,8 @@ void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     auto ptr = m_slab.Alloc<LockEvent>();
     ptr->srcloc = ev.srcloc;
 
-    auto it = m_lockMap.find( ev.id );
-    if( it == m_lockMap.end() )
-    {
-        m_lockMap.emplace( ev.id, ptr );
-    }
-    else
-    {
-        it->second = ptr;
-    }
+    assert( m_lockMap.find( ev.id ) == m_lockMap.end() );
+    m_lockMap.emplace( ev.id, ptr );
 
     std::lock_guard<std::mutex> lock( m_lock );
     m_locks.push_back( ptr );

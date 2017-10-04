@@ -49,6 +49,7 @@ private:
         uint64_t id;
         uint64_t srcloc;
         Vector<LockEvent*> timeline;
+        std::unordered_set<uint64_t> threads;
     };
 
     void Worker();
@@ -84,7 +85,7 @@ private:
 
     void InsertZone( Event* zone, Event* parent, Vector<Event*>& vec );
 
-    void InsertLockEvent( Vector<LockEvent*>& timeline, LockEvent* lev );
+    void InsertLockEvent( LockMap& lockmap, LockEvent* lev );
     void UpdateLockCount( Vector<LockEvent*>& timeline, size_t pos );
 
     uint64_t GetFrameTime( size_t idx ) const;

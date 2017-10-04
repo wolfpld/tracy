@@ -467,7 +467,7 @@ void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     {
         for( auto& v : it->second )
         {
-            InsertLockEvent( lockmap.timeline, v );
+            InsertLockEvent( lockmap, v );
         }
         lock.unlock();
         m_pendingLocks.erase( it );
@@ -490,7 +490,7 @@ void View::ProcessLockWait( const QueueLockWait& ev )
     else
     {
         std::lock_guard<std::mutex> lock( m_lock );
-        InsertLockEvent( it->second.timeline, lev );
+        InsertLockEvent( it->second, lev );
     }
 }
 
@@ -510,7 +510,7 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
     else
     {
         std::lock_guard<std::mutex> lock( m_lock );
-        InsertLockEvent( it->second.timeline, lev );
+        InsertLockEvent( it->second, lev );
     }
 }
 
@@ -530,7 +530,7 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
     else
     {
         std::lock_guard<std::mutex> lock( m_lock );
-        InsertLockEvent( it->second.timeline, lev );
+        InsertLockEvent( it->second, lev );
     }
 }
 
@@ -676,8 +676,10 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
     }
 }
 
-void View::InsertLockEvent( Vector<LockEvent*>& timeline, LockEvent* lev )
+void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev )
 {
+    lockmap.threads.insert( lev->thread );
+    auto& timeline = lockmap.timeline;
     if( timeline.empty() || timeline.back()->time < lev->time )
     {
         timeline.push_back( lev );

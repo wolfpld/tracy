@@ -158,6 +158,7 @@ View::View( FileRead& f )
         LockMap lockmap;
         uint64_t id, tsz;
         f.Read( &id, sizeof( id ) );
+        f.Read( &lockmap.srcloc, sizeof( lockmap.srcloc ) );
         f.Read( &tsz, sizeof( tsz ) );
         for( uint64_t i=0; i<tsz; i++ )
         {
@@ -1836,6 +1837,7 @@ void View::Write( FileWrite& f )
     for( auto& v : m_lockMap )
     {
         f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second.srcloc, sizeof( v.second.srcloc ) );
         sz = v.second.threads.size();
         f.Write( &sz, sizeof( sz ) );
         for( auto& t : v.second.threads )

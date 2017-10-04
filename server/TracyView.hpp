@@ -46,7 +46,6 @@ private:
 
     struct LockMap
     {
-        uint64_t id;
         uint64_t srcloc;
         Vector<LockEvent*> timeline;
         std::unordered_set<uint64_t> threads;

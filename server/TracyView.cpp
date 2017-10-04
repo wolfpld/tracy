@@ -461,7 +461,7 @@ void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     auto it = m_pendingLocks.find( ev.id );
 
     std::unique_lock<std::mutex> lock( m_lock );
-    auto& lockmap = m_lockMap.emplace( ev.id, LockMap { ev.id, ev.srcloc } ).first->second;
+    auto& lockmap = m_lockMap.emplace( ev.id, LockMap { ev.srcloc } ).first->second;
 
     if( it != m_pendingLocks.end() )
     {

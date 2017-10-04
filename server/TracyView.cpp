@@ -477,7 +477,7 @@ void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
 void View::ProcessLockWait( const QueueLockWait& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
-    lev->time = ev.time;
+    lev->time = ev.time * m_timerMul;
     lev->thread = ev.thread;
     lev->type = LockEvent::Type::Wait;
 
@@ -497,7 +497,7 @@ void View::ProcessLockWait( const QueueLockWait& ev )
 void View::ProcessLockObtain( const QueueLockObtain& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
-    lev->time = ev.time;
+    lev->time = ev.time * m_timerMul;
     lev->thread = ev.thread;
     lev->type = LockEvent::Type::Obtain;
 
@@ -517,7 +517,7 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
 void View::ProcessLockRelease( const QueueLockRelease& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
-    lev->time = ev.time;
+    lev->time = ev.time * m_timerMul;
     lev->thread = ev.thread;
     lev->type = LockEvent::Type::Release;
 

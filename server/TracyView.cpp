@@ -1554,7 +1554,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
                 if( drawn )
                 {
-                    draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, GetString( srcloc.function ) );
+                    char buf[1024];
+                    sprintf( buf, "%" PRIu64 ": %s", v.first, GetString( srcloc.function ) );
+                    draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
                     cnt++;
                 }
             }

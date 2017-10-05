@@ -1521,47 +1521,127 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
 
 int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset )
 {
+    enum class State
+    {
+        Nothing,
+        HasLock,
+        WaitLock
+    };
+
     int cnt = 0;
     for( auto& v : m_lockMap )
     {
         auto& lockmap = v.second;
         if( lockmap.threads.find( tid ) == lockmap.threads.end() ) continue;
         auto& tl = lockmap.timeline;
-        auto it = std::lower_bound( tl.begin(), tl.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
-        if( it != tl.end() )
+        assert( !tl.empty() );
+        auto vbegin = std::lower_bound( tl.begin(), tl.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+        const auto vend = std::lower_bound( tl.begin(), tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+
+        if( vbegin > tl.begin() ) vbegin--;
+
+        State state = State::Nothing;
+        if( (*vbegin)->lockCount > 0 )
         {
-            const auto eit = std::lower_bound( tl.begin(), tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
-            if( it != eit )
+            auto it = vbegin;
+            for(;;)
             {
-                bool drawn = false;
-                const auto ty = ImGui::GetFontSize();
-                const auto ostep = ty + 1;
-                const auto offset = _offset + ostep * cnt;
-                auto draw = ImGui::GetWindowDrawList();
-                auto& srcloc = GetSourceLocation( lockmap.srcloc );
-
-                int64_t pos = std::distance( tl.begin(), it );
-                int64_t last = std::distance( tl.begin(), eit );
-
-                while( pos < last )
+                if( (*it)->type == LockEvent::Type::Obtain )
                 {
-                    if( tl[pos]->thread == tid )
+                    if( (*it)->thread == tid )
                     {
-                        const auto px0 = ( tl[pos]->time - m_zvStart ) * pxns;
-                        draw->AddCircle( wpos + ImVec2( px0, offset + ty / 2 ), 5.f, tl[pos]->type == LockEvent::Type::Wait ? 0xFF0000FF : ( tl[pos]->type == LockEvent::Type::Obtain ? 0xFF00FF00 : 0xFF00FFFF ) );
-                        drawn = true;
+                        state = State::HasLock;
                     }
-                    pos++;
+                    break;
                 }
-
-                if( drawn )
+                --it;
+            }
+            if( state == State::Nothing && (*vbegin)->waitCount > 0 )
+            {
+                auto it = vbegin;
+                for(;;)
                 {
-                    char buf[1024];
-                    sprintf( buf, "%" PRIu64 ": %s", v.first, GetString( srcloc.function ) );
-                    draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
-                    cnt++;
+                    if( (*it)->waitCount == 0 ) break;
+                    if( (*it)->type == LockEvent::Type::Wait && (*it)->thread == tid )
+                    {
+                        state = State::WaitLock;
+                        break;
+                    }
+                    --it;
                 }
             }
+        }
+
+        bool drawn = false;
+        const auto w = ImGui::GetWindowContentRegionWidth();
+        const auto ty = ImGui::GetFontSize();
+        const auto ostep = ty + 1;
+        const auto offset = _offset + ostep * cnt;
+        auto draw = ImGui::GetWindowDrawList();
+        auto& srcloc = GetSourceLocation( lockmap.srcloc );
+
+        while( vbegin < vend )
+        {
+            State nextState = State::Nothing;
+            auto next = vbegin;
+            next++;
+
+            switch( state )
+            {
+            case State::Nothing:
+                while( next != tl.end() )
+                {
+                    if( (*next)->thread == tid && (*next)->lockCount > 0 )
+                    {
+                        nextState = (*next)->waitCount > 0 ? State::WaitLock : State::HasLock;
+                        break;
+                    }
+                    next++;
+                }
+                break;
+            case State::HasLock:
+                nextState = State::Nothing;
+                while( next != tl.end() )
+                {
+                    if( (*next)->lockCount == 0 ) break;
+                    next++;
+                }
+                break;
+            case State::WaitLock:
+                nextState = State::HasLock;
+                while( next != tl.end() )
+                {
+                    if( (*next)->type == LockEvent::Type::Obtain && (*next)->thread == tid ) break;
+                    next++;
+                }
+                break;
+            default:
+                assert( false );
+                break;
+            }
+
+            if( state != State::Nothing )
+            {
+                drawn = true;
+                const auto px0 = ( (*vbegin)->time - m_zvStart ) * pxns;
+                const auto px1 = ( ( next == tl.end() ? GetLastTime() : (*next)->time ) - m_zvStart ) * pxns;
+
+                const auto cfilled  = state == State::HasLock ? 0xFF228A22 : 0xFF2222BD;
+                const auto coutline = state == State::HasLock ? 0xFF3BA33B : 0xFF3B3BD6;
+                draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), cfilled, 2.f );
+                draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), coutline, 2.f );
+            }
+
+            vbegin = next;
+            state = nextState;
+        }
+
+        if( drawn )
+        {
+            char buf[1024];
+            sprintf( buf, "%" PRIu64 ": %s", v.first, GetString( srcloc.function ) );
+            draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
+            cnt++;
         }
     }
     return cnt;

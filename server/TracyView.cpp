@@ -1645,6 +1645,31 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 const auto coutline = state == State::HasLock ? 0xFF3BA33B : ( state == State::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
                 draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), cfilled, 2.f );
                 draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), coutline, 2.f );
+
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Lock #%" PRIu64, v.first );
+                    ImGui::Text( "%s", GetString( srcloc.function ) );
+                    ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
+                    ImGui::Separator();
+                    switch( state )
+                    {
+                    case State::HasLock:
+                        ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
+                        break;
+                    case State::HasBlockingLock:
+                        ImGui::Text( "Thread \"%s\" has lock. Other threads are blocked.", GetThreadString( tid ) );
+                        break;
+                    case State::WaitLock:
+                        ImGui::Text( "Thread \"%s\" is blocked by other threads.", GetThreadString( tid ) );
+                        break;
+                    default:
+                        assert( false );
+                        break;
+                    }
+                    ImGui::EndTooltip();
+                }
             }
 
             vbegin = next;

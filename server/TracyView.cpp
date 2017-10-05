@@ -1639,8 +1639,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             if( state != State::Nothing )
             {
                 drawn = true;
-                const auto px0 = ( (*vbegin)->time - m_zvStart ) * pxns;
-                const auto px1 = ( ( next == tl.end() ? GetLastTime() : (*next)->time ) - m_zvStart ) * pxns;
+                const auto t0 = (*vbegin)->time;
+                const auto t1 = next == tl.end() ? GetLastTime() : (*next)->time;
+                const auto px0 = ( t0 - m_zvStart ) * pxns;
+                const auto px1 = ( t1 - m_zvStart ) * pxns;
 
                 const auto cfilled  = state == State::HasLock ? 0xFF228A22 : ( state == State::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
                 const auto coutline = state == State::HasLock ? 0xFF3BA33B : ( state == State::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
@@ -1653,6 +1655,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     ImGui::Text( "Lock #%" PRIu64, v.first );
                     ImGui::Text( "%s", GetString( srcloc.function ) );
                     ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
+                    ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
                     ImGui::Separator();
                     switch( state )
                     {

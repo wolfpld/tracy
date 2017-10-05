@@ -1660,11 +1660,36 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
                         break;
                     case State::HasBlockingLock:
-                        ImGui::Text( "Thread \"%s\" has lock. Other threads are blocked.", GetThreadString( tid ) );
+                    {
+                        ImGui::Text( "Thread \"%s\" has lock. Other threads are blocked:", GetThreadString( tid ) );
+                        auto it = next;
+                        do
+                        {
+                            --it;
+                            if( (*it)->type == LockEvent::Type::Wait )
+                            {
+                                ImGui::Text( "\"%s\"", GetThreadString( (*it)->thread ) );
+                            }
+                        }
+                        while( it != vbegin );
                         break;
+                    }
                     case State::WaitLock:
-                        ImGui::Text( "Thread \"%s\" is blocked by other threads.", GetThreadString( tid ) );
+                    {
+                        ImGui::Text( "Thread \"%s\" is blocked by other thread:", GetThreadString( tid ) );
+                        auto it = vbegin;
+                        --it;
+                        for(;;)
+                        {
+                            if( (*it)->type == LockEvent::Type::Obtain )
+                            {
+                                ImGui::Text( "\"%s\"", GetThreadString( (*it)->thread ) );
+                                break;
+                            }
+                            --it;
+                        }
                         break;
+                    }
                     default:
                         assert( false );
                         break;

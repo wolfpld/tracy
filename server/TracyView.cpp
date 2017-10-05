@@ -719,25 +719,33 @@ void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev )
 
 void View::UpdateLockCount( Vector<LockEvent*>& timeline, size_t pos )
 {
-    uint8_t count = pos == 0 ? 0 : timeline[pos-1]->lockCount;
+    uint8_t lockCount = pos == 0 ? 0 : timeline[pos-1]->lockCount;
+    uint8_t waitCount = pos == 0 ? 0 : timeline[pos-1]->waitCount;
     const auto end = timeline.size();
 
     while( pos != end )
     {
         switch( timeline[pos]->type )
         {
+        case LockEvent::Type::Wait:
+            assert( waitCount < std::numeric_limits<uint8_t>::max() );
+            waitCount++;
+            break;
         case LockEvent::Type::Obtain:
-            assert( count < std::numeric_limits<uint8_t>::max() );
-            count++;
+            assert( lockCount < std::numeric_limits<uint8_t>::max() );
+            assert( waitCount > 0 );
+            lockCount++;
+            waitCount--;
             break;
         case LockEvent::Type::Release:
-            assert( count > 0 );
-            count--;
+            assert( lockCount > 0 );
+            lockCount--;
             break;
         default:
             break;
         }
-        timeline[pos]->lockCount = count;
+        timeline[pos]->lockCount = lockCount;
+        timeline[pos]->waitCount = waitCount;
         pos++;
     }
 }

@@ -41,7 +41,7 @@ public:
             item->hdr.type = QueueType::LockWait;
             item->lockWait.id = m_id;
             item->lockWait.thread = thread;
-            item->lockWait.time = Profiler::GetTime( item->zoneBegin.cpu );
+            item->lockWait.time = Profiler::GetTime( cpu );
             s_queue.enqueue_finish( token, magic );
         }
 
@@ -54,7 +54,7 @@ public:
             item->hdr.type = QueueType::LockObtain;
             item->lockObtain.id = m_id;
             item->lockObtain.thread = thread;
-            item->lockObtain.time = Profiler::GetTime( item->zoneBegin.cpu );
+            item->lockObtain.time = Profiler::GetTime( cpu );
             s_queue.enqueue_finish( token, magic );
         }
     }
@@ -70,7 +70,7 @@ public:
         item->hdr.type = QueueType::LockRelease;
         item->lockRelease.id = m_id;
         item->lockRelease.thread = GetThreadHandle();
-        item->lockRelease.time = Profiler::GetTime( item->zoneBegin.cpu );
+        item->lockRelease.time = Profiler::GetTime( cpu );
         s_queue.enqueue_finish( token, magic );
     }
 
@@ -86,7 +86,7 @@ public:
             item->hdr.type = QueueType::LockObtain;
             item->lockObtain.id = (uint64_t)&m_lockable;
             item->lockObtain.thread = GetThreadHandle();
-            item->lockObtain.time = Profiler::GetTime( item->zoneBegin.cpu );
+            item->lockObtain.time = Profiler::GetTime( cpu );
             s_queue.enqueue_finish( token, magic );
         }
         return ret;

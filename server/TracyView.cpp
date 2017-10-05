@@ -1187,12 +1187,6 @@ void View::DrawFrames()
     }
 }
 
-struct TimeScale
-{
-    uint64_t div;
-    const char* fmt;
-};
-
 void View::DrawZones()
 {
     if( m_zvStart == m_zvEnd ) return;

@@ -1545,13 +1545,14 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         if( (*vbegin)->lockCount > 0 )
         {
             auto it = vbegin;
+            bool waiting = (*vbegin)->waitCount > 0;
             for(;;)
             {
                 if( (*it)->type == LockEvent::Type::Obtain )
                 {
                     if( (*it)->thread == tid )
                     {
-                        state = (*it)->waitCount > 0 ? State::HasBlockingLock : State::HasLock;
+                        state = waiting ? State::HasBlockingLock : State::HasLock;
                     }
                     break;
                 }

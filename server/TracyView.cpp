@@ -1525,6 +1525,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     {
         Nothing,
         HasLock,
+        HasBlockingLock,
         WaitLock
     };
 
@@ -1550,7 +1551,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 {
                     if( (*it)->thread == tid )
                     {
-                        state = State::HasLock;
+                        state = (*it)->waitCount > 0 ? State::HasBlockingLock : State::HasLock;
                     }
                     break;
                 }
@@ -1604,6 +1605,20 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 while( next != tl.end() )
                 {
                     if( (*next)->lockCount == 0 ) break;
+                    if( (*next)->waitCount > 0 )
+                    {
+                        nextState = State::HasBlockingLock;
+                        break;
+                    }
+                    next++;
+                }
+                break;
+            case State::HasBlockingLock:
+                nextState = State::Nothing;
+                while( next != tl.end() )
+                {
+                    if( (*next)->lockCount == 0 ) break;
+                    // Can't go back to non-blocking lock. At least not yet. Maybe with timed mutex. But no support now.
                     next++;
                 }
                 break;
@@ -1626,8 +1641,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 const auto px0 = ( (*vbegin)->time - m_zvStart ) * pxns;
                 const auto px1 = ( ( next == tl.end() ? GetLastTime() : (*next)->time ) - m_zvStart ) * pxns;
 
-                const auto cfilled  = state == State::HasLock ? 0xFF228A22 : 0xFF2222BD;
-                const auto coutline = state == State::HasLock ? 0xFF3BA33B : 0xFF3B3BD6;
+                const auto cfilled  = state == State::HasLock ? 0xFF228A22 : ( state == State::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
+                const auto coutline = state == State::HasLock ? 0xFF3BA33B : ( state == State::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
                 draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), cfilled, 2.f );
                 draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), coutline, 2.f );
             }

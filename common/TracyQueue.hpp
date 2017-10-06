@@ -21,6 +21,7 @@ enum class QueueType : uint8_t
     LockWait,
     LockObtain,
     LockRelease,
+    LockMark,
     NUM_TYPES
 };
 
@@ -99,6 +100,13 @@ struct QueueLockRelease
     uint64_t thread;
 };
 
+struct QueueLockMark
+{
+    uint64_t id;
+    uint64_t thread;
+    uint64_t srcloc;    // ptr
+};
+
 struct QueueHeader
 {
     union
@@ -124,6 +132,7 @@ struct QueueItem
         QueueLockWait lockWait;
         QueueLockObtain lockObtain;
         QueueLockRelease lockRelease;
+        QueueLockMark lockMark;
     };
 };
 
@@ -145,6 +154,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
+    sizeof( QueueHeader ) + sizeof( QueueLockMark ),
 };
 
 static_assert( sizeof( QueueDataSize ) / sizeof( size_t ) == (uint8_t)QueueType::NUM_TYPES, "QueueDataSize mismatch" );

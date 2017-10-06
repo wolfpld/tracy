@@ -92,6 +92,18 @@ public:
         return ret;
     }
 
+    void Mark( const SourceLocation* srcloc )
+    {
+        Magic magic;
+        auto& token = s_token;
+        auto item = s_queue.enqueue_begin( token, magic );
+        item->hdr.type = QueueType::LockMark;
+        item->lockMark.id = m_id;
+        item->lockMark.thread = GetThreadHandle();
+        item->lockMark.srcloc = (uint64_t)srcloc;
+        s_queue.enqueue_finish( token, magic );
+    }
+
 private:
     T m_lockable;
     uint64_t m_id;

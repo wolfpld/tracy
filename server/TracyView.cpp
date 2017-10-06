@@ -485,22 +485,8 @@ void View::ProcessZoneName( const QueueZoneName& ev )
 void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
 {
     CheckSourceLocation( ev.srcloc );
-
-    assert( m_lockMap.find( ev.id ) == m_lockMap.end() );
-    auto it = m_pendingLocks.find( ev.id );
-
-    std::unique_lock<std::mutex> lock( m_lock );
-    auto& lockmap = m_lockMap.emplace( ev.id, LockMap { ev.srcloc } ).first->second;
-
-    if( it != m_pendingLocks.end() )
-    {
-        for( auto& v : it->second )
-        {
-            InsertLockEvent( lockmap, v );
-        }
-        lock.unlock();
-        m_pendingLocks.erase( it );
-    }
+    std::lock_guard<std::mutex> lock( m_lock );
+    m_lockMap[ev.id].srcloc = ev.srcloc;
 }
 
 void View::ProcessLockWait( const QueueLockWait& ev )
@@ -510,17 +496,8 @@ void View::ProcessLockWait( const QueueLockWait& ev )
     lev->thread = ev.thread;
     lev->type = LockEvent::Type::Wait;
 
-    auto it = m_lockMap.find( ev.id );
-    if( it == m_lockMap.end() )
-    {
-        auto& v = m_pendingLocks[ev.id];
-        v.push_back( lev );
-    }
-    else
-    {
-        std::lock_guard<std::mutex> lock( m_lock );
-        InsertLockEvent( it->second, lev );
-    }
+    std::lock_guard<std::mutex> lock( m_lock );
+    InsertLockEvent( m_lockMap[ev.id], lev );
 }
 
 void View::ProcessLockObtain( const QueueLockObtain& ev )
@@ -530,17 +507,8 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
     lev->thread = ev.thread;
     lev->type = LockEvent::Type::Obtain;
 
-    auto it = m_lockMap.find( ev.id );
-    if( it == m_lockMap.end() )
-    {
-        auto& v = m_pendingLocks[ev.id];
-        v.push_back( lev );
-    }
-    else
-    {
-        std::lock_guard<std::mutex> lock( m_lock );
-        InsertLockEvent( it->second, lev );
-    }
+    std::lock_guard<std::mutex> lock( m_lock );
+    InsertLockEvent( m_lockMap[ev.id], lev );
 }
 
 void View::ProcessLockRelease( const QueueLockRelease& ev )
@@ -550,17 +518,8 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
     lev->thread = ev.thread;
     lev->type = LockEvent::Type::Release;
 
-    auto it = m_lockMap.find( ev.id );
-    if( it == m_lockMap.end() )
-    {
-        auto& v = m_pendingLocks[ev.id];
-        v.push_back( lev );
-    }
-    else
-    {
-        std::lock_guard<std::mutex> lock( m_lock );
-        InsertLockEvent( it->second, lev );
-    }
+    std::lock_guard<std::mutex> lock( m_lock );
+    InsertLockEvent( m_lockMap[ev.id], lev );
 }
 
 void View::ProcessLockMark( const QueueLockMark& ev )

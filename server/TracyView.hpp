@@ -149,7 +149,6 @@ private:
     std::unordered_set<uint64_t> m_pendingSourceLocation;
     std::unordered_map<uint64_t, Event*> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
-    std::unordered_map<uint64_t, std::vector<LockEvent*>> m_pendingLocks;
 
     Slab<EventSize*1024*1024> m_slab;
 

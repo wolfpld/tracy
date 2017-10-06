@@ -92,7 +92,7 @@ public:
         return ret;
     }
 
-    tracy_force_inline void Mark( const SourceLocation* srcloc )
+    tracy_force_inline void Mark( const SourceLocation* srcloc ) const
     {
         Magic magic;
         auto& token = s_token;

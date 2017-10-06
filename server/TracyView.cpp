@@ -1648,6 +1648,34 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
                     ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
                     ImGui::Separator();
+
+                    uint64_t markloc = 0;
+                    if( (*vbegin)->thread == tid )
+                    {
+                        markloc = (*vbegin)->srcloc;
+                    }
+                    else
+                    {
+                        auto it = vbegin;
+                        --it;
+                        for(;;)
+                        {
+                            if( (*it)->thread == tid )
+                            {
+                                assert( (*it)->type == LockEvent::Type::Wait || (*it)->type == LockEvent::Type::Obtain );
+                                markloc = (*it)->srcloc;
+                                break;
+                            }
+                        }
+                    }
+                    if( markloc != 0 )
+                    {
+                        auto& marklocdata = GetSourceLocation( markloc );
+                        ImGui::Text( "Lock event location:" );
+                        ImGui::Text( "%s", GetString( marklocdata.function ) );
+                        ImGui::Text( "%s:%i", GetString( marklocdata.file ), marklocdata.line );
+                        ImGui::Separator();
+                    }
                     switch( state )
                     {
                     case State::HasLock:

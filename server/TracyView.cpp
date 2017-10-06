@@ -1531,6 +1531,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         if( lockmap.threads.find( tid ) == lockmap.threads.end() ) continue;
         auto& tl = lockmap.timeline;
         assert( !tl.empty() );
+        if( tl.back()->time < m_zvStart ) continue;
         auto vbegin = std::lower_bound( tl.begin(), tl.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
         const auto vend = std::lower_bound( tl.begin(), tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
 

@@ -15,7 +15,7 @@ template<class T>
 class Lockable
 {
 public:
-    Lockable( const SourceLocation* srcloc )
+    tracy_force_inline Lockable( const SourceLocation* srcloc )
         : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
     {
         Magic magic;
@@ -30,7 +30,7 @@ public:
     Lockable( const Lockable& ) = delete;
     Lockable& operator=( const Lockable& ) = delete;
 
-    void lock()
+    tracy_force_inline void lock()
     {
         int8_t cpu;
         const auto thread = GetThreadHandle();
@@ -59,7 +59,7 @@ public:
         }
     }
 
-    void unlock()
+    tracy_force_inline void unlock()
     {
         m_lockable.unlock();
 
@@ -74,7 +74,7 @@ public:
         s_queue.enqueue_finish( token, magic );
     }
 
-    bool try_lock()
+    tracy_force_inline bool try_lock()
     {
         const auto ret = m_lockable.try_lock();
         if( ret )
@@ -92,7 +92,7 @@ public:
         return ret;
     }
 
-    void Mark( const SourceLocation* srcloc )
+    tracy_force_inline void Mark( const SourceLocation* srcloc )
     {
         Magic magic;
         auto& token = s_token;

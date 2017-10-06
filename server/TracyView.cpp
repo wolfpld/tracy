@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <limits>
+#include <math.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -51,6 +52,7 @@ View::View( const char* addr )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
     , m_zoneInfoWindow( nullptr )
+    , m_lockHighlight( nullptr )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -1332,6 +1334,7 @@ void View::DrawZones()
     while( false );
 
     // zones
+    const LockEvent* nextLockHighlight = nullptr;
     const auto ostep = ImGui::GetFontSize() + 1;
     int offset = 20;
     for( auto& v : m_threads )
@@ -1344,9 +1347,10 @@ void View::DrawZones()
         auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
         offset += ostep * ( depth + 1 );
 
-        depth = DrawLocks( v->id, hover, pxns, wpos, offset );
+        depth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight );
         offset += ostep * ( depth + 0.2f );
     }
+    m_lockHighlight = nextLockHighlight;
 }
 
 int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
@@ -1519,7 +1523,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
     return maxdepth;
 }
 
-int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset )
+int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset, const LockEvent*& highlight )
 {
     enum class State
     {
@@ -1644,13 +1648,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 const auto px0 = ( t0 - m_zvStart ) * pxns;
                 const auto px1 = ( t1 - m_zvStart ) * pxns;
 
-                const auto cfilled  = state == State::HasLock ? 0xFF228A22 : ( state == State::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
-                const auto coutline = state == State::HasLock ? 0xFF3BA33B : ( state == State::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
-                draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), cfilled, 2.f );
-                draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), coutline, 2.f );
-
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ) ) )
+                bool itemHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ) );
+                if( itemHovered )
                 {
+                    highlight = *vbegin;
                     ImGui::BeginTooltip();
                     ImGui::Text( "Lock #%" PRIu64, v.first );
                     ImGui::Text( "%s", GetString( srcloc.function ) );
@@ -1698,6 +1699,19 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         break;
                     }
                     ImGui::EndTooltip();
+                }
+
+                const auto cfilled  = state == State::HasLock ? 0xFF228A22 : ( state == State::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
+                draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), cfilled, 2.f );
+                if( !itemHovered && m_lockHighlight == *vbegin )
+                {
+                    const auto t = uint8_t( ( sin( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() * 0.01 ) * 0.5 + 0.5 ) * 255 );
+                    draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), 0x00FFFFFF | ( t << 24 ), 2.f, -1, 2.f );
+                }
+                else
+                {
+                    const auto coutline = state == State::HasLock ? 0xFF3BA33B : ( state == State::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
+                    draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), coutline, 2.f );
                 }
             }
 

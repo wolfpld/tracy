@@ -495,6 +495,7 @@ void View::ProcessLockWait( const QueueLockWait& ev )
     lev->time = ev.time * m_timerMul;
     lev->thread = ev.thread;
     lev->type = LockEvent::Type::Wait;
+    lev->srcloc = 0;
 
     std::lock_guard<std::mutex> lock( m_lock );
     InsertLockEvent( m_lockMap[ev.id], lev );
@@ -506,6 +507,7 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
     lev->time = ev.time * m_timerMul;
     lev->thread = ev.thread;
     lev->type = LockEvent::Type::Obtain;
+    lev->srcloc = 0;
 
     std::lock_guard<std::mutex> lock( m_lock );
     InsertLockEvent( m_lockMap[ev.id], lev );
@@ -517,6 +519,7 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
     lev->time = ev.time * m_timerMul;
     lev->thread = ev.thread;
     lev->type = LockEvent::Type::Release;
+    lev->srcloc = 0;
 
     std::lock_guard<std::mutex> lock( m_lock );
     InsertLockEvent( m_lockMap[ev.id], lev );
@@ -524,7 +527,27 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
 
 void View::ProcessLockMark( const QueueLockMark& ev )
 {
+    CheckSourceLocation( ev.srcloc );
     std::lock_guard<std::mutex> lock( m_lock );
+    auto it = m_lockMap[ev.id].timeline.end();
+    for(;;)
+    {
+        --it;
+        if( (*it)->thread == ev.thread )
+        {
+            switch( (*it)->type )
+            {
+            case LockEvent::Type::Obtain:
+                (*it)->srcloc = ev.srcloc;
+                break;
+            case LockEvent::Type::Wait:
+                (*it)->srcloc = ev.srcloc;
+                return;
+            default:
+                break;
+            }
+        }
+    }
 }
 
 void View::CheckString( uint64_t ptr )

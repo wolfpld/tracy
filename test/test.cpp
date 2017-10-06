@@ -47,6 +47,7 @@ void Lock1()
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
         std::lock_guard<LockableBase( std::mutex )> lock( mutex );
+        LockMark( mutex );
         ZoneScoped;
         std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
     }
@@ -58,6 +59,7 @@ void Lock2()
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 3 ) );
         std::unique_lock<LockableBase( std::mutex )> lock( mutex );
+        LockMark( mutex );
         ZoneScoped;
         std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
     }

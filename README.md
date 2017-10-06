@@ -36,6 +36,18 @@ Use the `ZoneName( const char* name )` macro to set a custom name for the zone, 
 
 Use the `ZoneText( const char* text, size_t size )` macro to add a custom text string that will be displayed along the zone information (for example, name of the file you are opening). Note that every time `ZoneText` is invoked, a memory allocation is performed to store an internal copy of the data. The string you have provided is not used by tracy.
 
+#### Marking locks
+
+Tracy can collect and display lock interactions in threads.
+
+![](doc/locks.png)
+
+To mark a lock (mutex) for event reporting, use the `TracyLockable( type, varname )` macro. Note that the lock must implement a [Lockable concept](http://en.cppreference.com/w/cpp/concept/Lockable) (i.e. there's no support for timed mutices). For a concrete example, you would replace the line `std::mutex m_lock` with `TracyLockable( std::mutex, m_lock )`.
+
+The standard `std::lock_guard` and `std::unique_lock` wrappers should use the `LockableBase( type )` macro for their template parameter (unless you're using C++17, with improved template argument deduction). For example, `std::lock_guard<LockableBase( std::mutex )> lock( m_lock )`.
+
+To mark the location of lock being held, use the `LockMark( varname )` macro, after you have obtained the lock. Note that the varname must be a lock variable (a reference is also valid). This step is optional.
+
 #### Running the server
 
 The easiest way to get going is to build the standalone server, available in the `standalone` directory. You can connect to localhost or remote clients and view the collected data right away.

@@ -68,6 +68,7 @@ private:
     void ProcessLockWait( const QueueLockWait& ev );
     void ProcessLockObtain( const QueueLockObtain& ev );
     void ProcessLockRelease( const QueueLockRelease& ev );
+    void ProcessLockMark( const QueueLockMark& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );

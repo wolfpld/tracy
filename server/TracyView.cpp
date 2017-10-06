@@ -411,6 +411,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::LockRelease:
         ProcessLockRelease( ev.lockRelease );
         break;
+    case QueueType::LockMark:
+        ProcessLockMark( ev.lockMark );
+        break;
     default:
         assert( false );
         break;
@@ -558,6 +561,11 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
         std::lock_guard<std::mutex> lock( m_lock );
         InsertLockEvent( it->second, lev );
     }
+}
+
+void View::ProcessLockMark( const QueueLockMark& ev )
+{
+    std::lock_guard<std::mutex> lock( m_lock );
 }
 
 void View::CheckString( uint64_t ptr )

@@ -1535,10 +1535,12 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         auto vbegin = std::lower_bound( tl.begin(), tl.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
         const auto vend = std::lower_bound( tl.begin(), tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
 
+        auto blc = (*vbegin)->lockCount;
+        auto bth = (*vbegin)->thread;
         if( vbegin > tl.begin() ) vbegin--;
 
         State state = State::Nothing;
-        if( (*vbegin)->lockCount > 0 )
+        if( (*vbegin)->lockCount > 0 || ( blc > 0 && bth == tid ) )
         {
             auto it = vbegin;
             bool waiting = (*vbegin)->waitCount > 0;

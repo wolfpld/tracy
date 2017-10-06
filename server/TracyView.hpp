@@ -91,7 +91,7 @@ private:
     uint64_t GetFrameTime( size_t idx ) const;
     uint64_t GetFrameBegin( size_t idx ) const;
     uint64_t GetFrameEnd( size_t idx ) const;
-    uint64_t GetLastTime() const;
+    int64_t GetLastTime() const;
     int64_t GetZoneEnd( const Event& ev ) const;
     Vector<Event*>& GetParentVector( const Event& ev );
     const char* TimeToString( int64_t ns ) const;

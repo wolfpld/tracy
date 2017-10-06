@@ -775,9 +775,9 @@ uint64_t View::GetFrameEnd( size_t idx ) const
     }
 }
 
-uint64_t View::GetLastTime() const
+int64_t View::GetLastTime() const
 {
-    uint64_t last = 0;
+    int64_t last = 0;
     if( !m_frames.empty() ) last = m_frames.back();
     for( auto& v : m_threads )
     {

@@ -48,7 +48,17 @@ private:
     {
         uint64_t srcloc;
         Vector<LockEvent*> timeline;
-        std::unordered_set<uint64_t> threads;
+        std::unordered_map<uint64_t, uint8_t> threadMap;
+        std::vector<uint64_t> threadList;
+    };
+
+    struct LockHighlight
+    {
+        int64_t id;
+        uint64_t begin;
+        uint64_t end;
+        uint8_t thread;
+        bool blocked;
     };
 
     void Worker();
@@ -85,8 +95,8 @@ private:
 
     void InsertZone( Event* zone, Event* parent, Vector<Event*>& vec );
 
-    void InsertLockEvent( LockMap& lockmap, LockEvent* lev );
-    void UpdateLockCount( Vector<LockEvent*>& timeline, size_t pos );
+    void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread );
+    void UpdateLockCount( LockMap& lockmap, size_t pos );
 
     uint64_t GetFrameTime( size_t idx ) const;
     uint64_t GetFrameBegin( size_t idx ) const;
@@ -104,7 +114,7 @@ private:
     void DrawFrames();
     void DrawZones();
     int DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
-    int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, const LockEvent*& highlight );
+    int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, LockHighlight& highlight );
     void DrawZoneInfoWindow();
 
     uint32_t GetZoneColor( const Event& ev );
@@ -175,7 +185,7 @@ private:
 
     const Event* m_zoneInfoWindow;
     const Event* m_zoneHighlight;
-    const LockEvent* m_lockHighlight;
+    LockHighlight m_lockHighlight;
 };
 
 }

@@ -1,6 +1,8 @@
 #ifndef __TRACYEVENT_HPP__
 #define __TRACYEVENT_HPP__
 
+#include <limits>
+
 #include "TracyVector.hpp"
 
 namespace tracy
@@ -40,14 +42,18 @@ struct LockEvent
     };
 
     int64_t time;
-    uint64_t thread;
     uint64_t srcloc;
+    uint64_t waitList;
+    uint8_t thread;
+    uint8_t lockingThread;
     uint8_t lockCount;
-    uint8_t waitCount;
     Type type;
 };
 
 enum { LockEventSize = sizeof( LockEvent ) };
+
+enum { MaxLockThreads = sizeof( LockEvent::waitList ) * 8 };
+static_assert( std::numeric_limits<decltype(LockEvent::lockCount)>::max() >= MaxLockThreads, "Not enough space for lock count." );
 
 #pragma pack()
 

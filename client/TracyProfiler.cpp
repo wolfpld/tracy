@@ -26,6 +26,12 @@
 #  define DISABLE_LZ4
 #endif
 
+#ifdef __GNUC__
+#define init_order( val ) __attribute__ ((init_priority(val)))
+#else
+#define init_order(x)
+#endif
+
 namespace tracy
 {
 
@@ -48,13 +54,13 @@ static const char* GetProcessName()
 
 enum { QueuePrealloc = 256 * 1024 };
 
-moodycamel::ConcurrentQueue<QueueItem> s_queue( QueueItemSize * QueuePrealloc );
-thread_local moodycamel::ProducerToken s_token( s_queue );
+moodycamel::ConcurrentQueue<QueueItem> init_order(101) s_queue( QueueItemSize * QueuePrealloc );
+thread_local moodycamel::ProducerToken init_order(102) s_token( s_queue );
 
 std::atomic<uint64_t> s_id( 0 );
 
 #ifndef TRACY_DISABLE
-static Profiler s_profiler;
+static Profiler init_order(103) s_profiler;
 #endif
 
 static Profiler* s_instance = nullptr;

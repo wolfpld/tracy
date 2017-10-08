@@ -65,6 +65,18 @@ void Lock2()
     }
 }
 
+void Lock3()
+{
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+        std::unique_lock<LockableBase( std::mutex )> lock( mutex );
+        LockMark( mutex );
+        ZoneScoped;
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    }
+}
+
 int main()
 {
     auto t1 = std::thread( TestFunction );
@@ -73,6 +85,7 @@ int main()
     auto t4 = std::thread( ScopeCheck );
     auto t5 = std::thread( Lock1 );
     auto t6 = std::thread( Lock2 );
+    auto t7 = std::thread( Lock3 );
 
     tracy::SetThreadName( t1, "First thread" );
     tracy::SetThreadName( t2, "Second thread" );
@@ -80,6 +93,7 @@ int main()
     tracy::SetThreadName( t4, "Scope check" );
     tracy::SetThreadName( t5, "Lock 1" );
     tracy::SetThreadName( t6, "Lock 2" );
+    tracy::SetThreadName( t7, "Lock 3" );
 
     for(;;)
     {

@@ -1927,9 +1927,10 @@ float View::GetZoneThickness( const Event& ev )
 
 void View::ZoomToZone( const Event& ev )
 {
-    if( ev.end - ev.start <= 0 ) return;
+    const auto end = GetZoneEnd( ev );
+    if( end - ev.start <= 0 ) return;
     m_zvStartNext = ev.start;
-    m_zvEndNext = ev.end;
+    m_zvEndNext = end;
 }
 
 void View::ZoneTooltip( const Event& ev )

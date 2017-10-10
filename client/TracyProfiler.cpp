@@ -56,7 +56,7 @@ enum { QueuePrealloc = 256 * 1024 };
 
 static moodycamel::ConcurrentQueue<QueueItem> init_order(101) s_queue( QueueItemSize * QueuePrealloc );
 static thread_local moodycamel::ProducerToken init_order(102) s_token_detail( s_queue );
-thread_local moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* init_order(103) s_token = s_queue.get_explicit_producer( s_token_detail );
+thread_local ProducerWrapper init_order(103) s_token { s_queue.get_explicit_producer( s_token_detail ) };
 
 std::atomic<uint64_t> s_id( 0 );
 
@@ -227,7 +227,7 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     item.srcloc.function = (uint64_t)srcloc->function;
     item.srcloc.line = srcloc->line;
     item.srcloc.color = srcloc->color;
-    s_token->enqueue<moodycamel::CanAlloc>( std::move( item ) );
+    s_token.ptr->enqueue<moodycamel::CanAlloc>( std::move( item ) );
 }
 
 bool Profiler::HandleServerQuery()

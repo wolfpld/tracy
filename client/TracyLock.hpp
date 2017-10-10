@@ -19,7 +19,7 @@ public:
         : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
     {
         Magic magic;
-        auto& token = s_token;
+        auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::LockAnnounce;
@@ -37,7 +37,7 @@ public:
         const auto thread = GetThreadHandle();
         {
             Magic magic;
-            auto& token = s_token;
+            auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::LockWait;
@@ -51,7 +51,7 @@ public:
 
         {
             Magic magic;
-            auto& token = s_token;
+            auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::LockObtain;
@@ -68,7 +68,7 @@ public:
 
         uint32_t cpu;
         Magic magic;
-        auto& token = s_token;
+        auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::LockRelease;
@@ -85,7 +85,7 @@ public:
         {
             uint32_t cpu;
             Magic magic;
-            auto& token = s_token;
+            auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::LockObtain;
@@ -100,7 +100,7 @@ public:
     tracy_force_inline void Mark( const SourceLocation* srcloc ) const
     {
         Magic magic;
-        auto& token = s_token;
+        auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::LockMark;

@@ -18,7 +18,7 @@ public:
         const auto thread = GetThreadHandle();
         m_thread = thread;
         Magic magic;
-        auto& token = s_token;
+        auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::ZoneBegin;
@@ -31,7 +31,7 @@ public:
     tracy_force_inline ~ScopedZone()
     {
         Magic magic;
-        auto& token = s_token;
+        auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::ZoneEnd;
@@ -46,7 +46,7 @@ public:
         auto ptr = new char[size+1];
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        auto& token = s_token;
+        auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::ZoneText;
@@ -58,7 +58,7 @@ public:
     tracy_force_inline void Name( const char* name )
     {
         Magic magic;
-        auto& token = s_token;
+        auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::ZoneName;

@@ -70,10 +70,11 @@ public:
         uint32_t cpu;
         Magic magic;
         auto& token = s_token;
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::FrameMarkMsg;
         item->frameMark.time = GetTime( cpu );
-        token->enqueue_finish( magic );
+        tail.store( magic + 1, std::memory_order_release );
     }
 
     static bool ShouldExit();

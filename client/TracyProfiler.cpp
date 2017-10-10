@@ -319,20 +319,22 @@ void Profiler::CalibrateDelay()
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
+            auto& tail = ptoken->get_tail_index();
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::ZoneBegin;
             item->zoneBegin.thread = GetThreadHandle();
             item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
-            ptoken->enqueue_finish( magic );
+            tail.store( magic + 1, std::memory_order_release );
         }
         {
             Magic magic;
+            auto& tail = ptoken->get_tail_index();
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::ZoneEnd;
             item->zoneEnd.thread = 0;
             item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
-            ptoken->enqueue_finish( magic );
+            tail.store( magic + 1, std::memory_order_release );
         }
     }
     const auto f0 = GetTime( cpu );
@@ -347,20 +349,22 @@ void Profiler::CalibrateDelay()
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
+            auto& tail = ptoken->get_tail_index();
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::ZoneBegin;
             item->zoneBegin.thread = GetThreadHandle();
             item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
-            ptoken->enqueue_finish( magic );
+            tail.store( magic + 1, std::memory_order_release );
         }
         {
             Magic magic;
+            auto& tail = ptoken->get_tail_index();
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::ZoneEnd;
             item->zoneEnd.thread = 0;
             item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
-            ptoken->enqueue_finish( magic );
+            tail.store( magic + 1, std::memory_order_release );
         }
     }
     const auto t1 = GetTime( cpu );

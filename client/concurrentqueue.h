@@ -958,11 +958,6 @@ public:
         return inner_enqueue_begin<CanAlloc>(token, currentTailIndex);
     }
 
-    tracy_force_inline void enqueue_finish(producer_token_t const& token, index_t currentTailIndex)
-    {
-        inner_enqueue_finish(token, currentTailIndex);
-    }
-
 	// Enqueues several items.
 	// Allocates memory if required. Only fails if memory allocation fails (or
 	// implicit production is disabled because Traits::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE
@@ -1305,11 +1300,6 @@ private:
     tracy_force_inline T* inner_enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
     {
         return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_begin<canAlloc>(currentTailIndex);
-    }
-
-    tracy_force_inline void inner_enqueue_finish(producer_token_t const& token, index_t currentTailIndex)
-    {
-        return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_finish(currentTailIndex);
     }
 
 	template<AllocationMode canAlloc, typename U>
@@ -1989,9 +1979,9 @@ private:
             }
         }
 
-        tracy_force_inline void enqueue_finish(index_t currentTailIndex)
+        tracy_force_inline std::atomic<index_t>& get_tail_index()
         {
-            this->tailIndex.store(currentTailIndex + 1, std::memory_order_release);
+            return this->tailIndex;
         }
 
 		template<typename U>

@@ -32,7 +32,7 @@ public:
 
     tracy_force_inline void lock()
     {
-        int8_t cpu;
+        uint32_t cpu;
         const auto thread = GetThreadHandle();
         {
             Magic magic;
@@ -63,7 +63,7 @@ public:
     {
         m_lockable.unlock();
 
-        int8_t cpu;
+        uint32_t cpu;
         Magic magic;
         auto& token = s_token;
         auto item = s_queue.enqueue_begin( token, magic );
@@ -79,7 +79,7 @@ public:
         const auto ret = m_lockable.try_lock();
         if( ret )
         {
-            int8_t cpu;
+            uint32_t cpu;
             Magic magic;
             auto& token = s_token;
             auto item = s_queue.enqueue_begin( token, magic );

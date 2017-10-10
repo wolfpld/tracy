@@ -446,7 +446,8 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
     zone->start = ev.time * m_timerMul;
     zone->end = -1;
     zone->srcloc = ev.srcloc;
-    zone->cpu_start = ev.cpu;
+    assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
+    zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->text = nullptr;
 
     std::unique_lock<std::mutex> lock( m_lock );
@@ -464,7 +465,8 @@ void View::ProcessZoneEnd( const QueueZoneEnd& ev )
     assert( zone->end == -1 );
     std::unique_lock<std::mutex> lock( m_lock );
     zone->end = ev.time * m_timerMul;
-    zone->cpu_end = ev.cpu;
+    assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
+    zone->cpu_end = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     lock.unlock();
     assert( zone->end >= zone->start );
     UpdateZone( zone );

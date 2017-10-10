@@ -78,7 +78,7 @@ Profiler::Profiler()
 
     CalibrateTimer();
     CalibrateDelay();
-    int8_t cpu;
+    uint32_t cpu;
     m_timeBegin = GetTime( cpu );
 
     m_thread = std::thread( [this] { Worker(); } );
@@ -274,7 +274,7 @@ bool Profiler::HandleServerQuery()
 void Profiler::CalibrateTimer()
 {
 #ifdef TRACY_RDTSCP_SUPPORTED
-    int8_t cpu;
+    uint32_t cpu;
     std::atomic_signal_fence( std::memory_order_acq_rel );
     const auto t0 = std::chrono::high_resolution_clock::now();
     const auto r0 = tracy_rdtscp( cpu );
@@ -310,7 +310,7 @@ void Profiler::CalibrateDelay()
     enum { Events = Iterations * 2 };   // start + end
     static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
-    int8_t cpu;
+    uint32_t cpu;
     moodycamel::ProducerToken ptoken( s_queue );
     for( int i=0; i<Iterations; i++ )
     {

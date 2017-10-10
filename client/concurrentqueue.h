@@ -262,6 +262,8 @@ namespace details {
 	} max_align_t;
 }
 
+enum AllocationMode { CanAlloc, CannotAlloc };
+
 // Default traits for the ConcurrentQueue. To change some of the
 // traits without re-implementing all of them, inherit from this
 // struct and shadow the declarations you wish to be different;
@@ -1287,7 +1289,6 @@ private:
 	friend struct ExplicitProducer;
 	friend class ConcurrentQueueTests;
 		
-	enum AllocationMode { CanAlloc, CannotAlloc };
 	
 	
 	///////////////////////////////
@@ -1717,10 +1718,10 @@ private:
 	};
 	
 	
+    public:
 	///////////////////////////
 	// Explicit queue
 	///////////////////////////
-		
 	struct ExplicitProducer : public ProducerBase
 	{
 		explicit ExplicitProducer(ConcurrentQueue* parent) :
@@ -2370,7 +2371,7 @@ private:
 			
 			return 0;
 		}
-		
+
 	private:
 		struct BlockIndexEntry
 		{
@@ -2447,6 +2448,12 @@ private:
 #endif
 	};
 	
+    ExplicitProducer* get_explicit_producer(producer_token_t const& token)
+    {
+        return static_cast<ExplicitProducer*>(token.producer);
+    }
+
+    private:
 	
 	//////////////////////////////////
 	// Implicit queue

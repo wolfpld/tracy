@@ -31,8 +31,7 @@ struct SourceLocation
     uint32_t color;
 };
 
-extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
-extern thread_local moodycamel::ProducerToken s_token;
+extern thread_local moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* s_token;
 
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
@@ -71,10 +70,10 @@ public:
         uint32_t cpu;
         Magic magic;
         auto& token = s_token;
-        auto item = s_queue.enqueue_begin( token, magic );
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::FrameMarkMsg;
         item->frameMark.time = GetTime( cpu );
-        s_queue.enqueue_finish( token, magic );
+        token->enqueue_finish( magic );
     }
 
     static bool ShouldExit();

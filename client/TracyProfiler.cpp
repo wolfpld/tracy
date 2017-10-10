@@ -54,13 +54,14 @@ static const char* GetProcessName()
 
 enum { QueuePrealloc = 256 * 1024 };
 
-moodycamel::ConcurrentQueue<QueueItem> init_order(101) s_queue( QueueItemSize * QueuePrealloc );
-thread_local moodycamel::ProducerToken init_order(102) s_token( s_queue );
+static moodycamel::ConcurrentQueue<QueueItem> init_order(101) s_queue( QueueItemSize * QueuePrealloc );
+static thread_local moodycamel::ProducerToken init_order(102) s_token_detail( s_queue );
+thread_local moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* init_order(103) s_token = s_queue.get_explicit_producer( s_token_detail );
 
 std::atomic<uint64_t> s_id( 0 );
 
 #ifndef TRACY_DISABLE
-static Profiler init_order(103) s_profiler;
+static Profiler init_order(104) s_profiler;
 #endif
 
 static Profiler* s_instance = nullptr;
@@ -226,7 +227,7 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     item.srcloc.function = (uint64_t)srcloc->function;
     item.srcloc.line = srcloc->line;
     item.srcloc.color = srcloc->color;
-    s_queue.enqueue( s_token, std::move( item ) );
+    s_token->enqueue<moodycamel::CanAlloc>( std::move( item ) );
 }
 
 bool Profiler::HandleServerQuery()
@@ -311,26 +312,27 @@ void Profiler::CalibrateDelay()
     static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
     uint32_t cpu;
-    moodycamel::ProducerToken ptoken( s_queue );
+    moodycamel::ProducerToken ptoken_detail( s_queue );
+    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = s_queue.get_explicit_producer( ptoken_detail );
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
-            auto item = s_queue.enqueue_begin( ptoken, magic );
+            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::ZoneBegin;
             item->zoneBegin.thread = GetThreadHandle();
             item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
-            s_queue.enqueue_finish( ptoken, magic );
+            ptoken->enqueue_finish( magic );
         }
         {
             Magic magic;
-            auto item = s_queue.enqueue_begin( ptoken, magic );
+            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::ZoneEnd;
             item->zoneEnd.thread = 0;
             item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
-            s_queue.enqueue_finish( ptoken, magic );
+            ptoken->enqueue_finish( magic );
         }
     }
     const auto f0 = GetTime( cpu );
@@ -345,20 +347,20 @@ void Profiler::CalibrateDelay()
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
-            auto item = s_queue.enqueue_begin( ptoken, magic );
+            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::ZoneBegin;
             item->zoneBegin.thread = GetThreadHandle();
             item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
             item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
-            s_queue.enqueue_finish( ptoken, magic );
+            ptoken->enqueue_finish( magic );
         }
         {
             Magic magic;
-            auto item = s_queue.enqueue_begin( ptoken, magic );
+            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::ZoneEnd;
             item->zoneEnd.thread = 0;
             item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
-            s_queue.enqueue_finish( ptoken, magic );
+            ptoken->enqueue_finish( magic );
         }
     }
     const auto t1 = GetTime( cpu );

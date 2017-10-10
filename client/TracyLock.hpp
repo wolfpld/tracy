@@ -20,11 +20,11 @@ public:
     {
         Magic magic;
         auto& token = s_token;
-        auto item = s_queue.enqueue_begin( token, magic );
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::LockAnnounce;
         item->lockAnnounce.id = m_id;
         item->lockAnnounce.srcloc = (uint64_t)srcloc;
-        s_queue.enqueue_finish( token, magic );
+        token->enqueue_finish( magic );
     }
 
     Lockable( const Lockable& ) = delete;
@@ -37,12 +37,12 @@ public:
         {
             Magic magic;
             auto& token = s_token;
-            auto item = s_queue.enqueue_begin( token, magic );
+            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::LockWait;
             item->lockWait.id = m_id;
             item->lockWait.thread = thread;
             item->lockWait.time = Profiler::GetTime( cpu );
-            s_queue.enqueue_finish( token, magic );
+            token->enqueue_finish( magic );
         }
 
         m_lockable.lock();
@@ -50,12 +50,12 @@ public:
         {
             Magic magic;
             auto& token = s_token;
-            auto item = s_queue.enqueue_begin( token, magic );
+            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::LockObtain;
             item->lockObtain.id = m_id;
             item->lockObtain.thread = thread;
             item->lockObtain.time = Profiler::GetTime( cpu );
-            s_queue.enqueue_finish( token, magic );
+            token->enqueue_finish( magic );
         }
     }
 
@@ -66,12 +66,12 @@ public:
         uint32_t cpu;
         Magic magic;
         auto& token = s_token;
-        auto item = s_queue.enqueue_begin( token, magic );
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::LockRelease;
         item->lockRelease.id = m_id;
         item->lockRelease.thread = GetThreadHandle();
         item->lockRelease.time = Profiler::GetTime( cpu );
-        s_queue.enqueue_finish( token, magic );
+        token->enqueue_finish( magic );
     }
 
     tracy_force_inline bool try_lock()
@@ -82,12 +82,12 @@ public:
             uint32_t cpu;
             Magic magic;
             auto& token = s_token;
-            auto item = s_queue.enqueue_begin( token, magic );
+            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::LockObtain;
             item->lockObtain.id = (uint64_t)&m_lockable;
             item->lockObtain.thread = GetThreadHandle();
             item->lockObtain.time = Profiler::GetTime( cpu );
-            s_queue.enqueue_finish( token, magic );
+            token->enqueue_finish( magic );
         }
         return ret;
     }
@@ -96,12 +96,12 @@ public:
     {
         Magic magic;
         auto& token = s_token;
-        auto item = s_queue.enqueue_begin( token, magic );
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::LockMark;
         item->lockMark.id = m_id;
         item->lockMark.thread = GetThreadHandle();
         item->lockMark.srcloc = (uint64_t)srcloc;
-        s_queue.enqueue_finish( token, magic );
+        token->enqueue_finish( magic );
     }
 
 private:

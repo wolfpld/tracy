@@ -36,7 +36,7 @@ It should be noted that tracy needs to calibrate its internal timers at each run
 
 #### Initial client setup
 
-Add source files from `tracy/client` and `tracy/common` to your project. That's all. Tracy is now integrated into your application.
+Copy files from `tracy/client` and `tracy/common` to your project. Add `tracy/TracyClient.cpp` to source files list. That's all. Tracy is now integrated into your application.
 
 #### Marking zones
 

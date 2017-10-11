@@ -29,8 +29,8 @@ It should be noted that tracy needs to calibrate its internal timers at each run
 
 | Scenario |  Zones  | Clean run | Profiling run | Difference |
 |----------|---------|-----------|---------------|------------|
-|    1     | 4194571 |    1.22 s |         1.4 s |    +0.18 s |
-|    2     | 5592812 |    1.35 s |        1.52 s |    +0.17 s |
+|    1     | 4194568 |    0.94 s |       1.003 s |   +0.063 s |
+|    2     | 5592822 |   1.034 s |       1.119 s |   +0.085 s |
 
 ## Usage instructions
 

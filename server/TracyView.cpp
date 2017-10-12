@@ -1032,7 +1032,18 @@ void View::DrawConnection()
         const char* fn = "trace.tracy";
 #endif
         {
-            auto f = std::unique_ptr<FileWrite>( FileWrite::Open( fn ) );
+            std::unique_ptr<FileWrite> f;
+            const auto sz = strlen( fn );
+            if( sz < 7 || memcmp( fn + sz - 6, ".tracy", 6 ) != 0 )
+            {
+                char tmp[1024];
+                sprintf( tmp, "%s.tracy", fn );
+                f.reset( FileWrite::Open( tmp ) );
+            }
+            else
+            {
+                f.reset( FileWrite::Open( fn ) );
+            }
             if( f )
             {
                 Write( *f );

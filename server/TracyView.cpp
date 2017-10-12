@@ -201,6 +201,7 @@ View::View( FileRead& f )
         auto td = new ThreadData;
         f.Read( &td->id, sizeof( td->id ) );
         ReadTimeline( f, td->timeline, nullptr, stringMap );
+        td->enabled = true;
         m_threads.push_back( td );
     }
 }
@@ -672,7 +673,7 @@ void View::NewZone( Event* zone, uint64_t thread )
     if( it == m_threadMap.end() )
     {
         m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
-        m_threads.push_back( new ThreadData { thread } );
+        m_threads.push_back( new ThreadData { thread, true } );
         timeline = &m_threads.back()->timeline;
     }
     else
@@ -1357,20 +1358,43 @@ void View::DrawZones()
 
     // zones
     LockHighlight nextLockHighlight { -1 };
-    const auto ostep = ImGui::GetFontSize() + 1;
+    const auto ty = ImGui::GetFontSize();
+    const auto ostep = ty + 1;
     int offset = 20;
+    const auto to = 9.f;
+    const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
     for( auto& v : m_threads )
     {
         draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
-        draw->AddText( wpos + ImVec2( 0, offset ), 0xFFFFFFFF, GetThreadString( v->id ) );
+
+        if( v->enabled )
+        {
+            draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFFFFF );
+        }
+        else
+        {
+            draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF888888 );
+        }
+        const auto txt = GetThreadString( v->id );
+        draw->AddText( wpos + ImVec2( ty, offset ), v->enabled ? 0xFFFFFFFF : 0xFF888888, txt );
+
+        if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( txt ).x, offset + ty ) ) )
+        {
+            v->enabled = !v->enabled;
+        }
+
         offset += ostep;
 
-        m_lastCpu = -1;
-        auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
-        offset += ostep * depth;
+        if( v->enabled )
+        {
+            m_lastCpu = -1;
+            auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
+            offset += ostep * depth;
 
-        depth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight );
-        offset += ostep * ( depth + 0.2f );
+            depth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight );
+            offset += ostep * depth;
+        }
+        offset += ostep * 0.2f;
     }
     m_lockHighlight = nextLockHighlight;
 }

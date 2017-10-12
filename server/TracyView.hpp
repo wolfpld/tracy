@@ -41,6 +41,7 @@ private:
     struct ThreadData
     {
         uint64_t id;
+        bool enabled;
         Vector<Event*> timeline;
     };
 

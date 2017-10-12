@@ -416,9 +416,6 @@ void View::Process( const QueueItem& ev )
     case QueueType::ZoneName:
         ProcessZoneName( ev.zoneName );
         break;
-    case QueueType::LockAnnounce:
-        ProcessLockAnnounce( ev.lockAnnounce );
-        break;
     case QueueType::LockWait:
         ProcessLockWait( ev.lockWait );
         break;
@@ -500,13 +497,6 @@ void View::ProcessZoneName( const QueueZoneName& ev )
     GetTextData( *zone )->zoneName = ev.name;
 }
 
-void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
-{
-    CheckSourceLocation( ev.srcloc );
-    std::lock_guard<std::mutex> lock( m_lock );
-    m_lockMap[ev.id].srcloc = ev.srcloc;
-}
-
 void View::ProcessLockWait( const QueueLockWait& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
@@ -514,8 +504,19 @@ void View::ProcessLockWait( const QueueLockWait& ev )
     lev->type = LockEvent::Type::Wait;
     lev->srcloc = 0;
 
+    auto it = m_lockMap.find( ev.id );
     std::lock_guard<std::mutex> lock( m_lock );
-    InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
+    if( it == m_lockMap.end() )
+    {
+        it = m_lockMap.emplace( ev.id, LockMap { ev.lckloc } ).first;
+        CheckSourceLocation( ev.lckloc );
+    }
+    else if( it->second.srcloc == 0 )
+    {
+        it->second.srcloc = ev.lckloc;
+        CheckSourceLocation( ev.lckloc );
+    }
+    InsertLockEvent( it->second, lev, ev.thread );
 }
 
 void View::ProcessLockObtain( const QueueLockObtain& ev )

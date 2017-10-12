@@ -716,6 +716,14 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
 
 void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
 {
+    auto tit = m_threadMap.find( thread );
+    if( tit == m_threadMap.end() )
+    {
+        CheckThreadString( thread );
+        m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
+        m_threads.push_back( new ThreadData { thread, true } );
+    }
+
     auto it = lockmap.threadMap.find( thread );
     if( it == lockmap.threadMap.end() )
     {

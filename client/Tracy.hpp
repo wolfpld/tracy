@@ -12,6 +12,7 @@
 #define FrameMark
 
 #define TracyLockable( type, varname ) type varname;
+#define TracyLockableN( type, varname, desc ) type varname;
 #define LockableBase( type ) type
 #define LockMark(x)
 
@@ -30,6 +31,7 @@
 #define FrameMark tracy::Profiler::FrameMark();
 
 #define TracyLockable( type, varname ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { #type " " #varname, __FILE__, __LINE__, 0 }; return &srcloc; }() };
+#define TracyLockableN( type, varname, desc ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { desc, __FILE__, __LINE__, 0 }; return &srcloc; }() };
 #define LockableBase( type ) tracy::Lockable<type>
 #define LockMark( varname ) static const tracy::SourceLocation __tracy_lock_location_##varname { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; varname.Mark( &__tracy_lock_location_##varname );
 

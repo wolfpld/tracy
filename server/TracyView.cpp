@@ -1367,7 +1367,7 @@ void View::DrawZones()
 
         m_lastCpu = -1;
         auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
-        offset += ostep * ( depth + 1 );
+        offset += ostep * depth;
 
         depth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight );
         offset += ostep * ( depth + 0.2f );
@@ -1377,168 +1377,171 @@ void View::DrawZones()
 
 int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
 {
-    int maxdepth = depth;
     auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->end < r; } );
-    if( it != vec.end() )
+    if( it == vec.end() ) return depth;
+
+    const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+    if( it == zitend ) return depth;
+
+    const auto w = ImGui::GetWindowContentRegionWidth();
+    const auto ty = ImGui::GetFontSize();
+    const auto ostep = ty + 1;
+    const auto offset = _offset + ostep * depth;
+    auto draw = ImGui::GetWindowDrawList();
+    const auto dsz = m_delay * pxns;
+    const auto rsz = m_resolution * pxns;
+
+    depth++;
+    int maxdepth = depth;
+
+    while( it < zitend )
     {
-        const auto w = ImGui::GetWindowContentRegionWidth();
-        const auto ty = ImGui::GetFontSize();
-        const auto ostep = ty + 1;
-        const auto offset = _offset + ostep * depth;
-        auto draw = ImGui::GetWindowDrawList();
-        const auto dsz = m_delay * pxns;
-        const auto rsz = m_resolution * pxns;
-
-        const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->start < r; } );
-        while( it < zitend )
+        auto& ev = **it;
+        auto& srcloc = GetSourceLocation( ev.srcloc );
+        const auto color = GetZoneColor( srcloc );
+        const auto end = GetZoneEnd( ev );
+        const auto zsz = ( end - ev.start ) * pxns;
+        if( zsz < MinVisSize )
         {
-            auto& ev = **it;
-            auto& srcloc = GetSourceLocation( ev.srcloc );
-            const auto color = GetZoneColor( srcloc );
-            const auto end = GetZoneEnd( ev );
-            const auto zsz = ( end - ev.start ) * pxns;
-            if( zsz < MinVisSize )
+            int num = 1;
+            const auto px0 = ( ev.start - m_zvStart ) * pxns;
+            auto px1 = ( end - m_zvStart ) * pxns;
+            auto rend = end;
+            for(;;)
             {
-                int num = 1;
-                const auto px0 = ( ev.start - m_zvStart ) * pxns;
-                auto px1 = ( end - m_zvStart ) * pxns;
-                auto rend = end;
-                for(;;)
-                {
-                    ++it;
-                    if( it == zitend ) break;
-                    auto& srcloc2 = GetSourceLocation( (*it)->srcloc );
-                    if( srcloc.color != srcloc2.color ) break;
-                    const auto nend = GetZoneEnd( **it );
-                    const auto pxnext = ( nend - m_zvStart ) * pxns;
-                    if( pxnext - px1 >= MinVisSize * 2 ) break;
-                    px1 = pxnext;
-                    rend = nend;
-                    num++;
-                }
-                draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), color, 2.f );
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ) ) )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::Text( "Zones too small to display: %i", num );
-                    ImGui::Text( "Execution time: %s", TimeToString( rend - ev.start ) );
-                    ImGui::EndTooltip();
+                ++it;
+                if( it == zitend ) break;
+                auto& srcloc2 = GetSourceLocation( (*it)->srcloc );
+                if( srcloc.color != srcloc2.color ) break;
+                const auto nend = GetZoneEnd( **it );
+                const auto pxnext = ( nend - m_zvStart ) * pxns;
+                if( pxnext - px1 >= MinVisSize * 2 ) break;
+                px1 = pxnext;
+                rend = nend;
+                num++;
+            }
+            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), color, 2.f );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ) ) )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "Zones too small to display: %i", num );
+                ImGui::Text( "Execution time: %s", TimeToString( rend - ev.start ) );
+                ImGui::EndTooltip();
 
-                    if( ImGui::IsMouseClicked( 2 ) && rend - ev.start > 0 )
-                    {
-                        m_zvStartNext = ev.start;
-                        m_zvEndNext = rend;
-                    }
-                }
-                char tmp[32];
-                sprintf( tmp, "%i", num );
-                const auto tsz = ImGui::CalcTextSize( tmp );
-                if( tsz.x < px1 - px0 )
+                if( ImGui::IsMouseClicked( 2 ) && rend - ev.start > 0 )
                 {
-                    const auto x = px0 + ( px1 - px0 - tsz.x ) / 2;
-                    draw->AddText( wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
+                    m_zvStartNext = ev.start;
+                    m_zvEndNext = rend;
+                }
+            }
+            char tmp[32];
+            sprintf( tmp, "%i", num );
+            const auto tsz = ImGui::CalcTextSize( tmp );
+            if( tsz.x < px1 - px0 )
+            {
+                const auto x = px0 + ( px1 - px0 - tsz.x ) / 2;
+                draw->AddText( wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
+            }
+        }
+        else
+        {
+            const char* zoneName;
+            if( ev.text && ev.text->zoneName )
+            {
+                zoneName = GetString( ev.text->zoneName );
+            }
+            else
+            {
+                zoneName = GetString( srcloc.function );
+            }
+
+            int dmul = 1;
+            if( ev.text )
+            {
+                if( ev.text->zoneName ) dmul++;
+                if( ev.text->userText ) dmul++;
+            }
+
+            bool migration = false;
+            if( m_lastCpu != ev.cpu_start )
+            {
+                if( m_lastCpu != -1 )
+                {
+                    migration = true;
+                }
+                m_lastCpu = ev.cpu_start;
+            }
+
+            if( !ev.child.empty() )
+            {
+                const auto d = DrawZoneLevel( ev.child, hover, pxns, wpos, _offset, depth );
+                if( d > maxdepth ) maxdepth = d;
+            }
+
+            if( ev.end != -1 && m_lastCpu != ev.cpu_end )
+            {
+                m_lastCpu = ev.cpu_end;
+                migration = true;
+            }
+
+            const auto tsz = ImGui::CalcTextSize( zoneName );
+            const auto pr0 = ( ev.start - m_zvStart ) * pxns;
+            const auto pr1 = ( end - m_zvStart ) * pxns;
+            const auto px0 = std::max( pr0, -10.0 );
+            const auto px1 = std::min( pr1, double( w + 10 ) );
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color, 2.f );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev, migration ), 2.f, -1, GetZoneThickness( ev ) );
+            if( dsz * dmul >= MinVisSize )
+            {
+                draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), 0x882222DD, 2.f );
+                draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), 0x882222DD, 2.f );
+            }
+            if( rsz >= MinVisSize )
+            {
+                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + tsz.y/2 ), wpos + ImVec2( pr0 - rsz, offset + tsz.y/2 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + tsz.y/4 ), wpos + ImVec2( pr0 + rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr0 - rsz, offset + tsz.y/4 ), wpos + ImVec2( pr0 - rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
+
+                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + tsz.y/2 ), wpos + ImVec2( pr1 - rsz, offset + tsz.y/2 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + tsz.y/4 ), wpos + ImVec2( pr1 + rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr1 - rsz, offset + tsz.y/4 ), wpos + ImVec2( pr1 - rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
+            }
+            if( tsz.x < zsz )
+            {
+                const auto x = ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2;
+                if( x < 0 || x > w - tsz.x )
+                {
+                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                    draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
+                    ImGui::PopClipRect();
+                }
+                else
+                {
+                    draw->AddText( wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
                 }
             }
             else
             {
-                const char* zoneName;
-                if( ev.text && ev.text->zoneName )
-                {
-                    zoneName = GetString( ev.text->zoneName );
-                }
-                else
-                {
-                    zoneName = GetString( srcloc.function );
-                }
-
-                int dmul = 1;
-                if( ev.text )
-                {
-                    if( ev.text->zoneName ) dmul++;
-                    if( ev.text->userText ) dmul++;
-                }
-
-                bool migration = false;
-                if( m_lastCpu != ev.cpu_start )
-                {
-                    if( m_lastCpu != -1 )
-                    {
-                        migration = true;
-                    }
-                    m_lastCpu = ev.cpu_start;
-                }
-
-                if( !ev.child.empty() )
-                {
-                    const auto d = DrawZoneLevel( ev.child, hover, pxns, wpos, _offset, depth+1 );
-                    if( d > maxdepth ) maxdepth = d;
-                }
-
-                if( ev.end != -1 && m_lastCpu != ev.cpu_end )
-                {
-                    m_lastCpu = ev.cpu_end;
-                    migration = true;
-                }
-
-                const auto tsz = ImGui::CalcTextSize( zoneName );
-                const auto pr0 = ( ev.start - m_zvStart ) * pxns;
-                const auto pr1 = ( end - m_zvStart ) * pxns;
-                const auto px0 = std::max( pr0, -10.0 );
-                const auto px1 = std::min( pr1, double( w + 10 ) );
-                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color, 2.f );
-                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev, migration ), 2.f, -1, GetZoneThickness( ev ) );
-                if( dsz * dmul >= MinVisSize )
-                {
-                    draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), 0x882222DD, 2.f );
-                    draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), 0x882222DD, 2.f );
-                }
-                if( rsz >= MinVisSize )
-                {
-                    draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + tsz.y/2 ), wpos + ImVec2( pr0 - rsz, offset + tsz.y/2 ), 0xAAFFFFFF );
-                    draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + tsz.y/4 ), wpos + ImVec2( pr0 + rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
-                    draw->AddLine( wpos + ImVec2( pr0 - rsz, offset + tsz.y/4 ), wpos + ImVec2( pr0 - rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
-
-                    draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + tsz.y/2 ), wpos + ImVec2( pr1 - rsz, offset + tsz.y/2 ), 0xAAFFFFFF );
-                    draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + tsz.y/4 ), wpos + ImVec2( pr1 + rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
-                    draw->AddLine( wpos + ImVec2( pr1 - rsz, offset + tsz.y/4 ), wpos + ImVec2( pr1 - rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
-                }
-                if( tsz.x < zsz )
-                {
-                    const auto x = ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2;
-                    if( x < 0 || x > w - tsz.x )
-                    {
-                        ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                        draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
-                        ImGui::PopClipRect();
-                    }
-                    else
-                    {
-                        draw->AddText( wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
-                    }
-                }
-                else
-                {
-                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                    draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
-                    ImGui::PopClipRect();
-                }
-
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
-                {
-                    ZoneTooltip( ev );
-
-                    if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) )
-                    {
-                        ZoomToZone( ev );
-                    }
-                    if( ImGui::IsMouseClicked( 0 ) )
-                    {
-                        m_zoneInfoWindow = &ev;
-                    }
-                }
-
-                ++it;
+                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
+                ImGui::PopClipRect();
             }
+
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
+            {
+                ZoneTooltip( ev );
+
+                if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( ev );
+                }
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    m_zoneInfoWindow = &ev;
+                }
+            }
+
+            ++it;
         }
     }
     return maxdepth;

@@ -442,7 +442,6 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
     auto zone = m_slab.Alloc<Event>();
 
     CheckSourceLocation( ev.srcloc );
-    CheckThreadString( ev.thread );
 
     zone->start = ev.time * m_timerMul;
     zone->end = -1;
@@ -672,6 +671,7 @@ void View::NewZone( Event* zone, uint64_t thread )
     auto it = m_threadMap.find( thread );
     if( it == m_threadMap.end() )
     {
+        CheckThreadString( thread );
         m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
         m_threads.push_back( new ThreadData { thread, true } );
         timeline = &m_threads.back()->timeline;

@@ -66,6 +66,8 @@ View::View( const char* addr )
     , m_frameStart( 0 )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
+    , m_zvHeight( 0 )
+    , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
     , m_lockHighlight { -1 }
 {
@@ -92,6 +94,8 @@ View::View( FileRead& f )
     , m_frameStart( 0 )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
+    , m_zvHeight( 0 )
+    , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
 {
     assert( s_instance == nullptr );
@@ -1229,65 +1233,64 @@ void View::DrawFrames()
     }
 }
 
-void View::DrawZones()
+void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns )
 {
-    if( m_zvStart == m_zvEnd ) return;
-    assert( m_zvStart < m_zvEnd );
+    auto& io = ImGui::GetIO();
 
-    ImGuiWindow* window = ImGui::GetCurrentWindow();
-    if( window->SkipItems ) return;
+    if( ImGui::IsMouseDragging( 1, 0 ) )
+    {
+        m_pause = true;
+        const auto delta = ImGui::GetMouseDragDelta( 1, 0 ).x;
+        const auto nspx = double( timespan ) / w;
+        const auto dpx = int64_t( delta * nspx );
+        if( dpx != 0 )
+        {
+            m_zvStart -= dpx;
+            m_zvEnd -= dpx;
+            io.MouseClickedPos[1].x = io.MousePos.x;
+        }
+    }
 
+    const auto wheel = io.MouseWheel;
+    if( wheel != 0 )
+    {
+        m_pause = true;
+        const double mouse = io.MousePos.x - wpos.x;
+        const auto p = mouse / w;
+        const auto p1 = timespan * p;
+        const auto p2 = timespan - p1;
+        if( wheel > 0 )
+        {
+            m_zvStart += int64_t( p1 * 0.2f );
+            m_zvEnd -= int64_t( p2 * 0.2f );
+        }
+        else if( timespan < 1000ull * 1000 * 1000 * 60 )
+        {
+            m_zvStart -= std::max( int64_t( 1 ), int64_t( p1 * 0.2f ) );
+            m_zvEnd += std::max( int64_t( 1 ), int64_t( p2 * 0.2f ) );
+        }
+        timespan = m_zvEnd - m_zvStart;
+        pxns = w / double( timespan );
+    }
+}
+
+void View::DrawZoneFrames()
+{
     auto& io = ImGui::GetIO();
 
     const auto wpos = ImGui::GetCursorScreenPos();
-    const auto w = ImGui::GetWindowContentRegionWidth();
-    const auto h = ImGui::GetContentRegionAvail().y;
+    const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
+    const auto h = ImGui::GetFontSize();
+    const auto wh = ImGui::GetContentRegionAvail().y;
     auto draw = ImGui::GetWindowDrawList();
 
-    ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
+    ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, h ) );
     bool hover = ImGui::IsItemHovered();
 
     auto timespan = m_zvEnd - m_zvStart;
     auto pxns = w / double( timespan );
 
-    if( hover )
-    {
-        if( ImGui::IsMouseDragging( 1, 0 ) )
-        {
-            m_pause = true;
-            const auto delta = ImGui::GetMouseDragDelta( 1, 0 ).x;
-            const auto nspx = double( timespan ) / w;
-            const auto dpx = int64_t( delta * nspx );
-            if( dpx != 0 )
-            {
-                m_zvStart -= dpx;
-                m_zvEnd -= dpx;
-                io.MouseClickedPos[1].x = io.MousePos.x;
-            }
-        }
-
-        const auto wheel = io.MouseWheel;
-        if( wheel != 0 )
-        {
-            m_pause = true;
-            const double mouse = io.MousePos.x - wpos.x;
-            const auto p = mouse / w;
-            const auto p1 = timespan * p;
-            const auto p2 = timespan - p1;
-            if( wheel > 0 )
-            {
-                m_zvStart += int64_t( p1 * 0.2f );
-                m_zvEnd -= int64_t( p2 * 0.2f );
-            }
-            else if( timespan < 1000ull * 1000 * 1000 * 60 )
-            {
-                m_zvStart -= std::max( int64_t( 1 ), int64_t( p1 * 0.2f ) );
-                m_zvEnd += std::max( int64_t( 1 ), int64_t( p2 * 0.2f ) );
-            }
-            timespan = m_zvEnd - m_zvStart;
-            pxns = w / double( timespan );
-        }
-    }
+    if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
 
     m_zvStartNext = 0;
 
@@ -1330,7 +1333,7 @@ void View::DrawZones()
 
             if( fbegin >= m_zvStart && fsz > 4 )
             {
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, h ), 0x22FFFFFF );
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
             }
 
             if( fsz >= 5 )
@@ -1360,16 +1363,43 @@ void View::DrawZones()
         const auto fend = GetFrameEnd( zend-1 );
         if( fend == m_zvEnd )
         {
-            draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, h ), 0x22FFFFFF );
+            draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
         }
     }
     while( false );
+}
+
+void View::DrawZones()
+{
+    if( m_zvStart == m_zvEnd ) return;
+    assert( m_zvStart < m_zvEnd );
+
+    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    if( window->SkipItems ) return;
+
+    DrawZoneFrames();
+
+    ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+
+    window = ImGui::GetCurrentWindow();
+    const auto wpos = ImGui::GetCursorScreenPos();
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto h = std::max<float>( m_zvHeight, ImGui::GetContentRegionAvail().y - 4 );    // magic border value
+    auto draw = ImGui::GetWindowDrawList();
+
+    ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
+    bool hover = ImGui::IsItemHovered();
+
+    auto timespan = m_zvEnd - m_zvStart;
+    auto pxns = w / double( timespan );
+
+    if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
 
     // zones
     LockHighlight nextLockHighlight { -1 };
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
-    int offset = 20;
+    int offset = 0;
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
     for( auto& v : m_threads )
@@ -1406,6 +1436,19 @@ void View::DrawZones()
         offset += ostep * 0.2f;
     }
     m_lockHighlight = nextLockHighlight;
+
+    const auto scrollPos = ImGui::GetScrollY();
+    if( scrollPos == 0 && m_zvScroll != 0 )
+    {
+        m_zvHeight = 0;
+    }
+    else
+    {
+        if( offset > m_zvHeight ) m_zvHeight = offset;
+    }
+    m_zvScroll = scrollPos;
+
+    ImGui::EndChild();
 }
 
 int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
@@ -1416,7 +1459,7 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
     const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->start < r; } );
     if( it == zitend ) return depth;
 
-    const auto w = ImGui::GetWindowContentRegionWidth();
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;

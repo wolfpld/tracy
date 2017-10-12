@@ -112,10 +112,13 @@ private:
     void DrawImpl();
     void DrawConnection();
     void DrawFrames();
+    void DrawZoneFrames();
     void DrawZones();
     int DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
     int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, LockHighlight& highlight );
     void DrawZoneInfoWindow();
+
+    void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
     uint32_t GetZoneColor( const Event& ev );
     uint32_t GetZoneColor( const QueueSourceLocation& srcloc );
@@ -182,6 +185,9 @@ private:
     std::string m_captureName;
 
     int8_t m_lastCpu;
+
+    uint64_t m_zvHeight;
+    uint64_t m_zvScroll;
 
     const Event* m_zoneInfoWindow;
     const Event* m_zoneHighlight;

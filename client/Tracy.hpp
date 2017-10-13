@@ -16,6 +16,8 @@
 #define LockableBase( type ) type
 #define LockMark(x)
 
+#define TracyPlot(x,y)
+
 #else
 
 #include "TracyLock.hpp"
@@ -34,6 +36,8 @@
 #define TracyLockableN( type, varname, desc ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { desc, __FILE__, __LINE__, 0 }; return &srcloc; }() };
 #define LockableBase( type ) tracy::Lockable<type>
 #define LockMark( varname ) static const tracy::SourceLocation __tracy_lock_location_##varname { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; varname.Mark( &__tracy_lock_location_##varname );
+
+#define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val );
 
 #endif
 

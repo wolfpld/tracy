@@ -854,12 +854,16 @@ void View::InsertPlot( PlotData* plot, int64_t time, double val )
 {
     if( plot->data.empty() || plot->data.back().time < time )
     {
+        plot->min = val;
+        plot->max = val;
         plot->data.emplace_back( PlotItem { time, val } );
     }
     else
     {
+        if( plot->min > val ) plot->min = val;
+        else if( plot->max < val ) plot->max = val;
         auto it = std::lower_bound( plot->data.begin(), plot->data.end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs.time < rhs; } );
-        it = plot->data.insert( it, PlotItem { time, val } );
+        plot->data.insert( it, PlotItem { time, val } );
     }
 }
 

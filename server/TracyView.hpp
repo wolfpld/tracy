@@ -71,6 +71,8 @@ private:
     struct PlotData
     {
         uint64_t name;
+        double min;
+        double max;
         std::vector<PlotItem> data;
     };
 

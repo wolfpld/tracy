@@ -606,6 +606,7 @@ void View::ProcessPlotData( const QueuePlotData& ev )
         {
             plot = m_slab.Alloc<PlotData>();
             plot->name = ev.name;
+            plot->enabled = true;
             m_pendingPlots.emplace( ev.name, plot );
             ServerQuery( ServerQueryPlotName, ev.name );
         }
@@ -2099,74 +2100,95 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
+    const auto to = 9.f;
+    const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
 
     for( auto& v : m_plots )
     {
         assert( !v->data.empty() );
 
-        draw->AddText( wpos + ImVec2( ty, offset ), 0xFF44DDDD, GetString( v->name ) );
+        if( v->enabled )
+        {
+            draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFF44DDDD );
+        }
+        else
+        {
+            draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF226E6E );
+        }
+        const auto txt = GetString( v->name );
+        draw->AddText( wpos + ImVec2( ty, offset ), v->enabled ? 0xFF44DDDD : 0xFF226E6E, txt );
         draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
+
+        if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( txt ).x, offset + ty ) ) )
+        {
+            v->enabled = !v->enabled;
+        }
+
         offset += ty;
 
-        auto& vec = v->data;
-        auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-        auto end = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-
-        if( end != vec.end() ) end++;
-        if( it != vec.begin() ) it--;
-
-        double min = it->val;
-        double max = it->val;
+        if( v->enabled )
         {
-            auto tmp = it;
-            ++tmp;
-            while( tmp != end )
+            auto& vec = v->data;
+            auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+            auto end = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+
+            if( end != vec.end() ) end++;
+            if( it != vec.begin() ) it--;
+
+            double min = it->val;
+            double max = it->val;
             {
-                if( tmp->val < min ) min = tmp->val;
-                else if( tmp->val > max ) max = tmp->val;
+                auto tmp = it;
                 ++tmp;
+                while( tmp != end )
+                {
+                    if( tmp->val < min ) min = tmp->val;
+                    else if( tmp->val > max ) max = tmp->val;
+                    ++tmp;
+                }
             }
-        }
 
-        {
-            char tmp[64];
-            sprintf( tmp, "%f", max );
-            draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
-        }
+            {
+                char tmp[64];
+                sprintf( tmp, "%f", max );
+                draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
+            }
 
-        const auto revrange = 1.0 / ( max - min );
+            const auto revrange = 1.0 / ( max - min );
 
-        if( it == vec.begin() )
-        {
-            const auto x = ( it->time - m_zvStart ) * pxns;
-            const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-            DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it->val, 0 );
-        }
+            if( it == vec.begin() )
+            {
+                const auto x = ( it->time - m_zvStart ) * pxns;
+                const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
+                DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it->val, 0 );
+            }
 
-        auto prev = it;
-        ++it;
-        while( it < end )
-        {
-            const auto x0 = ( prev->time - m_zvStart ) * pxns;
-            const auto x1 = ( it->time - m_zvStart ) * pxns;
-            const auto y0 = PlotHeight - ( prev->val - min ) * revrange * PlotHeight;
-            const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-
-            draw->AddLine( wpos + ImVec2( x0, offset + y0 ), wpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
-            DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it->val, prev->val );
-
-            prev = it;
+            auto prev = it;
             ++it;
-        }
+            while( it < end )
+            {
+                const auto x0 = ( prev->time - m_zvStart ) * pxns;
+                const auto x1 = ( it->time - m_zvStart ) * pxns;
+                const auto y0 = PlotHeight - ( prev->val - min ) * revrange * PlotHeight;
+                const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
 
-        offset += PlotHeight - ty;
-        {
-            char tmp[64];
-            sprintf( tmp, "%f", min );
-            draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
+                draw->AddLine( wpos + ImVec2( x0, offset + y0 ), wpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
+                DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it->val, prev->val );
+
+                prev = it;
+                ++it;
+            }
+
+            offset += PlotHeight - ty;
+            {
+                char tmp[64];
+                sprintf( tmp, "%f", min );
+                draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
+            }
+            draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
+            offset += ty;
         }
-        draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
-        offset += 1.2 * ty;
+        offset += 0.2 * ty;
     }
 
     return offset;

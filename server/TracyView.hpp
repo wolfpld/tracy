@@ -73,6 +73,7 @@ private:
         uint64_t name;
         double min;
         double max;
+        bool enabled;
         std::vector<PlotItem> data;
     };
 

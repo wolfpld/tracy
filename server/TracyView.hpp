@@ -172,7 +172,7 @@ private:
     std::unordered_map<uint64_t, std::string> m_threadNames;
     std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;
     std::unordered_map<uint64_t, QueueSourceLocation> m_sourceLocation;
-    std::unordered_map<uint64_t, LockMap> m_lockMap;
+    std::unordered_map<uint32_t, LockMap> m_lockMap;
     uint64_t m_zonesCnt;
 
     std::mutex m_mbpslock;

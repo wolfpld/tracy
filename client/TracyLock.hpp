@@ -2,6 +2,7 @@
 #define __TRACYLOCK_HPP__
 
 #include <atomic>
+#include <limits>
 
 #include "../common/TracySystem.hpp"
 #include "TracyProfiler.hpp"
@@ -9,7 +10,7 @@
 namespace tracy
 {
 
-static std::atomic<uint64_t> s_lockCounter( 0 );
+static std::atomic<uint32_t> s_lockCounter( 0 );
 
 template<class T>
 class Lockable
@@ -19,6 +20,7 @@ public:
         : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
         , m_lckloc( (uint64_t)srcloc )
     {
+        assert( m_id != std::numeric_limits<uint32_t>::max() );
     }
 
     Lockable( const Lockable& ) = delete;
@@ -106,7 +108,7 @@ public:
 
 private:
     T m_lockable;
-    uint64_t m_id;
+    uint32_t m_id;
     uint64_t m_lckloc;
 };
 

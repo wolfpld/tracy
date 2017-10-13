@@ -78,7 +78,7 @@ struct QueueZoneName
 
 struct QueueLockWait
 {
-    uint64_t id;
+    uint32_t id;
     int64_t time;
     uint64_t thread;
     uint64_t lckloc;    // ptr
@@ -86,21 +86,21 @@ struct QueueLockWait
 
 struct QueueLockObtain
 {
-    uint64_t id;
+    uint32_t id;
     int64_t time;
     uint64_t thread;
 };
 
 struct QueueLockRelease
 {
-    uint64_t id;
+    uint32_t id;
     int64_t time;
     uint64_t thread;
 };
 
 struct QueueLockMark
 {
-    uint64_t id;
+    uint32_t id;
     uint64_t thread;
     uint64_t srcloc;    // ptr
 };
@@ -176,6 +176,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
 };
 
+static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );
 static_assert( sizeof( QueueDataSize ) / sizeof( size_t ) == (uint8_t)QueueType::NUM_TYPES, "QueueDataSize mismatch" );
 static_assert( sizeof( void* ) <= sizeof( uint64_t ), "Pointer size > 8 bytes" );
 

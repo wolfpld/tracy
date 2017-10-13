@@ -1915,34 +1915,16 @@ private:
                 // a block, a block index must have been successfully allocated.
             }
             else {
-                // Whatever head value we see here is >= the last value we saw here (relatively),
-                // and <= its current value. Since we have the most recent tail, the head must be
-                // <= to it.
-                auto head = this->headIndex.load(std::memory_order_relaxed);
-                assert(!details::circular_less_than<index_t>(currentTailIndex, head));
-                if (!details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE)
-                    || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head))) {
-                    // We can't enqueue in another block because there's not enough leeway -- the
-                    // tail could surpass the head by the time the block fills up! (Or we'll exceed
-                    // the size limit, if the second part of the condition was true.)
-                    return;
-                }
                 // We're going to need a new block; check that the block index has room
                 if (pr_blockIndexRaw == nullptr || pr_blockIndexSlotsUsed == pr_blockIndexSize) {
                     // Hmm, the circular block index is already full -- we'll need
                     // to allocate a new index. Note pr_blockIndexRaw can only be nullptr if
                     // the initial allocation failed in the constructor.
-
-                    if (allocMode == CannotAlloc || !new_block_index(pr_blockIndexSlotsUsed)) {
-                        return;
-                    }
+                    new_block_index(pr_blockIndexSlotsUsed);
                 }
 
                 // Insert a new block in the circular linked list
                 auto newBlock = this->parent->ConcurrentQueue::template requisition_block<allocMode>();
-                if (newBlock == nullptr) {
-                    return;
-                }
 #if MCDBGQ_TRACKMEM
                 newBlock->owner = this;
 #endif
@@ -3117,11 +3099,7 @@ private:
 			return block;
 		}
 		
-		if (canAlloc == CanAlloc) {
-			return create<Block>();
-		}
-		
-		return nullptr;
+		return create<Block>();
 	}
 	
 

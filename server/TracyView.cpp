@@ -855,8 +855,16 @@ void View::InsertPlot( PlotData* plot, int64_t time, double val )
 {
     if( plot->data.empty() || plot->data.back().time < time )
     {
-        plot->min = val;
-        plot->max = val;
+        if( plot->data.empty() )
+        {
+            plot->min = val;
+            plot->max = val;
+        }
+        else
+        {
+            if( plot->min > val ) plot->min = val;
+            else if( plot->max < val ) plot->max = val;
+        }
         plot->data.emplace_back( PlotItem { time, val } );
     }
     else

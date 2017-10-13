@@ -2119,7 +2119,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             while( tmp != end )
             {
                 if( tmp->val < min ) min = tmp->val;
-                if( tmp->val > max ) max = tmp->val;
+                else if( tmp->val > max ) max = tmp->val;
                 ++tmp;
             }
         }

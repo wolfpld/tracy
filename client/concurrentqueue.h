@@ -1970,13 +1970,10 @@ private:
         tracy_force_inline T* enqueue_begin(index_t& currentTailIndex)
         {
             currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
-            if ((currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) != 0) {
-                return (*this->tailBlock)[currentTailIndex];
-            }
-            else {
+            if (details::unlikely((currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0)) {
                 this->enqueue_begin_alloc<allocMode>(currentTailIndex);
-                return (*this->tailBlock)[currentTailIndex];
             }
+            return (*this->tailBlock)[currentTailIndex];
         }
 
         tracy_force_inline std::atomic<index_t>& get_tail_index()

@@ -216,6 +216,27 @@ View::View( FileRead& f )
         td->enabled = true;
         m_threads.push_back( td );
     }
+
+    f.Read( &sz, sizeof( sz ) );
+    m_plots.reserve( sz );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        auto pd = new PlotData;
+        f.Read( &pd->name, sizeof( pd->name ) );
+        f.Read( &pd->min, sizeof( pd->min ) );
+        f.Read( &pd->max, sizeof( pd->max ) );
+        pd->enabled = true;
+        uint64_t psz;
+        f.Read( &psz, sizeof( psz ) );
+        pd->data.reserve( psz );
+        for( uint64_t j=0; j<psz; j++ )
+        {
+            PlotItem item;
+            f.Read( &item, sizeof( item ) );
+            pd->data.push_back( item );
+        }
+        m_plots.push_back( pd );
+    }
 }
 
 View::~View()
@@ -2547,6 +2568,18 @@ void View::Write( FileWrite& f )
     {
         f.Write( &thread->id, sizeof( thread->id ) );
         WriteTimeline( f, thread->timeline );
+    }
+
+    sz = m_plots.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& plot : m_plots )
+    {
+        f.Write( &plot->name, sizeof( plot->name ) );
+        f.Write( &plot->min, sizeof( plot->min ) );
+        f.Write( &plot->max, sizeof( plot->max ) );
+        sz = plot->data.size();
+        f.Write( &sz, sizeof( sz ) );
+        f.Write( plot->data.data(), sizeof( PlotItem ) * sz );
     }
 }
 

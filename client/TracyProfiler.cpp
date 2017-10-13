@@ -226,7 +226,9 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     item.srcloc.file = (uint64_t)srcloc->file;
     item.srcloc.function = (uint64_t)srcloc->function;
     item.srcloc.line = srcloc->line;
-    item.srcloc.color = srcloc->color;
+    item.srcloc.r = ( srcloc->color       ) & 0xFF;
+    item.srcloc.g = ( srcloc->color >> 8  ) & 0xFF;
+    item.srcloc.b = ( srcloc->color >> 16 ) & 0xFF;
     s_token.ptr->enqueue<moodycamel::CanAlloc>( std::move( item ) );
 }
 

@@ -59,7 +59,9 @@ struct QueueSourceLocation
     uint64_t function;  // ptr
     uint64_t file;      // ptr
     uint32_t line;
-    uint32_t color;
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
 };
 
 struct QueueZoneText

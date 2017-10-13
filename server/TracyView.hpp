@@ -128,7 +128,7 @@ private:
     void DrawImpl();
     void DrawConnection();
     void DrawFrames();
-    void DrawZoneFrames();
+    bool DrawZoneFrames();
     void DrawZones();
     int DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
     int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, LockHighlight& highlight );

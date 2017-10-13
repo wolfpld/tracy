@@ -1392,7 +1392,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     }
 }
 
-void View::DrawZoneFrames()
+bool View::DrawZoneFrames()
 {
     auto& io = ImGui::GetIO();
 
@@ -1485,6 +1485,8 @@ void View::DrawZoneFrames()
         }
     }
     while( false );
+
+    return hover;
 }
 
 void View::DrawZones()
@@ -1495,7 +1497,10 @@ void View::DrawZones()
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if( window->SkipItems ) return;
 
-    DrawZoneFrames();
+    const auto linepos = ImGui::GetCursorScreenPos();
+    const auto lineh = ImGui::GetContentRegionAvail().y;
+
+    auto drawMouseLine = DrawZoneFrames();
 
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
@@ -1511,7 +1516,11 @@ void View::DrawZones()
     auto timespan = m_zvEnd - m_zvStart;
     auto pxns = w / double( timespan );
 
-    if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
+    if( hover )
+    {
+        drawMouseLine = true;
+        HandleZoneViewMouse( timespan, wpos, w, pxns );
+    }
 
     // zones
     LockHighlight nextLockHighlight { -1 };
@@ -1578,6 +1587,12 @@ void View::DrawZones()
     m_zvScroll = scrollPos;
 
     ImGui::EndChild();
+
+    if( drawMouseLine )
+    {
+        auto& io = ImGui::GetIO();
+        draw->AddLine( ImVec2( io.MousePos.x, linepos.y ), ImVec2( io.MousePos.x, linepos.y + lineh ), 0x33FFFFFF );
+    }
 }
 
 int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )

@@ -2119,9 +2119,21 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
         draw->AddText( wpos + ImVec2( ty, offset ), v->enabled ? 0xFF44DDDD : 0xFF226E6E, txt );
         draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
 
-        if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( txt ).x, offset + ty ) ) )
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( txt ).x, offset + ty ) ) )
         {
-            v->enabled = !v->enabled;
+            if( ImGui::IsMouseClicked( 0 ) )
+            {
+                v->enabled = !v->enabled;
+            }
+
+            ImGui::BeginTooltip();
+            ImGui::Text( "Plot \"%s\"", txt );
+            ImGui::Text( "Data points: %i", v->data.size() );
+            ImGui::Text( "Data range: %f", v->max - v->min );
+            ImGui::Text( "Min value: %f", v->min );
+            ImGui::Text( "Max value: %f", v->max );
+            ImGui::Text( "Time range: %s", TimeToString( v->data.back().time - v->data.begin()->time ) );
+            ImGui::EndTooltip();
         }
 
         offset += ty;

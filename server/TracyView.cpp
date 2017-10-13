@@ -73,6 +73,7 @@ View::View( const char* addr )
     , m_showOptions( false )
     , m_drawZones( true )
     , m_drawLocks( true )
+    , m_drawPlots( true )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -103,6 +104,7 @@ View::View( FileRead& f )
     , m_showOptions( false )
     , m_drawZones( true )
     , m_drawLocks( true )
+    , m_drawPlots( true )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -1559,6 +1561,11 @@ void View::DrawZones()
     }
     m_lockHighlight = nextLockHighlight;
 
+    if( m_drawPlots )
+    {
+        offset = DrawPlots( offset, pxns, wpos );
+    }
+
     const auto scrollPos = ImGui::GetScrollY();
     if( scrollPos == 0 && m_zvScroll != 0 )
     {
@@ -2066,6 +2073,86 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     return cnt;
 }
 
+int View::DrawPlots( int offset, double pxns, const ImVec2& wpos )
+{
+    enum { PlotHeight = 100 };
+
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto ty = ImGui::GetFontSize();
+    auto draw = ImGui::GetWindowDrawList();
+
+    for( auto& v : m_plots )
+    {
+        if( v->data.empty() ) continue;
+
+        draw->AddText( wpos + ImVec2( ty, offset ), 0xFF44DDDD, GetString( v->name ) );
+        draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
+        offset += ty;
+
+        auto& vec = v->data;
+        auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+        auto end = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+
+        if( end != vec.end() ) end++;
+        if( it != vec.begin() ) it--;
+
+        double min = it->val;
+        double max = it->val;
+        {
+            auto tmp = it;
+            ++tmp;
+            while( tmp != end )
+            {
+                if( tmp->val < min ) min = tmp->val;
+                if( tmp->val > max ) max = tmp->val;
+                ++tmp;
+            }
+        }
+
+        {
+            char tmp[64];
+            sprintf( tmp, "%f", max );
+            draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
+        }
+
+        const auto revrange = 1.0 / ( max - min );
+
+        if( it == vec.begin() )
+        {
+            const auto x = ( it->time - m_zvStart ) * pxns;
+            const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
+            draw->AddRect( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), 0xFF44DDDD );
+        }
+
+        auto prev = it;
+        ++it;
+        while( it < end )
+        {
+            const auto x0 = ( prev->time - m_zvStart ) * pxns;
+            const auto x1 = ( it->time - m_zvStart ) * pxns;
+            const auto y0 = PlotHeight - ( prev->val - min ) * revrange * PlotHeight;
+            const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
+
+            draw->AddLine( wpos + ImVec2( x0, offset + y0 ), wpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
+            draw->AddRect( wpos + ImVec2( x1 - 1.5f, offset + y1 - 1.5f ), wpos + ImVec2( x1 + 2.5f, offset + y1 + 2.5f ), 0xFF44DDDD );
+
+            prev = it;
+            ++it;
+        }
+
+        offset += PlotHeight - ty;
+        {
+            char tmp[64];
+            sprintf( tmp, "%f", min );
+            draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
+        }
+        draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
+        offset += 1.2 * ty;
+    }
+
+    return offset;
+}
+
 void View::DrawZoneInfoWindow()
 {
     if( !m_zoneInfoWindow ) return;
@@ -2182,6 +2269,7 @@ void View::DrawOptions()
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     ImGui::Checkbox( "Draw zones", &m_drawZones );
     ImGui::Checkbox( "Draw locks", &m_drawLocks );
+    ImGui::Checkbox( "Draw plots", &m_drawPlots );
     ImGui::End();
 }
 

@@ -2102,7 +2102,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
     for( auto& v : m_plots )
     {
-        if( v->data.empty() ) continue;
+        assert( !v->data.empty() );
 
         draw->AddText( wpos + ImVec2( ty, offset ), 0xFF44DDDD, GetString( v->name ) );
         draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );

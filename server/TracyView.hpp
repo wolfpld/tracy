@@ -62,6 +62,18 @@ private:
         bool blocked;
     };
 
+    struct PlotItem
+    {
+        int64_t time;
+        double val;
+    };
+
+    struct PlotData
+    {
+        uint64_t name;
+        std::vector<PlotItem> data;
+    };
+
     void Worker();
 
     void DispatchProcess( const QueueItem& ev );
@@ -79,6 +91,7 @@ private:
     void ProcessLockObtain( const QueueLockObtain& ev );
     void ProcessLockRelease( const QueueLockRelease& ev );
     void ProcessLockMark( const QueueLockMark& ev );
+    void ProcessPlotData( const QueuePlotData& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
@@ -97,6 +110,9 @@ private:
 
     void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread );
     void UpdateLockCount( LockMap& lockmap, size_t pos );
+
+    void InsertPlot( PlotData* plot, int64_t time, double val );
+    void HandlePlotName( uint64_t name, std::string&& str );
 
     uint64_t GetFrameTime( size_t idx ) const;
     uint64_t GetFrameBegin( size_t idx ) const;
@@ -145,6 +161,7 @@ private:
     std::mutex m_lock;
     Vector<uint64_t> m_frames;
     Vector<ThreadData*> m_threads;
+    Vector<PlotData*> m_plots;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
     std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;
@@ -162,6 +179,9 @@ private:
     std::unordered_set<uint64_t> m_pendingSourceLocation;
     std::unordered_map<uint64_t, Event*> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
+    std::unordered_map<uint64_t, uint32_t> m_plotMap;
+    std::unordered_map<std::string, uint32_t> m_plotRev;
+    std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
 
     Slab<EventSize*1024*1024> m_slab;
 

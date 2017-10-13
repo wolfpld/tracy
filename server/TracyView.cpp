@@ -332,7 +332,7 @@ close:
 
 void View::DispatchProcess( const QueueItem& ev )
 {
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName )
+    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName )
     {
         timeval tv;
         tv.tv_sec = 0;
@@ -350,9 +350,13 @@ void View::DispatchProcess( const QueueItem& ev )
         {
             AddString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
         }
-        else
+        else if( ev.hdr.type == QueueType::ThreadName )
         {
             AddThreadString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
+        }
+        else
+        {
+            HandlePlotName( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
         }
     }
     else
@@ -364,7 +368,7 @@ void View::DispatchProcess( const QueueItem& ev )
 void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
 {
     ptr += QueueDataSize[ev.hdr.idx];
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName )
+    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName )
     {
         uint16_t sz;
         memcpy( &sz, ptr, sizeof( sz ) );
@@ -377,9 +381,13 @@ void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
         {
             AddString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
         }
-        else
+        else if( ev.hdr.type == QueueType::ThreadName )
         {
             AddThreadString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
+        }
+        else
+        {
+            HandlePlotName( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
         }
         ptr += sz;
     }
@@ -431,6 +439,9 @@ void View::Process( const QueueItem& ev )
         break;
     case QueueType::LockMark:
         ProcessLockMark( ev.lockMark );
+        break;
+    case QueueType::PlotData:
+        ProcessPlotData( ev.plotData );
         break;
     default:
         assert( false );
@@ -573,6 +584,49 @@ void View::ProcessLockMark( const QueueLockMark& ev )
                 break;
             }
         }
+    }
+}
+
+void View::ProcessPlotData( const QueuePlotData& ev )
+{
+    PlotData* plot;
+    auto it = m_plotMap.find( ev.name );
+    if( it == m_plotMap.end() )
+    {
+        auto pit = m_pendingPlots.find( ev.name );
+        if( pit == m_pendingPlots.end() )
+        {
+            plot = m_slab.Alloc<PlotData>();
+            plot->name = ev.name;
+            m_pendingPlots.emplace( ev.name, plot );
+            ServerQuery( ServerQueryPlotName, ev.name );
+        }
+        else
+        {
+            plot = pit->second;
+        }
+    }
+    else
+    {
+        plot = m_plots[it->second];
+    }
+
+    const auto time = int64_t( ev.time * m_timerMul );
+    std::lock_guard<std::mutex> lock( m_lock );
+    switch( ev.type )
+    {
+    case PlotDataType::Double:
+        InsertPlot( plot, time, ev.data.d );
+        break;
+    case PlotDataType::Float:
+        InsertPlot( plot, time, (double)ev.data.f );
+        break;
+    case PlotDataType::Int:
+        InsertPlot( plot, time, (double)ev.data.i );
+        break;
+    default:
+        assert( false );
+        break;
     }
 }
 
@@ -786,6 +840,48 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
         timeline[pos]->lockCount = lockCount;
         pos++;
     }
+}
+
+void View::InsertPlot( PlotData* plot, int64_t time, double val )
+{
+    if( plot->data.empty() || plot->data.back().time < time )
+    {
+        plot->data.emplace_back( PlotItem { time, val } );
+    }
+    else
+    {
+        auto it = std::lower_bound( plot->data.begin(), plot->data.end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs.time < rhs; } );
+        it = plot->data.insert( it, PlotItem { time, val } );
+    }
+}
+
+void View::HandlePlotName( uint64_t name, std::string&& str )
+{
+    auto pit = m_pendingPlots.find( name );
+    assert( pit != m_pendingPlots.end() );
+
+    auto it = m_plotRev.find( str );
+    if( it == m_plotRev.end() )
+    {
+        const auto idx = m_plots.size();
+        m_plots.push_back( pit->second );
+        m_plotMap.emplace( name, idx );
+        m_plotRev.emplace( str, idx );
+        m_strings.emplace( name, std::move( str ) );
+    }
+    else
+    {
+        m_plotMap.emplace( name, it->second );
+        const auto& pp = pit->second->data;
+        auto plot = m_plots[it->second];
+        for( auto& v : pp )
+        {
+            InsertPlot( plot, v.time, v.val );
+        }
+        // pit->second is leaked
+    }
+
+    m_pendingPlots.erase( pit );
 }
 
 uint64_t View::GetFrameTime( size_t idx ) const

@@ -22,6 +22,7 @@ enum class QueueType : uint8_t
     LockRelease,
     LockMark,
     PlotData,
+    PlotName,
     NUM_TYPES
 };
 
@@ -170,6 +171,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
 };
 
 static_assert( sizeof( QueueDataSize ) / sizeof( size_t ) == (uint8_t)QueueType::NUM_TYPES, "QueueDataSize mismatch" );

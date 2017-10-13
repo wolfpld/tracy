@@ -1563,7 +1563,7 @@ void View::DrawZones()
 
     if( m_drawPlots )
     {
-        offset = DrawPlots( offset, pxns, wpos );
+        offset = DrawPlots( offset, pxns, wpos, hover );
     }
 
     const auto scrollPos = ImGui::GetScrollY();
@@ -2073,10 +2073,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     return cnt;
 }
 
-int View::DrawPlots( int offset, double pxns, const ImVec2& wpos )
-{
-    enum { PlotHeight = 100 };
+enum { PlotHeight = 100 };
 
+int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
+{
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -2121,7 +2121,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos )
         {
             const auto x = ( it->time - m_zvStart ) * pxns;
             const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-            DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD );
+            DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it->val, 0 );
         }
 
         auto prev = it;
@@ -2134,7 +2134,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos )
             const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
 
             draw->AddLine( wpos + ImVec2( x0, offset + y0 ), wpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
-            DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD );
+            DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it->val, prev->val );
 
             prev = it;
             ++it;
@@ -2153,10 +2153,21 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos )
     return offset;
 }
 
-void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color )
+void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev )
 {
     auto draw = ImGui::GetWindowDrawList();
     draw->AddRect( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), color );
+
+    if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 1, offset ), wpos + ImVec2( x + 1, offset + PlotHeight ) ) )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Value: %f", val );
+        if( hasPrev )
+        {
+            ImGui::Text( "Change: %f", val - prev );
+        }
+        ImGui::EndTooltip();
+    }
 }
 
 void View::DrawZoneInfoWindow()

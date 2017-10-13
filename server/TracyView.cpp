@@ -70,6 +70,9 @@ View::View( const char* addr )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
     , m_lockHighlight { -1 }
+    , m_showOptions( false )
+    , m_drawZones( true )
+    , m_drawLocks( true )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -97,6 +100,9 @@ View::View( FileRead& f )
     , m_zvHeight( 0 )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
+    , m_showOptions( false )
+    , m_drawZones( true )
+    , m_drawLocks( true )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -1063,7 +1069,9 @@ void View::DrawImpl()
 
     std::lock_guard<std::mutex> lock( m_lock );
     ImGui::Begin( m_captureName.c_str(), nullptr, ImGuiWindowFlags_ShowBorders | ImGuiWindowFlags_NoScrollbar );
-    if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 80, 0 ) ) ) m_pause = !m_pause;
+    if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 70, 0 ) ) ) m_pause = !m_pause;
+    ImGui::SameLine();
+    if( ImGui::Button( "Options", ImVec2( 70, 0 ) ) ) m_showOptions = true;
     ImGui::SameLine();
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-10" PRIu64" Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt, TimeToString( m_delay ), TimeToString( m_resolution ) );
     DrawFrames();
@@ -1072,6 +1080,7 @@ void View::DrawImpl()
 
     m_zoneHighlight = nullptr;
     DrawZoneInfoWindow();
+    if( m_showOptions ) DrawOptions();
 
     if( m_zvStartNext != 0 )
     {
@@ -1534,11 +1543,17 @@ void View::DrawZones()
         if( v->enabled )
         {
             m_lastCpu = -1;
-            auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
-            offset += ostep * depth;
+            if( m_drawZones )
+            {
+                const auto depth = DrawZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
+                offset += ostep * depth;
+            }
 
-            depth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight );
-            offset += ostep * depth;
+            if( m_drawLocks )
+            {
+                const auto depth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight );
+                offset += ostep * depth;
+            }
         }
         offset += ostep * 0.2f;
     }
@@ -2160,6 +2175,14 @@ void View::DrawZoneInfoWindow()
     ImGui::End();
 
     if( !show ) m_zoneInfoWindow = nullptr;
+}
+
+void View::DrawOptions()
+{
+    ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+    ImGui::Checkbox( "Draw zones", &m_drawZones );
+    ImGui::Checkbox( "Draw locks", &m_drawLocks );
+    ImGui::End();
 }
 
 uint32_t View::GetZoneColor( const Event& ev )

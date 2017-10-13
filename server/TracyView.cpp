@@ -2121,7 +2121,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos )
         {
             const auto x = ( it->time - m_zvStart ) * pxns;
             const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-            draw->AddRect( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), 0xFF44DDDD );
+            DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD );
         }
 
         auto prev = it;
@@ -2134,7 +2134,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos )
             const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
 
             draw->AddLine( wpos + ImVec2( x0, offset + y0 ), wpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
-            draw->AddRect( wpos + ImVec2( x1 - 1.5f, offset + y1 - 1.5f ), wpos + ImVec2( x1 + 2.5f, offset + y1 + 2.5f ), 0xFF44DDDD );
+            DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD );
 
             prev = it;
             ++it;
@@ -2151,6 +2151,12 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos )
     }
 
     return offset;
+}
+
+void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color )
+{
+    auto draw = ImGui::GetWindowDrawList();
+    draw->AddRect( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), color );
 }
 
 void View::DrawZoneInfoWindow()

@@ -2134,13 +2134,24 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 v->enabled = !v->enabled;
             }
 
+            const auto tr = v->data.back().time - v->data.begin()->time;
+
             ImGui::BeginTooltip();
             ImGui::Text( "Plot \"%s\"", txt );
             ImGui::Text( "Data points: %i", v->data.size() );
             ImGui::Text( "Data range: %f", v->max - v->min );
             ImGui::Text( "Min value: %f", v->min );
             ImGui::Text( "Max value: %f", v->max );
-            ImGui::Text( "Time range: %s", TimeToString( v->data.back().time - v->data.begin()->time ) );
+            ImGui::Text( "Time range: %s", TimeToString( tr ) );
+            ImGui::Text( "Data/second: %f", double( v->data.size() ) / tr * 1000000000ull );
+
+            const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back().time - 1000000000ull * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+            const auto tr10 = v->data.back().time - it->time;
+            if( tr10 != 0 )
+            {
+                ImGui::Text( "D/s (10s): %f", double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ull );
+            }
+
             ImGui::EndTooltip();
         }
 

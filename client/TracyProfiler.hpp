@@ -82,6 +82,36 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    static tracy_force_inline void PlotData( const char* name, int64_t val )
+    {
+        uint32_t cpu;
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        item->hdr.type = QueueType::PlotData;
+        item->plotData.name = (uint64_t)name;
+        item->plotData.time = GetTime( cpu );
+        item->plotData.type = PlotDataType::Int;
+        item->plotData.data.i = val;
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    static tracy_force_inline void PlotData( const char* name, float val )
+    {
+        uint32_t cpu;
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        item->hdr.type = QueueType::PlotData;
+        item->plotData.name = (uint64_t)name;
+        item->plotData.time = GetTime( cpu );
+        item->plotData.type = PlotDataType::Float;
+        item->plotData.data.f = val;
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     static tracy_force_inline void PlotData( const char* name, double val )
     {
         uint32_t cpu;
@@ -92,7 +122,8 @@ public:
         item->hdr.type = QueueType::PlotData;
         item->plotData.name = (uint64_t)name;
         item->plotData.time = GetTime( cpu );
-        item->plotData.val = val;
+        item->plotData.type = PlotDataType::Double;
+        item->plotData.data.d = val;
         tail.store( magic + 1, std::memory_order_release );
     }
 

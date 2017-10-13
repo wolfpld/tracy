@@ -102,11 +102,24 @@ struct QueueLockMark
     uint64_t srcloc;    // ptr
 };
 
+enum class PlotDataType : uint8_t
+{
+    Float,
+    Double,
+    Int
+};
+
 struct QueuePlotData
 {
     uint64_t name;      // ptr
     int64_t time;
-    double val;
+    PlotDataType type;
+    union
+    {
+        double d;
+        float f;
+        int64_t i;
+    } data;
 };
 
 struct QueueHeader

@@ -38,11 +38,24 @@ public:
     static void Draw();
 
 private:
+    struct MessagePending
+    {
+        int64_t time;
+        uint64_t thread;
+    };
+
+    struct MessageData
+    {
+        int64_t time;
+        const char* txt;
+    };
+
     struct ThreadData
     {
         uint64_t id;
         bool enabled;
         Vector<Event*> timeline;
+        Vector<MessageData*> messages;
     };
 
     struct LockMap
@@ -75,18 +88,6 @@ private:
         double max;
         bool enabled;
         std::vector<PlotItem> data;
-    };
-
-    struct MessagePending
-    {
-        int64_t time;
-        uint64_t thread;
-    };
-
-    struct MessageData
-    {
-        int64_t time;
-        const char* txt;
     };
 
     void Worker();

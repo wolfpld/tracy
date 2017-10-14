@@ -782,17 +782,43 @@ void View::AddMessageData( uint64_t ptr, const char* str, size_t sz )
     assert( it != m_pendingMessages.end() );
     const auto& time = it->second.time;
     const auto& thread = it->second.thread;
+    auto msgdata = new MessageData { time, txt };
+
+    std::unique_lock<std::mutex> lock( m_lock );
     if( m_messages.empty() || m_messages.back()->time < time )
     {
-        std::lock_guard<std::mutex> lock( m_lock );
-        m_messages.push_back( new MessageData { time, txt } );
+        m_messages.push_back( msgdata );
     }
     else
     {
         auto mit = std::lower_bound( m_messages.begin(), m_messages.end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        std::lock_guard<std::mutex> lock( m_lock );
-        m_messages.insert( mit, new MessageData { time, txt } );
+        m_messages.insert( mit, msgdata );
     }
+
+    Vector<MessageData*>* vec;
+    auto tit = m_threadMap.find( thread );
+    if( tit == m_threadMap.end() )
+    {
+        m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
+        m_threads.push_back( new ThreadData { thread, true } );
+        vec = &m_threads.back()->messages;
+    }
+    else
+    {
+        vec = &m_threads[tit->second]->messages;
+    }
+
+    if( vec->empty() || vec->back()->time < time )
+    {
+        vec->push_back( msgdata );
+    }
+    else
+    {
+        auto tmit = std::lower_bound( vec->begin(), vec->end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        vec->insert( tmit, msgdata );
+    }
+
+    lock.unlock();
     m_pendingMessages.erase( it );
 }
 

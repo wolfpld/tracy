@@ -46,9 +46,9 @@ To slice the program's execution recording into frame-sized chunks, put the `Fra
 
 To record a zone's execution time add the `ZoneScoped` macro at the beginning of the scope you want to measure. This will automatically record function name, source file name and location. Optionally you may use the `ZoneScopedC( 0xBBGGRR )` macro to set a custom color for the zone. Note that the color value will be constant in the recording (don't try to parametrize it). After you have marked the zone, you may further parametrize it.
 
-Use the `ZoneName( const char* name )` macro to set a custom name for the zone, which will be displayed instead of the function's name in the timeline view. The text string that you have provided **must** be accessible indefinitely at the given address. Tracy does not guarantee at which point in time it will be sent to the server and there  is no notification when it happens.
+Use the `ZoneName( const char* name )` macro to set a custom name for the zone, which will be displayed instead of the function's name in the timeline view. The indented usage is to provide a string literal. (The text string that you provide **must** be accessible indefinitely at the given address. Tracy does not guarantee at which point in time it will be sent to the server and there is no notification when it happens.)
 
-Use the `ZoneText( const char* text, size_t size )` macro to add a custom text string that will be displayed along the zone information (for example, name of the file you are opening). Note that every time `ZoneText` is invoked, a memory allocation is performed to store an internal copy of the data. The string you have provided is not used by tracy.
+Use the `ZoneText( const char* text, size_t size )` macro to add a custom text string that will be displayed along the zone information (for example, name of the file you are opening). Note that every time `ZoneText` is invoked, a memory allocation is performed to store an internal copy of the data. The provided string is not used by tracy after ZoneText returns.
 
 #### Marking locks
 

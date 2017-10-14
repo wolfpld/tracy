@@ -236,6 +236,7 @@ private:
     const Event* m_zoneInfoWindow;
     const Event* m_zoneHighlight;
     LockHighlight m_lockHighlight;
+    const MessageData* m_msgHighlight;
 
     bool m_showOptions;
     bool m_showMessages;

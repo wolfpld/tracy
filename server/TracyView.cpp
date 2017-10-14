@@ -1625,6 +1625,8 @@ bool View::DrawZoneFrames()
 
 void View::DrawZones()
 {
+    m_msgHighlight = nullptr;
+
     if( m_zvStart == m_zvEnd ) return;
     assert( m_zvStart < m_zvEnd );
 
@@ -1684,6 +1686,7 @@ void View::DrawZones()
                     ImGui::Text( "%s", TimeToString( (*it)->time - m_frames[0] ) );
                     ImGui::Text( "%s", (*it)->txt );
                     ImGui::EndTooltip();
+                    m_msgHighlight = *it;
                 }
                 ++it;
             }
@@ -2507,7 +2510,14 @@ void View::DrawMessages()
     {
         char tmp[4096];
         sprintf( tmp, "%10s | %s", TimeToString( v->time - m_frames[0] ), v->txt );
-        ImGui::Text( tmp );
+        if( m_msgHighlight == v )
+        {
+            ImGui::TextColored( ImVec4( 0xDD / 255.f, 0x22 / 255.f, 0x22 / 255.f, 1.f ), "%s", tmp );
+        }
+        else
+        {
+            ImGui::Text( "%s", tmp );
+        }
         if( ImGui::IsItemClicked() )
         {
             m_pause = true;

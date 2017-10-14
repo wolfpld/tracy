@@ -68,7 +68,7 @@ enum { QueuePrealloc = 256 * 1024 };
 
 static RPMallocInit init_order(101) s_rpmalloc_init;
 static thread_local RPMallocThreadInit init_order(102) s_rpmalloc_thread_init;
-static moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueueItemSize * QueuePrealloc );
+static moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 static thread_local moodycamel::ProducerToken init_order(104) s_token_detail( s_queue );
 thread_local ProducerWrapper init_order(105) s_token { s_queue.get_explicit_producer( s_token_detail ) };
 

@@ -1642,6 +1642,23 @@ void View::DrawZones()
         if( v->enabled )
         {
             draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFFFFF );
+
+            auto it = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+            auto end = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvEnd, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+
+            while( it < end )
+            {
+                const auto px = ( (*it)->time - m_zvStart ) * pxns;
+                draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "%s", TimeToString( (*it)->time - m_frames[0] ) );
+                    ImGui::Text( "%s", (*it)->txt );
+                    ImGui::EndTooltip();
+                }
+                ++it;
+            }
         }
         else
         {

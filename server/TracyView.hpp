@@ -153,6 +153,7 @@ private:
     int DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover );
     void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev );
     void DrawOptions();
+    void DrawMessages();
 
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
@@ -236,6 +237,7 @@ private:
     LockHighlight m_lockHighlight;
 
     bool m_showOptions;
+    bool m_showMessages;
     bool m_drawZones;
     bool m_drawLocks;
     bool m_drawPlots;

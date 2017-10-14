@@ -71,6 +71,7 @@ View::View( const char* addr )
     , m_zoneInfoWindow( nullptr )
     , m_lockHighlight { -1 }
     , m_showOptions( false )
+    , m_showMessages( false )
     , m_drawZones( true )
     , m_drawLocks( true )
     , m_drawPlots( true )
@@ -102,6 +103,7 @@ View::View( FileRead& f )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
     , m_showOptions( false )
+    , m_showMessages( false )
     , m_drawZones( true )
     , m_drawLocks( true )
     , m_drawPlots( true )
@@ -1150,6 +1152,8 @@ void View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Options", ImVec2( 70, 0 ) ) ) m_showOptions = true;
     ImGui::SameLine();
+    if( ImGui::Button( "Messages", ImVec2( 70, 0 ) ) ) m_showMessages = true;
+    ImGui::SameLine();
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-10" PRIu64" Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt, TimeToString( m_delay ), TimeToString( m_resolution ) );
     DrawFrames();
     DrawZones();
@@ -1158,6 +1162,7 @@ void View::DrawImpl()
     m_zoneHighlight = nullptr;
     DrawZoneInfoWindow();
     if( m_showOptions ) DrawOptions();
+    if( m_showMessages ) DrawMessages();
 
     if( m_zvStartNext != 0 )
     {
@@ -2421,6 +2426,25 @@ void View::DrawOptions()
     ImGui::Checkbox( "Draw zones", &m_drawZones );
     ImGui::Checkbox( "Draw locks", &m_drawLocks );
     ImGui::Checkbox( "Draw plots", &m_drawPlots );
+    ImGui::End();
+}
+
+void View::DrawMessages()
+{
+    ImGui::Begin( "Messages", &m_showMessages, ImGuiWindowFlags_ShowBorders );
+    for( auto& v : m_messages )
+    {
+        char tmp[4096];
+        sprintf( tmp, "%10s | %s", TimeToString( v->time - m_frames[0] ), v->txt );
+        ImGui::Text( tmp );
+        if( ImGui::IsItemClicked() )
+        {
+            m_pause = true;
+            const auto hr = std::max( 1ll, ( m_zvEnd - m_zvStart ) / 2 );
+            m_zvStart = v->time - hr;
+            m_zvEnd = v->time + hr;
+        }
+    }
     ImGui::End();
 }
 

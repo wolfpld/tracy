@@ -127,6 +127,23 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    static tracy_force_inline void Message( const char* txt, size_t size )
+    {
+        uint32_t cpu;
+        Magic magic;
+        auto ptr = new char[size+1];
+        memcpy( ptr, txt, size );
+        ptr[size] = '\0';
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        item->hdr.type = QueueType::Message;
+        item->message.time = GetTime( cpu );
+        item->message.thread = GetThreadHandle();
+        item->message.text = (uint64_t)ptr;
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     static bool ShouldExit();
 
 private:

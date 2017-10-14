@@ -23,6 +23,7 @@ enum class QueueType : uint8_t
     LockMark,
     PlotData,
     PlotName,
+    Message,
     NUM_TYPES
 };
 
@@ -125,6 +126,13 @@ struct QueuePlotData
     } data;
 };
 
+struct QueueMessage
+{
+    int64_t time;
+    uint64_t thread;
+    uint64_t text;      // ptr
+};
+
 struct QueueHeader
 {
     union
@@ -151,6 +159,7 @@ struct QueueItem
         QueueLockRelease lockRelease;
         QueueLockMark lockMark;
         QueuePlotData plotData;
+        QueueMessage message;
     };
 };
 
@@ -174,6 +183,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
+    sizeof( QueueHeader ) + sizeof( QueueMessage ),
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

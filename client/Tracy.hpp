@@ -18,6 +18,8 @@
 
 #define TracyPlot(x,y)
 
+#define TracyMesage(x,y)
+
 #else
 
 #include "TracyLock.hpp"
@@ -38,6 +40,8 @@
 #define LockMark( varname ) static const tracy::SourceLocation __tracy_lock_location_##varname { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; varname.Mark( &__tracy_lock_location_##varname );
 
 #define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val );
+
+#define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size );
 
 #endif
 

@@ -24,6 +24,7 @@ enum class QueueType : uint8_t
     PlotData,
     PlotName,
     Message,
+    MessageData,
     NUM_TYPES
 };
 
@@ -184,6 +185,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // message data
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

@@ -77,6 +77,18 @@ private:
         std::vector<PlotItem> data;
     };
 
+    struct MessagePending
+    {
+        int64_t time;
+        uint64_t thread;
+    };
+
+    struct MessageData
+    {
+        int64_t time;
+        const char* txt;
+    };
+
     void Worker();
 
     void DispatchProcess( const QueueItem& ev );
@@ -95,6 +107,7 @@ private:
     void ProcessLockRelease( const QueueLockRelease& ev );
     void ProcessLockMark( const QueueLockMark& ev );
     void ProcessPlotData( const QueuePlotData& ev );
+    void ProcessMessage( const QueueMessage& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
@@ -105,6 +118,7 @@ private:
     void AddThreadString( uint64_t id, std::string&& str );
     void AddCustomString( uint64_t ptr, std::string&& str );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
+    void AddMessageData( uint64_t ptr, const char* str, size_t sz );
 
     void NewZone( Event* zone, uint64_t thread );
     void UpdateZone( Event* zone );
@@ -168,6 +182,7 @@ private:
     Vector<uint64_t> m_frames;
     Vector<ThreadData*> m_threads;
     Vector<PlotData*> m_plots;
+    Vector<MessageData*> m_messages;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
     std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;
@@ -188,6 +203,7 @@ private:
     std::unordered_map<uint64_t, uint32_t> m_plotMap;
     std::unordered_map<std::string, uint32_t> m_plotRev;
     std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
+    std::unordered_map<uint64_t, MessagePending> m_pendingMessages;
 
     Slab<EventSize*1024*1024> m_slab;
 

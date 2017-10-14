@@ -193,7 +193,7 @@ bool Profiler::SendData( const char* data, size_t len )
 
 bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
-    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName );
+    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName || type == QueueType::MessageData );
 
     QueueItem item;
     item.hdr.type = type;
@@ -268,6 +268,10 @@ bool Profiler::HandleServerQuery()
         break;
     case ServerQueryPlotName:
         SendString( ptr, (const char*)ptr, QueueType::PlotName );
+        break;
+    case ServerQueryMessage:
+        SendString( ptr, (const char*)ptr, QueueType::MessageData );
+        delete[] (const char*)ptr;
         break;
     default:
         assert( false );

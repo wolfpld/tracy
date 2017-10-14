@@ -361,7 +361,7 @@ close:
 
 void View::DispatchProcess( const QueueItem& ev )
 {
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName )
+    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::MessageData )
     {
         timeval tv;
         tv.tv_sec = 0;
@@ -383,9 +383,13 @@ void View::DispatchProcess( const QueueItem& ev )
         {
             AddThreadString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
         }
-        else
+        else if( ev.hdr.type == QueueType::PlotName )
         {
             HandlePlotName( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
+        }
+        else
+        {
+            AddMessageData( ev.stringTransfer.ptr, buf, sz );
         }
     }
     else
@@ -397,7 +401,7 @@ void View::DispatchProcess( const QueueItem& ev )
 void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
 {
     ptr += QueueDataSize[ev.hdr.idx];
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName )
+    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::MessageData )
     {
         uint16_t sz;
         memcpy( &sz, ptr, sizeof( sz ) );
@@ -414,9 +418,13 @@ void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
         {
             AddThreadString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
         }
-        else
+        else if( ev.hdr.type == QueueType::PlotName )
         {
             HandlePlotName( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
+        }
+        else
+        {
+            AddMessageData( ev.stringTransfer.ptr, ptr, sz );
         }
         ptr += sz;
     }
@@ -471,6 +479,9 @@ void View::Process( const QueueItem& ev )
         break;
     case QueueType::PlotData:
         ProcessPlotData( ev.plotData );
+        break;
+    case QueueType::Message:
+        ProcessMessage( ev.message );
         break;
     default:
         assert( false );
@@ -660,6 +671,12 @@ void View::ProcessPlotData( const QueuePlotData& ev )
     }
 }
 
+void View::ProcessMessage( const QueueMessage& ev )
+{
+    m_pendingMessages.emplace( ev.text, MessagePending { int64_t( ev.time * m_timerMul ), ev.thread } );
+    ServerQuery( ServerQueryMessage, ev.text );
+}
+
 void View::CheckString( uint64_t ptr )
 {
     if( m_strings.find( ptr ) != m_strings.end() ) return;
@@ -751,6 +768,30 @@ void View::AddSourceLocation( const QueueSourceLocation& srcloc )
     CheckString( srcloc.function );
     std::lock_guard<std::mutex> lock( m_lock );
     m_sourceLocation.emplace( srcloc.ptr, srcloc );
+}
+
+void View::AddMessageData( uint64_t ptr, const char* str, size_t sz )
+{
+    auto txt = new char[sz+1];
+    memcpy( txt, str, sz );
+    txt[sz] = '\0';
+
+    auto it = m_pendingMessages.find( ptr );
+    assert( it != m_pendingMessages.end() );
+    const auto& time = it->second.time;
+    const auto& thread = it->second.thread;
+    if( m_messages.empty() || m_messages.back()->time < time )
+    {
+        std::lock_guard<std::mutex> lock( m_lock );
+        m_messages.push_back( new MessageData { time, txt } );
+    }
+    else
+    {
+        auto mit = std::lower_bound( m_messages.begin(), m_messages.end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        std::lock_guard<std::mutex> lock( m_lock );
+        m_messages.insert( mit, new MessageData { time, txt } );
+    }
+    m_pendingMessages.erase( it );
 }
 
 void View::NewZone( Event* zone, uint64_t thread )

@@ -19,6 +19,7 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
+#include "tracy_rpmalloc.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 
@@ -34,6 +35,18 @@
 
 namespace tracy
 {
+
+struct RPMallocInit
+{
+    RPMallocInit() { rpmalloc_initialize(); }
+    ~RPMallocInit() { rpmalloc_finalize(); }
+};
+
+struct RPMallocThreadInit
+{
+    RPMallocThreadInit() { rpmalloc_thread_initialize(); }
+    ~RPMallocThreadInit() { rpmalloc_thread_finalize(); }
+};
 
 static const char* GetProcessName()
 {
@@ -54,14 +67,16 @@ static const char* GetProcessName()
 
 enum { QueuePrealloc = 256 * 1024 };
 
-static moodycamel::ConcurrentQueue<QueueItem> init_order(101) s_queue( QueueItemSize * QueuePrealloc );
-static thread_local moodycamel::ProducerToken init_order(102) s_token_detail( s_queue );
-thread_local ProducerWrapper init_order(103) s_token { s_queue.get_explicit_producer( s_token_detail ) };
+static RPMallocInit init_order(101) s_rpmalloc_init;
+static thread_local RPMallocThreadInit init_order(102) s_rpmalloc_thread_init;
+static moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueueItemSize * QueuePrealloc );
+static thread_local moodycamel::ProducerToken init_order(104) s_token_detail( s_queue );
+thread_local ProducerWrapper init_order(105) s_token { s_queue.get_explicit_producer( s_token_detail ) };
 
 std::atomic<uint64_t> s_id( 0 );
 
 #ifndef TRACY_DISABLE
-static Profiler init_order(104) s_profiler;
+static Profiler init_order(106) s_profiler;
 #endif
 
 static Profiler* s_instance = nullptr;

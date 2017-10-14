@@ -62,6 +62,18 @@ The standard `std::lock_guard` and `std::unique_lock` wrappers should use the `L
 
 To mark the location of lock being held, use the `LockMark( varname )` macro, after you have obtained the lock. Note that the varname must be a lock variable (a reference is also valid). This step is optional.
 
+#### Plotting data
+
+Tracy is able to capture and draw value changes over time. You may use it to analyse memory usage, draw call count, etc. To report data, use the `TracyPlot( name, value )` macro.
+
+![](doc/plot.png)
+
+#### Message log
+
+Fast navigation in large data set and correlation of zones with what was happening in application may be difficult. To ease these issues tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the `TracyMessage( text, size )` macro (tracy will allocate memory for message storage). Messages are displayed on a chronological list and on the zone view.
+
+![](doc/messages.png)
+
 #### Running the server
 
 The easiest way to get going is to build the standalone server, available in the `standalone` directory. You can connect to localhost or remote clients and view the collected data right away.

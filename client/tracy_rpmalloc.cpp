@@ -305,7 +305,7 @@ struct span_t {
 	//! Previous span
 	span_t*     prev_span;
 };
-_Static_assert(sizeof(span_t) <= SPAN_HEADER_SIZE, "span size mismatch");
+static_assert(sizeof(span_t) <= SPAN_HEADER_SIZE, "span size mismatch");
 
 struct span_counter_t {
 	//! Allocation high water mark
@@ -350,7 +350,7 @@ struct heap_t {
 	size_t       global_to_thread;
 #endif
 };
-_Static_assert(sizeof(heap_t) <= PAGE_SIZE*2, "heap size mismatch");
+static_assert(sizeof(heap_t) <= PAGE_SIZE*2, "heap size mismatch");
 
 struct size_class_t {
 	//! Size of blocks in this class
@@ -362,7 +362,7 @@ struct size_class_t {
 	//! Class index this class is merged with
 	uint16_t class_idx;
 };
-_Static_assert(sizeof(size_class_t) == 8, "Size class size mismatch");
+static_assert(sizeof(size_class_t) == 8, "Size class size mismatch");
 
 //! Global size classes
 static size_class_t _memory_size_class[SIZE_CLASS_COUNT];

@@ -2521,7 +2521,7 @@ void View::DrawMessages()
         if( ImGui::IsItemClicked() )
         {
             m_pause = true;
-            const auto hr = std::max( 1ll, ( m_zvEnd - m_zvStart ) / 2 );
+            const auto hr = std::max<uint64_t>( 1, ( m_zvEnd - m_zvStart ) / 2 );
             m_zvStart = v->time - hr;
             m_zvEnd = v->time + hr;
         }

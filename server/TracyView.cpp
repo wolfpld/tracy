@@ -187,7 +187,8 @@ View::View( FileRead& f )
     for( uint64_t i=0; i<sz; i++ )
     {
         LockMap lockmap;
-        uint64_t id, tsz;
+        uint32_t id;
+        uint64_t tsz;
         f.Read( &id, sizeof( id ) );
         f.Read( &lockmap.srcloc, sizeof( lockmap.srcloc ) );
         f.Read( &tsz, sizeof( tsz ) );

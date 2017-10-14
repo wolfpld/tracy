@@ -4,6 +4,7 @@
 #include <atomic>
 #include <chrono>
 #include <stdint.h>
+#include <string.h>
 #include <thread>
 
 #include "concurrentqueue.h"

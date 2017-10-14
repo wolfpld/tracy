@@ -9,7 +9,7 @@
  *
  */
 
-#include "tracy_rpmalloc.h"
+#include "tracy_rpmalloc.hpp"
 
 // Build time configurable limits
 
@@ -77,6 +77,7 @@
 #  if ENABLE_VALIDATE_ARGS
 #    include <Intsafe.h>
 #  endif
+#  include <intrin.h>
 #else
 #  define ALIGNED_STRUCT(name, alignment) struct __attribute__((__aligned__(alignment))) name
 #  define FORCEINLINE inline __attribute__((__always_inline__))
@@ -113,6 +114,9 @@
 #else
 #  define assert(x)
 #endif
+
+namespace tracy
+{
 
 // Atomic access abstraction
 ALIGNED_STRUCT(atomic32_t, 4) {
@@ -417,7 +421,7 @@ _memory_deallocate_deferred(heap_t* heap, size_t size_class);
 static heap_t*
 _memory_heap_lookup(int32_t id) {
 	uint32_t list_idx = id % HEAP_ARRAY_SIZE;
-	heap_t* heap = atomic_load_ptr(&_memory_heaps[list_idx]);
+	heap_t* heap = (heap_t*)atomic_load_ptr(&_memory_heaps[list_idx]);
 	while (heap && (heap->id != id))
 		heap = heap->next_heap;
 	return heap;
@@ -636,7 +640,7 @@ use_active:
 		//Happy path, we have a span with at least one free block
 		span_t* span = heap->active_span[class_idx];
 		count_t offset = class_size * active_block->free_list;
-		uint32_t* block = pointer_offset(span, SPAN_HEADER_SIZE + offset);
+		uint32_t* block = (uint32_t*)pointer_offset(span, SPAN_HEADER_SIZE + offset);
 		assert(span);
 
 		--active_block->free_count;
@@ -712,7 +716,7 @@ use_active:
 	}
 	else {
 		//Step 6: All caches empty, map in new memory pages
-		span = _memory_map(size_class->page_count);
+		span = (span_t*)_memory_map(size_class->page_count);
 	}
 
 	//Mark span as owned by this heap and set base data
@@ -786,7 +790,7 @@ _memory_allocate_large_from_heap(heap_t* heap, size_t size) {
 		}
 		else {
 			//Step 6: All caches empty, map in new memory pages
-			span = _memory_map(SPAN_MAX_PAGE_COUNT);
+			span = (span_t*)_memory_map(SPAN_MAX_PAGE_COUNT);
 		}
 
 		//Mark span as owned by this heap and set base data
@@ -851,7 +855,7 @@ use_cache:
 	}
 	else {
 		//Step 4: Map in more memory pages
-		span = _memory_map(num_spans * SPAN_MAX_PAGE_COUNT);
+		span = (span_t*)_memory_map(num_spans * SPAN_MAX_PAGE_COUNT);
 	}
 	//Mark span as owned by this heap
 	atomic_store32(&span->heap_id, heap->id);
@@ -873,7 +877,7 @@ _memory_allocate_heap(void) {
 	//Try getting an orphaned heap
 	atomic_thread_fence_acquire();
 	do {
-		heap = atomic_load_ptr(&_memory_orphan_heaps);
+		heap = (heap_t*)atomic_load_ptr(&_memory_orphan_heaps);
 		if (!heap)
 			break;
 		next_heap = heap->next_orphan;
@@ -886,7 +890,7 @@ _memory_allocate_heap(void) {
 	}
 
 	//Map in pages for a new heap
-	heap = _memory_map(2);
+	heap = (heap_t*)_memory_map(2);
 	memset(heap, 0, sizeof(heap_t));
 
 	//Get a new heap ID
@@ -900,7 +904,7 @@ _memory_allocate_heap(void) {
 	//Link in heap in heap ID map
 	size_t list_idx = heap->id % HEAP_ARRAY_SIZE;
 	do {
-		next_heap = atomic_load_ptr(&_memory_heaps[list_idx]);
+		next_heap = (heap_t*)atomic_load_ptr(&_memory_heaps[list_idx]);
 		heap->next_heap = next_heap;
 	}
 	while (!atomic_cas_ptr(&_memory_heaps[list_idx], heap, next_heap));
@@ -1021,7 +1025,7 @@ _memory_deallocate_to_heap(heap_t* heap, span_t* span, void* p) {
 	void* blocks_start = pointer_offset(span, SPAN_HEADER_SIZE);
 	count_t block_offset = (count_t)pointer_diff(p, blocks_start);
 	count_t block_idx = block_offset / (count_t)size_class->size;
-	uint32_t* block = pointer_offset(blocks_start, block_idx * size_class->size);
+	uint32_t* block = (uint32_t*)pointer_offset(blocks_start, block_idx * size_class->size);
 	*block = block_data->free_list;
 	block_data->free_list = (uint16_t)block_idx;
 }
@@ -1097,7 +1101,7 @@ _memory_deallocate_deferred(heap_t* heap, size_t size_class) {
 	do {
 		void* next = *(void**)p;
 		//Get span and check which type of block
-		span_t* span = (void*)((uintptr_t)p & SPAN_MASK);
+		span_t* span = (span_t*)(void*)((uintptr_t)p & SPAN_MASK);
 		if (span->size_class < SIZE_CLASS_COUNT) {
 			//Small/medium block
 			got_class |= (span->size_class == size_class);
@@ -1139,7 +1143,7 @@ _memory_allocate(size_t size) {
 	size_t num_pages = size / PAGE_SIZE;
 	if (size % PAGE_SIZE)
 		++num_pages;
-	span_t* span = _memory_map(num_pages);
+	span_t* span = (span_t*)_memory_map(num_pages);
 	atomic_store32(&span->heap_id, 0);
 	//Store page count in next_span
 	span->next_span = (span_t*)((uintptr_t)num_pages);
@@ -1154,7 +1158,7 @@ _memory_deallocate(void* p) {
 		return;
 
 	//Grab the span (always at start of span, using 64KiB alignment)
-	span_t* span = (void*)((uintptr_t)p & SPAN_MASK);
+	span_t* span = (span_t*)(void*)((uintptr_t)p & SPAN_MASK);
 	int32_t heap_id = atomic_load32(&span->heap_id);
 	heap_t* heap = _memory_thread_heap;
 	//Check if block belongs to this heap or if deallocation should be deferred
@@ -1179,7 +1183,7 @@ static void*
 _memory_reallocate(void* p, size_t size, size_t oldsize, unsigned int flags) {
 	if (p) {
 		//Grab the span (always at start of span, using 64KiB alignment)
-		span_t* span = (void*)((uintptr_t)p & SPAN_MASK);
+		span_t* span = (span_t*)(void*)((uintptr_t)p & SPAN_MASK);
 		int32_t heap_id = atomic_load32(&span->heap_id);
 		if (heap_id) {
 			if (span->size_class < SIZE_CLASS_COUNT) {
@@ -1235,7 +1239,7 @@ _memory_reallocate(void* p, size_t size, size_t oldsize, unsigned int flags) {
 static size_t
 _memory_usable_size(void* p) {
 	//Grab the span (always at start of span, using 64KiB alignment)
-	span_t* span = (void*)((uintptr_t)p & SPAN_MASK);
+	span_t* span = (span_t*)(void*)((uintptr_t)p & SPAN_MASK);
 	int32_t heap_id = atomic_load32(&span->heap_id);
 	if (heap_id) {
 		if (span->size_class < SIZE_CLASS_COUNT) {
@@ -1344,7 +1348,7 @@ rpmalloc_finalize(void) {
 
 	//Free all thread caches
 	for (size_t list_idx = 0; list_idx < HEAP_ARRAY_SIZE; ++list_idx) {
-		heap_t* heap = atomic_load_ptr(&_memory_heaps[list_idx]);
+		heap_t* heap = (heap_t*)atomic_load_ptr(&_memory_heaps[list_idx]);
 		while (heap) {
 			_memory_deallocate_deferred(heap, 0);
 
@@ -1510,7 +1514,7 @@ rpmalloc_thread_finalize(void) {
 	//Orphan the heap
 	heap_t* last_heap;
 	do {
-		last_heap = atomic_load_ptr(&_memory_orphan_heaps);
+		last_heap = (heap_t*)atomic_load_ptr(&_memory_orphan_heaps);
 		heap->next_orphan = last_heap;
 	}
 	while (!atomic_cas_ptr(&_memory_orphan_heaps, heap, last_heap));
@@ -1725,7 +1729,7 @@ rpmalloc_thread_statistics(rpmalloc_thread_statistics_t* stats) {
 	void* p = atomic_load_ptr(&heap->defer_deallocate);
 	while (p) {
 		void* next = *(void**)p;
-		span_t* span = (void*)((uintptr_t)p & SPAN_MASK);
+		span_t* span = (span_t*)(void*)((uintptr_t)p & SPAN_MASK);
 		stats->deferred += _memory_size_class[span->size_class].size;
 		p = next;
 	}
@@ -1775,4 +1779,6 @@ rpmalloc_global_statistics(rpmalloc_global_statistics_t* stats) {
 		size_t list_bytes = global_span_count * (iclass + 1) * SPAN_MAX_PAGE_COUNT * PAGE_SIZE;
 		stats->cached_large += list_bytes;
 	}
+}
+
 }

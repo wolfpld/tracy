@@ -7,10 +7,7 @@ IMAGE := tracy_test
 
 SRC := \
     test.cpp \
-    ../client/TracyProfiler.cpp \
-    ../common/tracy_lz4.cpp \
-    ../common/TracySocket.cpp \
-    ../common/TracySystem.cpp
+    ../TracyClient.cpp
 
 OBJ := $(SRC:%.cpp=%.o)
 

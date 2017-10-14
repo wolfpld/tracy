@@ -9,6 +9,7 @@
 #include "concurrentqueue.h"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
+#include "TracyAlloc.hpp"
 
 #if defined _MSC_VER || defined __CYGWIN__
 #  include <intrin.h>
@@ -131,7 +132,7 @@ public:
     {
         uint32_t cpu;
         Magic magic;
-        auto ptr = new char[size+1];
+        auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& token = s_token.ptr;

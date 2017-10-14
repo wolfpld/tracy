@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "../common/TracySystem.hpp"
+#include "TracyAlloc.hpp"
 #include "TracyProfiler.hpp"
 
 namespace tracy
@@ -43,7 +44,7 @@ public:
     tracy_force_inline void Text( const char* txt, size_t size )
     {
         Magic magic;
-        auto ptr = new char[size+1];
+        auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& token = s_token.ptr;

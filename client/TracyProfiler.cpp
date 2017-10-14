@@ -20,6 +20,7 @@
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
 #include "tracy_rpmalloc.hpp"
+#include "TracyAlloc.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 
@@ -39,13 +40,11 @@ namespace tracy
 struct RPMallocInit
 {
     RPMallocInit() { rpmalloc_initialize(); }
-    ~RPMallocInit() { rpmalloc_finalize(); }
 };
 
 struct RPMallocThreadInit
 {
     RPMallocThreadInit() { rpmalloc_thread_initialize(); }
-    ~RPMallocThreadInit() { rpmalloc_thread_finalize(); }
 };
 
 static const char* GetProcessName()
@@ -86,7 +85,7 @@ Profiler::Profiler()
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
     , m_stream( LZ4_createStream() )
-    , m_buffer( new char[TargetFrameSize*3] )
+    , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
 {
     assert( !s_instance );
@@ -106,7 +105,7 @@ Profiler::~Profiler()
     m_shutdown.store( true, std::memory_order_relaxed );
     m_thread.join();
 
-    delete[] m_buffer;
+    tracy_free( m_buffer );
     LZ4_freeStream( m_stream );
 
     assert( s_instance );
@@ -276,7 +275,7 @@ bool Profiler::HandleServerQuery()
         break;
     case ServerQueryCustomString:
         SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-        delete[] (const char*)ptr;
+        tracy_free( (void*)ptr );
         break;
     case ServerQuerySourceLocation:
         SendSourceLocation( ptr );
@@ -286,7 +285,7 @@ bool Profiler::HandleServerQuery()
         break;
     case ServerQueryMessage:
         SendString( ptr, (const char*)ptr, QueueType::MessageData );
-        delete[] (const char*)ptr;
+        tracy_free( (void*)ptr );
         break;
     default:
         assert( false );

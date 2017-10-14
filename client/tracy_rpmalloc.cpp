@@ -1291,6 +1291,8 @@ _memory_adjust_size_class(size_t iclass) {
 	}
 }
 
+}
+
 #if defined( _WIN32 ) || defined( __WIN32__ ) || defined( _WIN64 )
 #  include <windows.h>
 #else
@@ -1301,6 +1303,9 @@ _memory_adjust_size_class(size_t iclass) {
 #    define MAP_UNINITIALIZED 0
 #  endif
 #endif
+
+namespace tracy
+{
 
 //! Initialize the allocator and setup global data
 int

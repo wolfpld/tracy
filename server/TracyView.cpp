@@ -209,6 +209,24 @@ View::View( FileRead& f )
         m_lockMap.emplace( id, std::move( lockmap ) );
     }
 
+    std::unordered_map<uint64_t, MessageData*> msgMap;
+    f.Read( &sz, sizeof( sz ) );
+    m_messages.reserve( sz );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint64_t ptr, tsz;
+        f.Read( &ptr, sizeof( ptr ) );
+        auto msgdata = new MessageData;
+        f.Read( &msgdata->time, sizeof( msgdata->time ) );
+        f.Read( &tsz, sizeof( tsz ) );
+        auto txt = new char[tsz+1];
+        f.Read( txt, tsz );
+        txt[tsz] = '\0';
+        msgdata->txt = txt;
+        m_messages.push_back( msgdata );
+        msgMap.emplace( ptr, msgdata );
+    }
+
     f.Read( &sz, sizeof( sz ) );
     m_threads.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -216,6 +234,15 @@ View::View( FileRead& f )
         auto td = new ThreadData;
         f.Read( &td->id, sizeof( td->id ) );
         ReadTimeline( f, td->timeline, nullptr, stringMap );
+        uint64_t msz;
+        f.Read( &msz, sizeof( msz ) );
+        td->messages.reserve( msz );
+        for( uint64_t j=0; j<msz; j++ )
+        {
+            uint64_t ptr;
+            f.Read( &ptr, sizeof( ptr ) );
+            td->messages.push_back( msgMap[ptr] );
+        }
         td->enabled = true;
         m_threads.push_back( td );
     }
@@ -2672,12 +2699,31 @@ void View::Write( FileWrite& f )
         }
     }
 
+    sz = m_messages.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_messages )
+    {
+        const auto ptr = (uint64_t)v;
+        f.Write( &ptr, sizeof( ptr ) );
+        f.Write( &v->time, sizeof( v->time ) );
+        sz = strlen( v->txt );
+        f.Write( &sz, sizeof( sz ) );
+        f.Write( v->txt, sz );
+    }
+
     sz = m_threads.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& thread : m_threads )
     {
         f.Write( &thread->id, sizeof( thread->id ) );
         WriteTimeline( f, thread->timeline );
+        sz = thread->messages.size();
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& v : thread->messages )
+        {
+            auto ptr = uint64_t( v );
+            f.Write( &ptr, sizeof( ptr ) );
+        }
     }
 
     sz = m_plots.size();

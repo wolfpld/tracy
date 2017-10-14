@@ -7,11 +7,11 @@
 // other).
 //
 
-#include "client/tracy_rpmalloc.cpp"
 #include "client/TracyProfiler.cpp"
 #include "common/tracy_lz4.cpp"
 #include "common/TracySocket.cpp"
 #include "common/TracySystem.cpp"
+#include "client/tracy_rpmalloc.cpp"
 
 #ifdef _MSC_VER
 #  pragma comment(lib, "ws2_32.lib")

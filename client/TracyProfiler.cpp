@@ -72,8 +72,6 @@ static moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrea
 static thread_local moodycamel::ProducerToken init_order(104) s_token_detail( s_queue );
 thread_local ProducerWrapper init_order(105) s_token { s_queue.get_explicit_producer( s_token_detail ) };
 
-std::atomic<uint64_t> s_id( 0 );
-
 #ifndef TRACY_DISABLE
 static Profiler init_order(106) s_profiler;
 #endif

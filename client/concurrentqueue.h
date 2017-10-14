@@ -38,6 +38,8 @@
 #  define tracy_force_inline inline
 #endif
 
+#include "TracyAlloc.hpp"
+
 #if defined(__GNUC__)
 // Disable -Wconversion warnings (spuriously triggered when Traits::size_t and
 // Traits::index_t are set to < 32 bits, causing integer promotion, causing warnings
@@ -338,8 +340,8 @@ struct ConcurrentQueueDefaultTraits
 	static inline void* (malloc)(size_t size) { return WORKAROUND_malloc(size); }
 	static inline void (free)(void* ptr) { return WORKAROUND_free(ptr); }
 #else
-	static inline void* malloc(size_t size) { return std::malloc(size); }
-	static inline void free(void* ptr) { return std::free(ptr); }
+	static inline void* malloc(size_t size) { return tracy::tracy_malloc(size); }
+	static inline void free(void* ptr) { return tracy::tracy_free(ptr); }
 #endif
 #else
 	// Debug versions when running under the Relacy race detector (ignore

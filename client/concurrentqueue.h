@@ -3579,15 +3579,7 @@ private:
 	static inline U* create_array(size_t count)
 	{
 		assert(count > 0);
-		auto p = static_cast<U*>((Traits::malloc)(sizeof(U) * count));
-		if (p == nullptr) {
-			return nullptr;
-		}
-		
-		for (size_t i = 0; i != count; ++i) {
-			new (p + i) U();
-		}
-		return p;
+		return static_cast<U*>((Traits::malloc)(sizeof(U) * count));
 	}
 	
 	template<typename U>
@@ -3595,9 +3587,6 @@ private:
 	{
 		if (p != nullptr) {
 			assert(count > 0);
-			for (size_t i = count; i != 0; ) {
-				(p + --i)->~U();
-			}
 			(Traits::free)(p);
 		}
 	}

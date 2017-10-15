@@ -511,7 +511,10 @@ void View::Process( const QueueItem& ev )
         ProcessPlotData( ev.plotData );
         break;
     case QueueType::Message:
-        ProcessMessage( ev.message );
+        ProcessMessage( ev.message, false );
+        break;
+    case QueueType::MessageLiteral:
+        ProcessMessage( ev.message, true );
         break;
     default:
         assert( false );
@@ -701,10 +704,10 @@ void View::ProcessPlotData( const QueuePlotData& ev )
     }
 }
 
-void View::ProcessMessage( const QueueMessage& ev )
+void View::ProcessMessage( const QueueMessage& ev, bool literal )
 {
     m_pendingMessages.emplace( ev.text, MessagePending { int64_t( ev.time * m_timerMul ), ev.thread } );
-    ServerQuery( ServerQueryMessage, ev.text );
+    ServerQuery( literal ? ServerQueryMessageLiteral : ServerQueryMessage, ev.text );
 }
 
 void View::CheckString( uint64_t ptr )

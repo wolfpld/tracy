@@ -19,6 +19,7 @@
 #define TracyPlot(x,y)
 
 #define TracyMessage(x,y)
+#define TracyMessageL(x)
 
 #else
 
@@ -42,6 +43,7 @@
 #define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val );
 
 #define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size );
+#define TracyMessageL( txt ) tracy::Profiler::Message( txt );
 
 #endif
 

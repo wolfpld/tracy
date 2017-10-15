@@ -146,6 +146,20 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    static tracy_force_inline void Message( const char* txt )
+    {
+        uint32_t cpu;
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        item->hdr.type = QueueType::MessageLiteral;
+        item->message.time = GetTime( cpu );
+        item->message.thread = GetThreadHandle();
+        item->message.text = (uint64_t)txt;
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     static bool ShouldExit();
 
 private:

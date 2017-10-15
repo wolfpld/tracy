@@ -24,6 +24,7 @@ enum class QueueType : uint8_t
     PlotData,
     PlotName,
     Message,
+    MessageLiteral,
     MessageData,
     NUM_TYPES
 };
@@ -185,6 +186,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
+    sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // message data
 };
 

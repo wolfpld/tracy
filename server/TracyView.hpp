@@ -108,7 +108,7 @@ private:
     void ProcessLockRelease( const QueueLockRelease& ev );
     void ProcessLockMark( const QueueLockMark& ev );
     void ProcessPlotData( const QueuePlotData& ev );
-    void ProcessMessage( const QueueMessage& ev );
+    void ProcessMessage( const QueueMessage& ev, bool literal );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );

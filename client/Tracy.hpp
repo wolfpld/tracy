@@ -18,7 +18,7 @@
 
 #define TracyPlot(x,y)
 
-#define TracyMesage(x,y)
+#define TracyMessage(x,y)
 
 #else
 

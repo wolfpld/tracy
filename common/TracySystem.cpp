@@ -69,13 +69,16 @@ const char* GetThreadName( uint64_t id )
 #ifdef _WIN32
 #  ifdef NTDDI_WIN10_RS2
     auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)id );
-    PWSTR tmp;
-    GetThreadDescription( hnd, &tmp );
-    auto ret = wcstombs( buf, tmp, 256 );
-    CloseHandle( hnd );
-    if( ret != 0 )
+    if( hnd != 0 )
     {
-        return buf;
+        PWSTR tmp;
+        GetThreadDescription( hnd, &tmp );
+        auto ret = wcstombs( buf, tmp, 256 );
+        CloseHandle( hnd );
+        if( ret != 0 )
+        {
+            return buf;
+        }
     }
 #  endif
 #else

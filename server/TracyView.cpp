@@ -1495,14 +1495,20 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     if( ImGui::IsMouseDragging( 1, 0 ) )
     {
         m_pause = true;
-        const auto delta = ImGui::GetMouseDragDelta( 1, 0 ).x;
+        const auto delta = ImGui::GetMouseDragDelta( 1, 0 );
         const auto nspx = double( timespan ) / w;
-        const auto dpx = int64_t( delta * nspx );
+        const auto dpx = int64_t( delta.x * nspx );
         if( dpx != 0 )
         {
             m_zvStart -= dpx;
             m_zvEnd -= dpx;
             io.MouseClickedPos[1].x = io.MousePos.x;
+        }
+        if( delta.y != 0 )
+        {
+            auto y = ImGui::GetScrollY();
+            ImGui::SetScrollY( y - delta.y );
+            io.MouseClickedPos[1].y = io.MousePos.y;
         }
     }
 

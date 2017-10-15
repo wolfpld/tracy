@@ -70,6 +70,7 @@ View::View( const char* addr )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
     , m_lockHighlight { -1 }
+    , m_drawRegion( false )
     , m_showOptions( false )
     , m_showMessages( false )
     , m_drawZones( true )
@@ -102,6 +103,7 @@ View::View( FileRead& f )
     , m_zvHeight( 0 )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
+    , m_drawRegion( false )
     , m_showOptions( false )
     , m_showMessages( false )
     , m_drawZones( true )
@@ -1490,13 +1492,29 @@ void View::DrawFrames()
 
 void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns )
 {
+    assert( timespan > 0 );
     auto& io = ImGui::GetIO();
+
+    const auto nspx = double( timespan ) / w;
+
+    if( ImGui::IsMouseClicked( 0 ) )
+    {
+        m_drawRegion = true;
+        m_regionEnd = m_regionStart = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+    }
+    else if( ImGui::IsMouseDragging( 0, 0 ) )
+    {
+        m_regionEnd = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+    }
+    else
+    {
+        m_drawRegion = false;
+    }
 
     if( ImGui::IsMouseDragging( 1, 0 ) )
     {
         m_pause = true;
         const auto delta = ImGui::GetMouseDragDelta( 1, 0 );
-        const auto nspx = double( timespan ) / w;
         const auto dpx = int64_t( delta.x * nspx );
         if( dpx != 0 )
         {
@@ -1751,7 +1769,18 @@ void View::DrawZones()
 
     ImGui::EndChild();
 
-    if( drawMouseLine )
+    if( m_drawRegion && m_regionStart != m_regionEnd )
+    {
+        const auto s = std::min( m_regionStart, m_regionEnd );
+        const auto e = std::max( m_regionStart, m_regionEnd );
+        draw->AddRectFilled( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x22DD8888 );
+        draw->AddRect( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x44DD8888 );
+
+        ImGui::BeginTooltip();
+        ImGui::Text( "%s", TimeToString( e - s ) );
+        ImGui::EndTooltip();
+    }
+    else if( drawMouseLine )
     {
         auto& io = ImGui::GetIO();
         draw->AddLine( ImVec2( io.MousePos.x, linepos.y ), ImVec2( io.MousePos.x, linepos.y + lineh ), 0x33FFFFFF );

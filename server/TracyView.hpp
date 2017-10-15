@@ -238,6 +238,10 @@ private:
     LockHighlight m_lockHighlight;
     const MessageData* m_msgHighlight;
 
+    bool m_drawRegion;
+    uint64_t m_regionStart;
+    uint64_t m_regionEnd;
+
     bool m_showOptions;
     bool m_showMessages;
     bool m_drawZones;

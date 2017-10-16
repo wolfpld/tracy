@@ -132,7 +132,7 @@ void Profiler::Worker()
     {
         for(;;)
         {
-            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+            if( ShouldExit() ) return;
             m_sock = listen.Accept();
             if( m_sock ) break;
         }
@@ -163,7 +163,7 @@ void Profiler::Worker()
 
         for(;;)
         {
-            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+            if( ShouldExit() ) return;
 
             QueueItem item[BulkSize];
             const auto sz = s_queue.try_dequeue_bulk( token, item, BulkSize );

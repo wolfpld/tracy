@@ -25,6 +25,7 @@ static inline uint64_t GetThreadHandle()
 }
 
 void SetThreadName( std::thread& thread, const char* name );
+void SetThreadName( std::thread::native_handle_type handle, const char* name );
 const char* GetThreadName( uint64_t id );
 
 }

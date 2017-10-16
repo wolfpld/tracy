@@ -15,11 +15,16 @@ namespace tracy
 
 void SetThreadName( std::thread& thread, const char* name )
 {
+    SetThreadName( thread.native_handle(), name );
+}
+
+void SetThreadName( std::thread::native_handle_type handle, const char* name )
+{
 #ifdef _WIN32
 #  ifdef NTDDI_WIN10_RS2
     wchar_t buf[256];
     mbstowcs( buf, name, 256 );
-    SetThreadDescription( static_cast<HANDLE>( thread.native_handle() ), buf );
+    SetThreadDescription( static_cast<HANDLE>( handle ), buf );
 #  else
     const DWORD MS_VC_EXCEPTION=0x406D1388;
 #    pragma pack( push, 8 )
@@ -32,7 +37,7 @@ void SetThreadName( std::thread& thread, const char* name )
     };
 #    pragma pack(pop)
 
-    DWORD ThreadId = GetThreadId( static_cast<HANDLE>( thread.native_handle() ) );
+    DWORD ThreadId = GetThreadId( static_cast<HANDLE>( handle ) );
     THREADNAME_INFO info;
     info.dwType = 0x1000;
     info.szName = name;
@@ -51,14 +56,14 @@ void SetThreadName( std::thread& thread, const char* name )
     const auto sz = strlen( name );
     if( sz <= 15 )
     {
-        pthread_setname_np( thread.native_handle(), name );
+        pthread_setname_np( handle, name );
     }
     else
     {
         char buf[16];
         memcpy( buf, name, 15 );
         buf[15] = '\0';
-        pthread_setname_np( thread.native_handle(), buf );
+        pthread_setname_np( handle, buf );
     }
 #endif
 }

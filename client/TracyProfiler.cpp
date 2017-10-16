@@ -69,16 +69,30 @@ static const char* GetProcessName()
 
 enum { QueuePrealloc = 256 * 1024 };
 
-static RPMallocInit init_order(101) s_rpmalloc_init;
-static thread_local RPMallocThreadInit init_order(102) s_rpmalloc_thread_init;
-static moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
-static thread_local moodycamel::ProducerToken init_order(104) s_token_detail( s_queue );
-thread_local ProducerWrapper init_order(105) s_token { s_queue.get_explicit_producer( s_token_detail ) };
-
-static Profiler init_order(106) s_profiler;
+// MSVC static initialization order solution. gcc/clang uses init_order() to avoid all this.
 
 static Profiler* s_instance = nullptr;
 static Thread* s_thread = nullptr;
+
+// 1a. But s_queue is needed for initialization of variables in point 2.
+extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
+
+static thread_local RPMallocThreadInit init_order(104) s_rpmalloc_thread_init;
+
+// 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
+static thread_local moodycamel::ProducerToken init_order(105) s_token_detail( s_queue );
+thread_local ProducerWrapper init_order(106) s_token { s_queue.get_explicit_producer( s_token_detail ) };
+
+#ifdef _MSC_VER
+// 1. Initialize these static variables before all other variables.
+#  pragma warning( disable : 4075 )
+#  pragma init_seg( ".CRT$XCB" )
+#endif
+
+static RPMallocInit init_order(101) s_rpmalloc_init;
+moodycamel::ConcurrentQueue<QueueItem> init_order(102) s_queue( QueuePrealloc );
+static Profiler init_order(103) s_profiler;
+
 
 Profiler::Profiler()
     : m_mainThread( GetThreadHandle() )
@@ -90,6 +104,12 @@ Profiler::Profiler()
 {
     assert( !s_instance );
     s_instance = this;
+
+#ifdef _MSC_VER
+    // 3. But these variables need to be initialized in main thread within the .CRT$XCB section. Do it here.
+    s_token_detail = moodycamel::ProducerToken( s_queue );
+    s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
+#endif
 
     CalibrateTimer();
     CalibrateDelay();

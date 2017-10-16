@@ -109,11 +109,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#if ENABLE_ASSERTS
-#  include <assert.h>
-#else
-#  define assert(x)
-#endif
+#include <assert.h>
 
 namespace tracy
 {

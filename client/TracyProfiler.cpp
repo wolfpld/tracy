@@ -200,7 +200,7 @@ bool Profiler::SendData( const char* data, size_t len )
     if( m_sock->Send( data, (int)len ) == -1 ) return false;
 #else
     char lz4[LZ4Size + sizeof( lz4sz_t )];
-    const lz4sz_t lz4sz = LZ4_compress_fast_continue( m_stream, data, lz4 + sizeof( lz4sz_t ), len, LZ4Size, 1 );
+    const lz4sz_t lz4sz = LZ4_compress_fast_continue( m_stream, data, lz4 + sizeof( lz4sz_t ), (int)len, LZ4Size, 1 );
     memcpy( lz4, &lz4sz, sizeof( lz4sz ) );
     if( m_sock->Send( lz4, lz4sz + sizeof( lz4sz_t ) ) == -1 ) return false;
 #endif

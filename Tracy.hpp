@@ -1,7 +1,7 @@
 #ifndef __TRACY_HPP__
 #define __TRACY_HPP__
 
-#ifdef TRACY_DISABLE
+#ifndef TRACY_ENABLE
 
 #define ZoneScoped
 #define ZoneScopedC(x)

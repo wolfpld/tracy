@@ -1,3 +1,5 @@
+#ifdef TRACY_ENABLE
+
 #ifdef _MSC_VER
 #  include <winsock2.h>
 #  include <windows.h>
@@ -73,9 +75,7 @@ static moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrea
 static thread_local moodycamel::ProducerToken init_order(104) s_token_detail( s_queue );
 thread_local ProducerWrapper init_order(105) s_token { s_queue.get_explicit_producer( s_token_detail ) };
 
-#ifndef TRACY_DISABLE
 static Profiler init_order(106) s_profiler;
-#endif
 
 static Profiler* s_instance = nullptr;
 static Thread* s_thread = nullptr;
@@ -424,3 +424,5 @@ void Profiler::CalibrateDelay()
 }
 
 }
+
+#endif

@@ -1,3 +1,5 @@
+#ifdef TRACY_ENABLE
+
 /* rpmalloc.c  -  Memory allocator  -  Public Domain  -  2016 Mattias Jansson / Rampant Pixels
  *
  * This library provides a cross-platform lock free thread caching malloc implementation in C11.
@@ -1783,3 +1785,5 @@ rpmalloc_global_statistics(rpmalloc_global_statistics_t* stats) {
 }
 
 }
+
+#endif

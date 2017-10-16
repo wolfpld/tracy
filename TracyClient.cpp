@@ -7,6 +7,10 @@
 // other).
 //
 
+// Define TRACY_ENABLE to enable profiler.
+
+#ifdef TRACY_ENABLE
+
 #include "client/TracyProfiler.cpp"
 #include "common/tracy_lz4.cpp"
 #include "common/TracySocket.cpp"
@@ -15,4 +19,6 @@
 
 #ifdef _MSC_VER
 #  pragma comment(lib, "ws2_32.lib")
+#endif
+
 #endif

@@ -227,11 +227,11 @@ namespace moodycamel { namespace details {
 // Compiler-specific likely/unlikely hints
 namespace moodycamel { namespace details {
 #if defined(__GNUC__)
-	inline bool likely(bool x) { return __builtin_expect((x), true); }
-	inline bool unlikely(bool x) { return __builtin_expect((x), false); }
+	inline bool cqLikely(bool x) { return __builtin_expect((x), true); }
+	inline bool cqUnlikely(bool x) { return __builtin_expect((x), false); }
 #else
-	inline bool likely(bool x) { return x; }
-	inline bool unlikely(bool x) { return x; }
+	inline bool cqLikely(bool x) { return x; }
+	inline bool cqUnlikely(bool x) { return x; }
 #endif
 } }
 
@@ -1076,7 +1076,7 @@ public:
 		// If there was at least one non-empty queue but it appears empty at the time
 		// we try to dequeue from it, we need to make sure every queue's been tried
 		if (nonEmptyCount > 0) {
-			if (details::likely(best->dequeue(item))) {
+			if (details::cqLikely(best->dequeue(item))) {
 				return true;
 			}
 			for (auto ptr = producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
@@ -1333,7 +1333,7 @@ private:
 		}
 		auto prodCount = producerCount.load(std::memory_order_relaxed);
 		auto globalOffset = globalExplicitConsumerOffset.load(std::memory_order_relaxed);
-		if (details::unlikely(token.desiredProducer == nullptr)) {
+		if (details::cqUnlikely(token.desiredProducer == nullptr)) {
 			// Aha, first time we're dequeueing anything.
 			// Figure out our local position
 			// Note: offset is from start, not end, but we're traversing from end -- subtract from count first
@@ -1954,7 +1954,7 @@ private:
         tracy_force_inline T* enqueue_begin(index_t& currentTailIndex)
         {
             currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
-            if (details::unlikely((currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0)) {
+            if (details::cqUnlikely((currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0)) {
                 this->enqueue_begin_alloc<allocMode>(currentTailIndex);
             }
             return (*this->tailBlock)[currentTailIndex];
@@ -2002,7 +2002,7 @@ private:
 				// this load is sequenced after (happens after) the earlier load above. This is supported by read-read
 				// coherency (as defined in the standard), explained here: http://en.cppreference.com/w/cpp/atomic/memory_order
 				tail = this->tailIndex.load(std::memory_order_acquire);
-				if (details::likely(details::circular_less_than<index_t>(myDequeueCount - overcommit, tail))) {
+				if (details::cqLikely(details::circular_less_than<index_t>(myDequeueCount - overcommit, tail))) {
 					// Guaranteed to be at least one element to dequeue!
 					
 					// Get the index. Note that since there's guaranteed to be at least one element, this
@@ -2571,7 +2571,7 @@ private:
 				index_t myDequeueCount = this->dequeueOptimisticCount.fetch_add(1, std::memory_order_relaxed);
 				assert(overcommit <= myDequeueCount);
 				tail = this->tailIndex.load(std::memory_order_acquire);
-				if (details::likely(details::circular_less_than<index_t>(myDequeueCount - overcommit, tail))) {
+				if (details::cqLikely(details::circular_less_than<index_t>(myDequeueCount - overcommit, tail))) {
 					index_t index = this->headIndex.fetch_add(1, std::memory_order_acq_rel);
 					
 					// Determine which block the element is in

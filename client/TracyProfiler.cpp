@@ -23,6 +23,7 @@
 #include "TracyAlloc.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
+#include "TracyThread.hpp"
 
 #ifdef _DEBUG
 #  define DISABLE_LZ4
@@ -77,6 +78,7 @@ static Profiler init_order(106) s_profiler;
 #endif
 
 static Profiler* s_instance = nullptr;
+static Thread* s_thread = nullptr;
 
 Profiler::Profiler()
     : m_mainThread( GetThreadHandle() )
@@ -94,14 +96,16 @@ Profiler::Profiler()
     uint32_t cpu;
     m_timeBegin = GetTime( cpu );
 
-    m_thread = std::thread( [this] { Worker(); } );
-    SetThreadName( m_thread, "Tracy Profiler" );
+    s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_thread) Thread( LaunchWorker, this );
+    SetThreadName( s_thread->Handle(), "Tracy Profiler" );
 }
 
 Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
-    m_thread.join();
+    s_thread->~Thread();
+    tracy_free( s_thread );
 
     tracy_free( m_buffer );
     LZ4_freeStream( m_stream );

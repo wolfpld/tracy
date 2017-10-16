@@ -5,7 +5,6 @@
 #include <chrono>
 #include <stdint.h>
 #include <string.h>
-#include <thread>
 
 #include "concurrentqueue.h"
 #include "../common/tracy_lz4.hpp"
@@ -163,6 +162,7 @@ public:
     static bool ShouldExit();
 
 private:
+    static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();
 
     bool SendData( const char* data, size_t len );
@@ -180,7 +180,6 @@ private:
     int64_t m_timeBegin;
     uint64_t m_mainThread;
     uint64_t m_epoch;
-    std::thread m_thread;
     std::atomic<bool> m_shutdown;
     std::unique_ptr<Socket> m_sock;
 

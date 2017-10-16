@@ -40,7 +40,7 @@ Copy files from `tracy/client` and `tracy/common` to your project. Add `tracy/Tr
 
 #### Marking zones
 
-To begin data collection, tracy requires that you manually instrument your application (automatic tracing of every entered function is not feasible due to the amount of data that would generate). All the user-facing interface is contained in the `tracy/client/Tracy.hpp` header file.
+To begin data collection, tracy requires that you manually instrument your application (automatic tracing of every entered function is not feasible due to the amount of data that would generate). All the user-facing interface is contained in the `tracy/Tracy.hpp` header file.
 
 To slice the program's execution recording into frame-sized chunks, put the `FrameMark` macro after you have completed rendering the frame. Ideally that would be right after the swap buffers command. Note that this step is optional, as some applications (for example: a compression utility) do not have the concept of a frame.
 

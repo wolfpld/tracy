@@ -1,7 +1,7 @@
 #include <chrono>
 #include <mutex>
 #include <thread>
-#include "../client/Tracy.hpp"
+#include "../Tracy.hpp"
 #include "../common/TracySystem.hpp"
 
 void TestFunction()

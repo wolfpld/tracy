@@ -38,6 +38,8 @@ It should be noted that tracy needs to calibrate its internal timers at each run
 
 Copy files from `tracy/client` and `tracy/common` to your project. Add `tracy/TracyClient.cpp` to source files list. That's all. Tracy is now integrated into your application.
 
+In the default configuration tracy is disabled. To enable it, add a TRACY\_ENABLE define.
+
 #### Marking zones
 
 To begin data collection, tracy requires that you manually instrument your application (automatic tracing of every entered function is not feasible due to the amount of data that would generate). All the user-facing interface is contained in the `tracy/Tracy.hpp` header file.

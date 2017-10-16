@@ -1413,8 +1413,16 @@ void View::DrawFrames()
                 }
                 else
                 {
-                    ImGui::Text( "Frame: %i", sel );
-                    ImGui::Text( "Frame time: %s", TimeToString( GetFrameTime( sel ) ) );
+                    if( sel == 0 )
+                    {
+                        ImGui::Text( "Tracy initialization", sel );
+                        ImGui::Text( "Time: %s", TimeToString( GetFrameTime( sel ) ) );
+                    }
+                    else
+                    {
+                        ImGui::Text( "Frame: %i", sel );
+                        ImGui::Text( "Frame time: %s", TimeToString( GetFrameTime( sel ) ) );
+                    }
                 }
                 ImGui::Text( "Time from start of program: %s", TimeToString( m_frames[sel] - m_frames[0] ) );
                 ImGui::EndTooltip();
@@ -1591,8 +1599,18 @@ bool View::DrawZoneFrames()
             const auto fbegin = (int64_t)GetFrameBegin( i );
             const auto fend = (int64_t)GetFrameEnd( i );
 
+            uint32_t color;
             char buf[128];
-            sprintf( buf, "Frame %i (%s)", i, TimeToString( ftime ) );
+            if( i == 0 )
+            {
+                sprintf( buf, "Tracy init (%s)", TimeToString( ftime ) );
+                color = 0xFF4444FF;
+            }
+            else
+            {
+                sprintf( buf, "Frame %i (%s)", i, TimeToString( ftime ) );
+                color = 0xFFFFFFFF;
+            }
             const auto tsz = ImGui::CalcTextSize( buf );
             const auto fsz = pxns * ftime;
 
@@ -1620,22 +1638,22 @@ bool View::DrawZoneFrames()
             {
                 if( fbegin >= m_zvStart )
                 {
-                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y - 1 ), 0xFFFFFFFF );
+                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y - 1 ), color );
                 }
                 if( fend <= m_zvEnd )
                 {
-                    draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y - 1 ), 0xFFFFFFFF );
+                    draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y - 1 ), color );
                 }
                 if( fsz - 5 > tsz.x )
                 {
                     const auto part = ( fsz - 5 - tsz.x ) / 2;
-                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + part, tsz.y / 2 ), 0xFFFFFFFF );
-                    draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), 0xFFFFFFFF, buf );
-                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part + tsz.x, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), 0xFFFFFFFF );
+                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + part, tsz.y / 2 ), color );
+                    draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), color, buf );
+                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part + tsz.x, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), color );
                 }
                 else
                 {
-                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), 0xFFFFFFFF );
+                    draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, tsz.y / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, tsz.y / 2 ), color );
                 }
             }
         }

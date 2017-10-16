@@ -2565,7 +2565,7 @@ void View::DrawMessages()
     ImGui::Begin( "Messages", &m_showMessages, ImGuiWindowFlags_ShowBorders );
     for( auto& v : m_messages )
     {
-        char tmp[4096];
+        char tmp[64 * 1024];
         sprintf( tmp, "%10s | %s", TimeToString( v->time - m_frames[0] ), v->txt );
         if( m_msgHighlight == v )
         {

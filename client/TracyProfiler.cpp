@@ -102,7 +102,8 @@ static Profiler init_order(104) s_profiler;
 
 
 Profiler::Profiler()
-    : m_mainThread( GetThreadHandle() )
+    : m_timeBegin( 0 )
+    , m_mainThread( GetThreadHandle() )
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
     , m_stream( LZ4_createStream() )
@@ -120,12 +121,13 @@ Profiler::Profiler()
 
     CalibrateTimer();
     CalibrateDelay();
-    uint32_t cpu;
-    m_timeBegin = GetTime( cpu );
 
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
     SetThreadName( s_thread->Handle(), "Tracy Profiler" );
+
+    uint32_t cpu;
+    m_timeBegin.store( GetTime( cpu ), std::memory_order_relaxed );
 }
 
 Profiler::~Profiler()
@@ -154,6 +156,8 @@ void Profiler::Worker()
 
     ListenSocket listen;
     listen.Listen( "8086", 8 );
+
+    while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
     for(;;)
     {

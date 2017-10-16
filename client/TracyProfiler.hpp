@@ -177,7 +177,7 @@ private:
     double m_timerMul;
     uint64_t m_resolution;
     uint64_t m_delay;
-    int64_t m_timeBegin;
+    std::atomic<int64_t> m_timeBegin;
     uint64_t m_mainThread;
     uint64_t m_epoch;
     std::atomic<bool> m_shutdown;

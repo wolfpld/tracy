@@ -1,4 +1,5 @@
-CFLAGS := -g3 -Wall -fmerge-constants -D_GNU_SOURCE
+OPTFLAGS := -g3 -fmerge-constants
+CFLAGS := $(OPTFLAGS) -Wall -D_GNU_SOURCE -DTRACY_ENABLE
 CXXFLAGS := $(CFLAGS) -std=gnu++14
 DEFINES +=
 INCLUDES :=

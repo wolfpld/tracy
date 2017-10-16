@@ -34,7 +34,8 @@ struct WelcomeMessage
 {
     uint8_t lz4;
     double timerMul;
-    uint64_t timeBegin;
+    uint64_t initBegin;
+    uint64_t initEnd;
     uint64_t delay;
     uint64_t resolution;
     uint64_t epoch;

@@ -312,7 +312,8 @@ void View::Worker()
             if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
             lz4 = welcome.lz4;
             m_timerMul = welcome.timerMul;
-            m_frames.push_back( welcome.timeBegin * m_timerMul );
+            m_frames.push_back( welcome.initBegin * m_timerMul );
+            m_frames.push_back( welcome.initEnd * m_timerMul );
             m_delay = welcome.delay * m_timerMul;
             m_resolution = welcome.resolution * m_timerMul;
 

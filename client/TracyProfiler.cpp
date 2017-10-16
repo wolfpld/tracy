@@ -180,7 +180,8 @@ void Profiler::Worker()
             welcome.lz4 = 1;
 #endif
             welcome.timerMul = m_timerMul;
-            welcome.timeBegin = m_timeBegin;
+            welcome.initBegin = s_initTime.val;
+            welcome.initEnd = m_timeBegin.load( std::memory_order_relaxed );
             welcome.delay = m_delay;
             welcome.resolution = m_resolution;
             welcome.epoch = m_epoch;

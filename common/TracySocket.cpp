@@ -119,7 +119,7 @@ int Socket::Send( const void* _buf, int len )
         len -= ret;
         buf += ret;
     }
-    return buf - start;
+    return int( buf - start );
 }
 
 int Socket::Recv( void* _buf, int len, const timeval* tv )

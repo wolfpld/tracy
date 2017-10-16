@@ -174,7 +174,7 @@ void Profiler::Worker()
                     ptr += dsz;
                 }
                 if( !SendData( buf, ptr - buf ) ) break;
-                m_bufferOffset += ptr - buf;
+                m_bufferOffset += int( ptr - buf );
                 if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
             }
             else
@@ -193,7 +193,7 @@ void Profiler::Worker()
 bool Profiler::SendData( const char* data, size_t len )
 {
 #ifdef DISABLE_LZ4
-    if( m_sock->Send( data, len ) == -1 ) return false;
+    if( m_sock->Send( data, (int)len ) == -1 ) return false;
 #else
     char lz4[LZ4Size + sizeof( lz4sz_t )];
     const lz4sz_t lz4sz = LZ4_compress_fast_continue( m_stream, data, lz4 + sizeof( lz4sz_t ), len, LZ4Size, 1 );
@@ -219,11 +219,11 @@ bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     auto len = strlen( ptr );
     assert( len < TargetFrameSize - isz - sizeof( uint16_t ) );
     assert( len <= std::numeric_limits<uint16_t>::max() );
-    uint16_t l16 = len;
+    auto l16 = uint16_t( len );
     memcpy( buf + isz, &l16, sizeof( l16 ) );
     memcpy( buf + isz + sizeof( l16 ), ptr, l16 );
 
-    m_bufferOffset += isz + sizeof( l16 ) + l16;
+    m_bufferOffset += int( isz + sizeof( l16 ) + l16 );
     if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
 
     return SendData( buf, isz + sizeof( l16 ) + l16 );
@@ -364,7 +364,7 @@ void Profiler::CalibrateDelay()
     const auto f0 = GetTime( cpu );
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, __LINE__, 0 };
+        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         FakeZone ___tracy_scoped_zone( &__tracy_source_location );
     }
     const auto t0 = GetTime( cpu );
@@ -396,7 +396,7 @@ void Profiler::CalibrateDelay()
     const auto df = t0 - f0;
     m_delay = ( dt - df ) / Events;
 
-    uint64_t mindiff = std::numeric_limits<uint64_t>::max();
+    auto mindiff = std::numeric_limits<int64_t>::max();
     for( int i=0; i<Iterations * 10; i++ )
     {
         const auto t0 = GetTime( cpu );
@@ -415,7 +415,7 @@ void Profiler::CalibrateDelay()
     {
         const auto sz = s_queue.try_dequeue_bulk( token, item, std::min( left, (int)Bulk ) );
         assert( sz > 0 );
-        left -= sz;
+        left -= (int)sz;
     }
 }
 

@@ -155,12 +155,28 @@ void Profiler::Worker()
     const auto procname = GetProcessName();
     const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );
 
+    while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+
+    WelcomeMessage welcome;
+#ifdef DISABLE_LZ4
+    // notify client that lz4 compression is disabled (too slow in debug builds)
+    welcome.lz4 = 0;
+#else
+    welcome.lz4 = 1;
+#endif
+    welcome.timerMul = m_timerMul;
+    welcome.initBegin = s_initTime.val;
+    welcome.initEnd = m_timeBegin.load( std::memory_order_relaxed );
+    welcome.delay = m_delay;
+    welcome.resolution = m_resolution;
+    welcome.epoch = m_epoch;
+    memcpy( welcome.programName, procname, pnsz );
+    memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
+
     moodycamel::ConsumerToken token( s_queue );
 
     ListenSocket listen;
     listen.Listen( "8086", 8 );
-
-    while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
     for(;;)
     {
@@ -171,26 +187,7 @@ void Profiler::Worker()
             if( m_sock ) break;
         }
 
-        {
-            WelcomeMessage welcome;
-#ifdef DISABLE_LZ4
-            // notify client that lz4 compression is disabled (too slow in debug builds)
-            welcome.lz4 = 0;
-#else
-            welcome.lz4 = 1;
-#endif
-            welcome.timerMul = m_timerMul;
-            welcome.initBegin = s_initTime.val;
-            welcome.initEnd = m_timeBegin.load( std::memory_order_relaxed );
-            welcome.delay = m_delay;
-            welcome.resolution = m_resolution;
-            welcome.epoch = m_epoch;
-            memcpy( welcome.programName, procname, pnsz );
-            memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
-
-            m_sock->Send( &welcome, sizeof( welcome ) );
-        }
-
+        m_sock->Send( &welcome, sizeof( welcome ) );
         LZ4_resetStream( m_stream );
 
         for(;;)

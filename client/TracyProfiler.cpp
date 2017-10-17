@@ -152,6 +152,9 @@ void Profiler::Worker()
 {
     enum { BulkSize = TargetFrameSize / QueueItemSize };
 
+    const auto procname = GetProcessName();
+    const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );
+
     moodycamel::ConsumerToken token( s_queue );
 
     ListenSocket listen;
@@ -169,9 +172,6 @@ void Profiler::Worker()
         }
 
         {
-            const auto procname = GetProcessName();
-            const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );
-
             WelcomeMessage welcome;
 #ifdef DISABLE_LZ4
             // notify client that lz4 compression is disabled (too slow in debug builds)

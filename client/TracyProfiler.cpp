@@ -192,8 +192,6 @@ void Profiler::Worker()
 
         for(;;)
         {
-            if( ShouldExit() ) return;
-
             QueueItem item[BulkSize];
             const auto sz = s_queue.try_dequeue_bulk( token, item, BulkSize );
             if( sz > 0 )
@@ -212,6 +210,7 @@ void Profiler::Worker()
             }
             else
             {
+                if( ShouldExit() ) return;
                 std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
             }
 
@@ -277,6 +276,8 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     s_token.ptr->enqueue<moodycamel::CanAlloc>( std::move( item ) );
 }
 
+static bool DontExit() { return false; }
+
 bool Profiler::HandleServerQuery()
 {
     timeval tv;
@@ -284,10 +285,10 @@ bool Profiler::HandleServerQuery()
     tv.tv_usec = 10000;
 
     uint8_t type;
-    if( !m_sock->Read( &type, sizeof( type ), &tv, ShouldExit ) ) return false;
+    if( !m_sock->Read( &type, sizeof( type ), &tv, DontExit ) ) return false;
 
     uint64_t ptr;
-    if( !m_sock->Read( &ptr, sizeof( ptr ), &tv, ShouldExit ) ) return false;
+    if( !m_sock->Read( &ptr, sizeof( ptr ), &tv, DontExit ) ) return false;
 
     switch( type )
     {

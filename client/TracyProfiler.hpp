@@ -185,7 +185,7 @@ private:
     uint64_t m_mainThread;
     uint64_t m_epoch;
     std::atomic<bool> m_shutdown;
-    std::unique_ptr<Socket> m_sock;
+    Socket* m_sock;
 
     LZ4_stream_t* m_stream;
     char* m_buffer;

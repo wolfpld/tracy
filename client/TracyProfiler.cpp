@@ -101,6 +101,7 @@ Profiler::Profiler()
     , m_mainThread( GetThreadHandle() )
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
+    , m_sock( nullptr )
     , m_stream( LZ4_createStream() )
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
@@ -133,6 +134,12 @@ Profiler::~Profiler()
 
     tracy_free( m_buffer );
     LZ4_freeStream( m_stream );
+
+    if( m_sock )
+    {
+        m_sock->~Socket();
+        tracy_free( m_sock );
+    }
 
     assert( s_instance );
     s_instance = nullptr;

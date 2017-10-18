@@ -1,9 +1,11 @@
 #include <assert.h>
+#include <new>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 
+#include "TracyAlloc.hpp"
 #include "TracySocket.hpp"
 
 #ifdef _MSC_VER
@@ -226,7 +228,7 @@ bool ListenSocket::Listen( const char* port, int backlog )
     return true;
 }
 
-std::unique_ptr<Socket> ListenSocket::Accept()
+Socket* ListenSocket::Accept()
 {
     struct sockaddr_storage remote;
     socklen_t sz = sizeof( remote );
@@ -249,7 +251,9 @@ std::unique_ptr<Socket> ListenSocket::Accept()
         }
         else
         {
-            return std::make_unique<Socket>( sock );
+            auto ptr = (Socket*)tracy_malloc( sizeof( Socket ) );
+            new(ptr) Socket( sock );
+            return ptr;
         }
     }
     else

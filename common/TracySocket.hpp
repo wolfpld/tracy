@@ -1,8 +1,6 @@
 #ifndef __TRACYSOCKET_HPP__
 #define __TRACYSOCKET_HPP__
 
-#include <memory>
-
 struct timeval;
 
 namespace tracy
@@ -40,7 +38,7 @@ public:
     ~ListenSocket();
 
     bool Listen( const char* port, int backlog );
-    std::unique_ptr<Socket> Accept();
+    Socket* Accept();
     void Close();
 
     ListenSocket( const ListenSocket& ) = delete;

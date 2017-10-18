@@ -9,12 +9,13 @@
 
 // Define TRACY_ENABLE to enable profiler.
 
+#include "common/TracySystem.cpp"
+
 #ifdef TRACY_ENABLE
 
 #include "client/TracyProfiler.cpp"
 #include "common/tracy_lz4.cpp"
 #include "common/TracySocket.cpp"
-#include "common/TracySystem.cpp"
 #include "client/tracy_rpmalloc.cpp"
 
 #ifdef _MSC_VER

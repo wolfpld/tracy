@@ -139,6 +139,7 @@ private:
     int64_t GetZoneEnd( const Event& ev ) const;
     Vector<Event*>& GetParentVector( const Event& ev );
     const char* TimeToString( int64_t ns ) const;
+    const char* RealToString( double val ) const;
     const char* GetString( uint64_t ptr ) const;
     const char* GetThreadString( uint64_t id ) const;
     const QueueSourceLocation& GetSourceLocation( uint64_t srcloc ) const;

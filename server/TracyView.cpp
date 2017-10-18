@@ -1178,6 +1178,26 @@ const char* View::TimeToString( int64_t ns ) const
     return buf;
 }
 
+const char* View::RealToString( double val ) const
+{
+    enum { Pool = 8 };
+    static char bufpool[Pool][64];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    sprintf( buf, "%f", val );
+    auto ptr = buf;
+    while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
+    if( *ptr == '\0' ) return buf;
+    while( *ptr != '\0' ) ptr++;
+    ptr--;
+    while( *ptr == '0' && *ptr != ',' && *ptr != '.' ) ptr--;
+    if( *ptr != '.' && *ptr != ',' ) ptr++;
+    *ptr = '\0';
+    return buf;
+}
+
 const char* View::GetString( uint64_t ptr ) const
 {
     const auto it = m_strings.find( ptr );
@@ -2363,17 +2383,17 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             ImGui::BeginTooltip();
             ImGui::Text( "Plot \"%s\"", txt );
             ImGui::Text( "Data points: %i", v->data.size() );
-            ImGui::Text( "Data range: %f", v->max - v->min );
-            ImGui::Text( "Min value: %f", v->min );
-            ImGui::Text( "Max value: %f", v->max );
+            ImGui::Text( "Data range: %s", RealToString( v->max - v->min ) );
+            ImGui::Text( "Min value: %s", RealToString( v->min ) );
+            ImGui::Text( "Max value: %s", RealToString( v->max ) );
             ImGui::Text( "Time range: %s", TimeToString( tr ) );
-            ImGui::Text( "Data/second: %f", double( v->data.size() ) / tr * 1000000000ull );
+            ImGui::Text( "Data/second: %s", RealToString( double( v->data.size() ) / tr * 1000000000ull ) );
 
             const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back().time - 1000000000ull * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
             const auto tr10 = v->data.back().time - it->time;
             if( tr10 != 0 )
             {
-                ImGui::Text( "D/s (10s): %f", double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ull );
+                ImGui::Text( "D/s (10s): %s", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ull ) );
             }
 
             ImGui::EndTooltip();
@@ -2405,7 +2425,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
             {
                 char tmp[64];
-                sprintf( tmp, "%f", max );
+                sprintf( tmp, "%s", RealToString( max ) );
                 draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
             }
 
@@ -2437,7 +2457,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             offset += PlotHeight - ty;
             {
                 char tmp[64];
-                sprintf( tmp, "%f", min );
+                sprintf( tmp, "%s", RealToString( min ) );
                 draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
             }
             draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
@@ -2457,10 +2477,10 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Value: %f", val );
+        ImGui::Text( "Value: %s", RealToString( val ) );
         if( hasPrev )
         {
-            ImGui::Text( "Change: %f", val - prev );
+            ImGui::Text( "Change: %s", RealToString( val - prev ) );
         }
         ImGui::EndTooltip();
     }

@@ -28,7 +28,7 @@
 #include "TracyThread.hpp"
 
 #ifdef _DEBUG
-#  define DISABLE_LZ4
+#  define TRACY_DISABLE_LZ4
 #endif
 
 #ifdef __GNUC__
@@ -158,7 +158,7 @@ void Profiler::Worker()
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
     WelcomeMessage welcome;
-#ifdef DISABLE_LZ4
+#ifdef TRACY_DISABLE_LZ4
     // notify client that lz4 compression is disabled (too slow in debug builds)
     welcome.lz4 = 0;
 #else
@@ -255,7 +255,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 
 bool Profiler::SendData( const char* data, size_t len )
 {
-#ifdef DISABLE_LZ4
+#ifdef TRACY_DISABLE_LZ4
     if( m_sock->Send( data, (int)len ) == -1 ) return false;
 #else
     char lz4[LZ4Size + sizeof( lz4sz_t )];

@@ -2375,6 +2375,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
     auto draw = ImGui::GetWindowDrawList();
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
+    const auto nspx = 1.0 / pxns;
 
     for( auto& v : m_plots )
     {
@@ -2456,23 +2457,64 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             {
                 const auto x = ( it->time - m_zvStart ) * pxns;
                 const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-                DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it->val, 0 );
+                DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it->val, 0, false );
             }
 
-            auto prev = it;
+            auto prevx = it;
+            auto prevy = it;
             ++it;
             while( it < end )
             {
-                const auto x0 = ( prev->time - m_zvStart ) * pxns;
+                const auto x0 = ( prevx->time - m_zvStart ) * pxns;
                 const auto x1 = ( it->time - m_zvStart ) * pxns;
-                const auto y0 = PlotHeight - ( prev->val - min ) * revrange * PlotHeight;
+                const auto y0 = PlotHeight - ( prevy->val - min ) * revrange * PlotHeight;
                 const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
 
                 draw->AddLine( wpos + ImVec2( x0, offset + y0 ), wpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
-                DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it->val, prev->val );
 
-                prev = it;
-                ++it;
+                auto range = std::upper_bound( it, end, int64_t( it->time + nspx * 2.5 ), [] ( const auto& l, const auto& r ) { return l < r.time; } );
+                assert( range > it );
+                if( std::distance( it, range ) == 1 )
+                {
+                    DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it->val, prevy->val, false );
+                    prevx = it;
+                    prevy = it;
+                    ++it;
+                }
+                else
+                {
+                    assert( m_tmpVec.empty() );
+
+                    prevx = it;
+
+                    while( it < range )
+                    {
+                        m_tmpVec.emplace_back( &*it );
+                        ++it;
+                    }
+                    std::sort( m_tmpVec.begin(), m_tmpVec.end(), [] ( const auto& l, const auto& r ) { return l->val < r->val; } );
+
+                    draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( (*m_tmpVec.begin())->val - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( m_tmpVec.back()->val - min ) * revrange * PlotHeight ), 0xFF44DDDD );
+
+                    auto vit = m_tmpVec.begin();
+                    while( vit < m_tmpVec.end() )
+                    {
+                        auto vrange = std::upper_bound( vit, m_tmpVec.end(), (*vit)->val + 3.0 / ( revrange * PlotHeight ), [] ( const auto& l, const auto& r ) { return l < r->val; } );
+                        assert( vrange > vit );
+                        if( std::distance( vit, vrange ) == 1 )
+                        {
+                            DrawPlotPoint( wpos, x1, PlotHeight - ( (*vit)->val - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, (*vit)->val, 0, false );
+                        }
+                        else
+                        {
+                            DrawPlotPoint( wpos, x1, PlotHeight - ( (*vit)->val - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, (*vit)->val, 0, true );
+                        }
+                        vit = vrange;
+                    }
+
+                    prevy = it - 1;
+                    m_tmpVec.clear();
+                }
             }
 
             offset += PlotHeight - ty;
@@ -2490,10 +2532,17 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
     return offset;
 }
 
-void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev )
+void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged )
 {
     auto draw = ImGui::GetWindowDrawList();
-    draw->AddRect( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), color );
+    if( merged )
+    {
+        draw->AddRectFilled( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), color );
+    }
+    else
+    {
+        draw->AddRect( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), color );
+    }
 
     if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
     {

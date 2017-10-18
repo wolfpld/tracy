@@ -153,7 +153,7 @@ private:
     int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, LockHighlight& highlight );
     void DrawZoneInfoWindow();
     int DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover );
-    void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev );
+    void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged );
     void DrawOptions();
     void DrawMessages();
 
@@ -250,6 +250,8 @@ private:
     bool m_drawPlots;
 
     bool m_terminate;
+
+    std::vector<PlotItem*> m_tmpVec;
 };
 
 }

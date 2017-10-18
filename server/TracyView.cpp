@@ -76,6 +76,7 @@ View::View( const char* addr )
     , m_drawZones( true )
     , m_drawLocks( true )
     , m_drawPlots( true )
+    , m_terminate( false )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -109,6 +110,7 @@ View::View( FileRead& f )
     , m_drawZones( true )
     , m_drawLocks( true )
     , m_drawPlots( true )
+    , m_terminate( false )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -384,6 +386,27 @@ void View::Worker()
                 t0 = t1;
                 bytes = 0;
             }
+
+            if( m_terminate )
+            {
+                if( !m_pendingStrings.empty() || !m_pendingThreads.empty() || !m_pendingSourceLocation.empty() ||
+                    !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() || !m_pendingMessages.empty() )
+                {
+                    continue;
+                }
+                bool done = true;
+                for( auto& v : m_zoneStack )
+                {
+                    if( !v.second.empty() )
+                    {
+                        done = false;
+                        break;
+                    }
+                }
+                if( !done ) continue;
+                ServerQuery( ServerQueryTerminate, 0 );
+                break;
+            }
         }
 
 close:
@@ -518,6 +541,9 @@ void View::Process( const QueueItem& ev )
         break;
     case QueueType::MessageLiteral:
         ProcessMessage( ev.message, true );
+        break;
+    case QueueType::Terminate:
+        m_terminate = true;
         break;
     default:
         assert( false );

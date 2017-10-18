@@ -8,6 +8,7 @@ namespace tracy
 
 enum class QueueType : uint8_t
 {
+    Terminate,
     ZoneBegin,
     ZoneEnd,
     StringData,
@@ -170,6 +171,7 @@ struct QueueItem
 enum { QueueItemSize = sizeof( QueueItem ) };
 
 static const size_t QueueDataSize[] = {
+    sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data

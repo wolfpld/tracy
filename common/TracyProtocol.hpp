@@ -18,6 +18,7 @@ static_assert( TargetFrameSize * 2 >= 64 * 1024, "Not enough space for LZ4 strea
 
 enum ServerQuery : uint8_t
 {
+    ServerQueryTerminate,
     ServerQueryString,
     ServerQueryThreadString,
     ServerQueryCustomString,

@@ -162,8 +162,12 @@ public:
     static bool ShouldExit();
 
 private:
+    enum DequeueStatus { Success, ConnectionLost, QueueEmpty };
+
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();
+
+    DequeueStatus Dequeue( moodycamel::ConsumerToken& token );
 
     bool SendData( const char* data, size_t len );
     bool SendString( uint64_t ptr, const char* str, QueueType type );

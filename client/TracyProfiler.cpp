@@ -148,10 +148,10 @@ bool Profiler::ShouldExit()
     return s_instance->m_shutdown.load( std::memory_order_relaxed );
 }
 
+enum { BulkSize = TargetFrameSize / QueueItemSize };
+
 void Profiler::Worker()
 {
-    enum { BulkSize = TargetFrameSize / QueueItemSize };
-
     const auto procname = GetProcessName();
     const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );
 
@@ -192,25 +192,14 @@ void Profiler::Worker()
 
         for(;;)
         {
-            QueueItem item[BulkSize];
-            const auto sz = s_queue.try_dequeue_bulk( token, item, BulkSize );
-            if( sz > 0 )
+            const auto status = Dequeue( token );
+            if( status == ConnectionLost )
             {
-                auto buf = m_buffer + m_bufferOffset;
-                auto ptr = buf;
-                for( size_t i=0; i<sz; i++ )
-                {
-                    const auto dsz = QueueDataSize[item[i].hdr.idx];
-                    memcpy( ptr, item+i, dsz );
-                    ptr += dsz;
-                }
-                if( !SendData( buf, ptr - buf ) ) break;
-                m_bufferOffset += int( ptr - buf );
-                if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
+                break;
             }
-            else
+            else if( status == QueueEmpty )
             {
-                if( ShouldExit() ) return;
+                if( ShouldExit() ) break;
                 std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
             }
 
@@ -219,7 +208,49 @@ void Profiler::Worker()
                 if( !HandleServerQuery() ) break;
             }
         }
+        if( ShouldExit() ) break;
     }
+
+    QueueItem terminate;
+    terminate.hdr.type = QueueType::Terminate;
+    if( !SendData( (const char*)&terminate, 1 ) ) return;
+    for(;;)
+    {
+        if( m_sock->HasData() )
+        {
+            while( m_sock->HasData() ) if( !HandleServerQuery() ) return;
+            while( Dequeue( token ) == Success ) {}
+        }
+        else
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        }
+    }
+}
+
+Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
+{
+    QueueItem item[BulkSize];
+    const auto sz = s_queue.try_dequeue_bulk( token, item, BulkSize );
+    if( sz > 0 )
+    {
+        auto buf = m_buffer + m_bufferOffset;
+        auto ptr = buf;
+        for( size_t i=0; i<sz; i++ )
+        {
+            const auto dsz = QueueDataSize[item[i].hdr.idx];
+            memcpy( ptr, item+i, dsz );
+            ptr += dsz;
+        }
+        if( !SendData( buf, ptr - buf ) ) return ConnectionLost;
+        m_bufferOffset += int( ptr - buf );
+        if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
+    }
+    else
+    {
+        return QueueEmpty;
+    }
+    return Success;
 }
 
 bool Profiler::SendData( const char* data, size_t len )
@@ -322,6 +353,8 @@ bool Profiler::HandleServerQuery()
     case ServerQueryMessageLiteral:
         SendString( ptr, (const char*)ptr, QueueType::MessageData );
         break;
+    case ServerQueryTerminate:
+        return false;
     default:
         assert( false );
         break;

@@ -154,6 +154,8 @@ enum { BulkSize = TargetFrameSize / QueueItemSize };
 
 void Profiler::Worker()
 {
+    rpmalloc_thread_initialize();
+
     const auto procname = GetProcessName();
     const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );
 

@@ -184,7 +184,9 @@ void Profiler::Worker()
     {
         for(;;)
         {
+#ifndef TRACY_NO_EXIT
             if( ShouldExit() ) return;
+#endif
             m_sock = listen.Accept();
             if( m_sock ) break;
         }

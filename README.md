@@ -38,7 +38,9 @@ It should be noted that tracy needs to calibrate its internal timers at each run
 
 Copy files from `tracy/client` and `tracy/common` to your project. Add `tracy/TracyClient.cpp` to source files list. That's all. Tracy is now integrated into your application.
 
-In the default configuration tracy is disabled. To enable it, add a TRACY\_ENABLE define.
+In the default configuration tracy is disabled. To enable it, add a `TRACY_ENABLE` define.
+
+If you want to profile a short-lived application, add a `TRACY_NO_EXIT` define. In this configuration tracy will not exit until an incoming connection is made, even if the application has already finished.
 
 #### Marking zones
 

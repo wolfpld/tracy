@@ -1178,7 +1178,7 @@ const char* View::TimeToString( int64_t ns ) const
     return buf;
 }
 
-const char* View::RealToString( double val ) const
+const char* View::RealToString( double val, bool separator ) const
 {
     enum { Pool = 8 };
     static char bufpool[Pool][64];
@@ -1188,7 +1188,28 @@ const char* View::RealToString( double val ) const
 
     sprintf( buf, "%f", val );
     auto ptr = buf;
+    if( *ptr == '-' ) ptr++;
+
+    const auto vbegin = ptr;
+
+    if( separator )
+    {
+        while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
+        auto end = ptr;
+        while( *end != '\0' ) end++;
+        auto sz = end - ptr;
+
+        while( ptr - vbegin > 3 )
+        {
+            ptr -= 3;
+            memmove( ptr+1, ptr, sz );
+            *ptr = ',';
+            sz += 4;
+        }
+    }
+
     while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
+
     if( *ptr == '\0' ) return buf;
     while( *ptr != '\0' ) ptr++;
     ptr--;
@@ -2383,17 +2404,17 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             ImGui::BeginTooltip();
             ImGui::Text( "Plot \"%s\"", txt );
             ImGui::Text( "Data points: %i", v->data.size() );
-            ImGui::Text( "Data range: %s", RealToString( v->max - v->min ) );
-            ImGui::Text( "Min value: %s", RealToString( v->min ) );
-            ImGui::Text( "Max value: %s", RealToString( v->max ) );
+            ImGui::Text( "Data range: %s", RealToString( v->max - v->min, true ) );
+            ImGui::Text( "Min value: %s", RealToString( v->min, true ) );
+            ImGui::Text( "Max value: %s", RealToString( v->max, true ) );
             ImGui::Text( "Time range: %s", TimeToString( tr ) );
-            ImGui::Text( "Data/second: %s", RealToString( double( v->data.size() ) / tr * 1000000000ull ) );
+            ImGui::Text( "Data/second: %s", RealToString( double( v->data.size() ) / tr * 1000000000ull, true ) );
 
             const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back().time - 1000000000ull * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
             const auto tr10 = v->data.back().time - it->time;
             if( tr10 != 0 )
             {
-                ImGui::Text( "D/s (10s): %s", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ull ) );
+                ImGui::Text( "D/s (10s): %s", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ull, true ) );
             }
 
             ImGui::EndTooltip();
@@ -2425,7 +2446,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
             {
                 char tmp[64];
-                sprintf( tmp, "%s", RealToString( max ) );
+                sprintf( tmp, "%s", RealToString( max, true ) );
                 draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
             }
 
@@ -2457,7 +2478,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             offset += PlotHeight - ty;
             {
                 char tmp[64];
-                sprintf( tmp, "%s", RealToString( min ) );
+                sprintf( tmp, "%s", RealToString( min, true ) );
                 draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
             }
             draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
@@ -2477,10 +2498,10 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Value: %s", RealToString( val ) );
+        ImGui::Text( "Value: %s", RealToString( val, true ) );
         if( hasPrev )
         {
-            ImGui::Text( "Change: %s", RealToString( val - prev ) );
+            ImGui::Text( "Change: %s", RealToString( val - prev, true ) );
         }
         ImGui::EndTooltip();
     }

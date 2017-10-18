@@ -1281,7 +1281,7 @@ void View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Messages", ImVec2( 70, 0 ) ) ) m_showMessages = true;
     ImGui::SameLine();
-    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-10" PRIu64" Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), m_zonesCnt, TimeToString( m_delay ), TimeToString( m_resolution ) );
+    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_zonesCnt, true ), TimeToString( m_delay ), TimeToString( m_resolution ) );
     DrawFrames();
     DrawZones();
     ImGui::End();

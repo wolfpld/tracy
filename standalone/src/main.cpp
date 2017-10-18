@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <memory>
 #include "../nfd/nfd.h"
+#include <sys/stat.h>
 
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyView.hpp"
@@ -43,6 +44,16 @@ int main(int, char**)
     //io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyClean.ttf", 13.0f);
     //io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyTiny.ttf", 10.0f);
     //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+
+    {
+        const char* font = "c:\\Windows\\Fonts\\arial.ttf";
+        struct stat st;
+        if( stat( font, &st ) == 0 )
+        {
+            ImGuiIO& io = ImGui::GetIO();
+            io.Fonts->AddFontFromFileTTF( font, 15.0f );
+        }
+    }
 
     ImVec4 clear_color = ImColor(114, 144, 154);
 

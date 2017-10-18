@@ -38,7 +38,7 @@
 #  define tracy_force_inline inline
 #endif
 
-#include "TracyAlloc.hpp"
+#include "../common/TracyAlloc.hpp"
 
 #if defined(__GNUC__)
 // Disable -Wconversion warnings (spuriously triggered when Traits::size_t and

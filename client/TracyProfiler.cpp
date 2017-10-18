@@ -22,7 +22,6 @@
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
 #include "tracy_rpmalloc.hpp"
-#include "TracyAlloc.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"

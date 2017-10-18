@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "../common/TracySystem.hpp"
-#include "TracyAlloc.hpp"
+#include "../common/TracyAlloc.hpp"
 #include "TracyProfiler.hpp"
 
 namespace tracy

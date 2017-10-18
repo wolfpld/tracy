@@ -9,7 +9,7 @@
 #include "concurrentqueue.h"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
-#include "TracyAlloc.hpp"
+#include "../common/TracyAlloc.hpp"
 
 #if defined _MSC_VER || defined __CYGWIN__
 #  include <intrin.h>

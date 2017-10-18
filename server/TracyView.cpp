@@ -1301,6 +1301,9 @@ void View::DrawImpl()
 
 void View::DrawConnection()
 {
+    const auto ty = ImGui::GetFontSize();
+    const auto cs = ty * 0.9f;
+
     ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     {
         std::lock_guard<std::mutex> lock( m_mbpslock );
@@ -1314,7 +1317,7 @@ void View::DrawConnection()
         {
             sprintf( buf, "%6.2f Mbps", mbps );
         }
-        ImGui::Dummy( ImVec2( 10, 0 ) );
+        ImGui::Dummy( ImVec2( cs, 0 ) );
         ImGui::SameLine();
         ImGui::PlotLines( buf, m_mbps.data(), m_mbps.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 150, 0 ) );
     }
@@ -1322,7 +1325,7 @@ void View::DrawConnection()
     ImGui::Text( "Memory usage: %.2f MB", memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ) );
 
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
-    ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 6, 9 ), 5.f, m_connected.load( std::memory_order_relaxed ) ? 0xFF2222CC : 0xFF444444, 10 );
+    ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_connected.load( std::memory_order_relaxed ) ? 0xFF2222CC : 0xFF444444, 10 );
 
     std::lock_guard<std::mutex> lock( m_lock );
     {

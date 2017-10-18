@@ -27,10 +27,6 @@
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
 
-#ifdef _DEBUG
-#  define TRACY_DISABLE_LZ4
-#endif
-
 #ifdef __GNUC__
 #define init_order( val ) __attribute__ ((init_priority(val)))
 #else
@@ -159,7 +155,7 @@ void Profiler::Worker()
 
     WelcomeMessage welcome;
 #ifdef TRACY_DISABLE_LZ4
-    // notify client that lz4 compression is disabled (too slow in debug builds)
+    // notify client that lz4 compression is disabled
     welcome.lz4 = 0;
 #else
     welcome.lz4 = 1;

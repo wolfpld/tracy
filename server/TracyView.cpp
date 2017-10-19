@@ -2492,25 +2492,25 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
                     while( it < range )
                     {
-                        m_tmpVec.emplace_back( &*it );
+                        m_tmpVec.emplace_back( it->val );
                         ++it;
                     }
-                    std::sort( m_tmpVec.begin(), m_tmpVec.end(), [] ( const auto& l, const auto& r ) { return l->val < r->val; } );
+                    std::sort( m_tmpVec.begin(), m_tmpVec.end(), [] ( const auto& l, const auto& r ) { return l < r; } );
 
-                    draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( (*m_tmpVec.begin())->val - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( m_tmpVec.back()->val - min ) * revrange * PlotHeight ), 0xFF44DDDD );
+                    draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( m_tmpVec.front() - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( m_tmpVec.back() - min ) * revrange * PlotHeight ), 0xFF44DDDD );
 
                     auto vit = m_tmpVec.begin();
                     while( vit < m_tmpVec.end() )
                     {
-                        auto vrange = std::upper_bound( vit, m_tmpVec.end(), (*vit)->val + 3.0 / ( revrange * PlotHeight ), [] ( const auto& l, const auto& r ) { return l < r->val; } );
+                        auto vrange = std::upper_bound( vit, m_tmpVec.end(), *vit + 3.0 / ( revrange * PlotHeight ), [] ( const auto& l, const auto& r ) { return l < r; } );
                         assert( vrange > vit );
                         if( std::distance( vit, vrange ) == 1 )
                         {
-                            DrawPlotPoint( wpos, x1, PlotHeight - ( (*vit)->val - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, (*vit)->val, 0, false );
+                            DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, false );
                         }
                         else
                         {
-                            DrawPlotPoint( wpos, x1, PlotHeight - ( (*vit)->val - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, (*vit)->val, 0, true );
+                            DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, true );
                         }
                         vit = vrange;
                     }

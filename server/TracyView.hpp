@@ -251,7 +251,7 @@ private:
 
     bool m_terminate;
 
-    std::vector<PlotItem*> m_tmpVec;
+    std::vector<double> m_tmpVec;
 };
 
 }

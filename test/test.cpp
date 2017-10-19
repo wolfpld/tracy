@@ -77,6 +77,19 @@ void Lock3()
     }
 }
 
+void Plot()
+{
+    unsigned char i = 0;
+    for(;;)
+    {
+        for( int j=0; j<1024; j++ )
+        {
+            TracyPlot( "Test plot", (int64_t)i++ );
+        }
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    }
+}
+
 int main()
 {
     auto t1 = std::thread( TestFunction );
@@ -86,6 +99,8 @@ int main()
     auto t5 = std::thread( Lock1 );
     auto t6 = std::thread( Lock2 );
     auto t7 = std::thread( Lock3 );
+    auto t8 = std::thread( Plot );
+    auto t9 = std::thread( Plot );
 
     tracy::SetThreadName( t1, "First thread" );
     tracy::SetThreadName( t2, "Second thread" );
@@ -94,6 +109,8 @@ int main()
     tracy::SetThreadName( t5, "Lock 1" );
     tracy::SetThreadName( t6, "Lock 2" );
     tracy::SetThreadName( t7, "Lock 3" );
+    tracy::SetThreadName( t8, "Plot 1" );
+    tracy::SetThreadName( t9, "Plot 2" );
 
     for(;;)
     {

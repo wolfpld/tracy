@@ -2495,18 +2495,28 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 {
                     prevx = it;
 
-                    if( m_tmpVecSize < rsz )
+                    const auto skip = std::max<ptrdiff_t>( 1, rsz / 1024 );
+                    const auto sz = rsz / skip + 1;
+
+                    if( m_tmpVecSize < sz )
                     {
                         delete[] m_tmpVec;
-                        m_tmpVec = new double[rsz];
-                        m_tmpVecSize = rsz;
+                        m_tmpVec = new double[sz];
+                        m_tmpVecSize = sz;
                     }
 
                     auto dst = m_tmpVec;
-                    while( it < range )
+                    for(;;)
                     {
                         *dst++ = it->val;
-                        ++it;
+                        if( std::distance( it, range ) > skip )
+                        {
+                            it += skip;
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                     std::sort( m_tmpVec, dst, [] ( const auto& l, const auto& r ) { return l < r; } );
 

@@ -2413,7 +2413,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
             ImGui::BeginTooltip();
             ImGui::Text( "Plot \"%s\"", txt );
-            ImGui::Text( "Data points: %i", v->data.size() );
+            ImGui::Text( "Data points: %s", RealToString( v->data.size(), true ) );
             ImGui::Text( "Data range: %s", RealToString( v->max - v->min, true ) );
             ImGui::Text( "Min value: %s", RealToString( v->min, true ) );
             ImGui::Text( "Max value: %s", RealToString( v->max, true ) );

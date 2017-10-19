@@ -126,6 +126,11 @@ public:
         Realloc();
     }
 
+    void clear()
+    {
+        m_size = 0;
+    }
+
 private:
     void AllocMore()
     {

@@ -2482,6 +2482,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             auto prevx = it;
             auto prevy = it;
             ++it;
+            ptrdiff_t skip = 0;
             while( it < end )
             {
                 const auto x0 = ( (*prevx)->time - m_zvStart ) * pxns;
@@ -2491,7 +2492,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
                 draw->AddLine( wpos + ImVec2( x0, offset + y0 ), wpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
 
-                auto range = std::upper_bound( it, end, int64_t( (*it)->time + nspx * 2.5 ), [] ( const auto& l, const auto& r ) { return l < r->time; } );
+                const auto rx = skip == 0 ? 2.0 : ( skip == 1 ? 2.5 : 4.0 );
+
+                auto range = std::upper_bound( it, end, int64_t( (*it)->time + nspx * rx ), [] ( const auto& l, const auto& r ) { return l < r->time; } );
                 assert( range > it );
                 const auto rsz = std::distance( it, range );
                 if( rsz == 1 )
@@ -2505,8 +2508,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 {
                     prevx = it;
 
-                    const auto skip = std::max<ptrdiff_t>( 1, rsz / 1024 );
-                    const auto sz = rsz / skip + 1;
+                    skip = rsz / 512;
+                    const auto skip1 = std::max<ptrdiff_t>( 1, skip );
+                    const auto sz = rsz / skip1 + 1;
 
                     if( m_tmpVecSize < sz )
                     {
@@ -2519,9 +2523,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                     for(;;)
                     {
                         *dst++ = float( (*it)->val );
-                        if( std::distance( it, range ) > skip )
+                        if( std::distance( it, range ) > skip1 )
                         {
-                            it += skip;
+                            it += skip1;
                         }
                         else
                         {

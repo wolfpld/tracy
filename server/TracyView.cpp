@@ -269,8 +269,8 @@ View::View( FileRead& f )
         pd->data.reserve( psz );
         for( uint64_t j=0; j<psz; j++ )
         {
-            PlotItem item;
-            f.Read( &item, sizeof( item ) );
+            auto item = m_slab.Alloc<PlotItem>();
+            f.Read( item, sizeof( PlotItem ) );
             pd->data.push_back( item );
         }
         m_plots.push_back( pd );
@@ -1009,7 +1009,18 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
 
 void View::InsertPlot( PlotData* plot, int64_t time, double val )
 {
-    if( plot->data.empty() || plot->data.back().time < time )
+    auto item = m_slab.Alloc<PlotItem>();
+    item->time = time;
+    item->val = val;
+    InsertPlot( plot, item );
+}
+
+void View::InsertPlot( PlotData* plot, PlotItem* item )
+{
+    const auto& time = item->time;
+    const auto& val = item->val;
+
+    if( plot->data.empty() || plot->data.back()->time < time )
     {
         if( plot->data.empty() )
         {
@@ -1021,14 +1032,14 @@ void View::InsertPlot( PlotData* plot, int64_t time, double val )
             if( plot->min > val ) plot->min = val;
             else if( plot->max < val ) plot->max = val;
         }
-        plot->data.push_back( PlotItem { time, val } );
+        plot->data.push_back( item );
     }
     else
     {
         if( plot->min > val ) plot->min = val;
         else if( plot->max < val ) plot->max = val;
-        auto it = std::lower_bound( plot->data.begin(), plot->data.end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs.time < rhs; } );
-        plot->data.insert( it, PlotItem { time, val } );
+        auto it = std::lower_bound( plot->data.begin(), plot->data.end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        plot->data.insert( it, item );
     }
 }
 
@@ -1053,9 +1064,8 @@ void View::HandlePlotName( uint64_t name, std::string&& str )
         auto plot = m_plots[it->second];
         for( auto& v : pp )
         {
-            InsertPlot( plot, v.time, v.val );
+            InsertPlot( plot, v );
         }
-        // pit->second is leaked
     }
 
     m_pendingPlots.erase( pit );
@@ -2409,7 +2419,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 v->enabled = !v->enabled;
             }
 
-            const auto tr = v->data.back().time - v->data.begin()->time;
+            const auto tr = v->data.back()->time - v->data.front()->time;
 
             ImGui::BeginTooltip();
             ImGui::Text( "Plot \"%s\"", txt );
@@ -2420,8 +2430,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             ImGui::Text( "Time range: %s", TimeToString( tr ) );
             ImGui::Text( "Data/second: %s", RealToString( double( v->data.size() ) / tr * 1000000000ull, true ) );
 
-            const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back().time - 1000000000ull * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-            const auto tr10 = v->data.back().time - it->time;
+            const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back()->time - 1000000000ull * 10, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+            const auto tr10 = v->data.back()->time - (*it)->time;
             if( tr10 != 0 )
             {
                 ImGui::Text( "D/s (10s): %s", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ull, true ) );
@@ -2435,21 +2445,21 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
         if( v->enabled )
         {
             auto& vec = v->data;
-            auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-            auto end = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+            auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+            auto end = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
 
             if( end != vec.end() ) end++;
             if( it != vec.begin() ) it--;
 
-            double min = it->val;
-            double max = it->val;
+            double min = (*it)->val;
+            double max = (*it)->val;
             {
                 auto tmp = it;
                 ++tmp;
                 while( tmp != end )
                 {
-                    if( tmp->val < min ) min = tmp->val;
-                    else if( tmp->val > max ) max = tmp->val;
+                    if( (*tmp)->val < min ) min = (*tmp)->val;
+                    else if( (*tmp)->val > max ) max = (*tmp)->val;
                     ++tmp;
                 }
             }
@@ -2464,9 +2474,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
             if( it == vec.begin() )
             {
-                const auto x = ( it->time - m_zvStart ) * pxns;
-                const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-                DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it->val, 0, false );
+                const auto x = ( (*it)->time - m_zvStart ) * pxns;
+                const auto y = PlotHeight - ( (*it)->val - min ) * revrange * PlotHeight;
+                DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, (*it)->val, 0, false );
             }
 
             auto prevx = it;
@@ -2474,19 +2484,19 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             ++it;
             while( it < end )
             {
-                const auto x0 = ( prevx->time - m_zvStart ) * pxns;
-                const auto x1 = ( it->time - m_zvStart ) * pxns;
-                const auto y0 = PlotHeight - ( prevy->val - min ) * revrange * PlotHeight;
-                const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
+                const auto x0 = ( (*prevx)->time - m_zvStart ) * pxns;
+                const auto x1 = ( (*it)->time - m_zvStart ) * pxns;
+                const auto y0 = PlotHeight - ( (*prevy)->val - min ) * revrange * PlotHeight;
+                const auto y1 = PlotHeight - ( (*it)->val - min ) * revrange * PlotHeight;
 
                 draw->AddLine( wpos + ImVec2( x0, offset + y0 ), wpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
 
-                auto range = std::upper_bound( it, end, int64_t( it->time + nspx * 2.5 ), [] ( const auto& l, const auto& r ) { return l < r.time; } );
+                auto range = std::upper_bound( it, end, int64_t( (*it)->time + nspx * 2.5 ), [] ( const auto& l, const auto& r ) { return l < r->time; } );
                 assert( range > it );
                 const auto rsz = std::distance( it, range );
                 if( rsz == 1 )
                 {
-                    DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it->val, prevy->val, false );
+                    DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, (*it)->val, (*prevy)->val, false );
                     prevx = it;
                     prevy = it;
                     ++it;
@@ -2508,7 +2518,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                     auto dst = m_tmpVec;
                     for(;;)
                     {
-                        *dst++ = float( it->val );
+                        *dst++ = float( (*it)->val );
                         if( std::distance( it, range ) > skip )
                         {
                             it += skip;
@@ -2943,7 +2953,10 @@ void View::Write( FileWrite& f )
         f.Write( &plot->max, sizeof( plot->max ) );
         sz = plot->data.size();
         f.Write( &sz, sizeof( sz ) );
-        f.Write( plot->data.data(), sizeof( PlotItem ) * sz );
+        for( auto& item : plot->data )
+        {
+            f.Write( item, sizeof( PlotItem ) );
+        }
     }
 }
 

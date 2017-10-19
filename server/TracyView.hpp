@@ -87,7 +87,7 @@ private:
         double min;
         double max;
         bool enabled;
-        std::vector<PlotItem> data;
+        Vector<PlotItem> data;
     };
 
     void Worker();

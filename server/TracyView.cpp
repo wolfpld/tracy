@@ -1021,7 +1021,7 @@ void View::InsertPlot( PlotData* plot, int64_t time, double val )
             if( plot->min > val ) plot->min = val;
             else if( plot->max < val ) plot->max = val;
         }
-        plot->data.emplace_back( PlotItem { time, val } );
+        plot->data.push_back( PlotItem { time, val } );
     }
     else
     {

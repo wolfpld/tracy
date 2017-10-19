@@ -88,6 +88,7 @@ private:
         double max;
         bool enabled;
         Vector<PlotItem*> data;
+        Vector<PlotItem*> postpone;
     };
 
     void Worker();
@@ -132,6 +133,7 @@ private:
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void InsertPlot( PlotData* plot, PlotItem* item );
     void HandlePlotName( uint64_t name, std::string&& str );
+    void HandlePostponedPlots();
 
     uint64_t GetFrameTime( size_t idx ) const;
     uint64_t GetFrameBegin( size_t idx ) const;

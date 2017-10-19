@@ -381,6 +381,8 @@ void View::Worker()
                 DispatchProcess( ev );
             }
 
+            HandlePostponedPlots();
+
             auto t1 = std::chrono::high_resolution_clock::now();
             auto td = std::chrono::duration_cast<std::chrono::milliseconds>( t1 - t0 ).count();
             enum { MbpsUpdateTime = 200 };
@@ -1038,8 +1040,7 @@ void View::InsertPlot( PlotData* plot, PlotItem* item )
     {
         if( plot->min > val ) plot->min = val;
         else if( plot->max < val ) plot->max = val;
-        auto it = std::lower_bound( plot->data.begin(), plot->data.end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        plot->data.insert( it, item );
+        plot->postpone.push_back( item );
     }
 }
 
@@ -1071,6 +1072,26 @@ void View::HandlePlotName( uint64_t name, std::string&& str )
     }
 
     m_pendingPlots.erase( pit );
+}
+
+void View::HandlePostponedPlots()
+{
+    for( auto& plot : m_plots )
+    {
+        auto& src = plot->postpone;
+        if( src.empty() ) continue;
+        auto& dst = plot->data;
+        std::sort( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l->time < r->time; } );
+        const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front()->time, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+        const auto dsd = std::distance( dst.begin(), ds ) ;
+        const auto de = std::lower_bound( ds, dst.end(), src.back()->time, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+        const auto ded = std::distance( dst.begin(), de );
+        std::unique_lock<std::mutex> lock( m_lock );
+        dst.insert( de, src.begin(), src.end() );
+        std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l->time < r->time; } );
+        lock.unlock();
+        src.clear();
+    }
 }
 
 uint64_t View::GetFrameTime( size_t idx ) const

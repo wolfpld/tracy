@@ -60,6 +60,9 @@ public:
     T* end() { return m_ptr + m_size; }
     const T* end() const { return m_ptr + m_size; }
 
+    T& front() { assert( m_size > 0 ); return m_ptr[0]; }
+    const T& front() const { assert( m_size > 0 ); return m_ptr[0]; }
+
     T& back() { assert( m_size > 0 ); return m_ptr[m_size - 1]; }
     const T& back() const { assert( m_size > 0 ); return m_ptr[m_size - 1]; }
 

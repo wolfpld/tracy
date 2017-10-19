@@ -2501,14 +2501,14 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                     if( m_tmpVecSize < sz )
                     {
                         delete[] m_tmpVec;
-                        m_tmpVec = new double[sz];
+                        m_tmpVec = new float[sz];
                         m_tmpVecSize = sz;
                     }
 
                     auto dst = m_tmpVec;
                     for(;;)
                     {
-                        *dst++ = it->val;
+                        *dst++ = float( it->val );
                         if( std::distance( it, range ) > skip )
                         {
                             it += skip;

@@ -252,7 +252,7 @@ private:
     bool m_terminate;
 
     size_t m_tmpVecSize;
-    double* m_tmpVec;
+    float* m_tmpVec;
 };
 
 }

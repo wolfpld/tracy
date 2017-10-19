@@ -103,6 +103,17 @@ public:
         return m_ptr + dist;
     }
 
+    void insert( T* it, T* begin, T* end )
+    {
+        assert( it >= m_ptr && it <= m_ptr + m_size );
+        const auto sz = end - begin;
+        const auto dist = it - m_ptr;
+        while( m_size + sz > m_capacity ) AllocMore();
+        if( dist != m_size ) memmove( m_ptr + dist + sz, m_ptr + dist, ( m_size - dist ) * sizeof( T ) );
+        m_size += sz;
+        memcpy( m_ptr + dist, begin, sz * sizeof( T ) );
+    }
+
     T* erase( T* begin, T* end )
     {
         assert( begin >= m_ptr && begin <= m_ptr + m_size );

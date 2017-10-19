@@ -251,7 +251,8 @@ private:
 
     bool m_terminate;
 
-    std::vector<double> m_tmpVec;
+    size_t m_tmpVecSize;
+    double* m_tmpVec;
 };
 
 }

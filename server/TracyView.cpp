@@ -77,6 +77,8 @@ View::View( const char* addr )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_terminate( false )
+    , m_tmpVecSize( 0 )
+    , m_tmpVec( nullptr )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -111,6 +113,8 @@ View::View( FileRead& f )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_terminate( false )
+    , m_tmpVecSize( 0 )
+    , m_tmpVec( nullptr )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -283,6 +287,8 @@ View::~View()
 
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );
+
+    delete[] m_tmpVec;
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
@@ -2477,7 +2483,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
                 auto range = std::upper_bound( it, end, int64_t( it->time + nspx * 2.5 ), [] ( const auto& l, const auto& r ) { return l < r.time; } );
                 assert( range > it );
-                if( std::distance( it, range ) == 1 )
+                const auto rsz = std::distance( it, range );
+                if( rsz == 1 )
                 {
                     DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it->val, prevy->val, false );
                     prevx = it;
@@ -2486,23 +2493,29 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 }
                 else
                 {
-                    assert( m_tmpVec.empty() );
-
                     prevx = it;
 
+                    if( m_tmpVecSize < rsz )
+                    {
+                        delete[] m_tmpVec;
+                        m_tmpVec = new double[rsz];
+                        m_tmpVecSize = rsz;
+                    }
+
+                    auto dst = m_tmpVec;
                     while( it < range )
                     {
-                        m_tmpVec.emplace_back( it->val );
+                        *dst++ = it->val;
                         ++it;
                     }
-                    std::sort( m_tmpVec.begin(), m_tmpVec.end(), [] ( const auto& l, const auto& r ) { return l < r; } );
+                    std::sort( m_tmpVec, dst, [] ( const auto& l, const auto& r ) { return l < r; } );
 
-                    draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( m_tmpVec.front() - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( m_tmpVec.back() - min ) * revrange * PlotHeight ), 0xFF44DDDD );
+                    draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( m_tmpVec[0] - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), 0xFF44DDDD );
 
-                    auto vit = m_tmpVec.begin();
-                    while( vit < m_tmpVec.end() )
+                    auto vit = m_tmpVec;
+                    while( vit != dst )
                     {
-                        auto vrange = std::upper_bound( vit, m_tmpVec.end(), *vit + 3.0 / ( revrange * PlotHeight ), [] ( const auto& l, const auto& r ) { return l < r; } );
+                        auto vrange = std::upper_bound( vit, dst, *vit + 3.0 / ( revrange * PlotHeight ), [] ( const auto& l, const auto& r ) { return l < r; } );
                         assert( vrange > vit );
                         if( std::distance( vit, vrange ) == 1 )
                         {
@@ -2516,7 +2529,6 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                     }
 
                     prevy = it - 1;
-                    m_tmpVec.clear();
                 }
             }
 

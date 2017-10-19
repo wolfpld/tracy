@@ -1052,13 +1052,15 @@ void View::HandlePlotName( uint64_t name, std::string&& str )
     if( it == m_plotRev.end() )
     {
         const auto idx = m_plots.size();
-        m_plots.push_back( pit->second );
         m_plotMap.emplace( name, idx );
         m_plotRev.emplace( str, idx );
+        std::lock_guard<std::mutex> lock( m_lock );
+        m_plots.push_back( pit->second );
         m_strings.emplace( name, std::move( str ) );
     }
     else
     {
+        std::lock_guard<std::mutex> lock( m_lock );
         m_plotMap.emplace( name, it->second );
         const auto& pp = pit->second->data;
         auto plot = m_plots[it->second];

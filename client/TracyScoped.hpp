@@ -44,10 +44,10 @@ public:
     tracy_force_inline void Text( const char* txt, size_t size )
     {
         Magic magic;
+        auto& token = s_token.ptr;
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::ZoneText;

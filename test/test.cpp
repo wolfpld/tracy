@@ -90,6 +90,15 @@ void Plot()
     }
 }
 
+void MessageTest()
+{
+    for(;;)
+    {
+        TracyMessage( "Tock", 4 );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
+    }
+}
+
 int main()
 {
     auto t1 = std::thread( TestFunction );
@@ -101,6 +110,7 @@ int main()
     auto t7 = std::thread( Lock3 );
     auto t8 = std::thread( Plot );
     auto t9 = std::thread( Plot );
+    auto t10 = std::thread( MessageTest );
 
     tracy::SetThreadName( t1, "First thread" );
     tracy::SetThreadName( t2, "Second thread" );
@@ -111,9 +121,11 @@ int main()
     tracy::SetThreadName( t7, "Lock 3" );
     tracy::SetThreadName( t8, "Plot 1" );
     tracy::SetThreadName( t9, "Plot 2" );
+    tracy::SetThreadName( t10, "Message test" );
 
     for(;;)
     {
+        TracyMessageL( "Tick" );
         std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
         {
             ZoneScoped;

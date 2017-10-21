@@ -880,23 +880,7 @@ void View::InsertMessageData( MessageData* msg, uint64_t thread )
         m_messages.insert( mit, msg );
     }
 
-    Vector<MessageData*>* vec;
-    auto tit = m_threadMap.find( thread );
-    if( tit == m_threadMap.end() )
-    {
-        CheckThreadString( thread );
-        m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
-        auto td = m_slab.AllocInit<ThreadData>();
-        td->id = thread;
-        td->enabled = true;
-        m_threads.push_back( td );
-        vec = &m_threads.back()->messages;
-    }
-    else
-    {
-        vec = &m_threads[tit->second]->messages;
-    }
-
+    Vector<MessageData*>* vec = &NoticeThread( thread )->messages;
     if( vec->empty() || vec->back()->time < msg->time )
     {
         vec->push_back( msg );
@@ -908,10 +892,8 @@ void View::InsertMessageData( MessageData* msg, uint64_t thread )
     }
 }
 
-void View::NewZone( Event* zone, uint64_t thread )
+View::ThreadData* View::NoticeThread( uint64_t thread )
 {
-    m_zonesCnt++;
-    Vector<Event*>* timeline;
     auto it = m_threadMap.find( thread );
     if( it == m_threadMap.end() )
     {
@@ -921,13 +903,18 @@ void View::NewZone( Event* zone, uint64_t thread )
         td->id = thread;
         td->enabled = true;
         m_threads.push_back( td );
-        timeline = &m_threads.back()->timeline;
+        return m_threads.back();
     }
     else
     {
-        timeline = &m_threads[it->second]->timeline;
+        return m_threads[it->second];
     }
+}
 
+void View::NewZone( Event* zone, uint64_t thread )
+{
+    m_zonesCnt++;
+    Vector<Event*>* timeline = &NoticeThread( thread )->timeline;
     InsertZone( zone, nullptr, *timeline );
 }
 
@@ -963,16 +950,7 @@ void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
 
 void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
 {
-    auto tit = m_threadMap.find( thread );
-    if( tit == m_threadMap.end() )
-    {
-        CheckThreadString( thread );
-        m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
-        auto td = m_slab.AllocInit<ThreadData>();
-        td->id = thread;
-        td->enabled = true;
-        m_threads.push_back( td );
-    }
+    NoticeThread( thread );
 
     auto it = lockmap.threadMap.find( thread );
     if( it == lockmap.threadMap.end() )

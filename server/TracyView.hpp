@@ -137,6 +137,8 @@ private:
 
     void InsertMessageData( MessageData* msg, uint64_t thread );
 
+    ThreadData* NoticeThread( uint64_t thread );
+
     void NewZone( Event* zone, uint64_t thread );
     void UpdateZone( Event* zone );
 

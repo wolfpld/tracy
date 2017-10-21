@@ -34,8 +34,8 @@
 */
 
 
-#ifndef LZ4_H_2983827168210
-#define LZ4_H_2983827168210
+#ifndef TRACY_LZ4_H_2983827168210
+#define TRACY_LZ4_H_2983827168210
 
 /* --- Dependency --- */
 #include <stddef.h>   /* size_t */

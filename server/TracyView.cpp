@@ -884,6 +884,7 @@ void View::InsertMessageData( MessageData* msg, uint64_t thread )
     auto tit = m_threadMap.find( thread );
     if( tit == m_threadMap.end() )
     {
+        CheckThreadString( thread );
         m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
         auto td = m_slab.AllocInit<ThreadData>();
         td->id = thread;

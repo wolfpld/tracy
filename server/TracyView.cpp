@@ -2481,6 +2481,12 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
             double min = (*it)->val;
             double max = (*it)->val;
+            if( std::distance( it, end ) > 1000000 )
+            {
+                min = v->min;
+                max = v->max;
+            }
+            else
             {
                 auto tmp = it;
                 ++tmp;

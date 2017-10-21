@@ -72,8 +72,6 @@ View::View( const char* addr )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_terminate( false )
-    , m_tmpVecSize( 0 )
-    , m_tmpVec( nullptr )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -108,8 +106,6 @@ View::View( FileRead& f )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_terminate( false )
-    , m_tmpVecSize( 0 )
-    , m_tmpVec( nullptr )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -289,8 +285,6 @@ View::~View()
 
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );
-
-    delete[] m_tmpVec;
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
@@ -2542,18 +2536,14 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 {
                     prevx = it;
 
-                    skip = rsz / 512;
+                    enum { MaxPoints = 512 };
+                    skip = rsz / MaxPoints;
                     const auto skip1 = std::max<ptrdiff_t>( 1, skip );
                     const auto sz = rsz / skip1 + 1;
+                    assert( sz <= MaxPoints*2 );
+                    float tmpvec[MaxPoints*2];
 
-                    if( m_tmpVecSize < sz )
-                    {
-                        delete[] m_tmpVec;
-                        m_tmpVec = new float[sz];
-                        m_tmpVecSize = sz;
-                    }
-
-                    auto dst = m_tmpVec;
+                    auto dst = tmpvec;
                     for(;;)
                     {
                         *dst++ = float( (*it)->val );
@@ -2566,11 +2556,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                             break;
                         }
                     }
-                    std::sort( m_tmpVec, dst, [] ( const auto& l, const auto& r ) { return l < r; } );
+                    std::sort( tmpvec, dst, [] ( const auto& l, const auto& r ) { return l < r; } );
 
-                    draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( m_tmpVec[0] - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), 0xFF44DDDD );
+                    draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( tmpvec[0] - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), 0xFF44DDDD );
 
-                    auto vit = m_tmpVec;
+                    auto vit = tmpvec;
                     while( vit != dst )
                     {
                         auto vrange = std::upper_bound( vit, dst, *vit + 3.0 / ( revrange * PlotHeight ), [] ( const auto& l, const auto& r ) { return l < r; } );

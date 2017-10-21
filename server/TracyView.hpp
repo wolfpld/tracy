@@ -273,9 +273,6 @@ private:
     bool m_drawPlots;
 
     bool m_terminate;
-
-    size_t m_tmpVecSize;
-    float* m_tmpVec;
 };
 
 }

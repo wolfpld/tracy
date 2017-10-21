@@ -568,7 +568,7 @@ void View::Process( const QueueItem& ev )
 
 void View::ProcessZoneBegin( const QueueZoneBegin& ev )
 {
-    auto zone = m_slab.Alloc<Event>();
+    auto zone = m_slab.AllocInit<Event>();
 
     CheckSourceLocation( ev.srcloc );
 
@@ -713,7 +713,7 @@ void View::ProcessPlotData( const QueuePlotData& ev )
         auto pit = m_pendingPlots.find( ev.name );
         if( pit == m_pendingPlots.end() )
         {
-            plot = m_slab.Alloc<PlotData>();
+            plot = m_slab.AllocInit<PlotData>();
             plot->name = ev.name;
             plot->enabled = true;
             m_pendingPlots.emplace( ev.name, plot );
@@ -3052,7 +3052,7 @@ void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const 
 
     for( uint64_t i=0; i<sz; i++ )
     {
-        auto zone = m_slab.Alloc<Event>();
+        auto zone = m_slab.AllocInit<Event>();
         m_zonesCnt++;
         vec.push_back( zone );
 

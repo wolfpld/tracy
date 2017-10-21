@@ -30,7 +30,7 @@ public:
         }
     }
 
-    void* Alloc( size_t size )
+    void* AllocRaw( size_t size )
     {
         assert( size <= BlockSize );
         if( m_offset + size > BlockSize )
@@ -46,9 +46,15 @@ public:
     }
 
     template<typename T>
+    T* AllocInit()
+    {
+        return new( AllocRaw( sizeof( T ) ) ) T;
+    }
+
+    template<typename T>
     T* Alloc()
     {
-        return new( Alloc( sizeof( T ) ) ) T;
+        return (T*)AllocRaw( sizeof( T ) );
     }
 
     void Unalloc( size_t size )

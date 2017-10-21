@@ -225,12 +225,19 @@ View::View( FileRead& f )
         uint64_t ptr, tsz;
         f.Read( &ptr, sizeof( ptr ) );
         auto msgdata = new MessageData;
-        f.Read( &msgdata->time, sizeof( msgdata->time ) );
-        f.Read( &tsz, sizeof( tsz ) );
-        auto txt = new char[tsz+1];
-        f.Read( txt, tsz );
-        txt[tsz] = '\0';
-        msgdata->txt = txt;
+        f.Read( &msgdata->_time_literal, sizeof( msgdata->_time_literal ) );
+        if( msgdata->literal )
+        {
+            f.Read( &msgdata->str, sizeof( msgdata->str ) );
+        }
+        else
+        {
+            f.Read( &tsz, sizeof( tsz ) );
+            auto txt = new char[tsz+1];
+            f.Read( txt, tsz );
+            txt[tsz] = '\0';
+            msgdata->txt = txt;
+        }
         m_messages.push_back( msgdata );
         msgMap.emplace( ptr, msgdata );
     }
@@ -545,10 +552,10 @@ void View::Process( const QueueItem& ev )
         ProcessPlotData( ev.plotData );
         break;
     case QueueType::Message:
-        ProcessMessage( ev.message, false );
+        ProcessMessage( ev.message );
         break;
     case QueueType::MessageLiteral:
-        ProcessMessage( ev.message, true );
+        ProcessMessageLiteral( ev.message );
         break;
     case QueueType::Terminate:
         m_terminate = true;
@@ -741,10 +748,20 @@ void View::ProcessPlotData( const QueuePlotData& ev )
     }
 }
 
-void View::ProcessMessage( const QueueMessage& ev, bool literal )
+void View::ProcessMessage( const QueueMessage& ev )
 {
     m_pendingMessages.emplace( ev.text, MessagePending { int64_t( ev.time * m_timerMul ), ev.thread } );
-    ServerQuery( literal ? ServerQueryMessageLiteral : ServerQueryMessage, ev.text );
+    ServerQuery( ServerQueryMessage, ev.text );
+}
+
+void View::ProcessMessageLiteral( const QueueMessage& ev )
+{
+    CheckString( ev.text );
+    auto msg = new MessageData;
+    msg->time = int64_t( ev.time * m_timerMul );
+    msg->literal = true;
+    msg->str = ev.text;
+    InsertMessageData( msg, ev.thread );
 }
 
 void View::CheckString( uint64_t ptr )
@@ -848,19 +865,25 @@ void View::AddMessageData( uint64_t ptr, const char* str, size_t sz )
 
     auto it = m_pendingMessages.find( ptr );
     assert( it != m_pendingMessages.end() );
-    const auto& time = it->second.time;
-    const auto& thread = it->second.thread;
-    auto msgdata = new MessageData { time, txt };
+    auto msg = new MessageData;
+    msg->time = it->second.time;
+    msg->literal = false;
+    msg->txt = txt;
+    InsertMessageData( msg, it->second.thread );
+    m_pendingMessages.erase( it );
+}
 
-    std::unique_lock<std::mutex> lock( m_lock );
-    if( m_messages.empty() || m_messages.back()->time < time )
+void View::InsertMessageData( MessageData* msg, uint64_t thread )
+{
+    std::lock_guard<std::mutex> lock( m_lock );
+    if( m_messages.empty() || m_messages.back()->time < msg->time )
     {
-        m_messages.push_back( msgdata );
+        m_messages.push_back( msg );
     }
     else
     {
-        auto mit = std::lower_bound( m_messages.begin(), m_messages.end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        m_messages.insert( mit, msgdata );
+        auto mit = std::lower_bound( m_messages.begin(), m_messages.end(), msg->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        m_messages.insert( mit, msg );
     }
 
     Vector<MessageData*>* vec;
@@ -876,18 +899,15 @@ void View::AddMessageData( uint64_t ptr, const char* str, size_t sz )
         vec = &m_threads[tit->second]->messages;
     }
 
-    if( vec->empty() || vec->back()->time < time )
+    if( vec->empty() || vec->back()->time < msg->time )
     {
-        vec->push_back( msgdata );
+        vec->push_back( msg );
     }
     else
     {
-        auto tmit = std::lower_bound( vec->begin(), vec->end(), time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        vec->insert( tmit, msgdata );
+        auto tmit = std::lower_bound( vec->begin(), vec->end(), msg->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        vec->insert( tmit, msg );
     }
-
-    lock.unlock();
-    m_pendingMessages.erase( it );
 }
 
 void View::NewZone( Event* zone, uint64_t thread )
@@ -1839,7 +1859,7 @@ void View::DrawZones()
                 {
                     ImGui::BeginTooltip();
                     ImGui::Text( "%s", TimeToString( (*it)->time - m_frames[0] ) );
-                    ImGui::Text( "%s", (*it)->txt );
+                    ImGui::Text( "%s", (*it)->literal ? GetString( (*it)->str ) : (*it)->txt );
                     ImGui::EndTooltip();
                     m_msgHighlight = *it;
                 }
@@ -2744,7 +2764,7 @@ void View::DrawMessages()
     for( auto& v : m_messages )
     {
         char tmp[64 * 1024];
-        sprintf( tmp, "%10s | %s", TimeToString( v->time - m_frames[0] ), v->txt );
+        sprintf( tmp, "%10s | %s", TimeToString( v->time - m_frames[0] ), v->literal ? GetString( v->str ) : v->txt );
         if( m_msgHighlight == v )
         {
             ImGui::TextColored( ImVec4( 0xDD / 255.f, 0x22 / 255.f, 0x22 / 255.f, 1.f ), "%s", tmp );
@@ -2950,10 +2970,17 @@ void View::Write( FileWrite& f )
     {
         const auto ptr = (uint64_t)v;
         f.Write( &ptr, sizeof( ptr ) );
-        f.Write( &v->time, sizeof( v->time ) );
-        sz = strlen( v->txt );
-        f.Write( &sz, sizeof( sz ) );
-        f.Write( v->txt, sz );
+        f.Write( &v->_time_literal, sizeof( v->_time_literal ) );
+        if( v->literal )
+        {
+            f.Write( &v->str, sizeof( v->str ) );
+        }
+        else
+        {
+            sz = strlen( v->txt );
+            f.Write( &sz, sizeof( sz ) );
+            f.Write( v->txt, sz );
+        }
     }
 
     sz = m_threads.size();

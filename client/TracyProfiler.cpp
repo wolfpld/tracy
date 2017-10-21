@@ -356,9 +356,6 @@ bool Profiler::HandleServerQuery()
         SendString( ptr, (const char*)ptr, QueueType::MessageData );
         tracy_free( (void*)ptr );
         break;
-    case ServerQueryMessageLiteral:
-        SendString( ptr, (const char*)ptr, QueueType::MessageData );
-        break;
     case ServerQueryTerminate:
         return false;
     default:

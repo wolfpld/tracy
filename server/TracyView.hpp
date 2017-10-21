@@ -46,8 +46,20 @@ private:
 
     struct MessageData
     {
-        int64_t time;
-        const char* txt;
+        union
+        {
+            struct
+            {
+                int64_t time : 63;
+                int64_t literal : 1;
+            };
+            int64_t _time_literal;
+        };
+        union
+        {
+            const char* txt;
+            uint64_t str;
+        };
     };
 
     struct ThreadData
@@ -109,7 +121,8 @@ private:
     void ProcessLockRelease( const QueueLockRelease& ev );
     void ProcessLockMark( const QueueLockMark& ev );
     void ProcessPlotData( const QueuePlotData& ev );
-    void ProcessMessage( const QueueMessage& ev, bool literal );
+    void ProcessMessage( const QueueMessage& ev );
+    void ProcessMessageLiteral( const QueueMessage& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
@@ -121,6 +134,8 @@ private:
     void AddCustomString( uint64_t ptr, std::string&& str );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
     void AddMessageData( uint64_t ptr, const char* str, size_t sz );
+
+    void InsertMessageData( MessageData* msg, uint64_t thread );
 
     void NewZone( Event* zone, uint64_t thread );
     void UpdateZone( Event* zone );

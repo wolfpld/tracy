@@ -101,6 +101,7 @@ private:
         bool enabled;
         Vector<PlotItem*> data;
         Vector<PlotItem*> postpone;
+        uint64_t postponeTime;
     };
 
     void Worker();

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <chrono>
 #include <inttypes.h>
 #include <limits>
 #include <math.h>
@@ -1042,6 +1043,7 @@ void View::InsertPlot( PlotData* plot, PlotItem* item )
     {
         if( plot->min > val ) plot->min = val;
         else if( plot->max < val ) plot->max = val;
+        if( plot->postpone.empty() ) plot->postponeTime = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
         plot->postpone.push_back( item );
     }
 }
@@ -1082,6 +1084,7 @@ void View::HandlePostponedPlots()
     {
         auto& src = plot->postpone;
         if( src.empty() ) continue;
+        if( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count() - plot->postponeTime < 100 ) continue;
         auto& dst = plot->data;
         std::sort( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l->time < r->time; } );
         const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front()->time, [] ( const auto& l, const auto& r ) { return l->time < r; } );

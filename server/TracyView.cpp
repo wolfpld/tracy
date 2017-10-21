@@ -2611,7 +2611,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
         draw->AddRect( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), color );
     }
 
-    if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
+    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
     {
         ImGui::BeginTooltip();
         ImGui::Text( "Value: %s", RealToString( val, true ) );

@@ -57,6 +57,12 @@ public:
         return (T*)AllocRaw( sizeof( T ) );
     }
 
+    template<typename T>
+    T* Alloc( size_t size )
+    {
+        return (T*)AllocRaw( sizeof( T ) * size );
+    }
+
     void Unalloc( size_t size )
     {
         assert( size <= m_offset );

@@ -42,12 +42,6 @@ namespace tracy
 
 enum { MinVisSize = 3 };
 
-static TextData* GetTextData( Event& zone )
-{
-    if( !zone.text ) zone.text = new TextData {};
-    return zone.text;
-}
-
 static View* s_instance = nullptr;
 
 View::View( const char* addr )
@@ -174,7 +168,7 @@ View::View( FileRead& f )
         f.Read( &ptr, sizeof( ptr ) );
         uint64_t ssz;
         f.Read( &ssz, sizeof( ssz ) );
-        auto dst = new char[ssz+1];
+        auto dst = m_slab.Alloc<char>( ssz+1 );
         f.Read( dst, ssz );
         dst[ssz] = '\0';
         m_customStrings.emplace( dst );
@@ -224,7 +218,7 @@ View::View( FileRead& f )
     {
         uint64_t ptr, tsz;
         f.Read( &ptr, sizeof( ptr ) );
-        auto msgdata = new MessageData;
+        auto msgdata = m_slab.Alloc<MessageData>();
         f.Read( &msgdata->_time_literal, sizeof( msgdata->_time_literal ) );
         if( msgdata->literal )
         {
@@ -233,7 +227,7 @@ View::View( FileRead& f )
         else
         {
             f.Read( &tsz, sizeof( tsz ) );
-            auto txt = new char[tsz+1];
+            auto txt = m_slab.Alloc<char>( tsz+1 );
             f.Read( txt, tsz );
             txt[tsz] = '\0';
             msgdata->txt = txt;
@@ -246,7 +240,7 @@ View::View( FileRead& f )
     m_threads.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
-        auto td = new ThreadData;
+        auto td = m_slab.AllocInit<ThreadData>();
         f.Read( &td->id, sizeof( td->id ) );
         ReadTimeline( f, td->timeline, nullptr, stringMap );
         uint64_t msz;
@@ -266,7 +260,7 @@ View::View( FileRead& f )
     m_plots.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
-        auto pd = new PlotData;
+        auto pd = m_slab.AllocInit<PlotData>();
         f.Read( &pd->name, sizeof( pd->name ) );
         f.Read( &pd->min, sizeof( pd->min ) );
         f.Read( &pd->max, sizeof( pd->max ) );
@@ -757,7 +751,7 @@ void View::ProcessMessage( const QueueMessage& ev )
 void View::ProcessMessageLiteral( const QueueMessage& ev )
 {
     CheckString( ev.text );
-    auto msg = new MessageData;
+    auto msg = m_slab.Alloc<MessageData>();
     msg->time = int64_t( ev.time * m_timerMul );
     msg->literal = true;
     msg->str = ev.text;
@@ -831,7 +825,7 @@ void View::AddCustomString( uint64_t ptr, std::string&& str )
     if( sit == m_customStrings.end() )
     {
         const auto sz = str.size();
-        auto ptr = new char[sz+1];
+        auto ptr = m_slab.Alloc<char>( sz+1 );
         memcpy( ptr, str.c_str(), sz );
         ptr[sz] = '\0';
         GetTextData( *pit->second )->userText = ptr;
@@ -859,13 +853,13 @@ void View::AddSourceLocation( const QueueSourceLocation& srcloc )
 
 void View::AddMessageData( uint64_t ptr, const char* str, size_t sz )
 {
-    auto txt = new char[sz+1];
+    auto txt = m_slab.Alloc<char>( sz+1 );
     memcpy( txt, str, sz );
     txt[sz] = '\0';
 
     auto it = m_pendingMessages.find( ptr );
     assert( it != m_pendingMessages.end() );
-    auto msg = new MessageData;
+    auto msg = m_slab.Alloc<MessageData>();
     msg->time = it->second.time;
     msg->literal = false;
     msg->txt = txt;
@@ -891,7 +885,10 @@ void View::InsertMessageData( MessageData* msg, uint64_t thread )
     if( tit == m_threadMap.end() )
     {
         m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
-        m_threads.push_back( new ThreadData { thread, true } );
+        auto td = m_slab.AllocInit<ThreadData>();
+        td->id = thread;
+        td->enabled = true;
+        m_threads.push_back( td );
         vec = &m_threads.back()->messages;
     }
     else
@@ -919,7 +916,10 @@ void View::NewZone( Event* zone, uint64_t thread )
     {
         CheckThreadString( thread );
         m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
-        m_threads.push_back( new ThreadData { thread, true } );
+        auto td = m_slab.AllocInit<ThreadData>();
+        td->id = thread;
+        td->enabled = true;
+        m_threads.push_back( td );
         timeline = &m_threads.back()->timeline;
     }
     else
@@ -967,7 +967,10 @@ void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
     {
         CheckThreadString( thread );
         m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
-        m_threads.push_back( new ThreadData { thread, true } );
+        auto td = m_slab.AllocInit<ThreadData>();
+        td->id = thread;
+        td->enabled = true;
+        m_threads.push_back( td );
     }
 
     auto it = lockmap.threadMap.find( thread );
@@ -2891,6 +2894,17 @@ void View::ZoneTooltip( const Event& ev )
     ImGui::EndTooltip();
 }
 
+TextData* View::GetTextData( Event& zone )
+{
+    if( !zone.text )
+    {
+        zone.text = m_slab.Alloc<TextData>();
+        zone.text->userText = nullptr;
+        zone.text->zoneName = 0;
+    }
+    return zone.text;
+}
+
 void View::Write( FileWrite& f )
 {
     f.Write( &m_delay, sizeof( m_delay ) );
@@ -3066,7 +3080,7 @@ void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const 
         f.Read( &flag, sizeof( flag ) );
         if( flag )
         {
-            zone->text = new TextData;
+            zone->text = m_slab.Alloc<TextData>();
             uint64_t ptr;
             f.Read( &ptr, sizeof( ptr ) );
             zone->text->userText = ptr == 0 ? nullptr : stringMap.find( ptr )->second;

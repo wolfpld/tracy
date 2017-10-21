@@ -185,6 +185,8 @@ private:
     void ZoomToZone( const Event& ev );
     void ZoneTooltip( const Event& ev );
 
+    TextData* GetTextData( Event& zone );
+
     void Write( FileWrite& f );
     void WriteTimeline( FileWrite& f, const Vector<Event*>& vec );
     void ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const std::unordered_map<uint64_t, const char*>& stringMap );

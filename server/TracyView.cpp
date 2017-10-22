@@ -72,6 +72,7 @@ View::View( const char* addr )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_onlyContendedLocks( false )
+    , m_namespace( Namespace::Full )
     , m_terminate( false )
 {
     assert( s_instance == nullptr );
@@ -107,6 +108,7 @@ View::View( FileRead& f )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_onlyContendedLocks( false )
+    , m_namespace( Namespace::Full )
     , m_terminate( false )
 {
     assert( s_instance == nullptr );
@@ -1301,6 +1303,36 @@ const QueueSourceLocation& View::GetSourceLocation( uint64_t srcloc ) const
     return it->second;
 }
 
+const char* View::ShortenNamespace( const char* name ) const
+{
+    if( m_namespace == Namespace::Full ) return name;
+    if( m_namespace == Namespace::Short )
+    {
+        auto ptr = name;
+        while( *ptr != '\0' ) ptr++;
+        while( ptr > name && *ptr != ':' ) ptr--;
+        if( *ptr == ':' ) ptr++;
+        return ptr;
+    }
+
+    static char buf[1024];
+    auto dst = buf;
+    auto ptr = name;
+    for(;;)
+    {
+        auto start = ptr;
+        while( *ptr != '\0' && *ptr != ':' ) ptr++;
+        if( *ptr == '\0' )
+        {
+            memcpy( dst, start, ptr - start + 1 );
+            return buf;
+        }
+        *dst++ = *start;
+        *dst++ = ':';
+        while( *ptr == ':' ) ptr++;
+    }
+}
+
 void View::Draw()
 {
     s_instance->DrawImpl();
@@ -2035,7 +2067,13 @@ int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, con
                 migration = true;
             }
 
-            const auto tsz = ImGui::CalcTextSize( zoneName );
+            auto tsz = ImGui::CalcTextSize( zoneName );
+            if( tsz.x > zsz )
+            {
+                zoneName = ShortenNamespace( zoneName );
+                tsz = ImGui::CalcTextSize( zoneName );
+            }
+
             const auto pr0 = ( ev.start - m_zvStart ) * pxns;
             const auto pr1 = ( end - m_zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
@@ -2751,6 +2789,9 @@ void View::DrawOptions()
     const auto tw = ImGui::GetFontSize();
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     ImGui::Checkbox( "Draw zones", &m_drawZones );
+    int ns = (int)m_namespace;
+    ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None" );
+    m_namespace = (Namespace)ns;
     ImGui::Separator();
     ImGui::Checkbox( "Draw locks", &m_drawLocks );
     ImGui::SameLine();

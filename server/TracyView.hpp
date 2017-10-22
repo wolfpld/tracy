@@ -38,6 +38,13 @@ public:
     static void Draw();
 
 private:
+    enum class Namespace : uint8_t
+    {
+        Full,
+        Mid,
+        Short
+    };
+
     struct MessagePending
     {
         int64_t time;
@@ -168,6 +175,8 @@ private:
     const char* GetThreadString( uint64_t id ) const;
     const QueueSourceLocation& GetSourceLocation( uint64_t srcloc ) const;
 
+    const char* ShortenNamespace( const char* name ) const;
+
     void DrawImpl();
     void DrawConnection();
     void DrawFrames();
@@ -275,6 +284,8 @@ private:
     bool m_drawLocks;
     bool m_drawPlots;
     bool m_onlyContendedLocks;
+
+    Namespace m_namespace;
 
     bool m_terminate;
 };

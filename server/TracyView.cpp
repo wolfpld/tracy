@@ -249,7 +249,8 @@ View::View( FileRead& f )
             f.Read( &ptr, sizeof( ptr ) );
             td->messages.push_back( msgMap[ptr] );
         }
-        td->enabled = true;
+        td->showFull = true;
+        td->visible = true;
         m_threads.push_back( td );
     }
 
@@ -896,7 +897,8 @@ View::ThreadData* View::NoticeThread( uint64_t thread )
         m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
         auto td = m_slab.AllocInit<ThreadData>();
         td->id = thread;
-        td->enabled = true;
+        td->showFull = true;
+        td->visible = true;
         m_threads.push_back( td );
         return m_threads.back();
     }
@@ -1821,9 +1823,11 @@ void View::DrawZones()
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
     for( auto& v : m_threads )
     {
+        if( !v->visible ) continue;
+
         draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
 
-        if( v->enabled )
+        if( v->showFull )
         {
             draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFFFFF );
 
@@ -1850,16 +1854,16 @@ void View::DrawZones()
             draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF888888 );
         }
         const auto txt = GetThreadString( v->id );
-        draw->AddText( wpos + ImVec2( ty, offset ), v->enabled ? 0xFFFFFFFF : 0xFF888888, txt );
+        draw->AddText( wpos + ImVec2( ty, offset ), v->showFull ? 0xFFFFFFFF : 0xFF888888, txt );
 
         if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( txt ).x, offset + ty ) ) )
         {
-            v->enabled = !v->enabled;
+            v->showFull = !v->showFull;
         }
 
         offset += ostep;
 
-        if( v->enabled )
+        if( v->showFull )
         {
             m_lastCpu = -1;
             if( m_drawZones )
@@ -2732,10 +2736,19 @@ void View::DrawZoneInfoWindow()
 
 void View::DrawOptions()
 {
+    const auto tw = ImGui::GetFontSize();
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     ImGui::Checkbox( "Draw zones", &m_drawZones );
     ImGui::Checkbox( "Draw locks", &m_drawLocks );
     ImGui::Checkbox( "Draw plots", &m_drawPlots );
+    ImGui::Separator();
+    ImGui::Text( "Visible threads:" );
+    ImGui::Indent( tw );
+    for( auto& t : m_threads )
+    {
+        ImGui::Checkbox( GetThreadString( t->id ), &t->visible );
+    }
+    ImGui::Unindent( tw );
     ImGui::End();
 }
 

@@ -65,7 +65,8 @@ private:
     struct ThreadData
     {
         uint64_t id;
-        bool enabled;
+        bool showFull;
+        bool visible;
         Vector<Event*> timeline;
         Vector<MessageData*> messages;
     };

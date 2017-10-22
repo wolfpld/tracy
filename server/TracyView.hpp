@@ -153,7 +153,7 @@ private:
     void NewZone( ZoneEvent* zone, uint64_t thread );
     void UpdateZone( ZoneEvent* zone );
 
-    void InsertZone( ZoneEvent* zone, ZoneEvent* parent, Vector<ZoneEvent*>& vec );
+    void InsertZone( ZoneEvent* zone, Vector<ZoneEvent*>& vec );
 
     void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread );
     void UpdateLockCount( LockMap& lockmap, size_t pos );
@@ -198,12 +198,13 @@ private:
 
     void ZoomToZone( const ZoneEvent& ev );
     void ZoneTooltip( const ZoneEvent& ev );
+    const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
 
     TextData* GetTextData( ZoneEvent& zone );
 
     void Write( FileWrite& f );
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
-    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, ZoneEvent* parent, const std::unordered_map<uint64_t, const char*>& stringMap );
+    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, const std::unordered_map<uint64_t, const char*>& stringMap );
 
     std::string m_addr;
 

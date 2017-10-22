@@ -244,7 +244,7 @@ View::View( FileRead& f )
     {
         auto td = m_slab.AllocInit<ThreadData>();
         f.Read( &td->id, sizeof( td->id ) );
-        ReadTimeline( f, td->timeline, nullptr, stringMap );
+        ReadTimeline( f, td->timeline, stringMap );
         uint64_t msz;
         f.Read( &msz, sizeof( msz ) );
         td->messages.reserve( msz );
@@ -922,7 +922,7 @@ void View::NewZone( ZoneEvent* zone, uint64_t thread )
 {
     m_zonesCnt++;
     Vector<ZoneEvent*>* timeline = &NoticeThread( thread )->timeline;
-    InsertZone( zone, nullptr, *timeline );
+    InsertZone( zone, *timeline );
 }
 
 void View::UpdateZone( ZoneEvent* zone )
@@ -931,26 +931,24 @@ void View::UpdateZone( ZoneEvent* zone )
     assert( std::upper_bound( zone->child.begin(), zone->child.end(), zone->end, [] ( const auto& l, const auto& r ) { return l < r->start; } ) == zone->child.end() );
 }
 
-void View::InsertZone( ZoneEvent* zone, ZoneEvent* parent, Vector<ZoneEvent*>& vec )
+void View::InsertZone( ZoneEvent* zone, Vector<ZoneEvent*>& vec )
 {
     if( !vec.empty() )
     {
         const auto lastend = vec.back()->end;
         if( lastend != -1 && lastend <= zone->start )
         {
-            zone->parent = parent;
             vec.push_back( zone );
         }
         else
         {
             assert( std::upper_bound( vec.begin(), vec.end(), zone->start, [] ( const auto& l, const auto& r ) { return l < r->start; } ) == vec.end() );
             assert( vec.back()->end == -1 || vec.back()->end >= zone->end );
-            InsertZone( zone, vec.back(), vec.back()->child );
+            InsertZone( zone, vec.back()->child );
         }
     }
     else
     {
-        zone->parent = parent;
         vec.push_back( zone );
     }
 }
@@ -2671,9 +2669,10 @@ void View::DrawZoneInfoWindow()
     ImGui::SameLine();
     if( ImGui::Button( "Go to parent" ) )
     {
-        if( ev.parent )
+        auto parent = GetZoneParent( ev );
+        if( parent )
         {
-            m_zoneInfoWindow = ev.parent;
+            m_zoneInfoWindow = parent;
         }
     }
 
@@ -2935,6 +2934,27 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::EndTooltip();
 }
 
+const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
+{
+    for( auto& thread : m_threads )
+    {
+        const ZoneEvent* parent = nullptr;
+        const Vector<ZoneEvent*>* timeline = &thread->timeline;
+        if( timeline->empty() ) continue;
+        for(;;)
+        {
+            auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.start, [] ( const auto& l, const auto& r ) { return l < r->start; } );
+            if( it != timeline->begin() ) --it;
+            if( (*it)->start > zone.end ) break;
+            if( *it == &zone ) return parent;
+            if( (*it)->child.empty() ) break;
+            parent = *it;
+            timeline = &parent->child;
+        }
+    }
+    return nullptr;
+}
+
 TextData* View::GetTextData( ZoneEvent& zone )
 {
     if( !zone.text )
@@ -3099,7 +3119,7 @@ void View::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )
     }
 }
 
-void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, ZoneEvent* parent, const std::unordered_map<uint64_t, const char*>& stringMap )
+void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, const std::unordered_map<uint64_t, const char*>& stringMap )
 {
     uint64_t sz;
     f.Read( &sz, sizeof( sz ) );
@@ -3132,9 +3152,7 @@ void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, ZoneEvent* parent
             zone->text = nullptr;
         }
 
-        zone->parent = parent;
-
-        ReadTimeline( f, zone->child, zone, stringMap );
+        ReadTimeline( f, zone->child, stringMap );
     }
 }
 

@@ -262,7 +262,8 @@ View::View( FileRead& f )
         f.Read( &pd->name, sizeof( pd->name ) );
         f.Read( &pd->min, sizeof( pd->min ) );
         f.Read( &pd->max, sizeof( pd->max ) );
-        pd->enabled = true;
+        pd->showFull = true;
+        pd->visible = true;
         uint64_t psz;
         f.Read( &psz, sizeof( psz ) );
         pd->data.reserve( psz );
@@ -705,7 +706,8 @@ void View::ProcessPlotData( const QueuePlotData& ev )
         {
             plot = m_slab.AllocInit<PlotData>();
             plot->name = ev.name;
-            plot->enabled = true;
+            plot->showFull = true;
+            plot->visible = true;
             m_pendingPlots.emplace( ev.name, plot );
             ServerQuery( ServerQueryPlotName, ev.name );
         }
@@ -2424,9 +2426,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
     for( auto& v : m_plots )
     {
+        if( !v->visible ) continue;
+
         assert( !v->data.empty() );
 
-        if( v->enabled )
+        if( v->showFull )
         {
             draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFF44DDDD );
         }
@@ -2435,14 +2439,14 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF226E6E );
         }
         const auto txt = GetString( v->name );
-        draw->AddText( wpos + ImVec2( ty, offset ), v->enabled ? 0xFF44DDDD : 0xFF226E6E, txt );
+        draw->AddText( wpos + ImVec2( ty, offset ), v->showFull ? 0xFF44DDDD : 0xFF226E6E, txt );
         draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
 
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( txt ).x, offset + ty ) ) )
         {
             if( ImGui::IsMouseClicked( 0 ) )
             {
-                v->enabled = !v->enabled;
+                v->showFull = !v->showFull;
             }
 
             const auto tr = v->data.back()->time - v->data.front()->time;
@@ -2468,7 +2472,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
         offset += ty;
 
-        if( v->enabled )
+        if( v->showFull )
         {
             auto& vec = v->data;
             auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
@@ -2739,8 +2743,16 @@ void View::DrawOptions()
     const auto tw = ImGui::GetFontSize();
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     ImGui::Checkbox( "Draw zones", &m_drawZones );
+    ImGui::Separator();
     ImGui::Checkbox( "Draw locks", &m_drawLocks );
+    ImGui::Separator();
     ImGui::Checkbox( "Draw plots", &m_drawPlots );
+    ImGui::Indent( tw );
+    for( auto& p : m_plots )
+    {
+        ImGui::Checkbox( GetString( p->name ), &p->visible );
+    }
+    ImGui::Unindent( tw );
     ImGui::Separator();
     ImGui::Text( "Visible threads:" );
     ImGui::Indent( tw );

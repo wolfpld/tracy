@@ -99,7 +99,8 @@ private:
         uint64_t name;
         double min;
         double max;
-        bool enabled;
+        bool showFull;
+        bool visible;
         Vector<PlotItem*> data;
         Vector<PlotItem*> postpone;
         uint64_t postponeTime;

@@ -205,6 +205,7 @@ View::View( FileRead& f )
             f.Read( lev, sizeof( LockEvent ) );
             lockmap.timeline.push_back( lev );
         }
+        lockmap.visible = true;
         m_lockMap.emplace( id, std::move( lockmap ) );
     }
 
@@ -631,7 +632,10 @@ void View::ProcessLockWait( const QueueLockWait& ev )
     std::lock_guard<std::mutex> lock( m_lock );
     if( it == m_lockMap.end() )
     {
-        it = m_lockMap.emplace( ev.id, LockMap { ev.lckloc } ).first;
+        LockMap lm;
+        lm.srcloc = ev.lckloc;
+        lm.visible = true;
+        it = m_lockMap.emplace( ev.id, std::move( lm ) ).first;
         CheckSourceLocation( ev.lckloc );
     }
     else if( it->second.srcloc == 0 )
@@ -2111,6 +2115,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     for( auto& v : m_lockMap )
     {
         auto& lockmap = v.second;
+        if( !lockmap.visible ) continue;
+
         auto it = lockmap.threadMap.find( tid );
         if( it == lockmap.threadMap.end() ) continue;
 
@@ -2745,6 +2751,12 @@ void View::DrawOptions()
     ImGui::Checkbox( "Draw zones", &m_drawZones );
     ImGui::Separator();
     ImGui::Checkbox( "Draw locks", &m_drawLocks );
+    ImGui::Indent( tw );
+    for( auto& l : m_lockMap )
+    {
+        ImGui::Checkbox( GetString( GetSourceLocation( l.second.srcloc ).function ), &l.second.visible );
+    }
+    ImGui::Unindent( tw );
     ImGui::Separator();
     ImGui::Checkbox( "Draw plots", &m_drawPlots );
     ImGui::Indent( tw );

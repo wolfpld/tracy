@@ -77,6 +77,7 @@ private:
         Vector<LockEvent*> timeline;
         std::unordered_map<uint64_t, uint8_t> threadMap;
         std::vector<uint64_t> threadList;
+        bool visible;
     };
 
     struct LockHighlight

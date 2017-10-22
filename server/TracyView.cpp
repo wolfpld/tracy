@@ -239,6 +239,18 @@ View::View( FileRead& f )
     }
 
     f.Read( &sz, sizeof( sz ) );
+    m_textData.reserve( sz );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        auto td = m_slab.Alloc<TextData>();
+        uint64_t ptr;
+        f.Read( &ptr, sizeof( ptr ) );
+        td->userText = ptr == 0 ? nullptr : stringMap.find( ptr )->second;
+        f.Read( &td->zoneName, sizeof( td->zoneName ) );
+        m_textData.push_back( td );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
     m_threads.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
@@ -573,7 +585,7 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
     zone->srcloc = ev.srcloc;
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
-    zone->text = nullptr;
+    zone->text = -1;
 
     std::unique_lock<std::mutex> lock( m_lock );
     NewZone( zone, ev.thread );
@@ -2008,9 +2020,9 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         else
         {
             const char* zoneName;
-            if( ev.text && ev.text->zoneName )
+            if( ev.text != -1 && GetTextData( ev )->zoneName )
             {
-                zoneName = GetString( ev.text->zoneName );
+                zoneName = GetString( GetTextData( ev )->zoneName );
             }
             else
             {
@@ -2018,10 +2030,11 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             }
 
             int dmul = 1;
-            if( ev.text )
+            if( ev.text != -1 )
             {
-                if( ev.text->zoneName ) dmul++;
-                if( ev.text->userText ) dmul++;
+                auto td = GetTextData( ev );
+                if( td->zoneName ) dmul++;
+                if( td->userText ) dmul++;
             }
 
             bool migration = false;
@@ -2678,17 +2691,17 @@ void View::DrawZoneInfoWindow()
 
     ImGui::Separator();
 
-    if( ev.text && ev.text->zoneName )
+    if( ev.text != -1 && GetTextData( ev )->zoneName )
     {
-        ImGui::Text( "Zone name: %s", GetString( ev.text->zoneName ) );
+        ImGui::Text( "Zone name: %s", GetString( GetTextData( ev )->zoneName ) );
         dmul++;
     }
     auto& srcloc = GetSourceLocation( ev.srcloc );
     ImGui::Text( "Function: %s", GetString( srcloc.function ) );
     ImGui::Text( "Location: %s:%i", GetString( srcloc.file ), srcloc.line );
-    if( ev.text && ev.text->userText )
+    if( ev.text != -1 && GetTextData( ev )->userText )
     {
-        ImGui::Text( "User text: %s", ev.text->userText );
+        ImGui::Text( "User text: %s", GetTextData( ev )->userText );
         dmul++;
     }
 
@@ -2727,9 +2740,9 @@ void View::DrawZoneInfoWindow()
         for( int i=0; i<ev.child.size(); i++ )
         {
             auto& cev = *ev.child[cti[i]];
-            if( cev.text && cev.text->zoneName )
+            if( cev.text != -1 && GetTextData( cev )->zoneName )
             {
-                ImGui::Text( "%s", GetString( cev.text->zoneName ) );
+                ImGui::Text( "%s", GetString( GetTextData( cev )->zoneName ) );
             }
             else
             {
@@ -2885,10 +2898,11 @@ void View::ZoomToZone( const ZoneEvent& ev )
 void View::ZoneTooltip( const ZoneEvent& ev )
 {
     int dmul = 1;
-    if( ev.text )
+    if( ev.text != -1 )
     {
-        if( ev.text->zoneName ) dmul++;
-        if( ev.text->userText ) dmul++;
+        auto td = GetTextData( ev );
+        if( td->zoneName ) dmul++;
+        if( td->userText ) dmul++;
     }
 
     auto& srcloc = GetSourceLocation( ev.srcloc );
@@ -2898,9 +2912,9 @@ void View::ZoneTooltip( const ZoneEvent& ev )
 
     const char* func;
     const char* zoneName;
-    if( ev.text && ev.text->zoneName )
+    if( ev.text != -1 && GetTextData( ev )->zoneName )
     {
-        zoneName = GetString( ev.text->zoneName );
+        zoneName = GetString( GetTextData( ev )->zoneName );
         func = GetString( srcloc.function );
     }
     else
@@ -2926,10 +2940,10 @@ void View::ZoneTooltip( const ZoneEvent& ev )
             ImGui::Text( "CPU: %i -> %i", ev.cpu_start, ev.cpu_end );
         }
     }
-    if( ev.text && ev.text->userText )
+    if( ev.text != -1 && GetTextData( ev )->userText )
     {
         ImGui::Text( "" );
-        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", ev.text->userText );
+        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", GetTextData( ev )->userText );
     }
     ImGui::EndTooltip();
 }
@@ -2957,13 +2971,21 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
 
 TextData* View::GetTextData( ZoneEvent& zone )
 {
-    if( !zone.text )
+    if( zone.text == -1 )
     {
-        zone.text = m_slab.Alloc<TextData>();
-        zone.text->userText = nullptr;
-        zone.text->zoneName = 0;
+        auto td = m_slab.Alloc<TextData>();
+        td->userText = nullptr;
+        td->zoneName = 0;
+        zone.text = m_textData.size();
+        m_textData.push_back( td );
     }
-    return zone.text;
+    return m_textData[zone.text];
+}
+
+const TextData* View::GetTextData( const ZoneEvent& zone ) const
+{
+    assert( zone.text != -1 );
+    return m_textData[zone.text];
 }
 
 void View::Write( FileWrite& f )
@@ -3058,6 +3080,15 @@ void View::Write( FileWrite& f )
         }
     }
 
+    sz = m_textData.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_textData )
+    {
+        const auto ptr = (uint64_t)v->userText;
+        f.Write( &ptr, sizeof( ptr ) );
+        f.Write( &v->zoneName, sizeof( v->zoneName ) );
+    }
+
     sz = m_threads.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& thread : m_threads )
@@ -3101,20 +3132,7 @@ void View::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )
         f.Write( &v->srcloc, sizeof( v->srcloc ) );
         f.Write( &v->cpu_start, sizeof( v->cpu_start ) );
         f.Write( &v->cpu_end, sizeof( v->cpu_end ) );
-
-        if( v->text )
-        {
-            uint8_t flag = 1;
-            f.Write( &flag, sizeof( flag ) );
-            f.Write( &v->text->userText, sizeof( v->text->userText ) );
-            f.Write( &v->text->zoneName, sizeof( v->text->zoneName ) );
-        }
-        else
-        {
-            uint8_t flag = 0;
-            f.Write( &flag, sizeof( flag ) );
-        }
-
+        f.Write( &v->text, sizeof( v->text ) );
         WriteTimeline( f, v->child );
     }
 }
@@ -3136,22 +3154,7 @@ void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, const std::unorde
         f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
         f.Read( &zone->cpu_start, sizeof( zone->cpu_start ) );
         f.Read( &zone->cpu_end, sizeof( zone->cpu_end ) );
-
-        uint8_t flag;
-        f.Read( &flag, sizeof( flag ) );
-        if( flag )
-        {
-            zone->text = m_slab.Alloc<TextData>();
-            uint64_t ptr;
-            f.Read( &ptr, sizeof( ptr ) );
-            zone->text->userText = ptr == 0 ? nullptr : stringMap.find( ptr )->second;
-            f.Read( &zone->text->zoneName, sizeof( zone->text->zoneName ) );
-        }
-        else
-        {
-            zone->text = nullptr;
-        }
-
+        f.Read( &zone->text, sizeof( zone->text ) );
         ReadTimeline( f, zone->child, stringMap );
     }
 }

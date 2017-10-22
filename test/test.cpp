@@ -10,6 +10,7 @@ void TestFunction()
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
         ZoneScoped;
+        ZoneName( "Test function" );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
 }
@@ -111,6 +112,9 @@ void DepthTest()
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+        ZoneScoped;
+        const auto txt = "Fibonacci (15)";
+        ZoneText( txt, strlen( txt ) );
         Fibonacci( 15 );
     }
 }

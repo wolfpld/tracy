@@ -24,7 +24,7 @@ struct ZoneEvent
     int8_t cpu_start;
     int8_t cpu_end;
 
-    TextData* text;
+    int32_t text;
     Vector<ZoneEvent*> child;
 };
 

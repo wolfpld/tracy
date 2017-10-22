@@ -201,6 +201,7 @@ private:
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
 
     TextData* GetTextData( ZoneEvent& zone );
+    const TextData* GetTextData( const ZoneEvent& zone ) const;
 
     void Write( FileWrite& f );
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
@@ -221,6 +222,7 @@ private:
     Vector<ThreadData*> m_threads;
     Vector<PlotData*> m_plots;
     Vector<MessageData*> m_messages;
+    Vector<TextData*> m_textData;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
     std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;

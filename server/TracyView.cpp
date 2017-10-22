@@ -2792,7 +2792,9 @@ void View::DrawOptions()
     ImGui::Indent( tw );
     for( auto& l : m_lockMap )
     {
-        ImGui::Checkbox( GetString( GetSourceLocation( l.second.srcloc ).function ), &l.second.visible );
+        char buf[1024];
+        sprintf( buf, "%" PRIu64 ": %s", l.first, GetString( GetSourceLocation( l.second.srcloc ).function ) );
+        ImGui::Checkbox( buf , &l.second.visible );
     }
     ImGui::Unindent( tw );
     ImGui::Separator();

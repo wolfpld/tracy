@@ -2959,7 +2959,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
         {
             auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.start, [] ( const auto& l, const auto& r ) { return l < r->start; } );
             if( it != timeline->begin() ) --it;
-            if( (*it)->start > zone.end ) break;
+            if( zone.end != -1 && (*it)->start > zone.end ) break;
             if( *it == &zone ) return parent;
             if( (*it)->child.empty() ) break;
             parent = *it;

@@ -243,7 +243,7 @@ private:
     std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
     std::unordered_map<uint64_t, MessagePending> m_pendingMessages;
 
-    Slab<EventSize*1024*1024> m_slab;
+    Slab<64*1024*1024> m_slab;
 
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;

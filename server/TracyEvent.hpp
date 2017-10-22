@@ -16,7 +16,7 @@ struct TextData
 
 #pragma pack( 1 )
 
-struct Event
+struct ZoneEvent
 {
     int64_t start;
     int64_t end;
@@ -25,11 +25,11 @@ struct Event
     int8_t cpu_end;
 
     TextData* text;
-    Event* parent;
-    Vector<Event*> child;
+    ZoneEvent* parent;
+    Vector<ZoneEvent*> child;
 };
 
-enum { EventSize = sizeof( Event ) };
+enum { ZoneEventSize = sizeof( ZoneEvent ) };
 
 
 struct LockEvent

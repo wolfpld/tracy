@@ -74,7 +74,7 @@ private:
         uint64_t id;
         bool showFull;
         bool visible;
-        Vector<Event*> timeline;
+        Vector<ZoneEvent*> timeline;
         Vector<MessageData*> messages;
     };
 
@@ -137,7 +137,7 @@ private:
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
-    void CheckCustomString( uint64_t ptr, Event* dst );
+    void CheckCustomString( uint64_t ptr, ZoneEvent* dst );
     void CheckSourceLocation( uint64_t ptr );
 
     void AddString( uint64_t ptr, std::string&& str );
@@ -150,10 +150,10 @@ private:
 
     ThreadData* NoticeThread( uint64_t thread );
 
-    void NewZone( Event* zone, uint64_t thread );
-    void UpdateZone( Event* zone );
+    void NewZone( ZoneEvent* zone, uint64_t thread );
+    void UpdateZone( ZoneEvent* zone );
 
-    void InsertZone( Event* zone, Event* parent, Vector<Event*>& vec );
+    void InsertZone( ZoneEvent* zone, ZoneEvent* parent, Vector<ZoneEvent*>& vec );
 
     void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread );
     void UpdateLockCount( LockMap& lockmap, size_t pos );
@@ -167,8 +167,8 @@ private:
     uint64_t GetFrameBegin( size_t idx ) const;
     uint64_t GetFrameEnd( size_t idx ) const;
     int64_t GetLastTime() const;
-    int64_t GetZoneEnd( const Event& ev ) const;
-    Vector<Event*>& GetParentVector( const Event& ev );
+    int64_t GetZoneEnd( const ZoneEvent& ev ) const;
+    Vector<ZoneEvent*>& GetParentVector( const ZoneEvent& ev );
     const char* TimeToString( int64_t ns ) const;
     const char* RealToString( double val, bool separator ) const;
     const char* GetString( uint64_t ptr ) const;
@@ -182,7 +182,7 @@ private:
     void DrawFrames();
     bool DrawZoneFrames();
     void DrawZones();
-    int DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
+    int DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
     int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, LockHighlight& highlight );
     void DrawZoneInfoWindow();
     int DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover );
@@ -192,19 +192,19 @@ private:
 
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
-    uint32_t GetZoneColor( const Event& ev );
+    uint32_t GetZoneColor( const ZoneEvent& ev );
     uint32_t GetZoneColor( const QueueSourceLocation& srcloc );
-    uint32_t GetZoneHighlight( const Event& ev, bool migration );
-    float GetZoneThickness( const Event& ev );
+    uint32_t GetZoneHighlight( const ZoneEvent& ev, bool migration );
+    float GetZoneThickness( const ZoneEvent& ev );
 
-    void ZoomToZone( const Event& ev );
-    void ZoneTooltip( const Event& ev );
+    void ZoomToZone( const ZoneEvent& ev );
+    void ZoneTooltip( const ZoneEvent& ev );
 
-    TextData* GetTextData( Event& zone );
+    TextData* GetTextData( ZoneEvent& zone );
 
     void Write( FileWrite& f );
-    void WriteTimeline( FileWrite& f, const Vector<Event*>& vec );
-    void ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const std::unordered_map<uint64_t, const char*>& stringMap );
+    void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
+    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, ZoneEvent* parent, const std::unordered_map<uint64_t, const char*>& stringMap );
 
     std::string m_addr;
 
@@ -232,11 +232,11 @@ private:
     std::vector<float> m_mbps;
 
     // not used for vis - no need to lock
-    std::unordered_map<uint64_t, std::vector<Event*>> m_zoneStack;
+    std::unordered_map<uint64_t, std::vector<ZoneEvent*>> m_zoneStack;
     std::unordered_set<uint64_t> m_pendingStrings;
     std::unordered_set<uint64_t> m_pendingThreads;
     std::unordered_set<uint64_t> m_pendingSourceLocation;
-    std::unordered_map<uint64_t, Event*> m_pendingCustomStrings;
+    std::unordered_map<uint64_t, ZoneEvent*> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
     std::unordered_map<uint64_t, uint32_t> m_plotMap;
     std::unordered_map<std::string, uint32_t> m_plotRev;
@@ -269,8 +269,8 @@ private:
     uint64_t m_zvHeight;
     uint64_t m_zvScroll;
 
-    const Event* m_zoneInfoWindow;
-    const Event* m_zoneHighlight;
+    const ZoneEvent* m_zoneInfoWindow;
+    const ZoneEvent* m_zoneHighlight;
     LockHighlight m_lockHighlight;
     const MessageData* m_msgHighlight;
 

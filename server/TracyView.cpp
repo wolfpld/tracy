@@ -564,7 +564,7 @@ void View::Process( const QueueItem& ev )
 
 void View::ProcessZoneBegin( const QueueZoneBegin& ev )
 {
-    auto zone = m_slab.AllocInit<Event>();
+    auto zone = m_slab.AllocInit<ZoneEvent>();
 
     CheckSourceLocation( ev.srcloc );
 
@@ -784,7 +784,7 @@ void View::CheckThreadString( uint64_t id )
     ServerQuery( ServerQueryThreadString, id );
 }
 
-void View::CheckCustomString( uint64_t ptr, Event* dst )
+void View::CheckCustomString( uint64_t ptr, ZoneEvent* dst )
 {
     assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
     m_pendingCustomStrings.emplace( ptr, dst );
@@ -918,20 +918,20 @@ View::ThreadData* View::NoticeThread( uint64_t thread )
     }
 }
 
-void View::NewZone( Event* zone, uint64_t thread )
+void View::NewZone( ZoneEvent* zone, uint64_t thread )
 {
     m_zonesCnt++;
-    Vector<Event*>* timeline = &NoticeThread( thread )->timeline;
+    Vector<ZoneEvent*>* timeline = &NoticeThread( thread )->timeline;
     InsertZone( zone, nullptr, *timeline );
 }
 
-void View::UpdateZone( Event* zone )
+void View::UpdateZone( ZoneEvent* zone )
 {
     assert( zone->end != -1 );
     assert( std::upper_bound( zone->child.begin(), zone->child.end(), zone->end, [] ( const auto& l, const auto& r ) { return l < r->start; } ) == zone->child.end() );
 }
 
-void View::InsertZone( Event* zone, Event* parent, Vector<Event*>& vec )
+void View::InsertZone( ZoneEvent* zone, ZoneEvent* parent, Vector<ZoneEvent*>& vec )
 {
     if( !vec.empty() )
     {
@@ -1158,7 +1158,7 @@ int64_t View::GetLastTime() const
     return last;
 }
 
-int64_t View::GetZoneEnd( const Event& ev ) const
+int64_t View::GetZoneEnd( const ZoneEvent& ev ) const
 {
     auto ptr = &ev;
     for(;;)
@@ -1169,7 +1169,7 @@ int64_t View::GetZoneEnd( const Event& ev ) const
     }
 }
 
-Vector<Event*>& View::GetParentVector( const Event& ev )
+Vector<ZoneEvent*>& View::GetParentVector( const ZoneEvent& ev )
 {
     if( ev.parent )
     {
@@ -1183,7 +1183,7 @@ Vector<Event*>& View::GetParentVector( const Event& ev )
             if( it != t->timeline.end() && *it == &ev ) return t->timeline;
         }
         assert( false );
-        static Vector<Event*> empty;
+        static Vector<ZoneEvent*> empty;
         return empty;
     }
 }
@@ -1958,7 +1958,7 @@ void View::DrawZones()
     }
 }
 
-int View::DrawZoneLevel( const Vector<Event*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
+int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
 {
     auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->end < r; } );
     if( it == vec.end() ) return depth;
@@ -2847,7 +2847,7 @@ void View::DrawMessages()
     ImGui::End();
 }
 
-uint32_t View::GetZoneColor( const Event& ev )
+uint32_t View::GetZoneColor( const ZoneEvent& ev )
 {
     return GetZoneColor( GetSourceLocation( ev.srcloc ) );
 }
@@ -2858,7 +2858,7 @@ uint32_t View::GetZoneColor( const QueueSourceLocation& srcloc )
     return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
 }
 
-uint32_t View::GetZoneHighlight( const Event& ev, bool migration )
+uint32_t View::GetZoneHighlight( const ZoneEvent& ev, bool migration )
 {
     if( m_zoneInfoWindow == &ev )
     {
@@ -2882,7 +2882,7 @@ uint32_t View::GetZoneHighlight( const Event& ev, bool migration )
     }
 }
 
-float View::GetZoneThickness( const Event& ev )
+float View::GetZoneThickness( const ZoneEvent& ev )
 {
     if( m_zoneInfoWindow == &ev || m_zoneHighlight == &ev )
     {
@@ -2894,7 +2894,7 @@ float View::GetZoneThickness( const Event& ev )
     }
 }
 
-void View::ZoomToZone( const Event& ev )
+void View::ZoomToZone( const ZoneEvent& ev )
 {
     const auto end = GetZoneEnd( ev );
     if( end - ev.start <= 0 ) return;
@@ -2902,7 +2902,7 @@ void View::ZoomToZone( const Event& ev )
     m_zvEndNext = end;
 }
 
-void View::ZoneTooltip( const Event& ev )
+void View::ZoneTooltip( const ZoneEvent& ev )
 {
     int dmul = 1;
     if( ev.text )
@@ -2954,7 +2954,7 @@ void View::ZoneTooltip( const Event& ev )
     ImGui::EndTooltip();
 }
 
-TextData* View::GetTextData( Event& zone )
+TextData* View::GetTextData( ZoneEvent& zone )
 {
     if( !zone.text )
     {
@@ -3088,7 +3088,7 @@ void View::Write( FileWrite& f )
     }
 }
 
-void View::WriteTimeline( FileWrite& f, const Vector<Event*>& vec )
+void View::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )
 {
     uint64_t sz = vec.size();
     f.Write( &sz, sizeof( sz ) );
@@ -3118,7 +3118,7 @@ void View::WriteTimeline( FileWrite& f, const Vector<Event*>& vec )
     }
 }
 
-void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const std::unordered_map<uint64_t, const char*>& stringMap )
+void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, ZoneEvent* parent, const std::unordered_map<uint64_t, const char*>& stringMap )
 {
     uint64_t sz;
     f.Read( &sz, sizeof( sz ) );
@@ -3126,7 +3126,7 @@ void View::ReadTimeline( FileRead& f, Vector<Event*>& vec, Event* parent, const 
 
     for( uint64_t i=0; i<sz; i++ )
     {
-        auto zone = m_slab.AllocInit<Event>();
+        auto zone = m_slab.AllocInit<ZoneEvent>();
         m_zonesCnt++;
         vec.push_back( zone );
 

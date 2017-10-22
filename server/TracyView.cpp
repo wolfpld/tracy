@@ -1169,25 +1169,6 @@ int64_t View::GetZoneEnd( const ZoneEvent& ev ) const
     }
 }
 
-Vector<ZoneEvent*>& View::GetParentVector( const ZoneEvent& ev )
-{
-    if( ev.parent )
-    {
-        return ev.parent->child;
-    }
-    else
-    {
-        for( auto& t : m_threads )
-        {
-            auto it = std::lower_bound( t->timeline.begin(), t->timeline.end(), ev.start, [] ( const auto& l, const auto& r ) { return l->start < r; } );
-            if( it != t->timeline.end() && *it == &ev ) return t->timeline;
-        }
-        assert( false );
-        static Vector<ZoneEvent*> empty;
-        return empty;
-    }
-}
-
 const char* View::TimeToString( int64_t ns ) const
 {
     enum { Pool = 8 };

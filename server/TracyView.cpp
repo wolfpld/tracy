@@ -41,6 +41,88 @@ static int CountBits( uint64_t i )
 namespace tracy
 {
 
+static const char* TimeToString( int64_t ns )
+{
+    enum { Pool = 8 };
+    static char bufpool[Pool][64];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    const char* sign = "";
+    if( ns < 0 )
+    {
+        sign = "-";
+        ns = -ns;
+    }
+
+    if( ns < 1000 )
+    {
+        sprintf( buf, "%s%" PRIu64 " ns", sign, ns );
+    }
+    else if( ns < 1000ull * 1000 )
+    {
+        sprintf( buf, "%s%.2f us", sign, ns / 1000. );
+    }
+    else if( ns < 1000ull * 1000 * 1000 )
+    {
+        sprintf( buf, "%s%.2f ms", sign, ns / ( 1000. * 1000. ) );
+    }
+    else if( ns < 1000ull * 1000 * 1000 * 60 )
+    {
+        sprintf( buf, "%s%.2f s", sign, ns / ( 1000. * 1000. * 1000. ) );
+    }
+    else
+    {
+        const auto m = ns / ( 1000ull * 1000 * 1000 * 60 );
+        const auto s = ns - m * ( 1000ull * 1000 * 1000 * 60 );
+        sprintf( buf, "%s%" PRIu64 ":%04.1f", sign, m, s / ( 1000. * 1000. * 1000. ) );
+    }
+    return buf;
+}
+
+static const char* RealToString( double val, bool separator )
+{
+    enum { Pool = 8 };
+    static char bufpool[Pool][64];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    sprintf( buf, "%f", val );
+    auto ptr = buf;
+    if( *ptr == '-' ) ptr++;
+
+    const auto vbegin = ptr;
+
+    if( separator )
+    {
+        while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
+        auto end = ptr;
+        while( *end != '\0' ) end++;
+        auto sz = end - ptr;
+
+        while( ptr - vbegin > 3 )
+        {
+            ptr -= 3;
+            memmove( ptr+1, ptr, sz );
+            *ptr = ',';
+            sz += 4;
+        }
+    }
+
+    while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
+
+    if( *ptr == '\0' ) return buf;
+    while( *ptr != '\0' ) ptr++;
+    ptr--;
+    while( *ptr == '0' && *ptr != ',' && *ptr != '.' ) ptr--;
+    if( *ptr != '.' && *ptr != ',' ) ptr++;
+    *ptr = '\0';
+    return buf;
+}
+
+
 enum { MinVisSize = 3 };
 
 static View* s_instance = nullptr;
@@ -1177,87 +1259,6 @@ int64_t View::GetZoneEnd( const ZoneEvent& ev ) const
         if( ptr->child.empty() ) return ptr->start;
         ptr = ptr->child.back();
     }
-}
-
-const char* View::TimeToString( int64_t ns ) const
-{
-    enum { Pool = 8 };
-    static char bufpool[Pool][64];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    bufsel = ( bufsel + 1 ) % Pool;
-
-    const char* sign = "";
-    if( ns < 0 )
-    {
-        sign = "-";
-        ns = -ns;
-    }
-
-    if( ns < 1000 )
-    {
-        sprintf( buf, "%s%" PRIu64 " ns", sign, ns );
-    }
-    else if( ns < 1000ull * 1000 )
-    {
-        sprintf( buf, "%s%.2f us", sign, ns / 1000. );
-    }
-    else if( ns < 1000ull * 1000 * 1000 )
-    {
-        sprintf( buf, "%s%.2f ms", sign, ns / ( 1000. * 1000. ) );
-    }
-    else if( ns < 1000ull * 1000 * 1000 * 60 )
-    {
-        sprintf( buf, "%s%.2f s", sign, ns / ( 1000. * 1000. * 1000. ) );
-    }
-    else
-    {
-        const auto m = ns / ( 1000ull * 1000 * 1000 * 60 );
-        const auto s = ns - m * ( 1000ull * 1000 * 1000 * 60 );
-        sprintf( buf, "%s%" PRIu64 ":%04.1f", sign, m, s / ( 1000. * 1000. * 1000. ) );
-    }
-    return buf;
-}
-
-const char* View::RealToString( double val, bool separator ) const
-{
-    enum { Pool = 8 };
-    static char bufpool[Pool][64];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    bufsel = ( bufsel + 1 ) % Pool;
-
-    sprintf( buf, "%f", val );
-    auto ptr = buf;
-    if( *ptr == '-' ) ptr++;
-
-    const auto vbegin = ptr;
-
-    if( separator )
-    {
-        while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
-        auto end = ptr;
-        while( *end != '\0' ) end++;
-        auto sz = end - ptr;
-
-        while( ptr - vbegin > 3 )
-        {
-            ptr -= 3;
-            memmove( ptr+1, ptr, sz );
-            *ptr = ',';
-            sz += 4;
-        }
-    }
-
-    while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
-
-    if( *ptr == '\0' ) return buf;
-    while( *ptr != '\0' ) ptr++;
-    ptr--;
-    while( *ptr == '0' && *ptr != ',' && *ptr != '.' ) ptr--;
-    if( *ptr != '.' && *ptr != ',' ) ptr++;
-    *ptr = '\0';
-    return buf;
 }
 
 const char* View::GetString( uint64_t ptr ) const

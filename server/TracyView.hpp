@@ -168,8 +168,6 @@ private:
     uint64_t GetFrameEnd( size_t idx ) const;
     int64_t GetLastTime() const;
     int64_t GetZoneEnd( const ZoneEvent& ev ) const;
-    const char* TimeToString( int64_t ns ) const;
-    const char* RealToString( double val, bool separator ) const;
     const char* GetString( uint64_t ptr ) const;
     const char* GetThreadString( uint64_t id ) const;
     const QueueSourceLocation& GetSourceLocation( uint64_t srcloc ) const;

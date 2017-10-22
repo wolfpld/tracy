@@ -99,6 +99,22 @@ void MessageTest()
     }
 }
 
+static int Fibonacci( int n )
+{
+    ZoneScoped;
+    if( n < 2 ) return n;
+    return Fibonacci( n-1 ) + Fibonacci( n-2 );
+}
+
+void DepthTest()
+{
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+        Fibonacci( 15 );
+    }
+}
+
 int main()
 {
     auto t1 = std::thread( TestFunction );
@@ -111,6 +127,7 @@ int main()
     auto t8 = std::thread( Plot );
     auto t9 = std::thread( Plot );
     auto t10 = std::thread( MessageTest );
+    auto t11 = std::thread( DepthTest );
 
     tracy::SetThreadName( t1, "First thread" );
     tracy::SetThreadName( t2, "Second thread" );
@@ -122,6 +139,7 @@ int main()
     tracy::SetThreadName( t8, "Plot 1" );
     tracy::SetThreadName( t9, "Plot 2" );
     tracy::SetThreadName( t10, "Message test" );
+    tracy::SetThreadName( t11, "Depth test" );
 
     for(;;)
     {

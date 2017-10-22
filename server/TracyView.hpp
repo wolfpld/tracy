@@ -274,6 +274,7 @@ private:
     bool m_drawZones;
     bool m_drawLocks;
     bool m_drawPlots;
+    bool m_onlyContendedLocks;
 
     bool m_terminate;
 };

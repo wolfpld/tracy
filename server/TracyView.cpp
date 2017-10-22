@@ -71,6 +71,7 @@ View::View( const char* addr )
     , m_drawZones( true )
     , m_drawLocks( true )
     , m_drawPlots( true )
+    , m_onlyContendedLocks( false )
     , m_terminate( false )
 {
     assert( s_instance == nullptr );
@@ -105,6 +106,7 @@ View::View( FileRead& f )
     , m_drawZones( true )
     , m_drawLocks( true )
     , m_drawPlots( true )
+    , m_onlyContendedLocks( false )
     , m_terminate( false )
 {
     assert( s_instance == nullptr );
@@ -2263,7 +2265,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 break;
             }
 
-            if( state != State::Nothing )
+            if( state != State::Nothing && ( !m_onlyContendedLocks || state != State::HasLock ) )
             {
                 drawn = true;
                 const auto t0 = (*vbegin)->time;
@@ -2751,6 +2753,8 @@ void View::DrawOptions()
     ImGui::Checkbox( "Draw zones", &m_drawZones );
     ImGui::Separator();
     ImGui::Checkbox( "Draw locks", &m_drawLocks );
+    ImGui::SameLine();
+    ImGui::Checkbox( "Only contended", &m_onlyContendedLocks );
     ImGui::Indent( tw );
     for( auto& l : m_lockMap )
     {

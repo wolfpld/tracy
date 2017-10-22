@@ -2790,7 +2790,7 @@ void View::DrawOptions()
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     ImGui::Checkbox( "Draw zones", &m_drawZones );
     int ns = (int)m_namespace;
-    ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None" );
+    ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None\0" );
     m_namespace = (Namespace)ns;
     ImGui::Separator();
     ImGui::Checkbox( "Draw locks", &m_drawLocks );

@@ -78,11 +78,11 @@ static unsigned int __dontcare_cpu;
 // 1a. But s_queue is needed for initialization of variables in point 2.
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
 
-static thread_local RPMallocThreadInit init_order(105) s_rpmalloc_thread_init;
+static thread_local RPMallocThreadInit init_order(106) s_rpmalloc_thread_init;
 
 // 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
-static thread_local moodycamel::ProducerToken init_order(106) s_token_detail( s_queue );
-thread_local ProducerWrapper init_order(107) s_token { s_queue.get_explicit_producer( s_token_detail ) };
+static thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
+thread_local ProducerWrapper init_order(108) s_token { s_queue.get_explicit_producer( s_token_detail ) };
 
 #ifdef _MSC_VER
 // 1. Initialize these static variables before all other variables.
@@ -93,7 +93,8 @@ thread_local ProducerWrapper init_order(107) s_token { s_queue.get_explicit_prod
 static InitTimeWrapper init_order(101) s_initTime { Profiler::GetTime( __dontcare_cpu ) };
 static RPMallocInit init_order(102) s_rpmalloc_init;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
-static Profiler init_order(104) s_profiler;
+std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
+static Profiler init_order(105) s_profiler;
 
 
 Profiler::Profiler()

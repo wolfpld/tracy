@@ -10,7 +10,7 @@
 namespace tracy
 {
 
-static std::atomic<uint32_t> s_lockCounter( 0 );
+extern std::atomic<uint32_t> s_lockCounter;
 
 template<class T>
 class Lockable

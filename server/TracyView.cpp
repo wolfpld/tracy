@@ -2380,11 +2380,25 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     switch( state )
                     {
                     case State::HasLock:
-                        ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
+                        if( (*vbegin)->lockCount == 1 )
+                        {
+                            ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
+                        }
+                        else
+                        {
+                            ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", GetThreadString( tid ), (*vbegin)->lockCount );
+                        }
                         break;
                     case State::HasBlockingLock:
                     {
-                        ImGui::Text( "Thread \"%s\" has lock. Other threads are blocked:", GetThreadString( tid ) );
+                        if( (*vbegin)->lockCount == 1 )
+                        {
+                            ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), CountBits( (*vbegin)->waitList ) );
+                        }
+                        else
+                        {
+                            ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", GetThreadString( tid ), (*vbegin)->lockCount, CountBits( (*vbegin)->waitList ) );
+                        }
                         auto waitList = (*vbegin)->waitList;
                         int t = 0;
                         while( waitList != 0 )

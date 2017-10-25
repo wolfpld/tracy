@@ -2474,6 +2474,18 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             char buf[1024];
             sprintf( buf, "%" PRIu64 ": %s", v.first, GetString( srcloc.function ) );
             draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "Thread list:" );
+                ImGui::Indent( ty );
+                for( auto& t : v.second.threadList )
+                {
+                    ImGui::Text( "%s", GetThreadString( t ) );
+                }
+                ImGui::Unindent( ty );
+                ImGui::EndTooltip();
+            }
             cnt++;
         }
     }

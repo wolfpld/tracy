@@ -2249,6 +2249,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         }
                         break;
                     }
+                    if( (*next)->waitList != (*vbegin)->waitList )
+                    {
+                        break;
+                    }
                     next++;
                 }
                 break;

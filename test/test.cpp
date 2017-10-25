@@ -41,6 +41,7 @@ void ScopeCheck()
 }
 
 static TracyLockable( std::mutex, mutex );
+static TracyLockable( std::recursive_mutex, recmutex );
 
 void Lock1()
 {
@@ -75,6 +76,25 @@ void Lock3()
         LockMark( mutex );
         ZoneScoped;
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    }
+}
+
+void RecLock()
+{
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 7 ) );
+        std::lock_guard<LockableBase( std::recursive_mutex )> lock1( recmutex );
+        TracyMessageL( "First lock" );
+        LockMark( recmutex );
+        ZoneScoped;
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 3 ) );
+            std::lock_guard<LockableBase( std::recursive_mutex )> lock2( recmutex );
+            TracyMessageL( "Second lock" );
+            LockMark( recmutex );
+            std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
+        }
     }
 }
 
@@ -132,6 +152,8 @@ int main()
     auto t9 = std::thread( Plot );
     auto t10 = std::thread( MessageTest );
     auto t11 = std::thread( DepthTest );
+    auto t12 = std::thread( RecLock );
+    auto t13 = std::thread( RecLock );
 
     tracy::SetThreadName( t1, "First thread" );
     tracy::SetThreadName( t2, "Second thread" );
@@ -144,6 +166,8 @@ int main()
     tracy::SetThreadName( t9, "Plot 2" );
     tracy::SetThreadName( t10, "Message test" );
     tracy::SetThreadName( t11, "Depth test" );
+    tracy::SetThreadName( t12, "Recursive mtx 1" );
+    tracy::SetThreadName( t13, "Recursive mtx 2" );
 
     for(;;)
     {

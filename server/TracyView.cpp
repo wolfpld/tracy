@@ -1083,7 +1083,7 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
 
     while( pos != end )
     {
-        const auto tbit = 1 << timeline[pos]->thread;
+        const auto tbit = uint64_t( 1 ) << timeline[pos]->thread;
         switch( timeline[pos]->type )
         {
         case LockEvent::Type::Wait:
@@ -2133,7 +2133,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
 
 static inline bool IsThreadWaiting( uint64_t bitlist, uint8_t thread )
 {
-    return ( bitlist & ( 1 << thread ) ) != 0;
+    return ( bitlist & ( uint64_t( 1 ) << thread ) ) != 0;
 }
 
 int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset, LockHighlight& highlight )

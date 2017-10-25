@@ -2395,6 +2395,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         {
                             ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", GetThreadString( tid ), (*vbegin)->lockCount );
                         }
+                        if( (*vbegin)->waitList != 0 )
+                        {
+                            assert( ( (*next)->waitList & ~( uint64_t( 1 ) << thread ) ) == 0 );
+                            ImGui::Text( "Recursive lock acquire in thread." );
+                        }
                         break;
                     case State::HasBlockingLock:
                     {

@@ -2182,7 +2182,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         {
             if( (*vbegin)->lockingThread == thread )
             {
-                if( (*vbegin)->waitList == 0 )
+                if( ( (*vbegin)->waitList & ~( uint64_t( 1 ) << thread ) ) == 0 )
                 {
                     state = State::HasLock;
                 }
@@ -2212,7 +2212,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     {
                         if( (*next)->lockingThread == thread )
                         {
-                            if( (*next)->waitList == 0 )
+                            if( ( (*next)->waitList & ~( uint64_t( 1 ) << thread ) ) == 0 )
                             {
                                 nextState = State::HasLock;
                                 break;
@@ -2243,7 +2243,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
                     if( (*next)->waitList != 0 )
                     {
-                        nextState = State::HasBlockingLock;
+                        if( ( (*next)->waitList & ~( uint64_t( 1 ) << thread ) ) != 0 )
+                        {
+                            nextState = State::HasBlockingLock;
+                        }
                         break;
                     }
                     next++;
@@ -2271,7 +2274,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 {
                     if( (*next)->lockingThread == thread )
                     {
-                        if( (*next)->waitList == 0 )
+                        if( ( (*next)->waitList & ~( uint64_t( 1 ) << thread ) ) == 0 )
                         {
                             nextState = State::HasLock;
                             break;

@@ -2320,8 +2320,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     if( !highlight.blocked )
                     {
                         highlight.id = v.first;
-                        highlight.begin = (*vbegin)->time;
-                        highlight.end = (*next)->time;
+                        highlight.begin = t0;
+                        highlight.end = t1;
                         highlight.thread = thread;
                         highlight.blocked = false;
                     }

@@ -15,7 +15,7 @@ static inline uint32_t hash( const char* str )
     uint32_t hash = 5381;
     int c;
 
-    while( c = *str++ )
+    while( ( c = *str++ ) != 0 )
     {
         hash = ( ( hash << 5 ) + hash ) ^ c;
     }

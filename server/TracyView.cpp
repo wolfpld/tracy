@@ -2355,7 +2355,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 {
                     n = GetNextLockEvent( n, vend, ns, ns, thread );
                 }
-                if( n == next ) break;
+                if( n >= vend ) break;
+                if( n == next )
+                {
+                    n = GetNextLockEvent( n, vend, ns, ns, thread );
+                }
                 const auto t2 = n == tl.end() ? GetLastTime() : (*n)->time;
                 const auto px2 = ( t2 - m_zvStart ) * pxns;
                 if( px2 - px0 > MinVisSize ) break;

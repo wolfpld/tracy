@@ -2306,7 +2306,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             }
         }
 
-        while( vbegin < vend )
+        for(;;)
         {
             while( vbegin < vend && ( state == LockState::Nothing || ( m_onlyContendedLocks && state == LockState::HasLock ) ) )
             {

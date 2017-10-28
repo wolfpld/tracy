@@ -1777,8 +1777,14 @@ bool View::DrawZoneFrames()
         if( fsz >= 5 )
         {
             auto buf = GetFrameText( i, ftime );
-            const auto tx = ImGui::CalcTextSize( buf ).x;
+            auto tx = ImGui::CalcTextSize( buf ).x;
             uint32_t color = i == 0 ? 0xFF4444FF : 0xFFFFFFFF;
+
+            if( fsz - 5 <= tx )
+            {
+                buf = TimeToString( ftime );
+                tx = ImGui::CalcTextSize( buf ).x;
+            }
 
             if( fbegin >= m_zvStart )
             {

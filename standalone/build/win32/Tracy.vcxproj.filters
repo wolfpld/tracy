@@ -137,5 +137,8 @@
     <ClInclude Include="..\..\..\server\TracyFileWrite.hpp">
       <Filter>server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyCharUtil.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

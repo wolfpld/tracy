@@ -2157,9 +2157,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     enum class State
     {
         Nothing,
-        HasLock,
-        HasBlockingLock,
-        WaitLock
+        HasLock,            // green
+        HasBlockingLock,    // yellow
+        WaitLock            // red
     };
 
     int cnt = 0;

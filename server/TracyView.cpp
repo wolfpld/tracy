@@ -1839,7 +1839,7 @@ void View::DrawZones()
     ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
     bool hover = ImGui::IsItemHovered();
 
-    auto timespan = m_zvEnd - m_zvStart;
+    const auto timespan = m_zvEnd - m_zvStart;
     auto pxns = w / double( timespan );
 
     if( hover )
@@ -1847,6 +1847,8 @@ void View::DrawZones()
         drawMouseLine = true;
         HandleZoneViewMouse( timespan, wpos, w, pxns );
     }
+
+    const auto nspx = 1.0 / pxns;
 
     // zones
     LockHighlight nextLockHighlight { -1 };
@@ -1870,17 +1872,31 @@ void View::DrawZones()
 
             while( it < end )
             {
+                const auto next = std::upper_bound( it, v->messages.end(), (*it)->time + MinVisSize * nspx, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
+                const auto dist = std::distance( it, next );
+
                 const auto px = ( (*it)->time - m_zvStart ) * pxns;
+                if( dist > 1 )
+                {
+                    draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
+                }
                 draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
                 {
                     ImGui::BeginTooltip();
-                    ImGui::Text( "%s", TimeToString( (*it)->time - m_frames[0] ) );
-                    ImGui::Text( "%s", (*it)->literal ? GetString( (*it)->str ) : (*it)->txt );
+                    if( dist > 1 )
+                    {
+                        ImGui::Text( "%i messages", (int)dist );
+                    }
+                    else
+                    {
+                        ImGui::Text( "%s", TimeToString( (*it)->time - m_frames[0] ) );
+                        ImGui::Text( "%s", (*it)->literal ? GetString( (*it)->str ) : (*it)->txt );
+                    }
                     ImGui::EndTooltip();
                     m_msgHighlight = *it;
                 }
-                ++it;
+                it = next;
             }
         }
         else

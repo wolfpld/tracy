@@ -2343,12 +2343,13 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             const auto t0 = (*vbegin)->time;
             int64_t t1 = next == tl.end() ? GetLastTime() : (*next)->time;
             const auto px0 = ( t0 - m_zvStart ) * pxns;
+            auto tx0 = px0;
             double px1 = ( t1 - m_zvStart ) * pxns;
             bool condensed = false;
 
             for(;;)
             {
-                if( next >= vend || px1 - px0 > MinVisSize ) break;
+                if( next >= vend || px1 - tx0 > MinVisSize ) break;
                 auto n = next;
                 auto ns = nextState;
                 while( n < vend && ( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) )
@@ -2362,8 +2363,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 }
                 const auto t2 = n == tl.end() ? GetLastTime() : (*n)->time;
                 const auto px2 = ( t2 - m_zvStart ) * pxns;
-                if( px2 - px0 > MinVisSize ) break;
+                if( px2 - px0 > MinVisSize && !( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) && drawState != ns ) break;
+                if( px2 - px1 > MinVisSize ) break;
                 t1 = t2;
+                tx0 = px1;
                 px1 = px2;
                 next = n;
                 nextState = ns;

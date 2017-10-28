@@ -2345,7 +2345,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             const auto px0 = ( t0 - m_zvStart ) * pxns;
             auto tx0 = px0;
             double px1 = ( t1 - m_zvStart ) * pxns;
-            bool condensed = false;
+            uint64_t condensed = 0;
 
             for(;;)
             {
@@ -2370,142 +2370,151 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 px1 = px2;
                 next = n;
                 nextState = ns;
-                condensed = true;
+                condensed++;
                 drawState = CombineLockState( drawState, nextState );
             }
 
             bool itemHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ) );
             if( itemHovered )
             {
-                highlight.blocked = drawState == LockState::HasBlockingLock;
-                if( !highlight.blocked )
+                if( condensed != 0 )
                 {
-                    highlight.id = v.first;
-                    highlight.begin = t0;
-                    highlight.end = t1;
-                    highlight.thread = thread;
-                    highlight.blocked = false;
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Multiple lock events (%" PRIu64 ")", condensed );
+                    ImGui::EndTooltip();
                 }
                 else
                 {
-                    auto b = vbegin;
-                    while( b != tl.begin() )
+                    highlight.blocked = drawState == LockState::HasBlockingLock;
+                    if( !highlight.blocked )
                     {
-                        if( (*b)->lockingThread != (*vbegin)->lockingThread )
-                        {
-                            break;
-                        }
-                        b--;
+                        highlight.id = v.first;
+                        highlight.begin = t0;
+                        highlight.end = t1;
+                        highlight.thread = thread;
+                        highlight.blocked = false;
                     }
-                    b++;
-                    highlight.begin = (*b)->time;
-
-                    auto e = next;
-                    while( e != tl.end() )
+                    else
                     {
-                        if( (*e)->lockingThread != (*next)->lockingThread )
+                        auto b = vbegin;
+                        while( b != tl.begin() )
                         {
-                            highlight.id = v.first;
-                            highlight.end = (*e)->time;
-                            highlight.thread = thread;
-                            break;
+                            if( (*b)->lockingThread != (*vbegin)->lockingThread )
+                            {
+                                break;
+                            }
+                            b--;
                         }
-                        e++;
-                    }
-                }
+                        b++;
+                        highlight.begin = (*b)->time;
 
-                ImGui::BeginTooltip();
-                ImGui::Text( "Lock #%" PRIu64, v.first );
-                ImGui::Text( "%s", GetString( srcloc.function ) );
-                ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
-                ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
-                ImGui::Separator();
-
-                uint64_t markloc = 0;
-                auto it = vbegin;
-                for(;;)
-                {
-                    if( (*it)->thread == thread )
-                    {
-                        if( ( (*it)->lockingThread == thread || IsThreadWaiting( (*it)->waitList, thread ) ) && (*it)->srcloc != 0 )
+                        auto e = next;
+                        while( e != tl.end() )
                         {
-                            markloc = (*it)->srcloc;
-                            break;
+                            if( (*e)->lockingThread != (*next)->lockingThread )
+                            {
+                                highlight.id = v.first;
+                                highlight.end = (*e)->time;
+                                highlight.thread = thread;
+                                break;
+                            }
+                            e++;
                         }
                     }
-                    if( it == tl.begin() ) break;
-                    --it;
-                }
-                if( markloc != 0 )
-                {
-                    auto& marklocdata = GetSourceLocation( markloc );
-                    ImGui::Text( "Lock event location:" );
-                    ImGui::Text( "%s", GetString( marklocdata.function ) );
-                    ImGui::Text( "%s:%i", GetString( marklocdata.file ), marklocdata.line );
+
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Lock #%" PRIu64, v.first );
+                    ImGui::Text( "%s", GetString( srcloc.function ) );
+                    ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
+                    ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
                     ImGui::Separator();
-                }
 
-                switch( drawState )
-                {
-                case LockState::HasLock:
-                    if( (*vbegin)->lockCount == 1 )
+                    uint64_t markloc = 0;
+                    auto it = vbegin;
+                    for(;;)
                     {
-                        ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
-                    }
-                    else
-                    {
-                        ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", GetThreadString( tid ), (*vbegin)->lockCount );
-                    }
-                    if( (*vbegin)->waitList != 0 )
-                    {
-                        assert( !AreOtherWaiting( (*next)->waitList, thread ) );
-                        ImGui::Text( "Recursive lock acquire in thread." );
-                    }
-                    break;
-                case LockState::HasBlockingLock:
-                {
-                    if( (*vbegin)->lockCount == 1 )
-                    {
-                        ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), CountBits( (*vbegin)->waitList ) );
-                    }
-                    else
-                    {
-                        ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", GetThreadString( tid ), (*vbegin)->lockCount, CountBits( (*vbegin)->waitList ) );
-                    }
-                    auto waitList = (*vbegin)->waitList;
-                    int t = 0;
-                    while( waitList != 0 )
-                    {
-                        if( waitList & 0x1 )
+                        if( (*it)->thread == thread )
                         {
-                            ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                            if( ( (*it)->lockingThread == thread || IsThreadWaiting( (*it)->waitList, thread ) ) && (*it)->srcloc != 0 )
+                            {
+                                markloc = (*it)->srcloc;
+                                break;
+                            }
                         }
-                        waitList >>= 1;
-                        t++;
+                        if( it == tl.begin() ) break;
+                        --it;
                     }
-                    break;
+                    if( markloc != 0 )
+                    {
+                        auto& marklocdata = GetSourceLocation( markloc );
+                        ImGui::Text( "Lock event location:" );
+                        ImGui::Text( "%s", GetString( marklocdata.function ) );
+                        ImGui::Text( "%s:%i", GetString( marklocdata.file ), marklocdata.line );
+                        ImGui::Separator();
+                    }
+
+                    switch( drawState )
+                    {
+                    case LockState::HasLock:
+                        if( (*vbegin)->lockCount == 1 )
+                        {
+                            ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
+                        }
+                        else
+                        {
+                            ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", GetThreadString( tid ), (*vbegin)->lockCount );
+                        }
+                        if( (*vbegin)->waitList != 0 )
+                        {
+                            assert( !AreOtherWaiting( (*next)->waitList, thread ) );
+                            ImGui::Text( "Recursive lock acquire in thread." );
+                        }
+                        break;
+                    case LockState::HasBlockingLock:
+                    {
+                        if( (*vbegin)->lockCount == 1 )
+                        {
+                            ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), CountBits( (*vbegin)->waitList ) );
+                        }
+                        else
+                        {
+                            ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", GetThreadString( tid ), (*vbegin)->lockCount, CountBits( (*vbegin)->waitList ) );
+                        }
+                        auto waitList = (*vbegin)->waitList;
+                        int t = 0;
+                        while( waitList != 0 )
+                        {
+                            if( waitList & 0x1 )
+                            {
+                                ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                            }
+                            waitList >>= 1;
+                            t++;
+                        }
+                        break;
+                    }
+                    case LockState::WaitLock:
+                    {
+                        ImGui::Text( "Thread \"%s\" is blocked by other thread:", GetThreadString( tid ) );
+                        ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[(*vbegin)->lockingThread] ) );
+                        break;
+                    }
+                    default:
+                        assert( false );
+                        break;
+                    }
+                    ImGui::EndTooltip();
                 }
-                case LockState::WaitLock:
-                {
-                    ImGui::Text( "Thread \"%s\" is blocked by other thread:", GetThreadString( tid ) );
-                    ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[(*vbegin)->lockingThread] ) );
-                    break;
-                }
-                default:
-                    assert( false );
-                    break;
-                }
-                ImGui::EndTooltip();
             }
 
             const auto cfilled  = drawState == LockState::HasLock ? 0xFF228A22 : ( drawState == LockState::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
-            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), cfilled, condensed ? 0.f : 2.f );
+            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), cfilled, condensed != 0 ? 0.f : 2.f );
             if( m_lockHighlight.thread != thread && ( drawState == LockState::HasBlockingLock ) != m_lockHighlight.blocked && next != tl.end() && m_lockHighlight.id == v.first && m_lockHighlight.begin <= (*vbegin)->time && m_lockHighlight.end >= (*next)->time )
             {
                 const auto t = uint8_t( ( sin( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() * 0.01 ) * 0.5 + 0.5 ) * 255 );
                 draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), 0x00FFFFFF | ( t << 24 ), 2.f, -1, 2.f );
             }
-            else if( !condensed )
+            else if( condensed == 0 )
             {
                 const auto coutline = drawState == LockState::HasLock ? 0xFF3BA33B : ( drawState == LockState::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
                 draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), coutline, 2.f );

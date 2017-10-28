@@ -2308,16 +2308,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
         while( vbegin < vend )
         {
-            if( state == LockState::Nothing || ( m_onlyContendedLocks && state == LockState::HasLock ) )
+            while( vbegin < vend && ( state == LockState::Nothing || ( m_onlyContendedLocks && state == LockState::HasLock ) ) )
             {
-                do
-                {
-                    vbegin = GetNextLockEvent( vbegin, vend, state, state, thread );
-                }
-                while( vbegin < vend && ( state == LockState::Nothing || ( m_onlyContendedLocks && state == LockState::HasLock ) ) );
-                if( vbegin >= vend ) break;
-                state = state;
+                vbegin = GetNextLockEvent( vbegin, vend, state, state, thread );
             }
+            if( vbegin >= vend ) break;
 
             LockState nextState;
             auto next = GetNextLockEvent( vbegin, vend, state, nextState, thread );

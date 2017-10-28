@@ -2203,14 +2203,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         {
             if( (*vbegin)->lockingThread == thread )
             {
-                if( !AreOtherWaiting( (*vbegin)->waitList, thread ) )
-                {
-                    state = State::HasLock;
-                }
-                else
-                {
-                    state = State::HasBlockingLock;
-                }
+                state = AreOtherWaiting( (*vbegin)->waitList, thread ) ? State::HasBlockingLock : State::HasLock;
             }
             else if( IsThreadWaiting( (*vbegin)->waitList, thread ) )
             {
@@ -2233,16 +2226,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     {
                         if( (*next)->lockingThread == thread )
                         {
-                            if( !AreOtherWaiting( (*next)->waitList, thread ) )
-                            {
-                                nextState = State::HasLock;
-                                break;
-                            }
-                            else
-                            {
-                                nextState = State::HasBlockingLock;
-                                break;
-                            }
+                            nextState = AreOtherWaiting( (*next)->waitList, thread ) ? State::HasBlockingLock : State::HasLock;
+                            break;
                         }
                         else if( IsThreadWaiting( (*next)->waitList, thread ) )
                         {
@@ -2299,16 +2284,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 {
                     if( (*next)->lockingThread == thread )
                     {
-                        if( !AreOtherWaiting( (*next)->waitList, thread ) )
-                        {
-                            nextState = State::HasLock;
-                            break;
-                        }
-                        else
-                        {
-                            nextState = State::HasBlockingLock;
-                            break;
-                        }
+                        nextState = AreOtherWaiting( (*next)->waitList, thread ) ? State::HasBlockingLock : State::HasLock;
+                        break;
                     }
                     if( (*next)->lockingThread != (*vbegin)->lockingThread )
                     {

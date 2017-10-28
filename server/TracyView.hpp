@@ -260,8 +260,8 @@ private:
     int64_t m_zvStartNext;
     int64_t m_zvEndNext;
 
-    uint64_t m_delay;
-    uint64_t m_resolution;
+    int64_t m_delay;
+    int64_t m_resolution;
     double m_timerMul;
     std::string m_captureName;
 

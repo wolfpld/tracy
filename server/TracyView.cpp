@@ -2152,6 +2152,11 @@ static inline bool IsThreadWaiting( uint64_t bitlist, uint8_t thread )
     return ( bitlist & ( uint64_t( 1 ) << thread ) ) != 0;
 }
 
+static inline bool AreOtherWaiting( uint64_t bitlist, uint8_t thread )
+{
+    return ( bitlist & ~( uint64_t( 1 ) << thread ) ) != 0;
+}
+
 int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset, LockHighlight& highlight )
 {
     enum class State
@@ -2198,7 +2203,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         {
             if( (*vbegin)->lockingThread == thread )
             {
-                if( ( (*vbegin)->waitList & ~( uint64_t( 1 ) << thread ) ) == 0 )
+                if( !AreOtherWaiting( (*vbegin)->waitList, thread ) )
                 {
                     state = State::HasLock;
                 }
@@ -2228,7 +2233,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     {
                         if( (*next)->lockingThread == thread )
                         {
-                            if( ( (*next)->waitList & ~( uint64_t( 1 ) << thread ) ) == 0 )
+                            if( !AreOtherWaiting( (*next)->waitList, thread ) )
                             {
                                 nextState = State::HasLock;
                                 break;
@@ -2259,7 +2264,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
                     if( (*next)->waitList != 0 )
                     {
-                        if( ( (*next)->waitList & ~( uint64_t( 1 ) << thread ) ) != 0 )
+                        if( AreOtherWaiting( (*next)->waitList, thread ) )
                         {
                             nextState = State::HasBlockingLock;
                         }
@@ -2294,7 +2299,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 {
                     if( (*next)->lockingThread == thread )
                     {
-                        if( ( (*next)->waitList & ~( uint64_t( 1 ) << thread ) ) == 0 )
+                        if( !AreOtherWaiting( (*next)->waitList, thread ) )
                         {
                             nextState = State::HasLock;
                             break;
@@ -2413,7 +2418,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         }
                         if( (*vbegin)->waitList != 0 )
                         {
-                            assert( ( (*next)->waitList & ~( uint64_t( 1 ) << thread ) ) == 0 );
+                            assert( !AreOtherWaiting( (*next)->waitList, thread ) );
                             ImGui::Text( "Recursive lock acquire in thread." );
                         }
                         break;

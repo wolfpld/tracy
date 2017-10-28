@@ -2262,6 +2262,13 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
 
 int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset, LockHighlight& highlight )
 {
+    const auto w = ImGui::GetWindowContentRegionWidth();
+    const auto ty = ImGui::GetFontSize();
+    const auto ostep = ty + 1;
+    auto draw = ImGui::GetWindowDrawList();
+    const auto dsz = m_delay * pxns;
+    const auto rsz = m_resolution * pxns;
+
     int cnt = 0;
     for( auto& v : m_lockMap )
     {
@@ -2284,14 +2291,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         if( vbegin > tl.begin() ) vbegin--;
 
         bool drawn = false;
-        const auto w = ImGui::GetWindowContentRegionWidth();
-        const auto ty = ImGui::GetFontSize();
-        const auto ostep = ty + 1;
-        const auto offset = _offset + ostep * cnt;
-        auto draw = ImGui::GetWindowDrawList();
         auto& srcloc = GetSourceLocation( lockmap.srcloc );
-        const auto dsz = m_delay * pxns;
-        const auto rsz = m_resolution * pxns;
+        const auto offset = _offset + ostep * cnt;
 
         LockState state = LockState::Nothing;
         if( (*vbegin)->lockCount != 0 )

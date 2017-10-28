@@ -91,8 +91,8 @@ private:
     struct LockHighlight
     {
         int64_t id;
-        uint64_t begin;
-        uint64_t end;
+        int64_t begin;
+        int64_t end;
         uint8_t thread;
         bool blocked;
     };
@@ -164,9 +164,9 @@ private:
     void HandlePlotName( uint64_t name, std::string&& str );
     void HandlePostponedPlots();
 
-    uint64_t GetFrameTime( size_t idx ) const;
-    uint64_t GetFrameBegin( size_t idx ) const;
-    uint64_t GetFrameEnd( size_t idx ) const;
+    int64_t GetFrameTime( size_t idx ) const;
+    int64_t GetFrameBegin( size_t idx ) const;
+    int64_t GetFrameEnd( size_t idx ) const;
     int64_t GetLastTime() const;
     int64_t GetZoneEnd( const ZoneEvent& ev ) const;
     const char* GetString( uint64_t ptr ) const;
@@ -217,7 +217,7 @@ private:
 
     // this block must be locked
     std::mutex m_lock;
-    Vector<uint64_t> m_frames;
+    Vector<int64_t> m_frames;
     Vector<ThreadData*> m_threads;
     Vector<PlotData*> m_plots;
     Vector<MessageData*> m_messages;
@@ -267,8 +267,8 @@ private:
 
     int8_t m_lastCpu;
 
-    uint64_t m_zvHeight;
-    uint64_t m_zvScroll;
+    int m_zvHeight;
+    int m_zvScroll;
 
     const ZoneEvent* m_zoneInfoWindow;
     const ZoneEvent* m_zoneHighlight;

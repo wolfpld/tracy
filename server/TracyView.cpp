@@ -58,25 +58,25 @@ static const char* TimeToString( int64_t ns )
 
     if( ns < 1000 )
     {
-        sprintf( buf, "%s%" PRIu64 " ns", sign, ns );
+        sprintf( buf, "%s%" PRIi64 " ns", sign, ns );
     }
-    else if( ns < 1000ull * 1000 )
+    else if( ns < 1000ll * 1000 )
     {
         sprintf( buf, "%s%.2f us", sign, ns / 1000. );
     }
-    else if( ns < 1000ull * 1000 * 1000 )
+    else if( ns < 1000ll * 1000 * 1000 )
     {
         sprintf( buf, "%s%.2f ms", sign, ns / ( 1000. * 1000. ) );
     }
-    else if( ns < 1000ull * 1000 * 1000 * 60 )
+    else if( ns < 1000ll * 1000 * 1000 * 60 )
     {
         sprintf( buf, "%s%.2f s", sign, ns / ( 1000. * 1000. * 1000. ) );
     }
     else
     {
-        const auto m = ns / ( 1000ull * 1000 * 1000 * 60 );
-        const auto s = ns - m * ( 1000ull * 1000 * 1000 * 60 );
-        sprintf( buf, "%s%" PRIu64 ":%04.1f", sign, m, s / ( 1000. * 1000. * 1000. ) );
+        const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) );
+        const auto s = int64_t( ns - m * ( 1000ll * 1000 * 1000 * 60 ) );
+        sprintf( buf, "%s%" PRIi64 ":%04.1f", sign, m, s / ( 1000. * 1000. * 1000. ) );
     }
     return buf;
 }
@@ -1091,7 +1091,7 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
             break;
         case LockEvent::Type::Obtain:
             assert( lockCount < std::numeric_limits<uint8_t>::max() );
-            assert( waitList | tbit != 0 );
+            assert( ( waitList | tbit ) != 0 );
             waitList &= ~tbit;
             lockingThread = timeline[pos]->thread;
             lockCount++;
@@ -1197,7 +1197,7 @@ void View::HandlePostponedPlots()
     }
 }
 
-uint64_t View::GetFrameTime( size_t idx ) const
+int64_t View::GetFrameTime( size_t idx ) const
 {
     if( idx < m_frames.size() - 1 )
     {
@@ -1210,13 +1210,13 @@ uint64_t View::GetFrameTime( size_t idx ) const
     }
 }
 
-uint64_t View::GetFrameBegin( size_t idx ) const
+int64_t View::GetFrameBegin( size_t idx ) const
 {
     assert( idx < m_frames.size() );
     return m_frames[idx];
 }
 
-uint64_t View::GetFrameEnd( size_t idx ) const
+int64_t View::GetFrameEnd( size_t idx ) const
 {
     if( idx < m_frames.size() - 1 )
     {
@@ -1543,7 +1543,7 @@ void View::DrawFrames()
                 ImGui::BeginTooltip();
                 if( group > 1 )
                 {
-                    uint64_t f = GetFrameTime( sel );
+                    auto f = GetFrameTime( sel );
                     auto g = std::min( group, total - sel );
                     for( int j=1; j<g; j++ )
                     {
@@ -1557,7 +1557,7 @@ void View::DrawFrames()
                 {
                     if( sel == 0 )
                     {
-                        ImGui::Text( "Tracy initialization", sel );
+                        ImGui::Text( "Tracy initialization" );
                         ImGui::Text( "Time: %s", TimeToString( GetFrameTime( sel ) ) );
                     }
                     else
@@ -1597,7 +1597,7 @@ void View::DrawFrames()
     int i = 0, idx = 0;
     while( i < onScreen && m_frameStart + idx < total )
     {
-        uint64_t f = GetFrameTime( m_frameStart + idx );
+        auto f = GetFrameTime( m_frameStart + idx );
         int g;
         if( group > 1 )
         {
@@ -1694,7 +1694,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             m_zvStart += int64_t( p1 * 0.2f );
             m_zvEnd -= int64_t( p2 * 0.2f );
         }
-        else if( timespan < 1000ull * 1000 * 1000 * 60 )
+        else if( timespan < 1000ll * 1000 * 1000 * 60 )
         {
             m_zvStart -= std::max( int64_t( 1 ), int64_t( p1 * 0.2f ) );
             m_zvEnd += std::max( int64_t( 1 ), int64_t( p2 * 0.2f ) );
@@ -1720,8 +1720,6 @@ static const char* GetFrameText( int i, uint64_t ftime )
 
 bool View::DrawZoneFrames()
 {
-    auto& io = ImGui::GetIO();
-
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
     const auto h = ImGui::GetFontSize();
@@ -2304,7 +2302,6 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
         auto vbegin = std::lower_bound( tl.begin(), tl.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
         const auto vend = std::lower_bound( tl.begin(), tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
-        auto vendn = tl.end();
 
         if( vbegin > tl.begin() ) vbegin--;
 
@@ -2423,7 +2420,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
 
                     ImGui::BeginTooltip();
-                    ImGui::Text( "Lock #%" PRIu64, v.first );
+                    ImGui::Text( "Lock #%" PRIu32, v.first );
                     ImGui::Text( "%s", GetString( srcloc.function ) );
                     ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
                     ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
@@ -2509,7 +2506,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
             const auto cfilled  = drawState == LockState::HasLock ? 0xFF228A22 : ( drawState == LockState::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), cfilled, condensed != 0 ? 0.f : 2.f );
-            if( m_lockHighlight.thread != thread && ( drawState == LockState::HasBlockingLock ) != m_lockHighlight.blocked && next != tl.end() && m_lockHighlight.id == v.first && m_lockHighlight.begin <= (*vbegin)->time && m_lockHighlight.end >= (*next)->time )
+            if( m_lockHighlight.thread != thread && ( drawState == LockState::HasBlockingLock ) != m_lockHighlight.blocked && next != tl.end() && m_lockHighlight.id == int64_t( v.first ) && m_lockHighlight.begin <= (*vbegin)->time && m_lockHighlight.end >= (*next)->time )
             {
                 const auto t = uint8_t( ( sin( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() * 0.01 ) * 0.5 + 0.5 ) * 255 );
                 draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), 0x00FFFFFF | ( t << 24 ), 2.f, -1, 2.f );
@@ -2541,7 +2538,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         if( drawn )
         {
             char buf[1024];
-            sprintf( buf, "%" PRIu64 ": %s", v.first, GetString( srcloc.function ) );
+            sprintf( buf, "%" PRIu32 ": %s", v.first, GetString( srcloc.function ) );
             draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
             {
@@ -2606,13 +2603,13 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             ImGui::Text( "Min value: %s", RealToString( v->min, true ) );
             ImGui::Text( "Max value: %s", RealToString( v->max, true ) );
             ImGui::Text( "Time range: %s", TimeToString( tr ) );
-            ImGui::Text( "Data/second: %s", RealToString( double( v->data.size() ) / tr * 1000000000ull, true ) );
+            ImGui::Text( "Data/second: %s", RealToString( double( v->data.size() ) / tr * 1000000000ll, true ) );
 
-            const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back()->time - 1000000000ull * 10, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+            const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back()->time - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l->time < r; } );
             const auto tr10 = v->data.back()->time - (*it)->time;
             if( tr10 != 0 )
             {
-                ImGui::Text( "D/s (10s): %s", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ull, true ) );
+                ImGui::Text( "D/s (10s): %s", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ll, true ) );
             }
 
             ImGui::EndTooltip();
@@ -2826,13 +2823,13 @@ void View::DrawZoneInfoWindow()
     auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
     auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
     uint64_t ctime = 0;
-    for( int i=0; i<ev.child.size(); i++ )
+    for( size_t i=0; i<ev.child.size(); i++ )
     {
         const auto cend = GetZoneEnd( *ev.child[i] );
         const auto ct = cend - ev.child[i]->start;
         ctime += ct;
         ctt[i] = ct;
-        cti[i] = i;
+        cti[i] = uint32_t( i );
     }
 
     std::sort( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
@@ -2847,7 +2844,7 @@ void View::DrawZoneInfoWindow()
         ImGui::Text( "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::NextColumn();
         ImGui::Separator();
-        for( int i=0; i<ev.child.size(); i++ )
+        for( size_t i=0; i<ev.child.size(); i++ )
         {
             auto& cev = *ev.child[cti[i]];
             if( cev.text != -1 && GetTextData( cev )->zoneName )
@@ -2903,7 +2900,7 @@ void View::DrawOptions()
     for( auto& l : m_lockMap )
     {
         char buf[1024];
-        sprintf( buf, "%" PRIu64 ": %s", l.first, GetString( GetSourceLocation( l.second.srcloc ).function ) );
+        sprintf( buf, "%" PRIu32 ": %s", l.first, GetString( GetSourceLocation( l.second.srcloc ).function ) );
         ImGui::Checkbox( buf , &l.second.visible );
     }
     ImGui::Unindent( tw );
@@ -3054,7 +3051,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     }
     if( ev.text != -1 && GetTextData( ev )->userText )
     {
-        ImGui::Text( "" );
+        ImGui::NewLine();
         ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", GetTextData( ev )->userText );
     }
     ImGui::EndTooltip();

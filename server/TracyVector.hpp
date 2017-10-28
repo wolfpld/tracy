@@ -17,6 +17,8 @@ template<typename T>
 class Vector
 {
 public:
+    using iterator = T*;
+
     Vector()
         : m_ptr( nullptr )
         , m_size( 0 )

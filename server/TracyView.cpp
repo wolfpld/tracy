@@ -19,23 +19,11 @@
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracyImGui.hpp"
+#include "TracyPopcnt.hpp"
 #include "TracyView.hpp"
 
 #ifdef TRACY_FILESELECTOR
 #  include "../nfd/nfd.h"
-#endif
-
-#ifdef _MSC_VER
-#  include <intrin.h>
-#  define CountBits __popcnt64
-#else
-static int CountBits( uint64_t i )
-{
-    i = i - ( (i >> 1) & 0x5555555555555555 );
-    i = ( i & 0x3333333333333333 ) + ( (i >> 2) & 0x3333333333333333 );
-    i = ( (i + (i >> 4) ) & 0x0F0F0F0F0F0F0F0F );
-    return ( i * (0x0101010101010101) ) >> 56;
-}
 #endif
 
 namespace tracy
@@ -2505,11 +2493,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     {
                         if( (*vbegin)->lockCount == 1 )
                         {
-                            ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), CountBits( (*vbegin)->waitList ) );
+                            ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), TracyCountBits( (*vbegin)->waitList ) );
                         }
                         else
                         {
-                            ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", GetThreadString( tid ), (*vbegin)->lockCount, CountBits( (*vbegin)->waitList ) );
+                            ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", GetThreadString( tid ), (*vbegin)->lockCount, TracyCountBits( (*vbegin)->waitList ) );
                         }
                         auto waitList = (*vbegin)->waitList;
                         int t = 0;

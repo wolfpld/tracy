@@ -785,8 +785,6 @@ void View::ProcessLockMark( const QueueLockMark& ev )
             switch( (*it)->type )
             {
             case LockEvent::Type::Obtain:
-                (*it)->srcloc = ev.srcloc;
-                break;
             case LockEvent::Type::Wait:
                 (*it)->srcloc = ev.srcloc;
                 return;

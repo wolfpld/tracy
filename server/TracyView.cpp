@@ -156,6 +156,7 @@ View::View( const char* addr )
     , m_onlyContendedLocks( false )
     , m_namespace( Namespace::Full )
     , m_terminate( false )
+    , m_sourceLocationExpand( { 0 } )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -266,6 +267,15 @@ View::View( FileRead& f )
         QueueSourceLocation srcloc;
         f.Read( &srcloc, sizeof( srcloc ) );
         m_sourceLocation.emplace( ptr, srcloc );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
+    m_sourceLocationExpand.reserve( sz );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint64_t v;
+        f.Read( &v, sizeof( v ) );
+        m_sourceLocationExpand.push_back( v );
     }
 
     f.Read( &sz, sizeof( sz ) );
@@ -664,7 +674,7 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
 
     zone->start = ev.time * m_timerMul;
     zone->end = -1;
-    zone->srcloc = ev.srcloc;
+    zone->srcloc = ShrinkSourceLocation( ev.srcloc );
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->text = -1;
@@ -731,14 +741,14 @@ void View::ProcessLockWait( const QueueLockWait& ev )
     if( it == m_lockMap.end() )
     {
         LockMap lm;
-        lm.srcloc = ev.lckloc;
+        lm.srcloc = ShrinkSourceLocation( ev.lckloc );
         lm.visible = true;
         it = m_lockMap.emplace( ev.id, std::move( lm ) ).first;
         CheckSourceLocation( ev.lckloc );
     }
     else if( it->second.srcloc == 0 )
     {
-        it->second.srcloc = ev.lckloc;
+        it->second.srcloc = ShrinkSourceLocation( ev.lckloc );
         CheckSourceLocation( ev.lckloc );
     }
     InsertLockEvent( it->second, lev, ev.thread );
@@ -786,7 +796,7 @@ void View::ProcessLockMark( const QueueLockMark& ev )
             {
             case LockEvent::Type::Obtain:
             case LockEvent::Type::Wait:
-                (*it)->srcloc = ev.srcloc;
+                (*it)->srcloc = ShrinkSourceLocation( ev.srcloc );
                 return;
             default:
                 break;
@@ -963,6 +973,22 @@ void View::AddMessageData( uint64_t ptr, const char* str, size_t sz )
     msg->txt = txt;
     InsertMessageData( msg, it->second.thread );
     m_pendingMessages.erase( it );
+}
+
+uint32_t View::ShrinkSourceLocation( uint64_t srcloc )
+{
+    auto it = m_sourceLocationShrink.find( srcloc );
+    if( it != m_sourceLocationShrink.end() )
+    {
+        return it->second;
+    }
+    else
+    {
+        const auto sz = m_sourceLocationExpand.size();
+        m_sourceLocationExpand.push_back( srcloc );
+        m_sourceLocationShrink.emplace( srcloc, sz );
+        return sz;
+    }
 }
 
 void View::InsertMessageData( MessageData* msg, uint64_t thread )
@@ -1285,10 +1311,10 @@ const char* View::GetThreadString( uint64_t id ) const
     }
 }
 
-const QueueSourceLocation& View::GetSourceLocation( uint64_t srcloc ) const
+const QueueSourceLocation& View::GetSourceLocation( uint32_t srcloc ) const
 {
     static const QueueSourceLocation empty = {};
-    const auto it = m_sourceLocation.find( srcloc );
+    const auto it = m_sourceLocation.find( m_sourceLocationExpand[srcloc] );
     if( it == m_sourceLocation.end() ) return empty;
     return it->second;
 }
@@ -2430,7 +2456,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
                     ImGui::Separator();
 
-                    uint64_t markloc = 0;
+                    uint32_t markloc = 0;
                     auto it = vbegin;
                     for(;;)
                     {
@@ -3152,6 +3178,13 @@ void View::Write( FileWrite& f )
     {
         f.Write( &v.first, sizeof( v.first ) );
         f.Write( &v.second, sizeof( v.second ) );
+    }
+
+    sz = m_sourceLocationExpand.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_sourceLocationExpand )
+    {
+        f.Write( &v, sizeof( v ) );
     }
 
     sz = m_lockMap.size();

@@ -81,7 +81,7 @@ private:
 
     struct LockMap
     {
-        uint64_t srcloc;
+        uint32_t srcloc;
         Vector<LockEvent*> timeline;
         std::unordered_map<uint64_t, uint8_t> threadMap;
         std::vector<uint64_t> threadList;
@@ -147,6 +147,8 @@ private:
     void AddSourceLocation( const QueueSourceLocation& srcloc );
     void AddMessageData( uint64_t ptr, const char* str, size_t sz );
 
+    uint32_t ShrinkSourceLocation( uint64_t srcloc );
+
     void InsertMessageData( MessageData* msg, uint64_t thread );
 
     ThreadData* NoticeThread( uint64_t thread );
@@ -171,7 +173,7 @@ private:
     int64_t GetZoneEnd( const ZoneEvent& ev ) const;
     const char* GetString( uint64_t ptr ) const;
     const char* GetThreadString( uint64_t id ) const;
-    const QueueSourceLocation& GetSourceLocation( uint64_t srcloc ) const;
+    const QueueSourceLocation& GetSourceLocation( uint32_t srcloc ) const;
 
     const char* ShortenNamespace( const char* name ) const;
 
@@ -226,6 +228,7 @@ private:
     std::unordered_map<uint64_t, std::string> m_threadNames;
     std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;
     std::unordered_map<uint64_t, QueueSourceLocation> m_sourceLocation;
+    std::vector<uint64_t> m_sourceLocationExpand;
     std::map<uint32_t, LockMap> m_lockMap;
     uint64_t m_zonesCnt;
 
@@ -243,6 +246,7 @@ private:
     std::unordered_map<std::string, uint32_t> m_plotRev;
     std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
     std::unordered_map<uint64_t, MessagePending> m_pendingMessages;
+    std::unordered_map<uint64_t, uint32_t> m_sourceLocationShrink;
 
     Slab<64*1024*1024> m_slab;
 

@@ -20,7 +20,7 @@ struct ZoneEvent
 {
     int64_t start;
     int64_t end;
-    uint64_t srcloc;
+    uint32_t srcloc;
     int8_t cpu_start;
     int8_t cpu_end;
 
@@ -41,7 +41,7 @@ struct LockEvent
     };
 
     int64_t time;
-    uint64_t srcloc;
+    uint32_t srcloc;
     uint64_t waitList;
     uint8_t thread;
     uint8_t lockingThread;

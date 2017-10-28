@@ -2260,6 +2260,24 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
     return next;
 }
 
+static LockState CombineLockState( LockState state, LockState next )
+{
+    switch( state )
+    {
+    case LockState::WaitLock:
+        return LockState::WaitLock;
+    case LockState::HasBlockingLock:
+        return next == LockState::WaitLock ? next : state;
+    case LockState::HasLock:
+        return next == LockState::Nothing ? state : next;
+    case LockState::Nothing:
+        return next;
+    default:
+        assert( false );
+        return LockState::Nothing;
+    }
+}
+
 int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset, LockHighlight& highlight )
 {
     const auto w = ImGui::GetWindowContentRegionWidth();
@@ -2315,20 +2333,44 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             }
             if( vbegin >= vend ) break;
 
+            assert( state != LockState::Nothing && ( !m_onlyContendedLocks || state != LockState::HasLock ) );
+            drawn = true;
+
+            LockState drawState = state;
             LockState nextState;
             auto next = GetNextLockEvent( vbegin, vend, state, nextState, thread );
 
-            assert( state != LockState::Nothing && ( !m_onlyContendedLocks || state != LockState::HasLock ) );
-            drawn = true;
             const auto t0 = (*vbegin)->time;
-            const auto t1 = next == tl.end() ? GetLastTime() : (*next)->time;
+            int64_t t1 = next == tl.end() ? GetLastTime() : (*next)->time;
             const auto px0 = ( t0 - m_zvStart ) * pxns;
-            const auto px1 = ( t1 - m_zvStart ) * pxns;
+            double px1 = ( t1 - m_zvStart ) * pxns;
+            bool condensed = false;
+
+            for(;;)
+            {
+                if( next >= vend || px1 - px0 > MinVisSize ) break;
+                auto n = next;
+                auto ns = nextState;
+                while( n < vend && ( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) )
+                {
+                    n = GetNextLockEvent( n, vend, ns, ns, thread );
+                }
+                if( n == next ) break;
+                const auto t2 = n == tl.end() ? GetLastTime() : (*n)->time;
+                const auto px2 = ( t2 - m_zvStart ) * pxns;
+                if( px2 - px0 > MinVisSize ) break;
+                t1 = t2;
+                px1 = px2;
+                next = n;
+                nextState = ns;
+                condensed = true;
+                drawState = CombineLockState( drawState, nextState );
+            }
 
             bool itemHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ) );
             if( itemHovered )
             {
-                highlight.blocked = state == LockState::HasBlockingLock;
+                highlight.blocked = drawState == LockState::HasBlockingLock;
                 if( !highlight.blocked )
                 {
                     highlight.id = v.first;
@@ -2396,7 +2438,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     ImGui::Separator();
                 }
 
-                switch( state )
+                switch( drawState )
                 {
                 case LockState::HasLock:
                     if( (*vbegin)->lockCount == 1 )
@@ -2449,16 +2491,16 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 ImGui::EndTooltip();
             }
 
-            const auto cfilled  = state == LockState::HasLock ? 0xFF228A22 : ( state == LockState::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
+            const auto cfilled  = drawState == LockState::HasLock ? 0xFF228A22 : ( drawState == LockState::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), cfilled, 2.f );
-            if( m_lockHighlight.thread != thread && ( state == LockState::HasBlockingLock ) != m_lockHighlight.blocked && next != tl.end() && m_lockHighlight.id == v.first && m_lockHighlight.begin <= (*vbegin)->time && m_lockHighlight.end >= (*next)->time )
+            if( m_lockHighlight.thread != thread && ( drawState == LockState::HasBlockingLock ) != m_lockHighlight.blocked && next != tl.end() && m_lockHighlight.id == v.first && m_lockHighlight.begin <= (*vbegin)->time && m_lockHighlight.end >= (*next)->time )
             {
                 const auto t = uint8_t( ( sin( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() * 0.01 ) * 0.5 + 0.5 ) * 255 );
-                draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), 0x00FFFFFF | ( t << 24 ), 2.f, -1, 2.f );
+                draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), 0x00FFFFFF | ( t << 24 ), 2.f, -1, condensed ? 0.f : 2.f );
             }
-            else
+            else if( !condensed )
             {
-                const auto coutline = state == LockState::HasLock ? 0xFF3BA33B : ( state == LockState::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
+                const auto coutline = drawState == LockState::HasLock ? 0xFF3BA33B : ( drawState == LockState::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
                 draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( px1, double( w + 10 ) ), offset + ty ), coutline, 2.f );
             }
             if( dsz >= MinVisSize )

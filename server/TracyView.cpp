@@ -721,7 +721,7 @@ void View::ProcessLockWait( const QueueLockWait& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = LockEvent::Type::Wait;
+    lev->type = (uint8_t)LockEvent::Type::Wait;
     lev->srcloc = 0;
 
     auto it = m_lockMap.find( ev.id );
@@ -746,7 +746,7 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = LockEvent::Type::Obtain;
+    lev->type = (uint8_t)LockEvent::Type::Obtain;
     lev->srcloc = 0;
 
     std::lock_guard<std::mutex> lock( m_lock );
@@ -757,7 +757,7 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = LockEvent::Type::Release;
+    lev->type = (uint8_t)LockEvent::Type::Release;
     lev->srcloc = 0;
 
     std::lock_guard<std::mutex> lock( m_lock );
@@ -780,7 +780,7 @@ void View::ProcessLockMark( const QueueLockMark& ev )
         --it;
         if( (*it)->thread == thread )
         {
-            switch( (*it)->type )
+            switch( (LockEvent::Type)(*it)->type )
             {
             case LockEvent::Type::Obtain:
             case LockEvent::Type::Wait:
@@ -1071,6 +1071,7 @@ void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
         lockmap.threadList.emplace_back( thread );
     }
     lev->thread = it->second;
+    assert( lev->thread == it->second );
     auto& timeline = lockmap.timeline;
     if( timeline.empty() || timeline.back()->time < lev->time )
     {
@@ -1096,7 +1097,7 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
     while( pos != end )
     {
         const auto tbit = uint64_t( 1 ) << timeline[pos]->thread;
-        switch( timeline[pos]->type )
+        switch( (LockEvent::Type)timeline[pos]->type )
         {
         case LockEvent::Type::Wait:
             waitList |= tbit;
@@ -1118,6 +1119,7 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
         timeline[pos]->lockingThread = lockingThread;
         timeline[pos]->waitList = waitList;
         timeline[pos]->lockCount = lockCount;
+        assert( timeline[pos]->lockingThread == lockingThread );
         pos++;
     }
 }

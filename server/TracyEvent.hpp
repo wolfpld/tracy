@@ -43,10 +43,10 @@ struct LockEvent
     int64_t time;
     uint32_t srcloc;
     uint64_t waitList;
-    uint8_t thread;
-    uint8_t lockingThread;
+    uint16_t thread         : 6;
+    uint16_t lockingThread  : 6;
+    uint16_t type           : 2;
     uint8_t lockCount;
-    Type type;
 };
 
 enum { LockEventSize = sizeof( LockEvent ) };

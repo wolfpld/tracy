@@ -70,7 +70,7 @@ public:
         return t;
 #elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
         uint32_t eax, edx;
-        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx) :: );
+        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx) :: "%ecx" );
         return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
 #endif
     }

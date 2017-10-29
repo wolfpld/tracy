@@ -73,7 +73,6 @@ enum { QueuePrealloc = 256 * 1024 };
 
 static Profiler* s_instance = nullptr;
 static Thread* s_thread = nullptr;
-static unsigned int __dontcare_cpu;
 
 // 1a. But s_queue is needed for initialization of variables in point 2.
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
@@ -90,7 +89,7 @@ thread_local ProducerWrapper init_order(108) s_token { s_queue.get_explicit_prod
 #  pragma init_seg( ".CRT$XCB" )
 #endif
 
-static InitTimeWrapper init_order(101) s_initTime { Profiler::GetTime( __dontcare_cpu ) };
+static InitTimeWrapper init_order(101) s_initTime { Profiler::GetTime() };
 static RPMallocInit init_order(102) s_rpmalloc_init;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
@@ -123,8 +122,7 @@ Profiler::Profiler()
     new(s_thread) Thread( LaunchWorker, this );
     SetThreadName( s_thread->Handle(), "Tracy Profiler" );
 
-    uint32_t cpu;
-    m_timeBegin.store( GetTime( cpu ), std::memory_order_relaxed );
+    m_timeBegin.store( GetTime(), std::memory_order_relaxed );
 }
 
 Profiler::~Profiler()
@@ -406,7 +404,6 @@ void Profiler::CalibrateDelay()
     enum { Events = Iterations * 2 };   // start + end
     static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
-    uint32_t cpu;
     moodycamel::ProducerToken ptoken_detail( s_queue );
     moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = s_queue.get_explicit_producer( ptoken_detail );
     for( int i=0; i<Iterations; i++ )
@@ -432,13 +429,13 @@ void Profiler::CalibrateDelay()
             tail.store( magic + 1, std::memory_order_release );
         }
     }
-    const auto f0 = GetTime( cpu );
+    const auto f0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         FakeZone ___tracy_scoped_zone( &__tracy_source_location );
     }
-    const auto t0 = GetTime( cpu );
+    const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
@@ -462,7 +459,7 @@ void Profiler::CalibrateDelay()
             tail.store( magic + 1, std::memory_order_release );
         }
     }
-    const auto t1 = GetTime( cpu );
+    const auto t1 = GetTime();
     const auto dt = t1 - t0;
     const auto df = t0 - f0;
     m_delay = ( dt - df ) / Events;
@@ -470,8 +467,8 @@ void Profiler::CalibrateDelay()
     auto mindiff = std::numeric_limits<int64_t>::max();
     for( int i=0; i<Iterations * 10; i++ )
     {
-        const auto t0 = GetTime( cpu );
-        const auto t1 = GetTime( cpu );
+        const auto t0 = GetTime();
+        const auto t1 = GetTime();
         const auto dt = t1 - t0;
         if( dt > 0 && dt < mindiff ) mindiff = dt;
     }

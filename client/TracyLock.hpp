@@ -28,7 +28,6 @@ public:
 
     tracy_force_inline void lock()
     {
-        uint32_t cpu;
         const auto thread = GetThreadHandle();
         {
             Magic magic;
@@ -38,7 +37,7 @@ public:
             item->hdr.type = QueueType::LockWait;
             item->lockWait.id = m_id;
             item->lockWait.thread = thread;
-            item->lockWait.time = Profiler::GetTime( cpu );
+            item->lockWait.time = Profiler::GetTime();
             item->lockWait.lckloc = m_lckloc;
             tail.store( magic + 1, std::memory_order_release );
         }
@@ -53,7 +52,7 @@ public:
             item->hdr.type = QueueType::LockObtain;
             item->lockObtain.id = m_id;
             item->lockObtain.thread = thread;
-            item->lockObtain.time = Profiler::GetTime( cpu );
+            item->lockObtain.time = Profiler::GetTime();
             tail.store( magic + 1, std::memory_order_release );
         }
     }
@@ -62,7 +61,6 @@ public:
     {
         m_lockable.unlock();
 
-        uint32_t cpu;
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -70,7 +68,7 @@ public:
         item->hdr.type = QueueType::LockRelease;
         item->lockRelease.id = m_id;
         item->lockRelease.thread = GetThreadHandle();
-        item->lockRelease.time = Profiler::GetTime( cpu );
+        item->lockRelease.time = Profiler::GetTime();
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -79,7 +77,6 @@ public:
         const auto ret = m_lockable.try_lock();
         if( ret )
         {
-            uint32_t cpu;
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
@@ -87,7 +84,7 @@ public:
             item->hdr.type = QueueType::LockObtain;
             item->lockObtain.id = (uint64_t)&m_lockable;
             item->lockObtain.thread = GetThreadHandle();
-            item->lockObtain.time = Profiler::GetTime( cpu );
+            item->lockObtain.time = Profiler::GetTime();
             tail.store( magic + 1, std::memory_order_release );
         }
         return ret;

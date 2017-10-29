@@ -54,9 +54,9 @@ public:
         const auto t = int64_t( __rdtscp( &cpu ) );
         return t;
 #elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
-        uint64_t eax, edx;
+        uint32_t eax, edx;
         asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx), "=c" (cpu) :: );
-        return ( edx << 32 ) + eax;
+        return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
 #endif
     }
 #endif

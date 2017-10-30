@@ -4,13 +4,17 @@ Tracy is a frame profiler that can be used for remote or embedded telemetry of y
 
 ![](doc/profiler.png)
 
-Tracy requires compiler support for C++11 and Thread Local Storage. There are no other requirements. The following platforms are confirmed to be working:
+Tracy requires compiler support for C++11, Thread Local Storage and a way to workaround static initialization order fiasco. There are no other requirements. The following platforms are confirmed to be working:
 
-- Windows (x64)
-- Linux (x64, ARM64)
+- Windows (x86, x64)
+- Linux (x86, x64, ARM, ARM64)
 - Android (ARM, x86)
 
-Other platforms should also work fine.
+The following compilers are supported:
+
+- MSVC
+- gcc
+- clang
 
 ### High-level overview
 

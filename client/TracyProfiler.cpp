@@ -16,6 +16,7 @@
 #include <chrono>
 #include <limits>
 #include <memory>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../common/TracyProtocol.hpp"
@@ -60,11 +61,15 @@ static const char* GetProcessName()
     while( ptr > buf && *ptr != '\\' && *ptr != '/' ) ptr--;
     if( ptr > buf ) ptr++;
     return ptr;
+#elif defined __ANDROID__
+#  if __ANDROID_API__ >= 21
+    auto buf = getprogname();
+    if( buf ) return buf;
+#  endif
 #elif defined _GNU_SOURCE
     return program_invocation_short_name;
-#else
-    return "unknown";
 #endif
+    return "unknown";
 }
 
 enum { QueuePrealloc = 256 * 1024 };

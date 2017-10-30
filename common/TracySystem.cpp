@@ -6,6 +6,10 @@
 #  include <unistd.h>
 #endif
 
+#ifdef __ANDROID__
+#  include <sys/prctl.h>
+#endif
+
 #include <inttypes.h>
 
 #include "TracySystem.hpp"
@@ -86,6 +90,11 @@ const char* GetThreadName( uint64_t id )
         }
     }
 #  endif
+#elif defined __ANDROID__
+    if( prctl( PR_GET_NAME, (unsigned long)buf, 0, 0, 0 ) == 0 )
+    {
+        return buf;
+    }
 #elif defined _GNU_SOURCE
     if( pthread_getname_np( (pthread_t)id, buf, 256 ) == 0 )
     {

@@ -2,7 +2,7 @@
 #define __TRACYSYSTEM_HPP__
 
 #ifdef TRACY_ENABLE
-#  ifdef __ANDROID__
+#  if defined __ANDROID__ || defined __CYGWIN__
 #    define TRACY_COLLECT_THREAD_NAMES
 #  endif
 #endif

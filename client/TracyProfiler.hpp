@@ -15,7 +15,7 @@
 #  include <intrin.h>
 #endif
 
-#if defined _MSC_VER || defined __CYGWIN__ || defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+#if defined _MSC_VER || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __ANDROID__ )
 #  define TRACY_RDTSCP_SUPPORTED
 #endif
 

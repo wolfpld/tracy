@@ -8,7 +8,7 @@ Tracy requires compiler support for C++11 and Thread Local Storage. There are no
 
 - Windows (x64)
 - Linux (x64, ARM64)
-- Android (ARM)
+- Android (ARM, x86)
 
 Other platforms should also work fine.
 

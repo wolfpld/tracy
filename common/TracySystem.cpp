@@ -6,16 +6,27 @@
 #  include <unistd.h>
 #endif
 
-#ifdef __ANDROID__
-#  include <sys/prctl.h>
-#endif
-
 #include <inttypes.h>
 
 #include "TracySystem.hpp"
 
+#ifdef TRACY_COLLECT_THREAD_NAMES
+#  include <atomic>
+#  include "../client/tracy_rpmalloc.hpp"
+#endif
+
 namespace tracy
 {
+
+#ifdef TRACY_COLLECT_THREAD_NAMES
+struct ThreadNameData
+{
+    uint64_t id;
+    const char* name;
+    ThreadNameData* next;
+};
+extern std::atomic<ThreadNameData*> s_threadNameData;
+#endif
 
 void SetThreadName( std::thread& thread, const char* name )
 {
@@ -70,13 +81,42 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
         pthread_setname_np( handle, buf );
     }
 #endif
+#ifdef TRACY_COLLECT_THREAD_NAMES
+    {
+        const auto sz = strlen( name );
+        char* buf = (char*)rpmalloc( sz+1 );
+        memcpy( buf, name, sz );
+        buf[sz+1] = '\0';
+        auto data = (ThreadNameData*)rpmalloc( sizeof( ThreadNameData ) );
+#  ifdef _WIN32
+        data->id = GetThreadId( static_cast<HANDLE>( handle ) );
+#  else
+        data->id = (uint64_t)handle;
+#  endif
+        data->name = buf;
+        data->next = s_threadNameData.load( std::memory_order_relaxed );
+        while( !s_threadNameData.compare_exchange_weak( data->next, data, std::memory_order_release, std::memory_order_relaxed ) ) {}
+    }
+#endif
 }
 
 const char* GetThreadName( uint64_t id )
 {
     static char buf[256];
-#ifdef _WIN32
-#  ifdef NTDDI_WIN10_RS2
+#ifdef TRACY_COLLECT_THREAD_NAMES
+    auto ptr = s_threadNameData.load( std::memory_order_relaxed );
+    while( ptr )
+    {
+        if( ptr->id == id )
+        {
+            strcpy( buf, ptr->name );
+            return buf;
+        }
+        ptr = ptr->next;
+    }
+#else
+#  ifdef _WIN32
+#    ifdef NTDDI_WIN10_RS2
     auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)id );
     if( hnd != 0 )
     {
@@ -89,17 +129,13 @@ const char* GetThreadName( uint64_t id )
             return buf;
         }
     }
-#  endif
-#elif defined __ANDROID__
-    if( prctl( PR_GET_NAME, (unsigned long)buf, 0, 0, 0 ) == 0 )
-    {
-        return buf;
-    }
-#elif defined _GNU_SOURCE
+#    endif
+#  elif defined _GNU_SOURCE
     if( pthread_getname_np( (pthread_t)id, buf, 256 ) == 0 )
     {
         return buf;
     }
+#  endif
 #endif
     sprintf( buf, "%" PRIu64, id );
     return buf;

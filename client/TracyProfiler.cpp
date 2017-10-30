@@ -98,6 +98,12 @@ static InitTimeWrapper init_order(101) s_initTime { Profiler::GetTime() };
 static RPMallocInit init_order(102) s_rpmalloc_init;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
+
+#ifdef TRACY_COLLECT_THREAD_NAMES
+struct ThreadNameData;
+std::atomic<ThreadNameData*> init_order(104) s_threadNameData( nullptr );
+#endif
+
 static Profiler init_order(105) s_profiler;
 
 

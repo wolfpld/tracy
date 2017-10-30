@@ -1,6 +1,12 @@
 #ifndef __TRACYSYSTEM_HPP__
 #define __TRACYSYSTEM_HPP__
 
+#ifdef TRACY_ENABLE
+#  ifdef __ANDROID__
+#    define TRACY_COLLECT_THREAD_NAMES
+#  endif
+#endif
+
 #ifdef _WIN32
 extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
 #else

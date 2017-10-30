@@ -9,6 +9,7 @@ Tracy requires compiler support for C++11, Thread Local Storage and a way to wor
 - Windows (x86, x64)
 - Linux (x86, x64, ARM, ARM64)
 - Android (ARM, x86)
+- FreeBSD (x64)
 
 The following compilers are supported:
 

@@ -30,7 +30,7 @@ public:
     HANDLE Handle() const { return m_hnd; }
 
 private:
-    static DWORD Launch( void* ptr ) { ((Thread*)ptr)->m_func( ((Thread*)ptr)->m_ptr ); return 0; }
+    static DWORD WINAPI Launch( void* ptr ) { ((Thread*)ptr)->m_func( ((Thread*)ptr)->m_ptr ); return 0; }
 
     void(*m_func)( void* ptr );
     void* m_ptr;

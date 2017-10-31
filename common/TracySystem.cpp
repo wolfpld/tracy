@@ -131,7 +131,7 @@ const char* GetThreadName( uint64_t id )
         }
     }
 #    endif
-#  elif defined _GNU_SOURCE
+#  elif defined _GNU_SOURCE && !defined __ANDROID__
     if( pthread_getname_np( (pthread_t)id, buf, 256 ) == 0 )
     {
         return buf;

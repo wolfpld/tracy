@@ -39,6 +39,8 @@ It should be noted that tracy needs to calibrate its internal timers at each run
 |    1     | 4194568 |    0.94 s |       1.003 s |   +0.063 s |
 |    2     | 5592822 |   1.034 s |       1.119 s |   +0.085 s |
 
+In both scenarios the per-zone time cost is at ~15 ns. This is in line with the measured 8 ns single event collection time (each zone has to raport start and end event).
+
 ## Usage instructions
 
 #### Initial client setup

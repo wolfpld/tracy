@@ -2,7 +2,7 @@
 #define __TRACYSYSTEM_HPP__
 
 #ifdef TRACY_ENABLE
-#  if defined __ANDROID__ || defined __CYGWIN__
+#  if defined __ANDROID__ || defined __CYGWIN__ || defined __MACOSX__ || defined __IPHONE__
 #    define TRACY_COLLECT_THREAD_NAMES
 #  endif
 #endif

@@ -82,6 +82,10 @@ bool Socket::Connect( const char* addr, const char* port )
     for( ptr = res; ptr; ptr = ptr->ai_next )
     {
         if( ( sock = socket( ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol ) ) == -1 ) continue;
+#if defined __MACOSX__ || defined __IPHONE__
+        int val = 1;
+        setsockopt( m_sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
+#endif
         if( connect( sock, ptr->ai_addr, ptr->ai_addrlen ) == -1 )
         {
 #ifdef _MSC_VER
@@ -247,6 +251,10 @@ Socket* ListenSocket::Accept()
     if( FD_ISSET( m_sock, &fds ) )
     {
         int sock = accept( m_sock, (sockaddr*)&remote, &sz);
+#if defined __MACOSX__ || defined __IPHONE__
+        int val = 1;
+        setsockopt( m_sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
+#endif
         if( sock == -1 )
         {
             return nullptr;

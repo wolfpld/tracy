@@ -107,6 +107,8 @@ std::atomic<ThreadNameData*> init_order(104) s_threadNameData( nullptr );
 static Profiler init_order(105) s_profiler;
 
 
+enum { BulkSize = TargetFrameSize / QueueItemSize };
+
 Profiler::Profiler()
     : m_timeBegin( 0 )
     , m_mainThread( GetThreadHandle() )
@@ -116,6 +118,7 @@ Profiler::Profiler()
     , m_stream( LZ4_createStream() )
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
+    , m_itemBuf( (QueueItem*)tracy_malloc( sizeof( QueueItem ) * BulkSize ) )
 {
     assert( !s_instance );
     s_instance = this;
@@ -142,6 +145,7 @@ Profiler::~Profiler()
     s_thread->~Thread();
     tracy_free( s_thread );
 
+    tracy_free( m_itemBuf );
     tracy_free( m_buffer );
     LZ4_freeStream( m_stream );
 
@@ -159,8 +163,6 @@ bool Profiler::ShouldExit()
 {
     return s_instance->m_shutdown.load( std::memory_order_relaxed );
 }
-
-enum { BulkSize = TargetFrameSize / QueueItemSize };
 
 void Profiler::Worker()
 {
@@ -246,16 +248,15 @@ void Profiler::Worker()
 
 Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 {
-    QueueItem item[BulkSize];
-    const auto sz = s_queue.try_dequeue_bulk( token, item, BulkSize );
+    const auto sz = s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize );
     if( sz > 0 )
     {
         auto buf = m_buffer + m_bufferOffset;
         auto ptr = buf;
         for( size_t i=0; i<sz; i++ )
         {
-            const auto dsz = QueueDataSize[item[i].hdr.idx];
-            memcpy( ptr, item+i, dsz );
+            const auto dsz = QueueDataSize[m_itemBuf[i].hdr.idx];
+            memcpy( ptr, m_itemBuf+i, dsz );
             ptr += dsz;
         }
         if( !SendData( buf, ptr - buf ) ) return ConnectionLost;

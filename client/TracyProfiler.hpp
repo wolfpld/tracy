@@ -208,6 +208,8 @@ private:
     LZ4_stream_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;
+
+    QueueItem* m_itemBuf;
 };
 
 };

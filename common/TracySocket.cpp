@@ -17,11 +17,14 @@
 #  include <unistd.h>
 #endif
 
+#ifndef MSG_NOSIGNAL
+#  define MSG_NOSIGNAL 0
+#endif
+
 namespace tracy
 {
 
 #ifdef _MSC_VER
-#  define MSG_NOSIGNAL 0
 struct __wsinit
 {
     __wsinit()
@@ -40,7 +43,6 @@ static __wsinit InitWinSock()
     static __wsinit init;
     return init;
 }
-
 #endif
 
 Socket::Socket()

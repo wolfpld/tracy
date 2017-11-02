@@ -119,6 +119,7 @@ Profiler::Profiler()
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
     , m_itemBuf( (QueueItem*)tracy_malloc( sizeof( QueueItem ) * BulkSize ) )
+    , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
 {
     assert( !s_instance );
     s_instance = this;
@@ -145,6 +146,7 @@ Profiler::~Profiler()
     s_thread->~Thread();
     tracy_free( s_thread );
 
+    tracy_free( m_lz4Buf );
     tracy_free( m_itemBuf );
     tracy_free( m_buffer );
     LZ4_freeStream( m_stream );
@@ -275,10 +277,9 @@ bool Profiler::SendData( const char* data, size_t len )
 #ifdef TRACY_DISABLE_LZ4
     if( m_sock->Send( data, (int)len ) == -1 ) return false;
 #else
-    char lz4[LZ4Size + sizeof( lz4sz_t )];
-    const lz4sz_t lz4sz = LZ4_compress_fast_continue( m_stream, data, lz4 + sizeof( lz4sz_t ), (int)len, LZ4Size, 1 );
-    memcpy( lz4, &lz4sz, sizeof( lz4sz ) );
-    if( m_sock->Send( lz4, lz4sz + sizeof( lz4sz_t ) ) == -1 ) return false;
+    const lz4sz_t lz4sz = LZ4_compress_fast_continue( m_stream, data, m_lz4Buf + sizeof( lz4sz_t ), (int)len, LZ4Size, 1 );
+    memcpy( m_lz4Buf, &lz4sz, sizeof( lz4sz ) );
+    if( m_sock->Send( m_lz4Buf, lz4sz + sizeof( lz4sz_t ) ) == -1 ) return false;
 #endif
     return true;
 }

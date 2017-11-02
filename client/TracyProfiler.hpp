@@ -210,6 +210,7 @@ private:
     int m_bufferOffset;
 
     QueueItem* m_itemBuf;
+    char* m_lz4Buf;
 };
 
 };

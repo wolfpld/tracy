@@ -13,7 +13,7 @@
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
 #  include <atomic>
-#  include "../client/tracy_rpmalloc.hpp"
+#  include "TracyAlloc.hpp"
 #endif
 
 namespace tracy
@@ -85,10 +85,10 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
 #ifdef TRACY_COLLECT_THREAD_NAMES
     {
         const auto sz = strlen( name );
-        char* buf = (char*)rpmalloc( sz+1 );
+        char* buf = (char*)tracy_malloc( sz+1 );
         memcpy( buf, name, sz );
         buf[sz+1] = '\0';
-        auto data = (ThreadNameData*)rpmalloc( sizeof( ThreadNameData ) );
+        auto data = (ThreadNameData*)tracy_malloc( sizeof( ThreadNameData ) );
 #  ifdef _WIN32
         data->id = GetThreadId( static_cast<HANDLE>( handle ) );
 #  else

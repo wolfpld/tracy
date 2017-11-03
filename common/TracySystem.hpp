@@ -24,6 +24,10 @@ static inline uint64_t GetThreadHandle()
 #ifdef _WIN32
     static_assert( sizeof( decltype( GetCurrentThreadId() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
     return uint64_t( GetCurrentThreadId() );
+#elif defined __MACOSX__ || defined __IPHONE__
+    uint64_t id;
+    pthread_threadid_np( pthread_self(), id );
+    return id;
 #else
     static_assert( sizeof( decltype( pthread_self() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
     return uint64_t( pthread_self() );

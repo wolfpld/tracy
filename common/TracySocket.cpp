@@ -253,7 +253,7 @@ Socket* ListenSocket::Accept()
         int sock = accept( m_sock, (sockaddr*)&remote, &sz);
 #if defined __APPLE__
         int val = 1;
-        setsockopt( m_sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
+        setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
         if( sock == -1 )
         {

@@ -26,7 +26,7 @@ static inline uint64_t GetThreadHandle()
     return uint64_t( GetCurrentThreadId() );
 #elif defined __APPLE__
     uint64_t id;
-    pthread_threadid_np( pthread_self(), id );
+    pthread_threadid_np( pthread_self(), &id );
     return id;
 #else
     static_assert( sizeof( decltype( pthread_self() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );

@@ -91,7 +91,7 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
         auto data = (ThreadNameData*)tracy_malloc( sizeof( ThreadNameData ) );
 #  ifdef _WIN32
         data->id = GetThreadId( static_cast<HANDLE>( handle ) );
-#  elif defined __MACOSX__ || defined __IPHONE__
+#  elif defined __APPLE__
         pthread_thread_id( handle, data->id );
 #  else
         data->id = (uint64_t)handle;

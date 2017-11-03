@@ -2,7 +2,7 @@
 #define __TRACYSYSTEM_HPP__
 
 #ifdef TRACY_ENABLE
-#  if defined __ANDROID__ || defined __CYGWIN__ || defined __MACOSX__ || defined __IPHONE__
+#  if defined __ANDROID__ || defined __CYGWIN__ || defined __APPLE__
 #    define TRACY_COLLECT_THREAD_NAMES
 #  endif
 #endif
@@ -24,7 +24,7 @@ static inline uint64_t GetThreadHandle()
 #ifdef _WIN32
     static_assert( sizeof( decltype( GetCurrentThreadId() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
     return uint64_t( GetCurrentThreadId() );
-#elif defined __MACOSX__ || defined __IPHONE__
+#elif defined __APPLE__
     uint64_t id;
     pthread_threadid_np( pthread_self(), id );
     return id;

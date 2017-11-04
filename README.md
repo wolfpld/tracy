@@ -12,6 +12,7 @@ Tracy requires compiler support for C++11, Thread Local Storage and a way to wor
 - FreeBSD (x64)
 - Cygwin (x64)
 - WSL (x64)
+- OSX (x64)
 
 The following compilers are supported:
 

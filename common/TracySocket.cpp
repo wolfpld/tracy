@@ -170,7 +170,7 @@ bool Socket::Read( void* _buf, int len, const timeval* tv, bool(*exitCb)() )
 #ifdef _WIN32
         {
             auto err = WSAGetLastError();
-            if( err == WSAECONNABORTED ) return false;
+            if( err == WSAECONNABORTED || err == WSAECONNRESET ) return false;
         }
 #endif
             break;

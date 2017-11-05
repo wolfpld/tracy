@@ -17,6 +17,7 @@ enum class QueueType : uint8_t
     CustomStringData,
     FrameMarkMsg,
     SourceLocation,
+    SourceLocationPayload,
     ZoneText,
     ZoneName,
     LockWait,
@@ -181,6 +182,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // custom string data
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // allocated source location payload
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueZoneName ),
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),

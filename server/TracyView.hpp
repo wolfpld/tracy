@@ -141,11 +141,13 @@ private:
     void CheckThreadString( uint64_t id );
     void CheckCustomString( uint64_t ptr, ZoneEvent* dst );
     void CheckSourceLocation( uint64_t ptr );
+    void CheckSourceLocationPayload( uint64_t ptr, ZoneEvent* dst );
 
     void AddString( uint64_t ptr, std::string&& str );
     void AddThreadString( uint64_t id, std::string&& str );
     void AddCustomString( uint64_t ptr, std::string&& str );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
+    void AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz );
     void AddMessageData( uint64_t ptr, const char* str, size_t sz );
 
     uint32_t ShrinkSourceLocation( uint64_t srcloc );
@@ -248,6 +250,7 @@ private:
     std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
     std::unordered_map<uint64_t, MessagePending> m_pendingMessages;
     std::unordered_map<uint64_t, uint32_t> m_sourceLocationShrink;
+    std::unordered_map<uint64_t, ZoneEvent*> m_pendingSourceLocationPayload;
 
     Slab<64*1024*1024> m_slab;
 

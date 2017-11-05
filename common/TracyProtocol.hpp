@@ -23,6 +23,7 @@ enum ServerQuery : uint8_t
     ServerQueryThreadString,
     ServerQueryCustomString,
     ServerQuerySourceLocation,
+    ServerQuerySourceLocationPayload,
     ServerQueryPlotName,
     ServerQueryMessage,
 };

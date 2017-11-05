@@ -325,6 +325,33 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     s_token.ptr->enqueue<moodycamel::CanAlloc>( std::move( item ) );
 }
 
+bool Profiler::SendSourceLocationPayload( uint64_t _ptr )
+{
+    auto ptr = (const char*)_ptr;
+
+    QueueItem item;
+    item.hdr.type = QueueType::SourceLocationPayload;
+    item.stringTransfer.ptr = _ptr;
+
+    const auto isz = QueueDataSize[item.hdr.idx];
+
+    auto buf = m_buffer + m_bufferOffset;
+    memcpy( buf, &item, isz );
+
+    const auto len = *((uint32_t*)ptr);
+    assert( len < TargetFrameSize - isz );
+    assert( len <= std::numeric_limits<uint16_t>::max() );
+    assert( len > 4 );
+    const auto l16 = (uint16_t)len - 4;
+    memcpy( buf + isz, &l16, 2 );
+    memcpy( buf + isz + 2, ptr + 4, len - 4 );
+
+    m_bufferOffset += int( isz + len - 2 );
+    if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
+
+    return SendData( buf, isz + len - 2 );
+}
+
 static bool DontExit() { return false; }
 
 bool Profiler::HandleServerQuery()
@@ -360,6 +387,10 @@ bool Profiler::HandleServerQuery()
         break;
     case ServerQuerySourceLocation:
         SendSourceLocation( ptr );
+        break;
+    case ServerQuerySourceLocationPayload:
+        SendSourceLocationPayload( ptr );
+        tracy_free( (void*)ptr );
         break;
     case ServerQueryPlotName:
         SendString( ptr, (const char*)ptr, QueueType::PlotName );

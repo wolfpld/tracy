@@ -520,7 +520,7 @@ close:
 
 void View::DispatchProcess( const QueueItem& ev )
 {
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::MessageData )
+    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::MessageData || ev.hdr.type == QueueType::SourceLocationPayload )
     {
         timeval tv;
         tv.tv_sec = 0;
@@ -547,6 +547,9 @@ void View::DispatchProcess( const QueueItem& ev )
         case QueueType::MessageData:
             AddMessageData( ev.stringTransfer.ptr, buf, sz );
             break;
+        case QueueType::SourceLocationPayload:
+            AddSourceLocationPayload( ev.stringTransfer.ptr, buf, sz );
+            break;
         default:
             assert( false );
             break;
@@ -561,7 +564,7 @@ void View::DispatchProcess( const QueueItem& ev )
 void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
 {
     ptr += QueueDataSize[ev.hdr.idx];
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::MessageData )
+    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::MessageData || ev.hdr.type == QueueType::SourceLocationPayload )
     {
         uint16_t sz;
         memcpy( &sz, ptr, sizeof( sz ) );
@@ -582,6 +585,9 @@ void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
             break;
         case QueueType::MessageData:
             AddMessageData( ev.stringTransfer.ptr, ptr, sz );
+            break;
+        case QueueType::SourceLocationPayload:
+            AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
             break;
         default:
             assert( false );
@@ -682,15 +688,14 @@ void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
 {
     auto zone = m_slab.AllocInit<ZoneEvent>();
 
-    //CheckSourceLocation( ev.srcloc );
-
     zone->start = ev.time * m_timerMul;
     zone->end = -1;
-    //zone->srcloc = ShrinkSourceLocation( ev.srcloc );
     zone->srcloc = 0;
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->text = -1;
+
+    CheckSourceLocationPayload( ev.srcloc, zone );
 
     std::unique_lock<std::mutex> lock( m_lock );
     NewZone( zone, ev.thread );
@@ -917,6 +922,14 @@ void View::CheckSourceLocation( uint64_t ptr )
     ServerQuery( ServerQuerySourceLocation, ptr );
 }
 
+void View::CheckSourceLocationPayload( uint64_t ptr, ZoneEvent* dst )
+{
+    assert( m_pendingSourceLocationPayload.find( ptr ) == m_pendingSourceLocationPayload.end() );
+    m_pendingSourceLocationPayload.emplace( ptr, dst );
+
+    ServerQuery( ServerQuerySourceLocationPayload, ptr );
+}
+
 void View::AddString( uint64_t ptr, std::string&& str )
 {
     assert( m_strings.find( ptr ) == m_strings.end() );
@@ -970,6 +983,33 @@ void View::AddSourceLocation( const QueueSourceLocation& srcloc )
     CheckString( srcloc.function );
     std::lock_guard<std::mutex> lock( m_lock );
     m_sourceLocation.emplace( srcloc.ptr, srcloc );
+}
+
+void View::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
+{
+    const auto start = data;
+
+    auto pit = m_pendingSourceLocationPayload.find( ptr );
+    assert( pit != m_pendingSourceLocationPayload.end() );
+
+    uint32_t color, line;
+    memcpy( &color, data, 4 );
+    memcpy( &line, data + 4, 4 );
+    data += 8;
+    auto end = data;
+    while( *end ) end++;
+    end++;
+    char* func = m_slab.Alloc<char>( end - data );
+    memcpy( func, data, end - data );
+    const auto ssz = sz - ( end - start );
+    char* source = m_slab.Alloc<char>( ssz+1 );
+    memcpy( source, end, ssz );
+    source[ssz] = '\0';
+
+    std::unique_lock<std::mutex> lock( m_lock );
+
+    lock.unlock();
+    m_pendingSourceLocationPayload.erase( ptr );
 }
 
 void View::AddMessageData( uint64_t ptr, const char* str, size_t sz )

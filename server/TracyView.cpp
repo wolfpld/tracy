@@ -267,6 +267,31 @@ View::View( FileRead& f )
     }
 
     f.Read( &sz, sizeof( sz ) );
+    m_sourceLocationPayload.reserve( sz );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint32_t color, line;
+        f.Read( &color, sizeof( color ) );
+        f.Read( &line, sizeof( line ) );
+        uint64_t fsz;
+        f.Read( &fsz, sizeof( fsz ) );
+        auto func = m_slab.Alloc<char>( fsz+1 );
+        f.Read( func, fsz );
+        func[fsz] = '\0';
+        f.Read( &fsz, sizeof( fsz ) );
+        auto file = m_slab.Alloc<char>( fsz+1 );
+        f.Read( file, fsz );
+        file[fsz] = '\0';
+        auto srcloc = m_slab.Alloc<SourceLocation>();
+        srcloc->function = (uint64_t)func;
+        srcloc->file = (uint64_t)file;
+        srcloc->line = line;
+        srcloc->color = color;
+        srcloc->stringsAllocated = 1;
+        m_sourceLocationPayload.push_back( srcloc );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
     for( uint64_t i=0; i<sz; i++ )
     {
         LockMap lockmap;
@@ -3284,6 +3309,24 @@ void View::Write( FileWrite& f )
     for( auto& v : m_sourceLocationExpand )
     {
         f.Write( &v, sizeof( v ) );
+    }
+
+    sz = m_sourceLocationPayload.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_sourceLocationPayload )
+    {
+        assert( v->stringsAllocated == 1 );
+        uint32_t color = v->color;
+        f.Write( &color, sizeof( color ) );
+        f.Write( &v->line, sizeof( v->line ) );
+        auto func = (const char*)v->function;
+        sz = strlen( func );
+        f.Write( &sz, sizeof( sz ) );
+        f.Write( func, sz );
+        auto file = (const char*)v->file;
+        sz = strlen( file );
+        f.Write( &sz, sizeof( sz ) );
+        f.Write( file, sz );
     }
 
     sz = m_lockMap.size();

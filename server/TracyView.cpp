@@ -2130,7 +2130,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             }
             else
             {
-                zoneName = GetString( srcloc.function );
+                zoneName = GetSrcLocFunction( srcloc );
             }
 
             int dmul = 1;
@@ -2511,8 +2511,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
                     ImGui::BeginTooltip();
                     ImGui::Text( "Lock #%" PRIu32, v.first );
-                    ImGui::Text( "%s", GetString( srcloc.function ) );
-                    ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
+                    ImGui::Text( "%s", GetSrcLocFunction( srcloc ) );
+                    ImGui::Text( "%s:%i", GetSrcLocFile( srcloc ), srcloc.line );
                     ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
                     ImGui::Separator();
 
@@ -2535,8 +2535,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     {
                         auto& marklocdata = GetSourceLocation( markloc );
                         ImGui::Text( "Lock event location:" );
-                        ImGui::Text( "%s", GetString( marklocdata.function ) );
-                        ImGui::Text( "%s:%i", GetString( marklocdata.file ), marklocdata.line );
+                        ImGui::Text( "%s", GetSrcLocFunction( marklocdata ) );
+                        ImGui::Text( "%s:%i", GetSrcLocFile( marklocdata ), marklocdata.line );
                         ImGui::Separator();
                     }
 
@@ -2628,7 +2628,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         if( drawn )
         {
             char buf[1024];
-            sprintf( buf, "%" PRIu32 ": %s", v.first, GetString( srcloc.function ) );
+            sprintf( buf, "%" PRIu32 ": %s", v.first, GetSrcLocFunction( srcloc ) );
             draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
             {
@@ -2894,8 +2894,8 @@ void View::DrawZoneInfoWindow()
         dmul++;
     }
     auto& srcloc = GetSourceLocation( ev.srcloc );
-    ImGui::Text( "Function: %s", GetString( srcloc.function ) );
-    ImGui::Text( "Location: %s:%i", GetString( srcloc.file ), srcloc.line );
+    ImGui::Text( "Function: %s", GetSrcLocFunction( srcloc ) );
+    ImGui::Text( "Location: %s:%i", GetSrcLocFile( srcloc ), srcloc.line );
     if( ev.text != -1 && GetTextData( ev )->userText )
     {
         ImGui::Text( "User text: %s", GetTextData( ev )->userText );
@@ -2944,7 +2944,7 @@ void View::DrawZoneInfoWindow()
             else
             {
                 auto& srcloc = GetSourceLocation( cev.srcloc );
-                ImGui::Text( "%s", GetString( srcloc.function ) );
+                ImGui::Text( "%s", GetSrcLocFunction( srcloc ) );
             }
             if( ImGui::IsItemHovered() )
             {
@@ -2990,7 +2990,7 @@ void View::DrawOptions()
     for( auto& l : m_lockMap )
     {
         char buf[1024];
-        sprintf( buf, "%" PRIu32 ": %s", l.first, GetString( GetSourceLocation( l.second.srcloc ).function ) );
+        sprintf( buf, "%" PRIu32 ": %s", l.first, GetSrcLocFunction( GetSourceLocation( l.second.srcloc ) ) );
         ImGui::Checkbox( buf , &l.second.visible );
     }
     ImGui::Unindent( tw );
@@ -3037,6 +3037,16 @@ void View::DrawMessages()
         }
     }
     ImGui::End();
+}
+
+const char* View::GetSrcLocFunction( const SourceLocation& srcloc )
+{
+    return GetString( srcloc.function );
+}
+
+const char* View::GetSrcLocFile( const SourceLocation& srcloc )
+{
+    return GetString( srcloc.file );
 }
 
 uint32_t View::GetZoneColor( const ZoneEvent& ev )
@@ -3106,7 +3116,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
 
     auto& srcloc = GetSourceLocation( ev.srcloc );
 
-    const auto filename = GetString( srcloc.file );
+    const auto filename = GetSrcLocFile( srcloc );
     const auto line = srcloc.line;
 
     const char* func;
@@ -3114,11 +3124,11 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     if( ev.text != -1 && GetTextData( ev )->zoneName )
     {
         zoneName = GetString( GetTextData( ev )->zoneName );
-        func = GetString( srcloc.function );
+        func = GetSrcLocFunction( srcloc );
     }
     else
     {
-        func = zoneName = GetString( srcloc.function );
+        func = zoneName = GetSrcLocFunction( srcloc );
     }
 
     const auto end = GetZoneEnd( ev );

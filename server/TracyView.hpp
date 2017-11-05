@@ -195,6 +195,9 @@ private:
 
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
+    const char* GetSrcLocFunction( const SourceLocation& srcloc );
+    const char* GetSrcLocFile( const SourceLocation& srcloc );
+
     uint32_t GetZoneColor( const ZoneEvent& ev );
     uint32_t GetZoneColor( const SourceLocation& srcloc );
     uint32_t GetZoneHighlight( const ZoneEvent& ev, bool migration );

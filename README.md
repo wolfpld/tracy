@@ -109,10 +109,11 @@ Even if tracy is disabled, you still have to pay the no-op function call cost. T
 
 Tracy's time measurement precision is not infinite. It's only as good as the system-provided timers are.
 
-- On the embedded ARM-based systems you can expect to have something around 1 µs time resolution.
+- On the embedded ARM-based systems you can expect to have 1 µs time resolution. Some hardware is able to provide hundreds-nanoseconds resolution.
 - On x86 the time resolution depends on the hardware implementation of the RDTSCP instruction and typically is in the low nanoseconds. This may vary from one micro-architecture to another and requires a fairly modern (Sandy Bridge) processor for reliable results.
-- Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the execution cost.
 
 While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which tracy tries to calculate and display on the timeline view, as a red zone. Note that this is an *approximation* of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.
 
 ![](doc/cost.png)
+
+Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.

@@ -530,25 +530,26 @@ void View::DispatchProcess( const QueueItem& ev )
         uint16_t sz;
         m_sock.Read( &sz, sizeof( sz ), &tv, ShouldExit );
         m_sock.Read( buf, sz, &tv, ShouldExit );
-        if( ev.hdr.type == QueueType::CustomStringData )
+        switch( ev.hdr.type )
         {
+        case QueueType::CustomStringData:
             AddCustomString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
-        }
-        else if( ev.hdr.type == QueueType::StringData )
-        {
+            break;
+        case QueueType::StringData:
             AddString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
-        }
-        else if( ev.hdr.type == QueueType::ThreadName )
-        {
+            break;
+        case QueueType::ThreadName:
             AddThreadString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
-        }
-        else if( ev.hdr.type == QueueType::PlotName )
-        {
+            break;
+        case QueueType::PlotName:
             HandlePlotName( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
-        }
-        else
-        {
+            break;
+        case QueueType::MessageData:
             AddMessageData( ev.stringTransfer.ptr, buf, sz );
+            break;
+        default:
+            assert( false );
+            break;
         }
     }
     else
@@ -565,25 +566,26 @@ void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
         uint16_t sz;
         memcpy( &sz, ptr, sizeof( sz ) );
         ptr += sizeof( sz );
-        if( ev.hdr.type == QueueType::CustomStringData )
+        switch( ev.hdr.type )
         {
+        case QueueType::CustomStringData:
             AddCustomString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
-        }
-        else if( ev.hdr.type == QueueType::StringData )
-        {
+            break;
+        case QueueType::StringData:
             AddString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
-        }
-        else if( ev.hdr.type == QueueType::ThreadName )
-        {
+            break;
+        case QueueType::ThreadName:
             AddThreadString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
-        }
-        else if( ev.hdr.type == QueueType::PlotName )
-        {
+            break;
+        case QueueType::PlotName:
             HandlePlotName( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
-        }
-        else
-        {
+            break;
+        case QueueType::MessageData:
             AddMessageData( ev.stringTransfer.ptr, ptr, sz );
+            break;
+        default:
+            assert( false );
+            break;
         }
         ptr += sz;
     }

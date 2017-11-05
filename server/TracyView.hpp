@@ -124,6 +124,7 @@ private:
 
     void Process( const QueueItem& ev );
     void ProcessZoneBegin( const QueueZoneBegin& ev );
+    void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
     void ProcessZoneEnd( const QueueZoneEnd& ev );
     void ProcessFrameMark( const QueueFrameMark& ev );
     void ProcessZoneText( const QueueZoneText& ev );

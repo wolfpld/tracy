@@ -609,6 +609,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::ZoneBegin:
         ProcessZoneBegin( ev.zoneBegin );
         break;
+    case QueueType::ZoneBeginAllocSrcLoc:
+        ProcessZoneBeginAllocSrcLoc( ev.zoneBegin );
+        break;
     case QueueType::ZoneEnd:
         ProcessZoneEnd( ev.zoneEnd );
         break;
@@ -663,6 +666,26 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
     zone->start = ev.time * m_timerMul;
     zone->end = -1;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
+    assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
+    zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
+    zone->text = -1;
+
+    std::unique_lock<std::mutex> lock( m_lock );
+    NewZone( zone, ev.thread );
+    lock.unlock();
+    m_zoneStack[ev.thread].push_back( zone );
+}
+
+void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
+{
+    auto zone = m_slab.AllocInit<ZoneEvent>();
+
+    //CheckSourceLocation( ev.srcloc );
+
+    zone->start = ev.time * m_timerMul;
+    zone->end = -1;
+    //zone->srcloc = ShrinkSourceLocation( ev.srcloc );
+    zone->srcloc = 0;
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->text = -1;

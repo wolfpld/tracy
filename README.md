@@ -94,6 +94,12 @@ The easiest way to get going is to build the standalone server, available in the
 
 Alternatively, you may want to embed the server in your application, the same which is running the client part of tracy. Doing so requires that you also include the `server` and `imgui` directories. Include the `tracy/server/TracyView.hpp` header file, create an instance of the `tracy::View` class and call its `Draw()` method every frame. Unfortunately, there's also the hard part - you need to integrate the imgui library into the innards of your program. How to do so is outside the scope of this document.
 
+#### Lua support
+
+To profile Lua code using tracy, include the `tracy/TracyLua.hpp` header file in your Lua wrapper and execute `tracy::LuaRegister( lua_State* )` function to add instrumentation support. In your Lua code, add `tracy.ZoneBegin()` and `tracy.ZoneEnd()` calls to mark execution zones. Double check if you have included all return paths!
+
+Even if tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the `tracy::LuaRemove( char* script )` function, which will replace instrumentation calls with whitespace. This function does nothing if profiler is enabled.
+
 ## Good practices
 
 - Remember to set thread names for proper identification of threads. You may use the functions exposed in the `tracy/common/TracySystem.hpp` header to do so. Note that the max thread name length in pthreads is limited to 15 characters. Proper thread naming support is available in MSVC only if you are using Windows SDK 10.0.15063 or newer.
@@ -105,6 +111,7 @@ Tracy's time measurement precision is not infinite. It's only as good as the sys
 
 - On the embedded ARM-based systems you can expect to have something around 1 µs time resolution.
 - On x86 the time resolution depends on the hardware implementation of the RDTSCP instruction and typically is in the low nanoseconds. This may vary from one micro-architecture to another and requires a fairly modern (Sandy Bridge) processor for reliable results.
+- Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the execution cost.
 
 While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which tracy tries to calculate and display on the timeline view, as a red zone. Note that this is an *approximation* of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.
 

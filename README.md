@@ -58,7 +58,7 @@ To begin data collection, tracy requires that you manually instrument your appli
 
 To slice the program's execution recording into frame-sized chunks, put the `FrameMark` macro after you have completed rendering the frame. Ideally that would be right after the swap buffers command. Note that this step is optional, as some applications (for example: a compression utility) do not have the concept of a frame.
 
-To record a zone's execution time add the `ZoneScoped` macro at the beginning of the scope you want to measure. This will automatically record function name, source file name and location. Optionally you may use the `ZoneScopedC( 0xBBGGRR )` macro to set a custom color for the zone. Note that the color value will be constant in the recording (don't try to parametrize it). After you have marked the zone, you may further parametrize it.
+To record a zone's execution time add the `ZoneScoped` macro at the beginning of the scope you want to measure. This will automatically record function name, source file name and location. Optionally you may use the `ZoneScopedC( 0xRRGGBB )` macro to set a custom color for the zone. Note that the color value will be constant in the recording (don't try to parametrize it). After you have marked the zone, you may further parametrize it.
 
 Use the `ZoneName( const char* name )` macro to set a custom name for the zone, which will be displayed instead of the function's name in the timeline view. The indented usage is to provide a string literal. (The text string that you provide **must** be accessible indefinitely at the given address. Tracy does not guarantee at which point in time it will be sent to the server and there is no notification when it happens.)
 

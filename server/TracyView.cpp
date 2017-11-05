@@ -252,7 +252,7 @@ View::View( FileRead& f )
     {
         uint64_t ptr;
         f.Read( &ptr, sizeof( ptr ) );
-        QueueSourceLocation srcloc;
+        SourceLocation srcloc;
         f.Read( &srcloc, sizeof( srcloc ) );
         m_sourceLocation.emplace( ptr, srcloc );
     }
@@ -981,8 +981,9 @@ void View::AddSourceLocation( const QueueSourceLocation& srcloc )
     m_pendingSourceLocation.erase( it );
     CheckString( srcloc.file );
     CheckString( srcloc.function );
+    uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
     std::lock_guard<std::mutex> lock( m_lock );
-    m_sourceLocation.emplace( srcloc.ptr, srcloc );
+    m_sourceLocation.emplace( srcloc.ptr, SourceLocation { srcloc.function, srcloc.file, srcloc.line, color } );
 }
 
 void View::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
@@ -1366,9 +1367,9 @@ const char* View::GetThreadString( uint64_t id ) const
     }
 }
 
-const QueueSourceLocation& View::GetSourceLocation( uint32_t srcloc ) const
+const SourceLocation& View::GetSourceLocation( uint32_t srcloc ) const
 {
-    static const QueueSourceLocation empty = {};
+    static const SourceLocation empty = {};
     const auto it = m_sourceLocation.find( m_sourceLocationExpand[srcloc] );
     if( it == m_sourceLocation.end() ) return empty;
     return it->second;
@@ -2089,7 +2090,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 ++it;
                 if( it == zitend ) break;
                 auto& srcloc2 = GetSourceLocation( (*it)->srcloc );
-                if( srcloc.r != srcloc2.r || srcloc.g != srcloc2.g || srcloc.b != srcloc2.b ) break;
+                if( srcloc.color != srcloc2.color ) break;
                 const auto nend = GetZoneEnd( **it );
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
@@ -3043,9 +3044,9 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev )
     return GetZoneColor( GetSourceLocation( ev.srcloc ) );
 }
 
-uint32_t View::GetZoneColor( const QueueSourceLocation& srcloc )
+uint32_t View::GetZoneColor( const SourceLocation& srcloc )
 {
-    const auto color = srcloc.r | ( srcloc.g << 8 ) | ( srcloc.b << 16 );
+    const auto color = srcloc.color;
     return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
 }
 

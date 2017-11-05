@@ -176,7 +176,7 @@ private:
     int64_t GetZoneEnd( const ZoneEvent& ev ) const;
     const char* GetString( uint64_t ptr ) const;
     const char* GetThreadString( uint64_t id ) const;
-    const QueueSourceLocation& GetSourceLocation( uint32_t srcloc ) const;
+    const SourceLocation& GetSourceLocation( uint32_t srcloc ) const;
 
     const char* ShortenNamespace( const char* name ) const;
 
@@ -196,7 +196,7 @@ private:
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
     uint32_t GetZoneColor( const ZoneEvent& ev );
-    uint32_t GetZoneColor( const QueueSourceLocation& srcloc );
+    uint32_t GetZoneColor( const SourceLocation& srcloc );
     uint32_t GetZoneHighlight( const ZoneEvent& ev, bool migration );
     float GetZoneThickness( const ZoneEvent& ev );
 
@@ -230,7 +230,7 @@ private:
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
     std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;
-    std::unordered_map<uint64_t, QueueSourceLocation> m_sourceLocation;
+    std::unordered_map<uint64_t, SourceLocation> m_sourceLocation;
     std::vector<uint64_t> m_sourceLocationExpand;
     std::map<uint32_t, LockMap> m_lockMap;
     uint64_t m_zonesCnt;

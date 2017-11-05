@@ -16,6 +16,17 @@ struct TextData
 
 #pragma pack( 1 )
 
+struct SourceLocation
+{
+    uint64_t function;  // ptr
+    uint64_t file;      // ptr
+    uint32_t line;
+    uint32_t color;
+};
+
+enum { SourceLocationSize = sizeof( SourceLocation ) };
+
+
 struct ZoneEvent
 {
     int64_t start;

@@ -61,7 +61,7 @@ namespace detail
 
 static inline int LuaZoneBegin( lua_State* L )
 {
-    const uint32_t color = 0x00DD6666;
+    const uint32_t color = 0x00CC8855;
 
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );

@@ -176,7 +176,7 @@ private:
     int64_t GetZoneEnd( const ZoneEvent& ev ) const;
     const char* GetString( uint64_t ptr ) const;
     const char* GetThreadString( uint64_t id ) const;
-    const SourceLocation& GetSourceLocation( uint32_t srcloc ) const;
+    const SourceLocation& GetSourceLocation( int32_t srcloc ) const;
 
     const char* ShortenNamespace( const char* name ) const;
 
@@ -230,6 +230,7 @@ private:
     Vector<PlotData*> m_plots;
     Vector<MessageData*> m_messages;
     Vector<TextData*> m_textData;
+    Vector<SourceLocation*> m_sourceLocationPayload;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
     std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;

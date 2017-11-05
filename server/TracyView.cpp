@@ -983,7 +983,7 @@ void View::AddSourceLocation( const QueueSourceLocation& srcloc )
     CheckString( srcloc.function );
     uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
     std::lock_guard<std::mutex> lock( m_lock );
-    m_sourceLocation.emplace( srcloc.ptr, SourceLocation { srcloc.function, srcloc.file, srcloc.line, color } );
+    m_sourceLocation.emplace( srcloc.ptr, SourceLocation { srcloc.function, srcloc.file, srcloc.line, color, 0 } );
 }
 
 void View::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
@@ -1007,10 +1007,18 @@ void View::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
     memcpy( source, end, ssz );
     source[ssz] = '\0';
 
-    std::unique_lock<std::mutex> lock( m_lock );
+    auto srcloc = m_slab.Alloc<SourceLocation>();
+    srcloc->function = (uint64_t)func;
+    srcloc->file = (uint64_t)source;
+    srcloc->line = line;
+    srcloc->color = color;
+    srcloc->stringsAllocated = 1;
 
+    std::unique_lock<std::mutex> lock( m_lock );
+    pit->second->srcloc = -int32_t( m_sourceLocationPayload.size() + 1 );
+    m_sourceLocationPayload.push_back( srcloc );
     lock.unlock();
-    m_pendingSourceLocationPayload.erase( ptr );
+    m_pendingSourceLocationPayload.erase( pit );
 }
 
 void View::AddMessageData( uint64_t ptr, const char* str, size_t sz )
@@ -1367,12 +1375,19 @@ const char* View::GetThreadString( uint64_t id ) const
     }
 }
 
-const SourceLocation& View::GetSourceLocation( uint32_t srcloc ) const
+const SourceLocation& View::GetSourceLocation( int32_t srcloc ) const
 {
-    static const SourceLocation empty = {};
-    const auto it = m_sourceLocation.find( m_sourceLocationExpand[srcloc] );
-    if( it == m_sourceLocation.end() ) return empty;
-    return it->second;
+    if( srcloc < 0 )
+    {
+        return *m_sourceLocationPayload[-srcloc-1];
+    }
+    else
+    {
+        static const SourceLocation empty = {};
+        const auto it = m_sourceLocation.find( m_sourceLocationExpand[srcloc] );
+        if( it == m_sourceLocation.end() ) return empty;
+        return it->second;
+    }
 }
 
 const char* View::ShortenNamespace( const char* name ) const
@@ -3041,12 +3056,26 @@ void View::DrawMessages()
 
 const char* View::GetSrcLocFunction( const SourceLocation& srcloc )
 {
-    return GetString( srcloc.function );
+    if( srcloc.stringsAllocated )
+    {
+        return (const char*)srcloc.function;
+    }
+    else
+    {
+        return GetString( srcloc.function );
+    }
 }
 
 const char* View::GetSrcLocFile( const SourceLocation& srcloc )
 {
-    return GetString( srcloc.file );
+    if( srcloc.stringsAllocated )
+    {
+        return (const char*)srcloc.file;
+    }
+    else
+    {
+        return GetString( srcloc.file );
+    }
 }
 
 uint32_t View::GetZoneColor( const ZoneEvent& ev )

@@ -21,7 +21,8 @@ struct SourceLocation
     uint64_t function;  // ptr
     uint64_t file;      // ptr
     uint32_t line;
-    uint32_t color;
+    uint32_t color : 31;
+    uint32_t stringsAllocated : 1;
 };
 
 enum { SourceLocationSize = sizeof( SourceLocation ) };
@@ -31,7 +32,7 @@ struct ZoneEvent
 {
     int64_t start;
     int64_t end;
-    uint32_t srcloc;
+    int32_t srcloc;
     int8_t cpu_start;
     int8_t cpu_end;
 
@@ -52,7 +53,7 @@ struct LockEvent
     };
 
     int64_t time;
-    uint32_t srcloc;
+    int32_t srcloc;
     uint64_t waitList;
     uint16_t thread         : 6;
     uint16_t lockingThread  : 6;

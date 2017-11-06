@@ -94,7 +94,7 @@ static inline int LuaZoneBegin( lua_State* L )
     item->hdr.type = QueueType::ZoneBeginAllocSrcLoc;
     item->zoneBegin.time = Profiler::GetTime( item->zoneBegin.cpu );
     item->zoneBegin.thread = GetThreadHandle();
-    item->zoneBegin.srcloc = (uint64)ptr;
+    item->zoneBegin.srcloc = (uint64_t)ptr;
     tail.store( magic + 1, std::memory_order_release );
     return 0;
 }

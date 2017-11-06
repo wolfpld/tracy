@@ -1,15 +1,12 @@
 #ifndef __TRACYLUA_HPP__
 #define __TRACYLUA_HPP__
 
-#include <string.h>
+#ifndef TRACY_ENABLE
 
-#include "common/TracySystem.hpp"
-#include "client/TracyProfiler.hpp"
+#include <string.h>
 
 namespace tracy
 {
-
-#ifndef TRACY_ENABLE
 
 namespace detail
 {
@@ -54,7 +51,15 @@ static inline void LuaRemove( char* script )
     }
 }
 
+}
+
 #else
+
+#include "common/TracySystem.hpp"
+#include "client/TracyProfiler.hpp"
+
+namespace tracy
+{
 
 namespace detail
 {
@@ -126,8 +131,8 @@ static inline void LuaRegister( lua_State* L )
 
 static inline void LuaRemove( char* script ) {}
 
-#endif
-
 }
+
+#endif
 
 #endif

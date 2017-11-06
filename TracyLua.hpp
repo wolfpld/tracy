@@ -68,7 +68,8 @@ static inline int LuaZoneBegin( lua_State* L )
     lua_getinfo( L, "Snl", &dbg );
 
     const uint32_t line = dbg.currentline;
-    const auto fsz = strlen( dbg.name );
+    const auto name = dbg.name ? dbg.name : dbg.short_src;
+    const auto fsz = strlen( name );
     const auto ssz = strlen( dbg.source );
 
     // Data layout:
@@ -83,7 +84,7 @@ static inline int LuaZoneBegin( lua_State* L )
     memcpy( ptr, &sz, 4 );
     memcpy( ptr + 4, &color, 4 );
     memcpy( ptr + 8, &line, 4 );
-    memcpy( ptr + 12, dbg.name, fsz+1 );
+    memcpy( ptr + 12, name, fsz+1 );
     memcpy( ptr + 12 + fsz + 1, dbg.source, ssz );
 
     Magic magic;

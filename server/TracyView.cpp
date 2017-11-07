@@ -2141,15 +2141,31 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ) ) )
             {
-                ImGui::BeginTooltip();
-                ImGui::Text( "Zones too small to display: %i", num );
-                ImGui::Text( "Execution time: %s", TimeToString( rend - ev.start ) );
-                ImGui::EndTooltip();
-
-                if( ImGui::IsMouseClicked( 2 ) && rend - ev.start > 0 )
+                if( num > 1 )
                 {
-                    m_zvStartNext = ev.start;
-                    m_zvEndNext = rend;
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Zones too small to display: %i", num );
+                    ImGui::Text( "Execution time: %s", TimeToString( rend - ev.start ) );
+                    ImGui::EndTooltip();
+
+                    if( ImGui::IsMouseClicked( 2 ) && rend - ev.start > 0 )
+                    {
+                        m_zvStartNext = ev.start;
+                        m_zvEndNext = rend;
+                    }
+                }
+                else
+                {
+                    ZoneTooltip( ev );
+
+                    if( ImGui::IsMouseClicked( 2 ) && rend - ev.start > 0 )
+                    {
+                        ZoomToZone( ev );
+                    }
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_zoneInfoWindow = &ev;
+                    }
                 }
             }
             char tmp[32];

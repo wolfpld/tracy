@@ -1917,13 +1917,13 @@ bool View::DrawZoneFrames()
             if( fsz - 5 > tx )
             {
                 const auto part = ( fsz - 5 - tx ) / 2;
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, ty / 2 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + part, ty / 2 ), color );
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, round( ty / 2 ) ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + part, round( ty / 2 ) ), color );
                 draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), color, buf );
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part + tx, ty / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, ty / 2 ), color );
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part + tx, round( ty / 2 ) ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, round( ty / 2 ) ), color );
             }
             else
             {
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, ty / 2 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, ty / 2 ), color );
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, round( ty / 2 ) ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, round( ty / 2 ) ), color );
             }
         }
     }
@@ -2239,13 +2239,13 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             }
             if( rsz >= MinVisSize )
             {
-                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + tsz.y/2 ), wpos + ImVec2( pr0 - rsz, offset + tsz.y/2 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + tsz.y/4 ), wpos + ImVec2( pr0 + rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( pr0 - rsz, offset + tsz.y/4 ), wpos + ImVec2( pr0 - rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + round( tsz.y/2 ) ), wpos + ImVec2( pr0 - rsz, offset + round( tsz.y/2 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr0 + rsz, offset + round( 3*tsz.y/4 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr0 - rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr0 - rsz, offset + round( 3*tsz.y/4 ) ), 0xAAFFFFFF );
 
-                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + tsz.y/2 ), wpos + ImVec2( pr1 - rsz, offset + tsz.y/2 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + tsz.y/4 ), wpos + ImVec2( pr1 + rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( pr1 - rsz, offset + tsz.y/4 ), wpos + ImVec2( pr1 - rsz, offset + 3*tsz.y/4 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + round( tsz.y/2 ) ), wpos + ImVec2( pr1 - rsz, offset + round( tsz.y/2 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr1 + rsz, offset + round( 3*tsz.y/4 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr1 - rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr1 - rsz, offset + round( 3*tsz.y/4 ) ), 0xAAFFFFFF );
             }
             if( tsz.x < zsz )
             {
@@ -2670,13 +2670,13 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             }
             if( rsz >= MinVisSize )
             {
-                draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + ty/2 ), wpos + ImVec2( rx0 - rsz, offset + ty/2 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + ty/4 ), wpos + ImVec2( rx0 + rsz, offset + 3*ty/4 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( rx0 - rsz, offset + ty/4 ), wpos + ImVec2( rx0 - rsz, offset + 3*ty/4 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + round( ty/2 ) ), wpos + ImVec2( rx0 - rsz, offset + round( ty/2 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + round( ty/4 ) ), wpos + ImVec2( rx0 + rsz, offset + round( 3*ty/4 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( rx0 - rsz, offset + round( ty/4 ) ), wpos + ImVec2( rx0 - rsz, offset + round( 3*ty/4 ) ), 0xAAFFFFFF );
 
-                draw->AddLine( wpos + ImVec2( px1 + rsz, offset + ty/2 ), wpos + ImVec2( px1 - rsz, offset + ty/2 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( px1 + rsz, offset + ty/4 ), wpos + ImVec2( px1 + rsz, offset + 3*ty/4 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( px1 - rsz, offset + ty/4 ), wpos + ImVec2( px1 - rsz, offset + 3*ty/4 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( px1 + rsz, offset + round( ty/2 ) ), wpos + ImVec2( px1 - rsz, offset + round( ty/2 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( px1 + rsz, offset + round( ty/4 ) ), wpos + ImVec2( px1 + rsz, offset + round( 3*ty/4 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( px1 - rsz, offset + round( ty/4 ) ), wpos + ImVec2( px1 - rsz, offset + round( 3*ty/4 ) ), 0xAAFFFFFF );
             }
 
             vbegin = next;

@@ -2646,15 +2646,17 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 const auto coutline = drawState == LockState::HasLock ? 0xFF3BA33B : ( drawState == LockState::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
                 draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( pxend, double( w + 10 ) ), offset + ty ), coutline, 2.f );
             }
+
+            const auto rx0 = ( t0 - m_zvStart ) * pxns;
             if( dsz >= MinVisSize )
             {
-                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::min( px0+dsz, px1 ), offset + ty ), 0x882222DD, 2.f );
+                draw->AddRectFilled( wpos + ImVec2( rx0, offset ), wpos + ImVec2( std::min( rx0+dsz, px1 ), offset + ty ), 0x882222DD, 2.f );
             }
             if( rsz >= MinVisSize )
             {
-                draw->AddLine( wpos + ImVec2( px0 + rsz, offset + ty/2 ), wpos + ImVec2( px0 - rsz, offset + ty/2 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( px0 + rsz, offset + ty/4 ), wpos + ImVec2( px0 + rsz, offset + 3*ty/4 ), 0xAAFFFFFF );
-                draw->AddLine( wpos + ImVec2( px0 - rsz, offset + ty/4 ), wpos + ImVec2( px0 - rsz, offset + 3*ty/4 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + ty/2 ), wpos + ImVec2( rx0 - rsz, offset + ty/2 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + ty/4 ), wpos + ImVec2( rx0 + rsz, offset + 3*ty/4 ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( rx0 - rsz, offset + ty/4 ), wpos + ImVec2( rx0 - rsz, offset + 3*ty/4 ), 0xAAFFFFFF );
 
                 draw->AddLine( wpos + ImVec2( px1 + rsz, offset + ty/2 ), wpos + ImVec2( px1 - rsz, offset + ty/2 ), 0xAAFFFFFF );
                 draw->AddLine( wpos + ImVec2( px1 + rsz, offset + ty/4 ), wpos + ImVec2( px1 + rsz, offset + 3*ty/4 ), 0xAAFFFFFF );

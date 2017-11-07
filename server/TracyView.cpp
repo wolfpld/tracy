@@ -1917,13 +1917,13 @@ bool View::DrawZoneFrames()
             if( fsz - 5 > tx )
             {
                 const auto part = ( fsz - 5 - tx ) / 2;
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, round( ty / 2 ) ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + part, round( ty / 2 ) ), color );
+                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fbegin - m_zvStart ) * pxns + part ), round( ty / 2 ) ), color );
                 draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), color, buf );
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part + tx, round( ty / 2 ) ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, round( ty / 2 ) ), color );
+                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 + part + tx ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
             }
             else
             {
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, round( ty / 2 ) ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, round( ty / 2 ) ), color );
+                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
             }
         }
     }

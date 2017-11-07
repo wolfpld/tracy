@@ -2138,7 +2138,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 rend = nend;
                 num++;
             }
-            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color, 2.f );
+            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ) ) )
             {
                 ImGui::BeginTooltip();
@@ -2214,12 +2214,12 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             const auto pr1 = ( end - m_zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::min( pr1, double( w + 10 ) );
-            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), color, 2.f );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), GetZoneHighlight( ev, migration ), 2.f, -1, GetZoneThickness( ev ) );
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), color );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), GetZoneHighlight( ev, migration ), 0.f, -1, GetZoneThickness( ev ) );
             if( dsz * dmul >= MinVisSize )
             {
-                draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), 0x882222DD, 2.f );
-                draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), 0x882222DD, 2.f );
+                draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), 0x882222DD );
+                draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), 0x882222DD );
             }
             if( rsz >= MinVisSize )
             {

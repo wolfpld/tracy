@@ -1,6 +1,6 @@
 # Tracy Profiler
 
-Tracy is a frame profiler that can be used for remote or embedded telemetry of your application.
+Tracy is a real-time frame profiler that can be used for remote or embedded telemetry of your application.
 
 ![](doc/profiler.png)
 

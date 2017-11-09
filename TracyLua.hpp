@@ -1,6 +1,8 @@
 #ifndef __TRACYLUA_HPP__
 #define __TRACYLUA_HPP__
 
+// Include this file after you include lua headers.
+
 #ifndef TRACY_ENABLE
 
 #include <string.h>

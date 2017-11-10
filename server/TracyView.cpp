@@ -124,7 +124,7 @@ View::View( const char* addr )
     , m_zonesCnt( 0 )
     , m_mbps( 64 )
     , m_stream( LZ4_createStreamDecode() )
-    , m_buffer( new char[TargetFrameSize*3] )
+    , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
     , m_frameScale( 0 )
     , m_pause( false )
@@ -474,11 +474,11 @@ void View::Worker()
             auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf, buf, lz4sz, TargetFrameSize );
             assert( sz >= 0 );
 
-            const char* ptr = buf;
+            char* ptr = buf;
             const char* end = buf + sz;
             while( ptr < end )
             {
-                auto ev = (QueueItem*)ptr;
+                auto ev = (const QueueItem*)ptr;
                 DispatchProcess( *ev, ptr );
             }
 
@@ -527,7 +527,7 @@ close:
     }
 }
 
-void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
+void View::DispatchProcess( const QueueItem& ev, char*& ptr )
 {
     ptr += QueueDataSize[ev.hdr.idx];
     if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::MessageData || ev.hdr.type == QueueType::SourceLocationPayload )
@@ -916,7 +916,7 @@ void View::AddThreadString( uint64_t id, std::string&& str )
     m_threadNames.emplace( id, std::move( str ) );
 }
 
-void View::AddCustomString( uint64_t ptr, const char* str, size_t sz )
+void View::AddCustomString( uint64_t ptr, char* str, size_t sz )
 {
     auto pit = m_pendingCustomStrings.find( ptr );
     assert( pit != m_pendingCustomStrings.end() );
@@ -927,23 +927,16 @@ void View::AddCustomString( uint64_t ptr, const char* str, size_t sz )
     m_pendingCustomStrings.erase( pit );
 }
 
-View::StringLocation View::StoreString( const char* str, size_t sz )
+View::StringLocation View::StoreString( char* str, size_t sz )
 {
     StringLocation ret;
-
-    // TODO: Remove this temporary buffer. Requires custom map implementation.
-    enum { BufSize = 16*1024 };
-    char buf[BufSize];
-    assert( sz < BufSize );
-    memcpy( buf, str, sz );
-    buf[sz] = '\0';
-
-    auto sit = m_stringMap.find( buf );
+    const char backup = str[sz];
+    str[sz] = '\0';
+    auto sit = m_stringMap.find( str );
     if( sit == m_stringMap.end() )
     {
         auto ptr = m_slab.Alloc<char>( sz+1 );
-        memcpy( ptr, str, sz );
-        ptr[sz] = '\0';
+        memcpy( ptr, str, sz+1 );
         ret.ptr = ptr;
         ret.idx = m_stringData.size();
         std::lock_guard<std::mutex> lock( m_lock );
@@ -955,6 +948,7 @@ View::StringLocation View::StoreString( const char* str, size_t sz )
         ret.ptr = sit->first;
         ret.idx = sit->second;
     }
+    str[sz] = backup;
     return ret;
 }
 

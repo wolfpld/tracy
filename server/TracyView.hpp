@@ -123,7 +123,7 @@ private:
 
     void Worker();
 
-    void DispatchProcess( const QueueItem& ev, const char*& ptr );
+    void DispatchProcess( const QueueItem& ev, char*& ptr );
 
     void ServerQuery( uint8_t type, uint64_t data );
 
@@ -150,12 +150,12 @@ private:
 
     void AddString( uint64_t ptr, std::string&& str );
     void AddThreadString( uint64_t id, std::string&& str );
-    void AddCustomString( uint64_t ptr, const char* str, size_t sz );
+    void AddCustomString( uint64_t ptr, char* str, size_t sz );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
     void AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz );
     void AddMessageData( uint64_t ptr, const char* str, size_t sz );
 
-    StringLocation StoreString( const char* str, size_t sz );
+    StringLocation StoreString( char* str, size_t sz );
 
     uint32_t ShrinkSourceLocation( uint64_t srcloc );
 

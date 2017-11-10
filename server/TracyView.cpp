@@ -231,7 +231,7 @@ View::View( FileRead& f )
         m_threadNames.emplace( ptr, std::string( tmp, tmp+ssz ) );
     }
 
-    std::unordered_map<uint64_t, const char*> stringMap;
+    std::unordered_map<uint64_t, const char*> pointerMap;
 
     f.Read( &sz, sizeof( sz ) );
     for( uint64_t i=0; i<sz; i++ )
@@ -245,7 +245,7 @@ View::View( FileRead& f )
         dst[ssz] = '\0';
         m_stringMap.emplace( dst, m_stringData.size() );
         m_stringData.push_back( dst );
-        stringMap.emplace( ptr, dst );
+        pointerMap.emplace( ptr, dst );
     }
 
     f.Read( &sz, sizeof( sz ) );
@@ -351,7 +351,7 @@ View::View( FileRead& f )
         auto td = m_slab.Alloc<TextData>();
         uint64_t ptr;
         f.Read( &ptr, sizeof( ptr ) );
-        td->userText = ptr == 0 ? nullptr : stringMap.find( ptr )->second;
+        td->userText = ptr == 0 ? nullptr : pointerMap.find( ptr )->second;
         f.Read( &td->zoneName, sizeof( td->zoneName ) );
         m_textData.push_back( td );
     }

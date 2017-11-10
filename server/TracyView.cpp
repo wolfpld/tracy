@@ -433,13 +433,11 @@ void View::Worker()
 
         std::chrono::time_point<std::chrono::high_resolution_clock> t0;
 
-        uint8_t lz4;
         uint64_t bytes = 0;
 
         {
             WelcomeMessage welcome;
             if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
-            lz4 = welcome.lz4;
             m_timerMul = welcome.timerMul;
             m_frames.push_back( welcome.initBegin * m_timerMul );
             m_frames.push_back( welcome.initEnd * m_timerMul );
@@ -466,41 +464,26 @@ void View::Worker()
         {
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
 
-            if( lz4 )
+            auto buf = m_buffer + m_bufferOffset;
+            char lz4buf[LZ4Size];
+            lz4sz_t lz4sz;
+            if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
+            if( !m_sock.Read( lz4buf, lz4sz, &tv, ShouldExit ) ) goto close;
+            bytes += sizeof( lz4sz ) + lz4sz;
+
+            auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf, buf, lz4sz, TargetFrameSize );
+            assert( sz >= 0 );
+
+            const char* ptr = buf;
+            const char* end = buf + sz;
+            while( ptr < end )
             {
-                auto buf = m_buffer + m_bufferOffset;
-                char lz4buf[LZ4Size];
-                lz4sz_t lz4sz;
-                if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
-                if( !m_sock.Read( lz4buf, lz4sz, &tv, ShouldExit ) ) goto close;
-                bytes += sizeof( lz4sz ) + lz4sz;
-
-                auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf, buf, lz4sz, TargetFrameSize );
-                assert( sz >= 0 );
-
-                const char* ptr = buf;
-                const char* end = buf + sz;
-                while( ptr < end )
-                {
-                    auto ev = (QueueItem*)ptr;
-                    DispatchProcess( *ev, ptr );
-                }
-
-                m_bufferOffset += sz;
-                if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
+                auto ev = (QueueItem*)ptr;
+                DispatchProcess( *ev, ptr );
             }
-            else
-            {
-                QueueItem ev;
-                if( !m_sock.Read( &ev.hdr, sizeof( QueueHeader ), &tv, ShouldExit ) ) goto close;
-                const auto payload = QueueDataSize[ev.hdr.idx] - sizeof( QueueHeader );
-                if( payload > 0 )
-                {
-                    if( !m_sock.Read( ((char*)&ev) + sizeof( QueueHeader ), payload, &tv, ShouldExit ) ) goto close;
-                }
-                bytes += sizeof( QueueHeader ) + payload;   // ignores string transfer
-                DispatchProcess( ev );
-            }
+
+            m_bufferOffset += sz;
+            if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
 
             HandlePostponedPlots();
 
@@ -541,49 +524,6 @@ void View::Worker()
 close:
         m_sock.Close();
         m_connected.store( false, std::memory_order_relaxed );
-    }
-}
-
-void View::DispatchProcess( const QueueItem& ev )
-{
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::MessageData || ev.hdr.type == QueueType::SourceLocationPayload )
-    {
-        timeval tv;
-        tv.tv_sec = 0;
-        tv.tv_usec = 10000;
-
-        char buf[TargetFrameSize];
-        uint16_t sz;
-        m_sock.Read( &sz, sizeof( sz ), &tv, ShouldExit );
-        m_sock.Read( buf, sz, &tv, ShouldExit );
-        switch( ev.hdr.type )
-        {
-        case QueueType::CustomStringData:
-            AddCustomString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
-            break;
-        case QueueType::StringData:
-            AddString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
-            break;
-        case QueueType::ThreadName:
-            AddThreadString( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
-            break;
-        case QueueType::PlotName:
-            HandlePlotName( ev.stringTransfer.ptr, std::string( buf, buf+sz ) );
-            break;
-        case QueueType::MessageData:
-            AddMessageData( ev.stringTransfer.ptr, buf, sz );
-            break;
-        case QueueType::SourceLocationPayload:
-            AddSourceLocationPayload( ev.stringTransfer.ptr, buf, sz );
-            break;
-        default:
-            assert( false );
-            break;
-        }
-    }
-    else
-    {
-        Process( ev );
     }
 }
 

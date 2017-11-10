@@ -176,12 +176,6 @@ void Profiler::Worker()
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
     WelcomeMessage welcome;
-#ifdef TRACY_DISABLE_LZ4
-    // notify client that lz4 compression is disabled
-    welcome.lz4 = 0;
-#else
-    welcome.lz4 = 1;
-#endif
     welcome.timerMul = m_timerMul;
     welcome.initBegin = s_initTime.val;
     welcome.initEnd = m_timeBegin.load( std::memory_order_relaxed );
@@ -274,14 +268,9 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 
 bool Profiler::SendData( const char* data, size_t len )
 {
-#ifdef TRACY_DISABLE_LZ4
-    if( m_sock->Send( data, (int)len ) == -1 ) return false;
-#else
     const lz4sz_t lz4sz = LZ4_compress_fast_continue( m_stream, data, m_lz4Buf + sizeof( lz4sz_t ), (int)len, LZ4Size, 1 );
     memcpy( m_lz4Buf, &lz4sz, sizeof( lz4sz ) );
-    if( m_sock->Send( m_lz4Buf, lz4sz + sizeof( lz4sz_t ) ) == -1 ) return false;
-#endif
-    return true;
+    return m_sock->Send( m_lz4Buf, lz4sz + sizeof( lz4sz_t ) ) != -1;
 }
 
 bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )

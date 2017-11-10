@@ -33,7 +33,6 @@ enum { WelcomeMessageProgramNameSize = 64 };
 #pragma pack( 1 )
 struct WelcomeMessage
 {
-    uint8_t lz4;
     double timerMul;
     uint64_t initBegin;
     uint64_t initEnd;

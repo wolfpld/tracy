@@ -117,7 +117,6 @@ private:
 
     void Worker();
 
-    void DispatchProcess( const QueueItem& ev );
     void DispatchProcess( const QueueItem& ev, const char*& ptr );
 
     void ServerQuery( uint8_t type, uint64_t data );

@@ -66,7 +66,7 @@ static const char* GetProcessName()
     auto buf = getprogname();
     if( buf ) return buf;
 #  endif
-#elif defined _GNU_SOURCE
+#elif defined _GNU_SOURCE || defined __CYGWIN__
     return program_invocation_short_name;
 #endif
     return "unknown";

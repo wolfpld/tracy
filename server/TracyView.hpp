@@ -173,7 +173,7 @@ private:
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void InsertPlot( PlotData* plot, PlotItem* item );
-    void HandlePlotName( uint64_t name, std::string&& str );
+    void HandlePlotName( uint64_t name, char* str, size_t sz );
     void HandlePostponedPlots();
 
     int64_t GetFrameTime( size_t idx ) const;
@@ -259,7 +259,7 @@ private:
     std::unordered_map<uint64_t, ZoneEvent*> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
     std::unordered_map<uint64_t, uint32_t> m_plotMap;
-    std::unordered_map<std::string, uint32_t> m_plotRev;
+    std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_plotRev;
     std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
     std::unordered_map<uint64_t, MessagePending> m_pendingMessages;
     std::unordered_map<uint64_t, uint32_t> m_sourceLocationShrink;

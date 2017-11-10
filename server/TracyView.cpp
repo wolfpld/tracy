@@ -541,7 +541,7 @@ void View::DispatchProcess( const QueueItem& ev, char*& ptr )
             AddThreadString( ev.stringTransfer.ptr, ptr, sz );
             break;
         case QueueType::PlotName:
-            HandlePlotName( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
+            HandlePlotName( ev.stringTransfer.ptr, ptr, sz );
             break;
         case QueueType::MessageData:
             AddMessageData( ev.stringTransfer.ptr, ptr, sz );
@@ -1209,20 +1209,22 @@ void View::InsertPlot( PlotData* plot, PlotItem* item )
     }
 }
 
-void View::HandlePlotName( uint64_t name, std::string&& str )
+void View::HandlePlotName( uint64_t name, char* str, size_t sz )
 {
     auto pit = m_pendingPlots.find( name );
     assert( pit != m_pendingPlots.end() );
 
-    auto it = m_plotRev.find( str );
+    const auto sl = StoreString( str, sz );
+
+    auto it = m_plotRev.find( sl.ptr );
     if( it == m_plotRev.end() )
     {
         const auto idx = m_plots.size();
         m_plotMap.emplace( name, idx );
-        m_plotRev.emplace( str, idx );
+        m_plotRev.emplace( sl.ptr, idx );
         std::lock_guard<std::mutex> lock( m_lock );
         m_plots.push_back( pit->second );
-        //m_strings.emplace( name, std::move( str ) );
+        m_strings.emplace( name, sl.ptr );
     }
     else
     {

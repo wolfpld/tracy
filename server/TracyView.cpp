@@ -207,18 +207,6 @@ View::View( FileRead& f )
         m_frames.push_back( v );
     }
 
-    f.Read( &sz, sizeof( sz ) );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t ptr;
-        f.Read( &ptr, sizeof( ptr ) );
-        uint64_t ssz;
-        f.Read( &ssz, sizeof( ssz ) );
-        char tmp[16*1024];
-        f.Read( tmp, ssz );
-        m_strings.emplace( ptr, std::string( tmp, tmp+ssz ) );
-    }
-
     std::unordered_map<uint64_t, const char*> pointerMap;
 
     f.Read( &sz, sizeof( sz ) );
@@ -234,6 +222,15 @@ View::View( FileRead& f )
         m_stringMap.emplace( dst, m_stringData.size() );
         m_stringData.push_back( dst );
         pointerMap.emplace( ptr, dst );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint64_t id, ptr;
+        f.Read( &id, sizeof( id ) );
+        f.Read( &ptr, sizeof( ptr ) );
+        m_strings.emplace( id, pointerMap.find( ptr )->second );
     }
 
     f.Read( &sz, sizeof( sz ) );
@@ -538,7 +535,7 @@ void View::DispatchProcess( const QueueItem& ev, char*& ptr )
             AddCustomString( ev.stringTransfer.ptr, ptr, sz );
             break;
         case QueueType::StringData:
-            AddString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
+            AddString( ev.stringTransfer.ptr, ptr, sz );
             break;
         case QueueType::ThreadName:
             AddThreadString( ev.stringTransfer.ptr, ptr, sz );
@@ -893,14 +890,15 @@ void View::CheckSourceLocationPayload( uint64_t ptr, ZoneEvent* dst )
     ServerQuery( ServerQuerySourceLocationPayload, ptr );
 }
 
-void View::AddString( uint64_t ptr, std::string&& str )
+void View::AddString( uint64_t ptr, char* str, size_t sz )
 {
     assert( m_strings.find( ptr ) == m_strings.end() );
     auto it = m_pendingStrings.find( ptr );
     assert( it != m_pendingStrings.end() );
     m_pendingStrings.erase( it );
+    const auto sl = StoreString( str, sz );
     std::lock_guard<std::mutex> lock( m_lock );
-    m_strings.emplace( ptr, std::move( str ) );
+    m_strings.emplace( ptr, sl.ptr );
 }
 
 void View::AddThreadString( uint64_t id, char* str, size_t sz )
@@ -1224,7 +1222,7 @@ void View::HandlePlotName( uint64_t name, std::string&& str )
         m_plotRev.emplace( str, idx );
         std::lock_guard<std::mutex> lock( m_lock );
         m_plots.push_back( pit->second );
-        m_strings.emplace( name, std::move( str ) );
+        //m_strings.emplace( name, std::move( str ) );
     }
     else
     {
@@ -1335,7 +1333,7 @@ const char* View::GetString( uint64_t ptr ) const
     }
     else
     {
-        return it->second.c_str();
+        return it->second;
     }
 }
 
@@ -3235,16 +3233,6 @@ void View::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_frames.data(), sizeof( uint64_t ) * sz );
 
-    sz = m_strings.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_strings )
-    {
-        f.Write( &v.first, sizeof( v.first ) );
-        sz = v.second.size();
-        f.Write( &sz, sizeof( sz ) );
-        f.Write( v.second.c_str(), v.second.size() );
-    }
-
     sz = m_stringData.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_stringData )
@@ -3254,6 +3242,15 @@ void View::Write( FileWrite& f )
         sz = strlen( v );
         f.Write( &sz, sizeof( sz ) );
         f.Write( v, sz );
+    }
+
+    sz = m_strings.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_strings )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        uint64_t ptr = (uint64_t)v.second;
+        f.Write( &ptr, sizeof( ptr ) );
     }
 
     sz = m_threadNames.size();

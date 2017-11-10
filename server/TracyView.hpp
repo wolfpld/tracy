@@ -148,7 +148,7 @@ private:
     void CheckSourceLocation( uint64_t ptr );
     void CheckSourceLocationPayload( uint64_t ptr, ZoneEvent* dst );
 
-    void AddString( uint64_t ptr, std::string&& str );
+    void AddString( uint64_t ptr, char* str, size_t sz );
     void AddThreadString( uint64_t id, char* str, size_t sz );
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
@@ -238,7 +238,7 @@ private:
     Vector<MessageData*> m_messages;
     Vector<TextData*> m_textData;
     Vector<SourceLocation*> m_sourceLocationPayload;
-    std::unordered_map<uint64_t, std::string> m_strings;
+    std::unordered_map<uint64_t, const char*> m_strings;
     std::unordered_map<uint64_t, const char*> m_threadNames;
     std::unordered_map<uint64_t, SourceLocation> m_sourceLocation;
     std::vector<uint64_t> m_sourceLocationExpand;

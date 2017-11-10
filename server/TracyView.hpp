@@ -115,6 +115,12 @@ private:
         uint64_t postponeTime;
     };
 
+    struct StringLocation
+    {
+        const char* ptr;
+        uint32_t idx;
+    };
+
     void Worker();
 
     void DispatchProcess( const QueueItem& ev, const char*& ptr );
@@ -144,10 +150,12 @@ private:
 
     void AddString( uint64_t ptr, std::string&& str );
     void AddThreadString( uint64_t id, std::string&& str );
-    void AddCustomString( uint64_t ptr, std::string&& str );
+    void AddCustomString( uint64_t ptr, const std::string& str );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
     void AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz );
     void AddMessageData( uint64_t ptr, const char* str, size_t sz );
+
+    StringLocation StoreString( const std::string& str );
 
     uint32_t ShrinkSourceLocation( uint64_t srcloc );
 
@@ -237,8 +245,8 @@ private:
     std::map<uint32_t, LockMap> m_lockMap;
     uint64_t m_zonesCnt;
 
-    Vector<const char*> m_customStringData;
-    std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_customStringMap;
+    Vector<const char*> m_stringData;
+    std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_stringMap;
 
     std::mutex m_mbpslock;
     std::vector<float> m_mbps;

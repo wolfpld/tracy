@@ -243,8 +243,8 @@ View::View( FileRead& f )
         auto dst = m_slab.Alloc<char>( ssz+1 );
         f.Read( dst, ssz );
         dst[ssz] = '\0';
-        m_customStringMap.emplace( dst, m_customStringData.size() );
-        m_customStringData.push_back( dst );
+        m_stringMap.emplace( dst, m_stringData.size() );
+        m_stringData.push_back( dst );
         stringMap.emplace( ptr, dst );
     }
 
@@ -916,28 +916,39 @@ void View::AddThreadString( uint64_t id, std::string&& str )
     m_threadNames.emplace( id, std::move( str ) );
 }
 
-void View::AddCustomString( uint64_t ptr, std::string&& str )
+void View::AddCustomString( uint64_t ptr, const std::string& str )
 {
     auto pit = m_pendingCustomStrings.find( ptr );
     assert( pit != m_pendingCustomStrings.end() );
-    std::unique_lock<std::mutex> lock( m_lock );
-    auto sit = m_customStringMap.find( str.c_str() );
-    if( sit == m_customStringMap.end() )
+    const auto sl = StoreString( str );
+    m_lock.lock();
+    GetTextData( *pit->second )->userText = sl.ptr;
+    m_lock.unlock();
+    m_pendingCustomStrings.erase( pit );
+}
+
+View::StringLocation View::StoreString( const std::string& str )
+{
+    StringLocation ret;
+    auto sit = m_stringMap.find( str.c_str() );
+    if( sit == m_stringMap.end() )
     {
         const auto sz = str.size();
         auto ptr = m_slab.Alloc<char>( sz+1 );
         memcpy( ptr, str.c_str(), sz );
         ptr[sz] = '\0';
-        GetTextData( *pit->second )->userText = ptr;
-        m_customStringMap.emplace( ptr, m_customStringData.size() );
-        m_customStringData.push_back( ptr );
+        ret.ptr = ptr;
+        ret.idx = m_stringData.size();
+        std::lock_guard<std::mutex> lock( m_lock );
+        m_stringMap.emplace( ptr, m_stringData.size() );
+        m_stringData.push_back( ptr );
     }
     else
     {
-        GetTextData( *pit->second )->userText = sit->first;
+        ret.ptr = sit->first;
+        ret.idx = sit->second;
     }
-    lock.unlock();
-    m_pendingCustomStrings.erase( pit );
+    return ret;
 }
 
 void View::AddSourceLocation( const QueueSourceLocation& srcloc )
@@ -3245,9 +3256,9 @@ void View::Write( FileWrite& f )
         f.Write( v.second.c_str(), v.second.size() );
     }
 
-    sz = m_customStringData.size();
+    sz = m_stringData.size();
     f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_customStringData )
+    for( auto& v : m_stringData )
     {
         uint64_t ptr = (uint64_t)v;
         f.Write( &ptr, sizeof( ptr ) );

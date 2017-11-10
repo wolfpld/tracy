@@ -150,12 +150,12 @@ private:
 
     void AddString( uint64_t ptr, std::string&& str );
     void AddThreadString( uint64_t id, std::string&& str );
-    void AddCustomString( uint64_t ptr, const std::string& str );
+    void AddCustomString( uint64_t ptr, const char* str, size_t sz );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
     void AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz );
     void AddMessageData( uint64_t ptr, const char* str, size_t sz );
 
-    StringLocation StoreString( const std::string& str );
+    StringLocation StoreString( const char* str, size_t sz );
 
     uint32_t ShrinkSourceLocation( uint64_t srcloc );
 

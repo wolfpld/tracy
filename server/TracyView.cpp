@@ -538,7 +538,7 @@ void View::DispatchProcess( const QueueItem& ev, const char*& ptr )
         switch( ev.hdr.type )
         {
         case QueueType::CustomStringData:
-            AddCustomString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
+            AddCustomString( ev.stringTransfer.ptr, ptr, sz );
             break;
         case QueueType::StringData:
             AddString( ev.stringTransfer.ptr, std::string( ptr, ptr+sz ) );
@@ -916,26 +916,33 @@ void View::AddThreadString( uint64_t id, std::string&& str )
     m_threadNames.emplace( id, std::move( str ) );
 }
 
-void View::AddCustomString( uint64_t ptr, const std::string& str )
+void View::AddCustomString( uint64_t ptr, const char* str, size_t sz )
 {
     auto pit = m_pendingCustomStrings.find( ptr );
     assert( pit != m_pendingCustomStrings.end() );
-    const auto sl = StoreString( str );
+    const auto sl = StoreString( str, sz );
     m_lock.lock();
     GetTextData( *pit->second )->userText = sl.ptr;
     m_lock.unlock();
     m_pendingCustomStrings.erase( pit );
 }
 
-View::StringLocation View::StoreString( const std::string& str )
+View::StringLocation View::StoreString( const char* str, size_t sz )
 {
     StringLocation ret;
-    auto sit = m_stringMap.find( str.c_str() );
+
+    // TODO: Remove this temporary buffer. Requires custom map implementation.
+    enum { BufSize = 16*1024 };
+    char buf[BufSize];
+    assert( sz < BufSize );
+    memcpy( buf, str, sz );
+    buf[sz] = '\0';
+
+    auto sit = m_stringMap.find( buf );
     if( sit == m_stringMap.end() )
     {
-        const auto sz = str.size();
         auto ptr = m_slab.Alloc<char>( sz+1 );
-        memcpy( ptr, str.c_str(), sz );
+        memcpy( ptr, str, sz );
         ptr[sz] = '\0';
         ret.ptr = ptr;
         ret.idx = m_stringData.size();

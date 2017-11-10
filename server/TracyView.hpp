@@ -219,7 +219,7 @@ private:
 
     void Write( FileWrite& f );
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
-    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, const std::unordered_map<uint64_t, const char*>& stringMap );
+    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec );
 
     std::string m_addr;
 

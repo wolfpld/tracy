@@ -362,7 +362,7 @@ View::View( FileRead& f )
     {
         auto td = m_slab.AllocInit<ThreadData>();
         f.Read( &td->id, sizeof( td->id ) );
-        ReadTimeline( f, td->timeline, stringMap );
+        ReadTimeline( f, td->timeline );
         uint64_t msz;
         f.Read( &msz, sizeof( msz ) );
         td->messages.reserve( msz );
@@ -3396,7 +3396,7 @@ void View::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )
     }
 }
 
-void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, const std::unordered_map<uint64_t, const char*>& stringMap )
+void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
 {
     uint64_t sz;
     f.Read( &sz, sizeof( sz ) );
@@ -3414,7 +3414,7 @@ void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, const std::unorde
         f.Read( &zone->cpu_start, sizeof( zone->cpu_start ) );
         f.Read( &zone->cpu_end, sizeof( zone->cpu_end ) );
         f.Read( &zone->text, sizeof( zone->text ) );
-        ReadTimeline( f, zone->child, stringMap );
+        ReadTimeline( f, zone->child );
     }
 }
 

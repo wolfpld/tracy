@@ -243,7 +243,8 @@ View::View( FileRead& f )
         auto dst = m_slab.Alloc<char>( ssz+1 );
         f.Read( dst, ssz );
         dst[ssz] = '\0';
-        m_customStrings.emplace( dst );
+        m_customStringMap.emplace( dst, m_customStringData.size() );
+        m_customStringData.push_back( dst );
         stringMap.emplace( ptr, dst );
     }
 
@@ -980,19 +981,20 @@ void View::AddCustomString( uint64_t ptr, std::string&& str )
     auto pit = m_pendingCustomStrings.find( ptr );
     assert( pit != m_pendingCustomStrings.end() );
     std::unique_lock<std::mutex> lock( m_lock );
-    auto sit = m_customStrings.find( str.c_str() );
-    if( sit == m_customStrings.end() )
+    auto sit = m_customStringMap.find( str.c_str() );
+    if( sit == m_customStringMap.end() )
     {
         const auto sz = str.size();
         auto ptr = m_slab.Alloc<char>( sz+1 );
         memcpy( ptr, str.c_str(), sz );
         ptr[sz] = '\0';
         GetTextData( *pit->second )->userText = ptr;
-        m_customStrings.emplace( ptr );
+        m_customStringMap.emplace( ptr, m_customStringData.size() );
+        m_customStringData.push_back( ptr );
     }
     else
     {
-        GetTextData( *pit->second )->userText = *sit;
+        GetTextData( *pit->second )->userText = sit->first;
     }
     lock.unlock();
     m_pendingCustomStrings.erase( pit );
@@ -3303,9 +3305,9 @@ void View::Write( FileWrite& f )
         f.Write( v.second.c_str(), v.second.size() );
     }
 
-    sz = m_customStrings.size();
+    sz = m_customStringData.size();
     f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_customStrings )
+    for( auto& v : m_customStringData )
     {
         uint64_t ptr = (uint64_t)v;
         f.Write( &ptr, sizeof( ptr ) );

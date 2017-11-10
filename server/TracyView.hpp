@@ -233,11 +233,13 @@ private:
     Vector<SourceLocation*> m_sourceLocationPayload;
     std::unordered_map<uint64_t, std::string> m_strings;
     std::unordered_map<uint64_t, std::string> m_threadNames;
-    std::unordered_set<const char*, charutil::Hasher, charutil::Comparator> m_customStrings;
     std::unordered_map<uint64_t, SourceLocation> m_sourceLocation;
     std::vector<uint64_t> m_sourceLocationExpand;
     std::map<uint32_t, LockMap> m_lockMap;
     uint64_t m_zonesCnt;
+
+    Vector<const char*> m_customStringData;
+    std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_customStringMap;
 
     std::mutex m_mbpslock;
     std::vector<float> m_mbps;

@@ -188,6 +188,7 @@ private:
     DequeueStatus Dequeue( moodycamel::ConsumerToken& token );
     bool AppendData( const void* data, size_t len );
     bool CommitData();
+    bool NeedDataSize( size_t len );
 
     bool SendData( const char* data, size_t len );
     bool SendString( uint64_t ptr, const char* str, QueueType type );

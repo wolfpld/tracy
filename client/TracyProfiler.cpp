@@ -276,7 +276,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 bool Profiler::AppendData( const void* data, size_t len )
 {
     auto ret = true;
-    if( m_bufferOffset - m_bufferStart + len > TargetFrameSize ) ret = CommitData();
+    ret = NeedDataSize( len );
     memcpy( m_buffer + m_bufferOffset, data, len );
     m_bufferOffset += int( len );
     return ret;
@@ -287,6 +287,16 @@ bool Profiler::CommitData()
     bool ret = SendData( m_buffer + m_bufferStart, m_bufferOffset - m_bufferStart );
     if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
     m_bufferStart = m_bufferOffset;
+    return ret;
+}
+
+bool Profiler::NeedDataSize( size_t len )
+{
+    bool ret = true;
+    if( m_bufferOffset - m_bufferStart + len > TargetFrameSize )
+    {
+        ret = CommitData();
+    }
     return ret;
 }
 
@@ -304,11 +314,14 @@ bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     QueueItem item;
     item.hdr.type = type;
     item.stringTransfer.ptr = str;
-    AppendData( &item, QueueDataSize[item.hdr.idx] );
 
     auto len = strlen( ptr );
     assert( len <= std::numeric_limits<uint16_t>::max() );
     auto l16 = uint16_t( len );
+
+    NeedDataSize( QueueDataSize[item.hdr.idx] + sizeof( l16 ) + l16 );
+
+    AppendData( &item, QueueDataSize[item.hdr.idx] );
     AppendData( &l16, sizeof( l16 ) );
     AppendData( ptr, l16 );
 
@@ -337,12 +350,15 @@ bool Profiler::SendSourceLocationPayload( uint64_t _ptr )
     QueueItem item;
     item.hdr.type = QueueType::SourceLocationPayload;
     item.stringTransfer.ptr = _ptr;
-    AppendData( &item, QueueDataSize[item.hdr.idx] );
 
     const auto len = *((uint32_t*)ptr);
     assert( len <= std::numeric_limits<uint16_t>::max() );
     assert( len > 4 );
     const auto l16 = uint16_t( len - 4 );
+
+    NeedDataSize( QueueDataSize[item.hdr.idx] + sizeof( l16 ) + l16 );
+
+    AppendData( &item, QueueDataSize[item.hdr.idx] );
     AppendData( &l16, sizeof( l16 ) );
     AppendData( ptr + 4, l16 );
 

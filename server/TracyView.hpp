@@ -233,6 +233,10 @@ private:
     int64_t m_regionStart;
     int64_t m_regionEnd;
 
+    uint64_t m_gpuThread;
+    int64_t m_gpuStart;
+    int64_t m_gpuEnd;
+
     bool m_showOptions;
     bool m_showMessages;
     bool m_drawGpuZones;

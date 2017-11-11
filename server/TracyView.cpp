@@ -132,6 +132,9 @@ View::View( const char* addr )
     , m_frameStart( 0 )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
+    , m_gpuThread( 0 )
+    , m_gpuStart( 0 )
+    , m_gpuEnd( 0 )
     , m_zvHeight( 0 )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
@@ -170,6 +173,9 @@ View::View( FileRead& f )
     , m_frameStart( 0 )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
+    , m_gpuThread( 0 )
+    , m_gpuStart( 0 )
+    , m_gpuEnd( 0 )
     , m_zvHeight( 0 )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
@@ -1976,6 +1982,10 @@ void View::DrawZones()
     ImGuiWindow* window = ImGui::GetCurrentWindow();
     if( window->SkipItems ) return;
 
+    m_gpuThread = 0;
+    m_gpuStart = 0;
+    m_gpuEnd = 0;
+
     const auto linepos = ImGui::GetCursorScreenPos();
     const auto lineh = ImGui::GetContentRegionAvail().y;
 
@@ -2094,9 +2104,15 @@ void View::DrawZones()
             draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF888888 );
         }
         const auto txt = GetThreadString( v->id );
+        const auto txtsz = ImGui::CalcTextSize( txt );
+        if( m_gpuThread == v->id )
+        {
+            draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x448888DD );
+            draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x888888DD );
+        }
         draw->AddText( wpos + ImVec2( ty, offset ), v->showFull ? 0xFFFFFFFF : 0xFF888888, txt );
 
-        if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( txt ).x, offset + ty ) ) )
+        if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x, offset + ty ) ) )
         {
             v->showFull = !v->showFull;
         }
@@ -2139,6 +2155,15 @@ void View::DrawZones()
     m_zvScroll = scrollPos;
 
     ImGui::EndChild();
+
+    if( m_gpuStart != m_gpuEnd )
+    {
+        assert( m_gpuStart != 0 && m_gpuEnd != 0 );
+        const auto px0 = ( m_gpuStart - m_zvStart ) * pxns;
+        const auto px1 = std::max( px0 + 1, ( m_gpuEnd - m_zvStart ) * pxns );
+        draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x228888DD );
+        draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x448888DD );
+    }
 
     if( m_drawRegion && m_regionStart != m_regionEnd )
     {
@@ -2424,6 +2449,10 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                     {
                         ZoomToZone( ev );
                     }
+
+                    m_gpuThread = ev.thread;
+                    m_gpuStart = ev.cpuStart;
+                    m_gpuEnd = ev.cpuEnd;
                 }
             }
             char tmp[32];
@@ -2496,6 +2525,10 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 {
                     ZoomToZone( ev );
                 }
+
+                m_gpuThread = ev.thread;
+                m_gpuStart = ev.cpuStart;
+                m_gpuEnd = ev.cpuEnd;
             }
 
             ++it;

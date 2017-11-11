@@ -327,7 +327,7 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     item.srcloc.r = ( srcloc->color       ) & 0xFF;
     item.srcloc.g = ( srcloc->color >> 8  ) & 0xFF;
     item.srcloc.b = ( srcloc->color >> 16 ) & 0xFF;
-    s_token.ptr->enqueue<moodycamel::CanAlloc>( std::move( item ) );
+    AppendData( &item, QueueDataSize[item.hdr.idx] );
 }
 
 bool Profiler::SendSourceLocationPayload( uint64_t _ptr )

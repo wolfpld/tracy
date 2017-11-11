@@ -879,7 +879,7 @@ void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
     zone->gpuStart = std::numeric_limits<int64_t>::max();
     zone->gpuEnd = -1;
     zone->name = ev.name;
-    zone->srcloc = ev.srcloc;
+    zone->srcloc = ShrinkSourceLocation( ev.srcloc );
     zone->thread = 0;
 
     auto timeline = &ctx->timeline;

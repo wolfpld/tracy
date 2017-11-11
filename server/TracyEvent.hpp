@@ -14,9 +14,10 @@ struct StringRef
 {
     enum Type { Ptr, Idx };
 
-    StringRef() {}
+    StringRef() : active( 0 ) {}
     StringRef( Type t, uint64_t data )
         : isidx( t == Idx )
+        , active( 1 )
     {
         if( isidx )
         {
@@ -33,13 +34,15 @@ struct StringRef
         uint64_t strptr;
         uint64_t stridx;
     };
-    bool isidx;
+
+    uint8_t isidx   : 1;
+    uint8_t active  : 1;
 };
 
 struct TextData
 {
     const char* userText;
-    uint64_t zoneName;      // ptr
+    StringRef zoneName;
 };
 
 struct SourceLocation

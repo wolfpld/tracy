@@ -564,6 +564,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::ZoneName:
         ProcessZoneName( ev.zoneName );
         break;
+    case QueueType::ZoneNameLiteral:
+        ProcessZoneNameLiteral( ev.zoneName );
+        break;
     case QueueType::LockWait:
         ProcessLockWait( ev.lockWait );
         break;
@@ -682,7 +685,20 @@ void View::ProcessZoneName( const QueueZoneName& ev )
     auto zone = stack.back();
     CheckString( ev.name );
     std::lock_guard<std::mutex> lock( m_lock );
-    GetTextData( *zone )->zoneName = ev.name;
+    GetTextData( *zone )->zoneName = StringRef( StringRef::Ptr, ev.name );
+}
+
+void View::ProcessZoneNameLiteral( const QueueZoneName& ev )
+{
+    auto& stack = m_zoneStack[ev.thread];
+    assert( !stack.empty() );
+    auto zone = stack.back();
+    auto it = m_pendingCustomStrings.find( ev.name );
+    assert( it != m_pendingCustomStrings.end() );
+    m_lock.lock();
+    GetTextData( *zone )->zoneName = StringRef( StringRef::Idx, it->second.idx );
+    m_lock.unlock();
+    m_pendingCustomStrings.erase( it );
 }
 
 void View::ProcessLockWait( const QueueLockWait& ev )
@@ -2092,7 +2108,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         else
         {
             const char* zoneName;
-            if( ev.text != -1 && GetTextData( ev )->zoneName )
+            if( ev.text != -1 && GetTextData( ev )->zoneName.active )
             {
                 zoneName = GetString( GetTextData( ev )->zoneName );
             }
@@ -2105,7 +2121,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             if( ev.text != -1 )
             {
                 auto td = GetTextData( ev );
-                if( td->zoneName ) dmul++;
+                if( td->zoneName.active ) dmul++;
                 if( td->userText ) dmul++;
             }
 
@@ -2858,7 +2874,7 @@ void View::DrawZoneInfoWindow()
 
     ImGui::Separator();
 
-    if( ev.text != -1 && GetTextData( ev )->zoneName )
+    if( ev.text != -1 && GetTextData( ev )->zoneName.active )
     {
         ImGui::Text( "Zone name: %s", GetString( GetTextData( ev )->zoneName ) );
         dmul++;
@@ -2907,7 +2923,7 @@ void View::DrawZoneInfoWindow()
         for( size_t i=0; i<ev.child.size(); i++ )
         {
             auto& cev = *ev.child[cti[i]];
-            if( cev.text != -1 && GetTextData( cev )->zoneName )
+            if( cev.text != -1 && GetTextData( cev )->zoneName.active )
             {
                 ImGui::Text( "%s", GetString( GetTextData( cev )->zoneName ) );
             }
@@ -3070,7 +3086,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     if( ev.text != -1 )
     {
         auto td = GetTextData( ev );
-        if( td->zoneName ) dmul++;
+        if( td->zoneName.active ) dmul++;
         if( td->userText ) dmul++;
     }
 
@@ -3081,7 +3097,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
 
     const char* func;
     const char* zoneName;
-    if( ev.text != -1 && GetTextData( ev )->zoneName )
+    if( ev.text != -1 && GetTextData( ev )->zoneName.active )
     {
         zoneName = GetString( GetTextData( ev )->zoneName );
         func = GetString( srcloc.function );
@@ -3144,7 +3160,6 @@ TextData* View::GetTextData( ZoneEvent& zone )
     {
         auto td = m_slab.Alloc<TextData>();
         td->userText = nullptr;
-        td->zoneName = 0;
         zone.text = m_textData.size();
         m_textData.push_back( td );
     }

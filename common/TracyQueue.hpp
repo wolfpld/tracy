@@ -20,6 +20,7 @@ enum class QueueType : uint8_t
     SourceLocationPayload,
     ZoneText,
     ZoneName,
+    ZoneNameLiteral,
     LockWait,
     LockObtain,
     LockRelease,
@@ -184,6 +185,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // allocated source location payload
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueZoneName ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneName ),        // literal
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),

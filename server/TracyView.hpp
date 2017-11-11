@@ -132,6 +132,7 @@ private:
     void ProcessFrameMark( const QueueFrameMark& ev );
     void ProcessZoneText( const QueueZoneText& ev );
     void ProcessZoneName( const QueueZoneName& ev );
+    void ProcessZoneNameLiteral( const QueueZoneName& ev );
     void ProcessLockWait( const QueueLockWait& ev );
     void ProcessLockObtain( const QueueLockObtain& ev );
     void ProcessLockRelease( const QueueLockRelease& ev );

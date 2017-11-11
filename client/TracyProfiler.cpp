@@ -272,6 +272,11 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                 SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                 tracy_free( (void*)ptr );
                 break;
+            case QueueType::ZoneNameLiteral:
+                ptr = item->zoneName.name;
+                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                tracy_free( (void*)ptr );
+                break;
             case QueueType::Message:
                 ptr = item->message.text;
                 SendString( ptr, (const char*)ptr, QueueType::CustomStringData );

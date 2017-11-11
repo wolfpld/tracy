@@ -134,6 +134,12 @@ public:
         return begin;
     }
 
+    void pop_back()
+    {
+        assert( m_size > 0 );
+        m_size--;
+    }
+
     void reserve( size_t cap )
     {
         if( cap <= Capacity() ) return;

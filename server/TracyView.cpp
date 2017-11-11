@@ -898,7 +898,7 @@ void View::AddThreadString( uint64_t id, char* str, size_t sz )
 
 void View::AddCustomString( uint64_t ptr, char* str, size_t sz )
 {
-    assert( m_pendingCustomString.find( ptr ) == m_pendingCustomStrings.end() );
+    assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
 }
 

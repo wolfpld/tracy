@@ -186,6 +186,8 @@ private:
     void Worker();
 
     DequeueStatus Dequeue( moodycamel::ConsumerToken& token );
+    bool AppendData( const void* data, size_t len );
+    bool CommitData();
 
     bool SendData( const char* data, size_t len );
     bool SendString( uint64_t ptr, const char* str, QueueType type );
@@ -209,6 +211,7 @@ private:
     LZ4_stream_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;
+    int m_bufferStart;
 
     QueueItem* m_itemBuf;
     char* m_lz4Buf;

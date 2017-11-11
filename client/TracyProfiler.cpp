@@ -250,6 +250,7 @@ void Profiler::Worker()
         }
         else
         {
+            if( m_bufferOffset != m_bufferStart ) CommitData();
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
     }

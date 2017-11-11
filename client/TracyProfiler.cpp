@@ -278,7 +278,7 @@ bool Profiler::AppendData( const void* data, size_t len )
     auto ret = true;
     if( m_bufferOffset - m_bufferStart + len > TargetFrameSize ) ret = CommitData();
     memcpy( m_buffer + m_bufferOffset, data, len );
-    m_bufferOffset += len;
+    m_bufferOffset += int( len );
     return ret;
 }
 

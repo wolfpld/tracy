@@ -5,7 +5,7 @@
 #  include <intrin.h>
 #  define TracyCountBits __popcnt64
 #else
-static int TracyCountBits( uint64_t i )
+static inline int TracyCountBits( uint64_t i )
 {
     i = i - ( (i >> 1) & 0x5555555555555555 );
     i = ( i & 0x3333333333333333 ) + ( (i >> 2) & 0x3333333333333333 );

@@ -615,6 +615,9 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
 
 void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
 {
+    auto it = m_pendingSourceLocationPayload.find( ev.srcloc );
+    assert( it != m_pendingSourceLocationPayload.end() );
+
     auto zone = m_slab.AllocInit<ZoneEvent>();
 
     zone->start = ev.time * m_timerMul;
@@ -623,13 +626,14 @@ void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->text = -1;
-
-    CheckSourceLocationPayload( ev.srcloc, zone );
+    zone->srcloc = it->second;
 
     std::unique_lock<std::mutex> lock( m_lock );
     NewZone( zone, ev.thread );
     lock.unlock();
     m_zoneStack[ev.thread].push_back( zone );
+
+    m_pendingSourceLocationPayload.erase( it );
 }
 
 void View::ProcessZoneEnd( const QueueZoneEnd& ev )
@@ -854,14 +858,6 @@ void View::CheckSourceLocation( uint64_t ptr )
     ServerQuery( ServerQuerySourceLocation, ptr );
 }
 
-void View::CheckSourceLocationPayload( uint64_t ptr, ZoneEvent* dst )
-{
-    assert( m_pendingSourceLocationPayload.find( ptr ) == m_pendingSourceLocationPayload.end() );
-    m_pendingSourceLocationPayload.emplace( ptr, dst );
-
-    ServerQuery( ServerQuerySourceLocationPayload, ptr );
-}
-
 void View::AddString( uint64_t ptr, char* str, size_t sz )
 {
     assert( m_strings.find( ptr ) == m_strings.end() );
@@ -932,8 +928,7 @@ void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
 {
     const auto start = data;
 
-    auto pit = m_pendingSourceLocationPayload.find( ptr );
-    assert( pit != m_pendingSourceLocationPayload.end() );
+    assert( m_pendingSourceLocationPayload.find( ptr ) == m_pendingSourceLocationPayload.end() );
 
     uint32_t color, line;
     memcpy( &color, data, 4 );
@@ -955,17 +950,14 @@ void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
         memcpy( slptr, &srcloc, sizeof( srcloc ) );
         uint32_t idx = m_sourceLocationPayload.size();
         m_sourceLocationPayloadMap.emplace( slptr, idx );
+        m_pendingSourceLocationPayload.emplace( ptr, -int32_t( idx + 1 ) );
         std::unique_lock<std::mutex> lock( m_lock );
         m_sourceLocationPayload.push_back( slptr );
-        pit->second->srcloc = -int32_t( idx + 1 );
     }
     else
     {
-        std::unique_lock<std::mutex> lock( m_lock );
-        pit->second->srcloc = -int32_t( it->second + 1 );
+        m_pendingSourceLocationPayload.emplace( ptr, -int32_t( it->second + 1 ) );
     }
-
-    m_pendingSourceLocationPayload.erase( pit );
 }
 
 uint32_t View::ShrinkSourceLocation( uint64_t srcloc )

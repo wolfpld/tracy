@@ -277,6 +277,11 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                 SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                 tracy_free( (void*)ptr );
                 break;
+            case QueueType::ZoneBeginAllocSrcLoc:
+                ptr = item->zoneBegin.srcloc;
+                SendSourceLocationPayload( ptr );
+                tracy_free( (void*)ptr );
+                break;
             default:
                 break;
             }
@@ -413,10 +418,6 @@ bool Profiler::HandleServerQuery()
         break;
     case ServerQuerySourceLocation:
         SendSourceLocation( ptr );
-        break;
-    case ServerQuerySourceLocationPayload:
-        SendSourceLocationPayload( ptr );
-        tracy_free( (void*)ptr );
         break;
     case ServerQueryPlotName:
         SendString( ptr, (const char*)ptr, QueueType::PlotName );

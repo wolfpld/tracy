@@ -143,7 +143,6 @@ private:
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
     void CheckSourceLocation( uint64_t ptr );
-    void CheckSourceLocationPayload( uint64_t ptr, ZoneEvent* dst );
 
     void AddString( uint64_t ptr, char* str, size_t sz );
     void AddThreadString( uint64_t id, char* str, size_t sz );
@@ -258,7 +257,7 @@ private:
     std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_plotRev;
     std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
     std::unordered_map<uint64_t, uint32_t> m_sourceLocationShrink;
-    std::unordered_map<uint64_t, ZoneEvent*> m_pendingSourceLocationPayload;
+    std::unordered_map<uint64_t, int32_t> m_pendingSourceLocationPayload;
 
     Slab<64*1024*1024> m_slab;
 

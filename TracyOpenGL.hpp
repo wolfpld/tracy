@@ -105,6 +105,7 @@ private:
     {
         const auto id = m_head;
         m_head = ( m_head + 1 ) % Num;
+        assert( m_head != m_tail );
         return m_query[id];
     }
 

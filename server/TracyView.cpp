@@ -468,7 +468,7 @@ void View::Worker()
             if( m_terminate )
             {
                 if( !m_pendingStrings.empty() || !m_pendingThreads.empty() || !m_pendingSourceLocation.empty() ||
-                    !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() || !m_pendingMessages.empty() )
+                    !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() )
                 {
                     continue;
                 }
@@ -496,7 +496,7 @@ close:
 void View::DispatchProcess( const QueueItem& ev, char*& ptr )
 {
     ptr += QueueDataSize[ev.hdr.idx];
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::MessageData || ev.hdr.type == QueueType::SourceLocationPayload )
+    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::SourceLocationPayload )
     {
         uint16_t sz;
         memcpy( &sz, ptr, sizeof( sz ) );
@@ -514,9 +514,6 @@ void View::DispatchProcess( const QueueItem& ev, char*& ptr )
             break;
         case QueueType::PlotName:
             HandlePlotName( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::MessageData:
-            AddMessageData( ev.stringTransfer.ptr, ptr, sz );
             break;
         case QueueType::SourceLocationPayload:
             AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
@@ -669,7 +666,7 @@ void View::ProcessZoneText( const QueueZoneText& ev )
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
     m_lock.lock();
-    GetTextData( *zone )->userText = it->second;
+    GetTextData( *zone )->userText = it->second.ptr;
     m_lock.unlock();
     m_pendingCustomStrings.erase( it );
 }
@@ -807,8 +804,14 @@ void View::ProcessPlotData( const QueuePlotData& ev )
 
 void View::ProcessMessage( const QueueMessage& ev )
 {
-    m_pendingMessages.emplace( ev.text, MessagePending { int64_t( ev.time * m_timerMul ), ev.thread } );
-    ServerQuery( ServerQueryMessage, ev.text );
+    auto it = m_pendingCustomStrings.find( ev.text );
+    assert( it != m_pendingCustomStrings.end() );
+    auto msg = m_slab.Alloc<MessageData>();
+    msg->time = int64_t( ev.time * m_timerMul );
+    msg->ref.isidx = true;
+    msg->ref.stridx = it->second.idx;
+    InsertMessageData( msg, ev.thread );
+    m_pendingCustomStrings.erase( it );
 }
 
 void View::ProcessMessageLiteral( const QueueMessage& ev )
@@ -883,9 +886,8 @@ void View::AddThreadString( uint64_t id, char* str, size_t sz )
 
 void View::AddCustomString( uint64_t ptr, char* str, size_t sz )
 {
-    const auto sl = StoreString( str, sz );
     assert( m_pendingCustomString.find( ptr ) == m_pendingCustomStrings.end() );
-    m_pendingCustomStrings.emplace( ptr, sl.ptr );
+    m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
 }
 
 View::StringLocation View::StoreString( char* str, size_t sz )
@@ -964,20 +966,6 @@ void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
     }
 
     m_pendingSourceLocationPayload.erase( pit );
-}
-
-void View::AddMessageData( uint64_t ptr, char* str, size_t sz )
-{
-    const auto sl = StoreString( str, sz );
-
-    auto it = m_pendingMessages.find( ptr );
-    assert( it != m_pendingMessages.end() );
-    auto msg = m_slab.Alloc<MessageData>();
-    msg->time = it->second.time;
-    msg->ref.isidx = true;
-    msg->ref.stridx = sl.idx;
-    InsertMessageData( msg, it->second.thread );
-    m_pendingMessages.erase( it );
 }
 
 uint32_t View::ShrinkSourceLocation( uint64_t srcloc )

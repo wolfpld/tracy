@@ -24,7 +24,6 @@ enum ServerQuery : uint8_t
     ServerQuerySourceLocation,
     ServerQuerySourceLocationPayload,
     ServerQueryPlotName,
-    ServerQueryMessage,
 };
 
 enum { WelcomeMessageProgramNameSize = 64 };

@@ -264,15 +264,19 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
         for( size_t i=0; i<sz; i++ )
         {
             const auto item = m_itemBuf + i;
+            uint64_t ptr;
             switch( item->hdr.type )
             {
             case QueueType::ZoneText:
-            {
-                const auto ptr = item->zoneText.text;
+                ptr = item->zoneText.text;
                 SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                 tracy_free( (void*)ptr );
                 break;
-            }
+            case QueueType::Message:
+                ptr = item->message.text;
+                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                tracy_free( (void*)ptr );
+                break;
             default:
                 break;
             }
@@ -322,7 +326,7 @@ bool Profiler::SendData( const char* data, size_t len )
 
 bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
-    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName || type == QueueType::MessageData );
+    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName );
 
     QueueItem item;
     item.hdr.type = type;
@@ -416,10 +420,6 @@ bool Profiler::HandleServerQuery()
         break;
     case ServerQueryPlotName:
         SendString( ptr, (const char*)ptr, QueueType::PlotName );
-        break;
-    case ServerQueryMessage:
-        SendString( ptr, (const char*)ptr, QueueType::MessageData );
-        tracy_free( (void*)ptr );
         break;
     case ServerQueryTerminate:
         return false;

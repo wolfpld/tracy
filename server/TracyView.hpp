@@ -46,12 +46,6 @@ private:
         Short
     };
 
-    struct MessagePending
-    {
-        int64_t time;
-        uint64_t thread;
-    };
-
     struct MessageData
     {
         int64_t time;
@@ -156,7 +150,6 @@ private:
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
     void AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz );
-    void AddMessageData( uint64_t ptr, char* str, size_t sz );
 
     StringLocation StoreString( char* str, size_t sz );
 
@@ -259,12 +252,11 @@ private:
     std::unordered_set<uint64_t> m_pendingStrings;
     std::unordered_set<uint64_t> m_pendingThreads;
     std::unordered_set<uint64_t> m_pendingSourceLocation;
-    std::unordered_map<uint64_t, const char*> m_pendingCustomStrings;
+    std::unordered_map<uint64_t, StringLocation> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
     std::unordered_map<uint64_t, uint32_t> m_plotMap;
     std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_plotRev;
     std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
-    std::unordered_map<uint64_t, MessagePending> m_pendingMessages;
     std::unordered_map<uint64_t, uint32_t> m_sourceLocationShrink;
     std::unordered_map<uint64_t, ZoneEvent*> m_pendingSourceLocationPayload;
 

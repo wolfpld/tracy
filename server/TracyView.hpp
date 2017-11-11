@@ -67,6 +67,7 @@ private:
     void ProcessPlotData( const QueuePlotData& ev );
     void ProcessMessage( const QueueMessage& ev );
     void ProcessMessageLiteral( const QueueMessage& ev );
+    void ProcessGpuNewContext( const QueueGpuNewContext& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
@@ -158,6 +159,7 @@ private:
     Vector<PlotData*> m_plots;
     Vector<MessageData*> m_messages;
     Vector<TextData*> m_textData;
+    Vector<GpuCtxData*> m_gpuData;
     std::unordered_map<uint64_t, const char*> m_strings;
     std::unordered_map<uint64_t, const char*> m_threadNames;
     std::unordered_map<uint64_t, SourceLocation> m_sourceLocation;

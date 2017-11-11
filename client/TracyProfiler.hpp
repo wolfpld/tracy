@@ -10,6 +10,7 @@
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracySystem.hpp"
 
 #if defined _MSC_VER || defined __CYGWIN__
 #  include <intrin.h>

@@ -112,6 +112,11 @@ struct ThreadData
     Vector<MessageData*> messages;
 };
 
+struct GpuCtxData
+{
+    int64_t timeDiff;
+};
+
 struct LockMap
 {
     uint32_t srcloc;

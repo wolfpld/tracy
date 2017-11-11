@@ -588,6 +588,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::MessageLiteral:
         ProcessMessageLiteral( ev.message );
         break;
+    case QueueType::GpuNewContext:
+        ProcessGpuNewContext( ev.gpuNewContext );
+        break;
     case QueueType::Terminate:
         m_terminate = true;
         break;
@@ -842,6 +845,15 @@ void View::ProcessMessageLiteral( const QueueMessage& ev )
     msg->ref.isidx = false;
     msg->ref.strptr = ev.text;
     InsertMessageData( msg, ev.thread );
+}
+
+void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
+{
+    assert( ev.context == m_gpuData.size() );
+    auto gpu = m_slab.Alloc<GpuCtxData>();
+    gpu->timeDiff = int64_t( ev.cputime * m_timerMul - ev.gputime );
+    std::lock_guard<std::mutex> lock( m_lock );
+    m_gpuData.push_back( gpu );
 }
 
 void View::CheckString( uint64_t ptr )

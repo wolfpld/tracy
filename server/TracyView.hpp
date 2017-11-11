@@ -109,6 +109,22 @@ private:
         uint32_t idx;
     };
 
+    struct SourceLocationHasher
+    {
+        size_t operator()( const SourceLocation* ptr ) const
+        {
+            return charutil::hash( (const char*)ptr, sizeof( SourceLocation ) );
+        }
+    };
+
+    struct SourceLocationComparator
+    {
+        bool operator()( const SourceLocation* lhs, const SourceLocation* rhs ) const
+        {
+            return memcmp( lhs, rhs, sizeof( SourceLocation ) ) == 0;
+        }
+    };
+
     void Worker();
 
     void DispatchProcess( const QueueItem& ev, char*& ptr );
@@ -223,7 +239,6 @@ private:
     Vector<PlotData*> m_plots;
     Vector<MessageData*> m_messages;
     Vector<TextData*> m_textData;
-    Vector<SourceLocation*> m_sourceLocationPayload;
     std::unordered_map<uint64_t, const char*> m_strings;
     std::unordered_map<uint64_t, const char*> m_threadNames;
     std::unordered_map<uint64_t, SourceLocation> m_sourceLocation;
@@ -233,6 +248,9 @@ private:
 
     Vector<const char*> m_stringData;
     std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_stringMap;
+
+    Vector<SourceLocation*> m_sourceLocationPayload;
+    std::unordered_map<SourceLocation*, uint32_t, SourceLocationHasher, SourceLocationComparator> m_sourceLocationPayloadMap;
 
     std::mutex m_mbpslock;
     std::vector<float> m_mbps;

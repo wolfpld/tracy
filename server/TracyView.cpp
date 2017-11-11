@@ -952,16 +952,24 @@ void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
     const auto ssz = sz - ( end - start );
     const auto source = StoreString( end, ssz );
 
-    auto srcloc = m_slab.Alloc<SourceLocation>();
-    srcloc->function = StringRef( StringRef::Idx, func.idx );
-    srcloc->file = StringRef( StringRef::Idx, source.idx );
-    srcloc->line = line;
-    srcloc->color = color;
+    SourceLocation srcloc { StringRef( StringRef::Idx, func.idx ), StringRef( StringRef::Idx, source.idx ), line, color };
+    auto it = m_sourceLocationPayloadMap.find( &srcloc );
+    if( it == m_sourceLocationPayloadMap.end() )
+    {
+        auto slptr = m_slab.Alloc<SourceLocation>();
+        memcpy( slptr, &srcloc, sizeof( srcloc ) );
+        uint32_t idx = m_sourceLocationPayload.size();
+        m_sourceLocationPayloadMap.emplace( slptr, idx );
+        std::unique_lock<std::mutex> lock( m_lock );
+        m_sourceLocationPayload.push_back( slptr );
+        pit->second->srcloc = -int32_t( idx + 1 );
+    }
+    else
+    {
+        std::unique_lock<std::mutex> lock( m_lock );
+        pit->second->srcloc = -int32_t( it->second + 1 );
+    }
 
-    std::unique_lock<std::mutex> lock( m_lock );
-    pit->second->srcloc = -int32_t( m_sourceLocationPayload.size() + 1 );
-    m_sourceLocationPayload.push_back( srcloc );
-    lock.unlock();
     m_pendingSourceLocationPayload.erase( pit );
 }
 

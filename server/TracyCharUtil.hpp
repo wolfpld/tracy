@@ -23,6 +23,21 @@ static inline uint32_t hash( const char* str )
     return hash;
 }
 
+static inline uint32_t hash( const char* str, size_t sz )
+{
+    uint32_t hash = 5381;
+    int c;
+
+    while( sz > 0 )
+    {
+        c = *str++;
+        hash = ( ( hash << 5 ) + hash ) ^ c;
+        sz--;
+    }
+
+    return hash;
+}
+
 struct Hasher
 {
     size_t operator()( const char* key ) const

@@ -20,7 +20,7 @@ struct StringRef
     {
         if( isidx )
         {
-            stridx = (uint32_t)data;
+            stridx = data;
         }
         else
         {
@@ -31,7 +31,7 @@ struct StringRef
     union
     {
         uint64_t strptr;
-        uint32_t stridx;
+        uint64_t stridx;
     };
     bool isidx;
 };

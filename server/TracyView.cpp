@@ -597,6 +597,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::GpuZoneEnd:
         ProcessGpuZoneEnd( ev.gpuZoneEnd );
         break;
+    case QueueType::GpuTime:
+        ProcessGpuTime( ev.gpuTime );
+        break;
     case QueueType::Terminate:
         m_terminate = true;
         break;
@@ -906,6 +909,26 @@ void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
     std::lock_guard<std::mutex> lock( m_lock );
     zone->cpuEnd = ev.cpuTime * m_timerMul;
     zone->thread = ev.thread;
+}
+
+void View::ProcessGpuTime( const QueueGpuTime& ev )
+{
+    assert( m_gpuData.size() >= ev.context );
+    auto ctx = m_gpuData[ev.context];
+
+    auto zone = ctx->queue.front();
+    if( zone->gpuStart == std::numeric_limits<int64_t>::max() )
+    {
+        std::lock_guard<std::mutex> lock( m_lock );
+        zone->gpuStart = ctx->timeDiff + ev.gpuTime;
+    }
+    else
+    {
+        std::lock_guard<std::mutex> lock( m_lock );
+        zone->gpuEnd = ctx->timeDiff + ev.gpuTime;
+    }
+
+    ctx->queue.erase( ctx->queue.begin() );
 }
 
 void View::CheckString( uint64_t ptr )

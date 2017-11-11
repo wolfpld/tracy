@@ -5,6 +5,7 @@
 
 #include <atomic>
 
+#include "Tracy.hpp"
 #include "client/TracyProfiler.hpp"
 
 #define TracyGpuZone( ctx, name ) static const tracy::SourceLocation __tracy_gpu_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; auto ___tracy_gpu_zone = tracy::detail::__GpuHelper( ctx, name, &__tracy_gpu_source_location );
@@ -93,6 +94,48 @@ public:
         item->gpuNewContext.gputime = tgpu;
         item->gpuNewContext.context = m_context;
         tail.store( magic + 1, std::memory_order_release );
+    }
+
+    void Collect()
+    {
+        ZoneScopedC( 0x881111 );
+
+        auto start = m_tail;
+        auto end = m_head + Num;
+        auto cnt = ( end - start ) % Num;
+        while( cnt > 1 )
+        {
+            auto mid = start + cnt / 2;
+            GLint available;
+            glGetQueryObjectiv( m_query[mid % Num], GL_QUERY_RESULT_AVAILABLE, &available );
+            if( available )
+            {
+                start = mid;
+            }
+            else
+            {
+                end = mid;
+            }
+            cnt = ( end - start ) % Num;
+        }
+
+        start %= Num;
+
+        while( m_tail != start )
+        {
+            uint64_t time;
+            glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
+
+            Magic magic;
+            auto& token = s_token.ptr;
+            auto& tail = token->get_tail_index();
+            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            item->hdr.type = QueueType::GpuTime;
+            item->gpuTime.gpuTime = (int64_t)time;
+            item->gpuTime.context = m_context;
+            tail.store( magic + 1, std::memory_order_release );
+            m_tail = ( m_tail + 1 ) % Num;
+        }
     }
 
 private:

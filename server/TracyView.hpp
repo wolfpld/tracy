@@ -70,6 +70,7 @@ private:
     void ProcessGpuNewContext( const QueueGpuNewContext& ev );
     void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev );
     void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev );
+    void ProcessGpuTime( const QueueGpuTime& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );

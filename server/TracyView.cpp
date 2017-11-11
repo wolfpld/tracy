@@ -121,6 +121,7 @@ View::View( const char* addr )
     , m_connected( false )
     , m_hasData( false )
     , m_staticView( false )
+    , m_sourceLocationExpand( { 0 } )
     , m_zonesCnt( 0 )
     , m_mbps( 64 )
     , m_stream( LZ4_createStreamDecode() )
@@ -144,7 +145,6 @@ View::View( const char* addr )
     , m_onlyContendedLocks( false )
     , m_namespace( Namespace::Full )
     , m_terminate( false )
-    , m_sourceLocationExpand( { 0 } )
 {
     assert( s_instance == nullptr );
     s_instance = this;

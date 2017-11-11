@@ -666,7 +666,12 @@ void View::ProcessZoneText( const QueueZoneText& ev )
     auto& stack = m_zoneStack[ev.thread];
     assert( !stack.empty() );
     auto zone = stack.back();
-    CheckCustomString( ev.text, zone );
+    auto it = m_pendingCustomStrings.find( ev.text );
+    assert( it != m_pendingCustomStrings.end() );
+    m_lock.lock();
+    GetTextData( *zone )->userText = it->second;
+    m_lock.unlock();
+    m_pendingCustomStrings.erase( it );
 }
 
 void View::ProcessZoneName( const QueueZoneName& ev )
@@ -836,14 +841,6 @@ void View::CheckThreadString( uint64_t id )
     ServerQuery( ServerQueryThreadString, id );
 }
 
-void View::CheckCustomString( uint64_t ptr, ZoneEvent* dst )
-{
-    assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
-    m_pendingCustomStrings.emplace( ptr, dst );
-
-    ServerQuery( ServerQueryCustomString, ptr );
-}
-
 void View::CheckSourceLocation( uint64_t ptr )
 {
     if( m_sourceLocation.find( ptr ) != m_sourceLocation.end() ) return;
@@ -886,13 +883,9 @@ void View::AddThreadString( uint64_t id, char* str, size_t sz )
 
 void View::AddCustomString( uint64_t ptr, char* str, size_t sz )
 {
-    auto pit = m_pendingCustomStrings.find( ptr );
-    assert( pit != m_pendingCustomStrings.end() );
     const auto sl = StoreString( str, sz );
-    m_lock.lock();
-    GetTextData( *pit->second )->userText = sl.ptr;
-    m_lock.unlock();
-    m_pendingCustomStrings.erase( pit );
+    assert( m_pendingCustomString.find( ptr ) == m_pendingCustomStrings.end() );
+    m_pendingCustomStrings.emplace( ptr, sl.ptr );
 }
 
 View::StringLocation View::StoreString( char* str, size_t sz )

@@ -148,7 +148,6 @@ private:
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
-    void CheckCustomString( uint64_t ptr, ZoneEvent* dst );
     void CheckSourceLocation( uint64_t ptr );
     void CheckSourceLocationPayload( uint64_t ptr, ZoneEvent* dst );
 
@@ -260,7 +259,7 @@ private:
     std::unordered_set<uint64_t> m_pendingStrings;
     std::unordered_set<uint64_t> m_pendingThreads;
     std::unordered_set<uint64_t> m_pendingSourceLocation;
-    std::unordered_map<uint64_t, ZoneEvent*> m_pendingCustomStrings;
+    std::unordered_map<uint64_t, const char*> m_pendingCustomStrings;
     std::unordered_map<uint64_t, uint32_t> m_threadMap;
     std::unordered_map<uint64_t, uint32_t> m_plotMap;
     std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_plotRev;

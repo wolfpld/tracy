@@ -263,7 +263,20 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
     {
         for( size_t i=0; i<sz; i++ )
         {
-            if( !AppendData( m_itemBuf+i, QueueDataSize[m_itemBuf[i].hdr.idx] ) ) return ConnectionLost;
+            const auto item = m_itemBuf + i;
+            switch( item->hdr.type )
+            {
+            case QueueType::ZoneText:
+            {
+                const auto ptr = item->zoneText.text;
+                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                tracy_free( (void*)ptr );
+                break;
+            }
+            default:
+                break;
+            }
+            if( !AppendData( item, QueueDataSize[m_itemBuf[i].hdr.idx] ) ) return ConnectionLost;
         }
     }
     else
@@ -393,10 +406,6 @@ bool Profiler::HandleServerQuery()
         {
             SendString( ptr, GetThreadName( ptr ), QueueType::ThreadName );
         }
-        break;
-    case ServerQueryCustomString:
-        SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-        tracy_free( (void*)ptr );
         break;
     case ServerQuerySourceLocation:
         SendSourceLocation( ptr );

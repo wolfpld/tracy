@@ -21,7 +21,6 @@ enum ServerQuery : uint8_t
     ServerQueryTerminate,
     ServerQueryString,
     ServerQueryThreadString,
-    ServerQueryCustomString,
     ServerQuerySourceLocation,
     ServerQuerySourceLocationPayload,
     ServerQueryPlotName,

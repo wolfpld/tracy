@@ -119,6 +119,14 @@ public:
         memcpy( m_ptr + dist, begin, sz * sizeof( T ) );
     }
 
+    T* erase( T* it )
+    {
+        assert( it >= m_ptr && it <= m_ptr + m_size );
+        m_size--;
+        memmove( it, it+1, m_size * sizeof( T ) );
+        return it;
+    }
+
     T* erase( T* begin, T* end )
     {
         assert( begin >= m_ptr && begin <= m_ptr + m_size );

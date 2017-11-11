@@ -8,13 +8,23 @@
 namespace tracy
 {
 
+#pragma pack( 1 )
+
+struct StringRef
+{
+    union
+    {
+        uint64_t strptr;
+        uint32_t stridx;
+    };
+    bool isptr;
+};
+
 struct TextData
 {
     const char* userText;
     uint64_t zoneName;      // ptr
 };
-
-#pragma pack( 1 )
 
 struct SourceLocation
 {

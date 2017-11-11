@@ -321,19 +321,7 @@ View::View( FileRead& f )
         uint64_t ptr, tsz;
         f.Read( &ptr, sizeof( ptr ) );
         auto msgdata = m_slab.Alloc<MessageData>();
-        f.Read( &msgdata->_time_literal, sizeof( msgdata->_time_literal ) );
-        if( msgdata->literal )
-        {
-            f.Read( &msgdata->str, sizeof( msgdata->str ) );
-        }
-        else
-        {
-            f.Read( &tsz, sizeof( tsz ) );
-            auto txt = m_slab.Alloc<char>( tsz+1 );
-            f.Read( txt, tsz );
-            txt[tsz] = '\0';
-            msgdata->txt = txt;
-        }
+        f.Read( msgdata, sizeof( *msgdata ) );
         m_messages.push_back( msgdata );
         msgMap.emplace( ptr, msgdata );
     }
@@ -839,8 +827,8 @@ void View::ProcessMessageLiteral( const QueueMessage& ev )
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = int64_t( ev.time * m_timerMul );
-    msg->literal = true;
-    msg->str = ev.text;
+    msg->ref.isptr = true;
+    msg->ref.strptr = ev.text;
     InsertMessageData( msg, ev.thread );
 }
 
@@ -996,18 +984,16 @@ void View::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
     m_pendingSourceLocationPayload.erase( pit );
 }
 
-void View::AddMessageData( uint64_t ptr, const char* str, size_t sz )
+void View::AddMessageData( uint64_t ptr, char* str, size_t sz )
 {
-    auto txt = m_slab.Alloc<char>( sz+1 );
-    memcpy( txt, str, sz );
-    txt[sz] = '\0';
+    const auto sl = StoreString( str, sz );
 
     auto it = m_pendingMessages.find( ptr );
     assert( it != m_pendingMessages.end() );
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = it->second.time;
-    msg->literal = false;
-    msg->txt = txt;
+    msg->ref.isptr = false;
+    msg->ref.stridx = sl.idx;
     InsertMessageData( msg, it->second.thread );
     m_pendingMessages.erase( it );
 }
@@ -1329,13 +1315,25 @@ int64_t View::GetZoneEnd( const ZoneEvent& ev ) const
 const char* View::GetString( uint64_t ptr ) const
 {
     const auto it = m_strings.find( ptr );
-    if( it == m_strings.end() )
+    if( it == m_strings.end() || it->second == nullptr )
     {
         return "???";
     }
     else
     {
         return it->second;
+    }
+}
+
+const char* View::GetString( const StringRef& ref ) const
+{
+    if( ref.isptr )
+    {
+        return GetString( ref.strptr );
+    }
+    else
+    {
+        return m_stringData[ref.stridx];
     }
 }
 
@@ -1967,7 +1965,7 @@ void View::DrawZones()
                     else
                     {
                         ImGui::Text( "%s", TimeToString( (*it)->time - m_frames[0] ) );
-                        ImGui::Text( "%s", (*it)->literal ? GetString( (*it)->str ) : (*it)->txt );
+                        ImGui::Text( "%s", GetString( (*it)->ref ) );
                     }
                     ImGui::EndTooltip();
                     m_msgHighlight = *it;
@@ -3029,7 +3027,7 @@ void View::DrawMessages()
     for( auto& v : m_messages )
     {
         char tmp[64 * 1024];
-        sprintf( tmp, "%10s | %s", TimeToString( v->time - m_frames[0] ), v->literal ? GetString( v->str ) : v->txt );
+        sprintf( tmp, "%10s | %s", TimeToString( v->time - m_frames[0] ), GetString( v->ref ) );
         if( m_msgHighlight == v )
         {
             ImGui::TextColored( ImVec4( 0xDD / 255.f, 0x22 / 255.f, 0x22 / 255.f, 1.f ), "%s", tmp );
@@ -3323,17 +3321,7 @@ void View::Write( FileWrite& f )
     {
         const auto ptr = (uint64_t)v;
         f.Write( &ptr, sizeof( ptr ) );
-        f.Write( &v->_time_literal, sizeof( v->_time_literal ) );
-        if( v->literal )
-        {
-            f.Write( &v->str, sizeof( v->str ) );
-        }
-        else
-        {
-            sz = strlen( v->txt );
-            f.Write( &sz, sizeof( sz ) );
-            f.Write( v->txt, sz );
-        }
+        f.Write( v, sizeof( *v ) );
     }
 
     sz = m_textData.size();

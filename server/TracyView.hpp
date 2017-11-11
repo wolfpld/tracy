@@ -54,20 +54,8 @@ private:
 
     struct MessageData
     {
-        union
-        {
-            struct
-            {
-                int64_t time : 63;
-                int64_t literal : 1;
-            };
-            int64_t _time_literal;
-        };
-        union
-        {
-            const char* txt;
-            uint64_t str;
-        };
+        int64_t time;
+        StringRef ref;
     };
 
     struct ThreadData
@@ -153,7 +141,7 @@ private:
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
     void AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz );
-    void AddMessageData( uint64_t ptr, const char* str, size_t sz );
+    void AddMessageData( uint64_t ptr, char* str, size_t sz );
 
     StringLocation StoreString( char* str, size_t sz );
 
@@ -182,6 +170,7 @@ private:
     int64_t GetLastTime() const;
     int64_t GetZoneEnd( const ZoneEvent& ev ) const;
     const char* GetString( uint64_t ptr ) const;
+    const char* GetString( const StringRef& ref ) const;
     const char* GetThreadString( uint64_t id ) const;
     const SourceLocation& GetSourceLocation( int32_t srcloc ) const;
 

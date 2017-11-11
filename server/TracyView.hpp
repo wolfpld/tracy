@@ -108,6 +108,7 @@ private:
     int64_t GetFrameEnd( size_t idx ) const;
     int64_t GetLastTime() const;
     int64_t GetZoneEnd( const ZoneEvent& ev ) const;
+    int64_t GetZoneEnd( const GpuEvent& ev ) const;
     const char* GetString( uint64_t ptr ) const;
     const char* GetString( const StringRef& ref ) const;
     const char* GetThreadString( uint64_t id ) const;
@@ -121,6 +122,7 @@ private:
     bool DrawZoneFrames();
     void DrawZones();
     int DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
+    int DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
     int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, LockHighlight& highlight );
     void DrawZoneInfoWindow();
     int DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover );
@@ -131,12 +133,16 @@ private:
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
     uint32_t GetZoneColor( const ZoneEvent& ev );
-    uint32_t GetZoneColor( const SourceLocation& srcloc );
+    uint32_t GetZoneColor( const GpuEvent& ev );
     uint32_t GetZoneHighlight( const ZoneEvent& ev, bool migration );
+    uint32_t GetZoneHighlight( const GpuEvent& ev );
     float GetZoneThickness( const ZoneEvent& ev );
+    float GetZoneThickness( const GpuEvent& ev );
 
     void ZoomToZone( const ZoneEvent& ev );
+    void ZoomToZone( const GpuEvent& ev );
     void ZoneTooltip( const ZoneEvent& ev );
+    void ZoneTooltip( const GpuEvent& ev );
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
 
     TextData* GetTextData( ZoneEvent& zone );
@@ -229,6 +235,7 @@ private:
 
     bool m_showOptions;
     bool m_showMessages;
+    bool m_drawGpuZones;
     bool m_drawZones;
     bool m_drawLocks;
     bool m_drawPlots;

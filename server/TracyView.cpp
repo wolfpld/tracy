@@ -139,6 +139,7 @@ View::View( const char* addr )
     , m_drawRegion( false )
     , m_showOptions( false )
     , m_showMessages( false )
+    , m_drawGpuZones( true )
     , m_drawZones( true )
     , m_drawLocks( true )
     , m_drawPlots( true )
@@ -175,6 +176,7 @@ View::View( FileRead& f )
     , m_drawRegion( false )
     , m_showOptions( false )
     , m_showMessages( false )
+    , m_drawGpuZones( true )
     , m_drawZones( true )
     , m_drawLocks( true )
     , m_drawPlots( true )
@@ -861,6 +863,7 @@ void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     assert( ev.context == m_gpuData.size() );
     auto gpu = m_slab.AllocInit<GpuCtxData>();
     gpu->timeDiff = int64_t( ev.cputime * m_timerMul - ev.gputime );
+    gpu->showFull = true;
     std::lock_guard<std::mutex> lock( m_lock );
     m_gpuData.push_back( gpu );
 }
@@ -1373,6 +1376,17 @@ int64_t View::GetZoneEnd( const ZoneEvent& ev ) const
     {
         if( ptr->end != -1 ) return ptr->end;
         if( ptr->child.empty() ) return ptr->start;
+        ptr = ptr->child.back();
+    }
+}
+
+int64_t View::GetZoneEnd( const GpuEvent& ev ) const
+{
+    auto ptr = &ev;
+    for(;;)
+    {
+        if( ptr->gpuEnd != -1 ) return ptr->gpuEnd;
+        if( ptr->child.empty() ) return ptr->gpuStart;
         ptr = ptr->child.back();
     }
 }
@@ -1989,13 +2003,50 @@ void View::DrawZones()
 
     const auto nspx = 1.0 / pxns;
 
-    // zones
-    LockHighlight nextLockHighlight { -1 };
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
     int offset = 0;
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
+
+    // gpu zones
+    if( m_drawGpuZones )
+    {
+        for( int i=0; i<m_gpuData.size(); i++ )
+        {
+            auto& v = m_gpuData[i];
+
+            draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
+
+            if( v->showFull )
+            {
+                draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFFFFF );
+            }
+            else
+            {
+                draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF888888 );
+            }
+            char buf[64];
+            sprintf( buf, "GPU context %i", i );
+            draw->AddText( wpos + ImVec2( ty, offset ), v->showFull ? 0xFFFFAAAA : 0xFF886666, buf );
+
+            if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
+            {
+                v->showFull = !v->showFull;
+            }
+
+            offset += ostep;
+            if( v->showFull )
+            {
+                const auto depth = DrawGpuZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
+                offset += ostep * depth;
+            }
+            offset += ostep * 0.2f;
+        }
+    }
+
+    // zones
+    LockHighlight nextLockHighlight { -1 };
     for( auto& v : m_threads )
     {
         if( !v->visible ) continue;
@@ -2131,7 +2182,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     {
         auto& ev = **it;
         auto& srcloc = GetSourceLocation( ev.srcloc );
-        const auto color = GetZoneColor( srcloc );
+        const auto color = GetZoneColor( ev );
         const auto end = GetZoneEnd( ev );
         const auto zsz = ( end - ev.start ) * pxns;
         if( zsz < MinVisSize )
@@ -2294,6 +2345,156 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
                     m_zoneInfoWindow = &ev;
+                }
+            }
+
+            ++it;
+        }
+    }
+    return maxdepth;
+}
+
+int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
+{
+    // cast to uint64_t, so that unended zones (end = -1) are still drawn
+    auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->gpuEnd < (uint64_t)r; } );
+    if( it == vec.end() ) return depth;
+
+    const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->gpuStart < r; } );
+    if( it == zitend ) return depth;
+
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto ty = ImGui::GetFontSize();
+    const auto ostep = ty + 1;
+    const auto offset = _offset + ostep * depth;
+    auto draw = ImGui::GetWindowDrawList();
+    const auto dsz = m_delay * pxns;
+    const auto rsz = m_resolution * pxns;
+
+    depth++;
+    int maxdepth = depth;
+
+    while( it < zitend )
+    {
+        auto& ev = **it;
+        auto& srcloc = GetSourceLocation( ev.srcloc );
+        const auto color = GetZoneColor( ev );
+        const auto end = GetZoneEnd( ev );
+        const auto zsz = ( end - ev.gpuStart ) * pxns;
+        if( zsz < MinVisSize )
+        {
+            int num = 1;
+            const auto px0 = ( ev.gpuStart - m_zvStart ) * pxns;
+            auto px1 = ( end - m_zvStart ) * pxns;
+            auto rend = end;
+            for(;;)
+            {
+                ++it;
+                if( it == zitend ) break;
+                auto& srcloc2 = GetSourceLocation( (*it)->srcloc );
+                if( srcloc.color != srcloc2.color ) break;
+                const auto nend = GetZoneEnd( **it );
+                const auto pxnext = ( nend - m_zvStart ) * pxns;
+                if( pxnext - px1 >= MinVisSize * 2 ) break;
+                px1 = pxnext;
+                rend = nend;
+                num++;
+            }
+            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ) ) )
+            {
+                if( num > 1 )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Zones too small to display: %i", num );
+                    ImGui::Text( "Execution time: %s", TimeToString( rend - ev.gpuStart ) );
+                    ImGui::EndTooltip();
+
+                    if( ImGui::IsMouseClicked( 2 ) && rend - ev.gpuStart > 0 )
+                    {
+                        m_zvStartNext = ev.gpuStart;
+                        m_zvEndNext = rend;
+                    }
+                }
+                else
+                {
+                    ZoneTooltip( ev );
+
+                    if( ImGui::IsMouseClicked( 2 ) && rend - ev.gpuStart > 0 )
+                    {
+                        ZoomToZone( ev );
+                    }
+                }
+            }
+            char tmp[32];
+            sprintf( tmp, "%i", num );
+            const auto tsz = ImGui::CalcTextSize( tmp );
+            if( tsz.x < px1 - px0 )
+            {
+                const auto x = px0 + ( px1 - px0 - tsz.x ) / 2;
+                draw->AddText( wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
+            }
+        }
+        else
+        {
+            if( !ev.child.empty() )
+            {
+                const auto d = DrawGpuZoneLevel( ev.child, hover, pxns, wpos, _offset, depth );
+                if( d > maxdepth ) maxdepth = d;
+            }
+
+            const char* zoneName = GetString( ev.name );
+            auto tsz = ImGui::CalcTextSize( zoneName );
+
+            const auto pr0 = ( ev.gpuStart - m_zvStart ) * pxns;
+            const auto pr1 = ( end - m_zvStart ) * pxns;
+            const auto px0 = std::max( pr0, -10.0 );
+            const auto px1 = std::min( pr1, double( w + 10 ) );
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), color );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), GetZoneHighlight( ev ), 0.f, -1, GetZoneThickness( ev ) );
+            if( dsz >= MinVisSize )
+            {
+                draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz, pr1 ), offset + tsz.y ), 0x882222DD );
+                draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), 0x882222DD );
+            }
+            if( rsz >= MinVisSize )
+            {
+                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + round( tsz.y/2 ) ), wpos + ImVec2( pr0 - rsz, offset + round( tsz.y/2 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr0 + rsz, offset + round( 3*tsz.y/4 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr0 - rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr0 - rsz, offset + round( 3*tsz.y/4 ) ), 0xAAFFFFFF );
+
+                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + round( tsz.y/2 ) ), wpos + ImVec2( pr1 - rsz, offset + round( tsz.y/2 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr1 + rsz, offset + round( 3*tsz.y/4 ) ), 0xAAFFFFFF );
+                draw->AddLine( wpos + ImVec2( pr1 - rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr1 - rsz, offset + round( 3*tsz.y/4 ) ), 0xAAFFFFFF );
+            }
+            if( tsz.x < zsz )
+            {
+                const auto x = ( ev.gpuStart - m_zvStart ) * pxns + ( ( end - ev.gpuStart ) * pxns - tsz.x ) / 2;
+                if( x < 0 || x > w - tsz.x )
+                {
+                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y * 2 ), true );
+                    draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
+                    ImGui::PopClipRect();
+                }
+                else
+                {
+                    draw->AddText( wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
+                }
+            }
+            else
+            {
+                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y * 2 ), true );
+                draw->AddText( wpos + ImVec2( ( ev.gpuStart - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
+                ImGui::PopClipRect();
+            }
+
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ) ) )
+            {
+                ZoneTooltip( ev );
+
+                if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( ev );
                 }
             }
 
@@ -3051,7 +3252,8 @@ void View::DrawOptions()
 {
     const auto tw = ImGui::GetFontSize();
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
-    ImGui::Checkbox( "Draw zones", &m_drawZones );
+    ImGui::Checkbox( "Draw GPU zones", &m_drawGpuZones );
+    ImGui::Checkbox( "Draw CPU zones", &m_drawZones );
     int ns = (int)m_namespace;
     ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None\0" );
     m_namespace = (Namespace)ns;
@@ -3114,13 +3316,16 @@ void View::DrawMessages()
 
 uint32_t View::GetZoneColor( const ZoneEvent& ev )
 {
-    return GetZoneColor( GetSourceLocation( ev.srcloc ) );
-}
-
-uint32_t View::GetZoneColor( const SourceLocation& srcloc )
-{
+    auto& srcloc = GetSourceLocation( ev.srcloc );
     const auto color = srcloc.color;
     return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
+}
+
+uint32_t View::GetZoneColor( const GpuEvent& ev )
+{
+    auto& srcloc = GetSourceLocation( ev.srcloc );
+    const auto color = srcloc.color;
+    return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
 }
 
 uint32_t View::GetZoneHighlight( const ZoneEvent& ev, bool migration )
@@ -3147,6 +3352,15 @@ uint32_t View::GetZoneHighlight( const ZoneEvent& ev, bool migration )
     }
 }
 
+uint32_t View::GetZoneHighlight( const GpuEvent& ev )
+{
+    const auto color = GetZoneColor( ev );
+    return 0xFF000000 |
+        ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + 25 ) ) << 16 ) |
+        ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + 25 ) ) << 8  ) |
+        ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + 25 ) )       );
+}
+
 float View::GetZoneThickness( const ZoneEvent& ev )
 {
     if( m_zoneInfoWindow == &ev || m_zoneHighlight == &ev )
@@ -3159,11 +3373,24 @@ float View::GetZoneThickness( const ZoneEvent& ev )
     }
 }
 
+float View::GetZoneThickness( const GpuEvent& ev )
+{
+    return 1.f;
+}
+
 void View::ZoomToZone( const ZoneEvent& ev )
 {
     const auto end = GetZoneEnd( ev );
     if( end - ev.start <= 0 ) return;
     m_zvStartNext = ev.start;
+    m_zvEndNext = end;
+}
+
+void View::ZoomToZone( const GpuEvent& ev )
+{
+    const auto end = GetZoneEnd( ev );
+    if( end - ev.gpuStart <= 0 ) return;
+    m_zvStartNext = ev.gpuStart;
     m_zvEndNext = end;
 }
 
@@ -3217,6 +3444,27 @@ void View::ZoneTooltip( const ZoneEvent& ev )
         ImGui::NewLine();
         ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", GetTextData( ev )->userText );
     }
+    ImGui::EndTooltip();
+}
+
+void View::ZoneTooltip( const GpuEvent& ev )
+{
+    auto& srcloc = GetSourceLocation( ev.srcloc );
+
+    const auto filename = GetString( srcloc.file );
+    const auto line = srcloc.line;
+    const auto func = GetString( srcloc.function );
+    const auto zoneName = GetString( ev.name );
+
+    const auto end = GetZoneEnd( ev );
+
+    ImGui::BeginTooltip();
+    ImGui::Text( "%s", func );
+    ImGui::Text( "%s:%i", filename, line );
+    ImGui::Text( "GPU execution time: %s", TimeToString( end - ev.gpuStart ) );
+    ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );
+    ImGui::Text( "Delay to execution: %s", TimeToString( ev.gpuStart - ev.cpuStart ) );
+
     ImGui::EndTooltip();
 }
 

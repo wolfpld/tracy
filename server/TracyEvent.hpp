@@ -134,6 +134,7 @@ struct GpuCtxData
     Vector<GpuEvent*> timeline;
     Vector<GpuEvent*> stack;
     Vector<GpuEvent*> queue;
+    bool showFull;
 };
 
 struct LockMap

@@ -591,6 +591,12 @@ void View::Process( const QueueItem& ev )
     case QueueType::GpuNewContext:
         ProcessGpuNewContext( ev.gpuNewContext );
         break;
+    case QueueType::GpuZoneBegin:
+        ProcessGpuZoneBegin( ev.gpuZoneBegin );
+        break;
+    case QueueType::GpuZoneEnd:
+        ProcessGpuZoneEnd( ev.gpuZoneEnd );
+        break;
     case QueueType::Terminate:
         m_terminate = true;
         break;
@@ -850,10 +856,56 @@ void View::ProcessMessageLiteral( const QueueMessage& ev )
 void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
 {
     assert( ev.context == m_gpuData.size() );
-    auto gpu = m_slab.Alloc<GpuCtxData>();
+    auto gpu = m_slab.AllocInit<GpuCtxData>();
     gpu->timeDiff = int64_t( ev.cputime * m_timerMul - ev.gputime );
     std::lock_guard<std::mutex> lock( m_lock );
     m_gpuData.push_back( gpu );
+}
+
+void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
+{
+    assert( m_gpuData.size() >= ev.context );
+    auto ctx = m_gpuData[ev.context];
+
+    CheckString( ev.name );
+    CheckSourceLocation( ev.srcloc );
+
+    auto zone = m_slab.AllocInit<GpuEvent>();
+    zone->cpuStart = ev.cpuTime;
+    zone->cpuEnd = -1;
+    zone->gpuStart = std::numeric_limits<int64_t>::max();
+    zone->gpuEnd = -1;
+    zone->name = ev.name;
+    zone->srcloc = ev.srcloc;
+    zone->thread = 0;
+
+    auto timeline = &ctx->timeline;
+    if( !ctx->stack.empty() )
+    {
+        timeline = &ctx->stack.back()->child;
+    }
+
+    m_lock.lock();
+    timeline->push_back( zone );
+    m_lock.unlock();
+
+    ctx->stack.push_back( zone );
+    ctx->queue.push_back( zone );
+}
+
+void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
+{
+    assert( m_gpuData.size() >= ev.context );
+    auto ctx = m_gpuData[ev.context];
+
+    assert( !ctx->stack.empty() );
+    auto zone = ctx->stack.back();
+    ctx->stack.pop_back();
+    ctx->queue.push_back( zone );
+
+    std::lock_guard<std::mutex> lock( m_lock );
+    zone->cpuEnd = ev.cpuTime;
+    zone->thread = ev.thread;
 }
 
 void View::CheckString( uint64_t ptr )

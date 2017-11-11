@@ -30,6 +30,8 @@ enum class QueueType : uint8_t
     Message,
     MessageLiteral,
     GpuNewContext,
+    GpuZoneBegin,
+    GpuZoneEnd,
     NUM_TYPES
 };
 
@@ -146,6 +148,21 @@ struct QueueGpuNewContext
     uint16_t context;
 };
 
+struct QueueGpuZoneBegin
+{
+    int64_t cpuTime;
+    uint64_t name;
+    uint64_t srcloc;
+    uint16_t context;
+};
+
+struct QueueGpuZoneEnd
+{
+    int64_t cpuTime;
+    uint64_t thread;
+    uint16_t context;
+};
+
 struct QueueHeader
 {
     union
@@ -174,6 +191,8 @@ struct QueueItem
         QueuePlotData plotData;
         QueueMessage message;
         QueueGpuNewContext gpuNewContext;
+        QueueGpuZoneBegin gpuZoneBegin;
+        QueueGpuZoneEnd gpuZoneEnd;
     };
 };
 
@@ -204,6 +223,8 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

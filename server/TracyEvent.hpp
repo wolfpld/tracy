@@ -94,6 +94,22 @@ enum { LockEventSize = sizeof( LockEvent ) };
 enum { MaxLockThreads = sizeof( LockEvent::waitList ) * 8 };
 static_assert( std::numeric_limits<decltype(LockEvent::lockCount)>::max() >= MaxLockThreads, "Not enough space for lock count." );
 
+
+struct GpuEvent
+{
+    int64_t cpuStart;
+    int64_t cpuEnd;
+    int64_t gpuStart;
+    int64_t gpuEnd;
+    int32_t srcloc;
+    uint64_t name;
+    uint64_t thread;
+
+    Vector<GpuEvent*> child;
+};
+
+enum { GpuEventSize = sizeof( GpuEvent ) };
+
 #pragma pack()
 
 
@@ -115,6 +131,9 @@ struct ThreadData
 struct GpuCtxData
 {
     int64_t timeDiff;
+    Vector<GpuEvent*> timeline;
+    Vector<GpuEvent*> stack;
+    Vector<GpuEvent*> queue;
 };
 
 struct LockMap

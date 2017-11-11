@@ -96,6 +96,80 @@ static_assert( std::numeric_limits<decltype(LockEvent::lockCount)>::max() >= Max
 
 #pragma pack()
 
+
+struct MessageData
+{
+    int64_t time;
+    StringRef ref;
+};
+
+struct ThreadData
+{
+    uint64_t id;
+    bool showFull;
+    bool visible;
+    Vector<ZoneEvent*> timeline;
+    Vector<MessageData*> messages;
+};
+
+struct LockMap
+{
+    uint32_t srcloc;
+    Vector<LockEvent*> timeline;
+    std::unordered_map<uint64_t, uint8_t> threadMap;
+    std::vector<uint64_t> threadList;
+    bool visible;
+};
+
+struct LockHighlight
+{
+    int64_t id;
+    int64_t begin;
+    int64_t end;
+    uint8_t thread;
+    bool blocked;
+};
+
+struct PlotItem
+{
+    int64_t time;
+    double val;
+};
+
+struct PlotData
+{
+    uint64_t name;
+    double min;
+    double max;
+    bool showFull;
+    bool visible;
+    Vector<PlotItem*> data;
+    Vector<PlotItem*> postpone;
+    uint64_t postponeTime;
+};
+
+struct StringLocation
+{
+    const char* ptr;
+    uint32_t idx;
+};
+
+struct SourceLocationHasher
+{
+    size_t operator()( const SourceLocation* ptr ) const
+    {
+        return charutil::hash( (const char*)ptr, sizeof( SourceLocation ) );
+    }
+};
+
+struct SourceLocationComparator
+{
+    bool operator()( const SourceLocation* lhs, const SourceLocation* rhs ) const
+    {
+        return memcmp( lhs, rhs, sizeof( SourceLocation ) ) == 0;
+    }
+};
+
 }
 
 #endif

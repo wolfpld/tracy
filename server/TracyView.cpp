@@ -902,7 +902,7 @@ void View::AddCustomString( uint64_t ptr, char* str, size_t sz )
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
 }
 
-View::StringLocation View::StoreString( char* str, size_t sz )
+StringLocation View::StoreString( char* str, size_t sz )
 {
     StringLocation ret;
     const char backup = str[sz];
@@ -1017,7 +1017,7 @@ void View::InsertMessageData( MessageData* msg, uint64_t thread )
     }
 }
 
-View::ThreadData* View::NoticeThread( uint64_t thread )
+ThreadData* View::NoticeThread( uint64_t thread )
 {
     auto it = m_threadMap.find( thread );
     if( it == m_threadMap.end() )

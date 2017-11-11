@@ -302,7 +302,7 @@ View::View( FileRead& f )
     m_messages.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
-        uint64_t ptr, tsz;
+        uint64_t ptr;
         f.Read( &ptr, sizeof( ptr ) );
         auto msgdata = m_slab.Alloc<MessageData>();
         f.Read( msgdata, sizeof( *msgdata ) );

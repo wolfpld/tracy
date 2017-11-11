@@ -12,12 +12,28 @@ namespace tracy
 
 struct StringRef
 {
+    enum Type { Ptr, Idx };
+
+    StringRef() {}
+    StringRef( Type t, uint64_t data )
+        : isidx( t == Idx )
+    {
+        if( isidx )
+        {
+            stridx = (uint32_t)data;
+        }
+        else
+        {
+            strptr = data;
+        }
+    }
+
     union
     {
         uint64_t strptr;
         uint32_t stridx;
     };
-    bool isptr;
+    bool isidx;
 };
 
 struct TextData
@@ -28,11 +44,10 @@ struct TextData
 
 struct SourceLocation
 {
-    uint64_t function;  // ptr
-    uint64_t file;      // ptr
+    StringRef function;
+    StringRef file;
     uint32_t line;
-    uint32_t color : 31;
-    uint32_t stringsAllocated : 1;
+    uint32_t color;
 };
 
 enum { SourceLocationSize = sizeof( SourceLocation ) };

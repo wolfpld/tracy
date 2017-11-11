@@ -265,24 +265,8 @@ View::View( FileRead& f )
     m_sourceLocationPayload.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
-        uint32_t color, line;
-        f.Read( &color, sizeof( color ) );
-        f.Read( &line, sizeof( line ) );
-        uint64_t fsz;
-        f.Read( &fsz, sizeof( fsz ) );
-        auto func = m_slab.Alloc<char>( fsz+1 );
-        f.Read( func, fsz );
-        func[fsz] = '\0';
-        f.Read( &fsz, sizeof( fsz ) );
-        auto file = m_slab.Alloc<char>( fsz+1 );
-        f.Read( file, fsz );
-        file[fsz] = '\0';
         auto srcloc = m_slab.Alloc<SourceLocation>();
-        srcloc->function = (uint64_t)func;
-        srcloc->file = (uint64_t)file;
-        srcloc->line = line;
-        srcloc->color = color;
-        srcloc->stringsAllocated = 1;
+        f.Read( srcloc, sizeof( *srcloc ) );
         m_sourceLocationPayload.push_back( srcloc );
     }
 
@@ -827,7 +811,7 @@ void View::ProcessMessageLiteral( const QueueMessage& ev )
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = int64_t( ev.time * m_timerMul );
-    msg->ref.isptr = true;
+    msg->ref.isidx = false;
     msg->ref.strptr = ev.text;
     InsertMessageData( msg, ev.thread );
 }
@@ -946,10 +930,10 @@ void View::AddSourceLocation( const QueueSourceLocation& srcloc )
     CheckString( srcloc.function );
     uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
     std::lock_guard<std::mutex> lock( m_lock );
-    m_sourceLocation.emplace( srcloc.ptr, SourceLocation { srcloc.function, srcloc.file, srcloc.line, color, 0 } );
+    m_sourceLocation.emplace( srcloc.ptr, SourceLocation { StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color } );
 }
 
-void View::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
+void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
 {
     const auto start = data;
 
@@ -962,20 +946,17 @@ void View::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
     data += 8;
     auto end = data;
     while( *end ) end++;
+
+    const auto func = StoreString( data, end - data );
     end++;
-    char* func = m_slab.Alloc<char>( end - data );
-    memcpy( func, data, end - data );
     const auto ssz = sz - ( end - start );
-    char* source = m_slab.Alloc<char>( ssz+1 );
-    memcpy( source, end, ssz );
-    source[ssz] = '\0';
+    const auto source = StoreString( end, ssz );
 
     auto srcloc = m_slab.Alloc<SourceLocation>();
-    srcloc->function = (uint64_t)func;
-    srcloc->file = (uint64_t)source;
+    srcloc->function = StringRef( StringRef::Idx, func.idx );
+    srcloc->file = StringRef( StringRef::Idx, source.idx );
     srcloc->line = line;
     srcloc->color = color;
-    srcloc->stringsAllocated = 1;
 
     std::unique_lock<std::mutex> lock( m_lock );
     pit->second->srcloc = -int32_t( m_sourceLocationPayload.size() + 1 );
@@ -992,7 +973,7 @@ void View::AddMessageData( uint64_t ptr, char* str, size_t sz )
     assert( it != m_pendingMessages.end() );
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = it->second.time;
-    msg->ref.isptr = false;
+    msg->ref.isidx = true;
     msg->ref.stridx = sl.idx;
     InsertMessageData( msg, it->second.thread );
     m_pendingMessages.erase( it );
@@ -1327,13 +1308,13 @@ const char* View::GetString( uint64_t ptr ) const
 
 const char* View::GetString( const StringRef& ref ) const
 {
-    if( ref.isptr )
+    if( ref.isidx )
     {
-        return GetString( ref.strptr );
+        return m_stringData[ref.stridx];
     }
     else
     {
-        return m_stringData[ref.stridx];
+        return GetString( ref.strptr );
     }
 }
 
@@ -2136,7 +2117,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             }
             else
             {
-                zoneName = GetSrcLocFunction( srcloc );
+                zoneName = GetString( srcloc.function );
             }
 
             int dmul = 1;
@@ -2517,8 +2498,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
                     ImGui::BeginTooltip();
                     ImGui::Text( "Lock #%" PRIu32, v.first );
-                    ImGui::Text( "%s", GetSrcLocFunction( srcloc ) );
-                    ImGui::Text( "%s:%i", GetSrcLocFile( srcloc ), srcloc.line );
+                    ImGui::Text( "%s", GetString( srcloc.function ) );
+                    ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
                     ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
                     ImGui::Separator();
 
@@ -2541,8 +2522,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     {
                         auto& marklocdata = GetSourceLocation( markloc );
                         ImGui::Text( "Lock event location:" );
-                        ImGui::Text( "%s", GetSrcLocFunction( marklocdata ) );
-                        ImGui::Text( "%s:%i", GetSrcLocFile( marklocdata ), marklocdata.line );
+                        ImGui::Text( "%s", GetString( marklocdata.function ) );
+                        ImGui::Text( "%s:%i", GetString( marklocdata.file ), marklocdata.line );
                         ImGui::Separator();
                     }
 
@@ -2636,7 +2617,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         if( drawn )
         {
             char buf[1024];
-            sprintf( buf, "%" PRIu32 ": %s", v.first, GetSrcLocFunction( srcloc ) );
+            sprintf( buf, "%" PRIu32 ": %s", v.first, GetString( srcloc.function ) );
             draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
             {
@@ -2902,8 +2883,8 @@ void View::DrawZoneInfoWindow()
         dmul++;
     }
     auto& srcloc = GetSourceLocation( ev.srcloc );
-    ImGui::Text( "Function: %s", GetSrcLocFunction( srcloc ) );
-    ImGui::Text( "Location: %s:%i", GetSrcLocFile( srcloc ), srcloc.line );
+    ImGui::Text( "Function: %s", GetString( srcloc.function ) );
+    ImGui::Text( "Location: %s:%i", GetString( srcloc.file ), srcloc.line );
     if( ev.text != -1 && GetTextData( ev )->userText )
     {
         ImGui::Text( "User text: %s", GetTextData( ev )->userText );
@@ -2952,7 +2933,7 @@ void View::DrawZoneInfoWindow()
             else
             {
                 auto& srcloc = GetSourceLocation( cev.srcloc );
-                ImGui::Text( "%s", GetSrcLocFunction( srcloc ) );
+                ImGui::Text( "%s", GetString( srcloc.function ) );
             }
             if( ImGui::IsItemHovered() )
             {
@@ -2998,7 +2979,7 @@ void View::DrawOptions()
     for( auto& l : m_lockMap )
     {
         char buf[1024];
-        sprintf( buf, "%" PRIu32 ": %s", l.first, GetSrcLocFunction( GetSourceLocation( l.second.srcloc ) ) );
+        sprintf( buf, "%" PRIu32 ": %s", l.first, GetString( GetSourceLocation( l.second.srcloc ).function ) );
         ImGui::Checkbox( buf , &l.second.visible );
     }
     ImGui::Unindent( tw );
@@ -3045,30 +3026,6 @@ void View::DrawMessages()
         }
     }
     ImGui::End();
-}
-
-const char* View::GetSrcLocFunction( const SourceLocation& srcloc )
-{
-    if( srcloc.stringsAllocated )
-    {
-        return (const char*)srcloc.function;
-    }
-    else
-    {
-        return GetString( srcloc.function );
-    }
-}
-
-const char* View::GetSrcLocFile( const SourceLocation& srcloc )
-{
-    if( srcloc.stringsAllocated )
-    {
-        return (const char*)srcloc.file;
-    }
-    else
-    {
-        return GetString( srcloc.file );
-    }
 }
 
 uint32_t View::GetZoneColor( const ZoneEvent& ev )
@@ -3138,7 +3095,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
 
     auto& srcloc = GetSourceLocation( ev.srcloc );
 
-    const auto filename = GetSrcLocFile( srcloc );
+    const auto filename = GetString( srcloc.file );
     const auto line = srcloc.line;
 
     const char* func;
@@ -3146,11 +3103,11 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     if( ev.text != -1 && GetTextData( ev )->zoneName )
     {
         zoneName = GetString( GetTextData( ev )->zoneName );
-        func = GetSrcLocFunction( srcloc );
+        func = GetString( srcloc.function );
     }
     else
     {
-        func = zoneName = GetSrcLocFunction( srcloc );
+        func = zoneName = GetString( srcloc.function );
     }
 
     const auto end = GetZoneEnd( ev );
@@ -3281,18 +3238,7 @@ void View::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_sourceLocationPayload )
     {
-        assert( v->stringsAllocated == 1 );
-        uint32_t color = v->color;
-        f.Write( &color, sizeof( color ) );
-        f.Write( &v->line, sizeof( v->line ) );
-        auto func = (const char*)v->function;
-        sz = strlen( func );
-        f.Write( &sz, sizeof( sz ) );
-        f.Write( func, sz );
-        auto file = (const char*)v->file;
-        sz = strlen( file );
-        f.Write( &sz, sizeof( sz ) );
-        f.Write( file, sz );
+        f.Write( v, sizeof( *v ) );
     }
 
     sz = m_lockMap.size();

@@ -140,7 +140,7 @@ private:
     void AddThreadString( uint64_t id, char* str, size_t sz );
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
     void AddSourceLocation( const QueueSourceLocation& srcloc );
-    void AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz );
+    void AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz );
     void AddMessageData( uint64_t ptr, char* str, size_t sz );
 
     StringLocation StoreString( char* str, size_t sz );
@@ -190,9 +190,6 @@ private:
     void DrawMessages();
 
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
-
-    const char* GetSrcLocFunction( const SourceLocation& srcloc );
-    const char* GetSrcLocFile( const SourceLocation& srcloc );
 
     uint32_t GetZoneColor( const ZoneEvent& ev );
     uint32_t GetZoneColor( const SourceLocation& srcloc );

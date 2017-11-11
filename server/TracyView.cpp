@@ -871,7 +871,7 @@ void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
     CheckSourceLocation( ev.srcloc );
 
     auto zone = m_slab.AllocInit<GpuEvent>();
-    zone->cpuStart = ev.cpuTime;
+    zone->cpuStart = ev.cpuTime * m_timerMul;
     zone->cpuEnd = -1;
     zone->gpuStart = std::numeric_limits<int64_t>::max();
     zone->gpuEnd = -1;
@@ -904,7 +904,7 @@ void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
     ctx->queue.push_back( zone );
 
     std::lock_guard<std::mutex> lock( m_lock );
-    zone->cpuEnd = ev.cpuTime;
+    zone->cpuEnd = ev.cpuTime * m_timerMul;
     zone->thread = ev.thread;
 }
 

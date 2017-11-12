@@ -1,7 +1,24 @@
 #ifndef __TRACYOPENGL_HPP__
 #define __TRACYOPENGL_HPP__
 
-#ifdef TRACY_ENABLE
+#ifndef TRACY_ENABLE
+
+#define TracyGpuZone(x,y)
+#define TracyGpuZoneC(x,y,z)
+
+namespace tracy
+{
+
+template<int>
+class GpuCtx
+{
+public:
+    void Collect() {}
+};
+
+}
+
+#else
 
 #include <atomic>
 

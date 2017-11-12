@@ -1,6 +1,8 @@
 #ifndef __TRACYOPENGL_HPP__
 #define __TRACYOPENGL_HPP__
 
+// Include this file after you include OpenGL 3.2 headers.
+
 #ifndef TRACY_ENABLE
 
 #define TracyGpuZone(x,y)

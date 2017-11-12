@@ -150,7 +150,9 @@ private:
 
     void Write( FileWrite& f );
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
+    void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec );
     void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec );
+    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
 
     std::string m_addr;
 

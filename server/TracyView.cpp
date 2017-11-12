@@ -352,6 +352,16 @@ View::View( FileRead& f )
     }
 
     f.Read( &sz, sizeof( sz ) );
+    m_gpuData.reserve( sz );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        auto ctx = m_slab.AllocInit<GpuCtxData>();
+        ReadTimeline( f, ctx->timeline );
+        ctx->showFull = true;
+        m_gpuData.push_back( ctx );
+    }
+
+    f.Read( &sz, sizeof( sz ) );
     m_plots.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
@@ -3658,6 +3668,13 @@ void View::Write( FileWrite& f )
         }
     }
 
+    sz = m_gpuData.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& ctx : m_gpuData )
+    {
+        WriteTimeline( f, ctx->timeline );
+    }
+
     sz = m_plots.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& plot : m_plots )
@@ -3691,6 +3708,24 @@ void View::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )
     }
 }
 
+void View::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec )
+{
+    uint64_t sz = vec.size();
+    f.Write( &sz, sizeof( sz ) );
+
+    for( auto& v : vec )
+    {
+        f.Write( &v->cpuStart, sizeof( v->cpuStart ) );
+        f.Write( &v->cpuEnd, sizeof( v->cpuEnd ) );
+        f.Write( &v->gpuStart, sizeof( v->gpuStart ) );
+        f.Write( &v->gpuEnd, sizeof( v->gpuEnd ) );
+        f.Write( &v->srcloc, sizeof( v->srcloc ) );
+        f.Write( &v->name, sizeof( v->name ) );
+        f.Write( &v->thread, sizeof( v->thread ) );
+        WriteTimeline( f, v->child );
+    }
+}
+
 void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
 {
     uint64_t sz;
@@ -3709,6 +3744,28 @@ void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
         f.Read( &zone->cpu_start, sizeof( zone->cpu_start ) );
         f.Read( &zone->cpu_end, sizeof( zone->cpu_end ) );
         f.Read( &zone->text, sizeof( zone->text ) );
+        ReadTimeline( f, zone->child );
+    }
+}
+
+void View::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
+{
+    uint64_t sz;
+    f.Read( &sz, sizeof( sz ) );
+    vec.reserve( sz );
+
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        auto zone = m_slab.AllocInit<GpuEvent>();
+        vec.push_back( zone );
+
+        f.Read( &zone->cpuStart, sizeof( zone->cpuStart ) );
+        f.Read( &zone->cpuEnd, sizeof( zone->cpuEnd ) );
+        f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) );
+        f.Read( &zone->gpuEnd, sizeof( zone->gpuEnd ) );
+        f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
+        f.Read( &zone->name, sizeof( zone->name ) );
+        f.Read( &zone->thread, sizeof( zone->thread ) );
         ReadTimeline( f, zone->child );
     }
 }

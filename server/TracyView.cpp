@@ -139,6 +139,7 @@ View::View( const char* addr )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
     , m_lockHighlight { -1 }
+    , m_gpuInfoWindow( nullptr )
     , m_drawRegion( false )
     , m_showOptions( false )
     , m_showMessages( false )
@@ -179,6 +180,7 @@ View::View( FileRead& f )
     , m_zvHeight( 0 )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
+    , m_gpuInfoWindow( nullptr )
     , m_drawRegion( false )
     , m_showOptions( false )
     , m_showMessages( false )
@@ -1524,7 +1526,7 @@ void View::DrawImpl()
     ImGui::End();
 
     m_zoneHighlight = nullptr;
-    DrawZoneInfoWindow();
+    DrawInfoWindow();
     if( m_showOptions ) DrawOptions();
     if( m_showMessages ) DrawMessages();
 
@@ -2266,6 +2268,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
                         m_zoneInfoWindow = &ev;
+                        m_gpuInfoWindow = nullptr;
                     }
                 }
             }
@@ -2380,6 +2383,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
                     m_zoneInfoWindow = &ev;
+                    m_gpuInfoWindow = nullptr;
                 }
             }
 
@@ -2459,6 +2463,11 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                     {
                         ZoomToZone( ev );
                     }
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_zoneInfoWindow = nullptr;
+                        m_gpuInfoWindow = &ev;
+                    }
 
                     m_gpuThread = ev.thread;
                     m_gpuStart = ev.cpuStart;
@@ -2534,6 +2543,11 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( ev );
+                }
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    m_zoneInfoWindow = nullptr;
+                    m_gpuInfoWindow = &ev;
                 }
 
                 m_gpuThread = ev.thread;
@@ -3179,10 +3193,20 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     }
 }
 
+void View::DrawInfoWindow()
+{
+    if( m_zoneInfoWindow )
+    {
+        DrawZoneInfoWindow();
+    }
+    else if( m_gpuInfoWindow )
+    {
+        DrawGpuInfoWindow();
+    }
+}
+
 void View::DrawZoneInfoWindow()
 {
-    if( !m_zoneInfoWindow ) return;
-
     auto& ev = *m_zoneInfoWindow;
     int dmul = 1;
 
@@ -3291,6 +3315,98 @@ void View::DrawZoneInfoWindow()
     if( !show ) m_zoneInfoWindow = nullptr;
 }
 
+void View::DrawGpuInfoWindow()
+{
+    auto& ev = *m_gpuInfoWindow;
+
+    bool show = true;
+    ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_ShowBorders );
+
+    if( ImGui::Button( "Zoom to zone" ) )
+    {
+        ZoomToZone( ev );
+    }
+    ImGui::SameLine();
+    if( ImGui::Button( "Go to parent" ) )
+    {
+        auto parent = GetZoneParent( ev );
+        if( parent )
+        {
+            m_gpuInfoWindow = parent;
+        }
+    }
+
+    ImGui::Separator();
+
+    ImGui::Text( "Zone name: %s", GetString( ev.name ) );
+    auto& srcloc = GetSourceLocation( ev.srcloc );
+    ImGui::Text( "Function: %s", GetString( srcloc.function ) );
+    ImGui::Text( "Location: %s:%i", GetString( srcloc.file ), srcloc.line );
+
+    ImGui::Separator();
+
+    const auto end = GetZoneEnd( ev );
+    const auto ztime = end - ev.gpuStart;
+    ImGui::Text( "Time from start of program: %s", TimeToString( ev.gpuStart - m_frames[0] ) );
+    ImGui::Text( "GPU execution time: %s", TimeToString( ztime ) );
+    ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );
+    ImGui::Text( "Delay to execution: %s", TimeToString( ev.gpuStart - ev.cpuStart ) );
+
+    auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
+    auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
+    uint64_t ctime = 0;
+    for( size_t i=0; i<ev.child.size(); i++ )
+    {
+        const auto cend = GetZoneEnd( *ev.child[i] );
+        const auto ct = cend - ev.child[i]->gpuStart;
+        ctime += ct;
+        ctt[i] = ct;
+        cti[i] = uint32_t( i );
+    }
+
+    std::sort( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+
+    if( !ev.child.empty() )
+    {
+        const auto ty = ImGui::GetTextLineHeight();
+        ImGui::Columns( 2 );
+        ImGui::Separator();
+        ImGui::Text( "Child zones: %" PRIu64, ev.child.size() );
+        ImGui::NextColumn();
+        ImGui::Text( "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+        ImGui::NextColumn();
+        ImGui::Separator();
+        for( size_t i=0; i<ev.child.size(); i++ )
+        {
+            auto& cev = *ev.child[cti[i]];
+            ImGui::Text( "%s", GetString( cev.name ) );
+            if( ImGui::IsItemHovered() )
+            {
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    m_gpuInfoWindow = &cev;
+                }
+                if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( cev );
+                }
+                ZoneTooltip( cev );
+            }
+            ImGui::NextColumn();
+            const auto part = double( ctt[cti[i]] ) / ztime;
+            char buf[128];
+            sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+            ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+            ImGui::NextColumn();
+        }
+        ImGui::EndColumns();
+    }
+
+    ImGui::End();
+
+    if( !show ) m_gpuInfoWindow = nullptr;
+}
+
 void View::DrawOptions()
 {
     const auto tw = ImGui::GetFontSize();
@@ -3397,11 +3513,18 @@ uint32_t View::GetZoneHighlight( const ZoneEvent& ev, bool migration )
 
 uint32_t View::GetZoneHighlight( const GpuEvent& ev )
 {
-    const auto color = GetZoneColor( ev );
-    return 0xFF000000 |
-        ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + 25 ) ) << 16 ) |
-        ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + 25 ) ) << 8  ) |
-        ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + 25 ) )       );
+    if( m_gpuInfoWindow == &ev )
+    {
+        return 0xFF44DD44;
+    }
+    else
+    {
+        const auto color = GetZoneColor( ev );
+        return 0xFF000000 |
+            ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + 25 ) ) << 16 ) |
+            ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + 25 ) ) << 8  ) |
+            ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + 25 ) )       );
+    }
 }
 
 float View::GetZoneThickness( const ZoneEvent& ev )
@@ -3418,7 +3541,14 @@ float View::GetZoneThickness( const ZoneEvent& ev )
 
 float View::GetZoneThickness( const GpuEvent& ev )
 {
-    return 1.f;
+    if( m_gpuInfoWindow == &ev )
+    {
+        return 3.f;
+    }
+    else
+    {
+        return 1.f;
+    }
 }
 
 void View::ZoomToZone( const ZoneEvent& ev )
@@ -3523,6 +3653,27 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
             auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.start, [] ( const auto& l, const auto& r ) { return l < r->start; } );
             if( it != timeline->begin() ) --it;
             if( zone.end != -1 && (*it)->start > zone.end ) break;
+            if( *it == &zone ) return parent;
+            if( (*it)->child.empty() ) break;
+            parent = *it;
+            timeline = &parent->child;
+        }
+    }
+    return nullptr;
+}
+
+const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
+{
+    for( auto& ctx : m_gpuData )
+    {
+        const GpuEvent* parent = nullptr;
+        const Vector<GpuEvent*>* timeline = &ctx->timeline;
+        if( timeline->empty() ) continue;
+        for(;;)
+        {
+            auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
+            if( it != timeline->begin() ) --it;
+            if( zone.gpuEnd != -1 && (*it)->gpuStart > zone.gpuEnd ) break;
             if( *it == &zone ) return parent;
             if( (*it)->child.empty() ) break;
             parent = *it;

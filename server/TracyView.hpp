@@ -124,11 +124,14 @@ private:
     int DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
     int DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth );
     int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, LockHighlight& highlight );
-    void DrawZoneInfoWindow();
     int DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover );
     void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged );
     void DrawOptions();
     void DrawMessages();
+
+    void DrawInfoWindow();
+    void DrawZoneInfoWindow();
+    void DrawGpuInfoWindow();
 
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
@@ -144,6 +147,7 @@ private:
     void ZoneTooltip( const ZoneEvent& ev );
     void ZoneTooltip( const GpuEvent& ev );
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
+    const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
 
     TextData* GetTextData( ZoneEvent& zone );
     const TextData* GetTextData( const ZoneEvent& zone ) const;
@@ -230,6 +234,7 @@ private:
     const ZoneEvent* m_zoneHighlight;
     LockHighlight m_lockHighlight;
     const MessageData* m_msgHighlight;
+    const GpuEvent* m_gpuInfoWindow;
 
     bool m_drawRegion;
     int64_t m_regionStart;

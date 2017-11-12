@@ -2247,8 +2247,6 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             {
                 ++it;
                 if( it == zitend ) break;
-                auto& srcloc2 = GetSourceLocation( (*it)->srcloc );
-                if( srcloc.color != srcloc2.color ) break;
                 const auto nend = GetZoneEnd( **it );
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
@@ -2445,8 +2443,6 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             {
                 ++it;
                 if( it == zitend ) break;
-                auto& srcloc2 = GetSourceLocation( (*it)->srcloc );
-                if( srcloc.color != srcloc2.color ) break;
                 const auto nend = GetZoneEnd( **it );
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;

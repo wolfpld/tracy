@@ -100,6 +100,14 @@ To profile Lua code using tracy, include the `tracy/TracyLua.hpp` header file in
 
 Even if tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the `tracy::LuaRemove( char* script )` function, which will replace instrumentation calls with whitespace. This function does nothing if profiler is enabled.
 
+#### GPU profiling
+
+Tracy provides bindings for profiling OpenGL execution time on GPU. To use it, you will need to include the `tracy/TracyOpenGL.hpp` header file and create an instance of `tracy::GpuCtx<>` class for each of your rendering contexts (typically you will only have one context). You need to keep track using the proper context yourself. The template parameter specifies the number of query events you anticipate to happen between event creation and collection. Each GPU zone requires two events and in some cases collection may happen after a couple frames (e.g. 5) have been submitted.
+
+To mark GPU zone use the `TracyGpuZone( ctx, name )` macro, where `ctx` is a pointer to the `tracy::GpuCtx<>` class instance you have created and `name` is a string literal name of the zone. Alternatively you may use `TracyGpuZoneC( ctx, name, color )` to specify zone color.
+
+You also need to periodically call the `Collect()` method of the `tracy::GpuCtx<>` class. A good place to do it is after swap buffers function call.
+
 ## Good practices
 
 - Remember to set thread names for proper identification of threads. You may use the functions exposed in the `tracy/common/TracySystem.hpp` header to do so. Note that the max thread name length in pthreads is limited to 15 characters. Proper thread naming support is available in MSVC only if you are using Windows SDK 10.0.15063 or newer.

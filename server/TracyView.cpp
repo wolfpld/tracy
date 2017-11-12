@@ -1526,7 +1526,10 @@ void View::DrawImpl()
     ImGui::End();
 
     m_zoneHighlight = nullptr;
+    m_gpuHighlight = nullptr;
+
     DrawInfoWindow();
+
     if( m_showOptions ) DrawOptions();
     if( m_showMessages ) DrawMessages();
 
@@ -3382,6 +3385,7 @@ void View::DrawGpuInfoWindow()
             ImGui::Text( "%s", GetString( cev.name ) );
             if( ImGui::IsItemHovered() )
             {
+                m_gpuHighlight = &cev;
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
                     m_gpuInfoWindow = &cev;
@@ -3517,6 +3521,10 @@ uint32_t View::GetZoneHighlight( const GpuEvent& ev )
     {
         return 0xFF44DD44;
     }
+    else if( m_gpuHighlight == &ev )
+    {
+        return 0xFF4444FF;
+    }
     else
     {
         const auto color = GetZoneColor( ev );
@@ -3541,7 +3549,7 @@ float View::GetZoneThickness( const ZoneEvent& ev )
 
 float View::GetZoneThickness( const GpuEvent& ev )
 {
-    if( m_gpuInfoWindow == &ev )
+    if( m_gpuInfoWindow == &ev || m_gpuHighlight == &ev )
     {
         return 3.f;
     }

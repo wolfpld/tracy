@@ -235,6 +235,7 @@ private:
     LockHighlight m_lockHighlight;
     const MessageData* m_msgHighlight;
     const GpuEvent* m_gpuInfoWindow;
+    const GpuEvent* m_gpuHighlight;
 
     bool m_drawRegion;
     int64_t m_regionStart;

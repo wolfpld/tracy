@@ -358,6 +358,7 @@ View::View( FileRead& f )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto ctx = m_slab.AllocInit<GpuCtxData>();
+        f.Read( &ctx->thread, sizeof( ctx->thread ) );
         ReadTimeline( f, ctx->timeline );
         ctx->showFull = true;
         m_gpuData.push_back( ctx );
@@ -881,6 +882,7 @@ void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     assert( ev.context == m_gpuData.size() );
     auto gpu = m_slab.AllocInit<GpuCtxData>();
     gpu->timeDiff = int64_t( ev.cputime * m_timerMul - ev.gputime );
+    gpu->thread = ev.thread;
     gpu->showFull = true;
     std::lock_guard<std::mutex> lock( m_lock );
     m_gpuData.push_back( gpu );
@@ -901,7 +903,6 @@ void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
     zone->gpuEnd = -1;
     zone->name = ev.name;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
-    zone->thread = 0;
 
     auto timeline = &ctx->timeline;
     if( !ctx->stack.empty() )
@@ -929,7 +930,6 @@ void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
 
     std::lock_guard<std::mutex> lock( m_lock );
     zone->cpuEnd = ev.cpuTime * m_timerMul;
-    zone->thread = ev.thread;
 }
 
 void View::ProcessGpuTime( const QueueGpuTime& ev )
@@ -2063,7 +2063,7 @@ void View::DrawZones()
             offset += ostep;
             if( v->showFull )
             {
-                const auto depth = DrawGpuZoneLevel( v->timeline, hover, pxns, wpos, offset, 0 );
+                const auto depth = DrawGpuZoneLevel( v->timeline, hover, pxns, wpos, offset, 0, v->thread );
                 offset += ostep * depth;
             }
             offset += ostep * 0.2f;
@@ -2125,7 +2125,7 @@ void View::DrawZones()
             draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x448888DD );
             draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x888888DD );
         }
-        if( m_gpuInfoWindow && m_gpuInfoWindow->thread == v->id )
+        if( m_gpuInfoWindow && m_gpuInfoWindowThread == v->id )
         {
             draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x4488DD88 );
             draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x8888DD88 );
@@ -2406,7 +2406,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     return maxdepth;
 }
 
-int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
+int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth, uint64_t thread )
 {
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
     auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->gpuEnd < (uint64_t)r; } );
@@ -2478,9 +2478,10 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                     {
                         m_zoneInfoWindow = nullptr;
                         m_gpuInfoWindow = &ev;
+                        m_gpuInfoWindowThread = thread;
                     }
 
-                    m_gpuThread = ev.thread;
+                    m_gpuThread = thread;
                     m_gpuStart = ev.cpuStart;
                     m_gpuEnd = ev.cpuEnd;
                 }
@@ -2498,7 +2499,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         {
             if( !ev.child.empty() )
             {
-                const auto d = DrawGpuZoneLevel( ev.child, hover, pxns, wpos, _offset, depth );
+                const auto d = DrawGpuZoneLevel( ev.child, hover, pxns, wpos, _offset, depth, thread );
                 if( d > maxdepth ) maxdepth = d;
             }
 
@@ -2559,9 +2560,10 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 {
                     m_zoneInfoWindow = nullptr;
                     m_gpuInfoWindow = &ev;
+                    m_gpuInfoWindowThread = thread;
                 }
 
-                m_gpuThread = ev.thread;
+                m_gpuThread = thread;
                 m_gpuStart = ev.cpuStart;
                 m_gpuEnd = ev.cpuEnd;
             }
@@ -3839,6 +3841,7 @@ void View::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& ctx : m_gpuData )
     {
+        f.Write( &ctx->thread, sizeof( ctx->thread ) );
         WriteTimeline( f, ctx->timeline );
     }
 
@@ -3888,7 +3891,6 @@ void View::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec )
         f.Write( &v->gpuEnd, sizeof( v->gpuEnd ) );
         f.Write( &v->srcloc, sizeof( v->srcloc ) );
         f.Write( &v->name, sizeof( v->name ) );
-        f.Write( &v->thread, sizeof( v->thread ) );
         WriteTimeline( f, v->child );
     }
 }
@@ -3932,7 +3934,6 @@ void View::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
         f.Read( &zone->gpuEnd, sizeof( zone->gpuEnd ) );
         f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
         f.Read( &zone->name, sizeof( zone->name ) );
-        f.Read( &zone->thread, sizeof( zone->thread ) );
         ReadTimeline( f, zone->child );
     }
 }

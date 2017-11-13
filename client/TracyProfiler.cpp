@@ -100,6 +100,9 @@ moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
 std::atomic<uint16_t> init_order(104) s_gpuCtxCounter( 0 );
 
+class GpuCtx;
+thread_local GpuCtx* init_order(104) s_gpuCtx = nullptr;
+
 #ifdef TRACY_COLLECT_THREAD_NAMES
 struct ThreadNameData;
 std::atomic<ThreadNameData*> init_order(104) s_threadNameData( nullptr );

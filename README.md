@@ -102,11 +102,11 @@ Even if tracy is disabled, you still have to pay the no-op function call cost. T
 
 #### GPU profiling
 
-Tracy provides bindings for profiling OpenGL execution time on GPU. To use it, you will need to include the `tracy/TracyOpenGL.hpp` header file and create an instance of `tracy::GpuCtx<>` class for each of your rendering contexts (typically you will only have one context). You need to keep track using the proper context yourself. The template parameter specifies the number of query events you anticipate to happen between event creation and collection. Each GPU zone requires two events and in some cases collection may happen after a couple frames (e.g. 5) have been submitted.
+Tracy provides bindings for profiling OpenGL execution time on GPU. To use it, you will need to include the `tracy/TracyOpenGL.hpp` header file and declare each of your rendering contexts using the `TracyGpuContext` macro (typically you will only have one context). Tracy expects no more than one context per thread and no context migration.
 
-To mark GPU zone use the `TracyGpuZone( ctx, name )` macro, where `ctx` is a pointer to the `tracy::GpuCtx<>` class instance you have created and `name` is a string literal name of the zone. Alternatively you may use `TracyGpuZoneC( ctx, name, color )` to specify zone color.
+To mark GPU zone use the `TracyGpuZone( name )` macro, where `name` is a string literal name of the zone. Alternatively you may use `TracyGpuZoneC( name, color )` to specify zone color.
 
-You also need to periodically call the `Collect()` method of the `tracy::GpuCtx<>` class. A good place to do it is after swap buffers function call.
+You also need to periodically collect the GPU events using the `TracyGpuCollect` macro. A good place to do it is after swap buffers function call.
 
 ## Good practices
 

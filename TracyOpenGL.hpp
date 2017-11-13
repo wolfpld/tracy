@@ -5,8 +5,10 @@
 
 #ifndef TRACY_ENABLE
 
+#define TracyGpuContext
 #define TracyGpuZone(x,y)
 #define TracyGpuZoneC(x,y,z)
+#define TracyGpuCollect
 
 namespace tracy
 {
@@ -26,71 +28,23 @@ public:
 
 #include "Tracy.hpp"
 #include "client/TracyProfiler.hpp"
+#include "common/TracyAlloc.hpp"
 
-#define TracyGpuZone( ctx, name ) static const tracy::SourceLocation __tracy_gpu_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; auto ___tracy_gpu_zone = tracy::detail::__GpuHelper( ctx, name, &__tracy_gpu_source_location );
-#define TracyGpuZoneC( ctx, name, color ) static const tracy::SourceLocation __tracy_gpu_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; auto ___tracy_gpu_zone = tracy::detail::__GpuHelper( ctx, name, &__tracy_gpu_source_location );
+#define TracyGpuContext tracy::s_gpuCtx = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::s_gpuCtx) tracy::GpuCtx;
+#define TracyGpuZone( name ) static const tracy::SourceLocation __tracy_gpu_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( name, &__tracy_gpu_source_location );
+#define TracyGpuZoneC( name, color ) static const tracy::SourceLocation __tracy_gpu_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( name, &__tracy_gpu_source_location );
+#define TracyGpuCollect tracy::s_gpuCtx->Collect();
 
 namespace tracy
 {
 
 extern std::atomic<uint16_t> s_gpuCtxCounter;
 
-template<int Num> class GpuCtx;
-
-template<int Num>
-class __GpuCtxScope
-{
-public:
-    tracy_force_inline __GpuCtxScope( GpuCtx<Num>& ctx, const char* name, const SourceLocation* srcloc )
-        : m_ctx( ctx )
-    {
-        glQueryCounter( m_ctx.NextQueryId(), GL_TIMESTAMP );
-
-        Magic magic;
-        auto& token = s_token.ptr;
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::GpuZoneBegin;
-        item->gpuZoneBegin.cpuTime = Profiler::GetTime();
-        item->gpuZoneBegin.name = (uint64_t)name;
-        item->gpuZoneBegin.srcloc = (uint64_t)srcloc;
-        item->gpuZoneBegin.context = m_ctx.GetId();
-        tail.store( magic + 1, std::memory_order_release );
-    }
-
-    tracy_force_inline ~__GpuCtxScope()
-    {
-        glQueryCounter( m_ctx.NextQueryId(), GL_TIMESTAMP );
-
-        Magic magic;
-        auto& token = s_token.ptr;
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::GpuZoneEnd;
-        item->gpuZoneEnd.cpuTime = Profiler::GetTime();
-        item->gpuZoneEnd.thread = GetThreadHandle();
-        item->gpuZoneEnd.context = m_ctx.GetId();
-        tail.store( magic + 1, std::memory_order_release );
-    }
-
-private:
-    GpuCtx<Num>& m_ctx;
-};
-
-namespace detail
-{
-template<int Num>
-static tracy_force_inline __GpuCtxScope<Num> __GpuHelper( GpuCtx<Num>* ctx, const char* name, const SourceLocation* srcloc )
-{
-    return ctx->SpawnZone( name, srcloc );
-}
-}
-
-template<int Num>
 class GpuCtx
 {
-    friend class __GpuCtxScope<Num>;
-    friend __GpuCtxScope<Num> detail::__GpuHelper<Num>( GpuCtx<Num>* ctx, const char* name, const SourceLocation* srcloc );
+    friend class GpuCtxScope;
+
+    enum { QueryCount = 1024 };
 
 public:
     GpuCtx()
@@ -98,7 +52,7 @@ public:
         , m_head( 0 )
         , m_tail( 0 )
     {
-        glGenQueries( Num, m_query );
+        glGenQueries( QueryCount, m_query );
 
         int64_t tgpu;
         glGetInteger64v( GL_TIMESTAMP, &tgpu );
@@ -111,6 +65,7 @@ public:
         item->hdr.type = QueueType::GpuNewContext;
         item->gpuNewContext.cputime = tcpu;
         item->gpuNewContext.gputime = tgpu;
+        item->gpuNewContext.thread = GetThreadHandle();
         item->gpuNewContext.context = m_context;
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -120,13 +75,13 @@ public:
         ZoneScopedC( 0x881111 );
 
         auto start = m_tail;
-        auto end = m_head + Num;
-        auto cnt = ( end - start ) % Num;
+        auto end = m_head + QueryCount;
+        auto cnt = ( end - start ) % QueryCount;
         while( cnt > 1 )
         {
             auto mid = start + cnt / 2;
             GLint available;
-            glGetQueryObjectiv( m_query[mid % Num], GL_QUERY_RESULT_AVAILABLE, &available );
+            glGetQueryObjectiv( m_query[mid % QueryCount], GL_QUERY_RESULT_AVAILABLE, &available );
             if( available )
             {
                 start = mid;
@@ -135,10 +90,10 @@ public:
             {
                 end = mid;
             }
-            cnt = ( end - start ) % Num;
+            cnt = ( end - start ) % QueryCount;
         }
 
-        start %= Num;
+        start %= QueryCount;
 
         while( m_tail != start )
         {
@@ -153,20 +108,15 @@ public:
             item->gpuTime.gpuTime = (int64_t)time;
             item->gpuTime.context = m_context;
             tail.store( magic + 1, std::memory_order_release );
-            m_tail = ( m_tail + 1 ) % Num;
+            m_tail = ( m_tail + 1 ) % QueryCount;
         }
     }
 
 private:
-    tracy_force_inline __GpuCtxScope<Num> SpawnZone( const char* name, const SourceLocation* srcloc )
-    {
-        return __GpuCtxScope<Num>( *this, name, srcloc );
-    }
-
     tracy_force_inline unsigned int NextQueryId()
     {
         const auto id = m_head;
-        m_head = ( m_head + 1 ) % Num;
+        m_head = ( m_head + 1 ) % QueryCount;
         assert( m_head != m_tail );
         return m_query[id];
     }
@@ -176,11 +126,47 @@ private:
         return m_context;
     }
 
-    unsigned int m_query[Num];
+    unsigned int m_query[QueryCount];
     uint16_t m_context;
 
     unsigned int m_head;
     unsigned int m_tail;
+};
+
+extern thread_local GpuCtx* s_gpuCtx;
+
+class GpuCtxScope
+{
+public:
+    tracy_force_inline GpuCtxScope( const char* name, const SourceLocation* srcloc )
+    {
+        glQueryCounter( s_gpuCtx->NextQueryId(), GL_TIMESTAMP );
+
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        item->hdr.type = QueueType::GpuZoneBegin;
+        item->gpuZoneBegin.cpuTime = Profiler::GetTime();
+        item->gpuZoneBegin.name = (uint64_t)name;
+        item->gpuZoneBegin.srcloc = (uint64_t)srcloc;
+        item->gpuZoneBegin.context = s_gpuCtx->GetId();
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    tracy_force_inline ~GpuCtxScope()
+    {
+        glQueryCounter( s_gpuCtx->NextQueryId(), GL_TIMESTAMP );
+
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        item->hdr.type = QueueType::GpuZoneEnd;
+        item->gpuZoneEnd.cpuTime = Profiler::GetTime();
+        item->gpuZoneEnd.context = s_gpuCtx->GetId();
+        tail.store( magic + 1, std::memory_order_release );
+    }
 };
 
 }

@@ -146,6 +146,7 @@ struct QueueGpuNewContext
 {
     int64_t cputime;
     int64_t gputime;
+    uint64_t thread;
     uint16_t context;
 };
 
@@ -160,7 +161,6 @@ struct QueueGpuZoneBegin
 struct QueueGpuZoneEnd
 {
     int64_t cpuTime;
-    uint64_t thread;
     uint16_t context;
 };
 

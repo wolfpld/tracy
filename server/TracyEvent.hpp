@@ -103,7 +103,6 @@ struct GpuEvent
     int64_t gpuEnd;
     int32_t srcloc;
     uint64_t name;
-    uint64_t thread;
 
     Vector<GpuEvent*> child;
 };
@@ -131,6 +130,7 @@ struct ThreadData
 struct GpuCtxData
 {
     int64_t timeDiff;
+    uint64_t thread;
     Vector<GpuEvent*> timeline;
     Vector<GpuEvent*> stack;
     Vector<GpuEvent*> queue;

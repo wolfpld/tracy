@@ -9,8 +9,7 @@ void TestFunction()
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
-        ZoneScoped;
-        ZoneName( "Test function" );
+        ZoneScopedN( "Test function" );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
 }

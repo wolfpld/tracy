@@ -248,7 +248,7 @@ static inline void LuaRegister( lua_State* L )
     lua_newtable( L );
     lua_pushcfunction( L, detail::LuaZoneBegin );
     lua_setfield( L, -2, "ZoneBegin" );
-    lua_pushcfunction( L, detail::LuaZoneBegin );
+    lua_pushcfunction( L, detail::LuaZoneBeginN );
     lua_setfield( L, -2, "ZoneBeginN" );
     lua_pushcfunction( L, detail::LuaZoneEnd );
     lua_setfield( L, -2, "ZoneEnd" );

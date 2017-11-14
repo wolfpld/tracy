@@ -41,6 +41,12 @@ struct ProducerWrapper
 
 extern thread_local ProducerWrapper s_token;
 
+class GpuCtx;
+struct GpuCtxWrapper
+{
+    GpuCtx* ptr;
+};
+
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
 class Profiler

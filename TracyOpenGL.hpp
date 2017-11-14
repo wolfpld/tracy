@@ -30,10 +30,10 @@ public:
 #include "client/TracyProfiler.hpp"
 #include "common/TracyAlloc.hpp"
 
-#define TracyGpuContext tracy::s_gpuCtx = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::s_gpuCtx) tracy::GpuCtx;
+#define TracyGpuContext tracy::s_gpuCtx.ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::s_gpuCtx.ptr) tracy::GpuCtx;
 #define TracyGpuZone( name ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location );
 #define TracyGpuZoneC( name, color ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location );
-#define TracyGpuCollect tracy::s_gpuCtx->Collect();
+#define TracyGpuCollect tracy::s_gpuCtx.ptr->Collect();
 
 namespace tracy
 {
@@ -133,14 +133,14 @@ private:
     unsigned int m_tail;
 };
 
-extern thread_local GpuCtx* s_gpuCtx;
+extern thread_local GpuCtxWrapper s_gpuCtx;
 
 class GpuCtxScope
 {
 public:
     tracy_force_inline GpuCtxScope( const SourceLocation* srcloc )
     {
-        glQueryCounter( s_gpuCtx->NextQueryId(), GL_TIMESTAMP );
+        glQueryCounter( s_gpuCtx.ptr->NextQueryId(), GL_TIMESTAMP );
 
         Magic magic;
         auto& token = s_token.ptr;
@@ -149,13 +149,13 @@ public:
         item->hdr.type = QueueType::GpuZoneBegin;
         item->gpuZoneBegin.cpuTime = Profiler::GetTime();
         item->gpuZoneBegin.srcloc = (uint64_t)srcloc;
-        item->gpuZoneBegin.context = s_gpuCtx->GetId();
+        item->gpuZoneBegin.context = s_gpuCtx.ptr->GetId();
         tail.store( magic + 1, std::memory_order_release );
     }
 
     tracy_force_inline ~GpuCtxScope()
     {
-        glQueryCounter( s_gpuCtx->NextQueryId(), GL_TIMESTAMP );
+        glQueryCounter( s_gpuCtx.ptr->NextQueryId(), GL_TIMESTAMP );
 
         Magic magic;
         auto& token = s_token.ptr;
@@ -163,7 +163,7 @@ public:
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::GpuZoneEnd;
         item->gpuZoneEnd.cpuTime = Profiler::GetTime();
-        item->gpuZoneEnd.context = s_gpuCtx->GetId();
+        item->gpuZoneEnd.context = s_gpuCtx.ptr->GetId();
         tail.store( magic + 1, std::memory_order_release );
     }
 };

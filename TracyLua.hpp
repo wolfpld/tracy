@@ -118,8 +118,8 @@ static inline int LuaZoneBegin( lua_State* L )
     lua_getinfo( L, "Snl", &dbg );
 
     const uint32_t line = dbg.currentline;
-    const auto name = dbg.name ? dbg.name : dbg.short_src;
-    const auto fsz = strlen( name );
+    const auto func = dbg.name ? dbg.name : dbg.short_src;
+    const auto fsz = strlen( func );
     const auto ssz = strlen( dbg.source );
 
     // Data layout:
@@ -129,13 +129,14 @@ static inline int LuaZoneBegin( lua_State* L )
     //  fsz function name
     //  1b  null terminator
     //  ssz source file name
-    const uint32_t sz = 4 + 4 + 4 + fsz + 1 + ssz;
+    //  1b  null terminator
+    const uint32_t sz = 4 + 4 + 4 + fsz + 1 + ssz + 1;
     auto ptr = (char*)tracy_malloc( sz );
     memcpy( ptr, &sz, 4 );
     memcpy( ptr + 4, &color, 4 );
     memcpy( ptr + 8, &line, 4 );
-    memcpy( ptr + 12, name, fsz+1 );
-    memcpy( ptr + 12 + fsz + 1, dbg.source, ssz );
+    memcpy( ptr + 12, func, fsz+1 );
+    memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
 
     Magic magic;
     auto& token = s_token.ptr;
@@ -158,8 +159,10 @@ static inline int LuaZoneBeginN( lua_State* L )
     lua_getinfo( L, "Snl", &dbg );
 
     const uint32_t line = dbg.currentline;
-    const auto name = dbg.name ? dbg.name : dbg.short_src;
-    const auto fsz = strlen( name );
+    const auto func = dbg.name ? dbg.name : dbg.short_src;
+    size_t nsz;
+    const auto name = lua_tolstring( L, 1, &nsz );
+    const auto fsz = strlen( func );
     const auto ssz = strlen( dbg.source );
 
     // Data layout:
@@ -169,13 +172,16 @@ static inline int LuaZoneBeginN( lua_State* L )
     //  fsz function name
     //  1b  null terminator
     //  ssz source file name
-    const uint32_t sz = 4 + 4 + 4 + fsz + 1 + ssz;
+    //  1b  null terminator
+    //  nsz zone name
+    const uint32_t sz = 4 + 4 + 4 + fsz + 1 + ssz + 1 + nsz;
     auto ptr = (char*)tracy_malloc( sz );
     memcpy( ptr, &sz, 4 );
     memcpy( ptr + 4, &color, 4 );
     memcpy( ptr + 8, &line, 4 );
-    memcpy( ptr + 12, name, fsz+1 );
-    memcpy( ptr + 12 + fsz + 1, dbg.source, ssz );
+    memcpy( ptr + 12, func, fsz+1 );
+    memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
+    memcpy( ptr + 12 + fsz + 1 + ssz + 1, name, nsz );
 
     Magic magic;
     auto& token = s_token.ptr;

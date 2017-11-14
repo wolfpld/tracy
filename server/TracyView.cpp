@@ -1020,14 +1020,19 @@ void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
     memcpy( &line, data + 4, 4 );
     data += 8;
     auto end = data;
-    while( *end ) end++;
 
+    while( *end ) end++;
     const auto func = StoreString( data, end - data );
     end++;
-    const auto ssz = sz - ( end - start );
-    const auto source = StoreString( end, ssz );
 
-    SourceLocation srcloc { StringRef(), StringRef( StringRef::Idx, func.idx ), StringRef( StringRef::Idx, source.idx ), line, color };
+    data = end;
+    while( *end ) end++;
+    const auto source = StoreString( data, end - data );
+    end++;
+
+    const auto nsz = sz - ( end - start );
+
+    SourceLocation srcloc { nsz == 0 ? StringRef() : StringRef( StringRef::Idx, StoreString( end, nsz ).idx ), StringRef( StringRef::Idx, func.idx ), StringRef( StringRef::Idx, source.idx ), line, color };
     auto it = m_sourceLocationPayloadMap.find( &srcloc );
     if( it == m_sourceLocationPayloadMap.end() )
     {

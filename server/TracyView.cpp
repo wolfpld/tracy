@@ -2406,6 +2406,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         auto& srcloc = GetSourceLocation( ev.srcloc );
         const auto color = GetZoneColor( ev );
         const auto end = GetZoneEnd( ev );
+        if( end == std::numeric_limits<int64_t>::max() ) break;
         const auto zsz = ( end - ev.gpuStart ) * pxns;
         if( zsz < MinVisSize )
         {

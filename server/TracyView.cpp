@@ -686,7 +686,7 @@ void View::ProcessZoneText( const QueueZoneText& ev )
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
     m_lock.lock();
-    zone->text = StringRef( StringRef::Idx, it->second.idx );
+    zone->text = StringIdx( it->second.idx );
     m_lock.unlock();
     m_pendingCustomStrings.erase( it );
 }
@@ -1401,6 +1401,12 @@ const char* View::GetString( const StringRef& ref ) const
             return "???";
         }
     }
+}
+
+const char* View::GetString( const StringIdx& idx ) const
+{
+    assert( idx.active );
+    return m_stringData[idx.idx];
 }
 
 const char* View::GetThreadString( uint64_t id ) const

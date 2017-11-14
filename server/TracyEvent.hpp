@@ -39,6 +39,18 @@ struct StringRef
     uint8_t active  : 1;
 };
 
+struct StringIdx
+{
+    StringIdx() : active( 0 ) {}
+    StringIdx( uint32_t idx )
+        : idx( idx )
+        , active( 1 )
+    {}
+
+    uint32_t idx    : 31;
+    uint32_t active : 1;
+};
+
 struct SourceLocation
 {
     StringRef name;
@@ -59,7 +71,7 @@ struct ZoneEvent
     int8_t cpu_start;
     int8_t cpu_end;
 
-    StringRef text;
+    StringIdx text;
     Vector<ZoneEvent*> child;
 };
 

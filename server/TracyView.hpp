@@ -109,6 +109,7 @@ private:
     int64_t GetZoneEnd( const GpuEvent& ev ) const;
     const char* GetString( uint64_t ptr ) const;
     const char* GetString( const StringRef& ref ) const;
+    const char* GetString( const StringIdx& idx ) const;
     const char* GetThreadString( uint64_t id ) const;
     const SourceLocation& GetSourceLocation( int32_t srcloc ) const;
 

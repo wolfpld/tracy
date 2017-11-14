@@ -47,6 +47,7 @@ struct TextData
 
 struct SourceLocation
 {
+    StringRef name;
     StringRef function;
     StringRef file;
     uint32_t line;
@@ -102,7 +103,6 @@ struct GpuEvent
     int64_t gpuStart;
     int64_t gpuEnd;
     int32_t srcloc;
-    uint64_t name;
 
     Vector<GpuEvent*> child;
 };

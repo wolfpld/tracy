@@ -31,8 +31,8 @@ public:
 #include "common/TracyAlloc.hpp"
 
 #define TracyGpuContext tracy::s_gpuCtx = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::s_gpuCtx) tracy::GpuCtx;
-#define TracyGpuZone( name ) static const tracy::SourceLocation __tracy_gpu_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( name, &__tracy_gpu_source_location );
-#define TracyGpuZoneC( name, color ) static const tracy::SourceLocation __tracy_gpu_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( name, &__tracy_gpu_source_location );
+#define TracyGpuZone( name ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location );
+#define TracyGpuZoneC( name, color ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location );
 #define TracyGpuCollect tracy::s_gpuCtx->Collect();
 
 namespace tracy
@@ -138,7 +138,7 @@ extern thread_local GpuCtx* s_gpuCtx;
 class GpuCtxScope
 {
 public:
-    tracy_force_inline GpuCtxScope( const char* name, const SourceLocation* srcloc )
+    tracy_force_inline GpuCtxScope( const SourceLocation* srcloc )
     {
         glQueryCounter( s_gpuCtx->NextQueryId(), GL_TIMESTAMP );
 
@@ -148,7 +148,6 @@ public:
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::GpuZoneBegin;
         item->gpuZoneBegin.cpuTime = Profiler::GetTime();
-        item->gpuZoneBegin.name = (uint64_t)name;
         item->gpuZoneBegin.srcloc = (uint64_t)srcloc;
         item->gpuZoneBegin.context = s_gpuCtx->GetId();
         tail.store( magic + 1, std::memory_order_release );

@@ -276,11 +276,6 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                 SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                 tracy_free( (void*)ptr );
                 break;
-            case QueueType::ZoneNameLiteral:
-                ptr = item->zoneName.name;
-                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-                tracy_free( (void*)ptr );
-                break;
             case QueueType::Message:
                 ptr = item->message.text;
                 SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
@@ -364,7 +359,7 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     auto srcloc = (const SourceLocation*)ptr;
     QueueItem item;
     item.hdr.type = QueueType::SourceLocation;
-    item.srcloc.ptr = ptr;
+    item.srcloc.name = (uint64_t)srcloc->name;
     item.srcloc.file = (uint64_t)srcloc->file;
     item.srcloc.function = (uint64_t)srcloc->function;
     item.srcloc.line = srcloc->line;
@@ -484,7 +479,7 @@ void Profiler::CalibrateDelay()
     moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = s_queue.get_explicit_producer( ptoken_detail );
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+        static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
@@ -508,13 +503,13 @@ void Profiler::CalibrateDelay()
     const auto f0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+        static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         FakeZone ___tracy_scoped_zone( &__tracy_source_location );
     }
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+        static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();

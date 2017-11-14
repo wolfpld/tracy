@@ -6,7 +6,9 @@
 #ifndef TRACY_ENABLE
 
 #define ZoneScoped
+#define ZoneScopedN(x)
 #define ZoneScopedC(x)
+#define ZoneScopedNC(x,y)
 
 #define ZoneText(x,y)
 #define ZoneName(x)
@@ -29,18 +31,19 @@
 #include "client/TracyProfiler.hpp"
 #include "client/TracyScoped.hpp"
 
-#define ZoneScoped static const tracy::SourceLocation __tracy_source_location { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
-#define ZoneScopedC( color ) static const tracy::SourceLocation __tracy_source_location {  __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
+#define ZoneScoped static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
+#define ZoneScopedN( name ) static const tracy::SourceLocation __tracy_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
+#define ZoneScopedC( color ) static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
+#define ZoneScopedNC( name, color ) static const tracy::SourceLocation __tracy_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
 
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size );
-#define ZoneName( name ) ___tracy_scoped_zone.Name( name );
 
 #define FrameMark tracy::Profiler::FrameMark();
 
-#define TracyLockable( type, varname ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { #type " " #varname, __FILE__, __LINE__, 0 }; return &srcloc; }() };
-#define TracyLockableN( type, varname, desc ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { desc, __FILE__, __LINE__, 0 }; return &srcloc; }() };
+#define TracyLockable( type, varname ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { nullptr, #type " " #varname, __FILE__, __LINE__, 0 }; return &srcloc; }() };
+#define TracyLockableN( type, varname, desc ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { nullptr, desc, __FILE__, __LINE__, 0 }; return &srcloc; }() };
 #define LockableBase( type ) tracy::Lockable<type>
-#define LockMark( varname ) static const tracy::SourceLocation __tracy_lock_location_##varname { __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; varname.Mark( &__tracy_lock_location_##varname );
+#define LockMark( varname ) static const tracy::SourceLocation __tracy_lock_location_##varname { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; varname.Mark( &__tracy_lock_location_##varname );
 
 #define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val );
 

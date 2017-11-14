@@ -582,12 +582,6 @@ void View::Process( const QueueItem& ev )
     case QueueType::ZoneText:
         ProcessZoneText( ev.zoneText );
         break;
-    case QueueType::ZoneName:
-        ProcessZoneName( ev.zoneName );
-        break;
-    case QueueType::ZoneNameLiteral:
-        ProcessZoneNameLiteral( ev.zoneName );
-        break;
     case QueueType::LockWait:
         ProcessLockWait( ev.lockWait );
         break;
@@ -707,29 +701,6 @@ void View::ProcessZoneText( const QueueZoneText& ev )
     assert( it != m_pendingCustomStrings.end() );
     m_lock.lock();
     GetTextData( *zone )->userText = it->second.ptr;
-    m_lock.unlock();
-    m_pendingCustomStrings.erase( it );
-}
-
-void View::ProcessZoneName( const QueueZoneName& ev )
-{
-    auto& stack = m_zoneStack[ev.thread];
-    assert( !stack.empty() );
-    auto zone = stack.back();
-    CheckString( ev.name );
-    std::lock_guard<std::mutex> lock( m_lock );
-    GetTextData( *zone )->zoneName = StringRef( StringRef::Ptr, ev.name );
-}
-
-void View::ProcessZoneNameLiteral( const QueueZoneName& ev )
-{
-    auto& stack = m_zoneStack[ev.thread];
-    assert( !stack.empty() );
-    auto zone = stack.back();
-    auto it = m_pendingCustomStrings.find( ev.name );
-    assert( it != m_pendingCustomStrings.end() );
-    m_lock.lock();
-    GetTextData( *zone )->zoneName = StringRef( StringRef::Idx, it->second.idx );
     m_lock.unlock();
     m_pendingCustomStrings.erase( it );
 }
@@ -893,7 +864,6 @@ void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
     assert( m_gpuData.size() >= ev.context );
     auto ctx = m_gpuData[ev.context];
 
-    CheckString( ev.name );
     CheckSourceLocation( ev.srcloc );
 
     auto zone = m_slab.AllocInit<GpuEvent>();
@@ -901,7 +871,6 @@ void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
     zone->cpuEnd = -1;
     zone->gpuStart = std::numeric_limits<int64_t>::max();
     zone->gpuEnd = -1;
-    zone->name = ev.name;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
 
     auto timeline = &ctx->timeline;
@@ -954,6 +923,7 @@ void View::ProcessGpuTime( const QueueGpuTime& ev )
 
 void View::CheckString( uint64_t ptr )
 {
+    if( ptr == 0 ) return;
     if( m_strings.find( ptr ) != m_strings.end() ) return;
     if( m_pendingStrings.find( ptr ) != m_pendingStrings.end() ) return;
 
@@ -978,6 +948,7 @@ void View::CheckSourceLocation( uint64_t ptr )
     if( m_pendingSourceLocation.find( ptr ) != m_pendingSourceLocation.end() ) return;
 
     m_pendingSourceLocation.emplace( ptr );
+    m_sourceLocationQueue.push_back( ptr );
 
     ServerQuery( ServerQuerySourceLocation, ptr );
 }
@@ -1037,15 +1008,19 @@ StringLocation View::StoreString( char* str, size_t sz )
 
 void View::AddSourceLocation( const QueueSourceLocation& srcloc )
 {
-    assert( m_sourceLocation.find( srcloc.ptr ) == m_sourceLocation.end() );
-    auto it = m_pendingSourceLocation.find( srcloc.ptr );
+    const auto ptr = m_sourceLocationQueue.front();
+    m_sourceLocationQueue.erase( m_sourceLocationQueue.begin() );
+
+    assert( m_sourceLocation.find( ptr ) == m_sourceLocation.end() );
+    auto it = m_pendingSourceLocation.find( ptr );
     assert( it != m_pendingSourceLocation.end() );
     m_pendingSourceLocation.erase( it );
+    CheckString( srcloc.name );
     CheckString( srcloc.file );
     CheckString( srcloc.function );
     uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
     std::lock_guard<std::mutex> lock( m_lock );
-    m_sourceLocation.emplace( srcloc.ptr, SourceLocation { StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color } );
+    m_sourceLocation.emplace( ptr, SourceLocation { StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color } );
 }
 
 void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
@@ -1066,7 +1041,7 @@ void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
     const auto ssz = sz - ( end - start );
     const auto source = StoreString( end, ssz );
 
-    SourceLocation srcloc { StringRef( StringRef::Idx, func.idx ), StringRef( StringRef::Idx, source.idx ), line, color };
+    SourceLocation srcloc { StringRef( StringRef::Ptr, 0 ), StringRef( StringRef::Idx, func.idx ), StringRef( StringRef::Idx, source.idx ), line, color };
     auto it = m_sourceLocationPayloadMap.find( &srcloc );
     if( it == m_sourceLocationPayloadMap.end() )
     {
@@ -2503,7 +2478,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 if( d > maxdepth ) maxdepth = d;
             }
 
-            const char* zoneName = GetString( ev.name );
+            const char* zoneName = GetString( srcloc.name );
             auto tsz = ImGui::CalcTextSize( zoneName );
 
             const auto pr0 = ( ev.gpuStart - m_zvStart ) * pxns;
@@ -3351,8 +3326,8 @@ void View::DrawGpuInfoWindow()
 
     ImGui::Separator();
 
-    ImGui::Text( "Zone name: %s", GetString( ev.name ) );
     auto& srcloc = GetSourceLocation( ev.srcloc );
+    ImGui::Text( "Zone name: %s", GetString( srcloc.name ) );
     ImGui::Text( "Function: %s", GetString( srcloc.function ) );
     ImGui::Text( "Location: %s:%i", GetString( srcloc.file ), srcloc.line );
 
@@ -3392,7 +3367,8 @@ void View::DrawGpuInfoWindow()
         for( size_t i=0; i<ev.child.size(); i++ )
         {
             auto& cev = *ev.child[cti[i]];
-            ImGui::Text( "%s", GetString( cev.name ) );
+            auto& csl = GetSourceLocation( cev.srcloc );
+            ImGui::Text( "%s", GetString( csl.name ) );
             if( ImGui::IsItemHovered() )
             {
                 m_gpuHighlight = &cev;
@@ -3645,7 +3621,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
     const auto filename = GetString( srcloc.file );
     const auto line = srcloc.line;
     const auto func = GetString( srcloc.function );
-    const auto zoneName = GetString( ev.name );
+    const auto zoneName = GetString( srcloc.name );
 
     const auto end = GetZoneEnd( ev );
 
@@ -3890,7 +3866,6 @@ void View::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec )
         f.Write( &v->gpuStart, sizeof( v->gpuStart ) );
         f.Write( &v->gpuEnd, sizeof( v->gpuEnd ) );
         f.Write( &v->srcloc, sizeof( v->srcloc ) );
-        f.Write( &v->name, sizeof( v->name ) );
         WriteTimeline( f, v->child );
     }
 }
@@ -3933,7 +3908,6 @@ void View::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
         f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) );
         f.Read( &zone->gpuEnd, sizeof( zone->gpuEnd ) );
         f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
-        f.Read( &zone->name, sizeof( zone->name ) );
         ReadTimeline( f, zone->child );
     }
 }

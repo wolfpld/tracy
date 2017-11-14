@@ -19,8 +19,6 @@ enum class QueueType : uint8_t
     SourceLocation,
     SourceLocationPayload,
     ZoneText,
-    ZoneName,
-    ZoneNameLiteral,
     LockWait,
     LockObtain,
     LockRelease,
@@ -65,7 +63,7 @@ struct QueueFrameMark
 
 struct QueueSourceLocation
 {
-    uint64_t ptr;
+    uint64_t name;
     uint64_t function;  // ptr
     uint64_t file;      // ptr
     uint32_t line;
@@ -78,12 +76,6 @@ struct QueueZoneText
 {
     uint64_t thread;
     uint64_t text;      // ptr
-};
-
-struct QueueZoneName
-{
-    uint64_t thread;
-    uint64_t name;      // ptr
 };
 
 struct QueueLockWait
@@ -153,7 +145,6 @@ struct QueueGpuNewContext
 struct QueueGpuZoneBegin
 {
     int64_t cpuTime;
-    uint64_t name;
     uint64_t srcloc;
     uint16_t context;
 };
@@ -190,7 +181,6 @@ struct QueueItem
         QueueFrameMark frameMark;
         QueueSourceLocation srcloc;
         QueueZoneText zoneText;
-        QueueZoneName zoneName;
         QueueLockWait lockWait;
         QueueLockObtain lockObtain;
         QueueLockRelease lockRelease;
@@ -220,8 +210,6 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // allocated source location payload
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
-    sizeof( QueueHeader ) + sizeof( QueueZoneName ),
-    sizeof( QueueHeader ) + sizeof( QueueZoneName ),        // literal
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),

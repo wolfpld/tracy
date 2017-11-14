@@ -56,18 +56,6 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
-    tracy_force_inline void Name( const char* name )
-    {
-        Magic magic;
-        auto& token = s_token.ptr;
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::ZoneName;
-        item->zoneName.thread = m_thread;
-        item->zoneName.name = (uint64_t)name;
-        tail.store( magic + 1, std::memory_order_release );
-    }
-
 private:
     uint64_t m_thread;
 };

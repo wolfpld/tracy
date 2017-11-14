@@ -27,6 +27,7 @@ class Socket;
 
 struct SourceLocation
 {
+    const char* name;
     const char* function;
     const char* file;
     uint32_t line;

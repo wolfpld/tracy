@@ -58,8 +58,6 @@ private:
     void ProcessZoneEnd( const QueueZoneEnd& ev );
     void ProcessFrameMark( const QueueFrameMark& ev );
     void ProcessZoneText( const QueueZoneText& ev );
-    void ProcessZoneName( const QueueZoneName& ev );
-    void ProcessZoneNameLiteral( const QueueZoneName& ev );
     void ProcessLockWait( const QueueLockWait& ev );
     void ProcessLockObtain( const QueueLockObtain& ev );
     void ProcessLockRelease( const QueueLockRelease& ev );
@@ -203,6 +201,7 @@ private:
     std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
     std::unordered_map<uint64_t, uint32_t> m_sourceLocationShrink;
     std::unordered_map<uint64_t, int32_t> m_pendingSourceLocationPayload;
+    Vector<uint64_t> m_sourceLocationQueue;
 
     Slab<64*1024*1024> m_slab;
 

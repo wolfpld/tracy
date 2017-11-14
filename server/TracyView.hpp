@@ -147,9 +147,6 @@ private:
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
 
-    TextData* GetTextData( ZoneEvent& zone );
-    const TextData* GetTextData( const ZoneEvent& zone ) const;
-
     void Write( FileWrite& f );
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
     void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec );
@@ -171,7 +168,6 @@ private:
     Vector<ThreadData*> m_threads;
     Vector<PlotData*> m_plots;
     Vector<MessageData*> m_messages;
-    Vector<TextData*> m_textData;
     Vector<GpuCtxData*> m_gpuData;
     std::unordered_map<uint64_t, const char*> m_strings;
     std::unordered_map<uint64_t, const char*> m_threadNames;

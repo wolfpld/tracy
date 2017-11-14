@@ -39,12 +39,6 @@ struct StringRef
     uint8_t active  : 1;
 };
 
-struct TextData
-{
-    const char* userText;
-    StringRef zoneName;
-};
-
 struct SourceLocation
 {
     StringRef name;
@@ -65,7 +59,7 @@ struct ZoneEvent
     int8_t cpu_start;
     int8_t cpu_end;
 
-    int32_t text;
+    StringRef text;
     Vector<ZoneEvent*> child;
 };
 

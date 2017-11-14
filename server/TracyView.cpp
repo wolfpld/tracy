@@ -1387,11 +1387,19 @@ const char* View::GetString( const StringRef& ref ) const
 {
     if( ref.isidx )
     {
+        assert( ref.active );
         return m_stringData[ref.stridx];
     }
     else
     {
-        return GetString( ref.strptr );
+        if( ref.active )
+        {
+            return GetString( ref.strptr );
+        }
+        else
+        {
+            return "???";
+        }
     }
 }
 

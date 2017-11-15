@@ -3,12 +3,14 @@
 // https://github.com/preshing/cpp11-on-multicore/blob/master/LICENSE
 //---------------------------------------------------------
 
-#ifndef __CPP11OM_SEMAPHORE_H__
-#define __CPP11OM_SEMAPHORE_H__
+#ifndef __TRACY_CPP11OM_SEMAPHORE_H__
+#define __TRACY_CPP11OM_SEMAPHORE_H__
 
 #include <atomic>
 #include <cassert>
 
+namespace tracy
+{
 
 #if defined(_WIN32)
 //---------------------------------------------------------
@@ -221,5 +223,6 @@ public:
 
 typedef LightweightSemaphore DefaultSemaphoreType;
 
+}
 
 #endif // __CPP11OM_SEMAPHORE_H__

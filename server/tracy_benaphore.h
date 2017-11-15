@@ -3,14 +3,16 @@
 // https://github.com/preshing/cpp11-on-multicore/blob/master/LICENSE
 //---------------------------------------------------------
 
-#ifndef __CPP11OM_BENAPHORE_H__
-#define __CPP11OM_BENAPHORE_H__
+#ifndef __TRACY_CPP11OM_BENAPHORE_H__
+#define __TRACY_CPP11OM_BENAPHORE_H__
 
 #include <cassert>
 #include <thread>
 #include <atomic>
-#include "sema.h"
+#include "tracy_sema.h"
 
+namespace tracy
+{
 
 //---------------------------------------------------------
 // NonRecursiveBenaphore
@@ -138,5 +140,6 @@ public:
     }
 };
 
+}
 
 #endif // __CPP11OM_BENAPHORE_H__

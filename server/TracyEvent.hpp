@@ -2,6 +2,7 @@
 #define __TRACYEVENT_HPP__
 
 #include <limits>
+#include <string.h>
 
 #include "TracyVector.hpp"
 

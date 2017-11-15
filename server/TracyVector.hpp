@@ -22,11 +22,10 @@ public:
     using iterator = T*;
 
     Vector()
-        : m_ptr( new T[1] )
+        : m_ptr( nullptr )
         , m_size( 0 )
         , m_capacity( 0 )
     {
-        memUsage.fetch_add( sizeof( T ), std::memory_order_relaxed );
     }
 
     Vector( const Vector& ) = delete;
@@ -150,7 +149,7 @@ public:
 
     void reserve( size_t cap )
     {
-        if( cap <= Capacity() ) return;
+        if( cap == 0 || cap <= Capacity() ) return;
         cap--;
         cap |= cap >> 1;
         cap |= cap >> 2;
@@ -171,14 +170,22 @@ public:
 private:
     void AllocMore()
     {
-        memUsage.fetch_add( Capacity() * sizeof( T ), std::memory_order_relaxed );
-        m_capacity++;
-        Realloc();
+        if( m_ptr == nullptr )
+        {
+            memUsage.fetch_add( sizeof( T ), std::memory_order_relaxed );
+            m_ptr = new T[1];
+        }
+        else
+        {
+            memUsage.fetch_add( Capacity() * sizeof( T ), std::memory_order_relaxed );
+            m_capacity++;
+            Realloc();
+        }
     }
 
     void Realloc()
     {
-        T* ptr = new T[Capacity()];
+        T* ptr = new T[CapacityNew()];
         if( m_size != 0 )
         {
             memcpy( ptr, m_ptr, m_size * sizeof( T ) );
@@ -188,6 +195,11 @@ private:
     }
 
     uint32_t Capacity() const
+    {
+        return m_ptr == nullptr ? 0 : 1 << m_capacity;
+    }
+
+    uint32_t CapacityNew() const
     {
         return 1 << m_capacity;
     }

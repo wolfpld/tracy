@@ -3593,7 +3593,6 @@ void View::ZoneTooltip( const GpuEvent& ev )
     const auto filename = GetString( srcloc.file );
     const auto line = srcloc.line;
     const auto func = GetString( srcloc.function );
-    const auto zoneName = GetString( srcloc.name );
 
     const auto end = GetZoneEnd( ev );
 

@@ -855,7 +855,9 @@ void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
 
     CheckSourceLocation( ev.srcloc );
 
-    auto zone = m_slab.AllocInit<GpuEvent>();
+    auto zone = m_slab.Alloc<GpuEvent>();
+    zone->Init();
+
     zone->cpuStart = ev.cpuTime * m_timerMul;
     zone->cpuEnd = -1;
     zone->gpuStart = std::numeric_limits<int64_t>::max();
@@ -3871,7 +3873,9 @@ void View::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
 
     for( uint64_t i=0; i<sz; i++ )
     {
-        auto zone = m_slab.AllocInit<GpuEvent>();
+        auto zone = m_slab.Alloc<GpuEvent>();
+        zone->Init();
+
         vec.push_back( zone );
 
         f.Read( &zone->cpuStart, sizeof( zone->cpuStart ) );

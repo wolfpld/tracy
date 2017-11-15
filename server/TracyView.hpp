@@ -6,7 +6,6 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "../common/tracy_lz4.hpp"
@@ -17,6 +16,7 @@
 #include "TracySlab.hpp"
 #include "TracyVector.hpp"
 #include "tracy_benaphore.h"
+#include "tracy_flat_hash_map.hpp"
 
 struct ImVec2;
 
@@ -170,9 +170,9 @@ private:
     Vector<PlotData*> m_plots;
     Vector<MessageData*> m_messages;
     Vector<GpuCtxData*> m_gpuData;
-    std::unordered_map<uint64_t, const char*> m_strings;
-    std::unordered_map<uint64_t, const char*> m_threadNames;
-    std::unordered_map<uint64_t, SourceLocation> m_sourceLocation;
+    flat_hash_map<uint64_t, const char*, power_of_two_std_hash<uint64_t>> m_strings;
+    flat_hash_map<uint64_t, const char*, power_of_two_std_hash<uint64_t>> m_threadNames;
+    flat_hash_map<uint64_t, SourceLocation, power_of_two_std_hash<uint64_t>> m_sourceLocation;
     std::vector<uint64_t> m_sourceLocationExpand;
     std::map<uint32_t, LockMap> m_lockMap;
     uint64_t m_zonesCnt;
@@ -187,17 +187,17 @@ private:
     std::vector<float> m_mbps;
 
     // not used for vis - no need to lock
-    std::unordered_map<uint64_t, std::vector<ZoneEvent*>> m_zoneStack;
-    std::unordered_set<uint64_t> m_pendingStrings;
-    std::unordered_set<uint64_t> m_pendingThreads;
-    std::unordered_set<uint64_t> m_pendingSourceLocation;
-    std::unordered_map<uint64_t, StringLocation> m_pendingCustomStrings;
-    std::unordered_map<uint64_t, uint32_t> m_threadMap;
-    std::unordered_map<uint64_t, uint32_t> m_plotMap;
+    flat_hash_map<uint64_t, std::vector<ZoneEvent*>, power_of_two_std_hash<uint64_t>> m_zoneStack;
+    flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingStrings;
+    flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingThreads;
+    flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingSourceLocation;
+    flat_hash_map<uint64_t, StringLocation, power_of_two_std_hash<uint64_t>> m_pendingCustomStrings;
+    flat_hash_map<uint64_t, uint32_t, power_of_two_std_hash<uint64_t>> m_threadMap;
+    flat_hash_map<uint64_t, uint32_t, power_of_two_std_hash<uint64_t>> m_plotMap;
     std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_plotRev;
-    std::unordered_map<uint64_t, PlotData*> m_pendingPlots;
-    std::unordered_map<uint64_t, uint32_t> m_sourceLocationShrink;
-    std::unordered_map<uint64_t, int32_t> m_pendingSourceLocationPayload;
+    flat_hash_map<uint64_t, PlotData*, power_of_two_std_hash<uint64_t>> m_pendingPlots;
+    flat_hash_map<uint64_t, uint32_t, power_of_two_std_hash<uint64_t>> m_sourceLocationShrink;
+    flat_hash_map<uint64_t, int32_t, power_of_two_std_hash<uint64_t>> m_pendingSourceLocationPayload;
     Vector<uint64_t> m_sourceLocationQueue;
 
     Slab<64*1024*1024> m_slab;

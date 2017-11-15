@@ -117,6 +117,7 @@
     <ClInclude Include="..\..\..\server\TracyVector.hpp" />
     <ClInclude Include="..\..\..\server\TracyView.hpp" />
     <ClInclude Include="..\..\..\server\tracy_benaphore.h" />
+    <ClInclude Include="..\..\..\server\tracy_flat_hash_map.hpp" />
     <ClInclude Include="..\..\..\server\tracy_sema.h" />
     <ClInclude Include="..\..\libs\gl3w\GL\gl3w.h" />
     <ClInclude Include="..\..\libs\gl3w\GL\glcorearb.h" />

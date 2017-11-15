@@ -66,6 +66,8 @@ enum { SourceLocationSize = sizeof( SourceLocation ) };
 
 struct ZoneEvent
 {
+    void Init() { memset( &child, 0, 12 ); }
+
     int64_t start;
     int64_t end;
     int32_t srcloc;
@@ -77,6 +79,7 @@ struct ZoneEvent
 };
 
 enum { ZoneEventSize = sizeof( ZoneEvent ) };
+static_assert( sizeof( ZoneEvent::child ) == 13, "Adjust vector clear size!" );
 
 
 struct LockEvent

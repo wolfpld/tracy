@@ -174,6 +174,7 @@ private:
         {
             memUsage.fetch_add( sizeof( T ), std::memory_order_relaxed );
             m_ptr = new T[1];
+            m_capacity = 0;
         }
         else
         {

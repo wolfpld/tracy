@@ -2290,44 +2290,12 @@ private:
 						auto endIndex = (index & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE);
 						endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex) ? firstIndex + static_cast<index_t>(actualCount) : endIndex;
 						auto block = localBlockIndex->entries[indexIndex].block;
-						if (MOODYCAMEL_NOEXCEPT_ASSIGN(T, T&&, details::deref_noexcept(itemFirst) = std::move((*(*block)[index])))) {
-							while (index != endIndex) {
-								auto& el = *((*block)[index]);
-								*itemFirst++ = std::move(el);
-								el.~T();
-								++index;
-							}
-						}
-						else {
-							MOODYCAMEL_TRY {
-								while (index != endIndex) {
-									auto& el = *((*block)[index]);
-									*itemFirst = std::move(el);
-									++itemFirst;
-									el.~T();
-									++index;
-								}
-							}
-							MOODYCAMEL_CATCH (...) {
-								// It's too late to revert the dequeue, but we can make sure that all
-								// the dequeued objects are properly destroyed and the block index
-								// (and empty count) are properly updated before we propagate the exception
-								do {
-									block = localBlockIndex->entries[indexIndex].block;
-									while (index != endIndex) {
-										(*block)[index++]->~T();
-									}
-									block->ConcurrentQueue::Block::template set_many_empty<explicit_context>(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
-									indexIndex = (indexIndex + 1) & (localBlockIndex->size - 1);
-									
-									firstIndexInBlock = index;
-									endIndex = (index & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE);
-									endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex) ? firstIndex + static_cast<index_t>(actualCount) : endIndex;
-								} while (index != firstIndex + actualCount);
-								
-								MOODYCAMEL_RETHROW;
-							}
-						}
+
+                        const auto sz = endIndex - index;
+                        memcpy( itemFirst, (*block)[index], sizeof( T ) * sz );
+                        index += sz;
+                        itemFirst += sz;
+
 						block->ConcurrentQueue::Block::template set_many_empty<explicit_context>(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
 						indexIndex = (indexIndex + 1) & (localBlockIndex->size - 1);
 					} while (index != firstIndex + actualCount);

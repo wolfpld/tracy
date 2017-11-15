@@ -10,6 +10,7 @@
 #include <inttypes.h>
 #include <limits>
 #include <math.h>
+#include <mutex>
 #include <stdlib.h>
 #include <time.h>
 
@@ -467,7 +468,7 @@ void View::Worker()
             enum { MbpsUpdateTime = 200 };
             if( td > MbpsUpdateTime )
             {
-                std::lock_guard<std::mutex> lock( m_mbpslock );
+                std::lock_guard<NonRecursiveBenaphore> lock( m_mbpslock );
                 m_mbps.erase( m_mbps.begin() );
                 m_mbps.emplace_back( bytes / ( td * 125.f ) );
                 t0 = t1;
@@ -624,7 +625,7 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
 
-    std::unique_lock<std::mutex> lock( m_lock );
+    std::unique_lock<NonRecursiveBenaphore> lock( m_lock );
     NewZone( zone, ev.thread );
     lock.unlock();
     m_zoneStack[ev.thread].push_back( zone );
@@ -644,7 +645,7 @@ void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->srcloc = it->second;
 
-    std::unique_lock<std::mutex> lock( m_lock );
+    std::unique_lock<NonRecursiveBenaphore> lock( m_lock );
     NewZone( zone, ev.thread );
     lock.unlock();
     m_zoneStack[ev.thread].push_back( zone );
@@ -659,7 +660,7 @@ void View::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto zone = stack.back();
     stack.pop_back();
     assert( zone->end == -1 );
-    std::unique_lock<std::mutex> lock( m_lock );
+    std::unique_lock<NonRecursiveBenaphore> lock( m_lock );
     zone->end = ev.time * m_timerMul;
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_end = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
@@ -674,7 +675,7 @@ void View::ProcessFrameMark( const QueueFrameMark& ev )
     const auto lastframe = m_frames.back();
     const auto time = ev.time * m_timerMul;
     assert( lastframe < time );
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     m_frames.push_back( time );
 }
 
@@ -699,7 +700,7 @@ void View::ProcessLockWait( const QueueLockWait& ev )
     lev->srcloc = 0;
 
     auto it = m_lockMap.find( ev.id );
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     if( it == m_lockMap.end() )
     {
         LockMap lm;
@@ -723,7 +724,7 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
     lev->type = (uint8_t)LockEvent::Type::Obtain;
     lev->srcloc = 0;
 
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
 }
 
@@ -734,7 +735,7 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
     lev->type = (uint8_t)LockEvent::Type::Release;
     lev->srcloc = 0;
 
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
 }
 
@@ -743,7 +744,7 @@ void View::ProcessLockMark( const QueueLockMark& ev )
     CheckSourceLocation( ev.srcloc );
     auto lit = m_lockMap.find( ev.id );
     assert( lit != m_lockMap.end() );
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     auto& lockmap = lit->second;
     auto tid = lockmap.threadMap.find( ev.thread );
     assert( tid != lockmap.threadMap.end() );
@@ -794,7 +795,7 @@ void View::ProcessPlotData( const QueuePlotData& ev )
     }
 
     const auto time = int64_t( ev.time * m_timerMul );
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     switch( ev.type )
     {
     case PlotDataType::Double:
@@ -841,7 +842,7 @@ void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     gpu->timeDiff = int64_t( ev.cputime * m_timerMul - ev.gputime );
     gpu->thread = ev.thread;
     gpu->showFull = true;
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     m_gpuData.push_back( gpu );
 }
 
@@ -883,7 +884,7 @@ void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
     ctx->stack.pop_back();
     ctx->queue.push_back( zone );
 
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     zone->cpuEnd = ev.cpuTime * m_timerMul;
 }
 
@@ -895,12 +896,12 @@ void View::ProcessGpuTime( const QueueGpuTime& ev )
     auto zone = ctx->queue.front();
     if( zone->gpuStart == std::numeric_limits<int64_t>::max() )
     {
-        std::lock_guard<std::mutex> lock( m_lock );
+        std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
         zone->gpuStart = ctx->timeDiff + ev.gpuTime;
     }
     else
     {
-        std::lock_guard<std::mutex> lock( m_lock );
+        std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
         zone->gpuEnd = ctx->timeDiff + ev.gpuTime;
     }
 
@@ -946,7 +947,7 @@ void View::AddString( uint64_t ptr, char* str, size_t sz )
     assert( it != m_pendingStrings.end() );
     m_pendingStrings.erase( it );
     const auto sl = StoreString( str, sz );
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     m_strings.emplace( ptr, sl.ptr );
 }
 
@@ -957,7 +958,7 @@ void View::AddThreadString( uint64_t id, char* str, size_t sz )
     assert( it != m_pendingThreads.end() );
     m_pendingThreads.erase( it );
     const auto sl = StoreString( str, sz );
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     m_threadNames.emplace( id, sl.ptr );
 }
 
@@ -979,7 +980,7 @@ StringLocation View::StoreString( char* str, size_t sz )
         memcpy( ptr, str, sz+1 );
         ret.ptr = ptr;
         ret.idx = m_stringData.size();
-        std::lock_guard<std::mutex> lock( m_lock );
+        std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
         m_stringMap.emplace( ptr, m_stringData.size() );
         m_stringData.push_back( ptr );
     }
@@ -1005,7 +1006,7 @@ void View::AddSourceLocation( const QueueSourceLocation& srcloc )
     CheckString( srcloc.file );
     CheckString( srcloc.function );
     uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     m_sourceLocation.emplace( ptr, SourceLocation { srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color } );
 }
 
@@ -1041,7 +1042,7 @@ void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
         uint32_t idx = m_sourceLocationPayload.size();
         m_sourceLocationPayloadMap.emplace( slptr, idx );
         m_pendingSourceLocationPayload.emplace( ptr, -int32_t( idx + 1 ) );
-        std::unique_lock<std::mutex> lock( m_lock );
+        std::unique_lock<NonRecursiveBenaphore> lock( m_lock );
         m_sourceLocationPayload.push_back( slptr );
     }
     else
@@ -1068,7 +1069,7 @@ uint32_t View::ShrinkSourceLocation( uint64_t srcloc )
 
 void View::InsertMessageData( MessageData* msg, uint64_t thread )
 {
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     if( m_messages.empty() || m_messages.back()->time < msg->time )
     {
         m_messages.push_back( msg );
@@ -1260,13 +1261,13 @@ void View::HandlePlotName( uint64_t name, char* str, size_t sz )
         const auto idx = m_plots.size();
         m_plotMap.emplace( name, idx );
         m_plotRev.emplace( sl.ptr, idx );
-        std::lock_guard<std::mutex> lock( m_lock );
+        std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
         m_plots.push_back( pit->second );
         m_strings.emplace( name, sl.ptr );
     }
     else
     {
-        std::lock_guard<std::mutex> lock( m_lock );
+        std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
         m_plotMap.emplace( name, it->second );
         const auto& pp = pit->second->data;
         auto plot = m_plots[it->second];
@@ -1292,7 +1293,7 @@ void View::HandlePostponedPlots()
         const auto dsd = std::distance( dst.begin(), ds ) ;
         const auto de = std::lower_bound( ds, dst.end(), src.back()->time, [] ( const auto& l, const auto& r ) { return l->time < r; } );
         const auto ded = std::distance( dst.begin(), de );
-        std::unique_lock<std::mutex> lock( m_lock );
+        std::unique_lock<NonRecursiveBenaphore> lock( m_lock );
         dst.insert( de, src.begin(), src.end() );
         std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l->time < r->time; } );
         lock.unlock();
@@ -1492,7 +1493,7 @@ void View::DrawImpl()
         DrawConnection();
     }
 
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     ImGui::Begin( m_captureName.c_str(), nullptr, ImGuiWindowFlags_ShowBorders | ImGuiWindowFlags_NoScrollbar );
     if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 70, 0 ) ) ) m_pause = !m_pause;
     ImGui::SameLine();
@@ -1528,7 +1529,7 @@ void View::DrawConnection()
 
     ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     {
-        std::lock_guard<std::mutex> lock( m_mbpslock );
+        std::lock_guard<NonRecursiveBenaphore> lock( m_mbpslock );
         const auto mbps = m_mbps.back();
         char buf[64];
         if( mbps < 0.1f )
@@ -1549,7 +1550,7 @@ void View::DrawConnection()
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_connected.load( std::memory_order_relaxed ) ? 0xFF2222CC : 0xFF444444, 10 );
 
-    std::lock_guard<std::mutex> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
     {
         const auto sz = m_frames.size();
         if( sz > 1 )

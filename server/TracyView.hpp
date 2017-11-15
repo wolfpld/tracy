@@ -3,7 +3,6 @@
 
 #include <atomic>
 #include <map>
-#include <mutex>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -17,6 +16,7 @@
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
 #include "TracyVector.hpp"
+#include "tracy_benaphore.h"
 
 struct ImVec2;
 
@@ -164,7 +164,7 @@ private:
     bool m_staticView;
 
     // this block must be locked
-    std::mutex m_lock;
+    NonRecursiveBenaphore m_lock;
     Vector<int64_t> m_frames;
     Vector<ThreadData*> m_threads;
     Vector<PlotData*> m_plots;
@@ -183,7 +183,7 @@ private:
     Vector<SourceLocation*> m_sourceLocationPayload;
     std::unordered_map<SourceLocation*, uint32_t, SourceLocationHasher, SourceLocationComparator> m_sourceLocationPayloadMap;
 
-    std::mutex m_mbpslock;
+    NonRecursiveBenaphore m_mbpslock;
     std::vector<float> m_mbps;
 
     // not used for vis - no need to lock

@@ -143,5 +143,11 @@
     <ClInclude Include="..\..\..\server\TracyPopcnt.hpp">
       <Filter>server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\server\tracy_benaphore.h">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\tracy_sema.h">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -67,7 +67,7 @@ static inline void LuaRemove( char* script )
                     memset( script, ' ', end - script );
                     script = end;
                 }
-                else if( strcmp( script + 10, "BeginN(", 7 ) == 0 )
+                else if( strncmp( script + 10, "BeginN(", 7 ) == 0 )
                 {
                     auto end = FindEnd( script + 17 );
                     memset( script, ' ', end - script );

@@ -6,8 +6,8 @@
 #ifndef TRACY_ENABLE
 
 #define TracyGpuContext
-#define TracyGpuZone(x,y)
-#define TracyGpuZoneC(x,y,z)
+#define TracyGpuZone(x)
+#define TracyGpuZoneC(x,y)
 #define TracyGpuCollect
 
 namespace tracy

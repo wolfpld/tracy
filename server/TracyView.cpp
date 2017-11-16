@@ -619,8 +619,7 @@ void View::Process( const QueueItem& ev )
 
 void View::ProcessZoneBegin( const QueueZoneBegin& ev )
 {
-    auto zone = m_slab.Alloc<ZoneEvent>();
-    zone->Init();
+    auto zone = m_slab.AllocInit<ZoneEvent>();
 
     CheckSourceLocation( ev.srcloc );
 
@@ -639,8 +638,7 @@ void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     auto it = m_pendingSourceLocationPayload.find( ev.srcloc );
     assert( it != m_pendingSourceLocationPayload.end() );
 
-    auto zone = m_slab.Alloc<ZoneEvent>();
-    zone->Init();
+    auto zone = m_slab.AllocInit<ZoneEvent>();
 
     zone->start = ev.time * m_timerMul;
     zone->end = -1;
@@ -844,8 +842,7 @@ void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
 
     CheckSourceLocation( ev.srcloc );
 
-    auto zone = m_slab.Alloc<GpuEvent>();
-    zone->Init();
+    auto zone = m_slab.AllocInit<GpuEvent>();
 
     zone->cpuStart = ev.cpuTime * m_timerMul;
     zone->cpuEnd = -1;
@@ -3822,8 +3819,7 @@ void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
 
     for( uint64_t i=0; i<sz; i++ )
     {
-        auto zone = m_slab.Alloc<ZoneEvent>();
-        zone->Init();
+        auto zone = m_slab.AllocInit<ZoneEvent>();
 
         m_zonesCnt++;
         vec.push_back( zone );
@@ -3846,8 +3842,7 @@ void View::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
 
     for( uint64_t i=0; i<sz; i++ )
     {
-        auto zone = m_slab.Alloc<GpuEvent>();
-        zone->Init();
+        auto zone = m_slab.AllocInit<GpuEvent>();
 
         vec.push_back( zone );
 

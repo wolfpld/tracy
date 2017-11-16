@@ -66,8 +66,6 @@ enum { SourceLocationSize = sizeof( SourceLocation ) };
 
 struct ZoneEvent
 {
-    void Init() { memset( &child, 0, 12 ); }
-
     int64_t start;
     int64_t end;
     int32_t srcloc;
@@ -79,7 +77,6 @@ struct ZoneEvent
 };
 
 enum { ZoneEventSize = sizeof( ZoneEvent ) };
-static_assert( sizeof( ZoneEvent::child ) == 13, "Adjust vector clear size!" );
 
 
 struct LockEvent
@@ -108,8 +105,6 @@ static_assert( std::numeric_limits<decltype(LockEvent::lockCount)>::max() >= Max
 
 struct GpuEvent
 {
-    void Init() { memset( &child, 0, 12 ); }
-
     int64_t cpuStart;
     int64_t cpuEnd;
     int64_t gpuStart;
@@ -120,7 +115,6 @@ struct GpuEvent
 };
 
 enum { GpuEventSize = sizeof( GpuEvent ) };
-static_assert( sizeof( GpuEvent::child ) == 13, "Adjust vector clear size!" );
 
 #pragma pack()
 

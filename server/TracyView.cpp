@@ -348,6 +348,7 @@ View::View( FileRead& f )
     {
         auto ctx = m_slab.AllocInit<GpuCtxData>();
         f.Read( &ctx->thread, sizeof( ctx->thread ) );
+        f.Read( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
         ReadTimeline( f, ctx->timeline );
         ctx->showFull = true;
         m_gpuData.push_back( ctx );
@@ -831,6 +832,7 @@ void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     auto gpu = m_slab.AllocInit<GpuCtxData>();
     gpu->timeDiff = int64_t( ev.cputime * m_timerMul - ev.gputime );
     gpu->thread = ev.thread;
+    gpu->accuracyBits = ev.accuracyBits;
     gpu->showFull = true;
     m_gpuData.push_back( gpu );
 }
@@ -3759,6 +3761,7 @@ void View::Write( FileWrite& f )
     for( auto& ctx : m_gpuData )
     {
         f.Write( &ctx->thread, sizeof( ctx->thread ) );
+        f.Write( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
         WriteTimeline( f, ctx->timeline );
     }
 

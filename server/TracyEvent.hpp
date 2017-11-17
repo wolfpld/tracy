@@ -141,6 +141,7 @@ struct GpuCtxData
     Vector<GpuEvent*> timeline;
     Vector<GpuEvent*> stack;
     Vector<GpuEvent*> queue;
+    uint8_t accuracyBits;
     bool showFull;
 };
 

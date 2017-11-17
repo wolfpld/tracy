@@ -2027,6 +2027,14 @@ void View::DrawZones()
                 ImGui::BeginTooltip();
                 ImGui::Text( "%s", buf );
                 ImGui::Separator();
+                if( !v->timeline.empty() )
+                {
+                    const auto t = v->timeline.front()->gpuStart;
+                    if( t != std::numeric_limits<int64_t>::max() )
+                    {
+                        ImGui::Text( "Appeared at %s", TimeToString( t - m_frames[0] ) );
+                    }
+                }
                 ImGui::Text( "Thread: %s", GetThreadString( v->thread ) );
                 ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
                 ImGui::EndTooltip();

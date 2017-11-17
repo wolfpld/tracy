@@ -3,7 +3,7 @@
 
 // Include this file after you include OpenGL 3.2 headers.
 
-#ifndef TRACY_ENABLE
+#if !defined TRACY_ENABLE || defined __APPLE__
 
 #define TracyGpuContext
 #define TracyGpuZone(x)

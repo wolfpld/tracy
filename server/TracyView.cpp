@@ -1679,6 +1679,7 @@ void View::DrawFrames()
                     }
 
                     ImGui::Text( "Frames: %i - %i (%i)", sel, sel + g - 1, g );
+                    ImGui::Separator();
                     ImGui::Text( "Max frame time: %s", TimeToString( f ) );
                 }
                 else
@@ -1686,11 +1687,13 @@ void View::DrawFrames()
                     if( sel == 0 )
                     {
                         ImGui::Text( "Tracy initialization" );
+                        ImGui::Separator();
                         ImGui::Text( "Time: %s", TimeToString( GetFrameTime( sel ) ) );
                     }
                     else
                     {
                         ImGui::Text( "Frame: %i", sel );
+                        ImGui::Separator();
                         ImGui::Text( "Frame time: %s", TimeToString( GetFrameTime( sel ) ) );
                     }
                 }
@@ -1884,6 +1887,7 @@ bool View::DrawZoneFrames()
         {
             ImGui::BeginTooltip();
             ImGui::Text( "%s", GetFrameText( i, ftime ) );
+            ImGui::Separator();
             ImGui::Text( "Time from start of program: %s", TimeToString( m_frames[i] - m_frames[0] ) );
             ImGui::EndTooltip();
 
@@ -2074,7 +2078,9 @@ void View::DrawZones()
                     else
                     {
                         ImGui::Text( "%s", TimeToString( (*it)->time - m_frames[0] ) );
-                        ImGui::Text( "%s", GetString( (*it)->ref ) );
+                        ImGui::Separator();
+                        ImGui::Text( "Message text:" );
+                        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", GetString( (*it)->ref ) );
                     }
                     ImGui::EndTooltip();
                     m_msgHighlight = *it;
@@ -2229,6 +2235,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 {
                     ImGui::BeginTooltip();
                     ImGui::Text( "Zones too small to display: %i", num );
+                    ImGui::Separator();
                     ImGui::Text( "Execution time: %s", TimeToString( rend - ev.start ) );
                     ImGui::EndTooltip();
 
@@ -2420,6 +2427,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 {
                     ImGui::BeginTooltip();
                     ImGui::Text( "Zones too small to display: %i", num );
+                    ImGui::Separator();
                     ImGui::Text( "Execution time: %s", TimeToString( rend - ev.gpuStart ) );
                     ImGui::EndTooltip();
 
@@ -2815,8 +2823,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
 
                     ImGui::BeginTooltip();
-                    ImGui::Text( "Lock #%" PRIu32, v.first );
-                    ImGui::Text( "%s", GetString( srcloc.function ) );
+                    ImGui::Text( "Lock #%" PRIu32 ": %s", v.first, GetString( srcloc.function ) );
+                    ImGui::Separator();
                     ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
                     ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
                     ImGui::Separator();
@@ -2874,6 +2882,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         }
                         auto waitList = (*vbegin)->waitList;
                         int t = 0;
+                        ImGui::Indent( ty );
                         while( waitList != 0 )
                         {
                             if( waitList & 0x1 )
@@ -2883,12 +2892,15 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             waitList >>= 1;
                             t++;
                         }
+                        ImGui::Unindent( ty );
                         break;
                     }
                     case LockState::WaitLock:
                     {
                         ImGui::Text( "Thread \"%s\" is blocked by other thread:", GetThreadString( tid ) );
+                        ImGui::Indent( ty );
                         ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[(*vbegin)->lockingThread] ) );
+                        ImGui::Unindent( ty );
                         break;
                     }
                     default:
@@ -2941,6 +2953,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             {
                 ImGui::BeginTooltip();
                 ImGui::Text( "Thread list:" );
+                ImGui::Separator();
                 ImGui::Indent( ty );
                 for( auto& t : v.second.threadList )
                 {
@@ -2995,6 +3008,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
             ImGui::BeginTooltip();
             ImGui::Text( "Plot \"%s\"", txt );
+            ImGui::Separator();
             ImGui::Text( "Data points: %s", RealToString( v->data.size(), true ) );
             ImGui::Text( "Data range: %s", RealToString( v->max - v->min, true ) );
             ImGui::Text( "Min value: %s", RealToString( v->min, true ) );
@@ -3572,7 +3586,17 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     const auto end = GetZoneEnd( ev );
 
     ImGui::BeginTooltip();
-    ImGui::Text( "%s", func );
+    if( srcloc.name.active )
+    {
+        ImGui::Text( "%s", zoneName );
+        ImGui::Separator();
+        ImGui::Text( "%s", func );
+    }
+    else
+    {
+        ImGui::Text( "%s", func );
+        ImGui::Separator();
+    }
     ImGui::Text( "%s:%i", filename, line );
     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay * dmul ) );
@@ -3607,6 +3631,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
 
     ImGui::BeginTooltip();
     ImGui::Text( "%s", func );
+    ImGui::Separator();
     ImGui::Text( "%s:%i", filename, line );
     ImGui::Text( "GPU execution time: %s", TimeToString( end - ev.gpuStart ) );
     ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );

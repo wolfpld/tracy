@@ -58,6 +58,9 @@ public:
         glGetInteger64v( GL_TIMESTAMP, &tgpu );
         int64_t tcpu = Profiler::GetTime();
 
+        GLint bits;
+        glGetQueryiv( GL_TIMESTAMP, GL_QUERY_COUNTER_BITS, &bits );
+
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -67,6 +70,7 @@ public:
         item->gpuNewContext.gputime = tgpu;
         item->gpuNewContext.thread = GetThreadHandle();
         item->gpuNewContext.context = m_context;
+        item->gpuNewContext.accuracyBits = bits;
         tail.store( magic + 1, std::memory_order_release );
     }
 

@@ -140,6 +140,7 @@ struct QueueGpuNewContext
     int64_t gputime;
     uint64_t thread;
     uint16_t context;
+    uint8_t accuracyBits;
 };
 
 struct QueueGpuZoneBegin

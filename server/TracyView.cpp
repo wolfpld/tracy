@@ -2013,9 +2013,19 @@ void View::DrawZones()
             sprintf( buf, "GPU context %i", i );
             draw->AddText( wpos + ImVec2( ty, offset ), v->showFull ? 0xFFFFAAAA : 0xFF886666, buf );
 
-            if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
             {
-                v->showFull = !v->showFull;
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    v->showFull = !v->showFull;
+                }
+
+                ImGui::BeginTooltip();
+                ImGui::Text( "%s", buf );
+                ImGui::Separator();
+                ImGui::Text( "Thread: %s", GetThreadString( v->thread ) );
+                ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
+                ImGui::EndTooltip();
             }
 
             offset += ostep;

@@ -349,6 +349,7 @@ View::View( FileRead& f )
         auto ctx = m_slab.AllocInit<GpuCtxData>();
         f.Read( &ctx->thread, sizeof( ctx->thread ) );
         f.Read( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
+        f.Read( &ctx->count, sizeof( ctx->count ) );
         ReadTimeline( f, ctx->timeline );
         ctx->showFull = true;
         m_gpuData.push_back( ctx );
@@ -833,6 +834,7 @@ void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     gpu->timeDiff = int64_t( ev.cputime * m_timerMul - ev.gputime );
     gpu->thread = ev.thread;
     gpu->accuracyBits = ev.accuracyBits;
+    gpu->count = 0;
     gpu->showFull = true;
     m_gpuData.push_back( gpu );
 }
@@ -886,6 +888,7 @@ void View::ProcessGpuTime( const QueueGpuTime& ev )
     if( zone->gpuStart == std::numeric_limits<int64_t>::max() )
     {
         zone->gpuStart = ctx->timeDiff + ev.gpuTime;
+        ctx->count++;
     }
     else
     {
@@ -2036,6 +2039,7 @@ void View::DrawZones()
                         ImGui::Text( "Appeared at %s", TimeToString( t - m_frames[0] ) );
                     }
                 }
+                ImGui::Text( "Zone count: %zu", v->count );
                 ImGui::Text( "Top-level zones: %zu", v->timeline.size() );
                 ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
                 ImGui::EndTooltip();
@@ -3820,6 +3824,7 @@ void View::Write( FileWrite& f )
     {
         f.Write( &ctx->thread, sizeof( ctx->thread ) );
         f.Write( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
+        f.Write( &ctx->count, sizeof( ctx->count ) );
         WriteTimeline( f, ctx->timeline );
     }
 

@@ -138,6 +138,7 @@ struct GpuCtxData
 {
     int64_t timeDiff;
     uint64_t thread;
+    uint64_t count;
     Vector<GpuEvent*> timeline;
     Vector<GpuEvent*> stack;
     Vector<GpuEvent*> queue;

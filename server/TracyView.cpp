@@ -2027,6 +2027,7 @@ void View::DrawZones()
                 ImGui::BeginTooltip();
                 ImGui::Text( "%s", buf );
                 ImGui::Separator();
+                ImGui::Text( "Thread: %s", GetThreadString( v->thread ) );
                 if( !v->timeline.empty() )
                 {
                     const auto t = v->timeline.front()->gpuStart;
@@ -2035,7 +2036,7 @@ void View::DrawZones()
                         ImGui::Text( "Appeared at %s", TimeToString( t - m_frames[0] ) );
                     }
                 }
-                ImGui::Text( "Thread: %s", GetThreadString( v->thread ) );
+                ImGui::Text( "Top-level zones: %zu", v->timeline.size() );
                 ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
                 ImGui::EndTooltip();
             }

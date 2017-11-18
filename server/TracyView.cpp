@@ -3634,14 +3634,13 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     if( srcloc.name.active )
     {
         ImGui::Text( "%s", zoneName );
-        ImGui::Separator();
         ImGui::Text( "%s", func );
     }
     else
     {
         ImGui::Text( "%s", func );
-        ImGui::Separator();
     }
+    ImGui::Separator();
     ImGui::Text( "%s:%i", filename, line );
     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay * dmul ) );
@@ -3668,6 +3667,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
 {
     auto& srcloc = GetSourceLocation( ev.srcloc );
 
+    const auto name = GetString( srcloc.name );
     const auto filename = GetString( srcloc.file );
     const auto line = srcloc.line;
     const auto func = GetString( srcloc.function );
@@ -3675,6 +3675,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
     const auto end = GetZoneEnd( ev );
 
     ImGui::BeginTooltip();
+    ImGui::Text( "%s", name );
     ImGui::Text( "%s", func );
     ImGui::Separator();
     ImGui::Text( "%s:%i", filename, line );

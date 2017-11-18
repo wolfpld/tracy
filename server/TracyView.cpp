@@ -2188,18 +2188,17 @@ void View::DrawZones()
 
     ImGui::EndChild();
 
-    if( m_gpuStart != m_gpuEnd )
+    if( m_gpuStart != 0 && m_gpuEnd != 0 )
     {
-        assert( m_gpuStart != 0 && m_gpuEnd != 0 );
         const auto px0 = ( m_gpuStart - m_zvStart ) * pxns;
-        const auto px1 = std::max( px0 + 1, ( m_gpuEnd - m_zvStart ) * pxns );
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuEnd - m_zvStart ) * pxns );
         draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x228888DD );
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x448888DD );
     }
     if( m_gpuInfoWindow )
     {
         const auto px0 = ( m_gpuInfoWindow->cpuStart - m_zvStart ) * pxns;
-        const auto px1 = std::max( px0 + 1, ( m_gpuInfoWindow->cpuEnd - m_zvStart ) * pxns );
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuInfoWindow->cpuEnd - m_zvStart ) * pxns );
         draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x2288DD88 );
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
@@ -2248,7 +2247,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         auto& srcloc = GetSourceLocation( ev.srcloc );
         const auto color = GetZoneColor( ev );
         const auto end = GetZoneEnd( ev );
-        const auto zsz = ( end - ev.start ) * pxns;
+        const auto zsz = std::max( ( end - ev.start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
             int num = 1;
@@ -2353,9 +2352,9 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             const auto pr0 = ( ev.start - m_zvStart ) * pxns;
             const auto pr1 = ( end - m_zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
-            const auto px1 = std::min( pr1, double( w + 10 ) );
-            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), color );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), GetZoneHighlight( ev, migration ), 0.f, -1, GetZoneThickness( ev ) );
+            const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev, migration ), 0.f, -1, GetZoneThickness( ev ) );
             if( dsz * dmul >= MinVisSize )
             {
                 draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), 0x882222DD );
@@ -2376,9 +2375,13 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 const auto x = ( ev.start - m_zvStart ) * pxns + ( ( end - ev.start ) * pxns - tsz.x ) / 2;
                 if( x < 0 || x > w - tsz.x )
                 {
-                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y * 2 ), true );
+                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
                     draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
                     ImGui::PopClipRect();
+                }
+                else if( ev.start == ev.end )
+                {
+                    draw->AddText( wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), 0xFFFFFFFF, zoneName );
                 }
                 else
                 {
@@ -2387,12 +2390,12 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             }
             else
             {
-                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y * 2 ), true );
+                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
                 draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
                 ImGui::PopClipRect();
             }
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ) ) )
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
             {
                 ZoneTooltip( ev );
 
@@ -2440,7 +2443,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         const auto color = GetZoneColor( ev );
         const auto end = GetZoneEnd( ev );
         if( end == std::numeric_limits<int64_t>::max() ) break;
-        const auto zsz = ( end - ev.gpuStart ) * pxns;
+        const auto zsz = std::max( ( end - ev.gpuStart ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
             int num = 1;
@@ -2518,9 +2521,9 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             const auto pr0 = ( ev.gpuStart - m_zvStart ) * pxns;
             const auto pr1 = ( end - m_zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
-            const auto px1 = std::min( pr1, double( w + 10 ) );
-            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), color );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ), GetZoneHighlight( ev ), 0.f, -1, GetZoneThickness( ev ) );
+            const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev ), 0.f, -1, GetZoneThickness( ev ) );
             if( dsz >= MinVisSize )
             {
                 draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz, pr1 ), offset + tsz.y ), 0x882222DD );
@@ -2541,9 +2544,13 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 const auto x = ( ev.gpuStart - m_zvStart ) * pxns + ( ( end - ev.gpuStart ) * pxns - tsz.x ) / 2;
                 if( x < 0 || x > w - tsz.x )
                 {
-                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y * 2 ), true );
+                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
                     draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
                     ImGui::PopClipRect();
+                }
+                else if( ev.gpuStart == ev.gpuEnd )
+                {
+                    draw->AddText( wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), 0xFFFFFFFF, zoneName );
                 }
                 else
                 {
@@ -2552,12 +2559,12 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             }
             else
             {
-                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y * 2 ), true );
+                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
                 draw->AddText( wpos + ImVec2( ( ev.gpuStart - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
                 ImGui::PopClipRect();
             }
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + tsz.y ) ) )
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
             {
                 ZoneTooltip( ev );
 
@@ -2810,7 +2817,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 nextState = ns;
             }
 
-            pxend = std::max( px1, px0+MinVisSize );
+            pxend = std::max( { px1, px0+MinVisSize, px0 + pxns * 0.5 } );
 
             bool itemHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( pxend, double( w + 10 ) ), offset + ty ) );
             if( itemHovered )

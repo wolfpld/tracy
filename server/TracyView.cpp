@@ -327,6 +327,7 @@ View::View( FileRead& f )
     {
         auto td = m_slab.AllocInit<ThreadData>();
         f.Read( &td->id, sizeof( td->id ) );
+        f.Read( &td->count, sizeof( td->count ) );
         ReadTimeline( f, td->timeline );
         uint64_t msz;
         f.Read( &msz, sizeof( msz ) );
@@ -1085,6 +1086,7 @@ ThreadData* View::NoticeThread( uint64_t thread )
         m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
         auto td = m_slab.AllocInit<ThreadData>();
         td->id = thread;
+        td->count = 0;
         td->showFull = true;
         td->visible = true;
         m_threads.push_back( td );
@@ -1099,7 +1101,9 @@ ThreadData* View::NoticeThread( uint64_t thread )
 void View::NewZone( ZoneEvent* zone, uint64_t thread )
 {
     m_zonesCnt++;
-    Vector<ZoneEvent*>* timeline = &NoticeThread( thread )->timeline;
+    auto td = NoticeThread( thread );
+    td->count++;
+    Vector<ZoneEvent*>* timeline = &td->timeline;
     InsertZone( zone, *timeline );
 }
 
@@ -3808,6 +3812,7 @@ void View::Write( FileWrite& f )
     for( auto& thread : m_threads )
     {
         f.Write( &thread->id, sizeof( thread->id ) );
+        f.Write( &thread->count, sizeof( thread->count ) );
         WriteTimeline( f, thread->timeline );
         sz = thread->messages.size();
         f.Write( &sz, sizeof( sz ) );

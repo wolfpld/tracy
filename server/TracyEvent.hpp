@@ -128,6 +128,7 @@ struct MessageData
 struct ThreadData
 {
     uint64_t id;
+    uint64_t count;
     bool showFull;
     bool visible;
     Vector<ZoneEvent*> timeline;

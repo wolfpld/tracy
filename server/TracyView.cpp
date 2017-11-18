@@ -2115,9 +2115,23 @@ void View::DrawZones()
         }
         draw->AddText( wpos + ImVec2( ty, offset ), v->showFull ? 0xFFFFFFFF : 0xFF888888, txt );
 
-        if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x, offset + ty ) ) )
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x, offset + ty ) ) )
         {
-            v->showFull = !v->showFull;
+            if( ImGui::IsMouseClicked( 0 ) )
+            {
+                v->showFull = !v->showFull;
+            }
+
+            ImGui::BeginTooltip();
+            ImGui::Text( "%s", GetThreadString( v->id ) );
+            ImGui::Separator();
+            if( !v->timeline.empty() )
+            {
+                ImGui::Text( "Appeared at %s", TimeToString( v->timeline.front()->start - m_frames[0] ) );
+                ImGui::Text( "Top-level zones: %zu", v->timeline.size() );
+            }
+            ImGui::EndTooltip();
+
         }
 
         offset += ostep;

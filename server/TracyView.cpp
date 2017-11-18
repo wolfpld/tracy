@@ -2043,8 +2043,8 @@ void View::DrawZones()
                         ImGui::Text( "Appeared at %s", TimeToString( t - m_frames[0] ) );
                     }
                 }
-                ImGui::Text( "Zone count: %zu", v->count );
-                ImGui::Text( "Top-level zones: %zu", v->timeline.size() );
+                ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
+                ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
                 ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
                 ImGui::EndTooltip();
             }

@@ -1,6 +1,6 @@
 # Tracy Profiler
 
-Tracy is a real-time frame profiler that can be used for remote or embedded telemetry of your application. It can profile both CPU (C++, Lua) and GPU (OpenGL).
+Tracy is a real time, nanosecond resolution frame profiler that can be used for remote or embedded telemetry of your application. It can profile both CPU (C++, Lua) and GPU (OpenGL).
 
 ![](doc/profiler.png)
 

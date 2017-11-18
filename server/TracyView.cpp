@@ -2132,11 +2132,12 @@ void View::DrawZones()
 
             ImGui::BeginTooltip();
             ImGui::Text( "%s", GetThreadString( v->id ) );
-            ImGui::Separator();
             if( !v->timeline.empty() )
             {
+                ImGui::Separator();
                 ImGui::Text( "Appeared at %s", TimeToString( v->timeline.front()->start - m_frames[0] ) );
-                ImGui::Text( "Top-level zones: %zu", v->timeline.size() );
+                ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
+                ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
             }
             ImGui::EndTooltip();
 

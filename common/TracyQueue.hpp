@@ -12,25 +12,25 @@ enum class QueueType : uint8_t
     ZoneBegin,
     ZoneBeginAllocSrcLoc,
     ZoneEnd,
-    StringData,
-    ThreadName,
-    CustomStringData,
     FrameMarkMsg,
     SourceLocation,
-    SourceLocationPayload,
     ZoneText,
     LockWait,
     LockObtain,
     LockRelease,
     LockMark,
     PlotData,
-    PlotName,
     Message,
     MessageLiteral,
     GpuNewContext,
     GpuZoneBegin,
     GpuZoneEnd,
     GpuTime,
+    StringData,
+    ThreadName,
+    CustomStringData,
+    PlotName,
+    SourceLocationPayload,
     NUM_TYPES
 };
 
@@ -204,25 +204,26 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
-    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
-    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name
-    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // custom string data
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
-    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // allocated source location payload
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
-    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
+    // keep all QueueStringTransfer below
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // custom string data
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // allocated source location payload
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

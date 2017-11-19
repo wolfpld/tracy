@@ -15,7 +15,7 @@ struct StringRef
 {
     enum Type { Ptr, Idx };
 
-    StringRef() : active( 0 ) {}
+    StringRef() : __data( 0 ) {}
     StringRef( Type t, uint64_t data )
         : isidx( t == Idx )
         , active( 1 )
@@ -36,20 +36,34 @@ struct StringRef
         uint64_t stridx;
     };
 
-    uint8_t isidx   : 1;
-    uint8_t active  : 1;
+    union
+    {
+        struct
+        {
+            uint8_t isidx   : 1;
+            uint8_t active  : 1;
+        };
+        uint8_t __data;
+    };
 };
 
 struct StringIdx
 {
-    StringIdx() : active( 0 ) {}
+    StringIdx() : __data( 0 ) {}
     StringIdx( uint32_t idx )
         : idx( idx )
         , active( 1 )
     {}
 
-    uint32_t idx    : 31;
-    uint32_t active : 1;
+    union
+    {
+        struct
+        {
+            uint32_t idx    : 31;
+            uint32_t active : 1;
+        };
+        uint32_t __data;
+    };
 };
 
 struct SourceLocation

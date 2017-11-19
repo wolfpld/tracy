@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdint.h>
 
+#include "../common/TracyForceInline.hpp"
 #include "TracyMemory.hpp"
 #include "TracyPopcnt.hpp"
 
@@ -167,7 +168,7 @@ public:
     }
 
 private:
-    void AllocMore()
+    tracy_no_inline void AllocMore()
     {
         if( m_ptr == nullptr )
         {

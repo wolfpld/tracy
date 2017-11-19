@@ -1165,15 +1165,30 @@ void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
 void View::UpdateLockCount( LockMap& lockmap, size_t pos )
 {
     auto& timeline = lockmap.timeline;
-    uint8_t lockingThread = pos == 0 ? 0 : timeline[pos-1]->lockingThread;
-    uint8_t lockCount = pos == 0 ? 0 : timeline[pos-1]->lockCount;
-    uint64_t waitList = pos == 0 ? 0 : timeline[pos-1]->waitList;
+    uint8_t lockingThread;
+    uint8_t lockCount;
+    uint64_t waitList;
+
+    if( pos == 0 )
+    {
+        lockingThread = 0;
+        lockCount = 0;
+        waitList = 0;
+    }
+    else
+    {
+        const auto tl = timeline[pos-1];
+        lockingThread = tl->lockingThread;
+        lockCount = tl->lockCount;
+        waitList = tl->waitList;
+    }
     const auto end = timeline.size();
 
     while( pos != end )
     {
-        const auto tbit = uint64_t( 1 ) << timeline[pos]->thread;
-        switch( (LockEvent::Type)timeline[pos]->type )
+        const auto tl = timeline[pos];
+        const auto tbit = uint64_t( 1 ) << tl->thread;
+        switch( (LockEvent::Type)tl->type )
         {
         case LockEvent::Type::Wait:
             waitList |= tbit;
@@ -1182,7 +1197,7 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
             assert( lockCount < std::numeric_limits<uint8_t>::max() );
             assert( ( waitList | tbit ) != 0 );
             waitList &= ~tbit;
-            lockingThread = timeline[pos]->thread;
+            lockingThread = tl->thread;
             lockCount++;
             break;
         case LockEvent::Type::Release:
@@ -1192,10 +1207,10 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
         default:
             break;
         }
-        timeline[pos]->lockingThread = lockingThread;
-        timeline[pos]->waitList = waitList;
-        timeline[pos]->lockCount = lockCount;
-        assert( timeline[pos]->lockingThread == lockingThread );
+        tl->lockingThread = lockingThread;
+        tl->waitList = waitList;
+        tl->lockCount = lockCount;
+        assert( tl->lockingThread == lockingThread );
         pos++;
     }
 }

@@ -662,8 +662,7 @@ void View::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto td = tit->second;
     auto& stack = td->stack;
     assert( !stack.empty() );
-    auto zone = stack.back();
-    stack.pop_back();
+    auto zone = stack.back_and_pop();
     assert( zone->end == -1 );
     zone->end = ev.time * m_timerMul;
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );

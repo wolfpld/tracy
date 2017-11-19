@@ -153,6 +153,13 @@ public:
         m_size--;
     }
 
+    T& back_and_pop()
+    {
+        assert( m_size > 0 );
+        m_size--;
+        return m_ptr[m_size];
+    }
+
     void reserve( size_t cap )
     {
         if( cap == 0 || cap <= Capacity() ) return;

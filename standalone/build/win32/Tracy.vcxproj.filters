@@ -152,5 +152,8 @@
     <ClInclude Include="..\..\..\server\tracy_flat_hash_map.hpp">
       <Filter>server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyForceInline.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

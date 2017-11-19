@@ -83,10 +83,12 @@ private:
     StringLocation StoreString( char* str, size_t sz );
 
     uint32_t ShrinkSourceLocation( uint64_t srcloc );
+    uint32_t NewShrinkedSourceLocation( uint64_t srcloc );
 
     void InsertMessageData( MessageData* msg, uint64_t thread );
 
     ThreadData* NoticeThread( uint64_t thread );
+    ThreadData* NewThread( uint64_t thread );
 
     void NewZone( ZoneEvent* zone, uint64_t thread );
 

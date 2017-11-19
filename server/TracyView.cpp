@@ -1058,11 +1058,16 @@ uint32_t View::ShrinkSourceLocation( uint64_t srcloc )
     }
     else
     {
-        const auto sz = m_sourceLocationExpand.size();
-        m_sourceLocationExpand.push_back( srcloc );
-        m_sourceLocationShrink.emplace( srcloc, sz );
-        return sz;
+        return NewShrinkedSourceLocation( srcloc );
     }
+}
+
+uint32_t View::NewShrinkedSourceLocation( uint64_t srcloc )
+{
+    const auto sz = m_sourceLocationExpand.size();
+    m_sourceLocationExpand.push_back( srcloc );
+    m_sourceLocationShrink.emplace( srcloc, sz );
+    return sz;
 }
 
 void View::InsertMessageData( MessageData* msg, uint64_t thread )
@@ -1092,22 +1097,27 @@ void View::InsertMessageData( MessageData* msg, uint64_t thread )
 ThreadData* View::NoticeThread( uint64_t thread )
 {
     auto it = m_threadMap.find( thread );
-    if( it == m_threadMap.end() )
-    {
-        CheckThreadString( thread );
-        auto td = m_slab.AllocInit<ThreadData>();
-        td->id = thread;
-        td->count = 0;
-        td->showFull = true;
-        td->visible = true;
-        m_threads.push_back( td );
-        m_threadMap.emplace( thread, td );
-        return td;
-    }
-    else
+    if( it != m_threadMap.end() )
     {
         return it->second;
     }
+    else
+    {
+        return NewThread( thread );
+    }
+}
+
+ThreadData* View::NewThread( uint64_t thread )
+{
+    CheckThreadString( thread );
+    auto td = m_slab.AllocInit<ThreadData>();
+    td->id = thread;
+    td->count = 0;
+    td->showFull = true;
+    td->visible = true;
+    m_threads.push_back( td );
+    m_threadMap.emplace( thread, td );
+    return td;
 }
 
 void View::NewZone( ZoneEvent* zone, uint64_t thread )

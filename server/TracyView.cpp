@@ -1123,7 +1123,7 @@ void View::NewZone( ZoneEvent* zone, uint64_t thread )
     else
     {
         td->stack.back()->child.push_back( zone );
-        td->stack.push_back( zone );
+        td->stack.push_back_non_empty( zone );
     }
 }
 

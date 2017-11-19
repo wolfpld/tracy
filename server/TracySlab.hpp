@@ -48,7 +48,19 @@ public:
     template<typename T>
     T* AllocInit()
     {
-        return new( AllocRaw( sizeof( T ) ) ) T;
+        const auto size = sizeof( T );
+        assert( size <= BlockSize );
+        if( m_offset + size > BlockSize )
+        {
+            m_ptr = new char[BlockSize];
+            m_offset = 0;
+            m_buffer.emplace_back( m_ptr );
+            memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
+        }
+        void* ret = m_ptr + m_offset;
+        new( ret ) T;
+        m_offset += size;
+        return (T*)ret;
     }
 
     template<typename T>

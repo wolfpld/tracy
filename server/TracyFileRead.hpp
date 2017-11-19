@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "../common/tracy_lz4.hpp"
+#include "../common/TracyForceInline.hpp"
 
 namespace tracy
 {
@@ -25,7 +26,7 @@ public:
         LZ4_freeStreamDecode( m_stream );
     }
 
-    void Read( void* ptr, size_t size )
+    tracy_force_inline void Read( void* ptr, size_t size )
     {
         if( size <= BufSize - m_offset )
         {
@@ -43,9 +44,8 @@ public:
                     m_offset = 0;
                     uint32_t sz;
                     fread( &sz, 1, sizeof( sz ), m_file );
-                    char lz4[LZ4Size];
-                    fread( lz4, 1, sz, m_file );
-                    LZ4_decompress_safe_continue( m_stream, lz4, m_buf[m_active], sz, BufSize );
+                    fread( m_lz4buf, 1, sz, m_file );
+                    LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf[m_active], sz, BufSize );
                 }
 
                 const auto sz = std::min( size, BufSize - m_offset );
@@ -71,6 +71,7 @@ private:
     LZ4_streamDecode_t* m_stream;
     FILE* m_file;
     char m_buf[2][BufSize];
+    char m_lz4buf[LZ4Size];
     size_t m_offset;
     uint8_t m_active;
 };

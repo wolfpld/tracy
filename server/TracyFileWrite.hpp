@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "../common/tracy_lz4.hpp"
+#include "../common/TracyForceInline.hpp"
 
 namespace tracy
 {
@@ -29,7 +30,7 @@ public:
         LZ4_freeStream( m_stream );
     }
 
-    void Write( const void* ptr, size_t size )
+    tracy_force_inline void Write( const void* ptr, size_t size )
     {
         if( m_offset + size <= BufSize )
         {

@@ -93,7 +93,7 @@ public:
 
 private:
     char* m_ptr;
-    size_t m_offset;
+    uint32_t m_offset;
     std::vector<char*> m_buffer;
 };
 

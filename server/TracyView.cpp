@@ -660,7 +660,7 @@ void View::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto tit = m_threadMap.find( ev.thread );
     assert( tit != m_threadMap.end() );
 
-    auto td = m_threads[tit->second];
+    auto td = tit->second;
     auto& stack = td->stack;
     assert( !stack.empty() );
     auto zone = stack.back();
@@ -686,7 +686,7 @@ void View::ProcessZoneText( const QueueZoneText& ev )
     auto tit = m_threadMap.find( ev.thread );
     assert( tit != m_threadMap.end() );
 
-    auto td = m_threads[tit->second];
+    auto td = tit->second;
     auto& stack = td->stack;
     assert( !stack.empty() );
     auto zone = stack.back();
@@ -1095,18 +1095,18 @@ ThreadData* View::NoticeThread( uint64_t thread )
     if( it == m_threadMap.end() )
     {
         CheckThreadString( thread );
-        m_threadMap.emplace( thread, (uint32_t)m_threads.size() );
         auto td = m_slab.AllocInit<ThreadData>();
         td->id = thread;
         td->count = 0;
         td->showFull = true;
         td->visible = true;
         m_threads.push_back( td );
-        return m_threads.back();
+        m_threadMap.emplace( thread, td );
+        return td;
     }
     else
     {
-        return m_threads[it->second];
+        return it->second;
     }
 }
 

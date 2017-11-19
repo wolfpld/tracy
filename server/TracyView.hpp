@@ -188,7 +188,7 @@ private:
     flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingThreads;
     flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingSourceLocation;
     flat_hash_map<uint64_t, StringLocation, power_of_two_std_hash<uint64_t>> m_pendingCustomStrings;
-    flat_hash_map<uint64_t, uint32_t, power_of_two_std_hash<uint64_t>> m_threadMap;
+    flat_hash_map<uint64_t, ThreadData*, power_of_two_std_hash<uint64_t>> m_threadMap;
     flat_hash_map<uint16_t, uint32_t, power_of_two_std_hash<uint16_t>> m_gpuCtxMap;
     flat_hash_map<uint64_t, uint32_t, power_of_two_std_hash<uint64_t>> m_plotMap;
     std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_plotRev;

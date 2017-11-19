@@ -645,10 +645,9 @@ void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
 
     zone->start = ev.time * m_timerMul;
     zone->end = -1;
-    zone->srcloc = 0;
+    zone->srcloc = it->second;
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
-    zone->srcloc = it->second;
 
     NewZone( zone, ev.thread );
 

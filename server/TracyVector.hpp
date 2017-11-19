@@ -79,6 +79,12 @@ public:
         m_ptr[m_size++] = v;
     }
 
+    void push_back_non_empty( const T& v )
+    {
+        if( m_size == CapacityNoNullptrCheck() ) AllocMore();
+        m_ptr[m_size++] = v;
+    }
+
     void push_back( T&& v )
     {
         if( m_size == Capacity() ) AllocMore();
@@ -186,7 +192,7 @@ private:
 
     void Realloc()
     {
-        T* ptr = new T[CapacityNew()];
+        T* ptr = new T[CapacityNoNullptrCheck()];
         if( m_size != 0 )
         {
             memcpy( ptr, m_ptr, m_size * sizeof( T ) );
@@ -200,7 +206,7 @@ private:
         return m_ptr == nullptr ? 0 : 1 << m_capacity;
     }
 
-    uint32_t CapacityNew() const
+    uint32_t CapacityNoNullptrCheck() const
     {
         return 1 << m_capacity;
     }

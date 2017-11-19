@@ -512,9 +512,9 @@ close:
 
 void View::DispatchProcess( const QueueItem& ev, char*& ptr )
 {
-    ptr += QueueDataSize[ev.hdr.idx];
     if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::SourceLocationPayload )
     {
+        ptr += sizeof( QueueHeader ) + sizeof( QueueStringTransfer );
         uint16_t sz;
         memcpy( &sz, ptr, sizeof( sz ) );
         ptr += sizeof( sz );
@@ -543,6 +543,7 @@ void View::DispatchProcess( const QueueItem& ev, char*& ptr )
     }
     else
     {
+        ptr += QueueDataSize[ev.hdr.idx];
         Process( ev );
     }
 }

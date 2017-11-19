@@ -89,9 +89,6 @@ private:
     ThreadData* NoticeThread( uint64_t thread );
 
     void NewZone( ZoneEvent* zone, uint64_t thread );
-    void UpdateZone( ZoneEvent* zone );
-
-    void InsertZone( ZoneEvent* zone, Vector<ZoneEvent*>& vec );
 
     void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread );
     void UpdateLockCount( LockMap& lockmap, size_t pos );
@@ -187,7 +184,6 @@ private:
     std::vector<float> m_mbps;
 
     // not used for vis - no need to lock
-    flat_hash_map<uint64_t, std::vector<ZoneEvent*>, power_of_two_std_hash<uint64_t>> m_zoneStack;
     flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingStrings;
     flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingThreads;
     flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingSourceLocation;

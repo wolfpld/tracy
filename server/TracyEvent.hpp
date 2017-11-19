@@ -132,6 +132,7 @@ struct ThreadData
     bool showFull;
     bool visible;
     Vector<ZoneEvent*> timeline;
+    Vector<ZoneEvent*> stack;
     Vector<MessageData*> messages;
 };
 

@@ -490,9 +490,9 @@ void View::Worker()
                     continue;
                 }
                 bool done = true;
-                for( auto& v : m_zoneStack )
+                for( auto& v : m_threads )
                 {
-                    if( !v.second.empty() )
+                    if( !v->stack.empty() )
                     {
                         done = false;
                         break;
@@ -633,7 +633,6 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
 
     NewZone( zone, ev.thread );
-    m_zoneStack[ev.thread].push_back( zone );
 }
 
 void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
@@ -651,14 +650,17 @@ void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     zone->srcloc = it->second;
 
     NewZone( zone, ev.thread );
-    m_zoneStack[ev.thread].push_back( zone );
 
     m_pendingSourceLocationPayload.erase( it );
 }
 
 void View::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
-    auto& stack = m_zoneStack[ev.thread];
+    auto tit = m_threadMap.find( ev.thread );
+    assert( tit != m_threadMap.end() );
+
+    auto td = m_threads[tit->second];
+    auto& stack = td->stack;
     assert( !stack.empty() );
     auto zone = stack.back();
     stack.pop_back();
@@ -667,7 +669,6 @@ void View::ProcessZoneEnd( const QueueZoneEnd& ev )
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_end = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     assert( zone->end >= zone->start );
-    UpdateZone( zone );
 }
 
 void View::ProcessFrameMark( const QueueFrameMark& ev )
@@ -681,7 +682,11 @@ void View::ProcessFrameMark( const QueueFrameMark& ev )
 
 void View::ProcessZoneText( const QueueZoneText& ev )
 {
-    auto& stack = m_zoneStack[ev.thread];
+    auto tit = m_threadMap.find( ev.thread );
+    assert( tit != m_threadMap.end() );
+
+    auto td = m_threads[tit->second];
+    auto& stack = td->stack;
     assert( !stack.empty() );
     auto zone = stack.back();
     auto it = m_pendingCustomStrings.find( ev.text );
@@ -1109,35 +1114,15 @@ void View::NewZone( ZoneEvent* zone, uint64_t thread )
     m_zonesCnt++;
     auto td = NoticeThread( thread );
     td->count++;
-    Vector<ZoneEvent*>* timeline = &td->timeline;
-    InsertZone( zone, *timeline );
-}
-
-void View::UpdateZone( ZoneEvent* zone )
-{
-    assert( zone->end != -1 );
-    assert( std::upper_bound( zone->child.begin(), zone->child.end(), zone->end, [] ( const auto& l, const auto& r ) { return l < r->start; } ) == zone->child.end() );
-}
-
-void View::InsertZone( ZoneEvent* zone, Vector<ZoneEvent*>& vec )
-{
-    if( !vec.empty() )
+    if( td->stack.empty() )
     {
-        const auto lastend = vec.back()->end;
-        if( lastend != -1 && lastend <= zone->start )
-        {
-            vec.push_back( zone );
-        }
-        else
-        {
-            assert( std::upper_bound( vec.begin(), vec.end(), zone->start, [] ( const auto& l, const auto& r ) { return l < r->start; } ) == vec.end() );
-            assert( vec.back()->end == -1 || vec.back()->end >= zone->end );
-            InsertZone( zone, vec.back()->child );
-        }
+        td->stack.push_back( zone );
+        td->timeline.push_back( zone );
     }
     else
     {
-        vec.push_back( zone );
+        td->stack.back()->child.push_back( zone );
+        td->stack.push_back( zone );
     }
 }
 

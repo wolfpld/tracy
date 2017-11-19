@@ -48,27 +48,27 @@ private:
 
     void Worker();
 
-    void DispatchProcess( const QueueItem& ev, char*& ptr );
+    tracy_force_inline void DispatchProcess( const QueueItem& ev, char*& ptr );
 
     void ServerQuery( uint8_t type, uint64_t data );
 
-    void Process( const QueueItem& ev );
-    void ProcessZoneBegin( const QueueZoneBegin& ev );
-    void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
-    void ProcessZoneEnd( const QueueZoneEnd& ev );
-    void ProcessFrameMark( const QueueFrameMark& ev );
-    void ProcessZoneText( const QueueZoneText& ev );
-    void ProcessLockWait( const QueueLockWait& ev );
-    void ProcessLockObtain( const QueueLockObtain& ev );
-    void ProcessLockRelease( const QueueLockRelease& ev );
-    void ProcessLockMark( const QueueLockMark& ev );
-    void ProcessPlotData( const QueuePlotData& ev );
-    void ProcessMessage( const QueueMessage& ev );
-    void ProcessMessageLiteral( const QueueMessage& ev );
-    void ProcessGpuNewContext( const QueueGpuNewContext& ev );
-    void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev );
-    void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev );
-    void ProcessGpuTime( const QueueGpuTime& ev );
+    tracy_force_inline void Process( const QueueItem& ev );
+    tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
+    tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
+    tracy_force_inline void ProcessZoneText( const QueueZoneText& ev );
+    tracy_force_inline void ProcessLockWait( const QueueLockWait& ev );
+    tracy_force_inline void ProcessLockObtain( const QueueLockObtain& ev );
+    tracy_force_inline void ProcessLockRelease( const QueueLockRelease& ev );
+    tracy_force_inline void ProcessLockMark( const QueueLockMark& ev );
+    tracy_force_inline void ProcessPlotData( const QueuePlotData& ev );
+    tracy_force_inline void ProcessMessage( const QueueMessage& ev );
+    tracy_force_inline void ProcessMessageLiteral( const QueueMessage& ev );
+    tracy_force_inline void ProcessGpuNewContext( const QueueGpuNewContext& ev );
+    tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev );
+    tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev );
+    tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );

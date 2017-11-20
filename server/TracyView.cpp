@@ -882,8 +882,7 @@ void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
     auto ctx = m_gpuData[it->second];
 
     assert( !ctx->stack.empty() );
-    auto zone = ctx->stack.back();
-    ctx->stack.pop_back();
+    auto zone = ctx->stack.back_and_pop();
     ctx->queue.push_back( zone );
 
     zone->cpuEnd = ev.cpuTime * m_timerMul;

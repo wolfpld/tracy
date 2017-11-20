@@ -156,4 +156,7 @@
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="DebugVis.natvis" />
+  </ItemGroup>
 </Project>

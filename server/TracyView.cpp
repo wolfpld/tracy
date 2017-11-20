@@ -676,7 +676,7 @@ void View::ProcessFrameMark( const QueueFrameMark& ev )
     const auto lastframe = m_frames.back();
     const auto time = ev.time * m_timerMul;
     assert( lastframe < time );
-    m_frames.push_back( time );
+    m_frames.push_back_non_empty( time );
 }
 
 void View::ProcessZoneText( const QueueZoneText& ev )
@@ -1069,9 +1069,13 @@ uint32_t View::NewShrinkedSourceLocation( uint64_t srcloc )
 
 void View::InsertMessageData( MessageData* msg, uint64_t thread )
 {
-    if( m_messages.empty() || m_messages.back()->time < msg->time )
+    if( m_messages.empty() )
     {
         m_messages.push_back( msg );
+    }
+    else if( m_messages.back()->time < msg->time )
+    {
+        m_messages.push_back_non_empty( msg );
     }
     else
     {
@@ -1079,10 +1083,14 @@ void View::InsertMessageData( MessageData* msg, uint64_t thread )
         m_messages.insert( mit, msg );
     }
 
-    Vector<MessageData*>* vec = &NoticeThread( thread )->messages;
-    if( vec->empty() || vec->back()->time < msg->time )
+    auto vec = &NoticeThread( thread )->messages;
+    if( vec->empty() )
     {
         vec->push_back( msg );
+    }
+    else if( vec->back()->time < msg->time )
+    {
+        vec->push_back_non_empty( msg );
     }
     else
     {
@@ -1148,9 +1156,14 @@ void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
     lev->thread = it->second;
     assert( lev->thread == it->second );
     auto& timeline = lockmap.timeline;
-    if( timeline.empty() || timeline.back()->time < lev->time )
+    if( timeline.empty() )
     {
         timeline.push_back( lev );
+        UpdateLockCount( lockmap, timeline.size() - 1 );
+    }
+    else if( timeline.back()->time < lev->time )
+    {
+        timeline.push_back_non_empty( lev );
         UpdateLockCount( lockmap, timeline.size() - 1 );
     }
     else
@@ -1227,26 +1240,31 @@ void View::InsertPlot( PlotData* plot, PlotItem* item )
     const auto& time = item->time;
     const auto& val = item->val;
 
-    if( plot->data.empty() || plot->data.back()->time < time )
+    if( plot->data.empty() )
     {
-        if( plot->data.empty() )
-        {
-            plot->min = val;
-            plot->max = val;
-        }
-        else
-        {
-            if( plot->min > val ) plot->min = val;
-            else if( plot->max < val ) plot->max = val;
-        }
+        plot->min = val;
+        plot->max = val;
         plot->data.push_back( item );
+    }
+    else if( plot->data.back()->time < time )
+    {
+        if( plot->min > val ) plot->min = val;
+        else if( plot->max < val ) plot->max = val;
+        plot->data.push_back_non_empty( item );
     }
     else
     {
         if( plot->min > val ) plot->min = val;
         else if( plot->max < val ) plot->max = val;
-        if( plot->postpone.empty() ) plot->postponeTime = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-        plot->postpone.push_back( item );
+        if( plot->postpone.empty() )
+        {
+            plot->postponeTime = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
+            plot->postpone.push_back( item );
+        }
+        else
+        {
+            plot->postpone.push_back_non_empty( item );
+        }
     }
 }
 

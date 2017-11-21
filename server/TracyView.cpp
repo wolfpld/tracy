@@ -230,7 +230,6 @@ View::View( FileRead& f )
         auto dst = m_slab.Alloc<char>( ssz+1 );
         f.Read( dst, ssz );
         dst[ssz] = '\0';
-        m_stringMap.emplace( dst, m_stringData.size() );
         m_stringData.push_back( dst );
         pointerMap.emplace( ptr, dst );
     }

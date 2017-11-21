@@ -835,8 +835,6 @@ void View::ProcessMessageLiteral( const QueueMessage& ev )
 void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
 {
     assert( m_gpuCtxMap.find( ev.context ) == m_gpuCtxMap.end() );
-    const auto idx = m_gpuData.size();
-    m_gpuCtxMap.emplace( ev.context, idx );
 
     auto gpu = m_slab.AllocInit<GpuCtxData>();
     gpu->timeDiff = int64_t( ev.cputime * m_timerMul - ev.gputime );
@@ -845,13 +843,14 @@ void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     gpu->count = 0;
     gpu->showFull = true;
     m_gpuData.push_back( gpu );
+    m_gpuCtxMap.emplace( ev.context, gpu );
 }
 
 void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
 {
     auto it = m_gpuCtxMap.find( ev.context );
     assert( it != m_gpuCtxMap.end() );
-    auto ctx = m_gpuData[it->second];
+    auto ctx = it->second;
 
     CheckSourceLocation( ev.srcloc );
 
@@ -879,7 +878,7 @@ void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
 {
     auto it = m_gpuCtxMap.find( ev.context );
     assert( it != m_gpuCtxMap.end() );
-    auto ctx = m_gpuData[it->second];
+    auto ctx = it->second;
 
     assert( !ctx->stack.empty() );
     auto zone = ctx->stack.back_and_pop();
@@ -892,7 +891,7 @@ void View::ProcessGpuTime( const QueueGpuTime& ev )
 {
     auto it = m_gpuCtxMap.find( ev.context );
     assert( it != m_gpuCtxMap.end() );
-    auto ctx = m_gpuData[it->second];
+    auto ctx = it->second;
 
     auto zone = ctx->queue.front();
     if( zone->gpuStart == std::numeric_limits<int64_t>::max() )

@@ -789,7 +789,7 @@ void View::ProcessPlotData( const QueuePlotData& ev )
     }
     else
     {
-        plot = m_plots[it->second];
+        plot = it->second;
     }
 
     const auto time = int64_t( ev.time * m_timerMul );
@@ -1278,17 +1278,16 @@ void View::HandlePlotName( uint64_t name, char* str, size_t sz )
     auto it = m_plotRev.find( sl.ptr );
     if( it == m_plotRev.end() )
     {
-        const auto idx = m_plots.size();
-        m_plotMap.emplace( name, idx );
-        m_plotRev.emplace( sl.ptr, idx );
+        m_plotMap.emplace( name, pit->second );
+        m_plotRev.emplace( sl.ptr, pit->second );
         m_plots.push_back( pit->second );
         m_strings.emplace( name, sl.ptr );
     }
     else
     {
-        m_plotMap.emplace( name, it->second );
+        auto plot = it->second;
+        m_plotMap.emplace( name, plot );
         const auto& pp = pit->second->data;
-        auto plot = m_plots[it->second];
         for( auto& v : pp )
         {
             InsertPlot( plot, v );

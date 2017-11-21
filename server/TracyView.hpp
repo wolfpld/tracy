@@ -29,6 +29,13 @@ class FileWrite;
 
 class View
 {
+    template<typename T>
+    struct nohash
+    {
+        size_t operator()( const T& v ) { return (size_t)v; }
+        typedef tracy::power_of_two_hash_policy hash_policy;
+    };
+
 public:
     View() : View( "127.0.0.1" ) {}
     View( const char* addr );
@@ -169,9 +176,9 @@ private:
     Vector<PlotData*> m_plots;
     Vector<MessageData*> m_messages;
     Vector<GpuCtxData*> m_gpuData;
-    flat_hash_map<uint64_t, const char*, power_of_two_std_hash<uint64_t>> m_strings;
-    flat_hash_map<uint64_t, const char*, power_of_two_std_hash<uint64_t>> m_threadNames;
-    flat_hash_map<uint64_t, SourceLocation, power_of_two_std_hash<uint64_t>> m_sourceLocation;
+    flat_hash_map<uint64_t, const char*, nohash<uint64_t>> m_strings;
+    flat_hash_map<uint64_t, const char*, nohash<uint64_t>> m_threadNames;
+    flat_hash_map<uint64_t, SourceLocation, nohash<uint64_t>> m_sourceLocation;
     std::vector<uint64_t> m_sourceLocationExpand;
     std::map<uint32_t, LockMap> m_lockMap;
     uint64_t m_zonesCnt;
@@ -186,17 +193,17 @@ private:
     std::vector<float> m_mbps;
 
     // not used for vis - no need to lock
-    flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingStrings;
-    flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingThreads;
-    flat_hash_set<uint64_t, power_of_two_std_hash<uint64_t>> m_pendingSourceLocation;
-    flat_hash_map<uint64_t, StringLocation, power_of_two_std_hash<uint64_t>> m_pendingCustomStrings;
-    flat_hash_map<uint64_t, ThreadData*, power_of_two_std_hash<uint64_t>> m_threadMap;
-    flat_hash_map<uint16_t, GpuCtxData*, power_of_two_std_hash<uint16_t>> m_gpuCtxMap;
-    flat_hash_map<uint64_t, PlotData*, power_of_two_std_hash<uint64_t>> m_plotMap;
+    flat_hash_set<uint64_t, nohash<uint64_t>> m_pendingStrings;
+    flat_hash_set<uint64_t, nohash<uint64_t>> m_pendingThreads;
+    flat_hash_set<uint64_t, nohash<uint64_t>> m_pendingSourceLocation;
+    flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
+    flat_hash_map<uint64_t, ThreadData*, nohash<uint64_t>> m_threadMap;
+    flat_hash_map<uint16_t, GpuCtxData*, nohash<uint16_t>> m_gpuCtxMap;
+    flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_plotMap;
     std::unordered_map<const char*, PlotData*, charutil::Hasher, charutil::Comparator> m_plotRev;
-    flat_hash_map<uint64_t, PlotData*, power_of_two_std_hash<uint64_t>> m_pendingPlots;
-    flat_hash_map<uint64_t, uint32_t, power_of_two_std_hash<uint64_t>> m_sourceLocationShrink;
-    flat_hash_map<uint64_t, int32_t, power_of_two_std_hash<uint64_t>> m_pendingSourceLocationPayload;
+    flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_pendingPlots;
+    flat_hash_map<uint64_t, uint32_t, nohash<uint64_t>> m_sourceLocationShrink;
+    flat_hash_map<uint64_t, int32_t, nohash<uint64_t>> m_pendingSourceLocationPayload;
     Vector<uint64_t> m_sourceLocationQueue;
 
     Slab<64*1024*1024> m_slab;

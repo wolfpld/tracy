@@ -1791,7 +1791,7 @@ void View::DrawFrames()
 
     const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
     if( zitbegin == m_frames.end() ) return;
-    const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
+    const auto zitend = std::lower_bound( zitbegin, m_frames.end(), m_zvEnd );
 
     auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
     if( zbegin > 0 && *zitbegin != m_zvStart ) zbegin--;
@@ -1906,7 +1906,7 @@ bool View::DrawZoneFrames()
 
     const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
     if( zitbegin == m_frames.end() ) return hover;
-    const auto zitend = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvEnd );
+    const auto zitend = std::lower_bound( zitbegin, m_frames.end(), m_zvEnd );
 
     auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
     if( zbegin > 0 && *zitbegin != m_zvStart ) zbegin--;
@@ -2101,7 +2101,7 @@ void View::DrawZones()
             draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFFFFF );
 
             auto it = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-            auto end = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvEnd, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+            auto end = std::lower_bound( it, v->messages.end(), m_zvEnd, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
 
             while( it < end )
             {
@@ -2250,7 +2250,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->start < r; } );
     if( it == zitend ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
@@ -2445,7 +2445,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->gpuEnd < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->gpuStart < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->gpuStart < r; } );
     if( it == zitend ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
@@ -2769,7 +2769,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         const auto thread = it->second;
 
         auto vbegin = std::lower_bound( tl.begin(), tl.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
-        const auto vend = std::lower_bound( tl.begin(), tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+        const auto vend = std::lower_bound( vbegin, tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
 
         if( vbegin > tl.begin() ) vbegin--;
 
@@ -3100,7 +3100,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
         {
             auto& vec = v->data;
             auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
-            auto end = std::lower_bound( vec.begin(), vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+            auto end = std::lower_bound( it, vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
 
             if( end != vec.end() ) end++;
             if( it != vec.begin() ) it--;

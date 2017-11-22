@@ -508,7 +508,7 @@ public:
 
         operator templated_iterator<const value_type>() const
         {
-            return { current };
+            return templated_iterator<const value_type> { current };
         }
     };
     using iterator = templated_iterator<value_type>;
@@ -519,7 +519,7 @@ public:
         for (EntryPointer it = entries;; ++it)
         {
             if (it->has_value())
-                return { it };
+                return iterator { it };
         }
     }
     const_iterator begin() const
@@ -527,7 +527,7 @@ public:
         for (EntryPointer it = entries;; ++it)
         {
             if (it->has_value())
-                return { it };
+                return const_iterator { it };
         }
     }
     const_iterator cbegin() const
@@ -536,11 +536,11 @@ public:
     }
     iterator end()
     {
-        return { entries + static_cast<ptrdiff_t>(num_slots_minus_one + max_lookups) };
+        return iterator { entries + static_cast<ptrdiff_t>(num_slots_minus_one + max_lookups) };
     }
     const_iterator end() const
     {
-        return { entries + static_cast<ptrdiff_t>(num_slots_minus_one + max_lookups) };
+        return const_iterator { entries + static_cast<ptrdiff_t>(num_slots_minus_one + max_lookups) };
     }
     const_iterator cend() const
     {
@@ -554,7 +554,7 @@ public:
         for (int8_t distance = 0; it->distance_from_desired >= distance; ++distance, ++it)
         {
             if (compares_equal(key, it->value))
-                return { it };
+                return iterator { it };
         }
         return end();
     }
@@ -570,17 +570,17 @@ public:
     {
         iterator found = find(key);
         if (found == end())
-            return { found, found };
+            return std::pair<iterator, iterator> { found, found };
         else
-            return { found, std::next(found) };
+            return std::pair<iterator, iterator> { found, std::next(found) };
     }
     std::pair<const_iterator, const_iterator> equal_range(const FindKey & key) const
     {
         const_iterator found = find(key);
         if (found == end())
-            return { found, found };
+            return std::pair<const_iterator, const_iterator> { found, found };
         else
-            return { found, std::next(found) };
+            return std::pair<const_iterator, const_iterator> { found, std::next(found) };
     }
 
     template<typename Key, typename... Args>
@@ -592,7 +592,7 @@ public:
         for (; current_entry->distance_from_desired >= distance_from_desired; ++current_entry, ++distance_from_desired)
         {
             if (compares_equal(key, current_entry->value))
-                return { { current_entry }, false };
+                return std::pair<iterator, bool> { iterator { current_entry }, false };
         }
         return emplace_new_key(distance_from_desired, current_entry, std::forward<Key>(key), std::forward<Args>(args)...);
     }
@@ -689,7 +689,7 @@ public:
             current->emplace(next->distance_from_desired - 1, std::move(next->value));
             next->destroy_value();
         }
-        return { to_erase.current };
+        return convertible_to_iterator { to_erase.current };
     }
 
     iterator erase(const_iterator begin_it, const_iterator end_it)
@@ -714,7 +714,7 @@ public:
             ++it;
             num_to_move = std::min(static_cast<ptrdiff_t>(it->distance_from_desired), num_to_move);
         }
-        return { to_return };
+        return iterator { to_return };
     }
 
     size_t erase(const FindKey & key)
@@ -922,14 +922,14 @@ private:
         operator iterator()
         {
             if (it->has_value())
-                return { it };
+                return convertible_to_iterator { it };
             else
                 return ++iterator{it};
         }
         operator const_iterator()
         {
             if (it->has_value())
-                return { it };
+                return convertible_to_iterator { it };
             else
                 return ++const_iterator{it};
         }

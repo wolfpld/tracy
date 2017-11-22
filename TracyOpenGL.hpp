@@ -44,7 +44,7 @@ class GpuCtx
 {
     friend class GpuCtxScope;
 
-    enum { QueryCount = 1024 };
+    enum { QueryCount = 64 * 1024 };
 
 public:
     GpuCtx()

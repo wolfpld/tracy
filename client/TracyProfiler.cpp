@@ -264,9 +264,10 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
     const auto sz = s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize );
     if( sz > 0 )
     {
-        for( size_t i=0; i<sz; i++ )
+        auto end = m_itemBuf + sz;
+        auto item = m_itemBuf;
+        while( item != end )
         {
-            const auto item = m_itemBuf + i;
             uint64_t ptr;
             switch( item->hdr.type )
             {
@@ -288,7 +289,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
             default:
                 break;
             }
-            if( !AppendData( item, QueueDataSize[m_itemBuf[i].hdr.idx] ) ) return ConnectionLost;
+            if( !AppendData( item, QueueDataSize[item->hdr.idx] ) ) return ConnectionLost;
+            item++;
         }
     }
     else

@@ -269,25 +269,29 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
         while( item != end )
         {
             uint64_t ptr;
-            switch( item->hdr.type )
+            if( item->hdr.idx < (int)QueueType::Terminate )
             {
-            case QueueType::ZoneText:
-                ptr = item->zoneText.text;
-                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-                tracy_free( (void*)ptr );
-                break;
-            case QueueType::Message:
-                ptr = item->message.text;
-                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-                tracy_free( (void*)ptr );
-                break;
-            case QueueType::ZoneBeginAllocSrcLoc:
-                ptr = item->zoneBegin.srcloc;
-                SendSourceLocationPayload( ptr );
-                tracy_free( (void*)ptr );
-                break;
-            default:
-                break;
+                switch( item->hdr.type )
+                {
+                case QueueType::ZoneText:
+                    ptr = item->zoneText.text;
+                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::Message:
+                    ptr = item->message.text;
+                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::ZoneBeginAllocSrcLoc:
+                    ptr = item->zoneBegin.srcloc;
+                    SendSourceLocationPayload( ptr );
+                    tracy_free( (void*)ptr );
+                    break;
+                default:
+                    assert( false );
+                    break;
+                }
             }
             if( !AppendData( item, QueueDataSize[item->hdr.idx] ) ) return ConnectionLost;
             item++;

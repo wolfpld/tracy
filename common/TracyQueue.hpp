@@ -8,19 +8,19 @@ namespace tracy
 
 enum class QueueType : uint8_t
 {
+    ZoneText,
+    Message,
+    ZoneBeginAllocSrcLoc,
     Terminate,
     ZoneBegin,
-    ZoneBeginAllocSrcLoc,
     ZoneEnd,
     FrameMarkMsg,
     SourceLocation,
-    ZoneText,
     LockWait,
     LockObtain,
     LockRelease,
     LockMark,
     PlotData,
-    Message,
     MessageLiteral,
     GpuNewContext,
     GpuZoneBegin,
@@ -200,19 +200,20 @@ struct QueueItem
 enum { QueueItemSize = sizeof( QueueItem ) };
 
 static const size_t QueueDataSize[] = {
+    sizeof( QueueHeader ) + sizeof( QueueZoneText ),
+    sizeof( QueueHeader ) + sizeof( QueueMessage ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
+    // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
-    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
-    sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
-    sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),

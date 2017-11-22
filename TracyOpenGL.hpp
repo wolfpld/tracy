@@ -10,18 +10,6 @@
 #define TracyGpuZoneC(x,y)
 #define TracyGpuCollect
 
-namespace tracy
-{
-
-template<int>
-class GpuCtx
-{
-public:
-    void Collect() {}
-};
-
-}
-
 #else
 
 #include <atomic>

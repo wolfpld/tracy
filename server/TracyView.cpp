@@ -128,6 +128,7 @@ View::View( const char* addr )
     , m_compRatio( 1 )
     , m_pendingStrings( 0 )
     , m_pendingThreads( 0 )
+    , m_pendingSourceLocation( 0 )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
@@ -490,7 +491,7 @@ void View::Worker()
 
             if( m_terminate )
             {
-                if( m_pendingStrings != 0 || m_pendingThreads != 0 || !m_pendingSourceLocation.empty() ||
+                if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 ||
                     !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() )
                 {
                     continue;
@@ -934,12 +935,14 @@ void View::CheckThreadString( uint64_t id )
     ServerQuery( ServerQueryThreadString, id );
 }
 
+static const SourceLocation emptySourceLocation = {};
+
 void View::CheckSourceLocation( uint64_t ptr )
 {
     if( m_sourceLocation.find( ptr ) != m_sourceLocation.end() ) return;
-    if( m_pendingSourceLocation.find( ptr ) != m_pendingSourceLocation.end() ) return;
 
-    m_pendingSourceLocation.emplace( ptr );
+    m_sourceLocation.emplace( ptr, emptySourceLocation );
+    m_pendingSourceLocation++;
     m_sourceLocationQueue.push_back( ptr );
 
     ServerQuery( ServerQuerySourceLocation, ptr );
@@ -997,18 +1000,19 @@ StringLocation View::StoreString( char* str, size_t sz )
 
 void View::AddSourceLocation( const QueueSourceLocation& srcloc )
 {
+    assert( m_pendingSourceLocation > 0 );
+    m_pendingSourceLocation--;
+
     const auto ptr = m_sourceLocationQueue.front();
     m_sourceLocationQueue.erase( m_sourceLocationQueue.begin() );
 
-    assert( m_sourceLocation.find( ptr ) == m_sourceLocation.end() );
-    auto it = m_pendingSourceLocation.find( ptr );
-    assert( it != m_pendingSourceLocation.end() );
-    m_pendingSourceLocation.erase( it );
+    auto it = m_sourceLocation.find( ptr );
+    assert( it != m_sourceLocation.end() );
     CheckString( srcloc.name );
     CheckString( srcloc.file );
     CheckString( srcloc.function );
     uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
-    m_sourceLocation.emplace( ptr, SourceLocation { srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color } );
+    it->second = SourceLocation { srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color };
 }
 
 void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
@@ -1456,9 +1460,8 @@ const SourceLocation& View::GetSourceLocation( int32_t srcloc ) const
     }
     else
     {
-        static const SourceLocation empty = {};
         const auto it = m_sourceLocation.find( m_sourceLocationExpand[srcloc] );
-        if( it == m_sourceLocation.end() ) return empty;
+        assert( it != m_sourceLocation.end() );
         return it->second;
     }
 }

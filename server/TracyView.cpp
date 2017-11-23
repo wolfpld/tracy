@@ -126,6 +126,8 @@ View::View( const char* addr )
     , m_zonesCnt( 0 )
     , m_mbps( 64 )
     , m_compRatio( 1 )
+    , m_pendingStrings( 0 )
+    , m_pendingThreads( 0 )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
@@ -488,7 +490,7 @@ void View::Worker()
 
             if( m_terminate )
             {
-                if( !m_pendingStrings.empty() || !m_pendingThreads.empty() || !m_pendingSourceLocation.empty() ||
+                if( m_pendingStrings != 0 || m_pendingThreads != 0 || !m_pendingSourceLocation.empty() ||
                     !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() )
                 {
                     continue;
@@ -915,9 +917,9 @@ void View::CheckString( uint64_t ptr )
 {
     if( ptr == 0 ) return;
     if( m_strings.find( ptr ) != m_strings.end() ) return;
-    if( m_pendingStrings.find( ptr ) != m_pendingStrings.end() ) return;
 
-    m_pendingStrings.emplace( ptr );
+    m_strings.emplace( ptr, "???" );
+    m_pendingStrings++;
 
     ServerQuery( ServerQueryString, ptr );
 }
@@ -925,9 +927,9 @@ void View::CheckString( uint64_t ptr )
 void View::CheckThreadString( uint64_t id )
 {
     if( m_threadNames.find( id ) != m_threadNames.end() ) return;
-    if( m_pendingThreads.find( id ) != m_pendingThreads.end() ) return;
 
-    m_pendingThreads.emplace( id );
+    m_threadNames.emplace( id, "???" );
+    m_pendingThreads++;
 
     ServerQuery( ServerQueryThreadString, id );
 }
@@ -945,22 +947,22 @@ void View::CheckSourceLocation( uint64_t ptr )
 
 void View::AddString( uint64_t ptr, char* str, size_t sz )
 {
-    assert( m_strings.find( ptr ) == m_strings.end() );
-    auto it = m_pendingStrings.find( ptr );
-    assert( it != m_pendingStrings.end() );
-    m_pendingStrings.erase( it );
+    assert( m_pendingStrings > 0 );
+    m_pendingStrings--;
+    auto it = m_strings.find( ptr );
+    assert( it != m_strings.end() && strcmp( it->second, "???" ) == 0 );
     const auto sl = StoreString( str, sz );
-    m_strings.emplace( ptr, sl.ptr );
+    it->second = sl.ptr;
 }
 
 void View::AddThreadString( uint64_t id, char* str, size_t sz )
 {
-    assert( m_threadNames.find( id ) == m_threadNames.end() );
-    auto it = m_pendingThreads.find( id );
-    assert( it != m_pendingThreads.end() );
-    m_pendingThreads.erase( it );
+    assert( m_pendingThreads > 0 );
+    m_pendingThreads--;
+    auto it = m_threadNames.find( id );
+    assert( it != m_threadNames.end() && strcmp( it->second, "???" ) == 0 );
     const auto sl = StoreString( str, sz );
-    m_threadNames.emplace( id, sl.ptr );
+    it->second = sl.ptr;
 }
 
 void View::AddCustomString( uint64_t ptr, char* str, size_t sz )

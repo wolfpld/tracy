@@ -125,6 +125,7 @@ View::View( const char* addr )
     , m_sourceLocationExpand( { 0 } )
     , m_zonesCnt( 0 )
     , m_mbps( 64 )
+    , m_compRatio( 1 )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
@@ -412,6 +413,7 @@ void View::Worker()
         std::chrono::time_point<std::chrono::high_resolution_clock> t0;
 
         uint64_t bytes = 0;
+        uint64_t decBytes = 0;
 
         {
             WelcomeMessage welcome;
@@ -451,6 +453,7 @@ void View::Worker()
 
             auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf, buf, lz4sz, TargetFrameSize );
             assert( sz >= 0 );
+            decBytes += sz;
 
             char* ptr = buf;
             const char* end = buf + sz;
@@ -477,8 +480,10 @@ void View::Worker()
                 std::lock_guard<NonRecursiveBenaphore> lock( m_mbpslock );
                 m_mbps.erase( m_mbps.begin() );
                 m_mbps.emplace_back( bytes / ( td * 125.f ) );
+                m_compRatio = float( bytes ) / decBytes;
                 t0 = t1;
                 bytes = 0;
+                decBytes = 0;
             }
 
             if( m_terminate )
@@ -1540,9 +1545,9 @@ void View::DrawConnection()
     const auto ty = ImGui::GetFontSize();
     const auto cs = ty * 0.9f;
 
-    ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     {
         std::lock_guard<NonRecursiveBenaphore> lock( m_mbpslock );
+        ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
         const auto mbps = m_mbps.back();
         char buf[64];
         if( mbps < 0.1f )
@@ -1556,6 +1561,7 @@ void View::DrawConnection()
         ImGui::Dummy( ImVec2( cs, 0 ) );
         ImGui::SameLine();
         ImGui::PlotLines( buf, m_mbps.data(), m_mbps.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 150, 0 ) );
+        ImGui::Text( "Ratio %.1f%%  Real: %6.2f Mbps", m_compRatio * 100.f, mbps / m_compRatio );
     }
 
     ImGui::Text( "Memory usage: %.2f MB", memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ) );

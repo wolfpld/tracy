@@ -191,6 +191,7 @@ private:
 
     NonRecursiveBenaphore m_mbpslock;
     std::vector<float> m_mbps;
+    float m_compRatio;
 
     // not used for vis - no need to lock
     flat_hash_set<uint64_t, nohash<uint64_t>> m_pendingStrings;

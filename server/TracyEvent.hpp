@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "TracyVector.hpp"
+#include "tracy_flat_hash_map.hpp"
 
 namespace tracy
 {
@@ -210,6 +211,7 @@ struct SourceLocationHasher
     {
         return charutil::hash( (const char*)ptr, sizeof( SourceLocation ) );
     }
+    typedef tracy::power_of_two_hash_policy hash_policy;
 };
 
 struct SourceLocationComparator

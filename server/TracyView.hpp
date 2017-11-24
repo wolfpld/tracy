@@ -189,7 +189,7 @@ private:
     std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_stringMap;
 
     Vector<SourceLocation*> m_sourceLocationPayload;
-    std::unordered_map<SourceLocation*, uint32_t, SourceLocationHasher, SourceLocationComparator> m_sourceLocationPayloadMap;
+    flat_hash_map<SourceLocation*, uint32_t, SourceLocationHasher, SourceLocationComparator> m_sourceLocationPayloadMap;
 
     NonRecursiveBenaphore m_mbpslock;
     std::vector<float> m_mbps;

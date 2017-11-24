@@ -449,7 +449,7 @@ void Profiler::CalibrateTimer()
     const auto t0 = std::chrono::high_resolution_clock::now();
     const auto r0 = tracy_rdtscp( cpu );
     std::atomic_signal_fence( std::memory_order_acq_rel );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
     std::atomic_signal_fence( std::memory_order_acq_rel );
     const auto t1 = std::chrono::high_resolution_clock::now();
     const auto r1 = tracy_rdtscp( cpu );

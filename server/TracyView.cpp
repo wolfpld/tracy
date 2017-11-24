@@ -939,8 +939,18 @@ static const SourceLocation emptySourceLocation = {};
 
 void View::CheckSourceLocation( uint64_t ptr )
 {
-    if( m_sourceLocation.find( ptr ) != m_sourceLocation.end() ) return;
+    if( m_sourceLocation.find( ptr ) != m_sourceLocation.end() )
+    {
+        return;
+    }
+    else
+    {
+        NewSourceLocation( ptr );
+    }
+}
 
+void View::NewSourceLocation( uint64_t ptr )
+{
     m_sourceLocation.emplace( ptr, emptySourceLocation );
     m_pendingSourceLocation++;
     m_sourceLocationQueue.push_back( ptr );

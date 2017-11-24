@@ -79,7 +79,9 @@ private:
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
-    void CheckSourceLocation( uint64_t ptr );
+
+    tracy_force_inline void CheckSourceLocation( uint64_t ptr );
+    void NewSourceLocation( uint64_t ptr );
 
     void AddString( uint64_t ptr, char* str, size_t sz );
     void AddThreadString( uint64_t id, char* str, size_t sz );

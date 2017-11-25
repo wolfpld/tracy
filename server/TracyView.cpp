@@ -619,6 +619,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::GpuTime:
         ProcessGpuTime( ev.gpuTime );
         break;
+    case QueueType::GpuResync:
+        ProcessGpuResync( ev.gpuResync );
+        break;
     case QueueType::Terminate:
         m_terminate = true;
         break;
@@ -912,6 +915,44 @@ void View::ProcessGpuTime( const QueueGpuTime& ev )
     }
 
     ctx->queue.erase( ctx->queue.begin() );
+    if( !ctx->resync.empty() )
+    {
+        auto& resync = ctx->resync.front();
+        assert( resync.events > 0 );
+        resync.events--;
+        if( resync.events == 0 )
+        {
+            ctx->timeDiff = resync.timeDiff;
+            ctx->resync.erase( ctx->resync.begin() );
+        }
+    }
+}
+
+void View::ProcessGpuResync( const QueueGpuResync& ev )
+{
+    auto it = m_gpuCtxMap.find( ev.context );
+    assert( it != m_gpuCtxMap.end() );
+    auto ctx = it->second;
+
+    const auto timeDiff = int64_t( ev.cpuTime * m_timerMul - ev.gpuTime );
+
+    if( ctx->queue.empty() )
+    {
+        assert( ctx->resync.empty() );
+        ctx->timeDiff = timeDiff;
+    }
+    else
+    {
+        if( ctx->resync.empty() )
+        {
+            ctx->resync.push_back( { timeDiff, uint16_t( ctx->queue.size() ) } );
+        }
+        else
+        {
+            const auto last = ctx->resync.back().events;
+            ctx->resync.push_back( { timeDiff, uint16_t( ctx->queue.size() - last ) } );
+        }
+    }
 }
 
 void View::CheckString( uint64_t ptr )

@@ -76,6 +76,7 @@ private:
     tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev );
     tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
+    tracy_force_inline void ProcessGpuResync( const QueueGpuResync& ev );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );

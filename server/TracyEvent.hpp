@@ -151,6 +151,12 @@ struct ThreadData
     Vector<MessageData*> messages;
 };
 
+struct GpuCtxResync
+{
+    int64_t timeDiff;
+    uint16_t events;
+};
+
 struct GpuCtxData
 {
     int64_t timeDiff;
@@ -159,6 +165,7 @@ struct GpuCtxData
     Vector<GpuEvent*> timeline;
     Vector<GpuEvent*> stack;
     Vector<GpuEvent*> queue;
+    Vector<GpuCtxResync> resync;
     uint8_t accuracyBits;
     bool showFull;
 };

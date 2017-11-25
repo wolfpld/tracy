@@ -102,6 +102,22 @@ public:
             tail.store( magic + 1, std::memory_order_release );
             m_tail = ( m_tail + 1 ) % QueryCount;
         }
+
+        {
+            int64_t tgpu;
+            glGetInteger64v( GL_TIMESTAMP, &tgpu );
+            int64_t tcpu = Profiler::GetTime();
+
+            Magic magic;
+            auto& token = s_token.ptr;
+            auto& tail = token->get_tail_index();
+            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            item->hdr.type = QueueType::GpuResync;
+            item->gpuResync.cpuTime = tcpu;
+            item->gpuResync.gpuTime = tgpu;
+            item->gpuResync.context = m_context;
+            tail.store( magic + 1, std::memory_order_release );
+        }
     }
 
 private:

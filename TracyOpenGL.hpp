@@ -87,14 +87,15 @@ public:
 
         start %= QueryCount;
 
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+
         while( m_tail != start )
         {
             uint64_t time;
             glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
 
-            Magic magic;
-            auto& token = s_token.ptr;
-            auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::GpuTime;
             item->gpuTime.gpuTime = (int64_t)time;
@@ -108,9 +109,6 @@ public:
             glGetInteger64v( GL_TIMESTAMP, &tgpu );
             int64_t tcpu = Profiler::GetTime();
 
-            Magic magic;
-            auto& token = s_token.ptr;
-            auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             item->hdr.type = QueueType::GpuResync;
             item->gpuResync.cpuTime = tcpu;

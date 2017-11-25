@@ -2366,7 +2366,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 if( num > 1 )
                 {
                     ImGui::BeginTooltip();
-                    ImGui::Text( "Zones too small to display: %i", num );
+                    ImGui::Text( "Zones too small to display: %s", RealToString( num, true ) );
                     ImGui::Separator();
                     ImGui::Text( "Execution time: %s", TimeToString( rend - ev.start ) );
                     ImGui::EndTooltip();
@@ -2562,7 +2562,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 if( num > 1 )
                 {
                     ImGui::BeginTooltip();
-                    ImGui::Text( "Zones too small to display: %i", num );
+                    ImGui::Text( "Zones too small to display: %s", RealToString( num, true ) );
                     ImGui::Separator();
                     ImGui::Text( "Execution time: %s", TimeToString( rend - ev.gpuStart ) );
                     ImGui::EndTooltip();

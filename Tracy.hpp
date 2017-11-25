@@ -1,6 +1,7 @@
 #ifndef __TRACY_HPP__
 #define __TRACY_HPP__
 
+#include "common/TracyColor.hpp"
 #include "common/TracySystem.hpp"
 
 #ifndef TRACY_ENABLE

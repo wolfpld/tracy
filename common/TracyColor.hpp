@@ -3,7 +3,9 @@
 
 namespace tracy
 {
-enum class Color
+struct Color
+{
+enum ColorType
 {
     Snow = 0xfffafa,
     GhostWhite = 0xf8f8ff,
@@ -681,6 +683,7 @@ enum class Color
     RebeccaPurple = 0x663399,
     Silver = 0xc0c0c0,
     Teal = 0x008080,
+};
 };
 }
 

@@ -3090,6 +3090,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     ImGui::Text( "%s", GetThreadString( t ) );
                 }
                 ImGui::Unindent( ty );
+                ImGui::Separator();
+                ImGui::Text( "Lock events: %s", RealToString( v.second.timeline.size(), true ) );
                 ImGui::EndTooltip();
             }
             cnt++;

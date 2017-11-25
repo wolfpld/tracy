@@ -1089,6 +1089,10 @@ void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
 
     const auto nsz = sz - ( end - start );
 
+    color = ( ( color & 0x00FF0000 ) >> 16 ) |
+            ( ( color & 0x0000FF00 )       ) |
+            ( ( color & 0x000000FF ) << 16 );
+
     SourceLocation srcloc { nsz == 0 ? StringRef() : StringRef( StringRef::Idx, StoreString( end, nsz ).idx ), StringRef( StringRef::Idx, func.idx ), StringRef( StringRef::Idx, source.idx ), line, color };
     auto it = m_sourceLocationPayloadMap.find( &srcloc );
     if( it == m_sourceLocationPayloadMap.end() )

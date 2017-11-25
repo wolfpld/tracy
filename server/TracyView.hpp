@@ -124,6 +124,8 @@ private:
 
     const char* ShortenNamespace( const char* name ) const;
 
+    void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text );
+
     void DrawImpl();
     void DrawConnection();
     void DrawFrames();

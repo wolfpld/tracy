@@ -1551,6 +1551,12 @@ const char* View::ShortenNamespace( const char* name ) const
     }
 }
 
+void View::DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text )
+{
+    draw->AddText( pos + ImVec2( 1, 1 ), 0x88000000, text );
+    draw->AddText( pos, color, text );
+}
+
 void View::Draw()
 {
     s_instance->DrawImpl();
@@ -2392,7 +2398,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             if( tsz.x < px1 - px0 )
             {
                 const auto x = px0 + ( px1 - px0 - tsz.x ) / 2;
-                draw->AddText( wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
+                DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
             }
         }
         else
@@ -2465,22 +2471,22 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 if( x < 0 || x > w - tsz.x )
                 {
                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                    draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
+                    DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
                     ImGui::PopClipRect();
                 }
                 else if( ev.start == ev.end )
                 {
-                    draw->AddText( wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), 0xFFFFFFFF, zoneName );
+                    DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), 0xFFFFFFFF, zoneName );
                 }
                 else
                 {
-                    draw->AddText( wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
+                    DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
                 }
             }
             else
             {
                 ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                draw->AddText( wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
+                DrawTextContrast( draw, wpos + ImVec2( ( ev.start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
                 ImGui::PopClipRect();
             }
 
@@ -2593,7 +2599,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             if( tsz.x < px1 - px0 )
             {
                 const auto x = px0 + ( px1 - px0 - tsz.x ) / 2;
-                draw->AddText( wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
+                DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFF4488DD, tmp );
             }
         }
         else
@@ -2634,22 +2640,22 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 if( x < 0 || x > w - tsz.x )
                 {
                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                    draw->AddText( wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
+                    DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
                     ImGui::PopClipRect();
                 }
                 else if( ev.gpuStart == ev.gpuEnd )
                 {
-                    draw->AddText( wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), 0xFFFFFFFF, zoneName );
+                    DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), 0xFFFFFFFF, zoneName );
                 }
                 else
                 {
-                    draw->AddText( wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
+                    DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFFFFFFFF, zoneName );
                 }
             }
             else
             {
                 ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                draw->AddText( wpos + ImVec2( ( ev.gpuStart - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
+                DrawTextContrast( draw, wpos + ImVec2( ( ev.gpuStart - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
                 ImGui::PopClipRect();
             }
 
@@ -3082,7 +3088,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         {
             char buf[1024];
             sprintf( buf, "%" PRIu32 ": %s", v.first, GetString( srcloc.function ) );
-            draw->AddText( wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
+            DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
             {
                 ImGui::BeginTooltip();

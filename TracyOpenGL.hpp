@@ -64,7 +64,7 @@ public:
 
     void Collect()
     {
-        ZoneScopedC( 0x881111 );
+        ZoneScopedC( Color::Red4 );
 
         auto start = m_tail;
         auto end = m_head + QueryCount;

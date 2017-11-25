@@ -100,6 +100,7 @@ static inline void LuaRemove( char* script )
 
 #else
 
+#include "common/TracyColor.hpp"
 #include "common/TracySystem.hpp"
 #include "client/TracyProfiler.hpp"
 
@@ -111,7 +112,7 @@ namespace detail
 
 static inline int LuaZoneBegin( lua_State* L )
 {
-    const uint32_t color = 0x005588CC;
+    const uint32_t color = Color::DeepSkyBlue3;
 
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
@@ -152,7 +153,7 @@ static inline int LuaZoneBegin( lua_State* L )
 
 static inline int LuaZoneBeginN( lua_State* L )
 {
-    const uint32_t color = 0x005588CC;
+    const uint32_t color = Color::DeepSkyBlue3;
 
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );

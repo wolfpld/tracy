@@ -2910,7 +2910,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 if( condensed > 1 )
                 {
                     ImGui::BeginTooltip();
-                    ImGui::Text( "Multiple lock events (%" PRIu64 ")", condensed );
+                    ImGui::Text( "Multiple lock events (%s)", RealToString( condensed, true ) );
                     ImGui::EndTooltip();
                 }
                 else
@@ -3391,7 +3391,7 @@ void View::DrawZoneInfoWindow()
         const auto ty = ImGui::GetTextLineHeight();
         ImGui::Columns( 2 );
         ImGui::Separator();
-        ImGui::Text( "Child zones: %" PRIu64, ev.child.size() );
+        ImGui::Text( "Child zones: %s", RealToString( ev.child.size(), true ) );
         ImGui::NextColumn();
         ImGui::Text( "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::NextColumn();
@@ -3492,7 +3492,7 @@ void View::DrawGpuInfoWindow()
         const auto ty = ImGui::GetTextLineHeight();
         ImGui::Columns( 2 );
         ImGui::Separator();
-        ImGui::Text( "Child zones: %" PRIu64, ev.child.size() );
+        ImGui::Text( "Child zones: %s", RealToString( ev.child.size(), true ) );
         ImGui::NextColumn();
         ImGui::Text( "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::NextColumn();

@@ -54,8 +54,8 @@ public:
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         item->hdr.type = QueueType::GpuNewContext;
-        item->gpuNewContext.cputime = tcpu;
-        item->gpuNewContext.gputime = tgpu;
+        item->gpuNewContext.cpuTime = tcpu;
+        item->gpuNewContext.gpuTime = tgpu;
         item->gpuNewContext.thread = GetThreadHandle();
         item->gpuNewContext.context = m_context;
         item->gpuNewContext.accuracyBits = bits;

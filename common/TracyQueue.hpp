@@ -136,8 +136,8 @@ struct QueueMessage
 
 struct QueueGpuNewContext
 {
-    int64_t cputime;
-    int64_t gputime;
+    int64_t cpuTime;
+    int64_t gpuTime;
     uint64_t thread;
     uint16_t context;
     uint8_t accuracyBits;

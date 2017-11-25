@@ -844,7 +844,7 @@ void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     assert( m_gpuCtxMap.find( ev.context ) == m_gpuCtxMap.end() );
 
     auto gpu = m_slab.AllocInit<GpuCtxData>();
-    gpu->timeDiff = int64_t( ev.cputime * m_timerMul - ev.gputime );
+    gpu->timeDiff = int64_t( ev.cpuTime * m_timerMul - ev.gpuTime );
     gpu->thread = ev.thread;
     gpu->accuracyBits = ev.accuracyBits;
     gpu->count = 0;

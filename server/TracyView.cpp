@@ -1,5 +1,6 @@
 #ifdef _MSC_VER
 #  include <winsock2.h>
+#  include <intrin.h>
 #else
 #  include <sys/time.h>
 #endif
@@ -2745,10 +2746,10 @@ static inline bool AreOtherWaiting( uint64_t bitlist, uint8_t thread )
 
 enum class LockState
 {
-    Nothing,
-    HasLock,            // green
-    HasBlockingLock,    // yellow
-    WaitLock            // red
+    Nothing         = 1 << 0,
+    HasLock         = 1 << 1,   // green
+    HasBlockingLock = 1 << 2,   // yellow
+    WaitLock        = 1 << 3,   // red
 };
 
 static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::iterator& it, const Vector<LockEvent*>::iterator& end, LockState state, LockState& nextState, uint8_t thread )
@@ -2848,20 +2849,22 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
 
 static LockState CombineLockState( LockState state, LockState next )
 {
-    switch( state )
+    unsigned val = (unsigned)state | (unsigned)next;
+
+#ifdef _MSC_VER
+    DWORD ret;
+    _BitScanReverse( &ret, val );
+    return (LockState)( 1 << ret );
+#else
+    unsigned ret = 1;
+    val >>= 1;
+    while( val )
     {
-    case LockState::WaitLock:
-        return LockState::WaitLock;
-    case LockState::HasBlockingLock:
-        return next == LockState::WaitLock ? next : state;
-    case LockState::HasLock:
-        return next == LockState::Nothing ? state : next;
-    case LockState::Nothing:
-        return next;
-    default:
-        assert( false );
-        return LockState::Nothing;
+        ret <<= 1;
+        val >>= 1;
     }
+    return (LockState)ret;
+#endif
 }
 
 int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset, LockHighlight& highlight )

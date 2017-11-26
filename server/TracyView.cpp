@@ -1989,10 +1989,15 @@ bool View::DrawZoneFrames()
             if( tw == 0 )
             {
                 char buf[128];
-                auto txt = TimeToString( m_zvStart - m_frames[0] );
-                sprintf( buf, "+%s", txt );
-                draw->AddText( wpos + ImVec2( x, round( ty * 0.5 ) ), 0x66FFFFFF, buf );
-                tw = ImGui::CalcTextSize( buf ).x;
+                const auto t = m_zvStart - m_frames[0];
+                auto txt = TimeToString( t );
+                if( t >= 0 )
+                {
+                    sprintf( buf, "+%s", txt );
+                    txt = buf;
+                }
+                draw->AddText( wpos + ImVec2( x, round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                tw = ImGui::CalcTextSize( txt ).x;
             }
             else if( x > tx + tw + ty * 2 )
             {

@@ -3307,7 +3307,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                             break;
                         }
                     }
-                    std::sort( tmpvec, dst, [] ( const auto& l, const auto& r ) { return l < r; } );
+                    std::sort( tmpvec, dst );
 
                     draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( tmpvec[0] - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), 0xFF44DDDD );
 

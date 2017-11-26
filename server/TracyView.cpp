@@ -1963,14 +1963,59 @@ bool View::DrawZoneFrames()
     const auto wh = ImGui::GetContentRegionAvail().y;
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetFontSize();
+    const auto fy = round( h * 1.5 );
 
-    ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, h ) );
+    ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, h * 2.5 ) );
     bool hover = ImGui::IsItemHovered();
 
     auto timespan = m_zvEnd - m_zvStart;
     auto pxns = w / double( timespan );
 
     if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
+
+    {
+        const auto nspx = 1.0 / pxns;
+        const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
+        const auto step = pow( 10, scale );
+
+        const auto dx = step * pxns;
+        double x = 0;
+        int tw = 0;
+        int tx = 0;
+        int64_t tt = 0;
+        while( x < w )
+        {
+            draw->AddLine( wpos + ImVec2( x, 0 ), wpos + ImVec2( x, round( ty * 0.5 ) ), 0x66FFFFFF );
+            if( tw == 0 )
+            {
+                char buf[128];
+                auto txt = TimeToString( m_zvStart - m_frames[0] );
+                sprintf( buf, "+%s", txt );
+                draw->AddText( wpos + ImVec2( x, round( ty * 0.5 ) ), 0x66FFFFFF, buf );
+                tw = ImGui::CalcTextSize( buf ).x;
+            }
+            else if( x > tx + tw + ty * 2 )
+            {
+                tx = x;
+                auto txt = TimeToString( tt );
+                draw->AddText( wpos + ImVec2( x, round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                tw = ImGui::CalcTextSize( txt ).x;
+            }
+
+            for( int i=1; i<5; i++ )
+            {
+                draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, round( ty * 0.25 ) ), 0x33FFFFFF );
+            }
+            draw->AddLine( wpos + ImVec2( x + 5 * dx / 10, 0 ), wpos + ImVec2( x + 5 * dx / 10, round( ty * 0.375 ) ), 0x33FFFFFF );
+            for( int i=6; i<10; i++ )
+            {
+                draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, round( ty * 0.25 ) ), 0x33FFFFFF );
+            }
+
+            x += dx;
+            tt += step;
+        }
+    }
 
     m_zvStartNext = 0;
 
@@ -1989,7 +2034,7 @@ bool View::DrawZoneFrames()
         const auto fend = (int64_t)GetFrameEnd( i );
         const auto fsz = pxns * ftime;
 
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, ty ) ) )
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, fy ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, fy + ty ) ) )
         {
             ImGui::BeginTooltip();
             ImGui::Text( "%s", GetFrameText( i, ftime ) );
@@ -2026,22 +2071,22 @@ bool View::DrawZoneFrames()
 
             if( fbegin >= m_zvStart )
             {
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, ty - 1 ), color );
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, fy + 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, fy + ty - 1 ), color );
             }
             if( fend <= m_zvEnd )
             {
-                draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, ty - 1 ), color );
+                draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, fy + 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, fy + ty - 1 ), color );
             }
             if( fsz - 5 > tx )
             {
                 const auto part = ( fsz - 5 - tx ) / 2;
-                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fbegin - m_zvStart ) * pxns + part ), round( ty / 2 ) ), color );
-                draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), color, buf );
-                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 + part + tx ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
+                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), fy + round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fbegin - m_zvStart ) * pxns + part ), fy + round( ty / 2 ) ), color );
+                draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, fy ), color, buf );
+                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 + part + tx ), fy + round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), fy + round( ty / 2 ) ), color );
             }
             else
             {
-                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
+                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), fy + round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), fy + round( ty / 2 ) ), color );
             }
         }
     }

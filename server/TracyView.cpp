@@ -2746,10 +2746,10 @@ static inline bool AreOtherWaiting( uint64_t bitlist, uint8_t thread )
 
 enum class LockState
 {
-    Nothing         = 1 << 0,
-    HasLock         = 1 << 1,   // green
-    HasBlockingLock = 1 << 2,   // yellow
-    WaitLock        = 1 << 3,   // red
+    Nothing,
+    HasLock,            // green
+    HasBlockingLock,    // yellow
+    WaitLock            // red
 };
 
 static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::iterator& it, const Vector<LockEvent*>::iterator& end, LockState state, LockState& nextState, uint8_t thread )
@@ -2849,22 +2849,7 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
 
 static LockState CombineLockState( LockState state, LockState next )
 {
-    unsigned val = (unsigned)state | (unsigned)next;
-
-#ifdef _MSC_VER
-    DWORD ret;
-    _BitScanReverse( &ret, val );
-    return (LockState)( 1 << ret );
-#else
-    unsigned ret = 1;
-    val >>= 1;
-    while( val )
-    {
-        ret <<= 1;
-        val >>= 1;
-    }
-    return (LockState)ret;
-#endif
+    return (LockState)std::max( (int)state, (int)next );
 }
 
 int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset, LockHighlight& highlight )

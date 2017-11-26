@@ -3165,6 +3165,9 @@ enum { PlotHeight = 100 };
 
 int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 {
+    enum { MaxPoints = 512 };
+    float tmpvec[MaxPoints*2];
+
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -3287,12 +3290,10 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 {
                     prevx = it;
 
-                    enum { MaxPoints = 512 };
                     skip = rsz / MaxPoints;
                     const auto skip1 = std::max<ptrdiff_t>( 1, skip );
                     const auto sz = rsz / skip1 + 1;
                     assert( sz <= MaxPoints*2 );
-                    float tmpvec[MaxPoints*2];
 
                     auto dst = tmpvec;
                     for(;;)

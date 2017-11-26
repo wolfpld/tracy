@@ -3246,12 +3246,6 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 }
             }
 
-            {
-                char tmp[64];
-                sprintf( tmp, "%s", RealToString( max, true ) );
-                draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
-            }
-
             const auto revrange = 1.0 / ( max - min );
 
             if( it == vec.begin() )
@@ -3334,12 +3328,13 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 }
             }
 
+            char tmp[64];
+            sprintf( tmp, "%s", RealToString( max, true ) );
+            DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
             offset += PlotHeight - ty;
-            {
-                char tmp[64];
-                sprintf( tmp, "%s", RealToString( min, true ) );
-                draw->AddText( wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
-            }
+            sprintf( tmp, "%s", RealToString( min, true ) );
+            DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
+
             draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
             offset += ty;
         }

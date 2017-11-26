@@ -826,8 +826,7 @@ void View::ProcessMessage( const QueueMessage& ev )
     assert( it != m_pendingCustomStrings.end() );
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = int64_t( ev.time * m_timerMul );
-    msg->ref.isidx = true;
-    msg->ref.stridx = it->second.idx;
+    msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
     InsertMessageData( msg, ev.thread );
     m_pendingCustomStrings.erase( it );
 }
@@ -837,8 +836,7 @@ void View::ProcessMessageLiteral( const QueueMessage& ev )
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = int64_t( ev.time * m_timerMul );
-    msg->ref.isidx = false;
-    msg->ref.strptr = ev.text;
+    msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     InsertMessageData( msg, ev.thread );
 }
 

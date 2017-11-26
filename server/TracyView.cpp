@@ -2155,7 +2155,7 @@ void View::DrawZones()
     // gpu zones
     if( m_drawGpuZones )
     {
-        for( int i=0; i<m_gpuData.size(); i++ )
+        for( size_t i=0; i<m_gpuData.size(); i++ )
         {
             auto& v = m_gpuData[i];
 

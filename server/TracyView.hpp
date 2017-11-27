@@ -36,6 +36,15 @@ class View
         typedef tracy::power_of_two_hash_policy hash_policy;
     };
 
+    struct Animation
+    {
+        bool active = false;
+        int64_t start0, start1;
+        int64_t end0, end1;
+        double progress;
+        double lenMod;
+    };
+
 public:
     View() : View( "127.0.0.1" ) {}
     View( const char* addr );
@@ -228,9 +237,6 @@ private:
     int64_t m_zvStart;
     int64_t m_zvEnd;
 
-    int64_t m_zvStartNext;
-    int64_t m_zvEndNext;
-
     int64_t m_delay;
     int64_t m_resolution;
     double m_timerMul;
@@ -266,6 +272,7 @@ private:
     bool m_onlyContendedLocks;
 
     Namespace m_namespace;
+    Animation m_zoomAnim;
 
     bool m_terminate;
 };

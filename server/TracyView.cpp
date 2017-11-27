@@ -1597,11 +1597,22 @@ void View::DrawImpl()
     if( m_showOptions ) DrawOptions();
     if( m_showMessages ) DrawMessages();
 
-    if( m_zvStartNext != 0 )
+    if( m_zoomAnim.active )
     {
-        m_zvStart = m_zvStartNext;
-        m_zvEnd = m_zvEndNext;
-        m_pause = true;
+        const auto& io = ImGui::GetIO();
+        m_zoomAnim.progress += io.DeltaTime * m_zoomAnim.lenMod;
+        if( m_zoomAnim.progress >= 1.f )
+        {
+            m_zoomAnim.active = false;
+            m_zvStart = m_zoomAnim.start1;
+            m_zvEnd = m_zoomAnim.end1;
+        }
+        else
+        {
+            const auto v = sqrt( sin( M_PI_2 * m_zoomAnim.progress ) );
+            m_zvStart = int64_t( m_zoomAnim.start0 + ( m_zoomAnim.start1 - m_zoomAnim.start0 ) * v );
+            m_zvEnd = int64_t( m_zoomAnim.end0 + ( m_zoomAnim.end1 - m_zoomAnim.end0 ) * v );
+        }
     }
 }
 
@@ -2022,8 +2033,6 @@ bool View::DrawZoneFrames()
             tt += step;
         }
     }
-
-    m_zvStartNext = 0;
 
     const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
     if( zitbegin == m_frames.end() ) return hover;
@@ -2541,7 +2550,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             {
                 ZoneTooltip( ev );
 
-                if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) )
+                if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( ev );
                 }
@@ -2709,7 +2718,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             {
                 ZoneTooltip( ev );
 
-                if( m_zvStartNext == 0 && ImGui::IsMouseClicked( 2 ) )
+                if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( ev );
                 }
@@ -3732,8 +3741,18 @@ void View::ZoomToZone( const GpuEvent& ev )
 
 void View::ZoomToRange( int64_t start, int64_t end )
 {
-    m_zvStartNext = start;
-    m_zvEndNext = end;
+    m_pause = true;
+    m_zoomAnim.active = true;
+    m_zoomAnim.start0 = m_zvStart;
+    m_zoomAnim.start1 = start;
+    m_zoomAnim.end0 = m_zvEnd;
+    m_zoomAnim.end1 = end;
+    m_zoomAnim.progress = 0;
+
+    const auto d0 = double( m_zoomAnim.end0 - m_zoomAnim.start0 );
+    const auto d1 = double( m_zoomAnim.end1 - m_zoomAnim.start1 );
+    const auto diff = d0>d1 ? d0/d1 : d1/d0;
+    m_zoomAnim.lenMod = 10.0 / log10( diff );
 }
 
 void View::ZoneTooltip( const ZoneEvent& ev )

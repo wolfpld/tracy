@@ -125,3 +125,5 @@ While the data collection is very lightweight, it is not completely free. Each r
 ![](doc/cost.png)
 
 Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.
+
+You may use named colors predefined in `common/TracyColor.hpp` (included by `Tracy.hpp`). Visual reference: [wikipedia](https://en.wikipedia.org/wiki/X11_color_names).

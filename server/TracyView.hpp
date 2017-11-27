@@ -154,6 +154,8 @@ private:
 
     void ZoomToZone( const ZoneEvent& ev );
     void ZoomToZone( const GpuEvent& ev );
+    void ZoomToRange( int64_t start, int64_t end );
+
     void ZoneTooltip( const ZoneEvent& ev );
     void ZoneTooltip( const GpuEvent& ev );
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;

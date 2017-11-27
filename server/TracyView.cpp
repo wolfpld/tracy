@@ -2050,8 +2050,7 @@ bool View::DrawZoneFrames()
 
             if( ImGui::IsMouseClicked( 2 ) )
             {
-                m_zvStartNext = fbegin;
-                m_zvEndNext = fend;
+                ZoomToRange( fbegin, fend );
                 m_pause = true;
             }
         }
@@ -2422,8 +2421,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
 
                     if( ImGui::IsMouseClicked( 2 ) && rend - ev.start > 0 )
                     {
-                        m_zvStartNext = ev.start;
-                        m_zvEndNext = rend;
+                        ZoomToRange( ev.start, rend );
                     }
                 }
                 else
@@ -2618,8 +2616,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
 
                     if( ImGui::IsMouseClicked( 2 ) && rend - ev.gpuStart > 0 )
                     {
-                        m_zvStartNext = ev.gpuStart;
-                        m_zvEndNext = rend;
+                        ZoomToRange( ev.gpuStart, rend );
                     }
                 }
                 else
@@ -3631,8 +3628,7 @@ void View::DrawMessages()
         {
             m_pause = true;
             const auto hr = std::max<uint64_t>( 1, ( m_zvEnd - m_zvStart ) / 2 );
-            m_zvStart = v->time - hr;
-            m_zvEnd = v->time + hr;
+            ZoomToRange( v->time - hr, v->time + hr );
         }
     }
     ImGui::End();
@@ -3724,15 +3720,19 @@ void View::ZoomToZone( const ZoneEvent& ev )
 {
     const auto end = GetZoneEnd( ev );
     if( end - ev.start <= 0 ) return;
-    m_zvStartNext = ev.start;
-    m_zvEndNext = end;
+    ZoomToRange( ev.start, end );
 }
 
 void View::ZoomToZone( const GpuEvent& ev )
 {
     const auto end = GetZoneEnd( ev );
     if( end - ev.gpuStart <= 0 ) return;
-    m_zvStartNext = ev.gpuStart;
+    ZoomToRange( ev.gpuStart, end );
+}
+
+void View::ZoomToRange( int64_t start, int64_t end )
+{
+    m_zvStartNext = start;
     m_zvEndNext = end;
 }
 

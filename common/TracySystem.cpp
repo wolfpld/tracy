@@ -68,7 +68,7 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
     {
     }
 #  endif
-#elif defined _GNU_SOURCE
+#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__
     const auto sz = strlen( name );
     if( sz <= 15 )
     {
@@ -133,7 +133,7 @@ const char* GetThreadName( uint64_t id )
         }
     }
 #    endif
-#  elif defined _GNU_SOURCE && !defined __ANDROID__
+#  elif defined _GNU_SOURCE && !defined __ANDROID__ && !defined __EMSCRIPTEN__
     if( pthread_getname_np( (pthread_t)id, buf, 256 ) == 0 )
     {
         return buf;

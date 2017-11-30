@@ -3586,6 +3586,14 @@ void View::DrawOptions()
     const auto tw = ImGui::GetFontSize();
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
     ImGui::Checkbox( "Draw GPU zones", &m_drawGpuZones );
+    ImGui::Indent( tw );
+    for( size_t i=0; i<m_gpuData.size(); i++ )
+    {
+        char buf[1024];
+        sprintf( buf, "GPU context %zu", i );
+        ImGui::Checkbox( buf , &m_gpuData[i]->visible );
+    }
+    ImGui::Unindent( tw );
     ImGui::Checkbox( "Draw CPU zones", &m_drawZones );
     int ns = (int)m_namespace;
     ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None\0" );

@@ -168,6 +168,7 @@ struct GpuCtxData
     Vector<GpuCtxResync> resync;
     uint8_t accuracyBits;
     bool showFull;
+    bool visible;
 };
 
 struct LockMap

@@ -357,6 +357,7 @@ View::View( FileRead& f )
         f.Read( &ctx->count, sizeof( ctx->count ) );
         ReadTimeline( f, ctx->timeline );
         ctx->showFull = true;
+        ctx->visible = true;
         m_gpuData.push_back( ctx );
     }
 
@@ -851,6 +852,7 @@ void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     gpu->accuracyBits = ev.accuracyBits;
     gpu->count = 0;
     gpu->showFull = true;
+    gpu->visible = true;
     m_gpuData.push_back( gpu );
     m_gpuCtxMap.emplace( ev.context, gpu );
 }
@@ -2167,6 +2169,7 @@ void View::DrawZones()
         for( size_t i=0; i<m_gpuData.size(); i++ )
         {
             auto& v = m_gpuData[i];
+            if( !v->visible ) continue;
 
             draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
 

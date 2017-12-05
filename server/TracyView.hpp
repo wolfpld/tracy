@@ -115,7 +115,6 @@ private:
     void UpdateLockCount( LockMap& lockmap, size_t pos );
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
-    void InsertPlot( PlotData* plot, PlotItem* item );
     void HandlePlotName( uint64_t name, char* str, size_t sz );
     void HandlePostponedPlots();
 

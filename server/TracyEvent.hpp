@@ -202,8 +202,8 @@ struct PlotData
     double max;
     bool showFull;
     bool visible;
-    Vector<PlotItem*> data;
-    Vector<PlotItem*> postpone;
+    Vector<PlotItem> data;
+    Vector<PlotItem> postpone;
     uint64_t postponeTime;
 };
 

@@ -373,13 +373,8 @@ View::View( FileRead& f )
         pd->visible = true;
         uint64_t psz;
         f.Read( &psz, sizeof( psz ) );
-        pd->data.reserve( psz );
-        for( uint64_t j=0; j<psz; j++ )
-        {
-            auto item = m_slab.Alloc<PlotItem>();
-            f.Read( item, sizeof( PlotItem ) );
-            pd->data.push_back( item );
-        }
+        pd->data.reserve_and_use( psz );
+        f.Read( pd->data.data(), psz * sizeof( PlotItem ) );
         m_plots.push_back( pd );
     }
 }
@@ -1294,28 +1289,17 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
 
 void View::InsertPlot( PlotData* plot, int64_t time, double val )
 {
-    auto item = m_slab.Alloc<PlotItem>();
-    item->time = time;
-    item->val = val;
-    InsertPlot( plot, item );
-}
-
-void View::InsertPlot( PlotData* plot, PlotItem* item )
-{
-    const auto& time = item->time;
-    const auto& val = item->val;
-
     if( plot->data.empty() )
     {
         plot->min = val;
         plot->max = val;
-        plot->data.push_back( item );
+        plot->data.push_back( { time, val } );
     }
-    else if( plot->data.back()->time < time )
+    else if( plot->data.back().time < time )
     {
         if( plot->min > val ) plot->min = val;
         else if( plot->max < val ) plot->max = val;
-        plot->data.push_back_non_empty( item );
+        plot->data.push_back_non_empty( { time, val } );
     }
     else
     {
@@ -1324,11 +1308,11 @@ void View::InsertPlot( PlotData* plot, PlotItem* item )
         if( plot->postpone.empty() )
         {
             plot->postponeTime = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-            plot->postpone.push_back( item );
+            plot->postpone.push_back( { time, val } );
         }
         else
         {
-            plot->postpone.push_back_non_empty( item );
+            plot->postpone.push_back_non_empty( { time, val } );
         }
     }
 }
@@ -1355,8 +1339,9 @@ void View::HandlePlotName( uint64_t name, char* str, size_t sz )
         const auto& pp = pit->second->data;
         for( auto& v : pp )
         {
-            InsertPlot( plot, v );
+            InsertPlot( plot, v.time, v.val );
         }
+        // TODO what happens with the source data here?
     }
 
     m_pendingPlots.erase( pit );
@@ -1370,13 +1355,13 @@ void View::HandlePostponedPlots()
         if( src.empty() ) continue;
         if( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count() - plot->postponeTime < 100 ) continue;
         auto& dst = plot->data;
-        std::sort( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l->time < r->time; } );
-        const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front()->time, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+        std::sort( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
+        const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );
         const auto dsd = std::distance( dst.begin(), ds ) ;
-        const auto de = std::lower_bound( ds, dst.end(), src.back()->time, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+        const auto de = std::lower_bound( ds, dst.end(), src.back().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );
         const auto ded = std::distance( dst.begin(), de );
         dst.insert( de, src.begin(), src.end() );
-        std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l->time < r->time; } );
+        std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
         src.clear();
     }
 }
@@ -3194,7 +3179,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 v->showFull = !v->showFull;
             }
 
-            const auto tr = v->data.back()->time - v->data.front()->time;
+            const auto tr = v->data.back().time - v->data.front().time;
 
             ImGui::BeginTooltip();
             ImGui::Text( "Plot \"%s\"", txt );
@@ -3206,8 +3191,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             ImGui::Text( "Time range: %s", TimeToString( tr ) );
             ImGui::Text( "Data/second: %s", RealToString( double( v->data.size() ) / tr * 1000000000ll, true ) );
 
-            const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back()->time - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l->time < r; } );
-            const auto tr10 = v->data.back()->time - (*it)->time;
+            const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back().time - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+            const auto tr10 = v->data.back().time - it->time;
             if( tr10 != 0 )
             {
                 ImGui::Text( "D/s (10s): %s", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ll, true ) );
@@ -3221,14 +3206,14 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
         if( v->showFull )
         {
             auto& vec = v->data;
-            auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
-            auto end = std::lower_bound( it, vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+            auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+            auto end = std::lower_bound( it, vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l.time < r; } );
 
             if( end != vec.end() ) end++;
             if( it != vec.begin() ) it--;
 
-            double min = (*it)->val;
-            double max = (*it)->val;
+            double min = it->val;
+            double max = it->val;
             if( std::distance( it, end ) > 1000000 )
             {
                 min = v->min;
@@ -3240,8 +3225,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 ++tmp;
                 while( tmp != end )
                 {
-                    if( (*tmp)->val < min ) min = (*tmp)->val;
-                    else if( (*tmp)->val > max ) max = (*tmp)->val;
+                    if( tmp->val < min ) min = tmp->val;
+                    else if( tmp->val > max ) max = tmp->val;
                     ++tmp;
                 }
             }
@@ -3250,9 +3235,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
             if( it == vec.begin() )
             {
-                const auto x = ( (*it)->time - m_zvStart ) * pxns;
-                const auto y = PlotHeight - ( (*it)->val - min ) * revrange * PlotHeight;
-                DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, (*it)->val, 0, false );
+                const auto x = ( it->time - m_zvStart ) * pxns;
+                const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
+                DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it->val, 0, false );
             }
 
             auto prevx = it;
@@ -3261,21 +3246,21 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             ptrdiff_t skip = 0;
             while( it < end )
             {
-                const auto x0 = ( (*prevx)->time - m_zvStart ) * pxns;
-                const auto x1 = ( (*it)->time - m_zvStart ) * pxns;
-                const auto y0 = PlotHeight - ( (*prevy)->val - min ) * revrange * PlotHeight;
-                const auto y1 = PlotHeight - ( (*it)->val - min ) * revrange * PlotHeight;
+                const auto x0 = ( prevx->time - m_zvStart ) * pxns;
+                const auto x1 = ( it->time - m_zvStart ) * pxns;
+                const auto y0 = PlotHeight - ( prevy->val - min ) * revrange * PlotHeight;
+                const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
 
                 draw->AddLine( wpos + ImVec2( x0, offset + y0 ), wpos + ImVec2( x1, offset + y1 ), 0xFF44DDDD );
 
                 const auto rx = skip == 0 ? 2.0 : ( skip == 1 ? 2.5 : 4.0 );
 
-                auto range = std::upper_bound( it, end, int64_t( (*it)->time + nspx * rx ), [] ( const auto& l, const auto& r ) { return l < r->time; } );
+                auto range = std::upper_bound( it, end, int64_t( it->time + nspx * rx ), [] ( const auto& l, const auto& r ) { return l < r.time; } );
                 assert( range > it );
                 const auto rsz = std::distance( it, range );
                 if( rsz == 1 )
                 {
-                    DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, (*it)->val, (*prevy)->val, false );
+                    DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it->val, prevy->val, false );
                     prevx = it;
                     prevy = it;
                     ++it;
@@ -3292,7 +3277,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                     auto dst = tmpvec;
                     for(;;)
                     {
-                        *dst++ = float( (*it)->val );
+                        *dst++ = float( it->val );
                         if( std::distance( it, range ) > skip1 )
                         {
                             it += skip1;
@@ -4016,10 +4001,7 @@ void View::Write( FileWrite& f )
         f.Write( &plot->max, sizeof( plot->max ) );
         sz = plot->data.size();
         f.Write( &sz, sizeof( sz ) );
-        for( auto& item : plot->data )
-        {
-            f.Write( item, sizeof( PlotItem ) );
-        }
+        f.Write( plot->data.data(), sizeof( PlotItem ) * sz );
     }
 }
 

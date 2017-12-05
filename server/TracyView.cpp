@@ -302,6 +302,7 @@ View::View( FileRead& f )
             lockmap.threadList.emplace_back( t );
         }
         f.Read( &tsz, sizeof( tsz ) );
+        lockmap.timeline.reserve( tsz );
         for( uint64_t i=0; i<tsz; i++ )
         {
             auto lev = m_slab.Alloc<LockEvent>();

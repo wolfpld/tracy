@@ -176,6 +176,12 @@ public:
         Realloc();
     }
 
+    void reserve_and_use( size_t sz )
+    {
+        reserve( sz );
+        m_size = sz;
+    }
+
     void clear()
     {
         m_size = 0;

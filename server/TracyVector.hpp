@@ -57,7 +57,8 @@ public:
     bool empty() const { return m_size == 0; }
     size_t size() const { return m_size; }
 
-    const T* data() { return m_ptr; };
+    T* data() { return m_ptr; }
+    const T* data() const { return m_ptr; };
 
     T* begin() { return m_ptr; }
     const T* begin() const { return m_ptr; }

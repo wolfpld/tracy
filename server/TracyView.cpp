@@ -2729,14 +2729,19 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     return maxdepth;
 }
 
-static inline bool IsThreadWaiting( uint64_t bitlist, uint8_t thread )
+static inline uint64_t GetThreadBit( uint8_t thread )
 {
-    return ( bitlist & ( uint64_t( 1 ) << thread ) ) != 0;
+    return uint64_t( 1 ) << thread;
 }
 
-static inline bool AreOtherWaiting( uint64_t bitlist, uint8_t thread )
+static inline bool IsThreadWaiting( uint64_t bitlist, uint64_t threadBit )
 {
-    return ( bitlist & ~( uint64_t( 1 ) << thread ) ) != 0;
+    return ( bitlist & threadBit ) != 0;
+}
+
+static inline bool AreOtherWaiting( uint64_t bitlist, uint64_t threadBit )
+{
+    return ( bitlist & ~threadBit ) != 0;
 }
 
 enum class LockState
@@ -2749,6 +2754,8 @@ enum class LockState
 
 static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::iterator& it, const Vector<LockEvent*>::iterator& end, LockState state, LockState& nextState, uint8_t thread )
 {
+    const auto threadBit = GetThreadBit( thread );
+
     nextState = LockState::Nothing;
     auto next = it;
     next++;
@@ -2762,10 +2769,10 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
             {
                 if( (*next)->lockingThread == thread )
                 {
-                    nextState = AreOtherWaiting( (*next)->waitList, thread ) ? LockState::HasBlockingLock : LockState::HasLock;
+                    nextState = AreOtherWaiting( (*next)->waitList, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
                     break;
                 }
-                else if( IsThreadWaiting( (*next)->waitList, thread ) )
+                else if( IsThreadWaiting( (*next)->waitList, threadBit ) )
                 {
                     nextState = LockState::WaitLock;
                     break;
@@ -2785,7 +2792,7 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
             }
             if( (*next)->waitList != 0 )
             {
-                if( AreOtherWaiting( (*next)->waitList, thread ) )
+                if( AreOtherWaiting( (*next)->waitList, threadBit ) )
                 {
                     nextState = LockState::HasBlockingLock;
                 }
@@ -2820,7 +2827,7 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
         {
             if( (*next)->lockingThread == thread )
             {
-                nextState = AreOtherWaiting( (*next)->waitList, thread ) ? LockState::HasBlockingLock : LockState::HasLock;
+                nextState = AreOtherWaiting( (*next)->waitList, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
                 break;
             }
             if( (*next)->lockingThread != (*it)->lockingThread )
@@ -2870,6 +2877,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         if( tl.back()->time < m_zvStart ) continue;
 
         const auto thread = it->second;
+        const auto threadBit = GetThreadBit( thread );
 
         auto vbegin = std::lower_bound( tl.begin(), tl.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
         const auto vend = std::lower_bound( vbegin, tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
@@ -2885,9 +2893,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         {
             if( (*vbegin)->lockingThread == thread )
             {
-                state = AreOtherWaiting( (*vbegin)->waitList, thread ) ? LockState::HasBlockingLock : LockState::HasLock;
+                state = AreOtherWaiting( (*vbegin)->waitList, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
             }
-            else if( IsThreadWaiting( (*vbegin)->waitList, thread ) )
+            else if( IsThreadWaiting( (*vbegin)->waitList, threadBit ) )
             {
                 state = LockState::WaitLock;
             }
@@ -3006,7 +3014,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     {
                         if( (*it)->thread == thread )
                         {
-                            if( ( (*it)->lockingThread == thread || IsThreadWaiting( (*it)->waitList, thread ) ) && (*it)->srcloc != 0 )
+                            if( ( (*it)->lockingThread == thread || IsThreadWaiting( (*it)->waitList, threadBit ) ) && (*it)->srcloc != 0 )
                             {
                                 markloc = (*it)->srcloc;
                                 break;
@@ -3037,7 +3045,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         }
                         if( (*vbegin)->waitList != 0 )
                         {
-                            assert( !AreOtherWaiting( (*next)->waitList, thread ) );
+                            assert( !AreOtherWaiting( (*next)->waitList, threadBit ) );
                             ImGui::Text( "Recursive lock acquire in thread." );
                         }
                         break;

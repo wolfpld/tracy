@@ -19,7 +19,7 @@
 #define TracyLockable( type, varname ) type varname;
 #define TracyLockableN( type, varname, desc ) type varname;
 #define LockableBase( type ) type
-#define LockMark(x)
+#define LockMark(x) (void)x;
 
 #define TracyPlot(x,y)
 

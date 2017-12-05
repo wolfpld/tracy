@@ -106,7 +106,7 @@ To mark a GPU zone use the `TracyGpuZone( name )` macro, where `name` is a strin
 
 You also need to periodically collect the GPU events using the `TracyGpuCollect` macro. A good place to do it is after swap buffers function call.
 
-GPU profiling is not supported on OSX, iOS (because Apple is unable to implement standards properly). Android devices do work, if GPU drivers are not broken. Disjoint events are not currently handled, so some readings may be a bit spotty.
+GPU profiling is not supported on OSX, iOS (because Apple is unable to implement standards properly). Android devices do work, if GPU drivers are not broken. Disjoint events are not currently handled, so some readings may be a bit spotty. NVIDIA drivers are unable to provide consistent timing results when two OpenGL contexts are used simultaneously.
 
 ## Good practices
 

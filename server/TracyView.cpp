@@ -3231,12 +3231,13 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
             {
                 auto tmp = it;
                 ++tmp;
-                while( tmp != end )
+                const auto sz = end - tmp;
+                for( size_t i=0; i<sz; i++ )
                 {
-                    if( tmp->val < min ) min = tmp->val;
-                    else if( tmp->val > max ) max = tmp->val;
-                    ++tmp;
+                    min = tmp[i].val < min ? tmp[i].val : min;
+                    max = tmp[i].val > max ? tmp[i].val : max;
                 }
+                tmp += sz;
             }
 
             const auto revrange = 1.0 / ( max - min );

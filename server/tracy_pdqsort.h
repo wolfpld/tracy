@@ -23,6 +23,8 @@
 #ifndef TRACY_PDQSORT_H
 #define TRACY_PDQSORT_H
 
+#include "../common/TracyForceInline.hpp"
+
 #include <algorithm>
 #include <cstddef>
 #include <functional>
@@ -61,7 +63,7 @@ namespace pdqsort_detail {
 
     // Returns floor(log2(n)), assumes n > 0.
     template<class T>
-    inline int log2(T n) {
+    tracy_force_inline int log2(T n) {
         int log = 0;
         while (n >>= 1) ++log;
         return log;
@@ -69,7 +71,7 @@ namespace pdqsort_detail {
 
     // Sorts [begin, end) using insertion sort with the given comparison function.
     template<class Iter, class Compare>
-    inline void insertion_sort(Iter begin, Iter end, Compare comp) {
+    tracy_force_inline void insertion_sort(Iter begin, Iter end, Compare comp) {
         typedef typename std::iterator_traits<Iter>::value_type T;
         if (begin == end) return;
 
@@ -92,7 +94,7 @@ namespace pdqsort_detail {
     // Sorts [begin, end) using insertion sort with the given comparison function. Assumes
     // *(begin - 1) is an element smaller than or equal to any element in [begin, end).
     template<class Iter, class Compare>
-    inline void unguarded_insertion_sort(Iter begin, Iter end, Compare comp) {
+    tracy_force_inline void unguarded_insertion_sort(Iter begin, Iter end, Compare comp) {
         typedef typename std::iterator_traits<Iter>::value_type T;
         if (begin == end) return;
 
@@ -116,7 +118,7 @@ namespace pdqsort_detail {
     // partial_insertion_sort_limit elements were moved, and abort sorting. Otherwise it will
     // successfully sort and return true.
     template<class Iter, class Compare>
-    inline bool partial_insertion_sort(Iter begin, Iter end, Compare comp) {
+    tracy_force_inline bool partial_insertion_sort(Iter begin, Iter end, Compare comp) {
         typedef typename std::iterator_traits<Iter>::value_type T;
         if (begin == end) return true;
         
@@ -143,20 +145,20 @@ namespace pdqsort_detail {
     }
 
     template<class Iter, class Compare>
-    inline void sort2(Iter a, Iter b, Compare comp) {
+    tracy_force_inline void sort2(Iter a, Iter b, Compare comp) {
         if (comp(*b, *a)) std::iter_swap(a, b);
     }
 
     // Sorts the elements *a, *b and *c using comparison function comp.
     template<class Iter, class Compare>
-    inline void sort3(Iter a, Iter b, Iter c, Compare comp) {
+    tracy_force_inline void sort3(Iter a, Iter b, Iter c, Compare comp) {
         sort2(a, b, comp);
         sort2(b, c, comp);
         sort2(a, b, comp);
     }
 
     template<class T>
-    inline T* align_cacheline(T* p) {
+    tracy_force_inline T* align_cacheline(T* p) {
 #if defined(UINTPTR_MAX)
         std::uintptr_t ip = reinterpret_cast<std::uintptr_t>(p);
 #else
@@ -167,7 +169,7 @@ namespace pdqsort_detail {
     }
 
     template<class Iter>
-    inline void swap_offsets(Iter first, Iter last,
+    tracy_force_inline void swap_offsets(Iter first, Iter last,
                              unsigned char* offsets_l, unsigned char* offsets_r,
                              int num, bool use_swaps) {
         typedef typename std::iterator_traits<Iter>::value_type T;
@@ -194,7 +196,7 @@ namespace pdqsort_detail {
     // pivot is a median of at least 3 elements and that [begin, end) is at least
     // insertion_sort_threshold long. Uses branchless partitioning.
     template<class Iter, class Compare>
-    inline std::pair<Iter, bool> partition_right_branchless(Iter begin, Iter end, Compare comp) {
+    tracy_force_inline std::pair<Iter, bool> partition_right_branchless(Iter begin, Iter end, Compare comp) {
         typedef typename std::iterator_traits<Iter>::value_type T;
 
         // Move pivot into local for speed.
@@ -333,7 +335,7 @@ namespace pdqsort_detail {
     // pivot is a median of at least 3 elements and that [begin, end) is at least
     // insertion_sort_threshold long.
     template<class Iter, class Compare>
-    inline std::pair<Iter, bool> partition_right(Iter begin, Iter end, Compare comp) {
+    tracy_force_inline std::pair<Iter, bool> partition_right(Iter begin, Iter end, Compare comp) {
         typedef typename std::iterator_traits<Iter>::value_type T;
         
         // Move pivot into local for speed.
@@ -377,7 +379,7 @@ namespace pdqsort_detail {
     // Since this is rarely used (the many equal case), and in that case pdqsort already has O(n)
     // performance, no block quicksort is applied here for simplicity.
     template<class Iter, class Compare>
-    inline Iter partition_left(Iter begin, Iter end, Compare comp) {
+    tracy_force_inline Iter partition_left(Iter begin, Iter end, Compare comp) {
         typedef typename std::iterator_traits<Iter>::value_type T;
 
         T pivot(PDQSORT_PREFER_MOVE(*begin));
@@ -522,7 +524,7 @@ inline void pdqsort_branchless(Iter begin, Iter end, Compare comp) {
 }
 
 template<class Iter>
-inline void pdqsort_branchless(Iter begin, Iter end) {
+tracy_force_inline void pdqsort_branchless(Iter begin, Iter end) {
     typedef typename std::iterator_traits<Iter>::value_type T;
     pdqsort_branchless(begin, end, std::less<T>());
 }

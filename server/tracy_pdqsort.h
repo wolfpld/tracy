@@ -29,13 +29,9 @@
 #include <utility>
 #include <iterator>
 
-#if __cplusplus >= 201103L
-    #include <cstdint>
-    #include <type_traits>
-    #define PDQSORT_PREFER_MOVE(x) std::move(x)
-#else
-    #define PDQSORT_PREFER_MOVE(x) (x)
-#endif
+#include <cstdint>
+#include <type_traits>
+#define PDQSORT_PREFER_MOVE(x) std::move(x)
 
 namespace tracy{
 
@@ -59,11 +55,9 @@ namespace pdqsort_detail {
 
     };
 
-#if __cplusplus >= 201103L
     template<class T> struct is_default_compare : std::false_type { };
     template<class T> struct is_default_compare<std::less<T>> : std::true_type { };
     template<class T> struct is_default_compare<std::greater<T>> : std::true_type { };
-#endif
 
     // Returns floor(log2(n)), assumes n > 0.
     template<class T>
@@ -163,7 +157,7 @@ namespace pdqsort_detail {
 
     template<class T>
     inline T* align_cacheline(T* p) {
-#if defined(UINTPTR_MAX) && __cplusplus >= 201103L
+#if defined(UINTPTR_MAX)
         std::uintptr_t ip = reinterpret_cast<std::uintptr_t>(p);
 #else
         std::size_t ip = reinterpret_cast<std::size_t>(p);
@@ -508,16 +502,10 @@ namespace pdqsort_detail {
 template<class Iter, class Compare>
 inline void pdqsort(Iter begin, Iter end, Compare comp) {
     if (begin == end) return;
-
-#if __cplusplus >= 201103L
     pdqsort_detail::pdqsort_loop<Iter, Compare,
         pdqsort_detail::is_default_compare<typename std::decay<Compare>::type>::value &&
         std::is_arithmetic<typename std::iterator_traits<Iter>::value_type>::value>(
         begin, end, comp, pdqsort_detail::log2(end - begin));
-#else
-    pdqsort_detail::pdqsort_loop<Iter, Compare, false>(
-        begin, end, comp, pdqsort_detail::log2(end - begin));
-#endif
 }
 
 template<class Iter>

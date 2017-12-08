@@ -155,6 +155,9 @@
     <ClInclude Include="..\..\..\common\TracyForceInline.hpp">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\server\tracy_pdqsort.h">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

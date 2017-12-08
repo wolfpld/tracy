@@ -18,6 +18,7 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "../common/TracyQueue.hpp"
+#include "tracy_pdqsort.h"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracyImGui.hpp"
@@ -3294,7 +3295,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                             break;
                         }
                     }
-                    std::sort( tmpvec, dst );
+                    pdqsort_branchless( tmpvec, dst );
 
                     draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( tmpvec[0] - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), 0xFF44DDDD );
 

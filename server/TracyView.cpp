@@ -2753,13 +2753,12 @@ enum class LockState
     WaitLock            // red
 };
 
-static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::iterator& it, const Vector<LockEvent*>::iterator& end, LockState state, LockState& nextState, uint64_t threadBit )
+static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::iterator& it, const Vector<LockEvent*>::iterator& end, LockState& nextState, uint64_t threadBit )
 {
-    nextState = LockState::Nothing;
     auto next = it;
     next++;
 
-    switch( state )
+    switch( nextState )
     {
     case LockState::Nothing:
         while( next < end )
@@ -2781,7 +2780,6 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
         }
         break;
     case LockState::HasLock:
-        nextState = LockState::HasLock;
         while( next < end )
         {
             if( (*next)->lockCount == 0 )
@@ -2805,7 +2803,6 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
         }
         break;
     case LockState::HasBlockingLock:
-        nextState = LockState::HasBlockingLock;
         while( next < end )
         {
             if( (*next)->lockCount == 0 )
@@ -2821,7 +2818,6 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
         }
         break;
     case LockState::WaitLock:
-        nextState = LockState::WaitLock;
         while( next < end )
         {
             if( GetThreadBit( (*next)->lockingThread ) == threadBit )
@@ -2905,7 +2901,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         {
             while( vbegin < vend && ( state == LockState::Nothing || ( m_onlyContendedLocks && state == LockState::HasLock ) ) )
             {
-                vbegin = GetNextLockEvent( vbegin, vend, state, state, threadBit );
+                vbegin = GetNextLockEvent( vbegin, vend, state, threadBit );
             }
             if( vbegin >= vend ) break;
 
@@ -2913,7 +2909,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             drawn = true;
 
             LockState drawState = state;
-            auto next = GetNextLockEvent( vbegin, vend, state, state, threadBit );
+            auto next = GetNextLockEvent( vbegin, vend, state, threadBit );
 
             const auto t0 = (*vbegin)->time;
             int64_t t1 = next == tl.end() ? GetLastTime() : (*next)->time;
@@ -2929,12 +2925,12 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 auto ns = state;
                 while( n < vend && ( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) )
                 {
-                    n = GetNextLockEvent( n, vend, ns, ns, threadBit );
+                    n = GetNextLockEvent( n, vend, ns, threadBit );
                 }
                 if( n >= vend ) break;
                 if( n == next )
                 {
-                    n = GetNextLockEvent( n, vend, ns, ns, threadBit );
+                    n = GetNextLockEvent( n, vend, ns, threadBit );
                 }
                 drawState = CombineLockState( drawState, state );
                 condensed++;

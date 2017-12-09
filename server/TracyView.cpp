@@ -812,6 +812,7 @@ void View::ProcessPlotData( const QueuePlotData& ev )
     }
 
     const auto time = int64_t( ev.time * m_timerMul );
+    m_lastTime = std::max( m_lastTime, time );
     switch( ev.type )
     {
     case PlotDataType::Double:
@@ -836,6 +837,7 @@ void View::ProcessMessage( const QueueMessage& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = int64_t( ev.time * m_timerMul );
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
+    m_lastTime = std::max( m_lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
     m_pendingCustomStrings.erase( it );
 }
@@ -846,6 +848,7 @@ void View::ProcessMessageLiteral( const QueueMessage& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = int64_t( ev.time * m_timerMul );
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
+    m_lastTime = std::max( m_lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
 }
 
@@ -880,6 +883,8 @@ void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
     zone->gpuEnd = -1;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
 
+    m_lastTime = std::max( m_lastTime, zone->cpuStart );
+
     auto timeline = &ctx->timeline;
     if( !ctx->stack.empty() )
     {
@@ -903,6 +908,7 @@ void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
     ctx->queue.push_back( zone );
 
     zone->cpuEnd = ev.cpuTime * m_timerMul;
+    m_lastTime = std::max( m_lastTime, zone->cpuEnd );
 }
 
 void View::ProcessGpuTime( const QueueGpuTime& ev )
@@ -915,11 +921,13 @@ void View::ProcessGpuTime( const QueueGpuTime& ev )
     if( zone->gpuStart == std::numeric_limits<int64_t>::max() )
     {
         zone->gpuStart = ctx->timeDiff + ev.gpuTime;
+        m_lastTime = std::max( m_lastTime, zone->gpuStart );
         ctx->count++;
     }
     else
     {
         zone->gpuEnd = ctx->timeDiff + ev.gpuTime;
+        m_lastTime = std::max( m_lastTime, zone->gpuEnd );
     }
 
     ctx->queue.erase( ctx->queue.begin() );
@@ -1216,6 +1224,8 @@ void View::NewZone( ZoneEvent* zone, uint64_t thread )
 
 void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
 {
+    m_lastTime = std::max( m_lastTime, lev->time );
+
     NoticeThread( thread );
 
     auto it = lockmap.threadMap.find( thread );

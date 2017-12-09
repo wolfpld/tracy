@@ -121,7 +121,6 @@ private:
     int64_t GetFrameTime( size_t idx ) const;
     int64_t GetFrameBegin( size_t idx ) const;
     int64_t GetFrameEnd( size_t idx ) const;
-    int64_t GetLastTime() const;
     int64_t GetZoneEnd( const ZoneEvent& ev ) const;
     int64_t GetZoneEnd( const GpuEvent& ev ) const;
     const char* GetString( uint64_t ptr ) const;
@@ -235,6 +234,7 @@ private:
 
     int64_t m_zvStart;
     int64_t m_zvEnd;
+    int64_t m_lastTime;
 
     int64_t m_delay;
     int64_t m_resolution;

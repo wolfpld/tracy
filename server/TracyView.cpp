@@ -139,6 +139,7 @@ View::View( const char* addr )
     , m_frameStart( 0 )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
+    , m_lastTime( 0 )
     , m_zvHeight( 0 )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
@@ -205,6 +206,7 @@ View::View( FileRead& f )
     f.Read( &m_delay, sizeof( m_delay ) );
     f.Read( &m_resolution, sizeof( m_resolution ) );
     f.Read( &m_timerMul, sizeof( m_timerMul ) );
+    f.Read( &m_lastTime, sizeof( m_lastTime ) );
 
     uint64_t sz;
     {
@@ -423,6 +425,7 @@ void View::Worker()
             m_timerMul = welcome.timerMul;
             m_frames.push_back( welcome.initBegin * m_timerMul );
             m_frames.push_back( welcome.initEnd * m_timerMul );
+            m_lastTime = m_frames.back();
             m_delay = welcome.delay * m_timerMul;
             m_resolution = welcome.resolution * m_timerMul;
 
@@ -642,6 +645,8 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
 
+    m_lastTime = std::max( m_lastTime, zone->start );
+
     NewZone( zone, ev.thread );
 }
 
@@ -657,6 +662,8 @@ void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     zone->srcloc = it->second;
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
+
+    m_lastTime = std::max( m_lastTime, zone->start );
 
     NewZone( zone, ev.thread );
 
@@ -677,15 +684,18 @@ void View::ProcessZoneEnd( const QueueZoneEnd& ev )
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_end = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     assert( zone->end >= zone->start );
+
+    m_lastTime = std::max( m_lastTime, zone->end );
 }
 
 void View::ProcessFrameMark( const QueueFrameMark& ev )
 {
     assert( !m_frames.empty() );
     const auto lastframe = m_frames.back();
-    const auto time = ev.time * m_timerMul;
+    const auto time = int64_t( ev.time * m_timerMul );
     assert( lastframe < time );
     m_frames.push_back_non_empty( time );
+    m_lastTime = std::max( m_lastTime, time );
 }
 
 void View::ProcessZoneText( const QueueZoneText& ev )
@@ -1376,8 +1386,7 @@ int64_t View::GetFrameTime( size_t idx ) const
     }
     else
     {
-        const auto last = GetLastTime();
-        return last == 0 ? 0 : last - m_frames.back();
+        return m_lastTime == 0 ? 0 : m_lastTime - m_frames.back();
     }
 }
 
@@ -1395,30 +1404,8 @@ int64_t View::GetFrameEnd( size_t idx ) const
     }
     else
     {
-        return GetLastTime();
+        return m_lastTime;
     }
-}
-
-int64_t View::GetLastTime() const
-{
-    int64_t last = 0;
-    if( !m_frames.empty() ) last = m_frames.back();
-    for( auto& v : m_threads )
-    {
-        if( !v->timeline.empty() )
-        {
-            auto ev = v->timeline.back();
-            if( ev->end == -1 )
-            {
-                if( ev->start > last ) last = ev->start;
-            }
-            else if( ev->end > last )
-            {
-                last = ev->end;
-            }
-        }
-    }
-    return last;
 }
 
 int64_t View::GetZoneEnd( const ZoneEvent& ev ) const
@@ -1573,7 +1560,7 @@ void View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Messages", ImVec2( 70, 0 ) ) ) m_showMessages = true;
     ImGui::SameLine();
-    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( GetLastTime() - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_zonesCnt, true ), TimeToString( m_delay ), TimeToString( m_resolution ) );
+    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( m_lastTime - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_zonesCnt, true ), TimeToString( m_delay ), TimeToString( m_resolution ) );
     DrawFrames();
     DrawZones();
     ImGui::End();
@@ -1744,7 +1731,7 @@ void View::DrawFrames()
         m_zvStart = m_frames[std::max( 0, (int)m_frames.size() - 4 )];
         if( m_frames.size() == 1 )
         {
-            m_zvEnd = GetLastTime();
+            m_zvEnd = m_lastTime;
         }
         else
         {
@@ -2912,7 +2899,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             auto next = GetNextLockEvent( vbegin, vend, state, threadBit );
 
             const auto t0 = (*vbegin)->time;
-            int64_t t1 = next == tl.end() ? GetLastTime() : (*next)->time;
+            int64_t t1 = next == tl.end() ? m_lastTime : (*next)->time;
             const auto px0 = std::max( pxend, ( t0 - m_zvStart ) * pxns );
             auto tx0 = px0;
             double px1 = ( t1 - m_zvStart ) * pxns;
@@ -2934,7 +2921,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 }
                 drawState = CombineLockState( drawState, state );
                 condensed++;
-                const auto t2 = n == tl.end() ? GetLastTime() : (*n)->time;
+                const auto t2 = n == tl.end() ? m_lastTime : (*n)->time;
                 const auto px2 = ( t2 - m_zvStart ) * pxns;
                 if( px2 - px1 > MinVisSize ) break;
                 if( drawState != ns && px2 - px0 > MinVisSize && !( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) ) break;
@@ -3880,6 +3867,7 @@ void View::Write( FileWrite& f )
     f.Write( &m_delay, sizeof( m_delay ) );
     f.Write( &m_resolution, sizeof( m_resolution ) );
     f.Write( &m_timerMul, sizeof( m_timerMul ) );
+    f.Write( &m_lastTime, sizeof( m_lastTime ) );
 
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );

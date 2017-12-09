@@ -2913,8 +2913,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             drawn = true;
 
             LockState drawState = state;
-            LockState nextState;
-            auto next = GetNextLockEvent( vbegin, vend, state, nextState, threadBit );
+            auto next = GetNextLockEvent( vbegin, vend, state, state, threadBit );
 
             const auto t0 = (*vbegin)->time;
             int64_t t1 = next == tl.end() ? GetLastTime() : (*next)->time;
@@ -2927,7 +2926,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             {
                 if( next >= vend || px1 - tx0 > MinVisSize ) break;
                 auto n = next;
-                auto ns = nextState;
+                auto ns = state;
                 while( n < vend && ( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) )
                 {
                     n = GetNextLockEvent( n, vend, ns, ns, threadBit );
@@ -2937,7 +2936,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 {
                     n = GetNextLockEvent( n, vend, ns, ns, threadBit );
                 }
-                drawState = CombineLockState( drawState, nextState );
+                drawState = CombineLockState( drawState, state );
                 condensed++;
                 const auto t2 = n == tl.end() ? GetLastTime() : (*n)->time;
                 const auto px2 = ( t2 - m_zvStart ) * pxns;
@@ -2947,7 +2946,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 tx0 = px1;
                 px1 = px2;
                 next = n;
-                nextState = ns;
+                state = ns;
             }
 
             pxend = std::max( { px1, px0+MinVisSize, px0 + pxns * 0.5 } );
@@ -3119,7 +3118,6 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             }
 
             vbegin = next;
-            state = nextState;
         }
 
         if( drawn )

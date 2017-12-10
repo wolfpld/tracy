@@ -3067,7 +3067,14 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
                     case LockState::WaitLock:
                     {
-                        ImGui::Text( "Thread \"%s\" is blocked by other thread:", GetThreadString( tid ) );
+                        if( (*vbegin)->lockCount > 0 )
+                        {
+                            ImGui::Text( "Thread \"%s\" is blocked by other thread:", GetThreadString( tid ) );
+                        }
+                        else
+                        {
+                            ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", GetThreadString( tid ) );
+                        }
                         ImGui::Indent( ty );
                         ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[(*vbegin)->lockingThread] ) );
                         ImGui::Unindent( ty );

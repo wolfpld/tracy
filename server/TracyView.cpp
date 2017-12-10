@@ -3156,6 +3156,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 case LockType::Lockable:
                     ImGui::Text( "Type: lockable" );
                     break;
+                case LockType::SharedLockable:
+                    ImGui::Text( "Type: shared lockable" );
+                    break;
                 default:
                     assert( false );
                     break;

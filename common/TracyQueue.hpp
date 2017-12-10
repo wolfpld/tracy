@@ -82,7 +82,8 @@ struct QueueZoneText
 
 enum class LockType : uint8_t
 {
-    Lockable
+    Lockable,
+    SharedLockable
 };
 
 struct QueueLockAnnounce

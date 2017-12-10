@@ -141,7 +141,7 @@ void DepthTest()
 
 static TracySharedLockable( std::shared_mutex, sharedMutex );
 
-void SharedRead()
+void SharedRead1()
 {
     for(;;)
     {
@@ -151,11 +151,31 @@ void SharedRead()
     }
 }
 
-void SharedWrite()
+void SharedRead2()
 {
     for(;;)
     {
-        std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 6 ) );
+        std::shared_lock<SharedLockableBase( std::shared_mutex )> lock( sharedMutex );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    }
+}
+
+void SharedWrite1()
+{
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 3 ) );
+        std::unique_lock<SharedLockableBase( std::shared_mutex )> lock( sharedMutex );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
+    }
+}
+
+void SharedWrite2()
+{
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
         std::unique_lock<SharedLockableBase( std::shared_mutex )> lock( sharedMutex );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
@@ -176,10 +196,11 @@ int main()
     auto t11 = std::thread( DepthTest );
     auto t12 = std::thread( RecLock );
     auto t13 = std::thread( RecLock );
-    auto t14 = std::thread( SharedRead );
-    auto t15 = std::thread( SharedRead );
-    auto t16 = std::thread( SharedRead );
-    auto t17 = std::thread( SharedWrite );
+    auto t14 = std::thread( SharedRead1 );
+    auto t15 = std::thread( SharedRead1 );
+    auto t16 = std::thread( SharedRead2 );
+    auto t17 = std::thread( SharedWrite1 );
+    auto t18 = std::thread( SharedWrite2 );
 
     tracy::SetThreadName( t1, "First thread" );
     tracy::SetThreadName( t2, "Second thread" );
@@ -198,6 +219,7 @@ int main()
     tracy::SetThreadName( t15, "Shared read 2" );
     tracy::SetThreadName( t16, "Shared read 3" );
     tracy::SetThreadName( t17, "Shared write 1" );
+    tracy::SetThreadName( t18, "Shared write 2" );
 
     for(;;)
     {

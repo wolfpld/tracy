@@ -793,7 +793,7 @@ void View::ProcessLockSharedWait( const QueueLockWait& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = LockEvent::Type::Wait;
+    lev->type = LockEvent::Type::WaitShared;
     lev->srcloc = 0;
 
     auto it = m_lockMap.find( ev.id );
@@ -811,7 +811,7 @@ void View::ProcessLockSharedObtain( const QueueLockObtain& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = LockEvent::Type::Obtain;
+    lev->type = LockEvent::Type::ObtainShared;
     lev->srcloc = 0;
 
     assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
@@ -822,7 +822,7 @@ void View::ProcessLockSharedRelease( const QueueLockRelease& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = LockEvent::Type::Release;
+    lev->type = LockEvent::Type::ReleaseShared;
     lev->srcloc = 0;
 
     assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
@@ -847,7 +847,9 @@ void View::ProcessLockMark( const QueueLockMark& ev )
             switch( (*it)->type )
             {
             case LockEvent::Type::Obtain:
+            case LockEvent::Type::ObtainShared:
             case LockEvent::Type::Wait:
+            case LockEvent::Type::WaitShared:
                 (*it)->srcloc = ShrinkSourceLocation( ev.srcloc );
                 return;
             default:
@@ -1334,12 +1336,14 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
     uint8_t lockingThread;
     uint8_t lockCount;
     uint64_t waitList;
+    uint64_t sharedList;
 
     if( pos == 0 )
     {
         lockingThread = 0;
         lockCount = 0;
         waitList = 0;
+        sharedList = 0;
     }
     else
     {
@@ -1347,9 +1351,12 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
         lockingThread = tl->lockingThread;
         lockCount = tl->lockCount;
         waitList = tl->waitList;
+        sharedList = tl->sharedList;
     }
     const auto end = timeline.size();
 
+    // ObtainShared and ReleaseShared should assert on lockCount == 0, but
+    // due to the async retrieval of data from threads that not possible.
     while( pos != end )
     {
         const auto tl = timeline[pos];
@@ -1357,6 +1364,7 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
         switch( (LockEvent::Type)tl->type )
         {
         case LockEvent::Type::Wait:
+        case LockEvent::Type::WaitShared:
             waitList |= tbit;
             break;
         case LockEvent::Type::Obtain:
@@ -1370,11 +1378,22 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
             assert( lockCount > 0 );
             lockCount--;
             break;
+        case LockEvent::Type::ObtainShared:
+            assert( ( waitList & tbit ) != 0 );
+            assert( ( sharedList & tbit ) == 0 );
+            waitList &= ~tbit;
+            sharedList |= tbit;
+            break;
+        case LockEvent::Type::ReleaseShared:
+            assert( ( sharedList & tbit ) != 0 );
+            sharedList &= ~tbit;
+            break;
         default:
             break;
         }
         tl->lockingThread = lockingThread;
         tl->waitList = waitList;
+        tl->sharedList = sharedList;
         tl->lockCount = lockCount;
         assert( tl->lockingThread == lockingThread );
         pos++;

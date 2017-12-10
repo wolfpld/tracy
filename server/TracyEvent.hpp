@@ -100,7 +100,10 @@ struct LockEvent
     {
         Wait,
         Obtain,
-        Release
+        Release,
+        WaitShared,
+        ObtainShared,
+        ReleaseShared
     };
 
     int64_t time;
@@ -110,6 +113,7 @@ struct LockEvent
     Type type;
     uint8_t lockCount;
     uint64_t waitList;
+    uint64_t sharedList;
 };
 
 enum { LockEventSize = sizeof( LockEvent ) };

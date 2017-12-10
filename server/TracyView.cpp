@@ -1361,7 +1361,7 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
             break;
         case LockEvent::Type::Obtain:
             assert( lockCount < std::numeric_limits<uint8_t>::max() );
-            assert( ( waitList | tbit ) != 0 );
+            assert( ( waitList & tbit ) != 0 );
             waitList &= ~tbit;
             lockingThread = tl->thread;
             lockCount++;

@@ -205,17 +205,64 @@ public:
 
     tracy_force_inline void lock_shared()
     {
+        const auto thread = GetThreadHandle();
+        {
+            Magic magic;
+            auto& token = s_token.ptr;
+            auto& tail = token->get_tail_index();
+            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            item->hdr.type = QueueType::LockWait;
+            item->lockWait.id = m_id;
+            item->lockWait.thread = thread;
+            item->lockWait.time = Profiler::GetTime();
+            tail.store( magic + 1, std::memory_order_release );
+        }
+
         m_lockable.lock_shared();
+
+        {
+            Magic magic;
+            auto& token = s_token.ptr;
+            auto& tail = token->get_tail_index();
+            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            item->hdr.type = QueueType::LockObtain;
+            item->lockObtain.id = m_id;
+            item->lockObtain.thread = thread;
+            item->lockObtain.time = Profiler::GetTime();
+            tail.store( magic + 1, std::memory_order_release );
+        }
     }
 
     tracy_force_inline void unlock_shared()
     {
         m_lockable.unlock_shared();
+
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        item->hdr.type = QueueType::LockRelease;
+        item->lockRelease.id = m_id;
+        item->lockRelease.thread = GetThreadHandle();
+        item->lockRelease.time = Profiler::GetTime();
+        tail.store( magic + 1, std::memory_order_release );
     }
 
     tracy_force_inline bool try_lock_shared()
     {
         const auto ret = m_lockable.try_lock_shared();
+        if( ret )
+        {
+            Magic magic;
+            auto& token = s_token.ptr;
+            auto& tail = token->get_tail_index();
+            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            item->hdr.type = QueueType::LockObtain;
+            item->lockObtain.id = (uint64_t)&m_lockable;
+            item->lockObtain.thread = GetThreadHandle();
+            item->lockObtain.time = Profiler::GetTime();
+            tail.store( magic + 1, std::memory_order_release );
+        }
         return ret;
     }
 

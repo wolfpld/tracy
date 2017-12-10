@@ -3151,6 +3151,15 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
             {
                 ImGui::BeginTooltip();
+                switch( v.second.type )
+                {
+                case LockType::Lockable:
+                    ImGui::Text( "Type: lockable" );
+                    break;
+                default:
+                    assert( false );
+                    break;
+                }
                 ImGui::Text( "Thread list:" );
                 ImGui::Separator();
                 ImGui::Indent( ty );

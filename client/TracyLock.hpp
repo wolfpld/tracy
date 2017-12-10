@@ -211,7 +211,7 @@ public:
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-            item->hdr.type = QueueType::LockWait;
+            item->hdr.type = QueueType::LockSharedWait;
             item->lockWait.id = m_id;
             item->lockWait.thread = thread;
             item->lockWait.time = Profiler::GetTime();
@@ -225,7 +225,7 @@ public:
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-            item->hdr.type = QueueType::LockObtain;
+            item->hdr.type = QueueType::LockSharedObtain;
             item->lockObtain.id = m_id;
             item->lockObtain.thread = thread;
             item->lockObtain.time = Profiler::GetTime();
@@ -241,7 +241,7 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::LockRelease;
+        item->hdr.type = QueueType::LockSharedRelease;
         item->lockRelease.id = m_id;
         item->lockRelease.thread = GetThreadHandle();
         item->lockRelease.time = Profiler::GetTime();
@@ -257,7 +257,7 @@ public:
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-            item->hdr.type = QueueType::LockObtain;
+            item->hdr.type = QueueType::LockSharedObtain;
             item->lockObtain.id = (uint64_t)&m_lockable;
             item->lockObtain.thread = GetThreadHandle();
             item->lockObtain.time = Profiler::GetTime();

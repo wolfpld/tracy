@@ -602,6 +602,15 @@ void View::Process( const QueueItem& ev )
     case QueueType::LockRelease:
         ProcessLockRelease( ev.lockRelease );
         break;
+    case QueueType::LockSharedWait:
+        ProcessLockSharedWait( ev.lockWait );
+        break;
+    case QueueType::LockSharedObtain:
+        ProcessLockSharedObtain( ev.lockObtain );
+        break;
+    case QueueType::LockSharedRelease:
+        ProcessLockSharedRelease( ev.lockRelease );
+        break;
     case QueueType::LockMark:
         ProcessLockMark( ev.lockMark );
         break;
@@ -770,6 +779,46 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
 }
 
 void View::ProcessLockRelease( const QueueLockRelease& ev )
+{
+    auto lev = m_slab.Alloc<LockEvent>();
+    lev->time = ev.time * m_timerMul;
+    lev->type = (uint8_t)LockEvent::Type::Release;
+    lev->srcloc = 0;
+
+    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
+    InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
+}
+
+void View::ProcessLockSharedWait( const QueueLockWait& ev )
+{
+    auto lev = m_slab.Alloc<LockEvent>();
+    lev->time = ev.time * m_timerMul;
+    lev->type = (uint8_t)LockEvent::Type::Wait;
+    lev->srcloc = 0;
+
+    auto it = m_lockMap.find( ev.id );
+    if( it == m_lockMap.end() )
+    {
+        LockMap lm;
+        lm.valid = false;
+        it = m_lockMap.emplace( ev.id, std::move( lm ) ).first;
+    }
+
+    InsertLockEvent( it->second, lev, ev.thread );
+}
+
+void View::ProcessLockSharedObtain( const QueueLockObtain& ev )
+{
+    auto lev = m_slab.Alloc<LockEvent>();
+    lev->time = ev.time * m_timerMul;
+    lev->type = (uint8_t)LockEvent::Type::Obtain;
+    lev->srcloc = 0;
+
+    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
+    InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
+}
+
+void View::ProcessLockSharedRelease( const QueueLockRelease& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;

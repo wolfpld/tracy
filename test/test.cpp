@@ -139,14 +139,14 @@ void DepthTest()
     }
 }
 
-static std::shared_mutex sharedMutex;
+static TracySharedLockable( std::shared_mutex, sharedMutex );
 
 void SharedRead()
 {
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
-        std::shared_lock<std::shared_mutex> lock( sharedMutex );
+        std::shared_lock<SharedLockableBase( std::shared_mutex )> lock( sharedMutex );
         std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
     }
 }
@@ -156,7 +156,7 @@ void SharedWrite()
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
-        std::unique_lock<std::shared_mutex> lock( sharedMutex );
+        std::unique_lock<SharedLockableBase( std::shared_mutex )> lock( sharedMutex );
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
 }

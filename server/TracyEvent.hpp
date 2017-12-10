@@ -112,6 +112,7 @@ struct LockEvent
     uint8_t lockingThread;
     Type type;
     uint8_t lockCount;
+    uint64_t waitShared;
     uint64_t waitList;
     uint64_t sharedList;
 };

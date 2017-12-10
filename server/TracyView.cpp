@@ -753,7 +753,7 @@ void View::ProcessLockWait( const QueueLockWait& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = (uint8_t)LockEvent::Type::Wait;
+    lev->type = LockEvent::Type::Wait;
     lev->srcloc = 0;
 
     auto it = m_lockMap.find( ev.id );
@@ -771,7 +771,7 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = (uint8_t)LockEvent::Type::Obtain;
+    lev->type = LockEvent::Type::Obtain;
     lev->srcloc = 0;
 
     assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
@@ -782,7 +782,7 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = (uint8_t)LockEvent::Type::Release;
+    lev->type = LockEvent::Type::Release;
     lev->srcloc = 0;
 
     assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
@@ -793,7 +793,7 @@ void View::ProcessLockSharedWait( const QueueLockWait& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = (uint8_t)LockEvent::Type::Wait;
+    lev->type = LockEvent::Type::Wait;
     lev->srcloc = 0;
 
     auto it = m_lockMap.find( ev.id );
@@ -811,7 +811,7 @@ void View::ProcessLockSharedObtain( const QueueLockObtain& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = (uint8_t)LockEvent::Type::Obtain;
+    lev->type = LockEvent::Type::Obtain;
     lev->srcloc = 0;
 
     assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
@@ -822,7 +822,7 @@ void View::ProcessLockSharedRelease( const QueueLockRelease& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
     lev->time = ev.time * m_timerMul;
-    lev->type = (uint8_t)LockEvent::Type::Release;
+    lev->type = LockEvent::Type::Release;
     lev->srcloc = 0;
 
     assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
@@ -844,7 +844,7 @@ void View::ProcessLockMark( const QueueLockMark& ev )
         --it;
         if( (*it)->thread == thread )
         {
-            switch( (LockEvent::Type)(*it)->type )
+            switch( (*it)->type )
             {
             case LockEvent::Type::Obtain:
             case LockEvent::Type::Wait:

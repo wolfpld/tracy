@@ -107,7 +107,7 @@ struct LockEvent
     int32_t srcloc;
     uint8_t thread;
     uint8_t lockingThread;
-    uint8_t type;
+    Type type;
     uint8_t lockCount;
     uint64_t waitList;
 };

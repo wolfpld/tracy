@@ -18,9 +18,18 @@ class Lockable
 public:
     tracy_force_inline Lockable( const SourceLocation* srcloc )
         : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
-        , m_lckloc( (uint64_t)srcloc )
     {
         assert( m_id != std::numeric_limits<uint32_t>::max() );
+
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        item->hdr.type = QueueType::LockAnnounce;
+        item->lockAnnounce.id = m_id;
+        item->lockAnnounce.lckloc = (uint64_t)srcloc;
+        item->lockAnnounce.type = LockType::Lockable;
+        tail.store( magic + 1, std::memory_order_release );
     }
 
     Lockable( const Lockable& ) = delete;
@@ -38,7 +47,6 @@ public:
             item->lockWait.id = m_id;
             item->lockWait.thread = thread;
             item->lockWait.time = Profiler::GetTime();
-            item->lockWait.lckloc = m_lckloc;
             tail.store( magic + 1, std::memory_order_release );
         }
 
@@ -106,7 +114,6 @@ public:
 private:
     T m_lockable;
     uint32_t m_id;
-    uint64_t m_lckloc;
 };
 
 };

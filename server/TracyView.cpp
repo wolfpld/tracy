@@ -296,6 +296,8 @@ View::View( FileRead& f )
         uint64_t tsz;
         f.Read( &id, sizeof( id ) );
         f.Read( &lockmap.srcloc, sizeof( lockmap.srcloc ) );
+        f.Read( &lockmap.type, sizeof( lockmap.type ) );
+        f.Read( &lockmap.valid, sizeof( lockmap.valid ) );
         f.Read( &tsz, sizeof( tsz ) );
         for( uint64_t i=0; i<tsz; i++ )
         {
@@ -588,6 +590,9 @@ void View::Process( const QueueItem& ev )
     case QueueType::ZoneText:
         ProcessZoneText( ev.zoneText );
         break;
+    case QueueType::LockAnnounce:
+        ProcessLockAnnounce( ev.lockAnnounce );
+        break;
     case QueueType::LockWait:
         ProcessLockWait( ev.lockWait );
         break;
@@ -713,6 +718,28 @@ void View::ProcessZoneText( const QueueZoneText& ev )
     m_pendingCustomStrings.erase( it );
 }
 
+void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
+{
+    auto it = m_lockMap.find( ev.id );
+    if( it == m_lockMap.end() )
+    {
+        LockMap lm;
+        lm.srcloc = ShrinkSourceLocation( ev.lckloc );
+        lm.type = ev.type;
+        lm.visible = true;
+        lm.valid = true;
+        m_lockMap.emplace( ev.id, std::move( lm ) );
+    }
+    else
+    {
+        it->second.srcloc = ShrinkSourceLocation( ev.lckloc );
+        it->second.type = ev.type;
+        it->second.visible = true;
+        it->second.valid = true;
+    }
+    CheckSourceLocation( ev.lckloc );
+}
+
 void View::ProcessLockWait( const QueueLockWait& ev )
 {
     auto lev = m_slab.Alloc<LockEvent>();
@@ -724,16 +751,10 @@ void View::ProcessLockWait( const QueueLockWait& ev )
     if( it == m_lockMap.end() )
     {
         LockMap lm;
-        lm.srcloc = ShrinkSourceLocation( ev.lckloc );
-        lm.visible = true;
+        lm.valid = false;
         it = m_lockMap.emplace( ev.id, std::move( lm ) ).first;
-        CheckSourceLocation( ev.lckloc );
     }
-    else if( it->second.srcloc == 0 )
-    {
-        it->second.srcloc = ShrinkSourceLocation( ev.lckloc );
-        CheckSourceLocation( ev.lckloc );
-    }
+
     InsertLockEvent( it->second, lev, ev.thread );
 }
 
@@ -744,6 +765,7 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
     lev->type = (uint8_t)LockEvent::Type::Obtain;
     lev->srcloc = 0;
 
+    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
     InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
 }
 
@@ -754,6 +776,7 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
     lev->type = (uint8_t)LockEvent::Type::Release;
     lev->srcloc = 0;
 
+    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
     InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
 }
 
@@ -2859,7 +2882,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     for( auto& v : m_lockMap )
     {
         auto& lockmap = v.second;
-        if( !lockmap.visible ) continue;
+        if( !lockmap.visible || !lockmap.valid ) continue;
 
         auto it = lockmap.threadMap.find( tid );
         if( it == lockmap.threadMap.end() ) continue;
@@ -3597,9 +3620,12 @@ void View::DrawOptions()
     ImGui::Indent( tw );
     for( auto& l : m_lockMap )
     {
-        char buf[1024];
-        sprintf( buf, "%" PRIu32 ": %s", l.first, GetString( GetSourceLocation( l.second.srcloc ).function ) );
-        ImGui::Checkbox( buf , &l.second.visible );
+        if( l.second.valid )
+        {
+            char buf[1024];
+            sprintf( buf, "%" PRIu32 ": %s", l.first, GetString( GetSourceLocation( l.second.srcloc ).function ) );
+            ImGui::Checkbox( buf , &l.second.visible );
+        }
     }
     ImGui::Unindent( tw );
     ImGui::Separator();
@@ -3951,6 +3977,8 @@ void View::Write( FileWrite& f )
     {
         f.Write( &v.first, sizeof( v.first ) );
         f.Write( &v.second.srcloc, sizeof( v.second.srcloc ) );
+        f.Write( &v.second.type, sizeof( v.second.type ) );
+        f.Write( &v.second.valid, sizeof( v.second.valid ) );
         sz = v.second.threadList.size();
         f.Write( &sz, sizeof( sz ) );
         for( auto& t : v.second.threadList )

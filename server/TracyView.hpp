@@ -74,6 +74,7 @@ private:
     tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
     tracy_force_inline void ProcessZoneText( const QueueZoneText& ev );
+    tracy_force_inline void ProcessLockAnnounce( const QueueLockAnnounce& ev );
     tracy_force_inline void ProcessLockWait( const QueueLockWait& ev );
     tracy_force_inline void ProcessLockObtain( const QueueLockObtain& ev );
     tracy_force_inline void ProcessLockRelease( const QueueLockRelease& ev );

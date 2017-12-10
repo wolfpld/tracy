@@ -1,6 +1,7 @@
 #include <chrono>
 #include <mutex>
 #include <thread>
+#include <shared_mutex>
 #include "../Tracy.hpp"
 #include "../common/TracySystem.hpp"
 
@@ -138,6 +139,28 @@ void DepthTest()
     }
 }
 
+static std::shared_mutex sharedMutex;
+
+void SharedRead()
+{
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+        std::shared_lock<std::shared_mutex> lock( sharedMutex );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
+    }
+}
+
+void SharedWrite()
+{
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
+        std::unique_lock<std::shared_mutex> lock( sharedMutex );
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+    }
+}
+
 int main()
 {
     auto t1 = std::thread( TestFunction );
@@ -153,6 +176,10 @@ int main()
     auto t11 = std::thread( DepthTest );
     auto t12 = std::thread( RecLock );
     auto t13 = std::thread( RecLock );
+    auto t14 = std::thread( SharedRead );
+    auto t15 = std::thread( SharedRead );
+    auto t16 = std::thread( SharedRead );
+    auto t17 = std::thread( SharedWrite );
 
     tracy::SetThreadName( t1, "First thread" );
     tracy::SetThreadName( t2, "Second thread" );
@@ -167,6 +194,10 @@ int main()
     tracy::SetThreadName( t11, "Depth test" );
     tracy::SetThreadName( t12, "Recursive mtx 1" );
     tracy::SetThreadName( t13, "Recursive mtx 2" );
+    tracy::SetThreadName( t14, "Shared read 1" );
+    tracy::SetThreadName( t15, "Shared read 2" );
+    tracy::SetThreadName( t16, "Shared read 3" );
+    tracy::SetThreadName( t17, "Shared write 1" );
 
     for(;;)
     {

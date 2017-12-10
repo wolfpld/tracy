@@ -1,6 +1,6 @@
 OPTFLAGS := -g3 -fmerge-constants
 CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE
-CXXFLAGS := $(CFLAGS) -std=gnu++11
+CXXFLAGS := $(CFLAGS) -std=gnu++17
 DEFINES +=
 INCLUDES :=
 LIBS := -lpthread

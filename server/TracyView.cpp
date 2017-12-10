@@ -2859,12 +2859,13 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
         {
             if( (*next)->lockCount != 0 )
             {
+                const auto wait = (*next)->waitList | (*next)->waitShared;
                 if( GetThreadBit( (*next)->lockingThread ) == threadBit )
                 {
-                    nextState = ( AreOtherWaiting( (*next)->waitList, threadBit ) || AreOtherWaiting( (*next)->waitShared, threadBit ) ) ? LockState::HasBlockingLock : LockState::HasLock;
+                    nextState = AreOtherWaiting( wait, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
                     break;
                 }
-                else if( IsThreadWaiting( (*next)->waitList, threadBit ) || IsThreadWaiting( (*next)->waitShared, threadBit ) )
+                else if( IsThreadWaiting( wait, threadBit ) )
                 {
                     nextState = LockState::WaitLock;
                     break;
@@ -2931,7 +2932,8 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
         {
             if( GetThreadBit( (*next)->lockingThread ) == threadBit )
             {
-                nextState = ( AreOtherWaiting( (*next)->waitList, threadBit ) || AreOtherWaiting( (*next)->waitShared, threadBit ) ) ? LockState::HasBlockingLock : LockState::HasLock;
+                const auto wait = (*next)->waitList | (*next)->waitShared;
+                nextState = AreOtherWaiting( wait, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
                 break;
             }
             if( IsThreadWaiting( (*next)->sharedList, threadBit ) )

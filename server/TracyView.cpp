@@ -2859,6 +2859,97 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
         {
             if( (*next)->lockCount != 0 )
             {
+                if( GetThreadBit( (*next)->lockingThread ) == threadBit )
+                {
+                    nextState = AreOtherWaiting( (*next)->waitList, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
+                    break;
+                }
+                else if( IsThreadWaiting( (*next)->waitList, threadBit ) )
+                {
+                    nextState = LockState::WaitLock;
+                    break;
+                }
+            }
+            next++;
+        }
+        break;
+    case LockState::HasLock:
+        while( next < end )
+        {
+            if( (*next)->lockCount == 0 )
+            {
+                nextState = LockState::Nothing;
+                break;
+            }
+            if( (*next)->waitList != 0 )
+            {
+                if( AreOtherWaiting( (*next)->waitList, threadBit ) )
+                {
+                    nextState = LockState::HasBlockingLock;
+                }
+                break;
+            }
+            if( (*next)->waitList != (*it)->waitList || (*next)->lockCount != (*it)->lockCount )
+            {
+                break;
+            }
+            next++;
+        }
+        break;
+    case LockState::HasBlockingLock:
+        while( next < end )
+        {
+            if( (*next)->lockCount == 0 )
+            {
+                nextState = LockState::Nothing;
+                break;
+            }
+            if( (*next)->waitList != (*it)->waitList || (*next)->lockCount != (*it)->lockCount )
+            {
+                break;
+            }
+            next++;
+        }
+        break;
+    case LockState::WaitLock:
+        while( next < end )
+        {
+            if( GetThreadBit( (*next)->lockingThread ) == threadBit )
+            {
+                nextState = AreOtherWaiting( (*next)->waitList, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
+                break;
+            }
+            if( (*next)->lockingThread != (*it)->lockingThread )
+            {
+                break;
+            }
+            if( (*next)->lockCount == 0 )
+            {
+                break;
+            }
+            next++;
+        }
+        break;
+    default:
+        assert( false );
+        break;
+    }
+
+    return next;
+}
+
+static Vector<LockEvent*>::iterator GetNextLockEventShared( const Vector<LockEvent*>::iterator& it, const Vector<LockEvent*>::iterator& end, LockState& nextState, uint64_t threadBit )
+{
+    auto next = it;
+    next++;
+
+    switch( nextState )
+    {
+    case LockState::Nothing:
+        while( next < end )
+        {
+            if( (*next)->lockCount != 0 )
+            {
                 const auto wait = (*next)->waitList | (*next)->waitShared;
                 if( GetThreadBit( (*next)->lockingThread ) == threadBit )
                 {
@@ -2987,6 +3078,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         assert( !tl.empty() );
         if( tl.back()->time < m_zvStart ) continue;
 
+        auto GetNextLockFunc = lockmap.type == LockType::Lockable ? GetNextLockEvent : GetNextLockEventShared;
+
         const auto thread = it->second;
         const auto threadBit = GetThreadBit( thread );
 
@@ -3000,24 +3093,41 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         const auto offset = _offset + ostep * cnt;
 
         LockState state = LockState::Nothing;
-        if( (*vbegin)->lockCount != 0 )
+        if( lockmap.type == LockType::Lockable )
         {
-            if( (*vbegin)->lockingThread == thread )
+            if( (*vbegin)->lockCount != 0 )
             {
-                state = ( AreOtherWaiting( (*vbegin)->waitList, threadBit ) || AreOtherWaiting( (*vbegin)->waitShared, threadBit ) ) ? LockState::HasBlockingLock : LockState::HasLock;
+                if( (*vbegin)->lockingThread == thread )
+                {
+                    state = AreOtherWaiting( (*vbegin)->waitList, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
+                }
+                else if( IsThreadWaiting( (*vbegin)->waitList, threadBit ) )
+                {
+                    state = LockState::WaitLock;
+                }
             }
-            else if( IsThreadWaiting( (*vbegin)->waitList, threadBit ) || IsThreadWaiting( (*vbegin)->waitShared, threadBit ) )
+        }
+        else
+        {
+            if( (*vbegin)->lockCount != 0 )
+            {
+                if( (*vbegin)->lockingThread == thread )
+                {
+                    state = ( AreOtherWaiting( (*vbegin)->waitList, threadBit ) || AreOtherWaiting( (*vbegin)->waitShared, threadBit ) ) ? LockState::HasBlockingLock : LockState::HasLock;
+                }
+                else if( IsThreadWaiting( (*vbegin)->waitList, threadBit ) || IsThreadWaiting( (*vbegin)->waitShared, threadBit ) )
+                {
+                    state = LockState::WaitLock;
+                }
+            }
+            else if( IsThreadWaiting( (*vbegin)->sharedList, threadBit ) )
+            {
+                state = (*vbegin)->waitList != 0 ? LockState::HasBlockingLock : LockState::HasLock;
+            }
+            else if( (*vbegin)->sharedList != 0 && IsThreadWaiting( (*vbegin)->waitList, threadBit ) )
             {
                 state = LockState::WaitLock;
             }
-        }
-        else if( IsThreadWaiting( (*vbegin)->sharedList, threadBit ) )
-        {
-            state = (*vbegin)->waitList != 0 ? LockState::HasBlockingLock : LockState::HasLock;
-        }
-        else if( (*vbegin)->sharedList != 0 && IsThreadWaiting( (*vbegin)->waitList, threadBit ) )
-        {
-            state = LockState::WaitLock;
         }
 
         double pxend = 0;
@@ -3025,7 +3135,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         {
             while( vbegin < vend && ( state == LockState::Nothing || ( m_onlyContendedLocks && state == LockState::HasLock ) ) )
             {
-                vbegin = GetNextLockEvent( vbegin, vend, state, threadBit );
+                vbegin = GetNextLockFunc( vbegin, vend, state, threadBit );
             }
             if( vbegin >= vend ) break;
 
@@ -3033,7 +3143,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             drawn = true;
 
             LockState drawState = state;
-            auto next = GetNextLockEvent( vbegin, vend, state, threadBit );
+            auto next = GetNextLockFunc( vbegin, vend, state, threadBit );
 
             const auto t0 = (*vbegin)->time;
             int64_t t1 = next == tl.end() ? m_lastTime : (*next)->time;
@@ -3049,12 +3159,12 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 auto ns = state;
                 while( n < vend && ( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) )
                 {
-                    n = GetNextLockEvent( n, vend, ns, threadBit );
+                    n = GetNextLockFunc( n, vend, ns, threadBit );
                 }
                 if( n >= vend ) break;
                 if( n == next )
                 {
-                    n = GetNextLockEvent( n, vend, ns, threadBit );
+                    n = GetNextLockFunc( n, vend, ns, threadBit );
                 }
                 drawState = CombineLockState( drawState, state );
                 condensed++;

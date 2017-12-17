@@ -3356,66 +3356,196 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         ImGui::Separator();
                     }
 
-                    switch( drawState )
+                    if( v.second.type == LockType::Lockable )
                     {
-                    case LockState::HasLock:
-                        if( (*vbegin)->lockCount == 1 )
+                        switch( drawState )
                         {
-                            ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
-                        }
-                        else
-                        {
-                            ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", GetThreadString( tid ), (*vbegin)->lockCount );
-                        }
-                        if( (*vbegin)->waitList != 0 )
-                        {
-                            assert( !AreOtherWaiting( (*next)->waitList, threadBit ) );
-                            ImGui::Text( "Recursive lock acquire in thread." );
-                        }
-                        break;
-                    case LockState::HasBlockingLock:
-                    {
-                        if( (*vbegin)->lockCount == 1 )
-                        {
-                            ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), TracyCountBits( (*vbegin)->waitList ) );
-                        }
-                        else
-                        {
-                            ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", GetThreadString( tid ), (*vbegin)->lockCount, TracyCountBits( (*vbegin)->waitList ) );
-                        }
-                        auto waitList = (*vbegin)->waitList;
-                        int t = 0;
-                        ImGui::Indent( ty );
-                        while( waitList != 0 )
-                        {
-                            if( waitList & 0x1 )
+                        case LockState::HasLock:
+                            if( (*vbegin)->lockCount == 1 )
                             {
-                                ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
                             }
-                            waitList >>= 1;
-                            t++;
+                            else
+                            {
+                                ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", GetThreadString( tid ), (*vbegin)->lockCount );
+                            }
+                            if( (*vbegin)->waitList != 0 )
+                            {
+                                assert( !AreOtherWaiting( (*next)->waitList, threadBit ) );
+                                ImGui::Text( "Recursive lock acquire in thread." );
+                            }
+                            break;
+                        case LockState::HasBlockingLock:
+                        {
+                            if( (*vbegin)->lockCount == 1 )
+                            {
+                                ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), TracyCountBits( (*vbegin)->waitList ) );
+                            }
+                            else
+                            {
+                                ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", GetThreadString( tid ), (*vbegin)->lockCount, TracyCountBits( (*vbegin)->waitList ) );
+                            }
+                            auto waitList = (*vbegin)->waitList;
+                            int t = 0;
+                            ImGui::Indent( ty );
+                            while( waitList != 0 )
+                            {
+                                if( waitList & 0x1 )
+                                {
+                                    ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                }
+                                waitList >>= 1;
+                                t++;
+                            }
+                            ImGui::Unindent( ty );
+                            break;
                         }
-                        ImGui::Unindent( ty );
-                        break;
+                        case LockState::WaitLock:
+                        {
+                            if( (*vbegin)->lockCount > 0 )
+                            {
+                                ImGui::Text( "Thread \"%s\" is blocked by other thread:", GetThreadString( tid ) );
+                            }
+                            else
+                            {
+                                ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", GetThreadString( tid ) );
+                            }
+                            ImGui::Indent( ty );
+                            ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[(*vbegin)->lockingThread] ) );
+                            ImGui::Unindent( ty );
+                            break;
+                        }
+                        default:
+                            assert( false );
+                            break;
+                        }
                     }
-                    case LockState::WaitLock:
+                    else
                     {
-                        if( (*vbegin)->lockCount > 0 )
+                        const auto ptr = (const LockEventShared*)*vbegin;
+                        switch( drawState )
                         {
-                            ImGui::Text( "Thread \"%s\" is blocked by other thread:", GetThreadString( tid ) );
-                        }
-                        else
+                        case LockState::HasLock:
+                            assert( ptr->waitList == 0 );
+                            if( ptr->sharedList == 0 )
+                            {
+                                assert( ptr->lockCount == 1 );
+                                ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
+                            }
+                            else if( TracyCountBits( ptr->sharedList ) == 1 )
+                            {
+                                ImGui::Text( "Thread \"%s\" has a sole shared lock. No other threads are waiting.", GetThreadString( tid ) );
+                            }
+                            else
+                            {
+                                ImGui::Text( "Thread \"%s\" has shared lock. No other threads are waiting.", GetThreadString( tid ) );
+                                ImGui::Text( "Threads sharing the lock (%i):", TracyCountBits( ptr->sharedList ) - 1 );
+                                auto sharedList = ptr->sharedList;
+                                int t = 0;
+                                ImGui::Indent( ty );
+                                while( sharedList != 0 )
+                                {
+                                    if( sharedList & 0x1 && t != thread )
+                                    {
+                                        ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                    }
+                                    sharedList >>= 1;
+                                    t++;
+                                }
+                                ImGui::Unindent( ty );
+                            }
+                            break;
+                        case LockState::HasBlockingLock:
                         {
-                            ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", GetThreadString( tid ) );
+                            if( ptr->sharedList == 0 )
+                            {
+                                assert( ptr->lockCount == 1 );
+                                ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), TracyCountBits( ptr->waitList ) + TracyCountBits( ptr->waitShared ) );
+                            }
+                            else if( TracyCountBits( ptr->sharedList ) == 1 )
+                            {
+                                ImGui::Text( "Thread \"%s\" has a sole shared lock. Blocked threads (%i):", GetThreadString( tid ), TracyCountBits( ptr->waitList ) + TracyCountBits( ptr->waitShared ) );
+                            }
+                            else
+                            {
+                                ImGui::Text( "Thread \"%s\" has shared lock.", GetThreadString( tid ) );
+                                ImGui::Text( "Threads sharing the lock (%i):", TracyCountBits( ptr->sharedList ) - 1 );
+                                auto sharedList = ptr->sharedList;
+                                int t = 0;
+                                ImGui::Indent( ty );
+                                while( sharedList != 0 )
+                                {
+                                    if( sharedList & 0x1 && t != thread )
+                                    {
+                                        ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                    }
+                                    sharedList >>= 1;
+                                    t++;
+                                }
+                                ImGui::Unindent( ty );
+                                ImGui::Text( "Blocked threads (%i):", TracyCountBits( ptr->waitList ) + TracyCountBits( ptr->waitShared ) );
+                            }
+
+                            auto waitList = ptr->waitList;
+                            int t = 0;
+                            ImGui::Indent( ty );
+                            while( waitList != 0 )
+                            {
+                                if( waitList & 0x1 )
+                                {
+                                    ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                }
+                                waitList >>= 1;
+                                t++;
+                            }
+                            auto waitShared = ptr->waitShared;
+                            t = 0;
+                            while( waitShared != 0 )
+                            {
+                                if( waitShared & 0x1 )
+                                {
+                                    ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                }
+                                waitShared >>= 1;
+                                t++;
+                            }
+                            ImGui::Unindent( ty );
+                            break;
                         }
-                        ImGui::Indent( ty );
-                        ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[(*vbegin)->lockingThread] ) );
-                        ImGui::Unindent( ty );
-                        break;
-                    }
-                    default:
-                        assert( false );
-                        break;
+                        case LockState::WaitLock:
+                        {
+                            assert( ptr->lockCount == 0 || ptr->lockCount == 1 );
+                            if( ptr->lockCount != 0 || ptr->sharedList != 0 )
+                            {
+                                ImGui::Text( "Thread \"%s\" is blocked by other threads (%i):", GetThreadString( tid ), ptr->lockCount + TracyCountBits( ptr->sharedList ) );
+                            }
+                            else
+                            {
+                                ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", GetThreadString( tid ) );
+                            }
+                            ImGui::Indent( ty );
+                            if( ptr->lockCount != 0 )
+                            {
+                                ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[ptr->lockingThread] ) );
+                            }
+                            auto sharedList = ptr->sharedList;
+                            int t = 0;
+                            while( sharedList != 0 )
+                            {
+                                if( sharedList & 0x1 )
+                                {
+                                    ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                }
+                                sharedList >>= 1;
+                                t++;
+                            }
+                            ImGui::Unindent( ty );
+                            break;
+                        }
+                        default:
+                            assert( false );
+                            break;
+                        }
                     }
                     ImGui::EndTooltip();
                 }

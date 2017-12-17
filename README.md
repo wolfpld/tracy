@@ -74,6 +74,8 @@ The standard `std::lock_guard` and `std::unique_lock` wrappers should use the `L
 
 To mark the location of lock being held, use the `LockMark( varname )` macro, after you have obtained the lock. Note that the varname must be a lock variable (a reference is also valid). This step is optional.
 
+Similarly, you can use `TracySharedLockable`, `TracySharedLockableN` and `SharedLockableBase` to mark locks implementing the [SharedMutex concept](http://en.cppreference.com/w/cpp/concept/SharedMutex). Note that while there's no support for timed mutices in tracy, both `std::shared_mutex` and `std::shared_timed_mutex` may be used.
+
 #### Plotting data
 
 Tracy is able to capture and draw value changes over time. You may use it to analyse memory usage, draw call count, etc. To report data, use the `TracyPlot( name, value )` macro.

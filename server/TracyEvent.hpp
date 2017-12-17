@@ -112,12 +112,17 @@ struct LockEvent
     uint8_t lockingThread;
     Type type;
     uint8_t lockCount;
-    uint64_t waitShared;
     uint64_t waitList;
+};
+
+struct LockEventShared : public LockEvent
+{
+    uint64_t waitShared;
     uint64_t sharedList;
 };
 
 enum { LockEventSize = sizeof( LockEvent ) };
+enum { LockEventSharedSize = sizeof( LockEventShared ) };
 
 enum { MaxLockThreads = sizeof( LockEvent::waitList ) * 8 };
 static_assert( std::numeric_limits<decltype(LockEvent::lockCount)>::max() >= MaxLockThreads, "Not enough space for lock count." );

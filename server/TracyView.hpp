@@ -116,7 +116,6 @@ private:
     tracy_force_inline void NewZone( ZoneEvent* zone, uint64_t thread );
 
     void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread );
-    void UpdateLockCount( LockMap& lockmap, size_t pos );
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void HandlePlotName( uint64_t name, char* str, size_t sz );

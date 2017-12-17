@@ -308,11 +308,23 @@ View::View( FileRead& f )
         }
         f.Read( &tsz, sizeof( tsz ) );
         lockmap.timeline.reserve( tsz );
-        for( uint64_t i=0; i<tsz; i++ )
+        if( lockmap.type == LockType::Lockable )
         {
-            auto lev = m_slab.Alloc<LockEvent>();
-            f.Read( lev, sizeof( LockEvent ) );
-            lockmap.timeline.push_back( lev );
+            for( uint64_t i=0; i<tsz; i++ )
+            {
+                auto lev = m_slab.Alloc<LockEvent>();
+                f.Read( lev, sizeof( LockEvent ) );
+                lockmap.timeline.push_back( lev );
+            }
+        }
+        else
+        {
+            for( uint64_t i=0; i<tsz; i++ )
+            {
+                auto lev = m_slab.Alloc<LockEventShared>();
+                f.Read( lev, sizeof( LockEventShared ) );
+                lockmap.timeline.push_back( lev );
+            }
         }
         lockmap.visible = true;
         m_lockMap.emplace( id, std::move( lockmap ) );
@@ -742,7 +754,7 @@ void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     else
     {
         it->second.srcloc = ShrinkSourceLocation( ev.lckloc );
-        it->second.type = ev.type;
+        assert( it->second.type == ev.type );
         it->second.visible = true;
         it->second.valid = true;
     }
@@ -751,82 +763,95 @@ void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
 
 void View::ProcessLockWait( const QueueLockWait& ev )
 {
-    auto lev = m_slab.Alloc<LockEvent>();
-    lev->time = ev.time * m_timerMul;
-    lev->type = LockEvent::Type::Wait;
-    lev->srcloc = 0;
-
     auto it = m_lockMap.find( ev.id );
     if( it == m_lockMap.end() )
     {
         LockMap lm;
         lm.valid = false;
+        lm.type = ev.type;
         it = m_lockMap.emplace( ev.id, std::move( lm ) ).first;
     }
+
+    auto lev = ev.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
+    lev->time = ev.time * m_timerMul;
+    lev->type = LockEvent::Type::Wait;
+    lev->srcloc = 0;
 
     InsertLockEvent( it->second, lev, ev.thread );
 }
 
 void View::ProcessLockObtain( const QueueLockObtain& ev )
 {
-    auto lev = m_slab.Alloc<LockEvent>();
+    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
+    auto& lock = m_lockMap[ev.id];
+
+    auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     lev->time = ev.time * m_timerMul;
     lev->type = LockEvent::Type::Obtain;
     lev->srcloc = 0;
 
-    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
-    InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
+    InsertLockEvent( lock, lev, ev.thread );
 }
 
 void View::ProcessLockRelease( const QueueLockRelease& ev )
 {
-    auto lev = m_slab.Alloc<LockEvent>();
+    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
+    auto& lock = m_lockMap[ev.id];
+
+    auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     lev->time = ev.time * m_timerMul;
     lev->type = LockEvent::Type::Release;
     lev->srcloc = 0;
 
-    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
-    InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
+    InsertLockEvent( lock, lev, ev.thread );
 }
 
 void View::ProcessLockSharedWait( const QueueLockWait& ev )
 {
-    auto lev = m_slab.Alloc<LockEvent>();
-    lev->time = ev.time * m_timerMul;
-    lev->type = LockEvent::Type::WaitShared;
-    lev->srcloc = 0;
-
     auto it = m_lockMap.find( ev.id );
     if( it == m_lockMap.end() )
     {
         LockMap lm;
         lm.valid = false;
+        lm.type = ev.type;
         it = m_lockMap.emplace( ev.id, std::move( lm ) ).first;
     }
+
+    assert( ev.type == LockType::SharedLockable );
+    auto lev = m_slab.Alloc<LockEventShared>();
+    lev->time = ev.time * m_timerMul;
+    lev->type = LockEvent::Type::WaitShared;
+    lev->srcloc = 0;
 
     InsertLockEvent( it->second, lev, ev.thread );
 }
 
 void View::ProcessLockSharedObtain( const QueueLockObtain& ev )
 {
-    auto lev = m_slab.Alloc<LockEvent>();
+    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
+    auto& lock = m_lockMap[ev.id];
+
+    assert( lock.type == LockType::SharedLockable );
+    auto lev = m_slab.Alloc<LockEventShared>();
     lev->time = ev.time * m_timerMul;
     lev->type = LockEvent::Type::ObtainShared;
     lev->srcloc = 0;
 
-    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
-    InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
+    InsertLockEvent( lock, lev, ev.thread );
 }
 
 void View::ProcessLockSharedRelease( const QueueLockRelease& ev )
 {
-    auto lev = m_slab.Alloc<LockEvent>();
+    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
+    auto& lock = m_lockMap[ev.id];
+
+    assert( lock.type == LockType::SharedLockable );
+    auto lev = m_slab.Alloc<LockEventShared>();
     lev->time = ev.time * m_timerMul;
     lev->type = LockEvent::Type::ReleaseShared;
     lev->srcloc = 0;
 
-    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
-    InsertLockEvent( m_lockMap[ev.id], lev, ev.thread );
+    InsertLockEvent( lock, lev, ev.thread );
 }
 
 void View::ProcessLockMark( const QueueLockMark& ev )
@@ -1296,41 +1321,60 @@ void View::NewZone( ZoneEvent* zone, uint64_t thread )
     }
 }
 
-void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
+static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
 {
-    m_lastTime = std::max( m_lastTime, lev->time );
-
-    NoticeThread( thread );
-
-    auto it = lockmap.threadMap.find( thread );
-    if( it == lockmap.threadMap.end() )
-    {
-        assert( lockmap.threadList.size() < MaxLockThreads );
-        it = lockmap.threadMap.emplace( thread, lockmap.threadList.size() ).first;
-        lockmap.threadList.emplace_back( thread );
-    }
-    lev->thread = it->second;
-    assert( lev->thread == it->second );
     auto& timeline = lockmap.timeline;
-    if( timeline.empty() )
+    uint8_t lockingThread;
+    uint8_t lockCount;
+    uint64_t waitList;
+
+    if( pos == 0 )
     {
-        timeline.push_back( lev );
-        UpdateLockCount( lockmap, timeline.size() - 1 );
-    }
-    else if( timeline.back()->time < lev->time )
-    {
-        timeline.push_back_non_empty( lev );
-        UpdateLockCount( lockmap, timeline.size() - 1 );
+        lockingThread = 0;
+        lockCount = 0;
+        waitList = 0;
     }
     else
     {
-        auto it = std::lower_bound( timeline.begin(), timeline.end(), lev->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        it = timeline.insert( it, lev );
-        UpdateLockCount( lockmap, std::distance( timeline.begin(), it ) );
+        const auto tl = timeline[pos-1];
+        lockingThread = tl->lockingThread;
+        lockCount = tl->lockCount;
+        waitList = tl->waitList;
+    }
+    const auto end = timeline.size();
+
+    while( pos != end )
+    {
+        const auto tl = timeline[pos];
+        const auto tbit = uint64_t( 1 ) << tl->thread;
+        switch( (LockEvent::Type)tl->type )
+        {
+        case LockEvent::Type::Wait:
+            waitList |= tbit;
+            break;
+        case LockEvent::Type::Obtain:
+            assert( lockCount < std::numeric_limits<uint8_t>::max() );
+            assert( ( waitList & tbit ) != 0 );
+            waitList &= ~tbit;
+            lockingThread = tl->thread;
+            lockCount++;
+            break;
+        case LockEvent::Type::Release:
+            assert( lockCount > 0 );
+            lockCount--;
+            break;
+        default:
+            break;
+        }
+        tl->lockingThread = lockingThread;
+        tl->waitList = waitList;
+        tl->lockCount = lockCount;
+        assert( tl->lockingThread == lockingThread );
+        pos++;
     }
 }
 
-void View::UpdateLockCount( LockMap& lockmap, size_t pos )
+static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
 {
     auto& timeline = lockmap.timeline;
     uint8_t lockingThread;
@@ -1349,7 +1393,7 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
     }
     else
     {
-        const auto tl = timeline[pos-1];
+        const auto tl = (LockEventShared*)timeline[pos-1];
         lockingThread = tl->lockingThread;
         lockCount = tl->lockCount;
         waitShared = tl->waitShared;
@@ -1362,7 +1406,7 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
     // due to the async retrieval of data from threads that not possible.
     while( pos != end )
     {
-        const auto tl = timeline[pos];
+        const auto tl = (LockEventShared*)timeline[pos];
         const auto tbit = uint64_t( 1 ) << tl->thread;
         switch( (LockEvent::Type)tl->type )
         {
@@ -1403,6 +1447,52 @@ void View::UpdateLockCount( LockMap& lockmap, size_t pos )
         tl->lockCount = lockCount;
         assert( tl->lockingThread == lockingThread );
         pos++;
+    }
+}
+
+static inline void UpdateLockCount( LockMap& lockmap, size_t pos )
+{
+    if( lockmap.type == LockType::Lockable )
+    {
+        UpdateLockCountLockable( lockmap, pos );
+    }
+    else
+    {
+        UpdateLockCountSharedLockable( lockmap, pos );
+    }
+}
+
+void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
+{
+    m_lastTime = std::max( m_lastTime, lev->time );
+
+    NoticeThread( thread );
+
+    auto it = lockmap.threadMap.find( thread );
+    if( it == lockmap.threadMap.end() )
+    {
+        assert( lockmap.threadList.size() < MaxLockThreads );
+        it = lockmap.threadMap.emplace( thread, lockmap.threadList.size() ).first;
+        lockmap.threadList.emplace_back( thread );
+    }
+    lev->thread = it->second;
+    assert( lev->thread == it->second );
+    auto& timeline = lockmap.timeline;
+    if( timeline.empty() )
+    {
+        timeline.push_back( lev );
+        UpdateLockCount( lockmap, timeline.size() - 1 );
+    }
+    else if( timeline.back()->time < lev->time )
+    {
+        timeline.push_back_non_empty( lev );
+        UpdateLockCount( lockmap, timeline.size() - 1 );
+    }
+    else
+    {
+        auto it = std::lower_bound( timeline.begin(), timeline.end(), lev->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        it = timeline.insert( it, lev );
+        UpdateLockCount( lockmap, std::distance( timeline.begin(), it ) );
     }
 }
 
@@ -2940,6 +3030,7 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
 
 static Vector<LockEvent*>::iterator GetNextLockEventShared( const Vector<LockEvent*>::iterator& it, const Vector<LockEvent*>::iterator& end, LockState& nextState, uint64_t threadBit )
 {
+    const auto itptr = (const LockEventShared*)*it;
     auto next = it;
     next++;
 
@@ -2948,10 +3039,11 @@ static Vector<LockEvent*>::iterator GetNextLockEventShared( const Vector<LockEve
     case LockState::Nothing:
         while( next < end )
         {
-            if( (*next)->lockCount != 0 )
+            const auto ptr = (const LockEventShared*)*next;
+            if( ptr->lockCount != 0 )
             {
-                const auto wait = (*next)->waitList | (*next)->waitShared;
-                if( GetThreadBit( (*next)->lockingThread ) == threadBit )
+                const auto wait = ptr->waitList | ptr->waitShared;
+                if( GetThreadBit( ptr->lockingThread ) == threadBit )
                 {
                     nextState = AreOtherWaiting( wait, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
                     break;
@@ -2962,12 +3054,12 @@ static Vector<LockEvent*>::iterator GetNextLockEventShared( const Vector<LockEve
                     break;
                 }
             }
-            else if( IsThreadWaiting( (*next)->sharedList, threadBit ) )
+            else if( IsThreadWaiting( ptr->sharedList, threadBit ) )
             {
-                nextState = ( (*next)->waitList != 0 ) ? LockState::HasBlockingLock : LockState::HasLock;
+                nextState = ( ptr->waitList != 0 ) ? LockState::HasBlockingLock : LockState::HasLock;
                 break;
             }
-            else if( (*next)->sharedList != 0 && IsThreadWaiting( (*next)->waitList, threadBit ) )
+            else if( ptr->sharedList != 0 && IsThreadWaiting( ptr->waitList, threadBit ) )
             {
                 nextState = LockState::WaitLock;
                 break;
@@ -2978,25 +3070,26 @@ static Vector<LockEvent*>::iterator GetNextLockEventShared( const Vector<LockEve
     case LockState::HasLock:
         while( next < end )
         {
-            if( (*next)->lockCount == 0 && !IsThreadWaiting( (*next)->sharedList, threadBit ) )
+            const auto ptr = (const LockEventShared*)*next;
+            if( ptr->lockCount == 0 && !IsThreadWaiting( ptr->sharedList, threadBit ) )
             {
                 nextState = LockState::Nothing;
                 break;
             }
-            if( (*next)->waitList != 0 )
+            if( ptr->waitList != 0 )
             {
-                if( AreOtherWaiting( (*next)->waitList, threadBit ) )
+                if( AreOtherWaiting( ptr->waitList, threadBit ) )
                 {
                     nextState = LockState::HasBlockingLock;
                 }
                 break;
             }
-            else if( !IsThreadWaiting( (*next)->sharedList, threadBit ) && (*next)->waitShared != 0 )
+            else if( !IsThreadWaiting( ptr->sharedList, threadBit ) && ptr->waitShared != 0 )
             {
                 nextState = LockState::HasBlockingLock;
                 break;
             }
-            if( (*next)->waitList != (*it)->waitList || (*next)->waitShared != (*it)->waitShared || (*next)->lockCount != (*it)->lockCount || (*next)->sharedList != (*it)->sharedList )
+            if( ptr->waitList != itptr->waitList || ptr->waitShared != itptr->waitShared || ptr->lockCount != itptr->lockCount || ptr->sharedList != itptr->sharedList )
             {
                 break;
             }
@@ -3006,12 +3099,13 @@ static Vector<LockEvent*>::iterator GetNextLockEventShared( const Vector<LockEve
     case LockState::HasBlockingLock:
         while( next < end )
         {
-            if( (*next)->lockCount == 0 && !IsThreadWaiting( (*next)->sharedList, threadBit ) )
+            const auto ptr = (const LockEventShared*)*next;
+            if( ptr->lockCount == 0 && !IsThreadWaiting( ptr->sharedList, threadBit ) )
             {
                 nextState = LockState::Nothing;
                 break;
             }
-            if( (*next)->waitList != (*it)->waitList || (*next)->waitShared != (*it)->waitShared || (*next)->lockCount != (*it)->lockCount || (*next)->sharedList != (*it)->sharedList )
+            if( ptr->waitList != itptr->waitList || ptr->waitShared != itptr->waitShared || ptr->lockCount != itptr->lockCount || ptr->sharedList != itptr->sharedList )
             {
                 break;
             }
@@ -3021,22 +3115,23 @@ static Vector<LockEvent*>::iterator GetNextLockEventShared( const Vector<LockEve
     case LockState::WaitLock:
         while( next < end )
         {
-            if( GetThreadBit( (*next)->lockingThread ) == threadBit )
+            const auto ptr = (const LockEventShared*)*next;
+            if( GetThreadBit( ptr->lockingThread ) == threadBit )
             {
-                const auto wait = (*next)->waitList | (*next)->waitShared;
+                const auto wait = ptr->waitList | ptr->waitShared;
                 nextState = AreOtherWaiting( wait, threadBit ) ? LockState::HasBlockingLock : LockState::HasLock;
                 break;
             }
-            if( IsThreadWaiting( (*next)->sharedList, threadBit ) )
+            if( IsThreadWaiting( ptr->sharedList, threadBit ) )
             {
-                nextState = ( (*next)->waitList != 0 ) ? LockState::HasBlockingLock : LockState::HasLock;
+                nextState = ( ptr->waitList != 0 ) ? LockState::HasBlockingLock : LockState::HasLock;
                 break;
             }
-            if( (*next)->lockingThread != (*it)->lockingThread )
+            if( ptr->lockingThread != itptr->lockingThread )
             {
                 break;
             }
-            if( (*next)->lockCount == 0 && !IsThreadWaiting( (*next)->waitShared, threadBit ) )
+            if( ptr->lockCount == 0 && !IsThreadWaiting( ptr->waitShared, threadBit ) )
             {
                 break;
             }
@@ -3109,22 +3204,23 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         }
         else
         {
-            if( (*vbegin)->lockCount != 0 )
+            const auto ptr = (LockEventShared*)*vbegin;
+            if( ptr->lockCount != 0 )
             {
-                if( (*vbegin)->lockingThread == thread )
+                if( ptr->lockingThread == thread )
                 {
-                    state = ( AreOtherWaiting( (*vbegin)->waitList, threadBit ) || AreOtherWaiting( (*vbegin)->waitShared, threadBit ) ) ? LockState::HasBlockingLock : LockState::HasLock;
+                    state = ( AreOtherWaiting( ptr->waitList, threadBit ) || AreOtherWaiting( ptr->waitShared, threadBit ) ) ? LockState::HasBlockingLock : LockState::HasLock;
                 }
-                else if( IsThreadWaiting( (*vbegin)->waitList, threadBit ) || IsThreadWaiting( (*vbegin)->waitShared, threadBit ) )
+                else if( IsThreadWaiting( ptr->waitList, threadBit ) || IsThreadWaiting( ptr->waitShared, threadBit ) )
                 {
                     state = LockState::WaitLock;
                 }
             }
-            else if( IsThreadWaiting( (*vbegin)->sharedList, threadBit ) )
+            else if( IsThreadWaiting( ptr->sharedList, threadBit ) )
             {
-                state = (*vbegin)->waitList != 0 ? LockState::HasBlockingLock : LockState::HasLock;
+                state = ptr->waitList != 0 ? LockState::HasBlockingLock : LockState::HasLock;
             }
-            else if( (*vbegin)->sharedList != 0 && IsThreadWaiting( (*vbegin)->waitList, threadBit ) )
+            else if( ptr->sharedList != 0 && IsThreadWaiting( ptr->waitList, threadBit ) )
             {
                 state = LockState::WaitLock;
             }
@@ -4213,9 +4309,19 @@ void View::Write( FileWrite& f )
         }
         sz = v.second.timeline.size();
         f.Write( &sz, sizeof( sz ) );
-        for( auto& lev : v.second.timeline )
+        if( v.second.type == LockType::Lockable )
         {
-            f.Write( lev, sizeof( LockEvent ) );
+            for( auto& lev : v.second.timeline )
+            {
+                f.Write( lev, sizeof( LockEvent ) );
+            }
+        }
+        else
+        {
+            for( auto& lev : v.second.timeline )
+            {
+                f.Write( lev, sizeof( LockEventShared ) );
+            }
         }
     }
 

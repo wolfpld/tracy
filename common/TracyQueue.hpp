@@ -101,6 +101,7 @@ struct QueueLockWait
     uint32_t id;
     int64_t time;
     uint64_t thread;
+    LockType type;
 };
 
 struct QueueLockObtain

@@ -47,6 +47,7 @@ public:
             item->lockWait.id = m_id;
             item->lockWait.thread = thread;
             item->lockWait.time = Profiler::GetTime();
+            item->lockWait.type = LockType::Lockable;
             tail.store( magic + 1, std::memory_order_release );
         }
 
@@ -152,6 +153,7 @@ public:
             item->lockWait.id = m_id;
             item->lockWait.thread = thread;
             item->lockWait.time = Profiler::GetTime();
+            item->lockWait.type = LockType::SharedLockable;
             tail.store( magic + 1, std::memory_order_release );
         }
 
@@ -215,6 +217,7 @@ public:
             item->lockWait.id = m_id;
             item->lockWait.thread = thread;
             item->lockWait.time = Profiler::GetTime();
+            item->lockWait.type = LockType::SharedLockable;
             tail.store( magic + 1, std::memory_order_release );
         }
 

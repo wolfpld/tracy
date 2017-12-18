@@ -28,17 +28,12 @@ Tracy is split into client and server side. The client side collects events usin
 
 ### Performance impact
 
-To check how much slowdown is introduced by using tracy, I have profiled [etcpak](https://bitbucket.org/wolfpld/etcpak), which is the fastest ETC texture compression utility there is. I used an 8192×8192 test image as input data and instrumented everything down to the 4×4 pixel block compression function (that's a lot of blocks to compress). There are two scenarios that were tested:
+To check how much slowdown is introduced by using tracy, I have profiled [etcpak](https://bitbucket.org/wolfpld/etcpak), which is the fastest ETC texture compression utility there is. I used an 8192×8192 test image as input data and instrumented everything down to the 4×4 pixel block compression function (that's 4 million blocks to compress). It should be noted that tracy needs to calibrate its internal timers at each run. This introduces a delay of 115 ms (on my machine), which is negligible when doing lengthy profiling runs, but it skews the results of etcpak timing. The following times have this delay subtracted, to give focus on zone collection impact, which is the thing that really matters here.
 
-1. Compression of an image to ETC1 format.
-2. Compression of an image to ETC2 format, with mip-maps.
-
-It should be noted that tracy needs to calibrate its internal timers at each run. This introduces a delay of 115 ms (on my machine), which is negligible when doing lengthy profiling runs, but it skews the results of etcpak timing. The following times have this delay subtracted, to give focus on zone collection impact, which is the thing that really matters here.
-
-| Scenario |  Zones  | Clean run | Profiling run | Difference |
-|----------|---------|-----------|---------------|------------|
-|    1     | 4194568 |    0.94 s |       1.003 s |   +0.063 s |
-|    2     | 5592822 |   1.034 s |       1.119 s |   +0.085 s |
+|                        Scenario                       |  Zones  | Clean run | Profiling run | Difference |
+|-------------------------------------------------------|---------|-----------|---------------|------------|
+| Compression of an image to ETC1 format                | 4194568 |    0.94 s |       1.003 s |   +0.063 s |
+| Compression of an image to ETC2 format, with mip-maps | 5592822 |   1.034 s |       1.119 s |   +0.085 s |
 
 In both scenarios the per-zone time cost is at ~15 ns. This is in line with the measured 8 ns single event collection time (each zone has to report start and end event).
 

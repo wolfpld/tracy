@@ -230,6 +230,25 @@ void Profiler::Worker()
         if( ShouldExit() ) break;
     }
 
+    for(;;)
+    {
+        const auto status = Dequeue( token );
+        if( status == ConnectionLost )
+        {
+            break;
+        }
+        else if( status == QueueEmpty )
+        {
+            if( m_bufferOffset != m_bufferStart ) CommitData();
+            break;
+        }
+
+        while( m_sock->HasData() )
+        {
+            if( !HandleServerQuery() ) break;
+        }
+    }
+
     QueueItem terminate;
     terminate.hdr.type = QueueType::Terminate;
     if( !SendData( (const char*)&terminate, 1 ) ) return;

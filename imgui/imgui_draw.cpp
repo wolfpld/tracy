@@ -1,7 +1,8 @@
-// dear imgui, v1.52
+// dear imgui, v1.53
 // (drawing and font code)
 
 // Contains implementation for
+// - Default styles
 // - ImDrawList
 // - ImDrawData
 // - ImFontAtlas
@@ -14,13 +15,15 @@
 
 #include "imgui.h"
 #define IMGUI_DEFINE_MATH_OPERATORS
-#define IMGUI_DEFINE_PLACEMENT_NEW
 #include "imgui_internal.h"
 
 #include <stdio.h>      // vsnprintf, sscanf, printf
 #if !defined(alloca)
 #ifdef _WIN32
 #include <malloc.h>     // alloca
+#if !defined(alloca)
+#define alloca _alloca  // for clang with MS Codegen
+#endif
 #elif defined(__GLIBC__) || defined(__sun)
 #include <alloca.h>     // alloca
 #else
@@ -39,6 +42,7 @@
 #pragma clang diagnostic ignored "-Wfloat-equal"            // warning : comparing floating point with == or != is unsafe   // storing and comparing against same constants ok.
 #pragma clang diagnostic ignored "-Wglobal-constructors"    // warning : declaration requires a global destructor           // similar to above, not sure what the exact difference it.
 #pragma clang diagnostic ignored "-Wsign-conversion"        // warning : implicit conversion changes signedness             //
+#pragma clang diagnostic ignored "-Wcomma"                  // warning : possible misuse of comma operator here             //
 #if __has_warning("-Wreserved-id-macro")
 #pragma clang diagnostic ignored "-Wreserved-id-macro"      // warning : macro name is a reserved identifier                //
 #endif
@@ -74,6 +78,7 @@ namespace IMGUI_STB_NAMESPACE
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-function"
 #pragma clang diagnostic ignored "-Wmissing-prototypes"
+#pragma clang diagnostic ignored "-Wimplicit-fallthrough"
 #endif
 
 #ifdef __GNUC__
@@ -117,16 +122,191 @@ using namespace IMGUI_STB_NAMESPACE;
 #endif
 
 //-----------------------------------------------------------------------------
-// ImDrawList
+// Style functions
 //-----------------------------------------------------------------------------
 
-static const ImVec4 GNullClipRect(-8192.0f, -8192.0f, +8192.0f, +8192.0f); // Large values that are easy to encode in a few bits+shift
+void ImGui::StyleColorsClassic(ImGuiStyle* dst)
+{
+    ImGuiStyle* style = dst ? dst : &ImGui::GetStyle();
+    ImVec4* colors = style->Colors;
+
+    colors[ImGuiCol_Text]                   = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    colors[ImGuiCol_TextDisabled]           = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+    colors[ImGuiCol_WindowBg]               = ImVec4(0.00f, 0.00f, 0.00f, 0.70f);
+    colors[ImGuiCol_ChildBg]                = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_PopupBg]                = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
+    colors[ImGuiCol_Border]                 = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
+    colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_FrameBg]                = ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
+    colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.47f, 0.47f, 0.69f, 0.40f);
+    colors[ImGuiCol_FrameBgActive]          = ImVec4(0.42f, 0.41f, 0.64f, 0.69f);
+    colors[ImGuiCol_TitleBg]                = ImVec4(0.27f, 0.27f, 0.54f, 0.83f);
+    colors[ImGuiCol_TitleBgActive]          = ImVec4(0.32f, 0.32f, 0.63f, 0.87f);
+    colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.40f, 0.40f, 0.80f, 0.20f);
+    colors[ImGuiCol_MenuBarBg]              = ImVec4(0.40f, 0.40f, 0.55f, 0.80f);
+    colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.20f, 0.25f, 0.30f, 0.60f);
+    colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.40f, 0.40f, 0.80f, 0.30f);
+    colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.40f, 0.40f, 0.80f, 0.40f);
+    colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.41f, 0.39f, 0.80f, 0.60f);
+    colors[ImGuiCol_CheckMark]              = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
+    colors[ImGuiCol_SliderGrab]             = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
+    colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.41f, 0.39f, 0.80f, 0.60f);
+    colors[ImGuiCol_Button]                 = ImVec4(0.35f, 0.40f, 0.61f, 0.62f);
+    colors[ImGuiCol_ButtonHovered]          = ImVec4(0.40f, 0.48f, 0.71f, 0.79f);
+    colors[ImGuiCol_ButtonActive]           = ImVec4(0.46f, 0.54f, 0.80f, 1.00f);
+    colors[ImGuiCol_Header]                 = ImVec4(0.40f, 0.40f, 0.90f, 0.45f);
+    colors[ImGuiCol_HeaderHovered]          = ImVec4(0.45f, 0.45f, 0.90f, 0.80f);
+    colors[ImGuiCol_HeaderActive]           = ImVec4(0.53f, 0.53f, 0.87f, 0.80f);
+    colors[ImGuiCol_Separator]              = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+    colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.60f, 0.60f, 0.70f, 1.00f);
+    colors[ImGuiCol_SeparatorActive]        = ImVec4(0.70f, 0.70f, 0.90f, 1.00f);
+    colors[ImGuiCol_ResizeGrip]             = ImVec4(1.00f, 1.00f, 1.00f, 0.16f);
+    colors[ImGuiCol_ResizeGripHovered]      = ImVec4(0.78f, 0.82f, 1.00f, 0.60f);
+    colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.78f, 0.82f, 1.00f, 0.90f);
+    colors[ImGuiCol_CloseButton]            = ImVec4(0.50f, 0.50f, 0.90f, 0.50f);
+    colors[ImGuiCol_CloseButtonHovered]     = ImVec4(0.70f, 0.70f, 0.90f, 0.60f);
+    colors[ImGuiCol_CloseButtonActive]      = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
+    colors[ImGuiCol_PlotLines]              = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImGuiCol_PlotLinesHovered]       = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    colors[ImGuiCol_PlotHistogram]          = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    colors[ImGuiCol_PlotHistogramHovered]   = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+    colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
+    colors[ImGuiCol_ModalWindowDarkening]   = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+    colors[ImGuiCol_DragDropTarget]         = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+}
+
+void ImGui::StyleColorsDark(ImGuiStyle* dst)
+{
+    ImGuiStyle* style = dst ? dst : &ImGui::GetStyle();
+    ImVec4* colors = style->Colors;
+
+    colors[ImGuiCol_Text]                   = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImGuiCol_TextDisabled]           = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
+    colors[ImGuiCol_WindowBg]               = ImVec4(0.06f, 0.06f, 0.06f, 0.94f);
+    colors[ImGuiCol_ChildBg]                = ImVec4(1.00f, 1.00f, 1.00f, 0.00f);
+    colors[ImGuiCol_PopupBg]                = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
+    colors[ImGuiCol_Border]                 = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+    colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_FrameBg]                = ImVec4(0.16f, 0.29f, 0.48f, 0.54f);
+    colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+    colors[ImGuiCol_FrameBgActive]          = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+    colors[ImGuiCol_TitleBg]                = ImVec4(0.04f, 0.04f, 0.04f, 1.00f);
+    colors[ImGuiCol_TitleBgActive]          = ImVec4(0.16f, 0.29f, 0.48f, 1.00f);
+    colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
+    colors[ImGuiCol_MenuBarBg]              = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
+    colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
+    colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.31f, 0.31f, 0.31f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
+    colors[ImGuiCol_CheckMark]              = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_SliderGrab]             = ImVec4(0.24f, 0.52f, 0.88f, 1.00f);
+    colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_Button]                 = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+    colors[ImGuiCol_ButtonHovered]          = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_ButtonActive]           = ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+    colors[ImGuiCol_Header]                 = ImVec4(0.26f, 0.59f, 0.98f, 0.31f);
+    colors[ImGuiCol_HeaderHovered]          = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+    colors[ImGuiCol_HeaderActive]           = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_Separator]              = colors[ImGuiCol_Border];//ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+    colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.10f, 0.40f, 0.75f, 0.78f);
+    colors[ImGuiCol_SeparatorActive]        = ImVec4(0.10f, 0.40f, 0.75f, 1.00f);
+    colors[ImGuiCol_ResizeGrip]             = ImVec4(0.26f, 0.59f, 0.98f, 0.25f);
+    colors[ImGuiCol_ResizeGripHovered]      = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+    colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+    colors[ImGuiCol_CloseButton]            = ImVec4(0.41f, 0.41f, 0.41f, 0.50f);
+    colors[ImGuiCol_CloseButtonHovered]     = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+    colors[ImGuiCol_CloseButtonActive]      = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+    colors[ImGuiCol_PlotLines]              = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
+    colors[ImGuiCol_PlotLinesHovered]       = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+    colors[ImGuiCol_PlotHistogram]          = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    colors[ImGuiCol_PlotHistogramHovered]   = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+    colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+    colors[ImGuiCol_ModalWindowDarkening]   = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
+    colors[ImGuiCol_DragDropTarget]         = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+}
+
+// Those light colors are better suited with a thicker font than the default one + FrameBorder
+void ImGui::StyleColorsLight(ImGuiStyle* dst)
+{
+    ImGuiStyle* style = dst ? dst : &ImGui::GetStyle();
+    ImVec4* colors = style->Colors;
+
+    colors[ImGuiCol_Text]                   = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_TextDisabled]           = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+    //colors[ImGuiCol_TextHovered]          = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    //colors[ImGuiCol_TextActive]           = ImVec4(1.00f, 1.00f, 0.00f, 1.00f);
+    colors[ImGuiCol_WindowBg]               = ImVec4(0.94f, 0.94f, 0.94f, 1.00f);
+    colors[ImGuiCol_ChildBg]                = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_PopupBg]                = ImVec4(1.00f, 1.00f, 1.00f, 0.98f);
+    colors[ImGuiCol_Border]                 = ImVec4(0.00f, 0.00f, 0.00f, 0.30f);
+    colors[ImGuiCol_BorderShadow]           = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImGuiCol_FrameBg]                = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImGuiCol_FrameBgHovered]         = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+    colors[ImGuiCol_FrameBgActive]          = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+    colors[ImGuiCol_TitleBg]                = ImVec4(0.96f, 0.96f, 0.96f, 1.00f);
+    colors[ImGuiCol_TitleBgActive]          = ImVec4(0.82f, 0.82f, 0.82f, 1.00f);
+    colors[ImGuiCol_TitleBgCollapsed]       = ImVec4(1.00f, 1.00f, 1.00f, 0.51f);
+    colors[ImGuiCol_MenuBarBg]              = ImVec4(0.86f, 0.86f, 0.86f, 1.00f);
+    colors[ImGuiCol_ScrollbarBg]            = ImVec4(0.98f, 0.98f, 0.98f, 0.53f);
+    colors[ImGuiCol_ScrollbarGrab]          = ImVec4(0.69f, 0.69f, 0.69f, 0.80f);
+    colors[ImGuiCol_ScrollbarGrabHovered]   = ImVec4(0.49f, 0.49f, 0.49f, 0.80f);
+    colors[ImGuiCol_ScrollbarGrabActive]    = ImVec4(0.49f, 0.49f, 0.49f, 1.00f);
+    colors[ImGuiCol_CheckMark]              = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_SliderGrab]             = ImVec4(0.26f, 0.59f, 0.98f, 0.78f);
+    colors[ImGuiCol_SliderGrabActive]       = ImVec4(0.46f, 0.54f, 0.80f, 0.60f);
+    colors[ImGuiCol_Button]                 = ImVec4(0.26f, 0.59f, 0.98f, 0.40f);
+    colors[ImGuiCol_ButtonHovered]          = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_ButtonActive]           = ImVec4(0.06f, 0.53f, 0.98f, 1.00f);
+    colors[ImGuiCol_Header]                 = ImVec4(0.26f, 0.59f, 0.98f, 0.31f);
+    colors[ImGuiCol_HeaderHovered]          = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+    colors[ImGuiCol_HeaderActive]           = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
+    colors[ImGuiCol_Separator]              = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+    colors[ImGuiCol_SeparatorHovered]       = ImVec4(0.14f, 0.44f, 0.80f, 0.78f);
+    colors[ImGuiCol_SeparatorActive]        = ImVec4(0.14f, 0.44f, 0.80f, 1.00f);
+    colors[ImGuiCol_ResizeGrip]             = ImVec4(0.80f, 0.80f, 0.80f, 0.56f);
+    colors[ImGuiCol_ResizeGripHovered]      = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+    colors[ImGuiCol_ResizeGripActive]       = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+    colors[ImGuiCol_CloseButton]            = ImVec4(0.59f, 0.59f, 0.59f, 0.50f);
+    colors[ImGuiCol_CloseButtonHovered]     = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+    colors[ImGuiCol_CloseButtonActive]      = ImVec4(0.98f, 0.39f, 0.36f, 1.00f);
+    colors[ImGuiCol_PlotLines]              = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+    colors[ImGuiCol_PlotLinesHovered]       = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+    colors[ImGuiCol_PlotHistogram]          = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    colors[ImGuiCol_PlotHistogramHovered]   = ImVec4(1.00f, 0.45f, 0.00f, 1.00f);
+    colors[ImGuiCol_TextSelectedBg]         = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+    colors[ImGuiCol_ModalWindowDarkening]   = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+    colors[ImGuiCol_DragDropTarget]         = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+}
+
+//-----------------------------------------------------------------------------
+// ImDrawListData
+//-----------------------------------------------------------------------------
+
+ImDrawListSharedData::ImDrawListSharedData()
+{
+    Font = NULL;
+    FontSize = 0.0f;
+    CurveTessellationTol = 0.0f;
+    ClipRectFullscreen = ImVec4(-8192.0f, -8192.0f, +8192.0f, +8192.0f);
+    
+    // Const data
+    for (int i = 0; i < IM_ARRAYSIZE(CircleVtx12); i++)
+    {
+        const float a = ((float)i * 2 * IM_PI) / (float)IM_ARRAYSIZE(CircleVtx12);
+        CircleVtx12[i] = ImVec2(cosf(a), sinf(a));
+    }
+}
+
+//-----------------------------------------------------------------------------
+// ImDrawList
+//-----------------------------------------------------------------------------
 
 void ImDrawList::Clear()
 {
     CmdBuffer.resize(0);
     IdxBuffer.resize(0);
     VtxBuffer.resize(0);
+    Flags = ImDrawListFlags_AntiAliasedLines | ImDrawListFlags_AntiAliasedFill;
     _VtxCurrentIdx = 0;
     _VtxWritePtr = NULL;
     _IdxWritePtr = NULL;
@@ -160,8 +340,8 @@ void ImDrawList::ClearFreeMemory()
     _Channels.clear();
 }
 
-// Use macros because C++ is a terrible language, we want guaranteed inline, no code in header, and no overhead in Debug mode
-#define GetCurrentClipRect()    (_ClipRectStack.Size ? _ClipRectStack.Data[_ClipRectStack.Size-1]  : GNullClipRect)
+// Using macros because C++ is a terrible language, we want guaranteed inline, no code in header, and no overhead in Debug builds
+#define GetCurrentClipRect()    (_ClipRectStack.Size ? _ClipRectStack.Data[_ClipRectStack.Size-1]  : _Data->ClipRectFullscreen)
 #define GetCurrentTextureId()   (_TextureIdStack.Size ? _TextureIdStack.Data[_TextureIdStack.Size-1] : NULL)
 
 void ImDrawList::AddDrawCmd()
@@ -252,8 +432,7 @@ void ImDrawList::PushClipRect(ImVec2 cr_min, ImVec2 cr_max, bool intersect_with_
 
 void ImDrawList::PushClipRectFullScreen()
 {
-    PushClipRect(ImVec2(GNullClipRect.x, GNullClipRect.y), ImVec2(GNullClipRect.z, GNullClipRect.w));
-    //PushClipRect(GetVisibleRect());   // FIXME-OPT: This would be more correct but we're not supposed to access ImGuiContext from here?
+    PushClipRect(ImVec2(_Data->ClipRectFullscreen.x, _Data->ClipRectFullscreen.y), ImVec2(_Data->ClipRectFullscreen.z, _Data->ClipRectFullscreen.w));
 }
 
 void ImDrawList::PopClipRect()
@@ -284,7 +463,7 @@ void ImDrawList::ChannelsSplit(int channels_count)
         _Channels.resize(channels_count);
     _ChannelsCount = channels_count;
 
-    // _Channels[] (24 bytes each) hold storage that we'll swap with this->_CmdBuffer/_IdxBuffer
+    // _Channels[] (24/32 bytes each) hold storage that we'll swap with this->_CmdBuffer/_IdxBuffer
     // The content of _Channels[0] at this point doesn't matter. We clear it to make state tidy in a debugger but we don't strictly need to.
     // When we switch to the next channel, we'll copy _CmdBuffer/_IdxBuffer into _Channels[0] and then _Channels[1] into _CmdBuffer/_IdxBuffer
     memset(&_Channels[0], 0, sizeof(ImDrawChannel));
@@ -373,7 +552,7 @@ void ImDrawList::PrimReserve(int idx_count, int vtx_count)
 // Fully unrolled with inline call to keep our debug builds decently fast.
 void ImDrawList::PrimRect(const ImVec2& a, const ImVec2& c, ImU32 col)
 {
-    ImVec2 b(c.x, a.y), d(a.x, c.y), uv(GImGui->FontTexUvWhitePixel);
+    ImVec2 b(c.x, a.y), d(a.x, c.y), uv(_Data->TexUvWhitePixel);
     ImDrawIdx idx = (ImDrawIdx)_VtxCurrentIdx;
     _IdxWritePtr[0] = idx; _IdxWritePtr[1] = (ImDrawIdx)(idx+1); _IdxWritePtr[2] = (ImDrawIdx)(idx+2);
     _IdxWritePtr[3] = idx; _IdxWritePtr[4] = (ImDrawIdx)(idx+2); _IdxWritePtr[5] = (ImDrawIdx)(idx+3);
@@ -416,21 +595,19 @@ void ImDrawList::PrimQuadUV(const ImVec2& a, const ImVec2& b, const ImVec2& c, c
 }
 
 // TODO: Thickness anti-aliased lines cap are missing their AA fringe.
-void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32 col, bool closed, float thickness, bool anti_aliased)
+void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32 col, bool closed, float thickness)
 {
     if (points_count < 2)
         return;
 
-    const ImVec2 uv = GImGui->FontTexUvWhitePixel;
-    anti_aliased &= GImGui->Style.AntiAliasedLines;
-    //if (ImGui::GetIO().KeyCtrl) anti_aliased = false; // Debug
+    const ImVec2 uv = _Data->TexUvWhitePixel;
 
     int count = points_count;
     if (!closed)
         count = points_count-1;
 
     const bool thick_line = thickness > 1.0f;
-    if (anti_aliased)
+    if (Flags & ImDrawListFlags_AntiAliasedLines)
     {
         // Anti-aliased stroke
         const float AA_SIZE = 1.0f;
@@ -597,13 +774,11 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
     }
 }
 
-void ImDrawList::AddConvexPolyFilled(const ImVec2* points, const int points_count, ImU32 col, bool anti_aliased)
+void ImDrawList::AddConvexPolyFilled(const ImVec2* points, const int points_count, ImU32 col)
 {
-    const ImVec2 uv = GImGui->FontTexUvWhitePixel;
-    anti_aliased &= GImGui->Style.AntiAliasedShapes;
-    //if (ImGui::GetIO().KeyCtrl) anti_aliased = false; // Debug
+    const ImVec2 uv = _Data->TexUvWhitePixel;
 
-    if (anti_aliased)
+    if (Flags & ImDrawListFlags_AntiAliasedFill)
     {
         // Anti-aliased Fill
         const float AA_SIZE = 1.0f;
@@ -682,20 +857,6 @@ void ImDrawList::AddConvexPolyFilled(const ImVec2* points, const int points_coun
 
 void ImDrawList::PathArcToFast(const ImVec2& centre, float radius, int a_min_of_12, int a_max_of_12)
 {
-    static ImVec2 circle_vtx[12];
-    static bool circle_vtx_builds = false;
-    const int circle_vtx_count = IM_ARRAYSIZE(circle_vtx);
-    if (!circle_vtx_builds)
-    {
-        for (int i = 0; i < circle_vtx_count; i++)
-        {
-            const float a = ((float)i / (float)circle_vtx_count) * 2*IM_PI;
-            circle_vtx[i].x = cosf(a);
-            circle_vtx[i].y = sinf(a);
-        }
-        circle_vtx_builds = true;
-    }
-
     if (radius == 0.0f || a_min_of_12 > a_max_of_12)
     {
         _Path.push_back(centre);
@@ -704,7 +865,7 @@ void ImDrawList::PathArcToFast(const ImVec2& centre, float radius, int a_min_of_
     _Path.reserve(_Path.Size + (a_max_of_12 - a_min_of_12 + 1));
     for (int a = a_min_of_12; a <= a_max_of_12; a++)
     {
-        const ImVec2& c = circle_vtx[a % circle_vtx_count];
+        const ImVec2& c = _Data->CircleVtx12[a % IM_ARRAYSIZE(_Data->CircleVtx12)];
         _Path.push_back(ImVec2(centre.x + c.x * radius, centre.y + c.y * radius));
     }
 }
@@ -756,7 +917,7 @@ void ImDrawList::PathBezierCurveTo(const ImVec2& p2, const ImVec2& p3, const ImV
     if (num_segments == 0)
     {
         // Auto-tessellated
-        PathBezierToCasteljau(&_Path, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, p4.x, p4.y, GImGui->Style.CurveTessellationTol, 0);
+        PathBezierToCasteljau(&_Path, p1.x, p1.y, p2.x, p2.y, p3.x, p3.y, p4.x, p4.y, _Data->CurveTessellationTol, 0);
     }
     else
     {
@@ -776,13 +937,8 @@ void ImDrawList::PathBezierCurveTo(const ImVec2& p2, const ImVec2& p3, const ImV
 
 void ImDrawList::PathRect(const ImVec2& a, const ImVec2& b, float rounding, int rounding_corners)
 {
-    const int corners_top = ImGuiCorner_TopLeft | ImGuiCorner_TopRight;
-    const int corners_bottom = ImGuiCorner_BotLeft | ImGuiCorner_BotRight;
-    const int corners_left = ImGuiCorner_TopLeft | ImGuiCorner_BotLeft;
-    const int corners_right = ImGuiCorner_TopRight | ImGuiCorner_BotRight;
-
-    rounding = ImMin(rounding, fabsf(b.x - a.x) * ( ((rounding_corners & corners_top)  == corners_top)  || ((rounding_corners & corners_bottom) == corners_bottom) ? 0.5f : 1.0f ) - 1.0f);
-    rounding = ImMin(rounding, fabsf(b.y - a.y) * ( ((rounding_corners & corners_left) == corners_left) || ((rounding_corners & corners_right)  == corners_right)  ? 0.5f : 1.0f ) - 1.0f);
+    rounding = ImMin(rounding, fabsf(b.x - a.x) * ( ((rounding_corners & ImDrawCornerFlags_Top)  == ImDrawCornerFlags_Top)  || ((rounding_corners & ImDrawCornerFlags_Bot)   == ImDrawCornerFlags_Bot)   ? 0.5f : 1.0f ) - 1.0f);
+    rounding = ImMin(rounding, fabsf(b.y - a.y) * ( ((rounding_corners & ImDrawCornerFlags_Left) == ImDrawCornerFlags_Left) || ((rounding_corners & ImDrawCornerFlags_Right) == ImDrawCornerFlags_Right) ? 0.5f : 1.0f ) - 1.0f);
 
     if (rounding <= 0.0f || rounding_corners == 0)
     {
@@ -793,10 +949,10 @@ void ImDrawList::PathRect(const ImVec2& a, const ImVec2& b, float rounding, int 
     }
     else
     {
-        const float rounding_tl = (rounding_corners & ImGuiCorner_TopLeft) ? rounding : 0.0f;
-        const float rounding_tr = (rounding_corners & ImGuiCorner_TopRight) ? rounding : 0.0f;
-        const float rounding_br = (rounding_corners & ImGuiCorner_BotRight) ? rounding : 0.0f;
-        const float rounding_bl = (rounding_corners & ImGuiCorner_BotLeft) ? rounding : 0.0f;
+        const float rounding_tl = (rounding_corners & ImDrawCornerFlags_TopLeft) ? rounding : 0.0f;
+        const float rounding_tr = (rounding_corners & ImDrawCornerFlags_TopRight) ? rounding : 0.0f;
+        const float rounding_br = (rounding_corners & ImDrawCornerFlags_BotRight) ? rounding : 0.0f;
+        const float rounding_bl = (rounding_corners & ImDrawCornerFlags_BotLeft) ? rounding : 0.0f;
         PathArcToFast(ImVec2(a.x + rounding_tl, a.y + rounding_tl), rounding_tl, 6, 9);
         PathArcToFast(ImVec2(b.x - rounding_tr, a.y + rounding_tr), rounding_tr, 9, 12);
         PathArcToFast(ImVec2(b.x - rounding_br, b.y - rounding_br), rounding_br, 0, 3);
@@ -843,7 +999,7 @@ void ImDrawList::AddRectFilledMultiColor(const ImVec2& a, const ImVec2& c, ImU32
     if (((col_upr_left | col_upr_right | col_bot_right | col_bot_left) & IM_COL32_A_MASK) == 0)
         return;
 
-    const ImVec2 uv = GImGui->FontTexUvWhitePixel;
+    const ImVec2 uv = _Data->TexUvWhitePixel;
     PrimReserve(6, 4);
     PrimWriteIdx((ImDrawIdx)(_VtxCurrentIdx)); PrimWriteIdx((ImDrawIdx)(_VtxCurrentIdx+1)); PrimWriteIdx((ImDrawIdx)(_VtxCurrentIdx+2));
     PrimWriteIdx((ImDrawIdx)(_VtxCurrentIdx)); PrimWriteIdx((ImDrawIdx)(_VtxCurrentIdx+2)); PrimWriteIdx((ImDrawIdx)(_VtxCurrentIdx+3));
@@ -939,12 +1095,11 @@ void ImDrawList::AddText(const ImFont* font, float font_size, const ImVec2& pos,
     if (text_begin == text_end)
         return;
 
-    // IMPORTANT: This is one of the few instance of breaking the encapsulation of ImDrawList, as we pull this from ImGui state, but it is just SO useful.
-    // Might just move Font/FontSize to ImDrawList?
+    // Pull default font/size from the shared ImDrawListSharedData instance
     if (font == NULL)
-        font = GImGui->Font;
+        font = _Data->Font;
     if (font_size == 0.0f)
-        font_size = GImGui->FontSize;
+        font_size = _Data->FontSize;
 
     IM_ASSERT(font->ContainerAtlas->TexID == _TextureIdStack.back());  // Use high-level ImGui::PushFont() or low-level ImDrawList::PushTextureId() to change font.
 
@@ -969,7 +1124,6 @@ void ImDrawList::AddImage(ImTextureID user_texture_id, const ImVec2& a, const Im
     if ((col & IM_COL32_A_MASK) == 0)
         return;
 
-    // FIXME-OPT: This is wasting draw calls.
     const bool push_texture_id = _TextureIdStack.empty() || user_texture_id != _TextureIdStack.back();
     if (push_texture_id)
         PushTextureID(user_texture_id);
@@ -992,6 +1146,31 @@ void ImDrawList::AddImageQuad(ImTextureID user_texture_id, const ImVec2& a, cons
 
     PrimReserve(6, 4);
     PrimQuadUV(a, b, c, d, uv_a, uv_b, uv_c, uv_d, col);
+
+    if (push_texture_id)
+        PopTextureID();
+}
+
+void ImDrawList::AddImageRounded(ImTextureID user_texture_id, const ImVec2& a, const ImVec2& b, const ImVec2& uv_a, const ImVec2& uv_b, ImU32 col, float rounding, int rounding_corners)
+{
+    if ((col & IM_COL32_A_MASK) == 0)
+        return;
+
+    if (rounding <= 0.0f || (rounding_corners & ImDrawCornerFlags_All) == 0)
+    {
+        AddImage(user_texture_id, a, b, uv_a, uv_b, col);
+        return;
+    }
+
+    const bool push_texture_id = _TextureIdStack.empty() || user_texture_id != _TextureIdStack.back();
+    if (push_texture_id)
+        PushTextureID(user_texture_id);
+
+    int vert_start_idx = VtxBuffer.Size;
+    PathRect(a, b, rounding, rounding_corners);
+    PathFillConvex(col);
+    int vert_end_idx = VtxBuffer.Size;
+    ImGui::ShadeVertsLinearUV(VtxBuffer.Data + vert_start_idx, VtxBuffer.Data + vert_end_idx, a, b, uv_a, uv_b, true);
 
     if (push_texture_id)
         PopTextureID();
@@ -1071,6 +1250,30 @@ void ImGui::ShadeVertsLinearAlphaGradientForLeftToRightText(ImDrawVert* vert_sta
     }
 }
 
+// Distribute UV over (a, b) rectangle
+void ImGui::ShadeVertsLinearUV(ImDrawVert* vert_start, ImDrawVert* vert_end, const ImVec2& a, const ImVec2& b, const ImVec2& uv_a, const ImVec2& uv_b, bool clamp)
+{
+    const ImVec2 size = b - a;
+    const ImVec2 uv_size = uv_b - uv_a;
+    const ImVec2 scale = ImVec2(
+        size.x != 0.0f ? (uv_size.x / size.x) : 0.0f,
+        size.y != 0.0f ? (uv_size.y / size.y) : 0.0f);
+
+    if (clamp)
+    {
+        const ImVec2 min = ImMin(uv_a, uv_b);
+        const ImVec2 max = ImMax(uv_a, uv_b);
+
+        for (ImDrawVert* vertex = vert_start; vertex < vert_end; ++vertex)
+            vertex->uv = ImClamp(uv_a + ImMul(ImVec2(vertex->pos.x, vertex->pos.y) - a, scale), min, max);
+    }
+    else
+    {
+        for (ImDrawVert* vertex = vert_start; vertex < vert_end; ++vertex)
+            vertex->uv = uv_a + ImMul(ImVec2(vertex->pos.x, vertex->pos.y) - a, scale);
+    }
+}
+
 //-----------------------------------------------------------------------------
 // ImFontConfig
 //-----------------------------------------------------------------------------
@@ -1104,7 +1307,7 @@ ImFontConfig::ImFontConfig()
 const int FONT_ATLAS_DEFAULT_TEX_DATA_W_HALF = 90;
 const int FONT_ATLAS_DEFAULT_TEX_DATA_H      = 27;
 const unsigned int FONT_ATLAS_DEFAULT_TEX_DATA_ID = 0x80000000;
-const char FONT_ATLAS_DEFAULT_TEX_DATA_PIXELS[FONT_ATLAS_DEFAULT_TEX_DATA_W_HALF * FONT_ATLAS_DEFAULT_TEX_DATA_H + 1] =
+static const char FONT_ATLAS_DEFAULT_TEX_DATA_PIXELS[FONT_ATLAS_DEFAULT_TEX_DATA_W_HALF * FONT_ATLAS_DEFAULT_TEX_DATA_H + 1] =
 {
     "..-         -XXXXXXX-    X    -           X           -XXXXXXX          -          XXXXXXX"
     "..-         -X.....X-   X.X   -          X.X          -X.....X          -          X.....X"
@@ -1134,6 +1337,19 @@ const char FONT_ATLAS_DEFAULT_TEX_DATA_PIXELS[FONT_ATLAS_DEFAULT_TEX_DATA_W_HALF
     "                                                      -   X.X           X.X   -           "
     "                                                      -    XX           XX    -           "
 };
+
+static const ImVec2 FONT_ATLAS_DEFAULT_TEX_CURSOR_DATA[ImGuiMouseCursor_Count_][3] =
+{
+    // Pos ........ Size ......... Offset ......
+    { ImVec2(0,3),  ImVec2(12,19), ImVec2( 0, 0) }, // ImGuiMouseCursor_Arrow
+    { ImVec2(13,0), ImVec2(7,16),  ImVec2( 4, 8) }, // ImGuiMouseCursor_TextInput
+    { ImVec2(31,0), ImVec2(23,23), ImVec2(11,11) }, // ImGuiMouseCursor_Move
+    { ImVec2(21,0), ImVec2( 9,23), ImVec2( 5,11) }, // ImGuiMouseCursor_ResizeNS
+    { ImVec2(55,18),ImVec2(23, 9), ImVec2(11, 5) }, // ImGuiMouseCursor_ResizeEW
+    { ImVec2(73,0), ImVec2(17,17), ImVec2( 9, 9) }, // ImGuiMouseCursor_ResizeNESW
+    { ImVec2(55,0), ImVec2(17,17), ImVec2( 9, 9) }, // ImGuiMouseCursor_ResizeNWSE
+};
+
 
 ImFontAtlas::ImFontAtlas()
 {
@@ -1188,10 +1404,7 @@ void    ImFontAtlas::ClearTexData()
 void    ImFontAtlas::ClearFonts()
 {
     for (int i = 0; i < Fonts.Size; i++)
-    {
-        Fonts[i]->~ImFont();
-        ImGui::MemFree(Fonts[i]);
-    }
+        IM_DELETE(Fonts[i]);
     Fonts.clear();
 }
 
@@ -1246,15 +1459,9 @@ ImFont* ImFontAtlas::AddFont(const ImFontConfig* font_cfg)
 
     // Create new font
     if (!font_cfg->MergeMode)
-    {
-        ImFont* font = (ImFont*)ImGui::MemAlloc(sizeof(ImFont));
-        IM_PLACEMENT_NEW(font) ImFont();
-        Fonts.push_back(font);
-    }
+        Fonts.push_back(IM_NEW(ImFont));
     else
-    {
         IM_ASSERT(!Fonts.empty()); // When using MergeMode make sure that a font has already been added before. You can use ImGui::GetIO().Fonts->AddFontDefault() to add the default imgui font.
-    }
 
     ConfigData.push_back(*font_cfg);
     ImFontConfig& new_font_cfg = ConfigData.back();
@@ -1449,7 +1656,7 @@ bool    ImFontAtlasBuildWithStbTruetype(ImFontAtlas* atlas)
 
     // Start packing
     const int max_tex_height = 1024*32;
-    stbtt_pack_context spc;
+    stbtt_pack_context spc = {};
     stbtt_PackBegin(&spc, NULL, atlas->TexWidth, max_tex_height, 0, atlas->TexGlyphPadding, NULL);
     stbtt_PackSetOversampling(&spc, 1, 1);
 
@@ -1680,26 +1887,14 @@ static void ImFontAtlasBuildRenderDefaultTexData(ImFontAtlas* atlas)
     atlas->TexUvWhitePixel = ImVec2((r.X + 0.5f) * tex_uv_scale.x, (r.Y + 0.5f) * tex_uv_scale.y);
 
     // Setup mouse cursors
-    const ImVec2 cursor_datas[ImGuiMouseCursor_Count_][3] =
-    {
-        // Pos ........ Size ......... Offset ......
-        { ImVec2(0,3),  ImVec2(12,19), ImVec2( 0, 0) }, // ImGuiMouseCursor_Arrow
-        { ImVec2(13,0), ImVec2(7,16),  ImVec2( 4, 8) }, // ImGuiMouseCursor_TextInput
-        { ImVec2(31,0), ImVec2(23,23), ImVec2(11,11) }, // ImGuiMouseCursor_Move
-        { ImVec2(21,0), ImVec2( 9,23), ImVec2( 5,11) }, // ImGuiMouseCursor_ResizeNS
-        { ImVec2(55,18),ImVec2(23, 9), ImVec2(11, 5) }, // ImGuiMouseCursor_ResizeEW
-        { ImVec2(73,0), ImVec2(17,17), ImVec2( 9, 9) }, // ImGuiMouseCursor_ResizeNESW
-        { ImVec2(55,0), ImVec2(17,17), ImVec2( 9, 9) }, // ImGuiMouseCursor_ResizeNWSE
-    };
-
     for (int type = 0; type < ImGuiMouseCursor_Count_; type++)
     {
         ImGuiMouseCursorData& cursor_data = GImGui->MouseCursorData[type];
-        ImVec2 pos = cursor_datas[type][0] + ImVec2((float)r.X, (float)r.Y);
-        const ImVec2 size = cursor_datas[type][1];
+        ImVec2 pos = FONT_ATLAS_DEFAULT_TEX_CURSOR_DATA[type][0] + ImVec2((float)r.X, (float)r.Y);
+        const ImVec2 size = FONT_ATLAS_DEFAULT_TEX_CURSOR_DATA[type][1];
         cursor_data.Type = type;
         cursor_data.Size = size;
-        cursor_data.HotOffset = cursor_datas[type][2];
+        cursor_data.HotOffset = FONT_ATLAS_DEFAULT_TEX_CURSOR_DATA[type][2];
         cursor_data.TexUvMin[0] = (pos) * tex_uv_scale;
         cursor_data.TexUvMax[0] = (pos + size) * tex_uv_scale;
         pos.x += FONT_ATLAS_DEFAULT_TEX_DATA_W_HALF + 1;
@@ -1851,6 +2046,7 @@ const ImWchar*  ImFontAtlas::GetGlyphRangesThai()
     static const ImWchar ranges[] =
     {
         0x0020, 0x00FF, // Basic Latin
+        0x2010, 0x205E, // Punctuations
         0x0E00, 0x0E7F, // Thai
         0,
     };
@@ -2026,7 +2222,7 @@ void ImFont::AddRemapChar(ImWchar dst, ImWchar src, bool overwrite_dst)
     IndexAdvanceX[dst] = (src < index_size) ? IndexAdvanceX.Data[src] : 1.0f;
 }
 
-const ImFontGlyph* ImFont::FindGlyph(unsigned short c) const
+const ImFontGlyph* ImFont::FindGlyph(ImWchar c) const
 {
     if (c < IndexLookup.Size)
     {

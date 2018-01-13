@@ -68,7 +68,7 @@ int main(int, char**)
 
         if( !view )
         {
-            ImGui::Begin( "Connect to...", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+            ImGui::Begin( "Connect to...", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
             ImGui::InputText( "Address", addr, 1024 );
             if( ImGui::Button( "Connect" ) && *addr )
             {

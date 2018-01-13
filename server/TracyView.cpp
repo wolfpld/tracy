@@ -1738,7 +1738,7 @@ void View::DrawImpl()
 {
     if( !m_hasData.load( std::memory_order_acquire ) )
     {
-        ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+        ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize );
         ImGui::Text( "Waiting for connection..." );
         ImGui::End();
         return;
@@ -1750,7 +1750,7 @@ void View::DrawImpl()
     }
 
     std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
-    ImGui::Begin( m_captureName.c_str(), nullptr, ImGuiWindowFlags_ShowBorders | ImGuiWindowFlags_NoScrollbar );
+    ImGui::Begin( m_captureName.c_str(), nullptr, ImGuiWindowFlags_NoScrollbar );
     if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 70, 0 ) ) ) m_pause = !m_pause;
     ImGui::SameLine();
     if( ImGui::Button( "Options", ImVec2( 70, 0 ) ) ) m_showOptions = true;
@@ -1796,7 +1796,7 @@ void View::DrawConnection()
 
     {
         std::lock_guard<NonRecursiveBenaphore> lock( m_mbpslock );
-        ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+        ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize );
         const auto mbps = m_mbps.back();
         char buf[64];
         if( mbps < 0.1f )
@@ -3851,7 +3851,7 @@ void View::DrawZoneInfoWindow()
     int dmul = 1;
 
     bool show = true;
-    ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_ShowBorders );
+    ImGui::Begin( "Zone info", &show );
 
     if( ImGui::Button( "Zoom to zone" ) )
     {
@@ -3959,7 +3959,7 @@ void View::DrawGpuInfoWindow()
     auto& ev = *m_gpuInfoWindow;
 
     bool show = true;
-    ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_ShowBorders );
+    ImGui::Begin( "Zone info", &show );
 
     if( ImGui::Button( "Zoom to zone" ) )
     {
@@ -4051,7 +4051,7 @@ void View::DrawGpuInfoWindow()
 void View::DrawOptions()
 {
     const auto tw = ImGui::GetFontSize();
-    ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_ShowBorders );
+    ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
     ImGui::Checkbox( "Draw GPU zones", &m_drawGpuZones );
     ImGui::Indent( tw );
     for( size_t i=0; i<m_gpuData.size(); i++ )
@@ -4101,7 +4101,7 @@ void View::DrawOptions()
 
 void View::DrawMessages()
 {
-    ImGui::Begin( "Messages", &m_showMessages, ImGuiWindowFlags_ShowBorders );
+    ImGui::Begin( "Messages", &m_showMessages );
     for( auto& v : m_messages )
     {
         char tmp[64 * 1024];

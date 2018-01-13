@@ -55,6 +55,8 @@ int main(int, char**)
         }
     }
 
+    ImGui::StyleColorsDark();
+
     ImVec4 clear_color = ImColor(114, 144, 154);
 
     char addr[1024] = { "127.0.0.1" };

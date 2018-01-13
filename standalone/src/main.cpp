@@ -56,6 +56,11 @@ int main(int, char**)
     }
 
     ImGui::StyleColorsDark();
+    auto& style = ImGui::GetStyle();
+    style.WindowBorderSize = 1.f;
+    style.FrameBorderSize = 1.f;
+    style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 0.94f );
+    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
 
     ImVec4 clear_color = ImColor(114, 144, 154);
 

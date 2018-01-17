@@ -1723,6 +1723,19 @@ const char* View::ShortenNamespace( const char* name ) const
     }
 }
 
+void View::DrawHelpMarker( const char* desc ) const
+{
+    ImGui::TextDisabled( "(?)" );
+    if ( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos( 450.0f );
+        ImGui::TextUnformatted( desc );
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+}
+
 void View::DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text )
 {
     draw->AddText( pos + ImVec2( 1, 1 ), 0x88000000, text );
@@ -1757,6 +1770,8 @@ void View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Messages", ImVec2( 70, 0 ) ) ) m_showMessages = true;
     ImGui::SameLine();
+    if ( ImGui::Button( "Find Zone", ImVec2( 70, 0 ) ) ) m_findZone.show = true;
+    ImGui::SameLine();
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( m_lastTime - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_zonesCnt, true ), TimeToString( m_delay ), TimeToString( m_resolution ) );
     DrawFrames();
     DrawZones();
@@ -1769,6 +1784,7 @@ void View::DrawImpl()
 
     if( m_showOptions ) DrawOptions();
     if( m_showMessages ) DrawMessages();
+    if( m_findZone.show ) DrawFindZone();
 
     if( m_zoomAnim.active )
     {
@@ -4124,6 +4140,81 @@ void View::DrawMessages()
     ImGui::End();
 }
 
+void View::DrawFindZone()
+{
+    ImGui::Begin( "Find Zone", &m_findZone.show );
+    ImGui::InputText( "", m_findZone.pattern, 1024 );
+    ImGui::SameLine();
+
+    bool findClicked = ImGui::Button( "Find" );
+
+    ImGui::SameLine();
+
+    if( ImGui::Button( "Clear" ) )
+    {
+        m_findZone.result.clear();
+    }
+
+    if( ImGui::TreeNode( "Options" ) )
+    {
+        ImGui::InputInt( "max zones per thread", &m_findZone.maxZonesPerThread );
+        ImGui::SameLine();
+        DrawHelpMarker( "0 for unlimitted.\nHigh value or unlimmited zone search may lead to performance issues." );
+        ImGui::InputInt( "max depth", &m_findZone.maxDepth );
+        ImGui::SameLine();
+        DrawHelpMarker( "-1 for unlimitted." );
+        ImGui::TreePop();
+    }
+
+    if ( findClicked )
+    {
+        m_findZone.result.clear();
+        FindZones();
+    }
+
+    ImGui::Separator();
+
+    for( const auto &v : m_findZone.result )
+    {
+        if( ImGui::TreeNode( GetThreadString( v->id ) ) )
+        {
+            ImGui::Columns( 3, GetThreadString( v->id ) );
+            ImGui::Separator();
+            ImGui::Text( "Name" );
+            ImGui::NextColumn();
+            ImGui::Text( "Time from start" );
+            ImGui::NextColumn();
+            ImGui::Text( "Execution time" );
+            ImGui::NextColumn();
+            ImGui::Separator();
+
+            for( auto ev : v->timeline )
+            {
+                ImGui::PushID( ev );
+
+                auto& srcloc = GetSourceLocation( ev->srcloc );
+                if( ImGui::Selectable( GetString( srcloc.name.active ? srcloc.name : srcloc.function ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
+                    m_zoneInfoWindow = ev;
+
+                ImGui::NextColumn();
+
+                ImGui::Text( TimeToString( ev->start - m_frames[0] ) );
+                ImGui::NextColumn();
+                const auto end = GetZoneEnd( *ev );
+                ImGui::Text( TimeToString( end - ev->start ) );
+                ImGui::NextColumn();
+
+                ImGui::PopID();
+            }
+            ImGui::Columns( 1 );
+            ImGui::Separator();
+            ImGui::TreePop();
+        }
+    }
+
+    ImGui::End();
+}
+
 uint32_t View::GetZoneColor( const ZoneEvent& ev )
 {
     auto& srcloc = GetSourceLocation( ev.srcloc );
@@ -4355,6 +4446,38 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
         }
     }
     return nullptr;
+}
+
+void View::FindZones()
+{
+    for( auto v : m_threads )
+    {
+        auto thrOut = std::make_unique<ThreadData>();
+        FindZones( v->timeline, thrOut->timeline, m_findZone.maxDepth );
+
+        if ( thrOut->timeline.size() )
+        {
+            thrOut->id = v->id;
+            m_findZone.result.push_back( std::move( thrOut ) );
+        }
+    }
+}
+
+void View::FindZones( const Vector<ZoneEvent*> &events, Vector<ZoneEvent*> &out, const int maxdepth )
+{
+    for ( ZoneEvent *ev : events )
+    {
+        if ( out.size() >= m_findZone.maxZonesPerThread )
+            break;
+
+        auto& srcloc = GetSourceLocation( ev->srcloc );
+        const auto str = GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+
+        if ( strstr( str, m_findZone.pattern ) )
+            out.push_back( ev );
+
+        if ( maxdepth != 0 ) FindZones( ev->child, out, maxdepth - 1 );
+    }
 }
 
 void View::Write( FileWrite& f )

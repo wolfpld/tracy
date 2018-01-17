@@ -134,6 +134,8 @@ private:
 
     const char* ShortenNamespace( const char* name ) const;
 
+    void DrawHelpMarker( const char* desc ) const;
+
     void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text );
 
     void DrawImpl();
@@ -148,6 +150,7 @@ private:
     void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged );
     void DrawOptions();
     void DrawMessages();
+    void DrawFindZone();
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
@@ -170,6 +173,9 @@ private:
     void ZoneTooltip( const GpuEvent& ev );
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
+
+    void FindZones();
+    void FindZones( const Vector<ZoneEvent*> &events, Vector<ZoneEvent*> &out, const int maxdepth = 0 );
 
     void Write( FileWrite& f );
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
@@ -275,6 +281,14 @@ private:
 
     Namespace m_namespace;
     Animation m_zoomAnim;
+
+    struct {
+        bool show;
+        std::vector<std::unique_ptr<ThreadData>> result;
+        char pattern[1024] = { "" };
+        int maxZonesPerThread = 1000;
+        int maxDepth = 10;
+    } m_findZone;
 
     bool m_terminate;
 };

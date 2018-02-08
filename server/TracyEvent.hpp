@@ -4,6 +4,7 @@
 #include <limits>
 #include <string.h>
 
+#include "TracyCharUtil.hpp"
 #include "TracyVector.hpp"
 #include "tracy_flat_hash_map.hpp"
 

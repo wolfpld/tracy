@@ -21,6 +21,7 @@ class Vector
 {
 public:
     using iterator = T*;
+    using const_iterator = const T*;
 
     Vector()
         : m_ptr( nullptr )

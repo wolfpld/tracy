@@ -8,13 +8,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../common/tracy_lz4.hpp"
-#include "../common/TracySocket.hpp"
-#include "../common/TracyQueue.hpp"
-#include "TracyCharUtil.hpp"
-#include "TracyEvent.hpp"
-#include "TracySlab.hpp"
 #include "TracyVector.hpp"
+#include "TracyWorker.hpp"
 #include "tracy_benaphore.h"
 #include "tracy_flat_hash_map.hpp"
 
@@ -25,17 +20,9 @@ namespace tracy
 
 struct QueueItem;
 class FileRead;
-class FileWrite;
 
 class View
 {
-    template<typename T>
-    struct nohash
-    {
-        size_t operator()( const T& v ) { return (size_t)v; }
-        typedef tracy::power_of_two_hash_policy hash_policy;
-    };
-
     struct Animation
     {
         bool active = false;
@@ -51,7 +38,6 @@ public:
     View( FileRead& f );
     ~View();
 
-    static bool ShouldExit();
     static void Draw();
 
 private:
@@ -61,76 +47,6 @@ private:
         Mid,
         Short
     };
-
-    void Worker();
-
-    tracy_force_inline void DispatchProcess( const QueueItem& ev, char*& ptr );
-
-    void ServerQuery( uint8_t type, uint64_t data );
-
-    tracy_force_inline void Process( const QueueItem& ev );
-    tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
-    tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
-    tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
-    tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
-    tracy_force_inline void ProcessZoneText( const QueueZoneText& ev );
-    tracy_force_inline void ProcessLockAnnounce( const QueueLockAnnounce& ev );
-    tracy_force_inline void ProcessLockWait( const QueueLockWait& ev );
-    tracy_force_inline void ProcessLockObtain( const QueueLockObtain& ev );
-    tracy_force_inline void ProcessLockRelease( const QueueLockRelease& ev );
-    tracy_force_inline void ProcessLockSharedWait( const QueueLockWait& ev );
-    tracy_force_inline void ProcessLockSharedObtain( const QueueLockObtain& ev );
-    tracy_force_inline void ProcessLockSharedRelease( const QueueLockRelease& ev );
-    tracy_force_inline void ProcessLockMark( const QueueLockMark& ev );
-    tracy_force_inline void ProcessPlotData( const QueuePlotData& ev );
-    tracy_force_inline void ProcessMessage( const QueueMessage& ev );
-    tracy_force_inline void ProcessMessageLiteral( const QueueMessage& ev );
-    tracy_force_inline void ProcessGpuNewContext( const QueueGpuNewContext& ev );
-    tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev );
-    tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev );
-    tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
-    tracy_force_inline void ProcessGpuResync( const QueueGpuResync& ev );
-
-    void CheckString( uint64_t ptr );
-    void CheckThreadString( uint64_t id );
-
-    tracy_force_inline void CheckSourceLocation( uint64_t ptr );
-    void NewSourceLocation( uint64_t ptr );
-
-    void AddString( uint64_t ptr, char* str, size_t sz );
-    void AddThreadString( uint64_t id, char* str, size_t sz );
-    void AddCustomString( uint64_t ptr, char* str, size_t sz );
-    void AddSourceLocation( const QueueSourceLocation& srcloc );
-    void AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz );
-
-    StringLocation StoreString( char* str, size_t sz );
-
-    tracy_force_inline uint32_t ShrinkSourceLocation( uint64_t srcloc );
-    uint32_t NewShrinkedSourceLocation( uint64_t srcloc );
-
-    void InsertMessageData( MessageData* msg, uint64_t thread );
-
-    tracy_force_inline ThreadData* NoticeThread( uint64_t thread );
-    ThreadData* NewThread( uint64_t thread );
-
-    tracy_force_inline void NewZone( ZoneEvent* zone, uint64_t thread );
-
-    void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread );
-
-    void InsertPlot( PlotData* plot, int64_t time, double val );
-    void HandlePlotName( uint64_t name, char* str, size_t sz );
-    void HandlePostponedPlots();
-
-    int64_t GetFrameTime( size_t idx ) const;
-    int64_t GetFrameBegin( size_t idx ) const;
-    int64_t GetFrameEnd( size_t idx ) const;
-    int64_t GetZoneEnd( const ZoneEvent& ev ) const;
-    int64_t GetZoneEnd( const GpuEvent& ev ) const;
-    const char* GetString( uint64_t ptr ) const;
-    const char* GetString( const StringRef& ref ) const;
-    const char* GetString( const StringIdx& idx ) const;
-    const char* GetThreadString( uint64_t id ) const;
-    const SourceLocation& GetSourceLocation( int32_t srcloc ) const;
 
     const char* ShortenNamespace( const char* name ) const;
 
@@ -177,68 +93,32 @@ private:
     void FindZones();
     void FindZones( const Vector<ZoneEvent*> &events, Vector<ZoneEvent*> &out, const int maxdepth = 0 );
 
-    void Write( FileWrite& f );
-    void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
-    void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec );
-    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec );
-    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
+    template <typename T>
+    bool& Visible( const T* ptr )
+    {
+        static std::map <const T*, bool> visible;
+        if( visible.find( ptr ) == visible.end() )
+        {
+            visible[ptr] = true;
+        }
 
-    int64_t TscTime( int64_t tsc ) { return int64_t( tsc * m_timerMul ); }
-    int64_t TscTime( uint64_t tsc ) { return int64_t( tsc * m_timerMul ); }
+        return visible[ptr];
+    }
 
-    std::string m_addr;
+    template <typename T>
+    bool& ShowFull( const T* ptr )
+    {
+        static std::map <const T*, bool> showFull;
+        if( showFull.find( ptr ) == showFull.end() )
+        {
+            showFull[ptr] = true;
+        }
 
-    Socket m_sock;
-    std::thread m_thread;
-    std::atomic<bool> m_shutdown;
-    std::atomic<bool> m_connected;
-    std::atomic<bool> m_hasData;
+        return showFull[ptr];
+    }
+
+    Worker m_worker;
     bool m_staticView;
-
-    // this block must be locked
-    NonRecursiveBenaphore m_lock;
-    Vector<int64_t> m_frames;
-    Vector<ThreadData*> m_threads;
-    Vector<PlotData*> m_plots;
-    Vector<MessageData*> m_messages;
-    Vector<GpuCtxData*> m_gpuData;
-    flat_hash_map<uint64_t, const char*, nohash<uint64_t>> m_strings;
-    flat_hash_map<uint64_t, const char*, nohash<uint64_t>> m_threadNames;
-    flat_hash_map<uint64_t, SourceLocation, nohash<uint64_t>> m_sourceLocation;
-    std::vector<uint64_t> m_sourceLocationExpand;
-    std::map<uint32_t, LockMap> m_lockMap;
-    uint64_t m_zonesCnt;
-
-    Vector<const char*> m_stringData;
-    std::unordered_map<const char*, uint32_t, charutil::Hasher, charutil::Comparator> m_stringMap;
-
-    Vector<SourceLocation*> m_sourceLocationPayload;
-    flat_hash_map<SourceLocation*, uint32_t, SourceLocationHasher, SourceLocationComparator> m_sourceLocationPayloadMap;
-
-    NonRecursiveBenaphore m_mbpslock;
-    std::vector<float> m_mbps;
-    float m_compRatio;
-
-    // not used for vis - no need to lock
-    flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
-    flat_hash_map<uint64_t, ThreadData*, nohash<uint64_t>> m_threadMap;
-    flat_hash_map<uint16_t, GpuCtxData*, nohash<uint16_t>> m_gpuCtxMap;
-    flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_plotMap;
-    std::unordered_map<const char*, PlotData*, charutil::Hasher, charutil::Comparator> m_plotRev;
-    flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_pendingPlots;
-    flat_hash_map<uint64_t, uint32_t, nohash<uint64_t>> m_sourceLocationShrink;
-    flat_hash_map<uint64_t, int32_t, nohash<uint64_t>> m_pendingSourceLocationPayload;
-    Vector<uint64_t> m_sourceLocationQueue;
-
-    uint32_t m_pendingStrings;
-    uint32_t m_pendingThreads;
-    uint32_t m_pendingSourceLocation;
-
-    Slab<64*1024*1024> m_slab;
-
-    LZ4_streamDecode_t* m_stream;
-    char* m_buffer;
-    int m_bufferOffset;
 
     int m_frameScale;
     bool m_pause;
@@ -247,11 +127,6 @@ private:
     int64_t m_zvStart;
     int64_t m_zvEnd;
     int64_t m_lastTime;
-
-    int64_t m_delay;
-    int64_t m_resolution;
-    double m_timerMul;
-    std::string m_captureName;
 
     int8_t m_lastCpu;
 
@@ -294,8 +169,6 @@ private:
         bool logVal = false;
         bool logTime = false;
     } m_findZone;
-
-    bool m_terminate;
 };
 
 }

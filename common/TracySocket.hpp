@@ -1,6 +1,8 @@
 #ifndef __TRACYSOCKET_HPP__
 #define __TRACYSOCKET_HPP__
 
+#include <functional>
+
 struct timeval;
 
 namespace tracy
@@ -19,7 +21,7 @@ public:
     int Send( const void* buf, int len );
     int Recv( void* buf, int len, const timeval* tv );
 
-    bool Read( void* buf, int len, const timeval* tv, bool(*exitCb)() );
+    bool Read( void* buf, int len, const timeval* tv, std::function< bool() > exitCb );
     bool HasData();
 
     Socket( const Socket& ) = delete;

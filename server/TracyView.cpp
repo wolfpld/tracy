@@ -179,10 +179,6 @@ View::View( FileRead& f )
 View::~View()
 {
     m_worker.Shutdown();
-    if( !m_staticView )
-    {
-        m_worker.Join();
-    }
 
     assert( s_instance != nullptr );
     s_instance = nullptr;

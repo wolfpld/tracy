@@ -109,7 +109,6 @@ public:
     bool IsConnected() const { return m_connected.load( std::memory_order_relaxed ); }
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
 
-    void Join();
     void Write( FileWrite& f );
 
 private:

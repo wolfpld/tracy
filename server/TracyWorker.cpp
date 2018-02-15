@@ -225,16 +225,13 @@ Worker::Worker( FileRead& f )
 
 Worker::~Worker()
 {
-    delete [] m_buffer;
-    LZ4_freeStreamDecode( m_stream );
-}
-
-void Worker::Join()
-{
+    Shutdown();
     if ( m_thread.joinable() )
     {
         m_thread.join();
     }
+    delete [] m_buffer;
+    LZ4_freeStreamDecode( m_stream );
 }
 
 int64_t Worker::GetFrameTime( size_t idx ) const

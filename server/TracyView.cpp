@@ -4177,7 +4177,7 @@ void View::DrawFindZone()
     {
         const bool expand = ImGui::TreeNode( GetThreadString( v->id ) );
         ImGui::SameLine();
-        ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%i)", v->timeline.size() );
+        ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->timeline.size(), true ) );
 
         if( expand )
         {

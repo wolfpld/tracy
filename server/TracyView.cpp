@@ -4171,49 +4171,121 @@ void View::DrawFindZone()
         FindZones();
     }
 
-    ImGui::Separator();
-
-    for( const auto &v : m_findZone.result )
+    if( !m_findZone.result.empty() )
     {
-        const bool expand = ImGui::TreeNode( GetThreadString( v->id ) );
-        ImGui::SameLine();
-        ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->timeline.size(), true ) );
+        ImGui::Separator();
 
-        if( expand )
+        if( ImGui::TreeNode( "Histogram" ) )
         {
-            ImGui::Columns( 3, GetThreadString( v->id ) );
-            ImGui::Separator();
-            ImGui::Text( "Name" );
-            ImGui::NextColumn();
-            ImGui::Text( "Time from start" );
-            ImGui::NextColumn();
-            ImGui::Text( "Execution time" );
-            ImGui::NextColumn();
-            ImGui::Separator();
+            int64_t tmin = std::numeric_limits<int64_t>::max();
+            int64_t tmax = std::numeric_limits<int64_t>::min();
 
-            for( auto& ev : v->timeline )
+            for( auto& v : m_findZone.result )
             {
-                ImGui::PushID( ev );
-
-                auto& srcloc = GetSourceLocation( ev->srcloc );
-                if( ImGui::Selectable( GetString( srcloc.name.active ? srcloc.name : srcloc.function ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
+                for( auto& ev : v->timeline )
                 {
-                    m_zoneInfoWindow = ev;
+                    const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
+                    tmin = std::min( tmin, timeSpan );
+                    tmax = std::max( tmax, timeSpan );
+                }
+            }
+
+            ImGui::Text( "tMin: %s", TimeToString( tmin ) );
+            ImGui::Text( "tMax: %s", TimeToString( tmax ) );
+
+            const auto dt = double( tmax - tmin );
+
+            if( dt > 0 )
+            {
+                enum { Height = 200 };
+                const auto w = ImGui::GetContentRegionAvail().x;
+                const auto wpos = ImGui::GetCursorScreenPos();
+
+                ImGui::InvisibleButton( "##histogram", ImVec2( w, Height ) );
+
+                auto draw = ImGui::GetWindowDrawList();
+                draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
+                draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
+
+                const auto numBins = size_t( w - 4 );
+                auto bins = std::make_unique<uint64_t[]>( numBins );
+                memset( bins.get(), 0, sizeof( uint64_t ) * numBins );
+
+                const auto idt = numBins / dt;
+
+                for( auto& v : m_findZone.result )
+                {
+                    for( auto& ev : v->timeline )
+                    {
+                        const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
+                        const auto bin = std::min( numBins - 1, size_t( ( timeSpan - tmin ) * idt ) );
+                        bins[bin]++;
+                    }
                 }
 
-                ImGui::NextColumn();
+                auto maxVal = bins[0];
+                for( int i=1; i<numBins; i++ )
+                {
+                    maxVal = std::max( maxVal, bins[i] );
+                }
 
-                ImGui::Text( TimeToString( ev->start - m_frames[0] ) );
-                ImGui::NextColumn();
-                const auto end = GetZoneEnd( *ev );
-                ImGui::Text( TimeToString( end - ev->start ) );
-                ImGui::NextColumn();
+                const auto hAdj = double( Height - 4 ) / maxVal;
 
-                ImGui::PopID();
+                for( int i=0; i<numBins; i++ )
+                {
+                    if( bins[i] > 0 )
+                    {
+                        draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - bins[i] * hAdj ), 0xFF22DDDD );
+                    }
+                }
             }
-            ImGui::Columns( 1 );
-            ImGui::Separator();
+
             ImGui::TreePop();
+        }
+
+        ImGui::Separator();
+        for( auto& v : m_findZone.result )
+        {
+            const bool expand = ImGui::TreeNode( GetThreadString( v->id ) );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->timeline.size(), true ) );
+
+            if( expand )
+            {
+                ImGui::Columns( 3, GetThreadString( v->id ) );
+                ImGui::Separator();
+                ImGui::Text( "Name" );
+                ImGui::NextColumn();
+                ImGui::Text( "Time from start" );
+                ImGui::NextColumn();
+                ImGui::Text( "Execution time" );
+                ImGui::NextColumn();
+                ImGui::Separator();
+
+                for( auto& ev : v->timeline )
+                {
+                    ImGui::PushID( ev );
+
+                    auto& srcloc = GetSourceLocation( ev->srcloc );
+                    if( ImGui::Selectable( GetString( srcloc.name.active ? srcloc.name : srcloc.function ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
+                    {
+                        m_zoneInfoWindow = ev;
+                    }
+
+                    ImGui::NextColumn();
+
+                    ImGui::Text( TimeToString( ev->start - m_frames[0] ) );
+                    ImGui::NextColumn();
+                    const auto end = GetZoneEnd( *ev );
+                    ImGui::Text( TimeToString( end - ev->start ) );
+                    ImGui::NextColumn();
+
+                    ImGui::PopID();
+                }
+                ImGui::Columns( 1 );
+                ImGui::Separator();
+                ImGui::TreePop();
+            }
         }
     }
 

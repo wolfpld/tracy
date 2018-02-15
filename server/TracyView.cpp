@@ -4158,10 +4158,10 @@ void View::DrawFindZone()
     {
         ImGui::InputInt( "max zones per thread", &m_findZone.maxZonesPerThread );
         ImGui::SameLine();
-        DrawHelpMarker( "0 for unlimitted.\nHigh value or unlimmited zone search may lead to performance issues." );
+        DrawHelpMarker( "-1 for unlimited.\nHigh value or unlimited zone search may lead to performance issues." );
         ImGui::InputInt( "max depth", &m_findZone.maxDepth );
         ImGui::SameLine();
-        DrawHelpMarker( "-1 for unlimitted." );
+        DrawHelpMarker( "-1 for unlimited." );
         ImGui::TreePop();
     }
 

@@ -4176,7 +4176,11 @@ void View::DrawFindZone()
 
     for( const auto &v : m_findZone.result )
     {
-        if( ImGui::TreeNode( GetThreadString( v->id ) ) )
+        const bool expand = ImGui::TreeNode( GetThreadString( v->id ) );
+        ImGui::SameLine();
+        ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%i)", v->timeline.size() );
+
+        if( expand )
         {
             ImGui::Columns( 3, GetThreadString( v->id ) );
             ImGui::Separator();

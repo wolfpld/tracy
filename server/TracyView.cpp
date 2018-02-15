@@ -4146,8 +4146,7 @@ void View::DrawFindZone()
     ImGui::InputText( "", m_findZone.pattern, 1024 );
     ImGui::SameLine();
 
-    bool findClicked = ImGui::Button( "Find" );
-
+    const bool findClicked = ImGui::Button( "Find" );
     ImGui::SameLine();
 
     if( ImGui::Button( "Clear" ) )
@@ -4166,7 +4165,7 @@ void View::DrawFindZone()
         ImGui::TreePop();
     }
 
-    if ( findClicked )
+    if( findClicked )
     {
         m_findZone.result.clear();
         FindZones();
@@ -4192,13 +4191,15 @@ void View::DrawFindZone()
             ImGui::NextColumn();
             ImGui::Separator();
 
-            for( auto ev : v->timeline )
+            for( auto& ev : v->timeline )
             {
                 ImGui::PushID( ev );
 
                 auto& srcloc = GetSourceLocation( ev->srcloc );
                 if( ImGui::Selectable( GetString( srcloc.name.active ? srcloc.name : srcloc.function ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
+                {
                     m_zoneInfoWindow = ev;
+                }
 
                 ImGui::NextColumn();
 
@@ -4454,12 +4455,12 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 
 void View::FindZones()
 {
-    for( auto v : m_threads )
+    for( auto& v : m_threads )
     {
         auto thrOut = std::make_unique<ThreadData>();
         FindZones( v->timeline, thrOut->timeline, m_findZone.maxDepth );
 
-        if ( thrOut->timeline.size() )
+        if( !thrOut->timeline.empty() )
         {
             thrOut->id = v->id;
             m_findZone.result.push_back( std::move( thrOut ) );
@@ -4467,20 +4468,24 @@ void View::FindZones()
     }
 }
 
-void View::FindZones( const Vector<ZoneEvent*> &events, Vector<ZoneEvent*> &out, const int maxdepth )
+void View::FindZones( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out, const int maxdepth )
 {
-    for ( ZoneEvent *ev : events )
+    for( auto& ev : events )
     {
-        if ( out.size() >= m_findZone.maxZonesPerThread )
-            break;
+        if( out.size() >= m_findZone.maxZonesPerThread ) break;
 
         auto& srcloc = GetSourceLocation( ev->srcloc );
-        const auto str = GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+        auto str = GetString( srcloc.name.active ? srcloc.name : srcloc.function );
 
-        if ( strstr( str, m_findZone.pattern ) )
+        if( strstr( str, m_findZone.pattern ) != nullptr )
+        {
             out.push_back( ev );
+        }
 
-        if ( maxdepth != 0 ) FindZones( ev->child, out, maxdepth - 1 );
+        if( maxdepth != 0 )
+        {
+            FindZones( ev->child, out, maxdepth - 1 );
+        }
     }
 }
 

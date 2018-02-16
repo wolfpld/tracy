@@ -4207,35 +4207,38 @@ void View::DrawFindZone()
                 draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
                 draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
 
-                const auto numBins = size_t( w - 4 );
-                auto bins = std::make_unique<uint64_t[]>( numBins );
-                memset( bins.get(), 0, sizeof( uint64_t ) * numBins );
-
-                const auto idt = numBins / dt;
-
-                for( auto& v : m_findZone.result )
+                const auto numBins = int64_t( w - 4 );
+                if( numBins > 1 )
                 {
-                    for( auto& ev : v->timeline )
+                    auto bins = std::make_unique<uint64_t[]>( numBins );
+                    memset( bins.get(), 0, sizeof( uint64_t ) * numBins );
+
+                    const auto idt = numBins / dt;
+
+                    for( auto& v : m_findZone.result )
                     {
-                        const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
-                        const auto bin = std::min( numBins - 1, size_t( ( timeSpan - tmin ) * idt ) );
-                        bins[bin]++;
+                        for( auto& ev : v->timeline )
+                        {
+                            const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
+                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                            bins[bin]++;
+                        }
                     }
-                }
 
-                auto maxVal = bins[0];
-                for( int i=1; i<numBins; i++ )
-                {
-                    maxVal = std::max( maxVal, bins[i] );
-                }
-
-                const auto hAdj = double( Height - 4 ) / maxVal;
-
-                for( int i=0; i<numBins; i++ )
-                {
-                    if( bins[i] > 0 )
+                    auto maxVal = bins[0];
+                    for( int i=1; i<numBins; i++ )
                     {
-                        draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - bins[i] * hAdj ), 0xFF22DDDD );
+                        maxVal = std::max( maxVal, bins[i] );
+                    }
+
+                    const auto hAdj = double( Height - 4 ) / maxVal;
+
+                    for( int i=0; i<numBins; i++ )
+                    {
+                        if( bins[i] > 0 )
+                        {
+                            draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - bins[i] * hAdj ), 0xFF22DDDD );
+                        }
                     }
                 }
             }

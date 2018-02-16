@@ -4201,16 +4201,7 @@ void View::DrawFindZone()
 
             if( dt > 0 )
             {
-                enum { Height = 200 };
                 const auto w = ImGui::GetContentRegionAvail().x;
-                const auto wpos = ImGui::GetCursorScreenPos();
-
-                ImGui::InvisibleButton( "##histogram", ImVec2( w, Height ) );
-                const bool hover = ImGui::IsItemHovered();
-
-                auto draw = ImGui::GetWindowDrawList();
-                draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
-                draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
 
                 const auto numBins = int64_t( w - 4 );
                 if( numBins > 1 )
@@ -4256,6 +4247,18 @@ void View::DrawFindZone()
                     {
                         maxVal = std::max( maxVal, bins[i] );
                     }
+
+                    ImGui::Text( "Max counts: %s", RealToString( maxVal, true ) );
+
+                    enum { Height = 200 };
+                    const auto wpos = ImGui::GetCursorScreenPos();
+
+                    ImGui::InvisibleButton( "##histogram", ImVec2( w, Height ) );
+                    const bool hover = ImGui::IsItemHovered();
+
+                    auto draw = ImGui::GetWindowDrawList();
+                    draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
+                    draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
 
                     if( m_findZone.logVal )
                     {

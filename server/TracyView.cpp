@@ -4190,6 +4190,8 @@ void View::DrawFindZone()
                 }
             }
 
+            ImGui::Checkbox( "Log values", &m_findZone.logVal );
+
             ImGui::Text( "tMin: %s", TimeToString( tmin ) );
             ImGui::Text( "tMax: %s", TimeToString( tmax ) );
 
@@ -4231,13 +4233,27 @@ void View::DrawFindZone()
                         maxVal = std::max( maxVal, bins[i] );
                     }
 
-                    const auto hAdj = double( Height - 4 ) / maxVal;
-
-                    for( int i=0; i<numBins; i++ )
+                    if( m_findZone.logVal )
                     {
-                        if( bins[i] > 0 )
+                        const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
+                        for( int i=0; i<numBins; i++ )
                         {
-                            draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - bins[i] * hAdj ), 0xFF22DDDD );
+                            if( bins[i] > 0 )
+                            {
+                                draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( bins[i] + 1 ) * hAdj ), 0xFF22DDDD );
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        const auto hAdj = double( Height - 4 ) / maxVal;
+                        for( int i=0; i<numBins; i++ )
+                        {
+                            if( bins[i] > 0 )
+                            {
+                                draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - bins[i] * hAdj ), 0xFF22DDDD );
+                            }
                         }
                     }
                 }

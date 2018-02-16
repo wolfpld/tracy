@@ -288,6 +288,7 @@ private:
         char pattern[1024] = { "" };
         int maxZonesPerThread = 1000;
         int maxDepth = 10;
+        bool logVal = false;
     } m_findZone;
 
     bool m_terminate;

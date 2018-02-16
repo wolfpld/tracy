@@ -4243,7 +4243,6 @@ void View::DrawFindZone()
                                 draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( bins[i] + 1 ) * hAdj ), 0xFF22DDDD );
                             }
                         }
-
                     }
                     else
                     {

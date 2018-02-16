@@ -4216,6 +4216,9 @@ void View::DrawFindZone()
                     auto bins = std::make_unique<uint64_t[]>( numBins );
                     memset( bins.get(), 0, sizeof( uint64_t ) * numBins );
 
+                    auto binTime = std::make_unique<int64_t[]>( numBins );
+                    memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
+
                     const auto idt = numBins / dt;
 
                     for( auto& v : m_findZone.result )
@@ -4225,6 +4228,7 @@ void View::DrawFindZone()
                             const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
                             const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
                             bins[bin]++;
+                            binTime[bin] += timeSpan;
                         }
                     }
 
@@ -4266,9 +4270,24 @@ void View::DrawFindZone()
                         const auto t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
                         const auto t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
 
+                        int64_t tBefore = 0;
+                        for( int i=0; i<bin; i++ )
+                        {
+                            tBefore += binTime[i];
+                        }
+
+                        int64_t tAfter = 0;
+                        for( int i=bin+1; i<numBins; i++ )
+                        {
+                            tAfter += binTime[i];
+                        }
+
                         ImGui::BeginTooltip();
                         ImGui::Text( "Time range: %s - %s", TimeToString( t0 ), TimeToString( t1 ) );
                         ImGui::Text( "Count: %" PRIu64, bins[bin] );
+                        ImGui::Text( "Time spent in bin: %s", TimeToString( binTime[bin] ) );
+                        ImGui::Text( "Time spent in the left bins: %s", TimeToString( tBefore ) );
+                        ImGui::Text( "Time spent in the right bins: %s", TimeToString( tAfter ) );
                         ImGui::EndTooltip();
                     }
                 }

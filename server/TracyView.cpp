@@ -4191,6 +4191,8 @@ void View::DrawFindZone()
             }
 
             ImGui::Checkbox( "Log values", &m_findZone.logVal );
+            ImGui::SameLine();
+            ImGui::Checkbox( "Log time", &m_findZone.logTime );
 
             ImGui::Text( "tMin: %s", TimeToString( tmin ) );
             ImGui::Text( "tMax: %s", TimeToString( tmax ) );
@@ -4219,16 +4221,33 @@ void View::DrawFindZone()
                     auto binTime = std::make_unique<int64_t[]>( numBins );
                     memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
 
-                    const auto idt = numBins / dt;
-
-                    for( auto& v : m_findZone.result )
+                    if( m_findZone.logTime )
                     {
-                        for( auto& ev : v->timeline )
+                        const auto tMinLog = log10( tmin );
+                        const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                        for( auto& v : m_findZone.result )
                         {
-                            const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
-                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                            bins[bin]++;
-                            binTime[bin] += timeSpan;
+                            for( auto& ev : v->timeline )
+                            {
+                                const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
+                                const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                bins[bin]++;
+                                binTime[bin] += timeSpan;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        const auto idt = numBins / dt;
+                        for( auto& v : m_findZone.result )
+                        {
+                            for( auto& ev : v->timeline )
+                            {
+                                const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
+                                const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                bins[bin]++;
+                                binTime[bin] += timeSpan;
+                            }
                         }
                     }
 
@@ -4267,8 +4286,17 @@ void View::DrawFindZone()
                         draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
 
                         const auto bin = double( io.MousePos.x - wpos.x - 2 );
-                        const auto t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
-                        const auto t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
+                        int64_t t0, t1;
+                        if( m_findZone.logTime )
+                        {
+                            t0 = int64_t( pow( 10, log10( tmin ) +  bin    / numBins * ( log10( tmax ) - log10( tmin ) ) ) );
+                            t1 = int64_t( pow( 10, log10( tmin ) + (bin+1) / numBins * ( log10( tmax ) - log10( tmin ) ) ) );
+                        }
+                        else
+                        {
+                            t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
+                            t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
+                        }
 
                         int64_t tBefore = 0;
                         for( int i=0; i<bin; i++ )

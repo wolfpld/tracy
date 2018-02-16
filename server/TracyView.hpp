@@ -289,6 +289,7 @@ private:
         int maxZonesPerThread = 1000;
         int maxDepth = 10;
         bool logVal = false;
+        bool logTime = false;
     } m_findZone;
 
     bool m_terminate;

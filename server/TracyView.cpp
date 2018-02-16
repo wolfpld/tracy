@@ -4204,6 +4204,7 @@ void View::DrawFindZone()
                 const auto wpos = ImGui::GetCursorScreenPos();
 
                 ImGui::InvisibleButton( "##histogram", ImVec2( w, Height ) );
+                const bool hover = ImGui::IsItemHovered();
 
                 auto draw = ImGui::GetWindowDrawList();
                 draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
@@ -4254,6 +4255,21 @@ void View::DrawFindZone()
                                 draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - bins[i] * hAdj ), 0xFF22DDDD );
                             }
                         }
+                    }
+
+                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height-2 ) ) )
+                    {
+                        auto& io = ImGui::GetIO();
+                        draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
+
+                        const auto bin = double( io.MousePos.x - wpos.x - 2 );
+                        const auto t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
+                        const auto t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
+
+                        ImGui::BeginTooltip();
+                        ImGui::Text( "Time range: %s - %s", TimeToString( t0 ), TimeToString( t1 ) );
+                        ImGui::Text( "Count: %" PRIu64, bins[bin] );
+                        ImGui::EndTooltip();
                     }
                 }
             }

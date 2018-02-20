@@ -4177,6 +4177,8 @@ void View::DrawFindZone()
 
         if( ImGui::TreeNode( "Histogram" ) )
         {
+            const auto ty = ImGui::GetFontSize();
+
             int64_t tmin = std::numeric_limits<int64_t>::max();
             int64_t tmax = std::numeric_limits<int64_t>::min();
 
@@ -4253,7 +4255,7 @@ void View::DrawFindZone()
                     enum { Height = 200 };
                     const auto wpos = ImGui::GetCursorScreenPos();
 
-                    ImGui::InvisibleButton( "##histogram", ImVec2( w, Height ) );
+                    ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
                     const bool hover = ImGui::IsItemHovered();
 
                     auto draw = ImGui::GetWindowDrawList();
@@ -4283,7 +4285,50 @@ void View::DrawFindZone()
                         }
                     }
 
-                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height-2 ) ) )
+                    const auto xoff = 2;
+                    const auto yoff = Height + 1;
+
+                    if( m_findZone.logTime )
+                    {
+
+                    }
+                    else
+                    {
+                        const auto pxns = numBins / dt;
+                        const auto nspx = 1.0 / pxns;
+                        const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
+                        const auto step = pow( 10, scale );
+
+                        const auto dx = step * pxns;
+                        double x = 0;
+                        int tw = 0;
+                        int tx = 0;
+                        int64_t tt = tmin;
+                        int iter = 0;
+
+                        const auto sstep = step / 10.0;
+                        const auto sdx = dx / 10.0;
+
+                        static const double linelen[] = { 0.5, 0.25, 0.25, 0.25, 0.25, 0.375, 0.25, 0.25, 0.25, 0.25 };
+
+                        while( x < numBins )
+                        {
+                            draw->AddLine( wpos + ImVec2( xoff + x, yoff ), wpos + ImVec2( xoff + x, yoff + round( ty * linelen[iter] ) ), 0x66FFFFFF );
+                            if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 2 ) )
+                            {
+                                tx = x;
+                                auto txt = TimeToString( tt );
+                                draw->AddText( wpos + ImVec2( xoff + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                tw = ImGui::CalcTextSize( txt ).x;
+                            }
+
+                            iter = ( iter + 1 ) % 10;
+                            x += sdx;
+                            tt += sstep;
+                        }
+                    }
+
+                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
                     {
                         auto& io = ImGui::GetIO();
                         draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );

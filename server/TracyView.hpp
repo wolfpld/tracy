@@ -183,6 +183,9 @@ private:
     void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec );
     void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
 
+    int64_t TscTime( int64_t tsc ) { return int64_t( tsc * m_timerMul ); }
+    int64_t TscTime( uint64_t tsc ) { return int64_t( tsc * m_timerMul ); }
+
     std::string m_addr;
 
     Socket m_sock;

@@ -437,11 +437,11 @@ void View::Worker()
             WelcomeMessage welcome;
             if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
             m_timerMul = welcome.timerMul;
-            m_frames.push_back( welcome.initBegin * m_timerMul );
-            m_frames.push_back( welcome.initEnd * m_timerMul );
+            m_frames.push_back( TscTime( welcome.initBegin ) );
+            m_frames.push_back( TscTime( welcome.initEnd ) );
             m_lastTime = m_frames.back();
-            m_delay = welcome.delay * m_timerMul;
-            m_resolution = welcome.resolution * m_timerMul;
+            m_delay = TscTime( welcome.delay );
+            m_resolution = TscTime( welcome.resolution );
 
             char dtmp[64];
             time_t date = welcome.epoch;
@@ -665,7 +665,7 @@ void View::ProcessZoneBegin( const QueueZoneBegin& ev )
 
     CheckSourceLocation( ev.srcloc );
 
-    zone->start = ev.time * m_timerMul;
+    zone->start = TscTime( ev.time );
     zone->end = -1;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
@@ -683,7 +683,7 @@ void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
 
     auto zone = m_slab.AllocInit<ZoneEvent>();
 
-    zone->start = ev.time * m_timerMul;
+    zone->start = TscTime( ev.time );
     zone->end = -1;
     zone->srcloc = it->second;
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
@@ -706,7 +706,7 @@ void View::ProcessZoneEnd( const QueueZoneEnd& ev )
     assert( !stack.empty() );
     auto zone = stack.back_and_pop();
     assert( zone->end == -1 );
-    zone->end = ev.time * m_timerMul;
+    zone->end = TscTime( ev.time );
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_end = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     assert( zone->end >= zone->start );
@@ -718,7 +718,7 @@ void View::ProcessFrameMark( const QueueFrameMark& ev )
 {
     assert( !m_frames.empty() );
     const auto lastframe = m_frames.back();
-    const auto time = int64_t( ev.time * m_timerMul );
+    const auto time = TscTime( ev.time );
     assert( lastframe < time );
     m_frames.push_back_non_empty( time );
     m_lastTime = std::max( m_lastTime, time );
@@ -773,7 +773,7 @@ void View::ProcessLockWait( const QueueLockWait& ev )
     }
 
     auto lev = ev.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->time = ev.time * m_timerMul;
+    lev->time = TscTime( ev.time );
     lev->type = LockEvent::Type::Wait;
     lev->srcloc = 0;
 
@@ -786,7 +786,7 @@ void View::ProcessLockObtain( const QueueLockObtain& ev )
     auto& lock = m_lockMap[ev.id];
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->time = ev.time * m_timerMul;
+    lev->time = TscTime( ev.time );
     lev->type = LockEvent::Type::Obtain;
     lev->srcloc = 0;
 
@@ -799,7 +799,7 @@ void View::ProcessLockRelease( const QueueLockRelease& ev )
     auto& lock = m_lockMap[ev.id];
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->time = ev.time * m_timerMul;
+    lev->time = TscTime( ev.time );
     lev->type = LockEvent::Type::Release;
     lev->srcloc = 0;
 
@@ -819,7 +819,7 @@ void View::ProcessLockSharedWait( const QueueLockWait& ev )
 
     assert( ev.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    lev->time = ev.time * m_timerMul;
+    lev->time = TscTime( ev.time );
     lev->type = LockEvent::Type::WaitShared;
     lev->srcloc = 0;
 
@@ -833,7 +833,7 @@ void View::ProcessLockSharedObtain( const QueueLockObtain& ev )
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    lev->time = ev.time * m_timerMul;
+    lev->time = TscTime( ev.time );
     lev->type = LockEvent::Type::ObtainShared;
     lev->srcloc = 0;
 
@@ -847,7 +847,7 @@ void View::ProcessLockSharedRelease( const QueueLockRelease& ev )
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    lev->time = ev.time * m_timerMul;
+    lev->time = TscTime( ev.time );
     lev->type = LockEvent::Type::ReleaseShared;
     lev->srcloc = 0;
 
@@ -910,7 +910,7 @@ void View::ProcessPlotData( const QueuePlotData& ev )
         plot = it->second;
     }
 
-    const auto time = int64_t( ev.time * m_timerMul );
+    const auto time = TscTime( ev.time );
     m_lastTime = std::max( m_lastTime, time );
     switch( ev.type )
     {
@@ -934,7 +934,7 @@ void View::ProcessMessage( const QueueMessage& ev )
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
     auto msg = m_slab.Alloc<MessageData>();
-    msg->time = int64_t( ev.time * m_timerMul );
+    msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
     m_lastTime = std::max( m_lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
@@ -945,7 +945,7 @@ void View::ProcessMessageLiteral( const QueueMessage& ev )
 {
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
-    msg->time = int64_t( ev.time * m_timerMul );
+    msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     m_lastTime = std::max( m_lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
@@ -956,7 +956,7 @@ void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     assert( m_gpuCtxMap.find( ev.context ) == m_gpuCtxMap.end() );
 
     auto gpu = m_slab.AllocInit<GpuCtxData>();
-    gpu->timeDiff = int64_t( ev.cpuTime * m_timerMul - ev.gpuTime );
+    gpu->timeDiff = TscTime( ev.cpuTime ) - ev.gpuTime;
     gpu->thread = ev.thread;
     gpu->accuracyBits = ev.accuracyBits;
     gpu->count = 0;
@@ -976,7 +976,7 @@ void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
 
     auto zone = m_slab.AllocInit<GpuEvent>();
 
-    zone->cpuStart = ev.cpuTime * m_timerMul;
+    zone->cpuStart = TscTime( ev.cpuTime );
     zone->cpuEnd = -1;
     zone->gpuStart = std::numeric_limits<int64_t>::max();
     zone->gpuEnd = -1;
@@ -1006,7 +1006,7 @@ void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
     auto zone = ctx->stack.back_and_pop();
     ctx->queue.push_back( zone );
 
-    zone->cpuEnd = ev.cpuTime * m_timerMul;
+    zone->cpuEnd = TscTime( ev.cpuTime );
     m_lastTime = std::max( m_lastTime, zone->cpuEnd );
 }
 
@@ -1049,7 +1049,7 @@ void View::ProcessGpuResync( const QueueGpuResync& ev )
     assert( it != m_gpuCtxMap.end() );
     auto ctx = it->second;
 
-    const auto timeDiff = int64_t( ev.cpuTime * m_timerMul - ev.gpuTime );
+    const auto timeDiff = TscTime( ev.cpuTime ) - ev.gpuTime;
 
     if( ctx->queue.empty() )
     {

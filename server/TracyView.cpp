@@ -4303,22 +4303,25 @@ void View::DrawFindZone()
                         double x = 0;
                         int tw = 0;
                         int tx = 0;
-                        int64_t tt = tmin;
-                        int iter = 0;
 
                         const auto sstep = step / 10.0;
                         const auto sdx = dx / 10.0;
 
                         static const double linelen[] = { 0.5, 0.25, 0.25, 0.25, 0.25, 0.375, 0.25, 0.25, 0.25, 0.25 };
 
+                        int64_t tt = int64_t( ceil( tmin / sstep ) * sstep );
+                        const auto diff = tmin / sstep - int64_t( tmin / sstep );
+                        const auto xo = ( diff == 0 ? 0 : ( ( 1 - diff ) * sstep * pxns ) ) + xoff;
+                        int iter = int( ceil( ( tmin - int64_t( tmin / step ) * step ) / sstep ) );
+
                         while( x < numBins )
                         {
-                            draw->AddLine( wpos + ImVec2( xoff + x, yoff ), wpos + ImVec2( xoff + x, yoff + round( ty * linelen[iter] ) ), 0x66FFFFFF );
+                            draw->AddLine( wpos + ImVec2( xo + x, yoff ), wpos + ImVec2( xo + x, yoff + round( ty * linelen[iter] ) ), 0x66FFFFFF );
                             if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 2 ) )
                             {
                                 tx = x;
                                 auto txt = TimeToString( tt );
-                                draw->AddText( wpos + ImVec2( xoff + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
                                 tw = ImGui::CalcTextSize( txt ).x;
                             }
 

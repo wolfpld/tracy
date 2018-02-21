@@ -4677,6 +4677,7 @@ void View::FindZones( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out,
     for( auto& ev : events )
     {
         if( out.size() >= m_findZone.maxZonesPerThread ) break;
+        if( GetZoneEnd( *ev ) == ev->start ) continue;
 
         auto& srcloc = GetSourceLocation( ev->srcloc );
         auto str = GetString( srcloc.name.active ? srcloc.name : srcloc.function );

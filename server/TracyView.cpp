@@ -4243,12 +4243,15 @@ void View::DrawFindZone()
                         }
                     }
 
+                    int64_t timeTotal = binTime[0];
                     auto maxVal = bins[0];
                     for( int i=1; i<numBins; i++ )
                     {
                         maxVal = std::max( maxVal, bins[i] );
+                        timeTotal += binTime[i];
                     }
 
+                    ImGui::Text( "Total time: %s", TimeToString( timeTotal ) );
                     ImGui::Text( "Max counts: %s", RealToString( maxVal, true ) );
 
                     enum { Height = 200 };

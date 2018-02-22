@@ -1,3 +1,10 @@
+#ifdef _MSC_VER
+#  include <winsock2.h>
+#else
+#  include <sys/time.h>
+#endif
+
+#include <chrono>
 #include <mutex>
 
 #include "../common/TracyProtocol.hpp"

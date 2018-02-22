@@ -1,10 +1,3 @@
-#ifdef _MSC_VER
-#  include <winsock2.h>
-#  include <intrin.h>
-#else
-#  include <sys/time.h>
-#endif
-
 #include <algorithm>
 #include <assert.h>
 #include <chrono>
@@ -19,6 +12,7 @@
 #include "tracy_pdqsort.h"
 #include "TracyFileWrite.hpp"
 #include "TracyImGui.hpp"
+#include "TracyPopcnt.hpp"
 #include "TracyView.hpp"
 
 #ifdef TRACY_FILESELECTOR

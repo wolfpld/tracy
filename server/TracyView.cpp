@@ -4196,8 +4196,7 @@ void View::DrawFindZone()
             ImGui::SameLine();
             ImGui::Checkbox( "Log time", &m_findZone.logTime );
 
-            ImGui::Text( "tMin: %s", TimeToString( tmin ) );
-            ImGui::Text( "tMax: %s", TimeToString( tmax ) );
+            ImGui::Text( "Time range: %s - %s", TimeToString( tmin ), TimeToString( tmax ) );
 
             const auto dt = double( tmax - tmin );
 

@@ -1,10 +1,3 @@
-#ifdef _MSC_VER
-#  include <winsock2.h>
-#  include <intrin.h>
-#else
-#  include <sys/time.h>
-#endif
-
 #include <algorithm>
 #include <assert.h>
 #include <chrono>
@@ -15,11 +8,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
-#include "../common/TracyQueue.hpp"
 #include "tracy_pdqsort.h"
-#include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPopcnt.hpp"
@@ -119,27 +109,13 @@ enum { MinVisSize = 3 };
 static View* s_instance = nullptr;
 
 View::View( const char* addr )
-    : m_addr( addr )
-    , m_shutdown( false )
-    , m_connected( false )
-    , m_hasData( false )
+    : m_worker( addr )
     , m_staticView( false )
-    , m_sourceLocationExpand( { 0 } )
-    , m_zonesCnt( 0 )
-    , m_mbps( 64 )
-    , m_compRatio( 1 )
-    , m_pendingStrings( 0 )
-    , m_pendingThreads( 0 )
-    , m_pendingSourceLocation( 0 )
-    , m_stream( LZ4_createStreamDecode() )
-    , m_buffer( new char[TargetFrameSize*3 + 1] )
-    , m_bufferOffset( 0 )
     , m_frameScale( 0 )
     , m_pause( false )
     , m_frameStart( 0 )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
-    , m_lastTime( 0 )
     , m_zvHeight( 0 )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
@@ -157,26 +133,17 @@ View::View( const char* addr )
     , m_drawPlots( true )
     , m_onlyContendedLocks( false )
     , m_namespace( Namespace::Full )
-    , m_terminate( false )
 {
     assert( s_instance == nullptr );
     s_instance = this;
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.FrameRounding = 2.f;
-
-    m_thread = std::thread( [this] { Worker(); } );
-    SetThreadName( m_thread, "Tracy View" );
 }
 
 View::View( FileRead& f )
-    : m_shutdown( false )
-    , m_connected( false )
-    , m_hasData( true )
+    : m_worker( f )
     , m_staticView( true )
-    , m_zonesCnt( 0 )
-    , m_stream( nullptr )
-    , m_buffer( nullptr )
     , m_frameScale( 0 )
     , m_pause( false )
     , m_frameStart( 0 )
@@ -198,1499 +165,17 @@ View::View( FileRead& f )
     , m_drawPlots( true )
     , m_onlyContendedLocks( false )
     , m_namespace( Namespace::Full )
-    , m_terminate( false )
 {
     assert( s_instance == nullptr );
     s_instance = this;
-
-    f.Read( &m_delay, sizeof( m_delay ) );
-    f.Read( &m_resolution, sizeof( m_resolution ) );
-    f.Read( &m_timerMul, sizeof( m_timerMul ) );
-    f.Read( &m_lastTime, sizeof( m_lastTime ) );
-
-    uint64_t sz;
-    {
-        f.Read( &sz, sizeof( sz ) );
-        assert( sz < 1024 );
-        char tmp[1024];
-        f.Read( tmp, sz );
-        m_captureName = std::string( tmp, tmp+sz );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    m_frames.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t v;
-        f.Read( &v, sizeof( v ) );
-        m_frames.push_back( v );
-    }
-
-    std::unordered_map<uint64_t, const char*> pointerMap;
-
-    f.Read( &sz, sizeof( sz ) );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t ptr;
-        f.Read( &ptr, sizeof( ptr ) );
-        uint64_t ssz;
-        f.Read( &ssz, sizeof( ssz ) );
-        auto dst = m_slab.Alloc<char>( ssz+1 );
-        f.Read( dst, ssz );
-        dst[ssz] = '\0';
-        m_stringData.push_back( dst );
-        pointerMap.emplace( ptr, dst );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t id, ptr;
-        f.Read( &id, sizeof( id ) );
-        f.Read( &ptr, sizeof( ptr ) );
-        m_strings.emplace( id, pointerMap.find( ptr )->second );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t id, ptr;
-        f.Read( &id, sizeof( id ) );
-        f.Read( &ptr, sizeof( ptr ) );
-        m_threadNames.emplace( id, pointerMap.find( ptr )->second );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t ptr;
-        f.Read( &ptr, sizeof( ptr ) );
-        SourceLocation srcloc;
-        f.Read( &srcloc, sizeof( srcloc ) );
-        m_sourceLocation.emplace( ptr, srcloc );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    m_sourceLocationExpand.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t v;
-        f.Read( &v, sizeof( v ) );
-        m_sourceLocationExpand.push_back( v );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    m_sourceLocationPayload.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        auto srcloc = m_slab.Alloc<SourceLocation>();
-        f.Read( srcloc, sizeof( *srcloc ) );
-        m_sourceLocationPayload.push_back( srcloc );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        LockMap lockmap;
-        uint32_t id;
-        uint64_t tsz;
-        f.Read( &id, sizeof( id ) );
-        f.Read( &lockmap.srcloc, sizeof( lockmap.srcloc ) );
-        f.Read( &lockmap.type, sizeof( lockmap.type ) );
-        f.Read( &lockmap.valid, sizeof( lockmap.valid ) );
-        f.Read( &tsz, sizeof( tsz ) );
-        for( uint64_t i=0; i<tsz; i++ )
-        {
-            uint64_t t;
-            f.Read( &t, sizeof( t ) );
-            lockmap.threadMap.emplace( t, lockmap.threadList.size() );
-            lockmap.threadList.emplace_back( t );
-        }
-        f.Read( &tsz, sizeof( tsz ) );
-        lockmap.timeline.reserve( tsz );
-        if( lockmap.type == LockType::Lockable )
-        {
-            for( uint64_t i=0; i<tsz; i++ )
-            {
-                auto lev = m_slab.Alloc<LockEvent>();
-                f.Read( lev, sizeof( LockEvent ) );
-                lockmap.timeline.push_back( lev );
-            }
-        }
-        else
-        {
-            for( uint64_t i=0; i<tsz; i++ )
-            {
-                auto lev = m_slab.Alloc<LockEventShared>();
-                f.Read( lev, sizeof( LockEventShared ) );
-                lockmap.timeline.push_back( lev );
-            }
-        }
-        lockmap.visible = true;
-        m_lockMap.emplace( id, std::move( lockmap ) );
-    }
-
-    std::unordered_map<uint64_t, MessageData*> msgMap;
-    f.Read( &sz, sizeof( sz ) );
-    m_messages.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t ptr;
-        f.Read( &ptr, sizeof( ptr ) );
-        auto msgdata = m_slab.Alloc<MessageData>();
-        f.Read( msgdata, sizeof( *msgdata ) );
-        m_messages.push_back( msgdata );
-        msgMap.emplace( ptr, msgdata );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    m_threads.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        auto td = m_slab.AllocInit<ThreadData>();
-        f.Read( &td->id, sizeof( td->id ) );
-        f.Read( &td->count, sizeof( td->count ) );
-        ReadTimeline( f, td->timeline );
-        uint64_t msz;
-        f.Read( &msz, sizeof( msz ) );
-        td->messages.reserve( msz );
-        for( uint64_t j=0; j<msz; j++ )
-        {
-            uint64_t ptr;
-            f.Read( &ptr, sizeof( ptr ) );
-            td->messages.push_back( msgMap[ptr] );
-        }
-        td->showFull = true;
-        td->visible = true;
-        m_threads.push_back( td );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    m_gpuData.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        auto ctx = m_slab.AllocInit<GpuCtxData>();
-        f.Read( &ctx->thread, sizeof( ctx->thread ) );
-        f.Read( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
-        f.Read( &ctx->count, sizeof( ctx->count ) );
-        ReadTimeline( f, ctx->timeline );
-        ctx->showFull = true;
-        ctx->visible = true;
-        m_gpuData.push_back( ctx );
-    }
-
-    f.Read( &sz, sizeof( sz ) );
-    m_plots.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        auto pd = m_slab.AllocInit<PlotData>();
-        f.Read( &pd->name, sizeof( pd->name ) );
-        f.Read( &pd->min, sizeof( pd->min ) );
-        f.Read( &pd->max, sizeof( pd->max ) );
-        pd->showFull = true;
-        pd->visible = true;
-        uint64_t psz;
-        f.Read( &psz, sizeof( psz ) );
-        pd->data.reserve_and_use( psz );
-        f.Read( pd->data.data(), psz * sizeof( PlotItem ) );
-        m_plots.push_back( pd );
-    }
 }
 
 View::~View()
 {
-    m_shutdown.store( true, std::memory_order_relaxed );
-    if( !m_staticView )
-    {
-        m_thread.join();
-    }
-
-    delete[] m_buffer;
-    LZ4_freeStreamDecode( m_stream );
+    m_worker.Shutdown();
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
-}
-
-bool View::ShouldExit()
-{
-    return s_instance->m_shutdown.load( std::memory_order_relaxed );
-}
-
-void View::Worker()
-{
-    timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 10000;
-
-    for(;;)
-    {
-        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-        if( !m_sock.Connect( m_addr.c_str(), "8086" ) ) continue;
-
-        std::chrono::time_point<std::chrono::high_resolution_clock> t0;
-
-        uint64_t bytes = 0;
-        uint64_t decBytes = 0;
-
-        {
-            WelcomeMessage welcome;
-            if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
-            m_timerMul = welcome.timerMul;
-            m_frames.push_back( TscTime( welcome.initBegin ) );
-            m_frames.push_back( TscTime( welcome.initEnd ) );
-            m_lastTime = m_frames.back();
-            m_delay = TscTime( welcome.delay );
-            m_resolution = TscTime( welcome.resolution );
-
-            char dtmp[64];
-            time_t date = welcome.epoch;
-            auto lt = localtime( &date );
-            strftime( dtmp, 64, "%F %T", lt );
-            char tmp[1024];
-            sprintf( tmp, "%s @ %s###Profiler", welcome.programName, dtmp );
-            m_captureName = tmp;
-        }
-
-        m_hasData.store( true, std::memory_order_release );
-
-        LZ4_setStreamDecode( m_stream, nullptr, 0 );
-        m_connected.store( true, std::memory_order_relaxed );
-
-        t0 = std::chrono::high_resolution_clock::now();
-
-        for(;;)
-        {
-            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-
-            auto buf = m_buffer + m_bufferOffset;
-            char lz4buf[LZ4Size];
-            lz4sz_t lz4sz;
-            if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
-            if( !m_sock.Read( lz4buf, lz4sz, &tv, ShouldExit ) ) goto close;
-            bytes += sizeof( lz4sz ) + lz4sz;
-
-            auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf, buf, lz4sz, TargetFrameSize );
-            assert( sz >= 0 );
-            decBytes += sz;
-
-            char* ptr = buf;
-            const char* end = buf + sz;
-
-            {
-                std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
-                while( ptr < end )
-                {
-                    auto ev = (const QueueItem*)ptr;
-                    DispatchProcess( *ev, ptr );
-                }
-
-                m_bufferOffset += sz;
-                if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
-
-                HandlePostponedPlots();
-            }
-
-            auto t1 = std::chrono::high_resolution_clock::now();
-            auto td = std::chrono::duration_cast<std::chrono::milliseconds>( t1 - t0 ).count();
-            enum { MbpsUpdateTime = 200 };
-            if( td > MbpsUpdateTime )
-            {
-                std::lock_guard<NonRecursiveBenaphore> lock( m_mbpslock );
-                m_mbps.erase( m_mbps.begin() );
-                m_mbps.emplace_back( bytes / ( td * 125.f ) );
-                m_compRatio = float( bytes ) / decBytes;
-                t0 = t1;
-                bytes = 0;
-                decBytes = 0;
-            }
-
-            if( m_terminate )
-            {
-                if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 ||
-                    !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() )
-                {
-                    continue;
-                }
-                bool done = true;
-                for( auto& v : m_threads )
-                {
-                    if( !v->stack.empty() )
-                    {
-                        done = false;
-                        break;
-                    }
-                }
-                if( !done ) continue;
-                ServerQuery( ServerQueryTerminate, 0 );
-                break;
-            }
-        }
-
-close:
-        m_sock.Close();
-        m_connected.store( false, std::memory_order_relaxed );
-    }
-}
-
-void View::DispatchProcess( const QueueItem& ev, char*& ptr )
-{
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::SourceLocationPayload )
-    {
-        ptr += sizeof( QueueHeader ) + sizeof( QueueStringTransfer );
-        uint16_t sz;
-        memcpy( &sz, ptr, sizeof( sz ) );
-        ptr += sizeof( sz );
-        switch( ev.hdr.type )
-        {
-        case QueueType::CustomStringData:
-            AddCustomString( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::StringData:
-            AddString( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::ThreadName:
-            AddThreadString( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::PlotName:
-            HandlePlotName( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::SourceLocationPayload:
-            AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        default:
-            assert( false );
-            break;
-        }
-        ptr += sz;
-    }
-    else
-    {
-        ptr += QueueDataSize[ev.hdr.idx];
-        Process( ev );
-    }
-}
-
-void View::ServerQuery( uint8_t type, uint64_t data )
-{
-    enum { DataSize = sizeof( type ) + sizeof( data ) };
-    char tmp[DataSize];
-    memcpy( tmp, &type, sizeof( type ) );
-    memcpy( tmp + sizeof( type ), &data, sizeof( data ) );
-    m_sock.Send( tmp, DataSize );
-}
-
-void View::Process( const QueueItem& ev )
-{
-    switch( ev.hdr.type )
-    {
-    case QueueType::ZoneBegin:
-        ProcessZoneBegin( ev.zoneBegin );
-        break;
-    case QueueType::ZoneBeginAllocSrcLoc:
-        ProcessZoneBeginAllocSrcLoc( ev.zoneBegin );
-        break;
-    case QueueType::ZoneEnd:
-        ProcessZoneEnd( ev.zoneEnd );
-        break;
-    case QueueType::FrameMarkMsg:
-        ProcessFrameMark( ev.frameMark );
-        break;
-    case QueueType::SourceLocation:
-        AddSourceLocation( ev.srcloc );
-        break;
-    case QueueType::ZoneText:
-        ProcessZoneText( ev.zoneText );
-        break;
-    case QueueType::LockAnnounce:
-        ProcessLockAnnounce( ev.lockAnnounce );
-        break;
-    case QueueType::LockWait:
-        ProcessLockWait( ev.lockWait );
-        break;
-    case QueueType::LockObtain:
-        ProcessLockObtain( ev.lockObtain );
-        break;
-    case QueueType::LockRelease:
-        ProcessLockRelease( ev.lockRelease );
-        break;
-    case QueueType::LockSharedWait:
-        ProcessLockSharedWait( ev.lockWait );
-        break;
-    case QueueType::LockSharedObtain:
-        ProcessLockSharedObtain( ev.lockObtain );
-        break;
-    case QueueType::LockSharedRelease:
-        ProcessLockSharedRelease( ev.lockRelease );
-        break;
-    case QueueType::LockMark:
-        ProcessLockMark( ev.lockMark );
-        break;
-    case QueueType::PlotData:
-        ProcessPlotData( ev.plotData );
-        break;
-    case QueueType::Message:
-        ProcessMessage( ev.message );
-        break;
-    case QueueType::MessageLiteral:
-        ProcessMessageLiteral( ev.message );
-        break;
-    case QueueType::GpuNewContext:
-        ProcessGpuNewContext( ev.gpuNewContext );
-        break;
-    case QueueType::GpuZoneBegin:
-        ProcessGpuZoneBegin( ev.gpuZoneBegin );
-        break;
-    case QueueType::GpuZoneEnd:
-        ProcessGpuZoneEnd( ev.gpuZoneEnd );
-        break;
-    case QueueType::GpuTime:
-        ProcessGpuTime( ev.gpuTime );
-        break;
-    case QueueType::GpuResync:
-        ProcessGpuResync( ev.gpuResync );
-        break;
-    case QueueType::Terminate:
-        m_terminate = true;
-        break;
-    default:
-        assert( false );
-        break;
-    }
-}
-
-void View::ProcessZoneBegin( const QueueZoneBegin& ev )
-{
-    auto zone = m_slab.AllocInit<ZoneEvent>();
-
-    CheckSourceLocation( ev.srcloc );
-
-    zone->start = TscTime( ev.time );
-    zone->end = -1;
-    zone->srcloc = ShrinkSourceLocation( ev.srcloc );
-    assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
-    zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
-
-    m_lastTime = std::max( m_lastTime, zone->start );
-
-    NewZone( zone, ev.thread );
-}
-
-void View::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
-{
-    auto it = m_pendingSourceLocationPayload.find( ev.srcloc );
-    assert( it != m_pendingSourceLocationPayload.end() );
-
-    auto zone = m_slab.AllocInit<ZoneEvent>();
-
-    zone->start = TscTime( ev.time );
-    zone->end = -1;
-    zone->srcloc = it->second;
-    assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
-    zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
-
-    m_lastTime = std::max( m_lastTime, zone->start );
-
-    NewZone( zone, ev.thread );
-
-    m_pendingSourceLocationPayload.erase( it );
-}
-
-void View::ProcessZoneEnd( const QueueZoneEnd& ev )
-{
-    auto tit = m_threadMap.find( ev.thread );
-    assert( tit != m_threadMap.end() );
-
-    auto td = tit->second;
-    auto& stack = td->stack;
-    assert( !stack.empty() );
-    auto zone = stack.back_and_pop();
-    assert( zone->end == -1 );
-    zone->end = TscTime( ev.time );
-    assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
-    zone->cpu_end = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
-    assert( zone->end >= zone->start );
-
-    m_lastTime = std::max( m_lastTime, zone->end );
-}
-
-void View::ProcessFrameMark( const QueueFrameMark& ev )
-{
-    assert( !m_frames.empty() );
-    const auto lastframe = m_frames.back();
-    const auto time = TscTime( ev.time );
-    assert( lastframe < time );
-    m_frames.push_back_non_empty( time );
-    m_lastTime = std::max( m_lastTime, time );
-}
-
-void View::ProcessZoneText( const QueueZoneText& ev )
-{
-    auto tit = m_threadMap.find( ev.thread );
-    assert( tit != m_threadMap.end() );
-
-    auto td = tit->second;
-    auto& stack = td->stack;
-    assert( !stack.empty() );
-    auto zone = stack.back();
-    auto it = m_pendingCustomStrings.find( ev.text );
-    assert( it != m_pendingCustomStrings.end() );
-    zone->text = StringIdx( it->second.idx );
-    m_pendingCustomStrings.erase( it );
-}
-
-void View::ProcessLockAnnounce( const QueueLockAnnounce& ev )
-{
-    auto it = m_lockMap.find( ev.id );
-    if( it == m_lockMap.end() )
-    {
-        LockMap lm;
-        lm.srcloc = ShrinkSourceLocation( ev.lckloc );
-        lm.type = ev.type;
-        lm.visible = true;
-        lm.valid = true;
-        m_lockMap.emplace( ev.id, std::move( lm ) );
-    }
-    else
-    {
-        it->second.srcloc = ShrinkSourceLocation( ev.lckloc );
-        assert( it->second.type == ev.type );
-        it->second.visible = true;
-        it->second.valid = true;
-    }
-    CheckSourceLocation( ev.lckloc );
-}
-
-void View::ProcessLockWait( const QueueLockWait& ev )
-{
-    auto it = m_lockMap.find( ev.id );
-    if( it == m_lockMap.end() )
-    {
-        LockMap lm;
-        lm.valid = false;
-        lm.type = ev.type;
-        it = m_lockMap.emplace( ev.id, std::move( lm ) ).first;
-    }
-
-    auto lev = ev.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time );
-    lev->type = LockEvent::Type::Wait;
-    lev->srcloc = 0;
-
-    InsertLockEvent( it->second, lev, ev.thread );
-}
-
-void View::ProcessLockObtain( const QueueLockObtain& ev )
-{
-    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
-    auto& lock = m_lockMap[ev.id];
-
-    auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time );
-    lev->type = LockEvent::Type::Obtain;
-    lev->srcloc = 0;
-
-    InsertLockEvent( lock, lev, ev.thread );
-}
-
-void View::ProcessLockRelease( const QueueLockRelease& ev )
-{
-    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
-    auto& lock = m_lockMap[ev.id];
-
-    auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time );
-    lev->type = LockEvent::Type::Release;
-    lev->srcloc = 0;
-
-    InsertLockEvent( lock, lev, ev.thread );
-}
-
-void View::ProcessLockSharedWait( const QueueLockWait& ev )
-{
-    auto it = m_lockMap.find( ev.id );
-    if( it == m_lockMap.end() )
-    {
-        LockMap lm;
-        lm.valid = false;
-        lm.type = ev.type;
-        it = m_lockMap.emplace( ev.id, std::move( lm ) ).first;
-    }
-
-    assert( ev.type == LockType::SharedLockable );
-    auto lev = m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time );
-    lev->type = LockEvent::Type::WaitShared;
-    lev->srcloc = 0;
-
-    InsertLockEvent( it->second, lev, ev.thread );
-}
-
-void View::ProcessLockSharedObtain( const QueueLockObtain& ev )
-{
-    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
-    auto& lock = m_lockMap[ev.id];
-
-    assert( lock.type == LockType::SharedLockable );
-    auto lev = m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time );
-    lev->type = LockEvent::Type::ObtainShared;
-    lev->srcloc = 0;
-
-    InsertLockEvent( lock, lev, ev.thread );
-}
-
-void View::ProcessLockSharedRelease( const QueueLockRelease& ev )
-{
-    assert( m_lockMap.find( ev.id ) != m_lockMap.end() );
-    auto& lock = m_lockMap[ev.id];
-
-    assert( lock.type == LockType::SharedLockable );
-    auto lev = m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time );
-    lev->type = LockEvent::Type::ReleaseShared;
-    lev->srcloc = 0;
-
-    InsertLockEvent( lock, lev, ev.thread );
-}
-
-void View::ProcessLockMark( const QueueLockMark& ev )
-{
-    CheckSourceLocation( ev.srcloc );
-    auto lit = m_lockMap.find( ev.id );
-    assert( lit != m_lockMap.end() );
-    auto& lockmap = lit->second;
-    auto tid = lockmap.threadMap.find( ev.thread );
-    assert( tid != lockmap.threadMap.end() );
-    const auto thread = tid->second;
-    auto it = lockmap.timeline.end();
-    for(;;)
-    {
-        --it;
-        if( (*it)->thread == thread )
-        {
-            switch( (*it)->type )
-            {
-            case LockEvent::Type::Obtain:
-            case LockEvent::Type::ObtainShared:
-            case LockEvent::Type::Wait:
-            case LockEvent::Type::WaitShared:
-                (*it)->srcloc = ShrinkSourceLocation( ev.srcloc );
-                return;
-            default:
-                break;
-            }
-        }
-    }
-}
-
-void View::ProcessPlotData( const QueuePlotData& ev )
-{
-    PlotData* plot;
-    auto it = m_plotMap.find( ev.name );
-    if( it == m_plotMap.end() )
-    {
-        auto pit = m_pendingPlots.find( ev.name );
-        if( pit == m_pendingPlots.end() )
-        {
-            plot = m_slab.AllocInit<PlotData>();
-            plot->name = ev.name;
-            plot->showFull = true;
-            plot->visible = true;
-            m_pendingPlots.emplace( ev.name, plot );
-            ServerQuery( ServerQueryPlotName, ev.name );
-        }
-        else
-        {
-            plot = pit->second;
-        }
-    }
-    else
-    {
-        plot = it->second;
-    }
-
-    const auto time = TscTime( ev.time );
-    m_lastTime = std::max( m_lastTime, time );
-    switch( ev.type )
-    {
-    case PlotDataType::Double:
-        InsertPlot( plot, time, ev.data.d );
-        break;
-    case PlotDataType::Float:
-        InsertPlot( plot, time, (double)ev.data.f );
-        break;
-    case PlotDataType::Int:
-        InsertPlot( plot, time, (double)ev.data.i );
-        break;
-    default:
-        assert( false );
-        break;
-    }
-}
-
-void View::ProcessMessage( const QueueMessage& ev )
-{
-    auto it = m_pendingCustomStrings.find( ev.text );
-    assert( it != m_pendingCustomStrings.end() );
-    auto msg = m_slab.Alloc<MessageData>();
-    msg->time = TscTime( ev.time );
-    msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
-    m_lastTime = std::max( m_lastTime, msg->time );
-    InsertMessageData( msg, ev.thread );
-    m_pendingCustomStrings.erase( it );
-}
-
-void View::ProcessMessageLiteral( const QueueMessage& ev )
-{
-    CheckString( ev.text );
-    auto msg = m_slab.Alloc<MessageData>();
-    msg->time = TscTime( ev.time );
-    msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
-    m_lastTime = std::max( m_lastTime, msg->time );
-    InsertMessageData( msg, ev.thread );
-}
-
-void View::ProcessGpuNewContext( const QueueGpuNewContext& ev )
-{
-    assert( m_gpuCtxMap.find( ev.context ) == m_gpuCtxMap.end() );
-
-    auto gpu = m_slab.AllocInit<GpuCtxData>();
-    gpu->timeDiff = TscTime( ev.cpuTime ) - ev.gpuTime;
-    gpu->thread = ev.thread;
-    gpu->accuracyBits = ev.accuracyBits;
-    gpu->count = 0;
-    gpu->showFull = true;
-    gpu->visible = true;
-    m_gpuData.push_back( gpu );
-    m_gpuCtxMap.emplace( ev.context, gpu );
-}
-
-void View::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
-{
-    auto it = m_gpuCtxMap.find( ev.context );
-    assert( it != m_gpuCtxMap.end() );
-    auto ctx = it->second;
-
-    CheckSourceLocation( ev.srcloc );
-
-    auto zone = m_slab.AllocInit<GpuEvent>();
-
-    zone->cpuStart = TscTime( ev.cpuTime );
-    zone->cpuEnd = -1;
-    zone->gpuStart = std::numeric_limits<int64_t>::max();
-    zone->gpuEnd = -1;
-    zone->srcloc = ShrinkSourceLocation( ev.srcloc );
-
-    m_lastTime = std::max( m_lastTime, zone->cpuStart );
-
-    auto timeline = &ctx->timeline;
-    if( !ctx->stack.empty() )
-    {
-        timeline = &ctx->stack.back()->child;
-    }
-
-    timeline->push_back( zone );
-
-    ctx->stack.push_back( zone );
-    ctx->queue.push_back( zone );
-}
-
-void View::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
-{
-    auto it = m_gpuCtxMap.find( ev.context );
-    assert( it != m_gpuCtxMap.end() );
-    auto ctx = it->second;
-
-    assert( !ctx->stack.empty() );
-    auto zone = ctx->stack.back_and_pop();
-    ctx->queue.push_back( zone );
-
-    zone->cpuEnd = TscTime( ev.cpuTime );
-    m_lastTime = std::max( m_lastTime, zone->cpuEnd );
-}
-
-void View::ProcessGpuTime( const QueueGpuTime& ev )
-{
-    auto it = m_gpuCtxMap.find( ev.context );
-    assert( it != m_gpuCtxMap.end() );
-    auto ctx = it->second;
-
-    auto zone = ctx->queue.front();
-    if( zone->gpuStart == std::numeric_limits<int64_t>::max() )
-    {
-        zone->gpuStart = ctx->timeDiff + ev.gpuTime;
-        m_lastTime = std::max( m_lastTime, zone->gpuStart );
-        ctx->count++;
-    }
-    else
-    {
-        zone->gpuEnd = ctx->timeDiff + ev.gpuTime;
-        m_lastTime = std::max( m_lastTime, zone->gpuEnd );
-    }
-
-    ctx->queue.erase( ctx->queue.begin() );
-    if( !ctx->resync.empty() )
-    {
-        auto& resync = ctx->resync.front();
-        assert( resync.events > 0 );
-        resync.events--;
-        if( resync.events == 0 )
-        {
-            ctx->timeDiff = resync.timeDiff;
-            ctx->resync.erase( ctx->resync.begin() );
-        }
-    }
-}
-
-void View::ProcessGpuResync( const QueueGpuResync& ev )
-{
-    auto it = m_gpuCtxMap.find( ev.context );
-    assert( it != m_gpuCtxMap.end() );
-    auto ctx = it->second;
-
-    const auto timeDiff = TscTime( ev.cpuTime ) - ev.gpuTime;
-
-    if( ctx->queue.empty() )
-    {
-        assert( ctx->resync.empty() );
-        ctx->timeDiff = timeDiff;
-    }
-    else
-    {
-        if( ctx->resync.empty() )
-        {
-            ctx->resync.push_back( { timeDiff, uint16_t( ctx->queue.size() ) } );
-        }
-        else
-        {
-            const auto last = ctx->resync.back().events;
-            ctx->resync.push_back( { timeDiff, uint16_t( ctx->queue.size() - last ) } );
-        }
-    }
-}
-
-void View::CheckString( uint64_t ptr )
-{
-    if( ptr == 0 ) return;
-    if( m_strings.find( ptr ) != m_strings.end() ) return;
-
-    m_strings.emplace( ptr, "???" );
-    m_pendingStrings++;
-
-    ServerQuery( ServerQueryString, ptr );
-}
-
-void View::CheckThreadString( uint64_t id )
-{
-    if( m_threadNames.find( id ) != m_threadNames.end() ) return;
-
-    m_threadNames.emplace( id, "???" );
-    m_pendingThreads++;
-
-    ServerQuery( ServerQueryThreadString, id );
-}
-
-static const SourceLocation emptySourceLocation = {};
-
-void View::CheckSourceLocation( uint64_t ptr )
-{
-    if( m_sourceLocation.find( ptr ) != m_sourceLocation.end() )
-    {
-        return;
-    }
-    else
-    {
-        NewSourceLocation( ptr );
-    }
-}
-
-void View::NewSourceLocation( uint64_t ptr )
-{
-    m_sourceLocation.emplace( ptr, emptySourceLocation );
-    m_pendingSourceLocation++;
-    m_sourceLocationQueue.push_back( ptr );
-
-    ServerQuery( ServerQuerySourceLocation, ptr );
-}
-
-void View::AddString( uint64_t ptr, char* str, size_t sz )
-{
-    assert( m_pendingStrings > 0 );
-    m_pendingStrings--;
-    auto it = m_strings.find( ptr );
-    assert( it != m_strings.end() && strcmp( it->second, "???" ) == 0 );
-    const auto sl = StoreString( str, sz );
-    it->second = sl.ptr;
-}
-
-void View::AddThreadString( uint64_t id, char* str, size_t sz )
-{
-    assert( m_pendingThreads > 0 );
-    m_pendingThreads--;
-    auto it = m_threadNames.find( id );
-    assert( it != m_threadNames.end() && strcmp( it->second, "???" ) == 0 );
-    const auto sl = StoreString( str, sz );
-    it->second = sl.ptr;
-}
-
-void View::AddCustomString( uint64_t ptr, char* str, size_t sz )
-{
-    assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
-    m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
-}
-
-StringLocation View::StoreString( char* str, size_t sz )
-{
-    StringLocation ret;
-    const char backup = str[sz];
-    str[sz] = '\0';
-    auto sit = m_stringMap.find( str );
-    if( sit == m_stringMap.end() )
-    {
-        auto ptr = m_slab.Alloc<char>( sz+1 );
-        memcpy( ptr, str, sz+1 );
-        ret.ptr = ptr;
-        ret.idx = m_stringData.size();
-        m_stringMap.emplace( ptr, m_stringData.size() );
-        m_stringData.push_back( ptr );
-    }
-    else
-    {
-        ret.ptr = sit->first;
-        ret.idx = sit->second;
-    }
-    str[sz] = backup;
-    return ret;
-}
-
-void View::AddSourceLocation( const QueueSourceLocation& srcloc )
-{
-    assert( m_pendingSourceLocation > 0 );
-    m_pendingSourceLocation--;
-
-    const auto ptr = m_sourceLocationQueue.front();
-    m_sourceLocationQueue.erase( m_sourceLocationQueue.begin() );
-
-    auto it = m_sourceLocation.find( ptr );
-    assert( it != m_sourceLocation.end() );
-    CheckString( srcloc.name );
-    CheckString( srcloc.file );
-    CheckString( srcloc.function );
-    uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
-    it->second = SourceLocation { srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color };
-}
-
-void View::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
-{
-    const auto start = data;
-
-    assert( m_pendingSourceLocationPayload.find( ptr ) == m_pendingSourceLocationPayload.end() );
-
-    uint32_t color, line;
-    memcpy( &color, data, 4 );
-    memcpy( &line, data + 4, 4 );
-    data += 8;
-    auto end = data;
-
-    while( *end ) end++;
-    const auto func = StoreString( data, end - data );
-    end++;
-
-    data = end;
-    while( *end ) end++;
-    const auto source = StoreString( data, end - data );
-    end++;
-
-    const auto nsz = sz - ( end - start );
-
-    color = ( ( color & 0x00FF0000 ) >> 16 ) |
-            ( ( color & 0x0000FF00 )       ) |
-            ( ( color & 0x000000FF ) << 16 );
-
-    SourceLocation srcloc { nsz == 0 ? StringRef() : StringRef( StringRef::Idx, StoreString( end, nsz ).idx ), StringRef( StringRef::Idx, func.idx ), StringRef( StringRef::Idx, source.idx ), line, color };
-    auto it = m_sourceLocationPayloadMap.find( &srcloc );
-    if( it == m_sourceLocationPayloadMap.end() )
-    {
-        auto slptr = m_slab.Alloc<SourceLocation>();
-        memcpy( slptr, &srcloc, sizeof( srcloc ) );
-        uint32_t idx = m_sourceLocationPayload.size();
-        m_sourceLocationPayloadMap.emplace( slptr, idx );
-        m_pendingSourceLocationPayload.emplace( ptr, -int32_t( idx + 1 ) );
-        m_sourceLocationPayload.push_back( slptr );
-    }
-    else
-    {
-        m_pendingSourceLocationPayload.emplace( ptr, -int32_t( it->second + 1 ) );
-    }
-}
-
-uint32_t View::ShrinkSourceLocation( uint64_t srcloc )
-{
-    auto it = m_sourceLocationShrink.find( srcloc );
-    if( it != m_sourceLocationShrink.end() )
-    {
-        return it->second;
-    }
-    else
-    {
-        return NewShrinkedSourceLocation( srcloc );
-    }
-}
-
-uint32_t View::NewShrinkedSourceLocation( uint64_t srcloc )
-{
-    const auto sz = m_sourceLocationExpand.size();
-    m_sourceLocationExpand.push_back( srcloc );
-    m_sourceLocationShrink.emplace( srcloc, sz );
-    return sz;
-}
-
-void View::InsertMessageData( MessageData* msg, uint64_t thread )
-{
-    if( m_messages.empty() )
-    {
-        m_messages.push_back( msg );
-    }
-    else if( m_messages.back()->time < msg->time )
-    {
-        m_messages.push_back_non_empty( msg );
-    }
-    else
-    {
-        auto mit = std::lower_bound( m_messages.begin(), m_messages.end(), msg->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        m_messages.insert( mit, msg );
-    }
-
-    auto vec = &NoticeThread( thread )->messages;
-    if( vec->empty() )
-    {
-        vec->push_back( msg );
-    }
-    else if( vec->back()->time < msg->time )
-    {
-        vec->push_back_non_empty( msg );
-    }
-    else
-    {
-        auto tmit = std::lower_bound( vec->begin(), vec->end(), msg->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        vec->insert( tmit, msg );
-    }
-}
-
-ThreadData* View::NoticeThread( uint64_t thread )
-{
-    auto it = m_threadMap.find( thread );
-    if( it != m_threadMap.end() )
-    {
-        return it->second;
-    }
-    else
-    {
-        return NewThread( thread );
-    }
-}
-
-ThreadData* View::NewThread( uint64_t thread )
-{
-    CheckThreadString( thread );
-    auto td = m_slab.AllocInit<ThreadData>();
-    td->id = thread;
-    td->count = 0;
-    td->showFull = true;
-    td->visible = true;
-    m_threads.push_back( td );
-    m_threadMap.emplace( thread, td );
-    return td;
-}
-
-void View::NewZone( ZoneEvent* zone, uint64_t thread )
-{
-    m_zonesCnt++;
-    auto td = NoticeThread( thread );
-    td->count++;
-    if( td->stack.empty() )
-    {
-        td->stack.push_back( zone );
-        td->timeline.push_back( zone );
-    }
-    else
-    {
-        td->stack.back()->child.push_back( zone );
-        td->stack.push_back_non_empty( zone );
-    }
-}
-
-static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
-{
-    auto& timeline = lockmap.timeline;
-    uint8_t lockingThread;
-    uint8_t lockCount;
-    uint64_t waitList;
-
-    if( pos == 0 )
-    {
-        lockingThread = 0;
-        lockCount = 0;
-        waitList = 0;
-    }
-    else
-    {
-        const auto tl = timeline[pos-1];
-        lockingThread = tl->lockingThread;
-        lockCount = tl->lockCount;
-        waitList = tl->waitList;
-    }
-    const auto end = timeline.size();
-
-    while( pos != end )
-    {
-        const auto tl = timeline[pos];
-        const auto tbit = uint64_t( 1 ) << tl->thread;
-        switch( (LockEvent::Type)tl->type )
-        {
-        case LockEvent::Type::Wait:
-            waitList |= tbit;
-            break;
-        case LockEvent::Type::Obtain:
-            assert( lockCount < std::numeric_limits<uint8_t>::max() );
-            assert( ( waitList & tbit ) != 0 );
-            waitList &= ~tbit;
-            lockingThread = tl->thread;
-            lockCount++;
-            break;
-        case LockEvent::Type::Release:
-            assert( lockCount > 0 );
-            lockCount--;
-            break;
-        default:
-            break;
-        }
-        tl->lockingThread = lockingThread;
-        tl->waitList = waitList;
-        tl->lockCount = lockCount;
-        assert( tl->lockingThread == lockingThread );
-        pos++;
-    }
-}
-
-static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
-{
-    auto& timeline = lockmap.timeline;
-    uint8_t lockingThread;
-    uint8_t lockCount;
-    uint64_t waitShared;
-    uint64_t waitList;
-    uint64_t sharedList;
-
-    if( pos == 0 )
-    {
-        lockingThread = 0;
-        lockCount = 0;
-        waitShared = 0;
-        waitList = 0;
-        sharedList = 0;
-    }
-    else
-    {
-        const auto tl = (LockEventShared*)timeline[pos-1];
-        lockingThread = tl->lockingThread;
-        lockCount = tl->lockCount;
-        waitShared = tl->waitShared;
-        waitList = tl->waitList;
-        sharedList = tl->sharedList;
-    }
-    const auto end = timeline.size();
-
-    // ObtainShared and ReleaseShared should assert on lockCount == 0, but
-    // due to the async retrieval of data from threads that not possible.
-    while( pos != end )
-    {
-        const auto tl = (LockEventShared*)timeline[pos];
-        const auto tbit = uint64_t( 1 ) << tl->thread;
-        switch( (LockEvent::Type)tl->type )
-        {
-        case LockEvent::Type::Wait:
-            waitList |= tbit;
-            break;
-        case LockEvent::Type::WaitShared:
-            waitShared |= tbit;
-            break;
-        case LockEvent::Type::Obtain:
-            assert( lockCount < std::numeric_limits<uint8_t>::max() );
-            assert( ( waitList & tbit ) != 0 );
-            waitList &= ~tbit;
-            lockingThread = tl->thread;
-            lockCount++;
-            break;
-        case LockEvent::Type::Release:
-            assert( lockCount > 0 );
-            lockCount--;
-            break;
-        case LockEvent::Type::ObtainShared:
-            assert( ( waitShared & tbit ) != 0 );
-            assert( ( sharedList & tbit ) == 0 );
-            waitShared &= ~tbit;
-            sharedList |= tbit;
-            break;
-        case LockEvent::Type::ReleaseShared:
-            assert( ( sharedList & tbit ) != 0 );
-            sharedList &= ~tbit;
-            break;
-        default:
-            break;
-        }
-        tl->lockingThread = lockingThread;
-        tl->waitShared = waitShared;
-        tl->waitList = waitList;
-        tl->sharedList = sharedList;
-        tl->lockCount = lockCount;
-        assert( tl->lockingThread == lockingThread );
-        pos++;
-    }
-}
-
-static inline void UpdateLockCount( LockMap& lockmap, size_t pos )
-{
-    if( lockmap.type == LockType::Lockable )
-    {
-        UpdateLockCountLockable( lockmap, pos );
-    }
-    else
-    {
-        UpdateLockCountSharedLockable( lockmap, pos );
-    }
-}
-
-void View::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
-{
-    m_lastTime = std::max( m_lastTime, lev->time );
-
-    NoticeThread( thread );
-
-    auto it = lockmap.threadMap.find( thread );
-    if( it == lockmap.threadMap.end() )
-    {
-        assert( lockmap.threadList.size() < MaxLockThreads );
-        it = lockmap.threadMap.emplace( thread, lockmap.threadList.size() ).first;
-        lockmap.threadList.emplace_back( thread );
-    }
-    lev->thread = it->second;
-    assert( lev->thread == it->second );
-    auto& timeline = lockmap.timeline;
-    if( timeline.empty() )
-    {
-        timeline.push_back( lev );
-        UpdateLockCount( lockmap, timeline.size() - 1 );
-    }
-    else if( timeline.back()->time < lev->time )
-    {
-        timeline.push_back_non_empty( lev );
-        UpdateLockCount( lockmap, timeline.size() - 1 );
-    }
-    else
-    {
-        auto it = std::lower_bound( timeline.begin(), timeline.end(), lev->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        it = timeline.insert( it, lev );
-        UpdateLockCount( lockmap, std::distance( timeline.begin(), it ) );
-    }
-}
-
-void View::InsertPlot( PlotData* plot, int64_t time, double val )
-{
-    if( plot->data.empty() )
-    {
-        plot->min = val;
-        plot->max = val;
-        plot->data.push_back( { time, val } );
-    }
-    else if( plot->data.back().time < time )
-    {
-        if( plot->min > val ) plot->min = val;
-        else if( plot->max < val ) plot->max = val;
-        plot->data.push_back_non_empty( { time, val } );
-    }
-    else
-    {
-        if( plot->min > val ) plot->min = val;
-        else if( plot->max < val ) plot->max = val;
-        if( plot->postpone.empty() )
-        {
-            plot->postponeTime = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-            plot->postpone.push_back( { time, val } );
-        }
-        else
-        {
-            plot->postpone.push_back_non_empty( { time, val } );
-        }
-    }
-}
-
-void View::HandlePlotName( uint64_t name, char* str, size_t sz )
-{
-    auto pit = m_pendingPlots.find( name );
-    assert( pit != m_pendingPlots.end() );
-
-    const auto sl = StoreString( str, sz );
-
-    auto it = m_plotRev.find( sl.ptr );
-    if( it == m_plotRev.end() )
-    {
-        m_plotMap.emplace( name, pit->second );
-        m_plotRev.emplace( sl.ptr, pit->second );
-        m_plots.push_back( pit->second );
-        m_strings.emplace( name, sl.ptr );
-    }
-    else
-    {
-        auto plot = it->second;
-        m_plotMap.emplace( name, plot );
-        const auto& pp = pit->second->data;
-        for( auto& v : pp )
-        {
-            InsertPlot( plot, v.time, v.val );
-        }
-        // TODO what happens with the source data here?
-    }
-
-    m_pendingPlots.erase( pit );
-}
-
-void View::HandlePostponedPlots()
-{
-    for( auto& plot : m_plots )
-    {
-        auto& src = plot->postpone;
-        if( src.empty() ) continue;
-        if( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count() - plot->postponeTime < 100 ) continue;
-        auto& dst = plot->data;
-        std::sort( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
-        const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-        const auto dsd = std::distance( dst.begin(), ds ) ;
-        const auto de = std::lower_bound( ds, dst.end(), src.back().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-        const auto ded = std::distance( dst.begin(), de );
-        dst.insert( de, src.begin(), src.end() );
-        std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
-        src.clear();
-    }
-}
-
-int64_t View::GetFrameTime( size_t idx ) const
-{
-    if( idx < m_frames.size() - 1 )
-    {
-        return m_frames[idx+1] - m_frames[idx];
-    }
-    else
-    {
-        return m_lastTime == 0 ? 0 : m_lastTime - m_frames.back();
-    }
-}
-
-int64_t View::GetFrameBegin( size_t idx ) const
-{
-    assert( idx < m_frames.size() );
-    return m_frames[idx];
-}
-
-int64_t View::GetFrameEnd( size_t idx ) const
-{
-    if( idx < m_frames.size() - 1 )
-    {
-        return m_frames[idx+1];
-    }
-    else
-    {
-        return m_lastTime;
-    }
-}
-
-int64_t View::GetZoneEnd( const ZoneEvent& ev ) const
-{
-    auto ptr = &ev;
-    for(;;)
-    {
-        if( ptr->end != -1 ) return ptr->end;
-        if( ptr->child.empty() ) return ptr->start;
-        ptr = ptr->child.back();
-    }
-}
-
-int64_t View::GetZoneEnd( const GpuEvent& ev ) const
-{
-    auto ptr = &ev;
-    for(;;)
-    {
-        if( ptr->gpuEnd != -1 ) return ptr->gpuEnd;
-        if( ptr->child.empty() ) return ptr->gpuStart;
-        ptr = ptr->child.back();
-    }
-}
-
-const char* View::GetString( uint64_t ptr ) const
-{
-    const auto it = m_strings.find( ptr );
-    if( it == m_strings.end() || it->second == nullptr )
-    {
-        return "???";
-    }
-    else
-    {
-        return it->second;
-    }
-}
-
-const char* View::GetString( const StringRef& ref ) const
-{
-    if( ref.isidx )
-    {
-        assert( ref.active );
-        return m_stringData[ref.stridx];
-    }
-    else
-    {
-        if( ref.active )
-        {
-            return GetString( ref.strptr );
-        }
-        else
-        {
-            return "???";
-        }
-    }
-}
-
-const char* View::GetString( const StringIdx& idx ) const
-{
-    assert( idx.active );
-    return m_stringData[idx.idx];
-}
-
-const char* View::GetThreadString( uint64_t id ) const
-{
-    const auto it = m_threadNames.find( id );
-    if( it == m_threadNames.end() )
-    {
-        return "???";
-    }
-    else
-    {
-        return it->second;
-    }
-}
-
-const SourceLocation& View::GetSourceLocation( int32_t srcloc ) const
-{
-    if( srcloc < 0 )
-    {
-        return *m_sourceLocationPayload[-srcloc-1];
-    }
-    else
-    {
-        const auto it = m_sourceLocation.find( m_sourceLocationExpand[srcloc] );
-        assert( it != m_sourceLocation.end() );
-        return it->second;
-    }
 }
 
 const char* View::ShortenNamespace( const char* name ) const
@@ -1749,9 +234,9 @@ void View::Draw()
 
 void View::DrawImpl()
 {
-    if( !m_hasData.load( std::memory_order_acquire ) )
+    if( !m_worker.HasData() )
     {
-        ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+        ImGui::Begin( m_worker.GetAddr().c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize );
         ImGui::Text( "Waiting for connection..." );
         ImGui::End();
         return;
@@ -1762,8 +247,8 @@ void View::DrawImpl()
         DrawConnection();
     }
 
-    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
-    ImGui::Begin( m_captureName.c_str(), nullptr, ImGuiWindowFlags_NoScrollbar );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_worker.GetDataLock() );
+    ImGui::Begin( m_worker.GetCaptureName().c_str(), nullptr, ImGuiWindowFlags_NoScrollbar );
     if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 70, 0 ) ) ) m_pause = !m_pause;
     ImGui::SameLine();
     if( ImGui::Button( "Options", ImVec2( 70, 0 ) ) ) m_showOptions = true;
@@ -1772,7 +257,7 @@ void View::DrawImpl()
     ImGui::SameLine();
     if ( ImGui::Button( "Find Zone", ImVec2( 70, 0 ) ) ) m_findZone.show = true;
     ImGui::SameLine();
-    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_frames.size(), TimeToString( m_lastTime - m_frames[0] ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_zonesCnt, true ), TimeToString( m_delay ), TimeToString( m_resolution ) );
+    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_worker.GetFrameCount(), TimeToString( m_worker.GetLastTime() - m_worker.GetFrameBegin( 0 ) ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
     DrawFrames();
     DrawZones();
     ImGui::End();
@@ -1811,9 +296,10 @@ void View::DrawConnection()
     const auto cs = ty * 0.9f;
 
     {
-        std::lock_guard<NonRecursiveBenaphore> lock( m_mbpslock );
-        ImGui::Begin( m_addr.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize );
-        const auto mbps = m_mbps.back();
+        std::lock_guard<NonRecursiveBenaphore> lock( m_worker.GetMbpsDataLock() );
+        ImGui::Begin( m_worker.GetAddr().c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+        const auto& mbpsVector = m_worker.GetMbpsData();
+        const auto mbps = mbpsVector.back();
         char buf[64];
         if( mbps < 0.1f )
         {
@@ -1825,21 +311,21 @@ void View::DrawConnection()
         }
         ImGui::Dummy( ImVec2( cs, 0 ) );
         ImGui::SameLine();
-        ImGui::PlotLines( buf, m_mbps.data(), m_mbps.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 150, 0 ) );
-        ImGui::Text( "Ratio %.1f%%  Real: %6.2f Mbps", m_compRatio * 100.f, mbps / m_compRatio );
+        ImGui::PlotLines( buf, mbpsVector.data(), mbpsVector.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 150, 0 ) );
+        ImGui::Text( "Ratio %.1f%%  Real: %6.2f Mbps", m_worker.GetCompRatio() * 100.f, mbps / m_worker.GetCompRatio() );
     }
 
     ImGui::Text( "Memory usage: %.2f MB", memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ) );
 
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
-    ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_connected.load( std::memory_order_relaxed ) ? 0xFF2222CC : 0xFF444444, 10 );
+    ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
 
-    std::lock_guard<NonRecursiveBenaphore> lock( m_lock );
+    std::lock_guard<NonRecursiveBenaphore> lock( m_worker.GetDataLock() );
     {
-        const auto sz = m_frames.size();
+        const auto sz = m_worker.GetFrameCount();
         if( sz > 1 )
         {
-            const auto dt = m_frames[sz-1] - m_frames[sz-2];
+            const auto dt = m_worker.GetFrameTime( sz - 2 );
             const auto dtm = dt / 1000000.f;
             const auto fps = 1000.f / dtm;
             ImGui::Text( "FPS: %6.1f  Frame time: %.2f ms", fps, dtm );
@@ -1870,7 +356,7 @@ void View::DrawConnection()
             }
             if( f )
             {
-                Write( *f );
+                m_worker.Write( *f );
             }
         }
     }
@@ -1901,7 +387,7 @@ static int GetFrameGroup( int frameScale )
 
 void View::DrawFrames()
 {
-    assert( !m_frames.empty() );
+    assert( m_worker.GetFrameCount() != 0 );
 
     enum { Height = 40 };
     enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
@@ -1936,19 +422,19 @@ void View::DrawFrames()
 
     const int fwidth = GetFrameWidth( m_frameScale );
     const int group = GetFrameGroup( m_frameScale );
-    const int total = m_frames.size();
+    const int total = m_worker.GetFrameCount();
     const int onScreen = ( w - 2 ) / fwidth;
     if( !m_pause )
     {
         m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
-        m_zvStart = m_frames[std::max( 0, (int)m_frames.size() - 4 )];
-        if( m_frames.size() == 1 )
+        m_zvStart = m_worker.GetFrameBegin( std::max( 0, total - 4 ) );
+        if( total == 1 )
         {
-            m_zvEnd = m_lastTime;
+            m_zvEnd = m_worker.GetLastTime();
         }
         else
         {
-            m_zvEnd = m_frames.back();
+            m_zvEnd = m_worker.GetFrameBegin( total - 1 );
         }
     }
 
@@ -1978,11 +464,11 @@ void View::DrawFrames()
                 ImGui::BeginTooltip();
                 if( group > 1 )
                 {
-                    auto f = GetFrameTime( sel );
+                    auto f = m_worker.GetFrameTime( sel );
                     auto g = std::min( group, total - sel );
                     for( int j=1; j<g; j++ )
                     {
-                        f = std::max( f, GetFrameTime( sel + j ) );
+                        f = std::max( f, m_worker.GetFrameTime( sel + j ) );
                     }
 
                     ImGui::Text( "Frames: %i - %i (%i)", sel, sel + g - 1, g );
@@ -1995,29 +481,29 @@ void View::DrawFrames()
                     {
                         ImGui::Text( "Tracy initialization" );
                         ImGui::Separator();
-                        ImGui::Text( "Time: %s", TimeToString( GetFrameTime( sel ) ) );
+                        ImGui::Text( "Time: %s", TimeToString( m_worker.GetFrameTime( sel ) ) );
                     }
                     else
                     {
                         ImGui::Text( "Frame: %i", sel );
                         ImGui::Separator();
-                        ImGui::Text( "Frame time: %s", TimeToString( GetFrameTime( sel ) ) );
+                        ImGui::Text( "Frame time: %s", TimeToString( m_worker.GetFrameTime( sel ) ) );
                     }
                 }
-                ImGui::Text( "Time from start of program: %s", TimeToString( m_frames[sel] - m_frames[0] ) );
+                ImGui::Text( "Time from start of program: %s", TimeToString( m_worker.GetFrameBegin( sel ) - m_worker.GetFrameBegin( 0 ) ) );
                 ImGui::EndTooltip();
 
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
                     m_pause = true;
-                    m_zvStart = GetFrameBegin( sel );
-                    m_zvEnd = GetFrameEnd( sel + group - 1 );
+                    m_zvStart = m_worker.GetFrameBegin( sel );
+                    m_zvEnd = m_worker.GetFrameEnd( sel + group - 1 );
                     if( m_zvStart == m_zvEnd ) m_zvStart--;
                 }
                 else if( ImGui::IsMouseDragging( 0 ) )
                 {
-                    m_zvStart = std::min( m_zvStart, (int64_t)GetFrameBegin( sel ) );
-                    m_zvEnd = std::max( m_zvEnd, (int64_t)GetFrameEnd( sel + group - 1 ) );
+                    m_zvStart = std::min( m_zvStart, m_worker.GetFrameBegin( sel ) );
+                    m_zvEnd = std::max( m_zvEnd, m_worker.GetFrameEnd( sel + group - 1 ) );
                 }
             }
 
@@ -2035,14 +521,14 @@ void View::DrawFrames()
     int i = 0, idx = 0;
     while( i < onScreen && m_frameStart + idx < total )
     {
-        auto f = GetFrameTime( m_frameStart + idx );
+        auto f = m_worker.GetFrameTime( m_frameStart + idx );
         int g;
         if( group > 1 )
         {
             g = std::min( group, total - ( m_frameStart + idx ) );
             for( int j=1; j<g; j++ )
             {
-                f = std::max( f, GetFrameTime( m_frameStart + idx + j ) );
+                f = std::max( f, m_worker.GetFrameTime( m_frameStart + idx + j ) );
             }
         }
 
@@ -2060,18 +546,12 @@ void View::DrawFrames()
         idx += group;
     }
 
-    const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
-    if( zitbegin == m_frames.end() ) return;
-    const auto zitend = std::lower_bound( zitbegin, m_frames.end(), m_zvEnd );
+    const std::pair <int, int> zrange = m_worker.GetFrameRange( m_zvStart, m_zvEnd );
 
-    auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
-    if( zbegin > 0 && *zitbegin != m_zvStart ) zbegin--;
-    const auto zend = (int)std::distance( m_frames.begin(), zitend );
-
-    if( zend > m_frameStart && zbegin < m_frameStart + onScreen * group )
+    if( zrange.second > m_frameStart && zrange.first < m_frameStart + onScreen * group )
     {
-        auto x0 = std::max( 0, ( zbegin - m_frameStart ) * fwidth / group );
-        auto x1 = std::min( onScreen * fwidth, ( zend - m_frameStart ) * fwidth / group );
+        auto x1 = std::min( onScreen * fwidth, ( zrange.second - m_frameStart ) * fwidth / group );
+        auto x0 = std::max( 0, ( zrange.first - m_frameStart ) * fwidth / group );
 
         if( x0 == x1 ) x1 = x0 + 1;
 
@@ -2190,7 +670,7 @@ bool View::DrawZoneFrames()
             if( tw == 0 )
             {
                 char buf[128];
-                const auto t = m_zvStart - m_frames[0];
+                const auto t = m_zvStart - m_worker.GetFrameBegin( 0 );
                 auto txt = TimeToString( t );
                 if( t >= 0 )
                 {
@@ -2223,19 +703,14 @@ bool View::DrawZoneFrames()
         }
     }
 
-    const auto zitbegin = std::lower_bound( m_frames.begin(), m_frames.end(), m_zvStart );
-    if( zitbegin == m_frames.end() ) return hover;
-    const auto zitend = std::lower_bound( zitbegin, m_frames.end(), m_zvEnd );
+    const std::pair <int, int> zrange = m_worker.GetFrameRange( m_zvStart, m_zvEnd );
+    if( zrange.first == -1 ) return hover;
 
-    auto zbegin = (int)std::distance( m_frames.begin(), zitbegin );
-    if( zbegin > 0 && *zitbegin != m_zvStart ) zbegin--;
-    const auto zend = (int)std::distance( m_frames.begin(), zitend );
-
-    for( int i=zbegin; i<zend; i++ )
+    for( int i = zrange.first; i < zrange.second; i++ )
     {
-        const auto ftime = GetFrameTime( i );
-        const auto fbegin = (int64_t)GetFrameBegin( i );
-        const auto fend = (int64_t)GetFrameEnd( i );
+        const auto ftime = m_worker.GetFrameTime( i );
+        const auto fbegin = m_worker.GetFrameBegin( i );
+        const auto fend = m_worker.GetFrameEnd( i );
         const auto fsz = pxns * ftime;
 
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, fy ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, fy + ty ) ) )
@@ -2243,7 +718,7 @@ bool View::DrawZoneFrames()
             ImGui::BeginTooltip();
             ImGui::Text( "%s", GetFrameText( i, ftime ) );
             ImGui::Separator();
-            ImGui::Text( "Time from start of program: %s", TimeToString( m_frames[i] - m_frames[0] ) );
+            ImGui::Text( "Time from start of program: %s", TimeToString( m_worker.GetFrameBegin( i ) - m_worker.GetFrameBegin( 0 ) ) );
             ImGui::EndTooltip();
 
             if( ImGui::IsMouseClicked( 2 ) )
@@ -2294,7 +769,7 @@ bool View::DrawZoneFrames()
         }
     }
 
-    const auto fend = GetFrameEnd( zend-1 );
+    const auto fend = m_worker.GetFrameEnd( zrange.second-1 );
     if( fend == m_zvEnd )
     {
         draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
@@ -2353,14 +828,15 @@ void View::DrawZones()
     // gpu zones
     if( m_drawGpuZones )
     {
-        for( size_t i=0; i<m_gpuData.size(); i++ )
+        for( size_t i=0; i<m_worker.GetGpuData().size(); i++ )
         {
-            auto& v = m_gpuData[i];
-            if( !v->visible ) continue;
+            const auto& v = m_worker.GetGpuData()[i];
+            if( !Visible( v ) ) continue;
 
             draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
 
-            if( v->showFull )
+            bool& showFull = ShowFull( v );
+            if( showFull )
             {
                 draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFAAAA );
             }
@@ -2370,25 +846,25 @@ void View::DrawZones()
             }
             char buf[64];
             sprintf( buf, "GPU context %i", i );
-            draw->AddText( wpos + ImVec2( ty, offset ), v->showFull ? 0xFFFFAAAA : 0xFF886666, buf );
+            draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
             {
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
-                    v->showFull = !v->showFull;
+                    showFull = !showFull;
                 }
 
                 ImGui::BeginTooltip();
                 ImGui::Text( "%s", buf );
                 ImGui::Separator();
-                ImGui::Text( "Thread: %s", GetThreadString( v->thread ) );
+                ImGui::Text( "Thread: %s", m_worker.GetThreadString( v->thread ) );
                 if( !v->timeline.empty() )
                 {
                     const auto t = v->timeline.front()->gpuStart;
                     if( t != std::numeric_limits<int64_t>::max() )
                     {
-                        ImGui::Text( "Appeared at %s", TimeToString( t - m_frames[0] ) );
+                        ImGui::Text( "Appeared at %s", TimeToString( t - m_worker.GetFrameTime( 0 ) ) );
                     }
                 }
                 ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
@@ -2398,7 +874,7 @@ void View::DrawZones()
             }
 
             offset += ostep;
-            if( v->showFull )
+            if( showFull )
             {
                 const auto depth = DrawGpuZoneLevel( v->timeline, hover, pxns, wpos, offset, 0, v->thread );
                 offset += ostep * depth;
@@ -2409,13 +885,14 @@ void View::DrawZones()
 
     // zones
     LockHighlight nextLockHighlight { -1 };
-    for( auto& v : m_threads )
+    for( const auto& v : m_worker.GetThreadData() )
     {
-        if( !v->visible ) continue;
+        if( !Visible( v ) ) continue;
 
         draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
 
-        if( v->showFull )
+        bool& showFull = ShowFull( v );
+        if( showFull )
         {
             draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFFFFF );
 
@@ -2442,10 +919,10 @@ void View::DrawZones()
                     }
                     else
                     {
-                        ImGui::Text( "%s", TimeToString( (*it)->time - m_frames[0] ) );
+                        ImGui::Text( "%s", TimeToString( (*it)->time - m_worker.GetFrameBegin( 0 ) ) );
                         ImGui::Separator();
                         ImGui::Text( "Message text:" );
-                        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", GetString( (*it)->ref ) );
+                        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( (*it)->ref ) );
                     }
                     ImGui::EndTooltip();
                     m_msgHighlight = *it;
@@ -2457,7 +934,7 @@ void View::DrawZones()
         {
             draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF888888 );
         }
-        const auto txt = GetThreadString( v->id );
+        const auto txt = m_worker.GetThreadString( v->id );
         const auto txtsz = ImGui::CalcTextSize( txt );
         if( m_gpuThread == v->id )
         {
@@ -2469,21 +946,21 @@ void View::DrawZones()
             draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x4488DD88 );
             draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x8888DD88 );
         }
-        draw->AddText( wpos + ImVec2( ty, offset ), v->showFull ? 0xFFFFFFFF : 0xFF888888, txt );
+        draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFFFFFFFF : 0xFF888888, txt );
 
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x, offset + ty ) ) )
         {
             if( ImGui::IsMouseClicked( 0 ) )
             {
-                v->showFull = !v->showFull;
+                showFull = !showFull;
             }
 
             ImGui::BeginTooltip();
-            ImGui::Text( "%s", GetThreadString( v->id ) );
+            ImGui::Text( "%s", m_worker.GetThreadString( v->id ) );
             if( !v->timeline.empty() )
             {
                 ImGui::Separator();
-                ImGui::Text( "Appeared at %s", TimeToString( v->timeline.front()->start - m_frames[0] ) );
+                ImGui::Text( "Appeared at %s", TimeToString( v->timeline.front()->start - m_worker.GetFrameBegin( 0 ) ) );
                 ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
                 ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
             }
@@ -2493,7 +970,7 @@ void View::DrawZones()
 
         offset += ostep;
 
-        if( v->showFull )
+        if( showFull )
         {
             m_lastCpu = -1;
             if( m_drawZones )
@@ -2565,11 +1042,13 @@ void View::DrawZones()
 
 int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
 {
+    const auto delay = m_worker.GetDelay();
+    const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->start < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->start < r; } );
     if( it == zitend ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
@@ -2577,8 +1056,8 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
     auto draw = ImGui::GetWindowDrawList();
-    const auto dsz = m_delay * pxns;
-    const auto rsz = m_resolution * pxns;
+    const auto dsz = delay * pxns;
+    const auto rsz = resolution * pxns;
 
     depth++;
     int maxdepth = depth;
@@ -2586,9 +1065,9 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     while( it < zitend )
     {
         auto& ev = **it;
-        auto& srcloc = GetSourceLocation( ev.srcloc );
+        auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
         const auto color = GetZoneColor( ev );
-        const auto end = GetZoneEnd( ev );
+        const auto end = m_worker.GetZoneEnd( ev );
         const auto zsz = std::max( ( end - ev.start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
@@ -2600,7 +1079,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             {
                 ++it;
                 if( it == zitend ) break;
-                const auto nend = GetZoneEnd( **it );
+                const auto nend = m_worker.GetZoneEnd( **it );
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
@@ -2652,11 +1131,11 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             const char* zoneName;
             if( srcloc.name.active )
             {
-                zoneName = GetString( srcloc.name );
+                zoneName = m_worker.GetString( srcloc.name );
             }
             else
             {
-                zoneName = GetString( srcloc.function );
+                zoneName = m_worker.GetString( srcloc.function );
             }
 
             int dmul = ev.text.active ? 2 : 1;
@@ -2759,11 +1238,13 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
 
 int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth, uint64_t thread )
 {
+    const auto delay = m_worker.GetDelay();
+    const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->gpuEnd < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->gpuEnd < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->gpuStart < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->gpuStart < r; } );
     if( it == zitend ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
@@ -2771,8 +1252,8 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     const auto ostep = ty + 1;
     const auto offset = _offset + ostep * depth;
     auto draw = ImGui::GetWindowDrawList();
-    const auto dsz = m_delay * pxns;
-    const auto rsz = m_resolution * pxns;
+    const auto dsz = delay * pxns;
+    const auto rsz = resolution * pxns;
 
     depth++;
     int maxdepth = depth;
@@ -2780,9 +1261,9 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     while( it < zitend )
     {
         auto& ev = **it;
-        auto& srcloc = GetSourceLocation( ev.srcloc );
+        auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
         const auto color = GetZoneColor( ev );
-        const auto end = GetZoneEnd( ev );
+        const auto end = m_worker.GetZoneEnd( ev );
         if( end == std::numeric_limits<int64_t>::max() ) break;
         const auto zsz = std::max( ( end - ev.gpuStart ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
@@ -2795,7 +1276,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             {
                 ++it;
                 if( it == zitend ) break;
-                const auto nend = GetZoneEnd( **it );
+                const auto nend = m_worker.GetZoneEnd( **it );
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
@@ -2855,7 +1336,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 if( d > maxdepth ) maxdepth = d;
             }
 
-            const char* zoneName = GetString( srcloc.name );
+            const char* zoneName = m_worker.GetString( srcloc.name );
             auto tsz = ImGui::CalcTextSize( zoneName );
 
             const auto pr0 = ( ev.gpuStart - m_zvStart ) * pxns;
@@ -2953,7 +1434,7 @@ enum class LockState
     WaitLock            // red
 };
 
-static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::iterator& it, const Vector<LockEvent*>::iterator& end, LockState& nextState, uint64_t threadBit )
+static Vector<LockEvent*>::const_iterator GetNextLockEvent( const Vector<LockEvent*>::const_iterator& it, const Vector<LockEvent*>::const_iterator& end, LockState& nextState, uint64_t threadBit )
 {
     auto next = it;
     next++;
@@ -3044,7 +1525,7 @@ static Vector<LockEvent*>::iterator GetNextLockEvent( const Vector<LockEvent*>::
     return next;
 }
 
-static Vector<LockEvent*>::iterator GetNextLockEventShared( const Vector<LockEvent*>::iterator& it, const Vector<LockEvent*>::iterator& end, LockState& nextState, uint64_t threadBit )
+static Vector<LockEvent*>::const_iterator GetNextLockEventShared( const Vector<LockEvent*>::const_iterator& it, const Vector<LockEvent*>::const_iterator& end, LockState& nextState, uint64_t threadBit )
 {
     const auto itptr = (const LockEventShared*)*it;
     auto next = it;
@@ -3169,23 +1650,25 @@ static LockState CombineLockState( LockState state, LockState next )
 
 int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int _offset, LockHighlight& highlight )
 {
+    const auto delay = m_worker.GetDelay();
+    const auto resolution = m_worker.GetResolution();
     const auto w = ImGui::GetWindowContentRegionWidth();
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
     auto draw = ImGui::GetWindowDrawList();
-    const auto dsz = m_delay * pxns;
-    const auto rsz = m_resolution * pxns;
+    const auto dsz = delay * pxns;
+    const auto rsz = resolution * pxns;
 
     int cnt = 0;
-    for( auto& v : m_lockMap )
+    for( const auto& v : m_worker.GetLockMap() )
     {
-        auto& lockmap = v.second;
-        if( !lockmap.visible || !lockmap.valid ) continue;
+        const auto& lockmap = v.second;
+        if( !Visible( &lockmap ) || !lockmap.valid ) continue;
 
         auto it = lockmap.threadMap.find( tid );
         if( it == lockmap.threadMap.end() ) continue;
 
-        auto& tl = lockmap.timeline;
+        const auto& tl = lockmap.timeline;
         assert( !tl.empty() );
         if( tl.back()->time < m_zvStart ) continue;
 
@@ -3194,13 +1677,13 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         const auto thread = it->second;
         const auto threadBit = GetThreadBit( thread );
 
-        auto vbegin = std::lower_bound( tl.begin(), tl.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
-        const auto vend = std::lower_bound( vbegin, tl.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+        auto vbegin = std::lower_bound( tl.begin(), tl.end(), m_zvStart - delay, [] ( const auto& l, const auto& r ) { return l->time < r; } );
+        const auto vend = std::lower_bound( vbegin, tl.end(), m_zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
 
         if( vbegin > tl.begin() ) vbegin--;
 
         bool drawn = false;
-        auto& srcloc = GetSourceLocation( lockmap.srcloc );
+        const auto& srcloc = m_worker.GetSourceLocation( lockmap.srcloc );
         const auto offset = _offset + ostep * cnt;
 
         LockState state = LockState::Nothing;
@@ -3342,9 +1825,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
 
                     ImGui::BeginTooltip();
-                    ImGui::Text( "Lock #%" PRIu32 ": %s", v.first, GetString( srcloc.function ) );
+                    ImGui::Text( "Lock #%" PRIu32 ": %s", v.first, m_worker.GetString( srcloc.function ) );
                     ImGui::Separator();
-                    ImGui::Text( "%s:%i", GetString( srcloc.file ), srcloc.line );
+                    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
                     ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
                     ImGui::Separator();
 
@@ -3365,10 +1848,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
                     if( markloc != 0 )
                     {
-                        auto& marklocdata = GetSourceLocation( markloc );
+                        const auto& marklocdata = m_worker.GetSourceLocation( markloc );
                         ImGui::Text( "Lock event location:" );
-                        ImGui::Text( "%s", GetString( marklocdata.function ) );
-                        ImGui::Text( "%s:%i", GetString( marklocdata.file ), marklocdata.line );
+                        ImGui::Text( "%s", m_worker.GetString( marklocdata.function ) );
+                        ImGui::Text( "%s:%i", m_worker.GetString( marklocdata.file ), marklocdata.line );
                         ImGui::Separator();
                     }
 
@@ -3379,11 +1862,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         case LockState::HasLock:
                             if( (*vbegin)->lockCount == 1 )
                             {
-                                ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
+                                ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", m_worker.GetThreadString( tid ) );
                             }
                             else
                             {
-                                ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", GetThreadString( tid ), (*vbegin)->lockCount );
+                                ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", m_worker.GetThreadString( tid ), (*vbegin)->lockCount );
                             }
                             if( (*vbegin)->waitList != 0 )
                             {
@@ -3395,11 +1878,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         {
                             if( (*vbegin)->lockCount == 1 )
                             {
-                                ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), TracyCountBits( (*vbegin)->waitList ) );
+                                ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", m_worker.GetThreadString( tid ), TracyCountBits( (*vbegin)->waitList ) );
                             }
                             else
                             {
-                                ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", GetThreadString( tid ), (*vbegin)->lockCount, TracyCountBits( (*vbegin)->waitList ) );
+                                ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", m_worker.GetThreadString( tid ), (*vbegin)->lockCount, TracyCountBits( (*vbegin)->waitList ) );
                             }
                             auto waitList = (*vbegin)->waitList;
                             int t = 0;
@@ -3408,7 +1891,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             {
                                 if( waitList & 0x1 )
                                 {
-                                    ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                    ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
                                 }
                                 waitList >>= 1;
                                 t++;
@@ -3420,14 +1903,14 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         {
                             if( (*vbegin)->lockCount > 0 )
                             {
-                                ImGui::Text( "Thread \"%s\" is blocked by other thread:", GetThreadString( tid ) );
+                                ImGui::Text( "Thread \"%s\" is blocked by other thread:", m_worker.GetThreadString( tid ) );
                             }
                             else
                             {
-                                ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", GetThreadString( tid ) );
+                                ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", m_worker.GetThreadString( tid ) );
                             }
                             ImGui::Indent( ty );
-                            ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[(*vbegin)->lockingThread] ) );
+                            ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[(*vbegin)->lockingThread] ) );
                             ImGui::Unindent( ty );
                             break;
                         }
@@ -3446,15 +1929,15 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             if( ptr->sharedList == 0 )
                             {
                                 assert( ptr->lockCount == 1 );
-                                ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", GetThreadString( tid ) );
+                                ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", m_worker.GetThreadString( tid ) );
                             }
                             else if( TracyCountBits( ptr->sharedList ) == 1 )
                             {
-                                ImGui::Text( "Thread \"%s\" has a sole shared lock. No other threads are waiting.", GetThreadString( tid ) );
+                                ImGui::Text( "Thread \"%s\" has a sole shared lock. No other threads are waiting.", m_worker.GetThreadString( tid ) );
                             }
                             else
                             {
-                                ImGui::Text( "Thread \"%s\" has shared lock. No other threads are waiting.", GetThreadString( tid ) );
+                                ImGui::Text( "Thread \"%s\" has shared lock. No other threads are waiting.", m_worker.GetThreadString( tid ) );
                                 ImGui::Text( "Threads sharing the lock (%i):", TracyCountBits( ptr->sharedList ) - 1 );
                                 auto sharedList = ptr->sharedList;
                                 int t = 0;
@@ -3463,7 +1946,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 {
                                     if( sharedList & 0x1 && t != thread )
                                     {
-                                        ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                        ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
                                     }
                                     sharedList >>= 1;
                                     t++;
@@ -3476,15 +1959,15 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             if( ptr->sharedList == 0 )
                             {
                                 assert( ptr->lockCount == 1 );
-                                ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", GetThreadString( tid ), TracyCountBits( ptr->waitList ) + TracyCountBits( ptr->waitShared ) );
+                                ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", m_worker.GetThreadString( tid ), TracyCountBits( ptr->waitList ) + TracyCountBits( ptr->waitShared ) );
                             }
                             else if( TracyCountBits( ptr->sharedList ) == 1 )
                             {
-                                ImGui::Text( "Thread \"%s\" has a sole shared lock. Blocked threads (%i):", GetThreadString( tid ), TracyCountBits( ptr->waitList ) + TracyCountBits( ptr->waitShared ) );
+                                ImGui::Text( "Thread \"%s\" has a sole shared lock. Blocked threads (%i):", m_worker.GetThreadString( tid ), TracyCountBits( ptr->waitList ) + TracyCountBits( ptr->waitShared ) );
                             }
                             else
                             {
-                                ImGui::Text( "Thread \"%s\" has shared lock.", GetThreadString( tid ) );
+                                ImGui::Text( "Thread \"%s\" has shared lock.", m_worker.GetThreadString( tid ) );
                                 ImGui::Text( "Threads sharing the lock (%i):", TracyCountBits( ptr->sharedList ) - 1 );
                                 auto sharedList = ptr->sharedList;
                                 int t = 0;
@@ -3493,7 +1976,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 {
                                     if( sharedList & 0x1 && t != thread )
                                     {
-                                        ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                        ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
                                     }
                                     sharedList >>= 1;
                                     t++;
@@ -3509,7 +1992,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             {
                                 if( waitList & 0x1 )
                                 {
-                                    ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                    ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
                                 }
                                 waitList >>= 1;
                                 t++;
@@ -3520,7 +2003,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             {
                                 if( waitShared & 0x1 )
                                 {
-                                    ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                    ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
                                 }
                                 waitShared >>= 1;
                                 t++;
@@ -3533,16 +2016,16 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             assert( ptr->lockCount == 0 || ptr->lockCount == 1 );
                             if( ptr->lockCount != 0 || ptr->sharedList != 0 )
                             {
-                                ImGui::Text( "Thread \"%s\" is blocked by other threads (%i):", GetThreadString( tid ), ptr->lockCount + TracyCountBits( ptr->sharedList ) );
+                                ImGui::Text( "Thread \"%s\" is blocked by other threads (%i):", m_worker.GetThreadString( tid ), ptr->lockCount + TracyCountBits( ptr->sharedList ) );
                             }
                             else
                             {
-                                ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", GetThreadString( tid ) );
+                                ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", m_worker.GetThreadString( tid ) );
                             }
                             ImGui::Indent( ty );
                             if( ptr->lockCount != 0 )
                             {
-                                ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[ptr->lockingThread] ) );
+                                ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[ptr->lockingThread] ) );
                             }
                             auto sharedList = ptr->sharedList;
                             int t = 0;
@@ -3550,7 +2033,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             {
                                 if( sharedList & 0x1 )
                                 {
-                                    ImGui::Text( "\"%s\"", GetThreadString( lockmap.threadList[t] ) );
+                                    ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
                                 }
                                 sharedList >>= 1;
                                 t++;
@@ -3602,7 +2085,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         if( drawn )
         {
             char buf[1024];
-            sprintf( buf, "%" PRIu32 ": %s", v.first, GetString( srcloc.function ) );
+            sprintf( buf, "%" PRIu32 ": %s", v.first, m_worker.GetString( srcloc.function ) );
             DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
             {
@@ -3622,9 +2105,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 ImGui::Text( "Thread list:" );
                 ImGui::Separator();
                 ImGui::Indent( ty );
-                for( auto& t : v.second.threadList )
+                for( const auto& t : v.second.threadList )
                 {
-                    ImGui::Text( "%s", GetThreadString( t ) );
+                    ImGui::Text( "%s", m_worker.GetThreadString( t ) );
                 }
                 ImGui::Unindent( ty );
                 ImGui::Separator();
@@ -3651,13 +2134,14 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
     const auto nspx = 1.0 / pxns;
 
-    for( auto& v : m_plots )
+    for( const auto& v : m_worker.GetPlots() )
     {
-        if( !v->visible ) continue;
+        if( !Visible( v ) ) continue;
 
         assert( !v->data.empty() );
 
-        if( v->showFull )
+        bool& showFull = ShowFull( v );
+        if( showFull )
         {
             draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFF44DDDD );
         }
@@ -3665,15 +2149,15 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
         {
             draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF226E6E );
         }
-        const auto txt = GetString( v->name );
-        draw->AddText( wpos + ImVec2( ty, offset ), v->showFull ? 0xFF44DDDD : 0xFF226E6E, txt );
+        const auto txt = m_worker.GetString( v->name );
+        draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFF44DDDD : 0xFF226E6E, txt );
         draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
 
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( txt ).x, offset + ty ) ) )
         {
             if( ImGui::IsMouseClicked( 0 ) )
             {
-                v->showFull = !v->showFull;
+                showFull = !showFull;
             }
 
             const auto tr = v->data.back().time - v->data.front().time;
@@ -3700,11 +2184,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
 
         offset += ty;
 
-        if( v->showFull )
+        if( showFull )
         {
-            auto& vec = v->data;
-            auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_delay, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-            auto end = std::lower_bound( it, vec.end(), m_zvEnd + m_resolution, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+            const auto& vec = v->data;
+            auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_worker.GetDelay(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
+            auto end = std::lower_bound( it, vec.end(), m_zvEnd + m_worker.GetResolution(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
 
             if( end != vec.end() ) end++;
             if( it != vec.begin() ) it--;
@@ -3885,33 +2369,33 @@ void View::DrawZoneInfoWindow()
 
     ImGui::Separator();
 
-    auto& srcloc = GetSourceLocation( ev.srcloc );
+    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     if( srcloc.name.active )
     {
-        ImGui::Text( "Zone name: %s", GetString( srcloc.name ) );
+        ImGui::Text( "Zone name: %s", m_worker.GetString( srcloc.name ) );
     }
-    ImGui::Text( "Function: %s", GetString( srcloc.function ) );
-    ImGui::Text( "Location: %s:%i", GetString( srcloc.file ), srcloc.line );
+    ImGui::Text( "Function: %s", m_worker.GetString( srcloc.function ) );
+    ImGui::Text( "Location: %s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     if( ev.text.active )
     {
-        ImGui::Text( "User text: %s", GetString( ev.text ) );
+        ImGui::Text( "User text: %s", m_worker.GetString( ev.text ) );
         dmul++;
     }
 
     ImGui::Separator();
 
-    const auto end = GetZoneEnd( ev );
+    const auto end = m_worker.GetZoneEnd( ev );
     const auto ztime = end - ev.start;
-    ImGui::Text( "Time from start of program: %s", TimeToString( ev.start - m_frames[0] ) );
+    ImGui::Text( "Time from start of program: %s", TimeToString( ev.start - m_worker.GetFrameBegin( 0 ) ) );
     ImGui::Text( "Execution time: %s", TimeToString( ztime ) );
-    ImGui::Text( "Without profiling: %s", TimeToString( ztime - m_delay * dmul ) );
+    ImGui::Text( "Without profiling: %s", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
 
     auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
     auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
     uint64_t ctime = 0;
     for( size_t i=0; i<ev.child.size(); i++ )
     {
-        const auto cend = GetZoneEnd( *ev.child[i] );
+        const auto cend = m_worker.GetZoneEnd( *ev.child[i] );
         const auto ct = cend - ev.child[i]->start;
         ctime += ct;
         ctt[i] = ct;
@@ -3933,14 +2417,14 @@ void View::DrawZoneInfoWindow()
         for( size_t i=0; i<ev.child.size(); i++ )
         {
             auto& cev = *ev.child[cti[i]];
-            auto& csl = GetSourceLocation( cev.srcloc );
+            const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
             if( csl.name.active )
             {
-                ImGui::Text( "%s", GetString( csl.name ) );
+                ImGui::Text( "%s", m_worker.GetString( csl.name ) );
             }
             else
             {
-                ImGui::Text( "%s", GetString( csl.function ) );
+                ImGui::Text( "%s", m_worker.GetString( csl.function ) );
             }
             if( ImGui::IsItemHovered() )
             {
@@ -3993,16 +2477,16 @@ void View::DrawGpuInfoWindow()
 
     ImGui::Separator();
 
-    auto& srcloc = GetSourceLocation( ev.srcloc );
-    ImGui::Text( "Zone name: %s", GetString( srcloc.name ) );
-    ImGui::Text( "Function: %s", GetString( srcloc.function ) );
-    ImGui::Text( "Location: %s:%i", GetString( srcloc.file ), srcloc.line );
+    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+    ImGui::Text( "Zone name: %s", m_worker.GetString( srcloc.name ) );
+    ImGui::Text( "Function: %s", m_worker.GetString( srcloc.function ) );
+    ImGui::Text( "Location: %s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
 
     ImGui::Separator();
 
-    const auto end = GetZoneEnd( ev );
+    const auto end = m_worker.GetZoneEnd( ev );
     const auto ztime = end - ev.gpuStart;
-    ImGui::Text( "Time from start of program: %s", TimeToString( ev.gpuStart - m_frames[0] ) );
+    ImGui::Text( "Time from start of program: %s", TimeToString( ev.gpuStart - m_worker.GetFrameBegin( 0 ) ) );
     ImGui::Text( "GPU execution time: %s", TimeToString( ztime ) );
     ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     ImGui::Text( "Delay to execution: %s", TimeToString( ev.gpuStart - ev.cpuStart ) );
@@ -4012,7 +2496,7 @@ void View::DrawGpuInfoWindow()
     uint64_t ctime = 0;
     for( size_t i=0; i<ev.child.size(); i++ )
     {
-        const auto cend = GetZoneEnd( *ev.child[i] );
+        const auto cend = m_worker.GetZoneEnd( *ev.child[i] );
         const auto ct = cend - ev.child[i]->gpuStart;
         ctime += ct;
         ctt[i] = ct;
@@ -4034,8 +2518,8 @@ void View::DrawGpuInfoWindow()
         for( size_t i=0; i<ev.child.size(); i++ )
         {
             auto& cev = *ev.child[cti[i]];
-            auto& csl = GetSourceLocation( cev.srcloc );
-            ImGui::Text( "%s", GetString( csl.name ) );
+            const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
+            ImGui::Text( "%s", m_worker.GetString( csl.name ) );
             if( ImGui::IsItemHovered() )
             {
                 m_gpuHighlight = &cev;
@@ -4070,11 +2554,11 @@ void View::DrawOptions()
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
     ImGui::Checkbox( "Draw GPU zones", &m_drawGpuZones );
     ImGui::Indent( tw );
-    for( size_t i=0; i<m_gpuData.size(); i++ )
+    for( size_t i=0; i<m_worker.GetGpuData().size(); i++ )
     {
         char buf[1024];
         sprintf( buf, "GPU context %zu", i );
-        ImGui::Checkbox( buf , &m_gpuData[i]->visible );
+        ImGui::Checkbox( buf, &Visible( m_worker.GetGpuData()[i] ) );
     }
     ImGui::Unindent( tw );
     ImGui::Checkbox( "Draw CPU zones", &m_drawZones );
@@ -4086,30 +2570,30 @@ void View::DrawOptions()
     ImGui::SameLine();
     ImGui::Checkbox( "Only contended", &m_onlyContendedLocks );
     ImGui::Indent( tw );
-    for( auto& l : m_lockMap )
+    for( const auto& l : m_worker.GetLockMap() )
     {
         if( l.second.valid )
         {
             char buf[1024];
-            sprintf( buf, "%" PRIu32 ": %s", l.first, GetString( GetSourceLocation( l.second.srcloc ).function ) );
-            ImGui::Checkbox( buf , &l.second.visible );
+            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
+            ImGui::Checkbox( buf, &Visible( &l.second ) );
         }
     }
     ImGui::Unindent( tw );
     ImGui::Separator();
     ImGui::Checkbox( "Draw plots", &m_drawPlots );
     ImGui::Indent( tw );
-    for( auto& p : m_plots )
+    for( const auto& p : m_worker.GetPlots() )
     {
-        ImGui::Checkbox( GetString( p->name ), &p->visible );
+        ImGui::Checkbox( m_worker.GetString( p->name ), &Visible( p ) );
     }
     ImGui::Unindent( tw );
     ImGui::Separator();
     ImGui::Text( "Visible threads:" );
     ImGui::Indent( tw );
-    for( auto& t : m_threads )
+    for( const auto& t : m_worker.GetThreadData() )
     {
-        ImGui::Checkbox( GetThreadString( t->id ), &t->visible );
+        ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Visible( t ) );
     }
     ImGui::Unindent( tw );
     ImGui::End();
@@ -4118,10 +2602,10 @@ void View::DrawOptions()
 void View::DrawMessages()
 {
     ImGui::Begin( "Messages", &m_showMessages );
-    for( auto& v : m_messages )
+    for( const auto& v : m_worker.GetMessages() )
     {
         char tmp[64 * 1024];
-        sprintf( tmp, "%10s | %s", TimeToString( v->time - m_frames[0] ), GetString( v->ref ) );
+        sprintf( tmp, "%10s | %s", TimeToString( v->time - m_worker.GetFrameBegin( 0 ) ), m_worker.GetString( v->ref ) );
         if( m_msgHighlight == v )
         {
             ImGui::TextColored( ImVec4( 0xDD / 255.f, 0x22 / 255.f, 0x22 / 255.f, 1.f ), "%s", tmp );
@@ -4186,7 +2670,7 @@ void View::DrawFindZone()
             {
                 for( auto& ev : v->timeline )
                 {
-                    const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
+                    const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
                     tmin = std::min( tmin, timeSpan );
                     tmax = std::max( tmax, timeSpan );
                 }
@@ -4221,7 +2705,7 @@ void View::DrawFindZone()
                         {
                             for( auto& ev : v->timeline )
                             {
-                                const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
+                                const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
                                 const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
                                 bins[bin]++;
                                 binTime[bin] += timeSpan;
@@ -4235,7 +2719,7 @@ void View::DrawFindZone()
                         {
                             for( auto& ev : v->timeline )
                             {
-                                const auto timeSpan = GetZoneEnd( *ev ) - ev->start;
+                                const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
                                 const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
                                 bins[bin]++;
                                 binTime[bin] += timeSpan;
@@ -4380,13 +2864,13 @@ void View::DrawFindZone()
         ImGui::Separator();
         for( auto& v : m_findZone.result )
         {
-            const bool expand = ImGui::TreeNode( GetThreadString( v->id ) );
+            const bool expand = ImGui::TreeNode( m_worker.GetThreadString( v->id ) );
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->timeline.size(), true ) );
 
             if( expand )
             {
-                ImGui::Columns( 3, GetThreadString( v->id ) );
+                ImGui::Columns( 3, m_worker.GetThreadString( v->id ) );
                 ImGui::Separator();
                 ImGui::Text( "Name" );
                 ImGui::NextColumn();
@@ -4400,17 +2884,17 @@ void View::DrawFindZone()
                 {
                     ImGui::PushID( ev );
 
-                    auto& srcloc = GetSourceLocation( ev->srcloc );
-                    if( ImGui::Selectable( GetString( srcloc.name.active ? srcloc.name : srcloc.function ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
+                    auto& srcloc = m_worker.GetSourceLocation( ev->srcloc );
+                    if( ImGui::Selectable( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
                     {
                         m_zoneInfoWindow = ev;
                     }
 
                     ImGui::NextColumn();
 
-                    ImGui::Text( TimeToString( ev->start - m_frames[0] ) );
+                    ImGui::Text( TimeToString( ev->start - m_worker.GetFrameBegin( 0 ) ) );
                     ImGui::NextColumn();
-                    const auto end = GetZoneEnd( *ev );
+                    const auto end = m_worker.GetZoneEnd( *ev );
                     ImGui::Text( TimeToString( end - ev->start ) );
                     ImGui::NextColumn();
 
@@ -4428,14 +2912,14 @@ void View::DrawFindZone()
 
 uint32_t View::GetZoneColor( const ZoneEvent& ev )
 {
-    auto& srcloc = GetSourceLocation( ev.srcloc );
+    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     const auto color = srcloc.color;
     return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
 }
 
 uint32_t View::GetZoneColor( const GpuEvent& ev )
 {
-    auto& srcloc = GetSourceLocation( ev.srcloc );
+    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     const auto color = srcloc.color;
     return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
 }
@@ -4510,14 +2994,14 @@ float View::GetZoneThickness( const GpuEvent& ev )
 
 void View::ZoomToZone( const ZoneEvent& ev )
 {
-    const auto end = GetZoneEnd( ev );
+    const auto end = m_worker.GetZoneEnd( ev );
     if( end - ev.start <= 0 ) return;
     ZoomToRange( ev.start, end );
 }
 
 void View::ZoomToZone( const GpuEvent& ev )
 {
-    const auto end = GetZoneEnd( ev );
+    const auto end = m_worker.GetZoneEnd( ev );
     if( end - ev.gpuStart <= 0 ) return;
     ZoomToRange( ev.gpuStart, end );
 }
@@ -4542,24 +3026,24 @@ void View::ZoneTooltip( const ZoneEvent& ev )
 {
     int dmul = ev.text.active ? 2 : 1;
 
-    auto& srcloc = GetSourceLocation( ev.srcloc );
+    auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
 
-    const auto filename = GetString( srcloc.file );
+    const auto filename = m_worker.GetString( srcloc.file );
     const auto line = srcloc.line;
 
     const char* func;
     const char* zoneName;
     if( srcloc.name.active )
     {
-        zoneName = GetString( srcloc.name );
-        func = GetString( srcloc.function );
+        zoneName = m_worker.GetString( srcloc.name );
+        func = m_worker.GetString( srcloc.function );
     }
     else
     {
-        func = zoneName = GetString( srcloc.function );
+        func = zoneName = m_worker.GetString( srcloc.function );
     }
 
-    const auto end = GetZoneEnd( ev );
+    const auto end = m_worker.GetZoneEnd( ev );
 
     ImGui::BeginTooltip();
     if( srcloc.name.active )
@@ -4574,7 +3058,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::Separator();
     ImGui::Text( "%s:%i", filename, line );
     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
-    ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_delay * dmul ) );
+    ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_worker.GetDelay() * dmul ) );
     if( ev.cpu_start != -1 )
     {
         if( ev.end == -1 || ev.cpu_start == ev.cpu_end )
@@ -4589,21 +3073,21 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     if( ev.text.active )
     {
         ImGui::NewLine();
-        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", GetString( ev.text ) );
+        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( ev.text ) );
     }
     ImGui::EndTooltip();
 }
 
 void View::ZoneTooltip( const GpuEvent& ev )
 {
-    auto& srcloc = GetSourceLocation( ev.srcloc );
+    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
 
-    const auto name = GetString( srcloc.name );
-    const auto filename = GetString( srcloc.file );
+    const auto name = m_worker.GetString( srcloc.name );
+    const auto filename = m_worker.GetString( srcloc.file );
     const auto line = srcloc.line;
-    const auto func = GetString( srcloc.function );
+    const auto func = m_worker.GetString( srcloc.function );
 
-    const auto end = GetZoneEnd( ev );
+    const auto end = m_worker.GetZoneEnd( ev );
 
     ImGui::BeginTooltip();
     ImGui::Text( "%s", name );
@@ -4619,7 +3103,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
 
 const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
 {
-    for( auto& thread : m_threads )
+    for( const auto& thread : m_worker.GetThreadData() )
     {
         const ZoneEvent* parent = nullptr;
         const Vector<ZoneEvent*>* timeline = &thread->timeline;
@@ -4640,7 +3124,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
 
 const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 {
-    for( auto& ctx : m_gpuData )
+    for( const auto& ctx : m_worker.GetGpuData() )
     {
         const GpuEvent* parent = nullptr;
         const Vector<GpuEvent*>* timeline = &ctx->timeline;
@@ -4661,7 +3145,7 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 
 void View::FindZones()
 {
-    for( auto& v : m_threads )
+    for( const auto& v : m_worker.GetThreadData() )
     {
         auto thrOut = std::make_unique<ThreadData>();
         FindZones( v->timeline, thrOut->timeline, m_findZone.maxDepth );
@@ -4679,10 +3163,10 @@ void View::FindZones( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out,
     for( auto& ev : events )
     {
         if( out.size() >= m_findZone.maxZonesPerThread ) break;
-        if( GetZoneEnd( *ev ) == ev->start ) continue;
+        if( m_worker.GetZoneEnd( *ev ) == ev->start ) continue;
 
-        auto& srcloc = GetSourceLocation( ev->srcloc );
-        auto str = GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+        const auto& srcloc = m_worker.GetSourceLocation( ev->srcloc );
+        const auto str = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
 
         if( strstr( str, m_findZone.pattern ) != nullptr )
         {
@@ -4693,229 +3177,6 @@ void View::FindZones( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out,
         {
             FindZones( ev->child, out, maxdepth - 1 );
         }
-    }
-}
-
-void View::Write( FileWrite& f )
-{
-    f.Write( &m_delay, sizeof( m_delay ) );
-    f.Write( &m_resolution, sizeof( m_resolution ) );
-    f.Write( &m_timerMul, sizeof( m_timerMul ) );
-    f.Write( &m_lastTime, sizeof( m_lastTime ) );
-
-    uint64_t sz = m_captureName.size();
-    f.Write( &sz, sizeof( sz ) );
-    f.Write( m_captureName.c_str(), sz );
-
-    sz = m_frames.size();
-    f.Write( &sz, sizeof( sz ) );
-    f.Write( m_frames.data(), sizeof( uint64_t ) * sz );
-
-    sz = m_stringData.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_stringData )
-    {
-        uint64_t ptr = (uint64_t)v;
-        f.Write( &ptr, sizeof( ptr ) );
-        sz = strlen( v );
-        f.Write( &sz, sizeof( sz ) );
-        f.Write( v, sz );
-    }
-
-    sz = m_strings.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_strings )
-    {
-        f.Write( &v.first, sizeof( v.first ) );
-        uint64_t ptr = (uint64_t)v.second;
-        f.Write( &ptr, sizeof( ptr ) );
-    }
-
-    sz = m_threadNames.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_threadNames )
-    {
-        f.Write( &v.first, sizeof( v.first ) );
-        uint64_t ptr = (uint64_t)v.second;
-        f.Write( &ptr, sizeof( ptr ) );
-    }
-
-    sz = m_sourceLocation.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_sourceLocation )
-    {
-        f.Write( &v.first, sizeof( v.first ) );
-        f.Write( &v.second, sizeof( v.second ) );
-    }
-
-    sz = m_sourceLocationExpand.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_sourceLocationExpand )
-    {
-        f.Write( &v, sizeof( v ) );
-    }
-
-    sz = m_sourceLocationPayload.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_sourceLocationPayload )
-    {
-        f.Write( v, sizeof( *v ) );
-    }
-
-    sz = m_lockMap.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_lockMap )
-    {
-        f.Write( &v.first, sizeof( v.first ) );
-        f.Write( &v.second.srcloc, sizeof( v.second.srcloc ) );
-        f.Write( &v.second.type, sizeof( v.second.type ) );
-        f.Write( &v.second.valid, sizeof( v.second.valid ) );
-        sz = v.second.threadList.size();
-        f.Write( &sz, sizeof( sz ) );
-        for( auto& t : v.second.threadList )
-        {
-            f.Write( &t, sizeof( t ) );
-        }
-        sz = v.second.timeline.size();
-        f.Write( &sz, sizeof( sz ) );
-        if( v.second.type == LockType::Lockable )
-        {
-            for( auto& lev : v.second.timeline )
-            {
-                f.Write( lev, sizeof( LockEvent ) );
-            }
-        }
-        else
-        {
-            for( auto& lev : v.second.timeline )
-            {
-                f.Write( lev, sizeof( LockEventShared ) );
-            }
-        }
-    }
-
-    sz = m_messages.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& v : m_messages )
-    {
-        const auto ptr = (uint64_t)v;
-        f.Write( &ptr, sizeof( ptr ) );
-        f.Write( v, sizeof( *v ) );
-    }
-
-    sz = m_threads.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& thread : m_threads )
-    {
-        f.Write( &thread->id, sizeof( thread->id ) );
-        f.Write( &thread->count, sizeof( thread->count ) );
-        WriteTimeline( f, thread->timeline );
-        sz = thread->messages.size();
-        f.Write( &sz, sizeof( sz ) );
-        for( auto& v : thread->messages )
-        {
-            auto ptr = uint64_t( v );
-            f.Write( &ptr, sizeof( ptr ) );
-        }
-    }
-
-    sz = m_gpuData.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& ctx : m_gpuData )
-    {
-        f.Write( &ctx->thread, sizeof( ctx->thread ) );
-        f.Write( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
-        f.Write( &ctx->count, sizeof( ctx->count ) );
-        WriteTimeline( f, ctx->timeline );
-    }
-
-    sz = m_plots.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& plot : m_plots )
-    {
-        f.Write( &plot->name, sizeof( plot->name ) );
-        f.Write( &plot->min, sizeof( plot->min ) );
-        f.Write( &plot->max, sizeof( plot->max ) );
-        sz = plot->data.size();
-        f.Write( &sz, sizeof( sz ) );
-        f.Write( plot->data.data(), sizeof( PlotItem ) * sz );
-    }
-}
-
-void View::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )
-{
-    uint64_t sz = vec.size();
-    f.Write( &sz, sizeof( sz ) );
-
-    for( auto& v : vec )
-    {
-        f.Write( &v->start, sizeof( v->start ) );
-        f.Write( &v->end, sizeof( v->end ) );
-        f.Write( &v->srcloc, sizeof( v->srcloc ) );
-        f.Write( &v->cpu_start, sizeof( v->cpu_start ) );
-        f.Write( &v->cpu_end, sizeof( v->cpu_end ) );
-        f.Write( &v->text, sizeof( v->text ) );
-        WriteTimeline( f, v->child );
-    }
-}
-
-void View::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec )
-{
-    uint64_t sz = vec.size();
-    f.Write( &sz, sizeof( sz ) );
-
-    for( auto& v : vec )
-    {
-        f.Write( &v->cpuStart, sizeof( v->cpuStart ) );
-        f.Write( &v->cpuEnd, sizeof( v->cpuEnd ) );
-        f.Write( &v->gpuStart, sizeof( v->gpuStart ) );
-        f.Write( &v->gpuEnd, sizeof( v->gpuEnd ) );
-        f.Write( &v->srcloc, sizeof( v->srcloc ) );
-        WriteTimeline( f, v->child );
-    }
-}
-
-void View::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
-{
-    uint64_t sz;
-    f.Read( &sz, sizeof( sz ) );
-    vec.reserve( sz );
-
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        auto zone = m_slab.AllocInit<ZoneEvent>();
-
-        m_zonesCnt++;
-        vec.push_back( zone );
-
-        f.Read( &zone->start, sizeof( zone->start ) );
-        f.Read( &zone->end, sizeof( zone->end ) );
-        f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
-        f.Read( &zone->cpu_start, sizeof( zone->cpu_start ) );
-        f.Read( &zone->cpu_end, sizeof( zone->cpu_end ) );
-        f.Read( &zone->text, sizeof( zone->text ) );
-        ReadTimeline( f, zone->child );
-    }
-}
-
-void View::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
-{
-    uint64_t sz;
-    f.Read( &sz, sizeof( sz ) );
-    vec.reserve( sz );
-
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        auto zone = m_slab.AllocInit<GpuEvent>();
-
-        vec.push_back( zone );
-
-        f.Read( &zone->cpuStart, sizeof( zone->cpuStart ) );
-        f.Read( &zone->cpuEnd, sizeof( zone->cpuEnd ) );
-        f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) );
-        f.Read( &zone->gpuEnd, sizeof( zone->gpuEnd ) );
-        f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
-        ReadTimeline( f, zone->child );
     }
 }
 

@@ -33,6 +33,9 @@
     <ClCompile Include="..\..\..\server\TracyView.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile  Include="..\..\..\server\TracyWorker.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\imgui_impl_glfw_gl3.cpp">
       <Filter>src</Filter>
     </ClCompile>

@@ -155,8 +155,6 @@ struct ThreadData
 {
     uint64_t id;
     uint64_t count;
-    bool showFull;
-    bool visible;
     Vector<ZoneEvent*> timeline;
     Vector<ZoneEvent*> stack;
     Vector<MessageData*> messages;
@@ -178,8 +176,6 @@ struct GpuCtxData
     Vector<GpuEvent*> queue;
     Vector<GpuCtxResync> resync;
     uint8_t accuracyBits;
-    bool showFull;
-    bool visible;
 };
 
 struct LockMap
@@ -189,7 +185,6 @@ struct LockMap
     std::unordered_map<uint64_t, uint8_t> threadMap;
     std::vector<uint64_t> threadList;
     LockType type;
-    bool visible;
     bool valid;
 };
 
@@ -213,8 +208,6 @@ struct PlotData
     uint64_t name;
     double min;
     double max;
-    bool showFull;
-    bool visible;
     Vector<PlotItem> data;
     Vector<PlotItem> postpone;
     uint64_t postponeTime;

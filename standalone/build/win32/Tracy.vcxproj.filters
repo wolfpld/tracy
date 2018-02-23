@@ -33,7 +33,7 @@
     <ClCompile Include="..\..\..\server\TracyView.cpp">
       <Filter>server</Filter>
     </ClCompile>
-    <ClCompile  Include="..\..\..\server\TracyWorker.cpp">
+    <ClCompile Include="..\..\..\server\TracyWorker.cpp">
       <Filter>server</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\imgui_impl_glfw_gl3.cpp">
@@ -159,6 +159,9 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\tracy_pdqsort.h">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyWorker.hpp">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

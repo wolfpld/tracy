@@ -2776,7 +2776,48 @@ void View::DrawFindZone()
 
                     if( m_findZone.logTime )
                     {
+                        const auto ltmin = log10( tmin );
+                        const auto ltmax = log10( tmax );
+                        const auto start = int( floor( ltmin ) );
+                        const auto end = int( ceil( ltmax ) );
 
+                        const auto range = ltmax - ltmin;
+                        const auto step = w / range;
+                        auto offset = start - ltmin;
+                        int tw = 0;
+                        int tx = 0;
+
+                        auto tt = int64_t( pow( 10, start ) );
+
+                        static const double logticks[] = { log10( 2 ), log10( 3 ), log10( 4 ), log10( 5 ), log10( 6 ), log10( 7 ), log10( 8 ), log10( 9 ) };
+
+                        for( int i=start; i<=end; i++ )
+                        {
+                            const auto x = ( i - start + offset ) * step;
+
+                            if( x >= 0 )
+                            {
+                                draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF );
+                                if( tw == 0 || x > tx + tw + ty * 1.1 )
+                                {
+                                    tx = x;
+                                    auto txt = TimeToString( tt );
+                                    draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                    tw = ImGui::CalcTextSize( txt ).x;
+                                }
+                            }
+
+                            for( int j=0; j<8; j++ )
+                            {
+                                const auto xoff = x + logticks[j] * step;
+                                if( xoff >= 0 )
+                                {
+                                    draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + round( ty * 0.25 ) ), 0x66FFFFFF );
+                                }
+                            }
+
+                            tt *= 10;
+                        }
                     }
                     else
                     {

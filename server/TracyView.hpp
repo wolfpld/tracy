@@ -91,7 +91,7 @@ private:
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
 
     void FindZones();
-    void FindZones( const Vector<ZoneEvent*> &events, Vector<ZoneEvent*> &out, const int maxdepth = 0 );
+    void FindZones( const Vector<ZoneEvent*> &events, Vector<ZoneEvent*> &out, const std::vector<int32_t>& match, const int maxdepth = 0 );
 
     template <typename T>
     bool& Visible( const T* ptr )

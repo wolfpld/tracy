@@ -3226,10 +3226,13 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 
 void View::FindZones()
 {
+    const auto match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
+    if( match.empty() ) return;
+
     for( const auto& v : m_worker.GetThreadData() )
     {
         auto thrOut = std::make_unique<ThreadData>();
-        FindZones( v->timeline, thrOut->timeline, m_findZone.maxDepth );
+        FindZones( v->timeline, thrOut->timeline, match, m_findZone.maxDepth );
 
         if( !thrOut->timeline.empty() )
         {
@@ -3239,24 +3242,21 @@ void View::FindZones()
     }
 }
 
-void View::FindZones( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out, const int maxdepth )
+void View::FindZones( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out, const std::vector<int32_t>& match, const int maxdepth )
 {
     for( auto& ev : events )
     {
         if( out.size() >= m_findZone.maxZonesPerThread ) break;
         if( m_worker.GetZoneEnd( *ev ) == ev->start ) continue;
 
-        const auto& srcloc = m_worker.GetSourceLocation( ev->srcloc );
-        const auto str = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-
-        if( strstr( str, m_findZone.pattern ) != nullptr )
+        if( std::find( match.begin(), match.end(), ev->srcloc ) != match.end() )
         {
             out.push_back( ev );
         }
 
         if( maxdepth != 0 )
         {
-            FindZones( ev->child, out, maxdepth - 1 );
+            FindZones( ev->child, out, match, maxdepth - 1 );
         }
     }
 }

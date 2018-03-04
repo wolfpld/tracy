@@ -325,13 +325,13 @@ const char* Worker::GetString( const StringRef& ref ) const
     if( ref.isidx )
     {
         assert( ref.active );
-        return m_data.stringData[ref.stridx];
+        return m_data.stringData[ref.str];
     }
     else
     {
         if( ref.active )
         {
-            return GetString( ref.strptr );
+            return GetString( ref.str );
         }
         else
         {

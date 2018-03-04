@@ -17,11 +17,12 @@ struct StringRef
 {
     enum Type { Ptr, Idx };
 
-    StringRef() : __data( 0 ) {}
-    StringRef( Type t, uint64_t data )
-        : isidx( t == Idx )
-        , active( 1 )
+    StringRef() : strptr( 0 ), __data( 0 ) {}
+    StringRef( Type t, uint64_t data ) : __data( 0 )
     {
+        isidx = t == Idx;
+        active = 1;
+
         if( isidx )
         {
             stridx = data;
@@ -52,10 +53,11 @@ struct StringRef
 struct StringIdx
 {
     StringIdx() : __data( 0 ) {}
-    StringIdx( uint32_t idx )
-        : idx( idx )
-        , active( 1 )
-    {}
+    StringIdx( uint32_t _idx ) : __data( 0 )
+    {
+        idx = _idx;
+        active = 1;
+    }
 
     union
     {

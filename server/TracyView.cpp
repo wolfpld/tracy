@@ -2708,7 +2708,6 @@ void View::DrawFindZone()
                 if( v.second != tmp )
                 {
                     v.second = tmp;
-                    m_findZone.result.clear();
                     RecalcFindMatches();
                 }
             }
@@ -3011,14 +3010,15 @@ void View::DrawFindZone()
         ImGui::Separator();
         ImGui::Text( "Found zones:" );
 
-        int idx = 0;
-        for( auto& v : m_findZone.result )
+        for( size_t i=0; i<m_findZone.result.size(); i++ )
         {
-            ImGui::PushID( idx++ );
+            auto& v = m_findZone.result[i];
+
+            ImGui::PushID( int( i ) );
             const bool expand = ImGui::TreeNode( m_worker.GetThreadString( v->id ) );
             ImGui::PopID();
             ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->timeline.size(), true ) );
+            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( m_findZone.counts[i], true ) );
 
             if( expand )
             {
@@ -3032,6 +3032,7 @@ void View::DrawFindZone()
                 ImGui::NextColumn();
                 ImGui::Separator();
 
+                uint32_t cnt = 0;
                 for( auto& ev : v->timeline )
                 {
                     const auto end = m_worker.GetZoneEnd( *ev );
@@ -3069,10 +3070,29 @@ void View::DrawFindZone()
                     ImGui::NextColumn();
 
                     ImGui::PopID();
+                    cnt++;
                 }
                 ImGui::Columns( 1 );
                 ImGui::Separator();
                 ImGui::TreePop();
+
+                m_findZone.counts[i] = cnt;
+            }
+            else
+            {
+                auto cnt = uint32_t( v->timeline.size() );
+                if( m_findZone.highlight.active )
+                {
+                    for( auto& ev : v->timeline )
+                    {
+                        const auto end = m_worker.GetZoneEnd( *ev );
+                        const auto timespan = end - ev->start;
+                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+                        if( timespan < s || timespan > e ) cnt--;
+                    }
+                }
+                m_findZone.counts[i] = cnt;
             }
         }
     }
@@ -3329,6 +3349,9 @@ void View::FindZones()
 
 void View::RecalcFindMatches()
 {
+    m_findZone.result.clear();
+    m_findZone.counts.clear();
+
     for( const auto& v : m_worker.GetThreadData() )
     {
         auto thrOut = std::make_unique<ThreadData>();
@@ -3337,7 +3360,8 @@ void View::RecalcFindMatches()
         if( !thrOut->timeline.empty() )
         {
             thrOut->id = v->id;
-            m_findZone.result.push_back( std::move( thrOut ) );
+            m_findZone.counts.emplace_back( thrOut->timeline.size() );
+            m_findZone.result.emplace_back( std::move( thrOut ) );
         }
     }
 }

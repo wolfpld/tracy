@@ -169,6 +169,7 @@ private:
     struct {
         bool show;
         std::vector<std::unique_ptr<ThreadData>> result;
+        std::vector<uint32_t> counts;
         flat_hash_map<int32_t, bool> match;
         char pattern[1024] = { "" };
         int maxZonesPerThread = -1;
@@ -181,6 +182,7 @@ private:
         {
             result.clear();
             match.clear();
+            counts.clear();
             highlight.active = false;
         }
     } m_findZone;

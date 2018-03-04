@@ -396,7 +396,7 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) cons
         {
             auto it = m_data.sourceLocationPayloadMap.find( srcloc );
             assert( it != m_data.sourceLocationPayloadMap.end() );
-            match.push_back( it->second );
+            match.push_back( -int32_t( it->second + 1 ) );
         }
     }
 

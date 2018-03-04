@@ -2970,6 +2970,10 @@ void View::DrawFindZone()
                     {
                         m_zoneInfoWindow = ev;
                     }
+                    else if( ImGui::IsItemHovered() && ImGui::GetIO().MouseClicked[2] )
+                    {
+                        ZoomToZone( *ev );
+                    }
 
                     ImGui::NextColumn();
 

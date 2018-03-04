@@ -2937,6 +2937,8 @@ void View::DrawFindZone()
         }
 
         ImGui::Separator();
+        ImGui::Text( "Found zones:" );
+
         for( auto& v : m_findZone.result )
         {
             const bool expand = ImGui::TreeNode( m_worker.GetThreadString( v->id ) );

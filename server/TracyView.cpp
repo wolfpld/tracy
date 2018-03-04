@@ -2625,9 +2625,12 @@ void View::DrawOptions()
     ImGui::Separator();
     ImGui::Text( "Visible threads:" );
     ImGui::Indent( tw );
+    int idx = 0;
     for( const auto& t : m_worker.GetThreadData() )
     {
+        ImGui::PushID( idx++ );
         ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Visible( t ) );
+        ImGui::PopID();
     }
     ImGui::Unindent( tw );
     ImGui::End();
@@ -2939,9 +2942,12 @@ void View::DrawFindZone()
         ImGui::Separator();
         ImGui::Text( "Found zones:" );
 
+        int idx = 0;
         for( auto& v : m_findZone.result )
         {
+            ImGui::PushID( idx++ );
             const bool expand = ImGui::TreeNode( m_worker.GetThreadString( v->id ) );
+            ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->timeline.size(), true ) );
 

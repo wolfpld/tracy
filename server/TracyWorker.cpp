@@ -543,11 +543,7 @@ void Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
 
 void Worker::CheckSourceLocation( uint64_t ptr )
 {
-    if( m_data.sourceLocation.find( ptr ) != m_data.sourceLocation.end() )
-    {
-        return;
-    }
-    else
+    if( m_data.sourceLocation.find( ptr ) == m_data.sourceLocation.end() )
     {
         NewSourceLocation( ptr );
     }

@@ -3034,6 +3034,16 @@ void View::DrawFindZone()
 
                 for( auto& ev : v->timeline )
                 {
+                    const auto end = m_worker.GetZoneEnd( *ev );
+                    const auto timespan = end - ev->start;
+
+                    if( m_findZone.highlight.active )
+                    {
+                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+                        if( timespan < s || timespan > e ) continue;
+                    }
+
                     ImGui::PushID( ev );
 
                     auto& srcloc = m_worker.GetSourceLocation( ev->srcloc );
@@ -3055,8 +3065,7 @@ void View::DrawFindZone()
 
                     ImGui::Text( TimeToString( ev->start - m_worker.GetFrameBegin( 0 ) ) );
                     ImGui::NextColumn();
-                    const auto end = m_worker.GetZoneEnd( *ev );
-                    ImGui::Text( TimeToString( end - ev->start ) );
+                    ImGui::Text( TimeToString( timespan ) );
                     ImGui::NextColumn();
 
                     ImGui::PopID();

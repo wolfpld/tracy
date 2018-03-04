@@ -126,6 +126,7 @@ Worker::Worker( FileRead& f )
         auto srcloc = m_slab.Alloc<SourceLocation>();
         f.Read( srcloc, sizeof( *srcloc ) );
         m_data.sourceLocationPayload.push_back( srcloc );
+        m_data.sourceLocationPayloadMap.emplace( srcloc, uint32_t( i ) );
     }
 
     f.Read( &sz, sizeof( sz ) );

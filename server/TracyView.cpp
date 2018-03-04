@@ -2670,8 +2670,7 @@ void View::DrawFindZone()
 
     if( ImGui::Button( "Clear" ) )
     {
-        m_findZone.result.clear();
-        m_findZone.match.clear();
+        m_findZone.Reset();
     }
 
     if( ImGui::TreeNode( "Options" ) )
@@ -2687,8 +2686,7 @@ void View::DrawFindZone()
 
     if( findClicked )
     {
-        m_findZone.result.clear();
-        m_findZone.match.clear();
+        m_findZone.Reset();
         FindZones();
     }
 
@@ -2742,8 +2740,21 @@ void View::DrawFindZone()
             ImGui::Checkbox( "Log values", &m_findZone.logVal );
             ImGui::SameLine();
             ImGui::Checkbox( "Log time", &m_findZone.logTime );
+            ImGui::SameLine();
+            if( ImGui::Button( "Clear selection" ) ) m_findZone.highlight.active = false;
 
-            ImGui::Text( "Time range: %s - %s", TimeToString( tmin ), TimeToString( tmax ) );
+            ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
+
+            if( m_findZone.highlight.active )
+            {
+                const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+                ImGui::Text( "Selection range: %s - %s (%s)", TimeToString( s ), TimeToString( e ), TimeToString( e - s ) );
+            }
+            else
+            {
+                ImGui::Text( "Selection range: none" );
+            }
 
             const auto dt = double( tmax - tmin );
 
@@ -2958,6 +2969,38 @@ void View::DrawFindZone()
                         ImGui::Text( "Time spent in the left bins: %s", TimeToString( tBefore ) );
                         ImGui::Text( "Time spent in the right bins: %s", TimeToString( tAfter ) );
                         ImGui::EndTooltip();
+
+                        if( ImGui::IsMouseClicked( 0 ) )
+                        {
+                            m_findZone.highlight.active = true;
+                            m_findZone.highlight.start = t0;
+                            m_findZone.highlight.end = t1;
+                        }
+                        else if( ImGui::IsMouseDragging( 0, 0 ) )
+                        {
+                            m_findZone.highlight.end = t1 > m_findZone.highlight.start ? t1 : t0;
+                        }
+                    }
+
+                    if( m_findZone.highlight.active && m_findZone.highlight.start != m_findZone.highlight.end )
+                    {
+                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+
+                        float t0, t1;
+                        if( m_findZone.logTime )
+                        {
+                            t0 = ( log10( s ) - log10( tmin ) ) / float( log10( tmax ) - log10( tmin ) ) * numBins;
+                            t1 = ( log10( e ) - log10( tmin ) ) / float( log10( tmax ) - log10( tmin ) ) * numBins;
+                        }
+                        else
+                        {
+                            t0 = ( s - tmin ) / float( tmax - tmin ) * numBins;
+                            t1 = ( e - tmin ) / float( tmax - tmin ) * numBins;
+                        }
+
+                        draw->AddRectFilled( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x22DD8888 );
+                        draw->AddRect( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x44DD8888 );
                     }
                 }
             }

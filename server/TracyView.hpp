@@ -175,6 +175,14 @@ private:
         int maxDepth = -1;
         bool logVal = false;
         bool logTime = false;
+        Region highlight;
+
+        void Reset()
+        {
+            result.clear();
+            match.clear();
+            highlight.active = false;
+        }
     } m_findZone;
 };
 

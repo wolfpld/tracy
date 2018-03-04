@@ -164,8 +164,8 @@ private:
         bool show;
         std::vector<std::unique_ptr<ThreadData>> result;
         char pattern[1024] = { "" };
-        int maxZonesPerThread = 1000;
-        int maxDepth = 10;
+        int maxZonesPerThread = -1;
+        int maxDepth = -1;
         bool logVal = false;
         bool logTime = false;
     } m_findZone;

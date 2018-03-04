@@ -2964,9 +2964,14 @@ void View::DrawFindZone()
                     {
                         m_zoneInfoWindow = ev;
                     }
-                    else if( ImGui::IsItemHovered() && ImGui::GetIO().MouseClicked[2] )
+                    if( ImGui::IsItemHovered() )
                     {
-                        ZoomToZone( *ev );
+                        m_zoneHighlight = ev;
+                        if( ImGui::IsMouseClicked( 2 ) )
+                        {
+                            ZoomToZone( *ev );
+                        }
+                        ZoneTooltip( *ev );
                     }
 
                     ImGui::NextColumn();

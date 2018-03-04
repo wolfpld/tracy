@@ -32,6 +32,13 @@ class View
         double lenMod;
     };
 
+    struct Region
+    {
+        bool active = false;
+        int64_t start;
+        int64_t end;
+    };
+
 public:
     View() : View( "127.0.0.1" ) {}
     View( const char* addr );
@@ -142,9 +149,7 @@ private:
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;
 
-    bool m_drawRegion;
-    int64_t m_regionStart;
-    int64_t m_regionEnd;
+    Region m_highlight;
 
     uint64_t m_gpuThread;
     int64_t m_gpuStart;

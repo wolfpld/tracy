@@ -161,7 +161,6 @@ View::View( const char* addr )
     , m_zoneInfoWindow( nullptr )
     , m_lockHighlight { -1 }
     , m_gpuInfoWindow( nullptr )
-    , m_drawRegion( false )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -193,7 +192,6 @@ View::View( FileRead& f )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
     , m_gpuInfoWindow( nullptr )
-    , m_drawRegion( false )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -608,16 +606,16 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
 
     if( ImGui::IsMouseClicked( 0 ) )
     {
-        m_drawRegion = true;
-        m_regionEnd = m_regionStart = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        m_highlight.active = true;
+        m_highlight.start = m_highlight.end = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
     else if( ImGui::IsMouseDragging( 0, 0 ) )
     {
-        m_regionEnd = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        m_highlight.end = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
     else
     {
-        m_drawRegion = false;
+        m_highlight.active = false;
     }
 
     if( ImGui::IsMouseDragging( 1, 0 ) )
@@ -1062,10 +1060,10 @@ void View::DrawZones()
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
 
-    if( m_drawRegion && m_regionStart != m_regionEnd )
+    if( m_highlight.active && m_highlight.start != m_highlight.end )
     {
-        const auto s = std::min( m_regionStart, m_regionEnd );
-        const auto e = std::max( m_regionStart, m_regionEnd );
+        const auto s = std::min( m_highlight.start, m_highlight.end );
+        const auto e = std::max( m_highlight.start, m_highlight.end );
         draw->AddRectFilled( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x22DD8888 );
         draw->AddRect( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x44DD8888 );
 

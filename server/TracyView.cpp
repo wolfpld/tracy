@@ -2809,6 +2809,9 @@ void View::DrawFindZone()
                     }
 
                     ImGui::Text( "Total time: %s", TimeToString( timeTotal ) );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
                     ImGui::Text( "Max counts: %s", RealToString( maxVal, true ) );
 
                     enum { Height = 200 };

@@ -101,6 +101,8 @@ public:
     const char* GetThreadString( uint64_t id ) const;
     const SourceLocation& GetSourceLocation( int32_t srcloc ) const;
 
+    std::vector<int32_t> GetMatchingSourceLocation( const char* query ) const;
+
     NonRecursiveBenaphore& GetMbpsDataLock() { return m_mbpsData.lock; }
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }
     float GetCompRatio() const { return m_mbpsData.compRatio; }

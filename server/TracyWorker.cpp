@@ -372,6 +372,37 @@ const SourceLocation& Worker::GetSourceLocation( int32_t srcloc ) const
     }
 }
 
+std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) const
+{
+    std::vector<int32_t> match;
+
+    const auto sz = m_data.sourceLocationExpand.size();
+    for( size_t i=0; i<sz; i++ )
+    {
+        const auto it = m_data.sourceLocation.find( m_data.sourceLocationExpand[i] );
+        assert( it != m_data.sourceLocation.end() );
+        const auto& srcloc = it->second;
+        const auto str = GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+        if( strstr( str, query ) != nullptr )
+        {
+            match.push_back( (int32_t)i );
+        }
+    }
+
+    for( auto& srcloc : m_data.sourceLocationPayload )
+    {
+        const auto str = GetString( srcloc->name.active ? srcloc->name : srcloc->function );
+        if( strstr( str, query ) != nullptr )
+        {
+            auto it = m_data.sourceLocationPayloadMap.find( srcloc );
+            assert( it != m_data.sourceLocationPayloadMap.end() );
+            match.push_back( it->second );
+        }
+    }
+
+    return match;
+}
+
 void Worker::Exec()
 {
     timeval tv;

@@ -2969,7 +2969,11 @@ void View::DrawFindZone()
                         ImGui::Text( "Time spent in the right bins: %s", TimeToString( tAfter ) );
                         ImGui::EndTooltip();
 
-                        if( ImGui::IsMouseClicked( 0 ) )
+                        if( ImGui::IsMouseClicked( 1 ) )
+                        {
+                            m_findZone.highlight.active = false;
+                        }
+                        else if( ImGui::IsMouseClicked( 0 ) )
                         {
                             m_findZone.highlight.active = true;
                             m_findZone.highlight.start = t0;

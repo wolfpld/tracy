@@ -377,7 +377,7 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) cons
     std::vector<int32_t> match;
 
     const auto sz = m_data.sourceLocationExpand.size();
-    for( size_t i=0; i<sz; i++ )
+    for( size_t i=1; i<sz; i++ )
     {
         const auto it = m_data.sourceLocation.find( m_data.sourceLocationExpand[i] );
         assert( it != m_data.sourceLocation.end() );

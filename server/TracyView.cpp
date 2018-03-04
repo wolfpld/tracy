@@ -2458,21 +2458,15 @@ void View::DrawZoneInfoWindow()
         {
             auto& cev = *ev.child[cti[i]];
             const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
-            if( csl.name.active )
+            const auto txt = csl.name.active ? m_worker.GetString( csl.name ) : m_worker.GetString( csl.function );
+            bool b = false;
+            if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
             {
-                ImGui::Text( "%s", m_worker.GetString( csl.name ) );
-            }
-            else
-            {
-                ImGui::Text( "%s", m_worker.GetString( csl.function ) );
+                m_zoneInfoWindow = &cev;
             }
             if( ImGui::IsItemHovered() )
             {
                 m_zoneHighlight = &cev;
-                if( ImGui::IsMouseClicked( 0 ) )
-                {
-                    m_zoneInfoWindow = &cev;
-                }
                 if( ImGui::IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( cev );

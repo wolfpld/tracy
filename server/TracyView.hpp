@@ -91,7 +91,7 @@ private:
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
 
     void FindZones();
-    void FindZones( const Vector<ZoneEvent*> &events, Vector<ZoneEvent*> &out, const std::vector<int32_t>& match, const int maxdepth = 0 );
+    void FindZones( const Vector<ZoneEvent*> &events, Vector<ZoneEvent*> &out, const int maxdepth = 0 );
 
     template <typename T>
     bool& Visible( const T* ptr )
@@ -163,6 +163,8 @@ private:
     struct {
         bool show;
         std::vector<std::unique_ptr<ThreadData>> result;
+        std::vector<int32_t> match;
+        std::vector<bool> matchEnable;
         char pattern[1024] = { "" };
         int maxZonesPerThread = -1;
         int maxDepth = -1;

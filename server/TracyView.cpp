@@ -2673,6 +2673,8 @@ void View::DrawFindZone()
     if( ImGui::Button( "Clear" ) )
     {
         m_findZone.result.clear();
+        m_findZone.match.clear();
+        m_findZone.matchEnable.clear();
     }
 
     if( ImGui::TreeNode( "Options" ) )
@@ -2689,7 +2691,29 @@ void View::DrawFindZone()
     if( findClicked )
     {
         m_findZone.result.clear();
+        m_findZone.match.clear();
+        m_findZone.matchEnable.clear();
         FindZones();
+    }
+
+    if( !m_findZone.match.empty() )
+    {
+        ImGui::Separator();
+        if( ImGui::TreeNode( "Matched source locations" ) )
+        {
+            for( size_t i=0; i<m_findZone.match.size(); i++ )
+            {
+                auto& srcloc = m_worker.GetSourceLocation( m_findZone.match[i] );
+                bool tmp = m_findZone.matchEnable[i];
+                ImGui::PushID( (int)i );
+                ImGui::Checkbox( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &tmp );
+                ImGui::SameLine();
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                ImGui::PopID();
+                m_findZone.matchEnable[i] = tmp;
+            }
+            ImGui::TreePop();
+        }
     }
 
     if( !m_findZone.result.empty() )
@@ -3237,13 +3261,15 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 
 void View::FindZones()
 {
-    const auto match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
-    if( match.empty() ) return;
+    m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
+    if( m_findZone.match.empty() ) return;
+
+    m_findZone.matchEnable = std::vector<bool>( m_findZone.match.size(), true );
 
     for( const auto& v : m_worker.GetThreadData() )
     {
         auto thrOut = std::make_unique<ThreadData>();
-        FindZones( v->timeline, thrOut->timeline, match, m_findZone.maxDepth );
+        FindZones( v->timeline, thrOut->timeline, m_findZone.maxDepth );
 
         if( !thrOut->timeline.empty() )
         {
@@ -3253,21 +3279,21 @@ void View::FindZones()
     }
 }
 
-void View::FindZones( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out, const std::vector<int32_t>& match, const int maxdepth )
+void View::FindZones( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out, const int maxdepth )
 {
     for( auto& ev : events )
     {
         if( out.size() >= m_findZone.maxZonesPerThread ) break;
         if( m_worker.GetZoneEnd( *ev ) == ev->start ) continue;
 
-        if( std::find( match.begin(), match.end(), ev->srcloc ) != match.end() )
+        if( std::find( m_findZone.match.begin(), m_findZone.match.end(), ev->srcloc ) != m_findZone.match.end() )
         {
             out.push_back( ev );
         }
 
         if( maxdepth != 0 )
         {
-            FindZones( ev->child, out, match, maxdepth - 1 );
+            FindZones( ev->child, out, maxdepth - 1 );
         }
     }
 }

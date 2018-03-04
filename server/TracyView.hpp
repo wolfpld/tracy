@@ -164,8 +164,7 @@ private:
     struct {
         bool show;
         std::vector<std::unique_ptr<ThreadData>> result;
-        std::vector<int32_t> match;
-        std::vector<bool> matchEnable;
+        flat_hash_map<int32_t, bool> match;
         char pattern[1024] = { "" };
         int maxZonesPerThread = -1;
         int maxDepth = -1;

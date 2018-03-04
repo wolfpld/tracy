@@ -2674,7 +2674,6 @@ void View::DrawFindZone()
     {
         m_findZone.result.clear();
         m_findZone.match.clear();
-        m_findZone.matchEnable.clear();
     }
 
     if( ImGui::TreeNode( "Options" ) )
@@ -2692,7 +2691,6 @@ void View::DrawFindZone()
     {
         m_findZone.result.clear();
         m_findZone.match.clear();
-        m_findZone.matchEnable.clear();
         FindZones();
     }
 
@@ -2701,18 +2699,19 @@ void View::DrawFindZone()
         ImGui::Separator();
         if( ImGui::TreeNode( "Matched source locations" ) )
         {
-            for( size_t i=0; i<m_findZone.match.size(); i++ )
+            int idx = 0;
+            for( auto& v : m_findZone.match )
             {
-                auto& srcloc = m_worker.GetSourceLocation( m_findZone.match[i] );
-                bool tmp = m_findZone.matchEnable[i];
-                ImGui::PushID( (int)i );
+                auto& srcloc = m_worker.GetSourceLocation( v.first );
+                bool tmp = v.second;
+                ImGui::PushID( idx++ );
                 ImGui::Checkbox( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &tmp );
                 ImGui::SameLine();
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
-                if( m_findZone.matchEnable[i] != tmp )
+                if( v.second != tmp )
                 {
-                    m_findZone.matchEnable[i] = tmp;
+                    v.second = tmp;
                     m_findZone.result.clear();
                     RecalcFindMatches();
                 }
@@ -3266,10 +3265,14 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 
 void View::FindZones()
 {
-    m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
-    if( m_findZone.match.empty() ) return;
+    const auto match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
+    if( match.empty() ) return;
 
-    m_findZone.matchEnable = std::vector<bool>( m_findZone.match.size(), true );
+    m_findZone.match.reserve( match.size() );
+    for( auto& v : match )
+    {
+        m_findZone.match.emplace( v, true );
+    }
 
     RecalcFindMatches();
 }
@@ -3296,8 +3299,8 @@ void View::RecalcFindMatches( const Vector<ZoneEvent*>& events, Vector<ZoneEvent
         if( out.size() >= m_findZone.maxZonesPerThread ) break;
         if( m_worker.GetZoneEnd( *ev ) == ev->start ) continue;
 
-        auto it = std::find( m_findZone.match.begin(), m_findZone.match.end(), ev->srcloc );
-        if( it != m_findZone.match.end() && m_findZone.matchEnable[std::distance( m_findZone.match.begin(), it )] )
+        auto it = m_findZone.match.find( ev->srcloc );
+        if( it != m_findZone.match.end() && it->second )
         {
             out.push_back( ev );
         }

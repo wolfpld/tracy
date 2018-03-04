@@ -2710,7 +2710,12 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
-                m_findZone.matchEnable[i] = tmp;
+                if( m_findZone.matchEnable[i] != tmp )
+                {
+                    m_findZone.matchEnable[i] = tmp;
+                    m_findZone.result.clear();
+                    RecalcFindMatches();
+                }
             }
             ImGui::TreePop();
         }
@@ -3266,10 +3271,15 @@ void View::FindZones()
 
     m_findZone.matchEnable = std::vector<bool>( m_findZone.match.size(), true );
 
+    RecalcFindMatches();
+}
+
+void View::RecalcFindMatches()
+{
     for( const auto& v : m_worker.GetThreadData() )
     {
         auto thrOut = std::make_unique<ThreadData>();
-        FindZones( v->timeline, thrOut->timeline, m_findZone.maxDepth );
+        RecalcFindMatches( v->timeline, thrOut->timeline, m_findZone.maxDepth );
 
         if( !thrOut->timeline.empty() )
         {
@@ -3279,21 +3289,22 @@ void View::FindZones()
     }
 }
 
-void View::FindZones( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out, const int maxdepth )
+void View::RecalcFindMatches( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out, const int maxdepth )
 {
     for( auto& ev : events )
     {
         if( out.size() >= m_findZone.maxZonesPerThread ) break;
         if( m_worker.GetZoneEnd( *ev ) == ev->start ) continue;
 
-        if( std::find( m_findZone.match.begin(), m_findZone.match.end(), ev->srcloc ) != m_findZone.match.end() )
+        auto it = std::find( m_findZone.match.begin(), m_findZone.match.end(), ev->srcloc );
+        if( it != m_findZone.match.end() && m_findZone.matchEnable[std::distance( m_findZone.match.begin(), it )] )
         {
             out.push_back( ev );
         }
 
         if( maxdepth != 0 )
         {
-            FindZones( ev->child, out, maxdepth - 1 );
+            RecalcFindMatches( ev->child, out, maxdepth - 1 );
         }
     }
 }

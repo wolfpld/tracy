@@ -9,3 +9,5 @@ Debug
 *.o
 *.swp
 imgui.ini
+test/tracy_test
+test/tracy_test.exe

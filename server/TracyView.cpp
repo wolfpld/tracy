@@ -2841,7 +2841,7 @@ void View::DrawFindZone()
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
-                    ImGui::Text( "Max counts: %s", RealToString( maxVal, true ) );
+                    ImGui::Text( "Max counts: %s", m_findZone.cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
 
                     enum { Height = 200 };
                     const auto wpos = ImGui::GetCursorScreenPos();

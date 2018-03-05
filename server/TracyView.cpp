@@ -2739,8 +2739,6 @@ void View::DrawFindZone()
             ImGui::Checkbox( "Log values", &m_findZone.logVal );
             ImGui::SameLine();
             ImGui::Checkbox( "Log time", &m_findZone.logTime );
-            ImGui::SameLine();
-            if( ImGui::Button( "Clear selection" ) ) m_findZone.highlight.active = false;
 
             ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
@@ -2753,6 +2751,14 @@ void View::DrawFindZone()
             else
             {
                 ImGui::Text( "Selection range: none" );
+            }
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(?)" );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "Left draw on histogram to select range. Right click to clear selection." );
+                ImGui::EndTooltip();
             }
 
             const auto dt = double( tmax - tmin );

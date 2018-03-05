@@ -3000,7 +3000,7 @@ void View::DrawFindZone()
                         while( x < numBins )
                         {
                             draw->AddLine( wpos + ImVec2( xo + x, yoff ), wpos + ImVec2( xo + x, yoff + round( ty * linelen[iter] ) ), 0x66FFFFFF );
-                            if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 2 ) )
+                            if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 1.1 ) )
                             {
                                 tx = x;
                                 auto txt = TimeToStringInteger( tt );

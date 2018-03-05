@@ -2936,6 +2936,9 @@ void View::DrawFindZone()
 
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
                     {
+                        const auto ltmin = log10( tmin );
+                        const auto ltmax = log10( tmax );
+
                         auto& io = ImGui::GetIO();
                         draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
 
@@ -2943,8 +2946,8 @@ void View::DrawFindZone()
                         int64_t t0, t1;
                         if( m_findZone.logTime )
                         {
-                            t0 = int64_t( pow( 10, log10( tmin ) +  bin    / numBins * ( log10( tmax ) - log10( tmin ) ) ) );
-                            t1 = int64_t( pow( 10, log10( tmin ) + (bin+1) / numBins * ( log10( tmax ) - log10( tmin ) ) ) );
+                            t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
+                            t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
                         }
                         else
                         {
@@ -2996,8 +2999,11 @@ void View::DrawFindZone()
                         float t0, t1;
                         if( m_findZone.logTime )
                         {
-                            t0 = ( log10( s ) - log10( tmin ) ) / float( log10( tmax ) - log10( tmin ) ) * numBins;
-                            t1 = ( log10( e ) - log10( tmin ) ) / float( log10( tmax ) - log10( tmin ) ) * numBins;
+                            const auto ltmin = log10( tmin );
+                            const auto ltmax = log10( tmax );
+
+                            t0 = ( log10( s ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                            t1 = ( log10( e ) - ltmin ) / float( ltmax - ltmin ) * numBins;
                         }
                         else
                         {

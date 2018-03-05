@@ -2739,6 +2739,16 @@ void View::DrawFindZone()
             ImGui::Checkbox( "Log values", &m_findZone.logVal );
             ImGui::SameLine();
             ImGui::Checkbox( "Log time", &m_findZone.logTime );
+            ImGui::SameLine();
+            ImGui::Checkbox( "Cumulate time", &m_findZone.cumulateTime );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(?)" );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "Show total time taken by calls in each bin instead of call counts." );
+                ImGui::EndTooltip();
+            }
 
             ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
@@ -2770,8 +2780,8 @@ void View::DrawFindZone()
                 const auto numBins = int64_t( w - 4 );
                 if( numBins > 1 )
                 {
-                    auto bins = std::make_unique<uint64_t[]>( numBins );
-                    memset( bins.get(), 0, sizeof( uint64_t ) * numBins );
+                    auto bins = std::make_unique<int64_t[]>( numBins );
+                    memset( bins.get(), 0, sizeof( int64_t ) * numBins );
 
                     auto binTime = std::make_unique<int64_t[]>( numBins );
                     memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
@@ -2807,11 +2817,24 @@ void View::DrawFindZone()
                     }
 
                     int64_t timeTotal = binTime[0];
-                    auto maxVal = bins[0];
-                    for( int i=1; i<numBins; i++ )
+                    int64_t maxVal;
+                    if( m_findZone.cumulateTime )
                     {
-                        maxVal = std::max( maxVal, bins[i] );
-                        timeTotal += binTime[i];
+                        maxVal = binTime[0];
+                        for( int i=1; i<numBins; i++ )
+                        {
+                            maxVal = std::max( maxVal, binTime[i] );
+                            timeTotal += binTime[i];
+                        }
+                    }
+                    else
+                    {
+                        maxVal = bins[0];
+                        for( int i=1; i<numBins; i++ )
+                        {
+                            maxVal = std::max( maxVal, bins[i] );
+                            timeTotal += binTime[i];
+                        }
                     }
 
                     ImGui::Text( "Total time: %s", TimeToString( timeTotal ) );
@@ -2835,9 +2858,10 @@ void View::DrawFindZone()
                         const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
                         for( int i=0; i<numBins; i++ )
                         {
-                            if( bins[i] > 0 )
+                            const auto val = m_findZone.cumulateTime ? binTime[i] : bins[i];
+                            if( val > 0 )
                             {
-                                draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( bins[i] + 1 ) * hAdj ), 0xFF22DDDD );
+                                draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFF22DDDD );
                             }
                         }
                     }
@@ -2846,9 +2870,10 @@ void View::DrawFindZone()
                         const auto hAdj = double( Height - 4 ) / maxVal;
                         for( int i=0; i<numBins; i++ )
                         {
-                            if( bins[i] > 0 )
+                            const auto val = m_findZone.cumulateTime ? binTime[i] : bins[i];
+                            if( val > 0 )
                             {
-                                draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - bins[i] * hAdj ), 0xFF22DDDD );
+                                draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - val * hAdj ), 0xFF22DDDD );
                             }
                         }
                     }

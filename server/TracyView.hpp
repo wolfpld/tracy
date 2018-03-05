@@ -176,6 +176,7 @@ private:
         int maxDepth = -1;
         bool logVal = false;
         bool logTime = false;
+        bool cumulateTime = false;
         Region highlight;
 
         void Reset()

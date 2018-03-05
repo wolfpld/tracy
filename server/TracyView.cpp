@@ -2752,25 +2752,6 @@ void View::DrawFindZone()
 
             ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
-            if( m_findZone.highlight.active )
-            {
-                const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
-                const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-                ImGui::Text( "Selection range: %s - %s (%s)", TimeToString( s ), TimeToString( e ), TimeToString( e - s ) );
-            }
-            else
-            {
-                ImGui::Text( "Selection range: none" );
-            }
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(?)" );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::Text( "Left draw on histogram to select range. Right click to clear selection." );
-                ImGui::EndTooltip();
-            }
-
             const auto dt = double( tmax - tmin );
 
             if( dt > 0 )
@@ -2884,6 +2865,24 @@ void View::DrawFindZone()
                     ImGui::SameLine();
                     ImGui::Text( "Max counts: %s", m_findZone.cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
 
+                    if( m_findZone.highlight.active )
+                    {
+                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+                        ImGui::Text( "Selection range: %s - %s (%s)", TimeToString( s ), TimeToString( e ), TimeToString( e - s ) );
+                    }
+                    else
+                    {
+                        ImGui::Text( "Selection range: none" );
+                    }
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(?)" );
+                    if( ImGui::IsItemHovered() )
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::Text( "Left draw on histogram to select range. Right click to clear selection." );
+                        ImGui::EndTooltip();
+                    }
                     if( m_findZone.highlight.active )
                     {
                         ImGui::Text( "Selection time: %s", TimeToString( selectionTime ) );

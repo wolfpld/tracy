@@ -2,7 +2,7 @@ CFLAGS +=
 CXXFLAGS := $(CFLAGS) -std=gnu++14
 DEFINES +=
 INCLUDES :=
-LIBS :=
+LIBS := -lpthread
 IMAGE := capture
 
 FILTER :=

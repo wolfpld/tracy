@@ -5,6 +5,7 @@
 #include <limits>
 #include <math.h>
 #include <mutex>
+#include <stddef.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -883,7 +884,7 @@ void View::DrawZones()
                 draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF886666 );
             }
             char buf[64];
-            sprintf( buf, "GPU context %i", i );
+            sprintf( buf, "GPU context %zu", i );
             draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
@@ -2243,7 +2244,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover )
                 auto tmp = it;
                 ++tmp;
                 const auto sz = end - tmp;
-                for( size_t i=0; i<sz; i++ )
+                for( ptrdiff_t i=0; i<sz; i++ )
                 {
                     min = tmp[i].val < min ? tmp[i].val : min;
                     max = tmp[i].val > max ? tmp[i].val : max;

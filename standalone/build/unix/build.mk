@@ -5,7 +5,7 @@ INCLUDES := $(shell pkg-config --cflags glfw3 gtk+-2.0) -I../../../imgui -I../..
 LIBS := $(shell pkg-config --libs glfw3 gtk+-2.0) -lpthread -ldl -lGL
 IMAGE := Tracy
 
-FILTER := ../../../nfd/nfd_win.cpp
+FILTER := ../../../nfd/nfd_win.cpp ../../src/imgui_impl_dx11.cpp
 
 BASE := $(shell egrep 'ClCompile.*cpp"' ../win32/$(IMAGE).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
 BASE2 := $(shell egrep 'ClCompile.*c"' ../win32/$(IMAGE).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')

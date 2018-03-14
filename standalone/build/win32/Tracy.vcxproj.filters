@@ -63,6 +63,9 @@
     <ClCompile Include="..\..\..\nfd\nfd_win.cpp">
       <Filter>nfd</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\imgui_impl_dx11.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -163,6 +166,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyWorker.hpp">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\imgui_impl_dx11.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

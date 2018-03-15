@@ -2585,53 +2585,93 @@ void View::DrawOptions()
 {
     const auto tw = ImGui::GetFontSize();
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
-    ImGui::Checkbox( "Draw GPU zones", &m_drawGpuZones );
-    ImGui::Indent( tw );
-    for( size_t i=0; i<m_worker.GetGpuData().size(); i++ )
+
+    auto sz = m_worker.GetGpuData().size();
+    if( sz > 0 )
     {
-        char buf[1024];
-        sprintf( buf, "GPU context %zu", i );
-        ImGui::Checkbox( buf, &Visible( m_worker.GetGpuData()[i] ) );
+        ImGui::Checkbox( "Draw GPU zones", &m_drawGpuZones );
+        const auto expand = ImGui::TreeNode( "GPU zones" );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%zu)", sz );
+        if( expand )
+        {
+            for( size_t i=0; i<sz; i++ )
+            {
+                char buf[1024];
+                sprintf( buf, "GPU context %zu", i );
+                ImGui::Checkbox( buf, &Visible( m_worker.GetGpuData()[i] ) );
+            }
+            ImGui::TreePop();
+        }
     }
-    ImGui::Unindent( tw );
+
     ImGui::Checkbox( "Draw CPU zones", &m_drawZones );
     int ns = (int)m_namespace;
     ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None\0" );
     m_namespace = (Namespace)ns;
-    ImGui::Separator();
-    ImGui::Checkbox( "Draw locks", &m_drawLocks );
-    ImGui::SameLine();
-    ImGui::Checkbox( "Only contended", &m_onlyContendedLocks );
-    ImGui::Indent( tw );
-    for( const auto& l : m_worker.GetLockMap() )
+
+    if( !m_worker.GetLockMap().empty() )
     {
-        if( l.second.valid )
+        ImGui::Separator();
+        ImGui::Checkbox( "Draw locks", &m_drawLocks );
+        ImGui::SameLine();
+        ImGui::Checkbox( "Only contended", &m_onlyContendedLocks );
+        const auto expand = ImGui::TreeNode( "Locks" );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%zu)", m_worker.GetLockMap().size() );
+        if( ImGui::IsItemHovered() )
         {
-            char buf[1024];
-            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
-            ImGui::Checkbox( buf, &Visible( &l.second ) );
+            ImGui::BeginTooltip();
+            ImGui::Text( "Locks with no recorded events are counted, but not listed." );
+            ImGui::EndTooltip();
+        }
+        if( expand )
+        {
+            for( const auto& l : m_worker.GetLockMap() )
+            {
+                if( l.second.valid )
+                {
+                    char buf[1024];
+                    sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
+                    ImGui::Checkbox( buf, &Visible( &l.second ) );
+                }
+            }
+            ImGui::TreePop();
         }
     }
-    ImGui::Unindent( tw );
-    ImGui::Separator();
-    ImGui::Checkbox( "Draw plots", &m_drawPlots );
-    ImGui::Indent( tw );
-    for( const auto& p : m_worker.GetPlots() )
+
+    if( !m_worker.GetPlots().empty() )
     {
-        ImGui::Checkbox( m_worker.GetString( p->name ), &Visible( p ) );
+        ImGui::Separator();
+        ImGui::Checkbox( "Draw plots", &m_drawPlots );
+        const auto expand = ImGui::TreeNode( "Plots" );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%zu)", m_worker.GetPlots().size() );
+        if( expand )
+        {
+            for( const auto& p : m_worker.GetPlots() )
+            {
+                ImGui::Checkbox( m_worker.GetString( p->name ), &Visible( p ) );
+            }
+            ImGui::TreePop();
+        }
     }
-    ImGui::Unindent( tw );
+
     ImGui::Separator();
-    ImGui::Text( "Visible threads:" );
-    ImGui::Indent( tw );
-    int idx = 0;
-    for( const auto& t : m_worker.GetThreadData() )
+    const auto expand = ImGui::TreeNode( "Visible threads:" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%zu)", m_worker.GetThreadData().size() );
+    if( expand )
     {
-        ImGui::PushID( idx++ );
-        ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Visible( t ) );
-        ImGui::PopID();
+        int idx = 0;
+        for( const auto& t : m_worker.GetThreadData() )
+        {
+            ImGui::PushID( idx++ );
+            ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Visible( t ) );
+            ImGui::PopID();
+        }
+        ImGui::TreePop();
     }
-    ImGui::Unindent( tw );
     ImGui::End();
 }
 

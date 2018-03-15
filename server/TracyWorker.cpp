@@ -58,13 +58,8 @@ Worker::Worker( FileRead& f )
     }
 
     f.Read( &sz, sizeof( sz ) );
-    m_data.frames.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t v;
-        f.Read( &v, sizeof( v ) );
-        m_data.frames.push_back( v );
-    }
+    m_data.frames.reserve_and_use( sz );
+    f.Read( m_data.frames.data(), sizeof( uint64_t ) * sz );
 
     std::unordered_map<uint64_t, const char*> pointerMap;
 
@@ -111,13 +106,8 @@ Worker::Worker( FileRead& f )
     }
 
     f.Read( &sz, sizeof( sz ) );
-    m_data.sourceLocationExpand.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
-    {
-        uint64_t v;
-        f.Read( &v, sizeof( v ) );
-        m_data.sourceLocationExpand.push_back( v );
-    }
+    m_data.sourceLocationExpand.reserve_and_use( sz );
+    f.Read( m_data.sourceLocationExpand.data(), sizeof( uint64_t ) * sz );
 
     f.Read( &sz, sizeof( sz ) );
     m_data.sourceLocationPayload.reserve( sz );
@@ -125,7 +115,7 @@ Worker::Worker( FileRead& f )
     {
         auto srcloc = m_slab.Alloc<SourceLocation>();
         f.Read( srcloc, sizeof( *srcloc ) );
-        m_data.sourceLocationPayload.push_back( srcloc );
+        m_data.sourceLocationPayload.push_back_no_space_check( srcloc );
         m_data.sourceLocationPayloadMap.emplace( srcloc, uint32_t( i ) );
     }
 
@@ -155,7 +145,7 @@ Worker::Worker( FileRead& f )
             {
                 auto lev = m_slab.Alloc<LockEvent>();
                 f.Read( lev, sizeof( LockEvent ) );
-                lockmap.timeline.push_back( lev );
+                lockmap.timeline.push_back_no_space_check( lev );
             }
         }
         else
@@ -164,7 +154,7 @@ Worker::Worker( FileRead& f )
             {
                 auto lev = m_slab.Alloc<LockEventShared>();
                 f.Read( lev, sizeof( LockEventShared ) );
-                lockmap.timeline.push_back( lev );
+                lockmap.timeline.push_back_no_space_check( lev );
             }
         }
         m_data.lockMap.emplace( id, std::move( lockmap ) );
@@ -179,7 +169,7 @@ Worker::Worker( FileRead& f )
         f.Read( &ptr, sizeof( ptr ) );
         auto msgdata = m_slab.Alloc<MessageData>();
         f.Read( msgdata, sizeof( *msgdata ) );
-        m_data.messages.push_back( msgdata );
+        m_data.messages.push_back_no_space_check( msgdata );
         msgMap.emplace( ptr, msgdata );
     }
 
@@ -198,9 +188,9 @@ Worker::Worker( FileRead& f )
         {
             uint64_t ptr;
             f.Read( &ptr, sizeof( ptr ) );
-            td->messages.push_back( msgMap[ptr] );
+            td->messages.push_back_no_space_check( msgMap[ptr] );
         }
-        m_data.threads.push_back( td );
+        m_data.threads.push_back_no_space_check( td );
     }
 
     f.Read( &sz, sizeof( sz ) );
@@ -212,7 +202,7 @@ Worker::Worker( FileRead& f )
         f.Read( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
         f.Read( &ctx->count, sizeof( ctx->count ) );
         ReadTimeline( f, ctx->timeline );
-        m_data.gpuData.push_back( ctx );
+        m_data.gpuData.push_back_no_space_check( ctx );
     }
 
     f.Read( &sz, sizeof( sz ) );
@@ -227,7 +217,7 @@ Worker::Worker( FileRead& f )
         f.Read( &psz, sizeof( psz ) );
         pd->data.reserve_and_use( psz );
         f.Read( pd->data.data(), psz * sizeof( PlotItem ) );
-        m_data.plots.push_back( pd );
+        m_data.plots.push_back_no_space_check( pd );
     }
 }
 

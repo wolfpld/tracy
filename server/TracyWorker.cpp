@@ -1561,11 +1561,11 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
     f.Read( &sz, sizeof( sz ) );
     vec.reserve( sz );
 
+    m_data.zonesCnt += sz;
+
     for( uint64_t i=0; i<sz; i++ )
     {
         auto zone = m_slab.AllocInit<ZoneEvent>();
-
-        m_data.zonesCnt++;
         vec.push_back( zone );
 
         f.Read( &zone->start, sizeof( zone->start ) );

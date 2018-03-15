@@ -1566,7 +1566,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto zone = m_slab.AllocInit<ZoneEvent>();
-        vec.push_back( zone );
+        vec.push_back_no_space_check( zone );
 
         f.Read( &zone->start, sizeof( zone->start ) );
         f.Read( &zone->end, sizeof( zone->end ) );
@@ -1587,8 +1587,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto zone = m_slab.AllocInit<GpuEvent>();
-
-        vec.push_back( zone );
+        vec.push_back_no_space_check( zone );
 
         f.Read( &zone->cpuStart, sizeof( zone->cpuStart ) );
         f.Read( &zone->cpuEnd, sizeof( zone->cpuEnd ) );

@@ -87,6 +87,11 @@ public:
         m_ptr[m_size++] = v;
     }
 
+    void push_back_no_space_check( const T& v )
+    {
+        m_ptr[m_size++] = v;
+    }
+
     void push_back( T&& v )
     {
         if( m_size == Capacity() ) AllocMore();

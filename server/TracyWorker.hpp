@@ -171,8 +171,11 @@ private:
 
     StringLocation StoreString( char* str, size_t sz );
 
-    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec );
-    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
+    tracy_force_inline void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec );
+    tracy_force_inline void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
+
+    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size );
+    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
 
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
     void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec );

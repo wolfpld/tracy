@@ -1549,11 +1549,29 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
 {
     uint64_t sz;
     f.Read( &sz, sizeof( sz ) );
-    vec.reserve( sz );
+    if( sz != 0 )
+    {
+        ReadTimeline( f, vec, sz );
+    }
+}
 
-    m_data.zonesCnt += sz;
+void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
+{
+    uint64_t sz;
+    f.Read( &sz, sizeof( sz ) );
+    if( sz != 0 )
+    {
+        ReadTimeline( f, vec, sz );
+    }
+}
 
-    for( uint64_t i=0; i<sz; i++ )
+void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size )
+{
+    assert( size != 0 );
+    vec.reserve_non_zero( size );
+    m_data.zonesCnt += size;
+
+    for( uint64_t i=0; i<size; i++ )
     {
         auto zone = m_slab.AllocInit<ZoneEvent>();
         vec.push_back_no_space_check( zone );
@@ -1563,13 +1581,12 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
     }
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
+void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size )
 {
-    uint64_t sz;
-    f.Read( &sz, sizeof( sz ) );
-    vec.reserve( sz );
+    assert( size != 0 );
+    vec.reserve_non_zero( size );
 
-    for( uint64_t i=0; i<sz; i++ )
+    for( uint64_t i=0; i<size; i++ )
     {
         auto zone = m_slab.AllocInit<GpuEvent>();
         vec.push_back_no_space_check( zone );

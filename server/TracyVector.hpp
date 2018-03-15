@@ -170,6 +170,11 @@ public:
     void reserve( size_t cap )
     {
         if( cap == 0 || cap <= Capacity() ) return;
+        reserve_non_zero( cap );
+    }
+
+    void reserve_non_zero( size_t cap )
+    {
         cap--;
         cap |= cap >> 1;
         cap |= cap >> 2;

@@ -79,13 +79,14 @@ struct ZoneEvent
     int32_t srcloc;
     int8_t cpu_start;
     int8_t cpu_end;
-
     StringIdx text;
+
+    // This must be last. All above is read/saved as-is.
     Vector<ZoneEvent*> child;
 };
 
 enum { ZoneEventSize = sizeof( ZoneEvent ) };
-
+static_assert( std::is_standard_layout<ZoneEvent>::value, "ZoneEvent is not standard layout" );
 
 struct LockEvent
 {
@@ -129,10 +130,12 @@ struct GpuEvent
     int64_t gpuEnd;
     int32_t srcloc;
 
+    // This must be last. All above is read/saved as-is.
     Vector<GpuEvent*> child;
 };
 
 enum { GpuEventSize = sizeof( GpuEvent ) };
+static_assert( std::is_standard_layout<GpuEvent>::value, "GpuEvent is not standard layout" );
 
 #pragma pack()
 

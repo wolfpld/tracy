@@ -1558,12 +1558,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
         auto zone = m_slab.AllocInit<ZoneEvent>();
         vec.push_back_no_space_check( zone );
 
-        f.Read( &zone->start, sizeof( zone->start ) );
-        f.Read( &zone->end, sizeof( zone->end ) );
-        f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
-        f.Read( &zone->cpu_start, sizeof( zone->cpu_start ) );
-        f.Read( &zone->cpu_end, sizeof( zone->cpu_end ) );
-        f.Read( &zone->text, sizeof( zone->text ) );
+        f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
         ReadTimeline( f, zone->child );
     }
 }
@@ -1579,11 +1574,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
         auto zone = m_slab.AllocInit<GpuEvent>();
         vec.push_back_no_space_check( zone );
 
-        f.Read( &zone->cpuStart, sizeof( zone->cpuStart ) );
-        f.Read( &zone->cpuEnd, sizeof( zone->cpuEnd ) );
-        f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) );
-        f.Read( &zone->gpuEnd, sizeof( zone->gpuEnd ) );
-        f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
+        f.Read( zone, sizeof( GpuEvent ) - sizeof( GpuEvent::child ) );
         ReadTimeline( f, zone->child );
     }
 }
@@ -1741,12 +1732,7 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )
 
     for( auto& v : vec )
     {
-        f.Write( &v->start, sizeof( v->start ) );
-        f.Write( &v->end, sizeof( v->end ) );
-        f.Write( &v->srcloc, sizeof( v->srcloc ) );
-        f.Write( &v->cpu_start, sizeof( v->cpu_start ) );
-        f.Write( &v->cpu_end, sizeof( v->cpu_end ) );
-        f.Write( &v->text, sizeof( v->text ) );
+        f.Write( v, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
         WriteTimeline( f, v->child );
     }
 }
@@ -1758,11 +1744,7 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec )
 
     for( auto& v : vec )
     {
-        f.Write( &v->cpuStart, sizeof( v->cpuStart ) );
-        f.Write( &v->cpuEnd, sizeof( v->cpuEnd ) );
-        f.Write( &v->gpuStart, sizeof( v->gpuStart ) );
-        f.Write( &v->gpuEnd, sizeof( v->gpuEnd ) );
-        f.Write( &v->srcloc, sizeof( v->srcloc ) );
+        f.Write( v, sizeof( GpuEvent ) - sizeof( GpuEvent::child ) );
         WriteTimeline( f, v->child );
     }
 }

@@ -1573,7 +1573,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size )
 
     for( uint64_t i=0; i<size; i++ )
     {
-        auto zone = m_slab.AllocInit<ZoneEvent>();
+        auto zone = m_slab.Alloc<ZoneEvent>();
+        new( &zone->child ) decltype( zone->child );
         vec.push_back_no_space_check( zone );
 
         f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );

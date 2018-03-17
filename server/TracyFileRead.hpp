@@ -54,6 +54,7 @@ private:
 
     void ReadBig( void* ptr, size_t size )
     {
+        char m_lz4buf[LZ4Size];
         auto dst = (char*)ptr;
         while( size > 0 )
         {
@@ -81,7 +82,6 @@ private:
     LZ4_streamDecode_t* m_stream;
     FILE* m_file;
     char m_buf[2][BufSize];
-    char m_lz4buf[LZ4Size];
     size_t m_offset;
     uint8_t m_active;
 };

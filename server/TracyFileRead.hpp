@@ -30,30 +30,11 @@ public:
     {
         if( size <= BufSize - m_offset )
         {
-            memcpy( ptr, m_buf[m_active] + m_offset, size );
-            m_offset += size;
+            ReadSmall( ptr, size );
         }
         else
         {
-            auto dst = (char*)ptr;
-            while( size > 0 )
-            {
-                if( m_offset == BufSize )
-                {
-                    m_active = 1 - m_active;
-                    m_offset = 0;
-                    uint32_t sz;
-                    fread( &sz, 1, sizeof( sz ), m_file );
-                    fread( m_lz4buf, 1, sz, m_file );
-                    LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf[m_active], sz, BufSize );
-                }
-
-                const auto sz = std::min( size, BufSize - m_offset );
-                memcpy( dst, m_buf[m_active] + m_offset, sz );
-                m_offset += sz;
-                dst += sz;
-                size -= sz;
-            }
+            ReadBig( ptr, size );
         }
     }
 
@@ -64,6 +45,35 @@ private:
         , m_offset( BufSize )
         , m_active( 1 )
     {}
+
+    tracy_force_inline void ReadSmall( void* ptr, size_t size )
+    {
+        memcpy( ptr, m_buf[m_active] + m_offset, size );
+        m_offset += size;
+    }
+
+    void ReadBig( void* ptr, size_t size )
+    {
+        auto dst = (char*)ptr;
+        while( size > 0 )
+        {
+            if( m_offset == BufSize )
+            {
+                m_active = 1 - m_active;
+                m_offset = 0;
+                uint32_t sz;
+                fread( &sz, 1, sizeof( sz ), m_file );
+                fread( m_lz4buf, 1, sz, m_file );
+                LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf[m_active], sz, BufSize );
+            }
+
+            const auto sz = std::min( size, BufSize - m_offset );
+            memcpy( dst, m_buf[m_active] + m_offset, sz );
+            m_offset += sz;
+            dst += sz;
+            size -= sz;
+        }
+    }
 
     enum { BufSize = 64 * 1024 };
     enum { LZ4Size = LZ4_COMPRESSBOUND( BufSize ) };

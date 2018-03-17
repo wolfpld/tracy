@@ -34,25 +34,11 @@ public:
     {
         if( m_offset + size <= BufSize )
         {
-            memcpy( m_buf[m_active] + m_offset, ptr, size );
-            m_offset += size;
+            WriteSmall( ptr, size );
         }
         else
         {
-            auto src = (const char*)ptr;
-            while( size > 0 )
-            {
-                const auto sz = std::min( size, BufSize - m_offset );
-                memcpy( m_buf[m_active] + m_offset, src, sz );
-                m_offset += sz;
-                src += sz;
-                size -= sz;
-
-                if( m_offset == BufSize )
-                {
-                    WriteLz4Block();
-                }
-            }
+            WriteBig( ptr, size );
         }
     }
 
@@ -63,6 +49,30 @@ private:
         , m_offset( 0 )
         , m_active( 0 )
     {}
+
+    tracy_force_inline void WriteSmall( const void* ptr, size_t size )
+    {
+        memcpy( m_buf[m_active] + m_offset, ptr, size );
+        m_offset += size;
+    }
+
+    void WriteBig( const void* ptr, size_t size )
+    {
+        auto src = (const char*)ptr;
+        while( size > 0 )
+        {
+            const auto sz = std::min( size, BufSize - m_offset );
+            memcpy( m_buf[m_active] + m_offset, src, sz );
+            m_offset += sz;
+            src += sz;
+            size -= sz;
+
+            if( m_offset == BufSize )
+            {
+                WriteLz4Block();
+            }
+        }
+    }
 
     void WriteLz4Block()
     {

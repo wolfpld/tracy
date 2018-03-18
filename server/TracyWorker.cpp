@@ -426,6 +426,28 @@ const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int32_t sr
 }
 #endif
 
+uint16_t Worker::CompressThread( uint64_t thread )
+{
+    auto it = m_data.threadMap.find( thread );
+    if( it != m_data.threadMap.end() )
+    {
+        return it->second;
+    }
+    else
+    {
+        auto sz = m_data.threadExpand.size();
+        m_data.threadExpand.push_back( thread );
+        m_data.threadMap.emplace( thread, sz );
+        return sz;
+    }
+}
+
+uint64_t Worker::DecompressThread( uint16_t thread ) const
+{
+    assert( thread < m_data.threadExpand.size() );
+    return m_data.threadExpand[thread];
+}
+
 void Worker::Exec()
 {
     timeval tv;

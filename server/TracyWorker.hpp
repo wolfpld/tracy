@@ -69,6 +69,9 @@ class Worker
 #endif
 
         std::map<uint32_t, LockMap> lockMap;
+
+        flat_hash_map<uint64_t, uint16_t, nohash<uint64_t>> threadMap;
+        Vector<uint64_t> threadExpand;
     };
 
     struct MbpsBlock
@@ -125,6 +128,9 @@ public:
 #ifndef TRACY_NO_STATISTICS
     const SourceLocationZones& GetZonesForSourceLocation( int32_t srcloc ) const;
 #endif
+
+    uint16_t CompressThread( uint64_t thread );
+    uint64_t DecompressThread( uint16_t thread ) const;
 
     NonRecursiveBenaphore& GetMbpsDataLock() { return m_mbpsData.lock; }
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }

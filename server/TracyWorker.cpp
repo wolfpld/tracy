@@ -1241,11 +1241,11 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     m_data.lastTime = std::max( m_data.lastTime, zone->end );
 
 #ifndef TRACY_NO_STATISTICS
-    auto it = m_data.sourceLocationZones.find( zone->srcloc );
-    assert( it != m_data.sourceLocationZones.end() );
     const auto timeSpan = zone->end - zone->start;
     if( timeSpan > 0 )
     {
+        auto it = m_data.sourceLocationZones.find( zone->srcloc );
+        assert( it != m_data.sourceLocationZones.end() );
         it->second.min = std::min( it->second.min, timeSpan );
         it->second.max = std::max( it->second.max, timeSpan );
     }

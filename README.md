@@ -20,6 +20,8 @@ The following compilers are supported:
 - gcc
 - clang
 
+[A quick FAQ.](FAQ.md)
+
 ### High-level overview
 
 ![](doc/design.svg)

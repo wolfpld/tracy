@@ -170,7 +170,7 @@ private:
     struct {
         bool show;
         std::vector<int32_t> match;
-        std::map<uint64_t, std::vector<ZoneEvent*>> threads;
+        std::map<uint64_t, Vector<ZoneEvent*>> threads;
         size_t processed;
         int selMatch = 0;
         char pattern[1024] = { "" };

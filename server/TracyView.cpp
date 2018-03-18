@@ -3160,7 +3160,7 @@ void View::DrawFindZone()
             }
 
             processed++;
-            m_findZone.threads[ev.thread].emplace_back( ev.zone );
+            m_findZone.threads[ev.thread].push_back( ev.zone );
         }
         m_findZone.processed = processed;
 

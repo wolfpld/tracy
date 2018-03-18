@@ -54,7 +54,7 @@ class Worker
         Vector<SourceLocation*> sourceLocationPayload;
         flat_hash_map<SourceLocation*, uint32_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
         Vector<uint64_t> sourceLocationExpand;
-        flat_hash_map<int32_t, Vector<ZoneEvent*>> sourceLocationZones;
+        flat_hash_map<int32_t, Vector<ZoneEvent*>, nohash<int32_t>> sourceLocationZones;
 
         std::map<uint32_t, LockMap> lockMap;
     };

@@ -3134,23 +3134,35 @@ void View::DrawFindZone()
 
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();
-        for( size_t i=m_findZone.processed; i<sz; i++ )
+        auto processed = m_findZone.processed;
+        while( processed < sz )
         {
-            auto& ev = zones[i];
+            auto& ev = zones[processed];
+            if( ev.zone->end == -1 ) break;
 
             const auto end = m_worker.GetZoneEndDirect( *ev.zone );
             const auto timespan = end - ev.zone->start;
+            if( timespan == 0 )
+            {
+                processed++;
+                continue;
+            }
 
             if( m_findZone.highlight.active )
             {
                 const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
                 const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-                if( timespan < s || timespan > e ) continue;
+                if( timespan < s || timespan > e )
+                {
+                    processed++;
+                    continue;
+                }
             }
 
+            processed++;
             m_findZone.threads[ev.thread].emplace_back( ev.zone );
         }
-        m_findZone.processed = sz;
+        m_findZone.processed = processed;
 
         int idx = 0;
         for( auto& v : m_findZone.threads )

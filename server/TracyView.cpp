@@ -2732,14 +2732,12 @@ void View::DrawFindZone()
             int idx = 0;
             for( auto& v : m_findZone.match )
             {
-                auto& srcloc = m_worker.GetSourceLocation( v.first );
-                bool tmp = v.second;
-                ImGui::PushID( idx++ );
-                ImGui::Checkbox( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &tmp );
+                auto& srcloc = m_worker.GetSourceLocation( v );
+                ImGui::PushID( idx );
+                ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_findZone.selMatch, idx++ );
                 ImGui::SameLine();
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
-                if( v.second != tmp ) v.second = tmp;
             }
             ImGui::TreePop();
         }
@@ -2753,18 +2751,14 @@ void View::DrawFindZone()
             int64_t tmin = std::numeric_limits<int64_t>::max();
             int64_t tmax = std::numeric_limits<int64_t>::min();
 
-            for( auto& v : m_findZone.match )
+            auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+            for( auto& ev : zones )
             {
-                if( !v.second ) continue;
-                auto& zones = m_worker.GetZonesForSourceLocation( v.first );
-                for( auto& ev : zones )
+                const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
+                if( timeSpan != 0 )
                 {
-                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
-                    if( timeSpan != 0 )
-                    {
-                        tmin = std::min( tmin, timeSpan );
-                        tmax = std::max( tmax, timeSpan );
-                    }
+                    tmin = std::min( tmin, timeSpan );
+                    tmax = std::max( tmax, timeSpan );
                 }
             }
 
@@ -2811,40 +2805,32 @@ void View::DrawFindZone()
                             {
                                 const auto tMinLog = log10( tmin );
                                 const auto idt = numBins / ( log10( tmax ) - tMinLog );
-                                for( auto& v : m_findZone.match )
+                                auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+                                for( auto& ev : zones )
                                 {
-                                    if( !v.second ) continue;
-                                    auto& zones = m_worker.GetZonesForSourceLocation( v.first );
-                                    for( auto& ev : zones )
+                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
+                                    if( timeSpan != 0 )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                            if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
-                                        }
+                                        const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                        bins[bin]++;
+                                        binTime[bin] += timeSpan;
+                                        if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                     }
                                 }
                             }
                             else
                             {
                                 const auto idt = numBins / dt;
-                                for( auto& v : m_findZone.match )
+                                auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+                                for( auto& ev : zones )
                                 {
-                                    if( !v.second ) continue;
-                                    auto& zones = m_worker.GetZonesForSourceLocation( v.first );
-                                    for( auto& ev : zones )
+                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
+                                    if( timeSpan != 0 )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                            if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
-                                        }
+                                        const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                        bins[bin]++;
+                                        binTime[bin] += timeSpan;
+                                        if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                     }
                                 }
                             }
@@ -2855,38 +2841,30 @@ void View::DrawFindZone()
                             {
                                 const auto tMinLog = log10( tmin );
                                 const auto idt = numBins / ( log10( tmax ) - tMinLog );
-                                for( auto& v : m_findZone.match )
+                                auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+                                for( auto& ev : zones )
                                 {
-                                    if( !v.second ) continue;
-                                    auto& zones = m_worker.GetZonesForSourceLocation( v.first );
-                                    for( auto& ev : zones )
+                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
+                                    if( timeSpan != 0 )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                        }
+                                        const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                        bins[bin]++;
+                                        binTime[bin] += timeSpan;
                                     }
                                 }
                             }
                             else
                             {
                                 const auto idt = numBins / dt;
-                                for( auto& v : m_findZone.match )
+                                auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+                                for( auto& ev : zones )
                                 {
-                                    if( !v.second ) continue;
-                                    auto& zones = m_worker.GetZonesForSourceLocation( v.first );
-                                    for( auto& ev : zones )
+                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
+                                    if( timeSpan != 0 )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                        }
+                                        const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                        bins[bin]++;
+                                        binTime[bin] += timeSpan;
                                     }
                                 }
                             }
@@ -3488,15 +3466,19 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 #ifndef TRACY_NO_STATISTICS
 void View::FindZones()
 {
-    const auto match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
-    if( match.empty() ) return;
+    m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
+    if( m_findZone.match.empty() ) return;
 
-    m_findZone.match.reserve( match.size() );
-    for( auto& v : match )
+    auto it = m_findZone.match.begin();
+    while( it != m_findZone.match.end() )
     {
-        if( !m_worker.GetZonesForSourceLocation( v ).empty() )
+        if( m_worker.GetZonesForSourceLocation( *it ).empty() )
         {
-            m_findZone.match.emplace( v, true );
+            it = m_findZone.match.erase( it );
+        }
+        else
+        {
+            ++it;
         }
     }
 }

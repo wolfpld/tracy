@@ -169,7 +169,8 @@ private:
     struct {
         bool show;
         std::vector<uint32_t> counts;
-        flat_hash_map<int32_t, bool> match;
+        std::vector<int32_t> match;
+        int selMatch = 0;
         char pattern[1024] = { "" };
         bool logVal = false;
         bool logTime = false;
@@ -180,6 +181,7 @@ private:
         {
             match.clear();
             counts.clear();
+            selMatch = 0;
             highlight.active = false;
         }
     } m_findZone;

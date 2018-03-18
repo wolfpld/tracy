@@ -2714,17 +2714,6 @@ void View::DrawFindZone()
         m_findZone.Reset();
     }
 
-    if( ImGui::TreeNode( "Options" ) )
-    {
-        ImGui::InputInt( "max zones per thread", &m_findZone.maxZonesPerThread );
-        ImGui::SameLine();
-        DrawHelpMarker( "-1 for unlimited.\nHigh value or unlimited zone search may lead to performance issues." );
-        ImGui::InputInt( "max depth", &m_findZone.maxDepth );
-        ImGui::SameLine();
-        DrawHelpMarker( "-1 for unlimited." );
-        ImGui::TreePop();
-    }
-
     if( findClicked )
     {
         m_findZone.Reset();
@@ -2746,18 +2735,11 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
-                if( v.second != tmp )
-                {
-                    v.second = tmp;
-                    RecalcFindMatches();
-                }
+                if( v.second != tmp ) v.second = tmp;
             }
             ImGui::TreePop();
         }
-    }
 
-    if( !m_findZone.result.empty() )
-    {
         ImGui::Separator();
 
         if( ImGui::TreeNode( "Histogram" ) )
@@ -2767,373 +2749,401 @@ void View::DrawFindZone()
             int64_t tmin = std::numeric_limits<int64_t>::max();
             int64_t tmax = std::numeric_limits<int64_t>::min();
 
-            for( auto& v : m_findZone.result )
+            for( auto& v : m_findZone.match )
             {
-                for( auto& ev : v->timeline )
+                if( !v.second ) continue;
+                auto& zones = m_worker.GetZonesForSourceLocation( v.first );
+                for( auto& ev : zones )
                 {
                     const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
-                    tmin = std::min( tmin, timeSpan );
-                    tmax = std::max( tmax, timeSpan );
+                    if( timeSpan != 0 )
+                    {
+                        tmin = std::min( tmin, timeSpan );
+                        tmax = std::max( tmax, timeSpan );
+                    }
                 }
             }
 
-            ImGui::Checkbox( "Log values", &m_findZone.logVal );
-            ImGui::SameLine();
-            ImGui::Checkbox( "Log time", &m_findZone.logTime );
-            ImGui::SameLine();
-            ImGui::Checkbox( "Cumulate time", &m_findZone.cumulateTime );
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(?)" );
-            if( ImGui::IsItemHovered() )
+            if( tmin != std::numeric_limits<int64_t>::max() )
             {
-                ImGui::BeginTooltip();
-                ImGui::Text( "Show total time taken by calls in each bin instead of call counts." );
-                ImGui::EndTooltip();
-            }
-
-            ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
-
-            const auto dt = double( tmax - tmin );
-
-            if( dt > 0 )
-            {
-                const auto w = ImGui::GetContentRegionAvail().x;
-
-                const auto numBins = int64_t( w - 4 );
-                if( numBins > 1 )
+                ImGui::Checkbox( "Log values", &m_findZone.logVal );
+                ImGui::SameLine();
+                ImGui::Checkbox( "Log time", &m_findZone.logTime );
+                ImGui::SameLine();
+                ImGui::Checkbox( "Cumulate time", &m_findZone.cumulateTime );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(?)" );
+                if( ImGui::IsItemHovered() )
                 {
-                    auto bins = std::make_unique<int64_t[]>( numBins );
-                    memset( bins.get(), 0, sizeof( int64_t ) * numBins );
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Show total time taken by calls in each bin instead of call counts." );
+                    ImGui::EndTooltip();
+                }
 
-                    auto binTime = std::make_unique<int64_t[]>( numBins );
-                    memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
+                ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
-                    int64_t selectionTime = 0;
-                    if( m_findZone.highlight.active )
+                const auto dt = double( tmax - tmin );
+
+                if( dt > 0 )
+                {
+                    const auto w = ImGui::GetContentRegionAvail().x;
+
+                    const auto numBins = int64_t( w - 4 );
+                    if( numBins > 1 )
                     {
-                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
-                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+                        auto bins = std::make_unique<int64_t[]>( numBins );
+                        memset( bins.get(), 0, sizeof( int64_t ) * numBins );
 
-                        if( m_findZone.logTime )
+                        auto binTime = std::make_unique<int64_t[]>( numBins );
+                        memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
+
+                        int64_t selectionTime = 0;
+                        if( m_findZone.highlight.active )
                         {
-                            const auto tMinLog = log10( tmin );
-                            const auto idt = numBins / ( log10( tmax ) - tMinLog );
-                            for( auto& v : m_findZone.result )
+                            const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                            const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+
+                            if( m_findZone.logTime )
                             {
-                                for( auto& ev : v->timeline )
+                                const auto tMinLog = log10( tmin );
+                                const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                                for( auto& v : m_findZone.match )
                                 {
-                                    const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
-                                    bins[bin]++;
-                                    binTime[bin] += timeSpan;
-                                    if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
+                                    if( !v.second ) continue;
+                                    auto& zones = m_worker.GetZonesForSourceLocation( v.first );
+                                    for( auto& ev : zones )
+                                    {
+                                        const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
+                                        if( timeSpan != 0 )
+                                        {
+                                            const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                            bins[bin]++;
+                                            binTime[bin] += timeSpan;
+                                            if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                const auto idt = numBins / dt;
+                                for( auto& v : m_findZone.match )
+                                {
+                                    if( !v.second ) continue;
+                                    auto& zones = m_worker.GetZonesForSourceLocation( v.first );
+                                    for( auto& ev : zones )
+                                    {
+                                        const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
+                                        if( timeSpan != 0 )
+                                        {
+                                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                            bins[bin]++;
+                                            binTime[bin] += timeSpan;
+                                            if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
+                                        }
+                                    }
                                 }
                             }
                         }
                         else
                         {
-                            const auto idt = numBins / dt;
-                            for( auto& v : m_findZone.result )
+                            if( m_findZone.logTime )
                             {
-                                for( auto& ev : v->timeline )
+                                const auto tMinLog = log10( tmin );
+                                const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                                for( auto& v : m_findZone.match )
                                 {
-                                    const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
-                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                    bins[bin]++;
-                                    binTime[bin] += timeSpan;
-                                    if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
+                                    if( !v.second ) continue;
+                                    auto& zones = m_worker.GetZonesForSourceLocation( v.first );
+                                    for( auto& ev : zones )
+                                    {
+                                        const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
+                                        if( timeSpan != 0 )
+                                        {
+                                            const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                            bins[bin]++;
+                                            binTime[bin] += timeSpan;
+                                        }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                const auto idt = numBins / dt;
+                                for( auto& v : m_findZone.match )
+                                {
+                                    if( !v.second ) continue;
+                                    auto& zones = m_worker.GetZonesForSourceLocation( v.first );
+                                    for( auto& ev : zones )
+                                    {
+                                        const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
+                                        if( timeSpan != 0 )
+                                        {
+                                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                            bins[bin]++;
+                                            binTime[bin] += timeSpan;
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                    else
-                    {
-                        if( m_findZone.logTime )
+
+                        int64_t timeTotal = binTime[0];
+                        int64_t maxVal;
+                        if( m_findZone.cumulateTime )
                         {
-                            const auto tMinLog = log10( tmin );
-                            const auto idt = numBins / ( log10( tmax ) - tMinLog );
-                            for( auto& v : m_findZone.result )
+                            maxVal = binTime[0];
+                            for( int i=1; i<numBins; i++ )
                             {
-                                for( auto& ev : v->timeline )
+                                maxVal = std::max( maxVal, binTime[i] );
+                                timeTotal += binTime[i];
+                            }
+                        }
+                        else
+                        {
+                            maxVal = bins[0];
+                            for( int i=1; i<numBins; i++ )
+                            {
+                                maxVal = std::max( maxVal, bins[i] );
+                                timeTotal += binTime[i];
+                            }
+                        }
+
+                        ImGui::Text( "Total time: %s", TimeToString( timeTotal ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        ImGui::Text( "Max counts: %s", m_findZone.cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
+
+                        if( m_findZone.highlight.active )
+                        {
+                            const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                            const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+                            ImGui::Text( "Selection range: %s - %s (%s)", TimeToString( s ), TimeToString( e ), TimeToString( e - s ) );
+                        }
+                        else
+                        {
+                            ImGui::Text( "Selection range: none" );
+                        }
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(?)" );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "Left draw on histogram to select range. Right click to clear selection." );
+                            ImGui::EndTooltip();
+                        }
+                        if( m_findZone.highlight.active )
+                        {
+                            ImGui::Text( "Selection time: %s", TimeToString( selectionTime ) );
+                        }
+                        else
+                        {
+                            ImGui::Text( "Selection time: none" );
+                        }
+
+                        enum { Height = 200 };
+                        const auto wpos = ImGui::GetCursorScreenPos();
+
+                        ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
+                        const bool hover = ImGui::IsItemHovered();
+
+                        auto draw = ImGui::GetWindowDrawList();
+                        draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
+                        draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
+
+                        if( m_findZone.logVal )
+                        {
+                            const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
+                            for( int i=0; i<numBins; i++ )
+                            {
+                                const auto val = m_findZone.cumulateTime ? binTime[i] : bins[i];
+                                if( val > 0 )
                                 {
-                                    const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
-                                    bins[bin]++;
-                                    binTime[bin] += timeSpan;
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFF22DDDD );
                                 }
                             }
                         }
                         else
                         {
-                            const auto idt = numBins / dt;
-                            for( auto& v : m_findZone.result )
+                            const auto hAdj = double( Height - 4 ) / maxVal;
+                            for( int i=0; i<numBins; i++ )
                             {
-                                for( auto& ev : v->timeline )
+                                const auto val = m_findZone.cumulateTime ? binTime[i] : bins[i];
+                                if( val > 0 )
                                 {
-                                    const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
-                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                    bins[bin]++;
-                                    binTime[bin] += timeSpan;
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - val * hAdj ), 0xFF22DDDD );
                                 }
                             }
                         }
-                    }
 
-                    int64_t timeTotal = binTime[0];
-                    int64_t maxVal;
-                    if( m_findZone.cumulateTime )
-                    {
-                        maxVal = binTime[0];
-                        for( int i=1; i<numBins; i++ )
-                        {
-                            maxVal = std::max( maxVal, binTime[i] );
-                            timeTotal += binTime[i];
-                        }
-                    }
-                    else
-                    {
-                        maxVal = bins[0];
-                        for( int i=1; i<numBins; i++ )
-                        {
-                            maxVal = std::max( maxVal, bins[i] );
-                            timeTotal += binTime[i];
-                        }
-                    }
+                        const auto xoff = 2;
+                        const auto yoff = Height + 1;
 
-                    ImGui::Text( "Total time: %s", TimeToString( timeTotal ) );
-                    ImGui::SameLine();
-                    ImGui::Spacing();
-                    ImGui::SameLine();
-                    ImGui::Text( "Max counts: %s", m_findZone.cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
-
-                    if( m_findZone.highlight.active )
-                    {
-                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
-                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-                        ImGui::Text( "Selection range: %s - %s (%s)", TimeToString( s ), TimeToString( e ), TimeToString( e - s ) );
-                    }
-                    else
-                    {
-                        ImGui::Text( "Selection range: none" );
-                    }
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "(?)" );
-                    if( ImGui::IsItemHovered() )
-                    {
-                        ImGui::BeginTooltip();
-                        ImGui::Text( "Left draw on histogram to select range. Right click to clear selection." );
-                        ImGui::EndTooltip();
-                    }
-                    if( m_findZone.highlight.active )
-                    {
-                        ImGui::Text( "Selection time: %s", TimeToString( selectionTime ) );
-                    }
-                    else
-                    {
-                        ImGui::Text( "Selection time: none" );
-                    }
-
-                    enum { Height = 200 };
-                    const auto wpos = ImGui::GetCursorScreenPos();
-
-                    ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
-                    const bool hover = ImGui::IsItemHovered();
-
-                    auto draw = ImGui::GetWindowDrawList();
-                    draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
-                    draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
-
-                    if( m_findZone.logVal )
-                    {
-                        const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
-                        for( int i=0; i<numBins; i++ )
-                        {
-                            const auto val = m_findZone.cumulateTime ? binTime[i] : bins[i];
-                            if( val > 0 )
-                            {
-                                draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFF22DDDD );
-                            }
-                        }
-                    }
-                    else
-                    {
-                        const auto hAdj = double( Height - 4 ) / maxVal;
-                        for( int i=0; i<numBins; i++ )
-                        {
-                            const auto val = m_findZone.cumulateTime ? binTime[i] : bins[i];
-                            if( val > 0 )
-                            {
-                                draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - val * hAdj ), 0xFF22DDDD );
-                            }
-                        }
-                    }
-
-                    const auto xoff = 2;
-                    const auto yoff = Height + 1;
-
-                    if( m_findZone.logTime )
-                    {
-                        const auto ltmin = log10( tmin );
-                        const auto ltmax = log10( tmax );
-                        const auto start = int( floor( ltmin ) );
-                        const auto end = int( ceil( ltmax ) );
-
-                        const auto range = ltmax - ltmin;
-                        const auto step = w / range;
-                        auto offset = start - ltmin;
-                        int tw = 0;
-                        int tx = 0;
-
-                        auto tt = int64_t( pow( 10, start ) );
-
-                        static const double logticks[] = { log10( 2 ), log10( 3 ), log10( 4 ), log10( 5 ), log10( 6 ), log10( 7 ), log10( 8 ), log10( 9 ) };
-
-                        for( int i=start; i<=end; i++ )
-                        {
-                            const auto x = ( i - start + offset ) * step;
-
-                            if( x >= 0 )
-                            {
-                                draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF );
-                                if( tw == 0 || x > tx + tw + ty * 1.1 )
-                                {
-                                    tx = x;
-                                    auto txt = TimeToStringInteger( tt );
-                                    draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
-                                    tw = ImGui::CalcTextSize( txt ).x;
-                                }
-                            }
-
-                            for( int j=0; j<8; j++ )
-                            {
-                                const auto xoff = x + logticks[j] * step;
-                                if( xoff >= 0 )
-                                {
-                                    draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + round( ty * 0.25 ) ), 0x66FFFFFF );
-                                }
-                            }
-
-                            tt *= 10;
-                        }
-                    }
-                    else
-                    {
-                        const auto pxns = numBins / dt;
-                        const auto nspx = 1.0 / pxns;
-                        const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
-                        const auto step = pow( 10, scale );
-
-                        const auto dx = step * pxns;
-                        double x = 0;
-                        int tw = 0;
-                        int tx = 0;
-
-                        const auto sstep = step / 10.0;
-                        const auto sdx = dx / 10.0;
-
-                        static const double linelen[] = { 0.5, 0.25, 0.25, 0.25, 0.25, 0.375, 0.25, 0.25, 0.25, 0.25 };
-
-                        int64_t tt = int64_t( ceil( tmin / sstep ) * sstep );
-                        const auto diff = tmin / sstep - int64_t( tmin / sstep );
-                        const auto xo = ( diff == 0 ? 0 : ( ( 1 - diff ) * sstep * pxns ) ) + xoff;
-                        int iter = int( ceil( ( tmin - int64_t( tmin / step ) * step ) / sstep ) );
-
-                        while( x < numBins )
-                        {
-                            draw->AddLine( wpos + ImVec2( xo + x, yoff ), wpos + ImVec2( xo + x, yoff + round( ty * linelen[iter] ) ), 0x66FFFFFF );
-                            if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 1.1 ) )
-                            {
-                                tx = x;
-                                auto txt = TimeToStringInteger( tt );
-                                draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
-                                tw = ImGui::CalcTextSize( txt ).x;
-                            }
-
-                            iter = ( iter + 1 ) % 10;
-                            x += sdx;
-                            tt += sstep;
-                        }
-                    }
-
-                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
-                    {
-                        const auto ltmin = log10( tmin );
-                        const auto ltmax = log10( tmax );
-
-                        auto& io = ImGui::GetIO();
-                        draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
-
-                        const auto bin = double( io.MousePos.x - wpos.x - 2 );
-                        int64_t t0, t1;
-                        if( m_findZone.logTime )
-                        {
-                            t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
-                            t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
-                        }
-                        else
-                        {
-                            t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
-                            t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
-                        }
-
-                        int64_t tBefore = 0;
-                        for( int i=0; i<bin; i++ )
-                        {
-                            tBefore += binTime[i];
-                        }
-
-                        int64_t tAfter = 0;
-                        for( int i=bin+1; i<numBins; i++ )
-                        {
-                            tAfter += binTime[i];
-                        }
-
-                        ImGui::BeginTooltip();
-                        ImGui::Text( "Time range: %s - %s", TimeToString( t0 ), TimeToString( t1 ) );
-                        ImGui::Text( "Count: %" PRIu64, bins[bin] );
-                        ImGui::Text( "Time spent in bin: %s", TimeToString( binTime[bin] ) );
-                        ImGui::Text( "Time spent in the left bins: %s", TimeToString( tBefore ) );
-                        ImGui::Text( "Time spent in the right bins: %s", TimeToString( tAfter ) );
-                        ImGui::EndTooltip();
-
-                        if( ImGui::IsMouseClicked( 1 ) )
-                        {
-                            m_findZone.highlight.active = false;
-                        }
-                        else if( ImGui::IsMouseClicked( 0 ) )
-                        {
-                            m_findZone.highlight.active = true;
-                            m_findZone.highlight.start = t0;
-                            m_findZone.highlight.end = t1;
-                        }
-                        else if( ImGui::IsMouseDragging( 0, 0 ) )
-                        {
-                            m_findZone.highlight.end = t1 > m_findZone.highlight.start ? t1 : t0;
-                        }
-                    }
-
-                    if( m_findZone.highlight.active && m_findZone.highlight.start != m_findZone.highlight.end )
-                    {
-                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
-                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-
-                        float t0, t1;
                         if( m_findZone.logTime )
                         {
                             const auto ltmin = log10( tmin );
                             const auto ltmax = log10( tmax );
+                            const auto start = int( floor( ltmin ) );
+                            const auto end = int( ceil( ltmax ) );
 
-                            t0 = ( log10( s ) - ltmin ) / float( ltmax - ltmin ) * numBins;
-                            t1 = ( log10( e ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                            const auto range = ltmax - ltmin;
+                            const auto step = w / range;
+                            auto offset = start - ltmin;
+                            int tw = 0;
+                            int tx = 0;
+
+                            auto tt = int64_t( pow( 10, start ) );
+
+                            static const double logticks[] = { log10( 2 ), log10( 3 ), log10( 4 ), log10( 5 ), log10( 6 ), log10( 7 ), log10( 8 ), log10( 9 ) };
+
+                            for( int i=start; i<=end; i++ )
+                            {
+                                const auto x = ( i - start + offset ) * step;
+
+                                if( x >= 0 )
+                                {
+                                    draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF );
+                                    if( tw == 0 || x > tx + tw + ty * 1.1 )
+                                    {
+                                        tx = x;
+                                        auto txt = TimeToStringInteger( tt );
+                                        draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                        tw = ImGui::CalcTextSize( txt ).x;
+                                    }
+                                }
+
+                                for( int j=0; j<8; j++ )
+                                {
+                                    const auto xoff = x + logticks[j] * step;
+                                    if( xoff >= 0 )
+                                    {
+                                        draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + round( ty * 0.25 ) ), 0x66FFFFFF );
+                                    }
+                                }
+
+                                tt *= 10;
+                            }
                         }
                         else
                         {
-                            t0 = ( s - tmin ) / float( tmax - tmin ) * numBins;
-                            t1 = ( e - tmin ) / float( tmax - tmin ) * numBins;
+                            const auto pxns = numBins / dt;
+                            const auto nspx = 1.0 / pxns;
+                            const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
+                            const auto step = pow( 10, scale );
+
+                            const auto dx = step * pxns;
+                            double x = 0;
+                            int tw = 0;
+                            int tx = 0;
+
+                            const auto sstep = step / 10.0;
+                            const auto sdx = dx / 10.0;
+
+                            static const double linelen[] = { 0.5, 0.25, 0.25, 0.25, 0.25, 0.375, 0.25, 0.25, 0.25, 0.25 };
+
+                            int64_t tt = int64_t( ceil( tmin / sstep ) * sstep );
+                            const auto diff = tmin / sstep - int64_t( tmin / sstep );
+                            const auto xo = ( diff == 0 ? 0 : ( ( 1 - diff ) * sstep * pxns ) ) + xoff;
+                            int iter = int( ceil( ( tmin - int64_t( tmin / step ) * step ) / sstep ) );
+
+                            while( x < numBins )
+                            {
+                                draw->AddLine( wpos + ImVec2( xo + x, yoff ), wpos + ImVec2( xo + x, yoff + round( ty * linelen[iter] ) ), 0x66FFFFFF );
+                                if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 1.1 ) )
+                                {
+                                    tx = x;
+                                    auto txt = TimeToStringInteger( tt );
+                                    draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                    tw = ImGui::CalcTextSize( txt ).x;
+                                }
+
+                                iter = ( iter + 1 ) % 10;
+                                x += sdx;
+                                tt += sstep;
+                            }
                         }
 
-                        draw->AddRectFilled( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x22DD8888 );
-                        draw->AddRect( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x44DD8888 );
+                        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
+                        {
+                            const auto ltmin = log10( tmin );
+                            const auto ltmax = log10( tmax );
+
+                            auto& io = ImGui::GetIO();
+                            draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
+
+                            const auto bin = double( io.MousePos.x - wpos.x - 2 );
+                            int64_t t0, t1;
+                            if( m_findZone.logTime )
+                            {
+                                t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
+                                t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
+                            }
+                            else
+                            {
+                                t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
+                                t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
+                            }
+
+                            int64_t tBefore = 0;
+                            for( int i=0; i<bin; i++ )
+                            {
+                                tBefore += binTime[i];
+                            }
+
+                            int64_t tAfter = 0;
+                            for( int i=bin+1; i<numBins; i++ )
+                            {
+                                tAfter += binTime[i];
+                            }
+
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "Time range: %s - %s", TimeToString( t0 ), TimeToString( t1 ) );
+                            ImGui::Text( "Count: %" PRIu64, bins[bin] );
+                            ImGui::Text( "Time spent in bin: %s", TimeToString( binTime[bin] ) );
+                            ImGui::Text( "Time spent in the left bins: %s", TimeToString( tBefore ) );
+                            ImGui::Text( "Time spent in the right bins: %s", TimeToString( tAfter ) );
+                            ImGui::EndTooltip();
+
+                            if( ImGui::IsMouseClicked( 1 ) )
+                            {
+                                m_findZone.highlight.active = false;
+                            }
+                            else if( ImGui::IsMouseClicked( 0 ) )
+                            {
+                                m_findZone.highlight.active = true;
+                                m_findZone.highlight.start = t0;
+                                m_findZone.highlight.end = t1;
+                            }
+                            else if( ImGui::IsMouseDragging( 0, 0 ) )
+                            {
+                                m_findZone.highlight.end = t1 > m_findZone.highlight.start ? t1 : t0;
+                            }
+                        }
+
+                        if( m_findZone.highlight.active && m_findZone.highlight.start != m_findZone.highlight.end )
+                        {
+                            const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                            const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+
+                            float t0, t1;
+                            if( m_findZone.logTime )
+                            {
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
+
+                                t0 = ( log10( s ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                                t1 = ( log10( e ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                            }
+                            else
+                            {
+                                t0 = ( s - tmin ) / float( tmax - tmin ) * numBins;
+                                t1 = ( e - tmin ) / float( tmax - tmin ) * numBins;
+                            }
+
+                            draw->AddRectFilled( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x22DD8888 );
+                            draw->AddRect( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x44DD8888 );
+                        }
                     }
                 }
             }
@@ -3141,6 +3151,8 @@ void View::DrawFindZone()
             ImGui::TreePop();
         }
 
+        // TODO
+#if 0
         ImGui::Separator();
         ImGui::Text( "Found zones:" );
 
@@ -3229,6 +3241,7 @@ void View::DrawFindZone()
                 m_findZone.counts[i] = cnt;
             }
         }
+#endif
     }
 
     ImGui::End();
@@ -3475,47 +3488,9 @@ void View::FindZones()
     m_findZone.match.reserve( match.size() );
     for( auto& v : match )
     {
-        m_findZone.match.emplace( v, true );
-    }
-
-    RecalcFindMatches();
-}
-
-void View::RecalcFindMatches()
-{
-    m_findZone.result.clear();
-    m_findZone.counts.clear();
-
-    for( const auto& v : m_worker.GetThreadData() )
-    {
-        auto thrOut = std::make_unique<ThreadData>();
-        RecalcFindMatches( v->timeline, thrOut->timeline, m_findZone.maxDepth );
-
-        if( !thrOut->timeline.empty() )
+        if( !m_worker.GetZonesForSourceLocation( v ).empty() )
         {
-            thrOut->id = v->id;
-            m_findZone.counts.emplace_back( thrOut->timeline.size() );
-            m_findZone.result.emplace_back( std::move( thrOut ) );
-        }
-    }
-}
-
-void View::RecalcFindMatches( const Vector<ZoneEvent*>& events, Vector<ZoneEvent*>& out, const int maxdepth )
-{
-    for( auto& ev : events )
-    {
-        if( out.size() >= m_findZone.maxZonesPerThread ) break;
-        if( m_worker.GetZoneEnd( *ev ) == ev->start ) continue;
-
-        auto it = m_findZone.match.find( ev->srcloc );
-        if( it != m_findZone.match.end() && it->second )
-        {
-            out.push_back( ev );
-        }
-
-        if( maxdepth != 0 )
-        {
-            RecalcFindMatches( ev->child, out, maxdepth - 1 );
+            m_findZone.match.emplace( v, true );
         }
     }
 }

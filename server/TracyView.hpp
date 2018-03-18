@@ -98,8 +98,6 @@ private:
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
 
     void FindZones();
-    void RecalcFindMatches();
-    void RecalcFindMatches( const Vector<ZoneEvent*> &events, Vector<ZoneEvent*> &out, const int maxdepth = 0 );
 
     template <typename T>
     bool& Visible( const T* ptr )
@@ -168,12 +166,9 @@ private:
 
     struct {
         bool show;
-        std::vector<std::unique_ptr<ThreadData>> result;
         std::vector<uint32_t> counts;
         flat_hash_map<int32_t, bool> match;
         char pattern[1024] = { "" };
-        int maxZonesPerThread = -1;
-        int maxDepth = -1;
         bool logVal = false;
         bool logTime = false;
         bool cumulateTime = false;
@@ -181,7 +176,6 @@ private:
 
         void Reset()
         {
-            result.clear();
             match.clear();
             counts.clear();
             highlight.active = false;

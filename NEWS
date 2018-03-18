@@ -1,0 +1,27 @@
+v0.2 (xxxx-xx-xx)
+-----------------
+
+- Fixed broken TRACY_NO_EXIT behavior.
+- Visual refresh (new color scheme).
+- Added optional support for live in-depth zone analysis.
+  - Ability to search for zones matching a query.
+  - List occurrences of a zone.
+  - Histogram of zone time spans.
+  - Support for linear and logarithmic display of time and values.
+  - Histogram bins can show zone counts or total execution time.
+  - Listed zones can be narrowed down by data range selection on histogram.
+- Separation of server data handling code from the visualisation.
+- Implementation of a command line capture utility.
+- Support libraries have been updated.
+- Fixed an issue that prevented de-duplication of source location payloads.
+- Small improvements to zone info view window.
+- Fixed an issue that prevented the ability to disable threads in settings
+  menu, if two threads had the same name.
+- Performance optimizations.
+- Visual clean up of the settings menu.
+
+
+v0.1 (2017-12-18)
+-----------------
+
+- Initial release.

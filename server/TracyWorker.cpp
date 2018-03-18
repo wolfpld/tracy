@@ -405,6 +405,13 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) cons
     return match;
 }
 
+const Vector<ZoneEvent*>& Worker::GetZonesForSourceLocation( int32_t srcloc ) const
+{
+    static const Vector<ZoneEvent*> empty;
+    auto it = m_data.sourceLocationZones.find( srcloc );
+    return it != m_data.sourceLocationZones.end() ? it->second : empty;
+}
+
 void Worker::Exec()
 {
     timeval tv;

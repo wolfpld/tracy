@@ -2733,10 +2733,11 @@ void View::DrawFindZone()
             for( auto& v : m_findZone.match )
             {
                 auto& srcloc = m_worker.GetSourceLocation( v );
+                auto& zones = m_worker.GetZonesForSourceLocation( v );
                 ImGui::PushID( idx );
                 ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_findZone.selMatch, idx++ );
                 ImGui::SameLine();
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_worker.GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
             }
             ImGui::TreePop();

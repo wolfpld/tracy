@@ -2703,6 +2703,10 @@ void View::DrawMessages()
 void View::DrawFindZone()
 {
     ImGui::Begin( "Find Zone", &m_findZone.show );
+#ifdef TRACY_NO_STATISTICS
+    ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
+    ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable zone search." );
+#else
     ImGui::InputText( "", m_findZone.pattern, 1024 );
     ImGui::SameLine();
 
@@ -3243,6 +3247,7 @@ void View::DrawFindZone()
         }
 #endif
     }
+#endif
 
     ImGui::End();
 }
@@ -3480,6 +3485,7 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
     return nullptr;
 }
 
+#ifndef TRACY_NO_STATISTICS
 void View::FindZones()
 {
     const auto match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
@@ -3494,5 +3500,6 @@ void View::FindZones()
         }
     }
 }
+#endif
 
 }

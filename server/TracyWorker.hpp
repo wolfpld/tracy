@@ -54,7 +54,9 @@ class Worker
         Vector<SourceLocation*> sourceLocationPayload;
         flat_hash_map<SourceLocation*, uint32_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
         Vector<uint64_t> sourceLocationExpand;
+#ifndef TRACY_NO_STATISTICS
         flat_hash_map<int32_t, Vector<ZoneEvent*>, nohash<int32_t>> sourceLocationZones;
+#endif
 
         std::map<uint32_t, LockMap> lockMap;
     };
@@ -110,7 +112,9 @@ public:
     const SourceLocation& GetSourceLocation( int32_t srcloc ) const;
 
     std::vector<int32_t> GetMatchingSourceLocation( const char* query ) const;
+#ifndef TRACY_NO_STATISTICS
     const Vector<ZoneEvent*>& GetZonesForSourceLocation( int32_t srcloc ) const;
+#endif
 
     NonRecursiveBenaphore& GetMbpsDataLock() { return m_mbpsData.lock; }
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }

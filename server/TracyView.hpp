@@ -97,7 +97,9 @@ private:
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
 
+#ifndef TRACY_NO_STATISTICS
     void FindZones();
+#endif
 
     template <typename T>
     bool& Visible( const T* ptr )

@@ -308,6 +308,16 @@ int64_t Worker::GetZoneEnd( const GpuEvent& ev ) const
     }
 }
 
+int64_t Worker::GetZoneEndDirect( const ZoneEvent& ev ) const
+{
+    return ev.end != -1 ? ev.end : ev.start;
+}
+
+int64_t Worker::GetZoneEndDirect( const GpuEvent& ev ) const
+{
+    return ev.gpuEnd != -1 ? ev.gpuEnd : ev.gpuStart;
+}
+
 const char* Worker::GetString( uint64_t ptr ) const
 {
     const auto it = m_data.strings.find( ptr );

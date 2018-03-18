@@ -94,8 +94,15 @@ public:
     const Vector<PlotData*>& GetPlots() const { return m_data.plots; }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
 
+    // Some zones may have incomplete timing data (only start time is available, end hasn't arrived yet).
+    // GetZoneEnd() will try to infer the end time by looking at child zones (parent zone can't end
+    //     before its children have ended).
+    // GetZoneEndDirect() will only return zone's direct timing data, without looking at children.
     int64_t GetZoneEnd( const ZoneEvent& ev ) const;
     int64_t GetZoneEnd( const GpuEvent& ev ) const;
+    int64_t GetZoneEndDirect( const ZoneEvent& ev ) const;
+    int64_t GetZoneEndDirect( const GpuEvent& ev ) const;
+
     const char* GetString( uint64_t ptr ) const;
     const char* GetString( const StringRef& ref ) const;
     const char* GetString( const StringIdx& idx ) const;

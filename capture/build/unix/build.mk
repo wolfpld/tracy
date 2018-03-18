@@ -1,6 +1,6 @@
 CFLAGS +=
 CXXFLAGS := $(CFLAGS) -std=gnu++14
-DEFINES +=
+DEFINES += -DTRACY_NO_STATISTICS
 INCLUDES :=
 LIBS := -lpthread
 IMAGE := capture

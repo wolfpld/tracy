@@ -108,6 +108,7 @@ Worker::Worker( FileRead& f )
     f.Read( &sz, sizeof( sz ) );
     m_data.sourceLocationExpand.reserve_and_use( sz );
     f.Read( m_data.sourceLocationExpand.data(), sizeof( uint64_t ) * sz );
+    const auto sle = sz;
 
     f.Read( &sz, sizeof( sz ) );
     m_data.sourceLocationPayload.reserve( sz );
@@ -117,6 +118,16 @@ Worker::Worker( FileRead& f )
         f.Read( srcloc, sizeof( *srcloc ) );
         m_data.sourceLocationPayload.push_back_no_space_check( srcloc );
         m_data.sourceLocationPayloadMap.emplace( srcloc, uint32_t( i ) );
+    }
+
+    m_data.sourceLocationZones.reserve( sle + sz );
+    for( uint64_t i=1; i<sle; i++ )
+    {
+        m_data.sourceLocationZones.emplace( int32_t( i ), Vector<ZoneEvent*>() );
+    }
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        m_data.sourceLocationZones.emplace( -int32_t( i + 1 ), Vector<ZoneEvent*>() );
     }
 
     f.Read( &sz, sizeof( sz ) );
@@ -599,6 +610,7 @@ uint32_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
 {
     const auto sz = m_data.sourceLocationExpand.size();
     m_data.sourceLocationExpand.push_back( srcloc );
+    m_data.sourceLocationZones.emplace( sz, Vector<ZoneEvent*>() );
     m_sourceLocationShrink.emplace( srcloc, sz );
     return sz;
 }
@@ -662,6 +674,11 @@ ThreadData* Worker::NewThread( uint64_t thread )
 void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
 {
     m_data.zonesCnt++;
+
+    auto it = m_data.sourceLocationZones.find( zone->srcloc );
+    assert( it != m_data.sourceLocationZones.end() );
+    it->second.push_back( zone );
+
     auto td = NoticeThread( thread );
     td->count++;
     if( td->stack.empty() )
@@ -926,6 +943,7 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
         m_data.sourceLocationPayloadMap.emplace( slptr, idx );
         m_pendingSourceLocationPayload.emplace( ptr, -int32_t( idx + 1 ) );
         m_data.sourceLocationPayload.push_back( slptr );
+        m_data.sourceLocationZones.emplace( -int32_t( idx + 1 ), Vector<ZoneEvent*>() );
     }
     else
     {
@@ -1578,6 +1596,10 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size )
         vec.push_back_no_space_check( zone );
 
         f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
+        auto it = m_data.sourceLocationZones.find( zone->srcloc );
+        assert( it != m_data.sourceLocationZones.end() );
+        it->second.push_back( zone );
+
         ReadTimeline( f, zone->child );
     }
 }

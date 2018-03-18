@@ -3464,6 +3464,25 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
     return nullptr;
 }
 
+uint64_t View::GetZoneThread( const ZoneEvent& zone ) const
+{
+    for( const auto& thread : m_worker.GetThreadData() )
+    {
+        const Vector<ZoneEvent*>* timeline = &thread->timeline;
+        if( timeline->empty() ) continue;
+        for(;;)
+        {
+            auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.start, [] ( const auto& l, const auto& r ) { return l < r->start; } );
+            if( it != timeline->begin() ) --it;
+            if( zone.end != -1 && (*it)->start > zone.end ) break;
+            if( *it == &zone ) return thread->id;
+            if( (*it)->child.empty() ) break;
+            timeline = &(*it)->child;
+        }
+    }
+    return 0;
+}
+
 #ifndef TRACY_NO_STATISTICS
 void View::FindZones()
 {

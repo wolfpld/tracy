@@ -96,6 +96,7 @@ private:
     void ZoneTooltip( const GpuEvent& ev );
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
+    uint64_t GetZoneThread( const ZoneEvent& zone ) const;
 
 #ifndef TRACY_NO_STATISTICS
     void FindZones();

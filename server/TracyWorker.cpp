@@ -124,11 +124,11 @@ Worker::Worker( FileRead& f )
     m_data.sourceLocationZones.reserve( sle + sz );
     for( uint64_t i=1; i<sle; i++ )
     {
-        m_data.sourceLocationZones.emplace( int32_t( i ), Vector<ZoneEvent*>() );
+        m_data.sourceLocationZones.emplace( int32_t( i ), SourceLocationZones() );
     }
     for( uint64_t i=0; i<sz; i++ )
     {
-        m_data.sourceLocationZones.emplace( -int32_t( i + 1 ), Vector<ZoneEvent*>() );
+        m_data.sourceLocationZones.emplace( -int32_t( i + 1 ), SourceLocationZones() );
     }
 #endif
 
@@ -422,7 +422,7 @@ const Vector<ZoneEvent*>& Worker::GetZonesForSourceLocation( int32_t srcloc ) co
 {
     static const Vector<ZoneEvent*> empty;
     auto it = m_data.sourceLocationZones.find( srcloc );
-    return it != m_data.sourceLocationZones.end() ? it->second : empty;
+    return it != m_data.sourceLocationZones.end() ? it->second.zones : empty;
 }
 #endif
 
@@ -632,7 +632,7 @@ uint32_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
     const auto sz = m_data.sourceLocationExpand.size();
     m_data.sourceLocationExpand.push_back( srcloc );
 #ifndef TRACY_NO_STATISTICS
-    m_data.sourceLocationZones.emplace( sz, Vector<ZoneEvent*>() );
+    m_data.sourceLocationZones.emplace( sz, SourceLocationZones() );
 #endif
     m_sourceLocationShrink.emplace( srcloc, sz );
     return sz;
@@ -701,7 +701,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
 #ifndef TRACY_NO_STATISTICS
     auto it = m_data.sourceLocationZones.find( zone->srcloc );
     assert( it != m_data.sourceLocationZones.end() );
-    it->second.push_back( zone );
+    it->second.zones.push_back( zone );
 #endif
 
     auto td = NoticeThread( thread );
@@ -969,7 +969,7 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
         m_pendingSourceLocationPayload.emplace( ptr, -int32_t( idx + 1 ) );
         m_data.sourceLocationPayload.push_back( slptr );
 #ifndef TRACY_NO_STATISTICS
-        m_data.sourceLocationZones.emplace( -int32_t( idx + 1 ), Vector<ZoneEvent*>() );
+        m_data.sourceLocationZones.emplace( -int32_t( idx + 1 ), SourceLocationZones() );
 #endif
     }
     else
@@ -1626,7 +1626,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size )
 #ifndef TRACY_NO_STATISTICS
         auto it = m_data.sourceLocationZones.find( zone->srcloc );
         assert( it != m_data.sourceLocationZones.end() );
-        it->second.push_back( zone );
+        it->second.zones.push_back( zone );
 #endif
 
         ReadTimeline( f, zone->child );

@@ -32,6 +32,13 @@ struct nohash
 
 class Worker
 {
+    struct SourceLocationZones
+    {
+        SourceLocationZones() {}
+
+        Vector<ZoneEvent*> zones;
+    };
+
     struct DataBlock
     {
         DataBlock() : zonesCnt( 0 ), lastTime( 0 ) {}
@@ -55,7 +62,7 @@ class Worker
         flat_hash_map<SourceLocation*, uint32_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
         Vector<uint64_t> sourceLocationExpand;
 #ifndef TRACY_NO_STATISTICS
-        flat_hash_map<int32_t, Vector<ZoneEvent*>, nohash<int32_t>> sourceLocationZones;
+        flat_hash_map<int32_t, SourceLocationZones, nohash<int32_t>> sourceLocationZones;
 #endif
 
         std::map<uint32_t, LockMap> lockMap;

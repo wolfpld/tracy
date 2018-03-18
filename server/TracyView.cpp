@@ -3148,10 +3148,7 @@ void View::DrawFindZone()
                 if( timespan < s || timespan > e ) continue;
             }
 
-            if( ev.thread != 0 )
-            {
-                m_findZone.threads[ev.thread].emplace_back( ev.zone );
-            }
+            m_findZone.threads[ev.thread].emplace_back( ev.zone );
         }
         m_findZone.processed = sz;
 

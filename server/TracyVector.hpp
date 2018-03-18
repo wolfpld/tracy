@@ -11,10 +11,6 @@
 namespace tracy
 {
 
-#if 0
-template<typename T>
-using Vector = std::vector<T>;
-#else
 #pragma pack( 1 )
 template<typename T>
 class Vector
@@ -241,7 +237,6 @@ private:
     uint8_t m_capacity;
 };
 #pragma pack()
-#endif
 
 }
 

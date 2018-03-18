@@ -124,3 +124,5 @@ While the data collection is very lightweight, it is not completely free. Each r
 Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.
 
 You may use named colors predefined in `common/TracyColor.hpp` (included by `Tracy.hpp`). Visual reference: [wikipedia](https://en.wikipedia.org/wiki/X11_color_names).
+
+Tracy server will perform statistical data collection on the fly, if the macro `TRACY_NO_STATISTICS` is not defined. This allows extended analysis of the trace (for example, you can perform a live search for matching zones) at a small CPU processing cost and a considerable memory usage increase (at least 8 bytes per zone).

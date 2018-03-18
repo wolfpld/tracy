@@ -2,6 +2,7 @@
 #define __TRACYWORKER_HPP__
 
 #include <atomic>
+#include <limits>
 #include <map>
 #include <string>
 #include <thread>
@@ -34,9 +35,11 @@ class Worker
 {
     struct SourceLocationZones
     {
-        SourceLocationZones() {}
+        SourceLocationZones() : min( std::numeric_limits<int64_t>::max() ), max( std::numeric_limits<int64_t>::min() ) {}
 
         Vector<ZoneEvent*> zones;
+        int64_t min;
+        int64_t max;
     };
 
     struct DataBlock

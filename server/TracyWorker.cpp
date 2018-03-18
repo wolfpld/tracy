@@ -1239,6 +1239,17 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     assert( zone->end >= zone->start );
 
     m_data.lastTime = std::max( m_data.lastTime, zone->end );
+
+#ifndef TRACY_NO_STATISTICS
+    auto it = m_data.sourceLocationZones.find( zone->srcloc );
+    assert( it != m_data.sourceLocationZones.end() );
+    const auto timeSpan = zone->end - zone->start;
+    if( timeSpan > 0 )
+    {
+        it->second.min = std::min( it->second.min, timeSpan );
+        it->second.max = std::max( it->second.max, timeSpan );
+    }
+#endif
 }
 
 void Worker::ProcessFrameMark( const QueueFrameMark& ev )
@@ -1627,6 +1638,16 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size )
         auto it = m_data.sourceLocationZones.find( zone->srcloc );
         assert( it != m_data.sourceLocationZones.end() );
         it->second.zones.push_back( zone );
+
+        if( zone->end != -1 )
+        {
+            const auto timeSpan = zone->end - zone->start;
+            if( timeSpan > 0 )
+            {
+                it->second.min = std::min( it->second.min, timeSpan );
+                it->second.max = std::max( it->second.max, timeSpan );
+            }
+        }
 #endif
 
         ReadTimeline( f, zone->child );

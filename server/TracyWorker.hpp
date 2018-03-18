@@ -123,7 +123,7 @@ public:
 
     std::vector<int32_t> GetMatchingSourceLocation( const char* query ) const;
 #ifndef TRACY_NO_STATISTICS
-    const Vector<ZoneEvent*>& GetZonesForSourceLocation( int32_t srcloc ) const;
+    const SourceLocationZones& GetZonesForSourceLocation( int32_t srcloc ) const;
 #endif
 
     NonRecursiveBenaphore& GetMbpsDataLock() { return m_mbpsData.lock; }

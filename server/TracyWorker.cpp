@@ -418,11 +418,11 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) cons
 }
 
 #ifndef TRACY_NO_STATISTICS
-const Vector<ZoneEvent*>& Worker::GetZonesForSourceLocation( int32_t srcloc ) const
+const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int32_t srcloc ) const
 {
-    static const Vector<ZoneEvent*> empty;
+    static const SourceLocationZones empty;
     auto it = m_data.sourceLocationZones.find( srcloc );
-    return it != m_data.sourceLocationZones.end() ? it->second.zones : empty;
+    return it != m_data.sourceLocationZones.end() ? it->second : empty;
 }
 #endif
 

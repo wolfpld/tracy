@@ -2734,7 +2734,7 @@ void View::DrawFindZone()
             for( auto& v : m_findZone.match )
             {
                 auto& srcloc = m_worker.GetSourceLocation( v );
-                auto& zones = m_worker.GetZonesForSourceLocation( v );
+                auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
                 ImGui::PushID( idx );
                 ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_findZone.selMatch, idx++ );
                 ImGui::SameLine();
@@ -2755,19 +2755,10 @@ void View::DrawFindZone()
         {
             const auto ty = ImGui::GetFontSize();
 
-            int64_t tmin = std::numeric_limits<int64_t>::max();
-            int64_t tmax = std::numeric_limits<int64_t>::min();
-
-            auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
-            for( auto& ev : zones )
-            {
-                const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
-                if( timeSpan != 0 )
-                {
-                    tmin = std::min( tmin, timeSpan );
-                    tmax = std::max( tmax, timeSpan );
-                }
-            }
+            auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+            auto& zones = zoneData.zones;
+            auto tmin = zoneData.min;
+            auto tmax = zoneData.max;
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
@@ -2812,7 +2803,6 @@ void View::DrawFindZone()
                             {
                                 const auto tMinLog = log10( tmin );
                                 const auto idt = numBins / ( log10( tmax ) - tMinLog );
-                                auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
                                 for( auto& ev : zones )
                                 {
                                     const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
@@ -2828,7 +2818,6 @@ void View::DrawFindZone()
                             else
                             {
                                 const auto idt = numBins / dt;
-                                auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
                                 for( auto& ev : zones )
                                 {
                                     const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
@@ -2848,7 +2837,6 @@ void View::DrawFindZone()
                             {
                                 const auto tMinLog = log10( tmin );
                                 const auto idt = numBins / ( log10( tmax ) - tMinLog );
-                                auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
                                 for( auto& ev : zones )
                                 {
                                     const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
@@ -2863,7 +2851,6 @@ void View::DrawFindZone()
                             else
                             {
                                 const auto idt = numBins / dt;
-                                auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
                                 for( auto& ev : zones )
                                 {
                                     const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
@@ -3145,7 +3132,7 @@ void View::DrawFindZone()
         ImGui::Separator();
         ImGui::Text( "Found zones:" );
 
-        auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+        auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();
         for( size_t i=m_findZone.processed; i<sz; i++ )
         {
@@ -3495,7 +3482,7 @@ void View::FindZones()
     auto it = m_findZone.match.begin();
     while( it != m_findZone.match.end() )
     {
-        if( m_worker.GetZonesForSourceLocation( *it ).empty() )
+        if( m_worker.GetZonesForSourceLocation( *it ).zones.empty() )
         {
             it = m_findZone.match.erase( it );
         }

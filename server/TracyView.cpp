@@ -2755,7 +2755,7 @@ void View::DrawFindZone()
                 auto& zones = m_worker.GetZonesForSourceLocation( v.first );
                 for( auto& ev : zones )
                 {
-                    const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
+                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
                     if( timeSpan != 0 )
                     {
                         tmin = std::min( tmin, timeSpan );
@@ -2813,7 +2813,7 @@ void View::DrawFindZone()
                                     auto& zones = m_worker.GetZonesForSourceLocation( v.first );
                                     for( auto& ev : zones )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
+                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
                                         if( timeSpan != 0 )
                                         {
                                             const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
@@ -2833,7 +2833,7 @@ void View::DrawFindZone()
                                     auto& zones = m_worker.GetZonesForSourceLocation( v.first );
                                     for( auto& ev : zones )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
+                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
                                         if( timeSpan != 0 )
                                         {
                                             const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
@@ -2857,7 +2857,7 @@ void View::DrawFindZone()
                                     auto& zones = m_worker.GetZonesForSourceLocation( v.first );
                                     for( auto& ev : zones )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
+                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
                                         if( timeSpan != 0 )
                                         {
                                             const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
@@ -2876,7 +2876,7 @@ void View::DrawFindZone()
                                     auto& zones = m_worker.GetZonesForSourceLocation( v.first );
                                     for( auto& ev : zones )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEnd( *ev ) - ev->start;
+                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
                                         if( timeSpan != 0 )
                                         {
                                             const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
@@ -3181,7 +3181,7 @@ void View::DrawFindZone()
                 uint32_t cnt = 0;
                 for( auto& ev : v->timeline )
                 {
-                    const auto end = m_worker.GetZoneEnd( *ev );
+                    const auto end = m_worker.GetZoneEndDirect( *ev );
                     const auto timespan = end - ev->start;
 
                     if( m_findZone.highlight.active )
@@ -3231,7 +3231,7 @@ void View::DrawFindZone()
                 {
                     for( auto& ev : v->timeline )
                     {
-                        const auto end = m_worker.GetZoneEnd( *ev );
+                        const auto end = m_worker.GetZoneEndDirect( *ev );
                         const auto timespan = end - ev->start;
                         const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
                         const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );

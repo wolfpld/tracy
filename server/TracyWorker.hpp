@@ -33,11 +33,19 @@ struct nohash
 
 class Worker
 {
+#pragma pack( 1 )
+    struct ZoneThreadData
+    {
+        ZoneEvent* zone;
+        uint16_t thread;
+    };
+#pragma pack()
+
     struct SourceLocationZones
     {
         SourceLocationZones() : min( std::numeric_limits<int64_t>::max() ), max( std::numeric_limits<int64_t>::min() ) {}
 
-        Vector<ZoneEvent*> zones;
+        Vector<ZoneThreadData> zones;
         int64_t min;
         int64_t max;
     };
@@ -200,10 +208,10 @@ private:
 
     StringLocation StoreString( char* str, size_t sz );
 
-    tracy_force_inline void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec );
+    tracy_force_inline void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread );
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
 
-    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size );
+    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size );
     void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
 
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );

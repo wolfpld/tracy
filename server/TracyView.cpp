@@ -2805,7 +2805,7 @@ void View::DrawFindZone()
                                 const auto idt = numBins / ( log10( tmax ) - tMinLog );
                                 for( auto& ev : zones )
                                 {
-                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
+                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                     if( timeSpan != 0 )
                                     {
                                         const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
@@ -2820,7 +2820,7 @@ void View::DrawFindZone()
                                 const auto idt = numBins / dt;
                                 for( auto& ev : zones )
                                 {
-                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
+                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                     if( timeSpan != 0 )
                                     {
                                         const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
@@ -2839,7 +2839,7 @@ void View::DrawFindZone()
                                 const auto idt = numBins / ( log10( tmax ) - tMinLog );
                                 for( auto& ev : zones )
                                 {
-                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
+                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                     if( timeSpan != 0 )
                                     {
                                         const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
@@ -2853,7 +2853,7 @@ void View::DrawFindZone()
                                 const auto idt = numBins / dt;
                                 for( auto& ev : zones )
                                 {
-                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev ) - ev->start;
+                                    const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                     if( timeSpan != 0 )
                                     {
                                         const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
@@ -3138,8 +3138,8 @@ void View::DrawFindZone()
         {
             auto& ev = zones[i];
 
-            const auto end = m_worker.GetZoneEndDirect( *ev );
-            const auto timespan = end - ev->start;
+            const auto end = m_worker.GetZoneEndDirect( *ev.zone );
+            const auto timespan = end - ev.zone->start;
 
             if( m_findZone.highlight.active )
             {
@@ -3148,10 +3148,9 @@ void View::DrawFindZone()
                 if( timespan < s || timespan > e ) continue;
             }
 
-            auto thread = GetZoneThread( *ev );
-            if( thread != 0 )
+            if( ev.thread != 0 )
             {
-                m_findZone.threads[thread].emplace_back( ev );
+                m_findZone.threads[ev.thread].emplace_back( ev.zone );
             }
         }
         m_findZone.processed = sz;
@@ -3159,15 +3158,16 @@ void View::DrawFindZone()
         int idx = 0;
         for( auto& v : m_findZone.threads )
         {
+            auto threadString = m_worker.GetThreadString( m_worker.DecompressThread( v.first ) );
             ImGui::PushID( idx++ );
-            const bool expand = ImGui::TreeNode( m_worker.GetThreadString( v.first ) );
+            const bool expand = ImGui::TreeNode( threadString );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v.second.size(), true ) );
 
             if( expand )
             {
-                ImGui::Columns( 3, m_worker.GetThreadString( v.first ) );
+                ImGui::Columns( 3, threadString );
                 ImGui::Separator();
                 ImGui::Text( "Name" );
                 ImGui::NextColumn();

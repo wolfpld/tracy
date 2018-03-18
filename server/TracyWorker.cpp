@@ -193,7 +193,7 @@ Worker::Worker( FileRead& f )
         auto td = m_slab.AllocInit<ThreadData>();
         f.Read( &td->id, sizeof( td->id ) );
         f.Read( &td->count, sizeof( td->count ) );
-        ReadTimeline( f, td->timeline );
+        ReadTimeline( f, td->timeline, CompressThread( td->id ) );
         uint64_t msz;
         f.Read( &msz, sizeof( msz ) );
         td->messages.reserve( msz );
@@ -723,7 +723,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
 #ifndef TRACY_NO_STATISTICS
     auto it = m_data.sourceLocationZones.find( zone->srcloc );
     assert( it != m_data.sourceLocationZones.end() );
-    it->second.zones.push_back( zone );
+    it->second.zones.push_back( ZoneThreadData { zone, CompressThread( thread ) } );
 #endif
 
     auto td = NoticeThread( thread );
@@ -1623,13 +1623,13 @@ void Worker::ProcessGpuResync( const QueueGpuResync& ev )
     }
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec )
+void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread )
 {
     uint64_t sz;
     f.Read( &sz, sizeof( sz ) );
     if( sz != 0 )
     {
-        ReadTimeline( f, vec, sz );
+        ReadTimeline( f, vec, thread, sz );
     }
 }
 
@@ -1643,7 +1643,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
     }
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size )
+void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size )
 {
     assert( size != 0 );
     vec.reserve_non_zero( size );
@@ -1659,7 +1659,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size )
 #ifndef TRACY_NO_STATISTICS
         auto it = m_data.sourceLocationZones.find( zone->srcloc );
         assert( it != m_data.sourceLocationZones.end() );
-        it->second.zones.push_back( zone );
+        it->second.zones.push_back( ZoneThreadData { zone, thread } );
 
         if( zone->end != -1 )
         {
@@ -1672,7 +1672,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint64_t size )
         }
 #endif
 
-        ReadTimeline( f, zone->child );
+        ReadTimeline( f, zone->child, thread );
     }
 }
 

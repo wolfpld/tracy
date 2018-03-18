@@ -169,8 +169,9 @@ private:
 
     struct {
         bool show;
-        std::vector<uint32_t> counts;
         std::vector<int32_t> match;
+        std::map<uint64_t, std::vector<ZoneEvent*>> threads;
+        size_t processed;
         int selMatch = 0;
         char pattern[1024] = { "" };
         bool logVal = false;
@@ -180,10 +181,16 @@ private:
 
         void Reset()
         {
+            ResetThreads();
             match.clear();
-            counts.clear();
             selMatch = 0;
             highlight.active = false;
+        }
+
+        void ResetThreads()
+        {
+            threads.clear();
+            processed = 0;
         }
     } m_findZone;
 };

@@ -2729,6 +2729,7 @@ void View::DrawFindZone()
         ImGui::Separator();
         if( ImGui::TreeNode( "Matched source locations" ) )
         {
+            auto prev = m_findZone.selMatch;
             int idx = 0;
             for( auto& v : m_findZone.match )
             {
@@ -2741,6 +2742,11 @@ void View::DrawFindZone()
                 ImGui::PopID();
             }
             ImGui::TreePop();
+
+            if( m_findZone.selMatch != prev )
+            {
+                m_findZone.ResetThreads();
+            }
         }
 
         ImGui::Separator();
@@ -3091,6 +3097,7 @@ void View::DrawFindZone()
                             if( ImGui::IsMouseClicked( 1 ) )
                             {
                                 m_findZone.highlight.active = false;
+                                m_findZone.ResetThreads();
                             }
                             else if( ImGui::IsMouseClicked( 0 ) )
                             {
@@ -3101,6 +3108,7 @@ void View::DrawFindZone()
                             else if( ImGui::IsMouseDragging( 0, 0 ) )
                             {
                                 m_findZone.highlight.end = t1 > m_findZone.highlight.start ? t1 : t0;
+                                m_findZone.ResetThreads();
                             }
                         }
 
@@ -3134,24 +3142,45 @@ void View::DrawFindZone()
             ImGui::TreePop();
         }
 
-        // TODO
-#if 0
         ImGui::Separator();
         ImGui::Text( "Found zones:" );
 
-        for( size_t i=0; i<m_findZone.result.size(); i++ )
+        auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+        auto sz = zones.size();
+        for( size_t i=m_findZone.processed; i<sz; i++ )
         {
-            auto& v = m_findZone.result[i];
+            auto& ev = zones[i];
 
-            ImGui::PushID( int( i ) );
-            const bool expand = ImGui::TreeNode( m_worker.GetThreadString( v->id ) );
+            const auto end = m_worker.GetZoneEndDirect( *ev );
+            const auto timespan = end - ev->start;
+
+            if( m_findZone.highlight.active )
+            {
+                const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+                if( timespan < s || timespan > e ) continue;
+            }
+
+            auto thread = GetZoneThread( *ev );
+            if( thread != 0 )
+            {
+                m_findZone.threads[thread].emplace_back( ev );
+            }
+        }
+        m_findZone.processed = sz;
+
+        int idx = 0;
+        for( auto& v : m_findZone.threads )
+        {
+            ImGui::PushID( idx++ );
+            const bool expand = ImGui::TreeNode( m_worker.GetThreadString( v.first ) );
             ImGui::PopID();
             ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( m_findZone.counts[i], true ) );
+            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v.second.size(), true ) );
 
             if( expand )
             {
-                ImGui::Columns( 3, m_worker.GetThreadString( v->id ) );
+                ImGui::Columns( 3, m_worker.GetThreadString( v.first ) );
                 ImGui::Separator();
                 ImGui::Text( "Name" );
                 ImGui::NextColumn();
@@ -3162,17 +3191,10 @@ void View::DrawFindZone()
                 ImGui::Separator();
 
                 uint32_t cnt = 0;
-                for( auto& ev : v->timeline )
+                for( auto& ev : v.second )
                 {
                     const auto end = m_worker.GetZoneEndDirect( *ev );
                     const auto timespan = end - ev->start;
-
-                    if( m_findZone.highlight.active )
-                    {
-                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
-                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-                        if( timespan < s || timespan > e ) continue;
-                    }
 
                     ImGui::PushID( ev );
 
@@ -3204,27 +3226,8 @@ void View::DrawFindZone()
                 ImGui::Columns( 1 );
                 ImGui::Separator();
                 ImGui::TreePop();
-
-                m_findZone.counts[i] = cnt;
-            }
-            else
-            {
-                auto cnt = uint32_t( v->timeline.size() );
-                if( m_findZone.highlight.active )
-                {
-                    for( auto& ev : v->timeline )
-                    {
-                        const auto end = m_worker.GetZoneEndDirect( *ev );
-                        const auto timespan = end - ev->start;
-                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
-                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-                        if( timespan < s || timespan > e ) cnt--;
-                    }
-                }
-                m_findZone.counts[i] = cnt;
             }
         }
-#endif
     }
 #endif
 

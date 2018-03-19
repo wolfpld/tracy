@@ -2408,6 +2408,7 @@ void View::DrawZoneInfoWindow()
 
     ImGui::Separator();
 
+    const auto tid = GetZoneThread( ev );
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     if( srcloc.name.active )
     {
@@ -2415,6 +2416,15 @@ void View::DrawZoneInfoWindow()
     }
     ImGui::Text( "Function: %s", m_worker.GetString( srcloc.function ) );
     ImGui::Text( "Location: %s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(id)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "0x%" PRIX64, tid );
+        ImGui::EndTooltip();
+    }
     if( ev.text.active )
     {
         ImGui::Text( "User text: %s", m_worker.GetString( ev.text ) );
@@ -2514,6 +2524,15 @@ void View::DrawGpuInfoWindow()
     ImGui::Text( "Zone name: %s", m_worker.GetString( srcloc.name ) );
     ImGui::Text( "Function: %s", m_worker.GetString( srcloc.function ) );
     ImGui::Text( "Location: %s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    ImGui::Text( "Thread: %s", m_worker.GetThreadString( m_gpuInfoWindowThread ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(id)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "0x%" PRIX64, m_gpuInfoWindowThread );
+        ImGui::EndTooltip();
+    }
 
     ImGui::Separator();
 

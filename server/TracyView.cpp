@@ -3154,6 +3154,23 @@ void View::DrawFindZone()
 
         ImGui::Separator();
         ImGui::Text( "Found zones:" );
+        ImGui::SameLine();
+        if( m_findZone.showThreads )
+        {
+            if( ImGui::SmallButton( "Group by user text" ) )
+            {
+                m_findZone.showThreads = false;
+                m_findZone.ResetThreads();
+            }
+        }
+        else
+        {
+            if( ImGui::SmallButton( "Group by threads" ) )
+            {
+                m_findZone.showThreads = true;
+                m_findZone.ResetThreads();
+            }
+        }
 
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();
@@ -3183,23 +3200,39 @@ void View::DrawFindZone()
             }
 
             processed++;
-            m_findZone.threads[ev.thread].push_back( ev.zone );
+            if( m_findZone.showThreads )
+            {
+                m_findZone.threads[ev.thread].push_back( ev.zone );
+            }
+            else
+            {
+                const uint64_t id = ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max();
+                m_findZone.threads[id].push_back( ev.zone );
+            }
         }
         m_findZone.processed = processed;
 
         int idx = 0;
         for( auto& v : m_findZone.threads )
         {
-            auto threadString = m_worker.GetThreadString( m_worker.DecompressThread( v.first ) );
+            const char* hdrString;
+            if( m_findZone.showThreads )
+            {
+                hdrString = m_worker.GetThreadString( m_worker.DecompressThread( v.first ) );
+            }
+            else
+            {
+                hdrString = v.first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v.first ) );
+            }
             ImGui::PushID( idx++ );
-            const bool expand = ImGui::TreeNode( threadString );
+            const bool expand = ImGui::TreeNode( hdrString );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v.second.size(), true ) );
 
             if( expand )
             {
-                ImGui::Columns( 3, threadString );
+                ImGui::Columns( 3, hdrString );
                 ImGui::Separator();
                 ImGui::Text( "Name" );
                 ImGui::NextColumn();

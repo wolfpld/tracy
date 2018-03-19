@@ -177,6 +177,7 @@ private:
         bool logVal = false;
         bool logTime = false;
         bool cumulateTime = false;
+        bool showThreads = true;
         Region highlight;
 
         void Reset()

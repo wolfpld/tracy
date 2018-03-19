@@ -3402,6 +3402,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
 {
     int dmul = ev.text.active ? 2 : 1;
 
+    const auto tid = GetZoneThread( ev );
     auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
 
     const auto filename = m_worker.GetString( srcloc.file );
@@ -3433,6 +3434,9 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     }
     ImGui::Separator();
     ImGui::Text( "%s:%i", filename, line );
+    ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_worker.GetDelay() * dmul ) );
     if( ev.cpu_start != -1 )

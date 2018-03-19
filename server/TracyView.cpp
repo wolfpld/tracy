@@ -2522,17 +2522,18 @@ void View::DrawGpuInfoWindow()
 
     ImGui::Separator();
 
+    const auto tid = GetZoneThread( ev );
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     ImGui::Text( "Zone name: %s", m_worker.GetString( srcloc.name ) );
     ImGui::Text( "Function: %s", m_worker.GetString( srcloc.function ) );
     ImGui::Text( "Location: %s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-    ImGui::Text( "Thread: %s", m_worker.GetThreadString( m_gpuInfoWindowThread ) );
+    ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(id)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "0x%" PRIX64, m_gpuInfoWindowThread );
+        ImGui::Text( "0x%" PRIX64, tid );
         ImGui::EndTooltip();
     }
 

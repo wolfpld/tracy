@@ -2571,14 +2571,14 @@ void View::DrawGpuInfoWindow()
         {
             auto& cev = *ev.child[cti[i]];
             const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
-            ImGui::Text( "%s", m_worker.GetString( csl.name ) );
+            bool b = false;
+            if( ImGui::Selectable( m_worker.GetString( csl.name ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
+            {
+                m_gpuInfoWindow = &cev;
+            }
             if( ImGui::IsItemHovered() )
             {
                 m_gpuHighlight = &cev;
-                if( ImGui::IsMouseClicked( 0 ) )
-                {
-                    m_gpuInfoWindow = &cev;
-                }
                 if( ImGui::IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( cev );

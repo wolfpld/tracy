@@ -3461,6 +3461,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
 
 void View::ZoneTooltip( const GpuEvent& ev )
 {
+    const auto tid = GetZoneThread( ev );
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
 
     const auto name = m_worker.GetString( srcloc.name );
@@ -3475,6 +3476,9 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::Text( "%s", func );
     ImGui::Separator();
     ImGui::Text( "%s:%i", filename, line );
+    ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
     ImGui::Text( "GPU execution time: %s", TimeToString( end - ev.gpuStart ) );
     ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     ImGui::Text( "Delay to execution: %s", TimeToString( ev.gpuStart - ev.cpuStart ) );

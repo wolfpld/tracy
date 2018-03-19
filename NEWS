@@ -19,6 +19,8 @@ v0.2 (xxxx-xx-xx)
   menu, if two threads had the same name.
 - Performance optimizations.
 - Visual clean up of the settings menu.
+- Visual improvements to zone info window child list.
+- Zone info windows now show zone thread.
 
 
 v0.1 (2017-12-18)

@@ -2460,7 +2460,9 @@ void View::DrawZoneInfoWindow()
         ImGui::Separator();
         ImGui::Text( "Child zones: %s", RealToString( ev.child.size(), true ) );
         ImGui::NextColumn();
-        ImGui::Text( "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+        char buf[128];
+        sprintf( buf, "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+        ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
         ImGui::Separator();
         for( size_t i=0; i<ev.child.size(); i++ )
@@ -2564,7 +2566,9 @@ void View::DrawGpuInfoWindow()
         ImGui::Separator();
         ImGui::Text( "Child zones: %s", RealToString( ev.child.size(), true ) );
         ImGui::NextColumn();
-        ImGui::Text( "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+        char buf[128];
+        sprintf( buf, "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+        ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
         ImGui::Separator();
         for( size_t i=0; i<ev.child.size(); i++ )

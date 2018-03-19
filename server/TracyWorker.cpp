@@ -1114,7 +1114,8 @@ StringLocation Worker::StoreString( char* str, size_t sz )
     if( sit == m_data.stringMap.end() )
     {
         auto ptr = m_slab.Alloc<char>( sz+1 );
-        memcpy( ptr, str, sz+1 );
+        memcpy( ptr, str, sz );
+        ptr[sz] = '\0';
         ret.ptr = ptr;
         ret.idx = m_data.stringData.size();
         m_data.stringMap.emplace( ptr, m_data.stringData.size() );

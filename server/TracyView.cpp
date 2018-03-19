@@ -3438,6 +3438,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
+    ImGui::Separator();
     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_worker.GetDelay() * dmul ) );
     if( ev.cpu_start != -1 )
@@ -3479,6 +3480,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
+    ImGui::Separator();
     ImGui::Text( "GPU execution time: %s", TimeToString( end - ev.gpuStart ) );
     ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     ImGui::Text( "Delay to execution: %s", TimeToString( ev.gpuStart - ev.cpuStart ) );

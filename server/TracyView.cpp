@@ -1702,7 +1702,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     for( const auto& v : m_worker.GetLockMap() )
     {
         const auto& lockmap = v.second;
-        if( !Visible( &lockmap ) || !lockmap.valid ) continue;
+        if( !lockmap.valid || !Visible( &lockmap ) ) continue;
 
         auto it = lockmap.threadMap.find( tid );
         if( it == lockmap.threadMap.end() ) continue;

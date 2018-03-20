@@ -2803,6 +2803,9 @@ void View::DrawFindZone()
                 ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
                 const auto dt = double( tmax - tmin );
+                const auto selThread = m_findZone.selThread;
+                const auto showThreads = m_findZone.showThreads;
+                const auto cumulateTime = m_findZone.cumulateTime;
 
                 if( dt > 0 )
                 {
@@ -2826,7 +2829,7 @@ void View::DrawFindZone()
                             const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
                             const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
 
-                            if( m_findZone.selThread != m_findZone.Unselected )
+                            if( selThread != m_findZone.Unselected )
                             {
                                 if( m_findZone.logTime )
                                 {
@@ -2840,9 +2843,9 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( m_findZone.selThread == ( m_findZone.showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
+                                            if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
                                             {
-                                                if( m_findZone.cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
+                                                if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                             }
                                             if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                         }
@@ -2859,9 +2862,9 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( m_findZone.selThread == ( m_findZone.showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
+                                            if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
                                             {
-                                                if( m_findZone.cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
+                                                if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                             }
                                             if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                         }
@@ -2905,7 +2908,7 @@ void View::DrawFindZone()
                         }
                         else
                         {
-                            if( m_findZone.selThread != m_findZone.Unselected )
+                            if( selThread != m_findZone.Unselected )
                             {
                                 if( m_findZone.logTime )
                                 {
@@ -2919,9 +2922,9 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( m_findZone.selThread == ( m_findZone.showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
+                                            if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
                                             {
-                                                if( m_findZone.cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
+                                                if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                             }
                                         }
                                     }
@@ -2937,9 +2940,9 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( m_findZone.selThread == ( m_findZone.showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
+                                            if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
                                             {
-                                                if( m_findZone.cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
+                                                if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                             }
                                         }
                                     }
@@ -2981,7 +2984,7 @@ void View::DrawFindZone()
 
                         int64_t timeTotal = binTime[0];
                         int64_t maxVal;
-                        if( m_findZone.cumulateTime )
+                        if( cumulateTime )
                         {
                             maxVal = binTime[0];
                             for( int i=1; i<numBins; i++ )
@@ -3004,7 +3007,7 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-                        ImGui::Text( "Max counts: %s", m_findZone.cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
+                        ImGui::Text( "Max counts: %s", cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
 
                         if( m_findZone.highlight.active )
                         {
@@ -3048,7 +3051,7 @@ void View::DrawFindZone()
                             const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
                             for( int i=0; i<numBins; i++ )
                             {
-                                const auto val = m_findZone.cumulateTime ? binTime[i] : bins[i];
+                                const auto val = cumulateTime ? binTime[i] : bins[i];
                                 if( val > 0 )
                                 {
                                     draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFF22DDDD );
@@ -3064,7 +3067,7 @@ void View::DrawFindZone()
                             const auto hAdj = double( Height - 4 ) / maxVal;
                             for( int i=0; i<numBins; i++ )
                             {
-                                const auto val = m_findZone.cumulateTime ? binTime[i] : bins[i];
+                                const auto val = cumulateTime ? binTime[i] : bins[i];
                                 if( val > 0 )
                                 {
                                     draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - val * hAdj ), 0xFF22DDDD );
@@ -3282,6 +3285,10 @@ void View::DrawFindZone()
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();
         auto processed = m_findZone.processed;
+        const auto hmin = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+        const auto hmax = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+        const auto showThreads = m_findZone.showThreads;
+        const auto highlightActive = m_findZone.highlight.active;
         while( processed < sz )
         {
             auto& ev = zones[processed];
@@ -3295,11 +3302,9 @@ void View::DrawFindZone()
                 continue;
             }
 
-            if( m_findZone.highlight.active )
+            if( highlightActive )
             {
-                const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
-                const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-                if( timespan < s || timespan > e )
+                if( timespan < hmin || timespan > hmax )
                 {
                     processed++;
                     continue;
@@ -3307,7 +3312,7 @@ void View::DrawFindZone()
             }
 
             processed++;
-            if( m_findZone.showThreads )
+            if( showThreads )
             {
                 m_findZone.threads[ev.thread].push_back( ev.zone );
             }
@@ -3324,7 +3329,7 @@ void View::DrawFindZone()
         for( auto& v : m_findZone.threads )
         {
             const char* hdrString;
-            if( m_findZone.showThreads )
+            if( showThreads )
             {
                 hdrString = m_worker.GetThreadString( m_worker.DecompressThread( v.first ) );
             }

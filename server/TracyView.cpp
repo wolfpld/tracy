@@ -2751,7 +2751,10 @@ void View::DrawFindZone()
     if( !m_findZone.match.empty() )
     {
         ImGui::Separator();
-        if( ImGui::TreeNode( "Matched source locations" ) )
+        bool expand = ImGui::TreeNode( "Matched source locations" );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%zu)", m_findZone.match.size() );
+        if( expand )
         {
             auto prev = m_findZone.selMatch;
             int idx = 0;

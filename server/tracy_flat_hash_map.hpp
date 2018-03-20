@@ -26,6 +26,13 @@ namespace tracy
 struct prime_number_hash_policy;
 struct power_of_two_hash_policy;
 
+template<typename T>
+struct nohash
+{
+    size_t operator()( const T& v ) { return (size_t)v; }
+    typedef tracy::power_of_two_hash_policy hash_policy;
+};
+
 namespace detailv3
 {
 template<typename Result, typename Functor>

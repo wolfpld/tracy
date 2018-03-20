@@ -24,13 +24,6 @@ namespace tracy
 class FileRead;
 class FileWrite;
 
-template<typename T>
-struct nohash
-{
-    size_t operator()( const T& v ) { return (size_t)v; }
-    typedef tracy::power_of_two_hash_policy hash_policy;
-};
-
 class Worker
 {
 #pragma pack( 1 )

@@ -181,6 +181,7 @@ private:
         bool logTime = false;
         bool cumulateTime = false;
         bool showThreads = true;
+        bool sortByCounts = false;
         Region highlight;
 
         void Reset()

@@ -3295,6 +3295,21 @@ void View::DrawFindZone()
                 m_findZone.ResetThreads();
             }
         }
+        ImGui::SameLine();
+        if( m_findZone.sortByCounts )
+        {
+            if( ImGui::SmallButton( "Sort by order" ) )
+            {
+                m_findZone.sortByCounts = false;
+            }
+        }
+        else
+        {
+            if( ImGui::SmallButton( "Sort by counts" ) )
+            {
+                m_findZone.sortByCounts = true;
+            }
+        }
 
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();
@@ -3338,28 +3353,39 @@ void View::DrawFindZone()
         }
         m_findZone.processed = processed;
 
-        ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
+        Vector<decltype( m_findZone.threads )::iterator> threads;
+        threads.reserve_and_use( m_findZone.threads.size() );
         int idx = 0;
-        for( auto& v : m_findZone.threads )
+        for( auto it = m_findZone.threads.begin(); it != m_findZone.threads.end(); ++it )
+        {
+            threads[idx++] = it;
+        }
+        if( m_findZone.sortByCounts )
+        {
+            std::sort( threads.begin(), threads.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.size() > rhs->second.size(); } );
+        }
+
+        ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
+        for( auto& v : threads )
         {
             const char* hdrString;
             if( showThreads )
             {
-                hdrString = m_worker.GetThreadString( m_worker.DecompressThread( v.first ) );
+                hdrString = m_worker.GetThreadString( m_worker.DecompressThread( v->first ) );
             }
             else
             {
-                hdrString = v.first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v.first ) );
+                hdrString = v->first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v->first ) );
             }
-            ImGui::PushID( idx++ );
-            const bool expand = ImGui::TreeNodeEx( hdrString, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ( v.first == m_findZone.selThread ? ImGuiTreeNodeFlags_Selected : 0 ) );
+            ImGui::PushID( v->first );
+            const bool expand = ImGui::TreeNodeEx( hdrString, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ( v->first == m_findZone.selThread ? ImGuiTreeNodeFlags_Selected : 0 ) );
             if( ImGui::IsItemClicked() )
             {
-                m_findZone.selThread = v.first;
+                m_findZone.selThread = v->first;
             }
             ImGui::PopID();
             ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v.second.size(), true ) );
+            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->second.size(), true ) );
 
             if( expand )
             {
@@ -3374,7 +3400,7 @@ void View::DrawFindZone()
                 ImGui::Separator();
 
                 uint32_t cnt = 0;
-                for( auto& ev : v.second )
+                for( auto& ev : v->second )
                 {
                     const auto end = m_worker.GetZoneEndDirect( *ev );
                     const auto timespan = end - ev->start;

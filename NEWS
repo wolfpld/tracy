@@ -5,8 +5,9 @@ v0.2 (xxxx-xx-xx)
 - Visual refresh (new color scheme).
 - Added optional support for live in-depth zone analysis.
   - Ability to search for zones matching a query.
-  - List occurrences of a zone, grouped by thread, or by user text.
   - Histogram of zone time spans.
+  - List occurrences of a zone, grouped by thread, or by user text.
+  - Zone groups can be selected and highlighted on histogram graph.
   - Support for linear and logarithmic display of time and values.
   - Histogram bins can show zone counts or total execution time.
   - Listed zones can be narrowed down by data range selection on histogram.

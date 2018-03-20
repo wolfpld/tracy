@@ -13,6 +13,8 @@
 #include "TracyFileWrite.hpp"
 #include "TracyWorker.hpp"
 
+#include "tracy_flat_hash_map.hpp"
+
 namespace tracy
 {
 
@@ -61,7 +63,7 @@ Worker::Worker( FileRead& f )
     m_data.frames.reserve_and_use( sz );
     f.Read( m_data.frames.data(), sizeof( uint64_t ) * sz );
 
-    std::unordered_map<uint64_t, const char*> pointerMap;
+    flat_hash_map<uint64_t, const char*, nohash<uint64_t>> pointerMap;
 
     f.Read( &sz, sizeof( sz ) );
     for( uint64_t i=0; i<sz; i++ )
@@ -173,7 +175,7 @@ Worker::Worker( FileRead& f )
         m_data.lockMap.emplace( id, std::move( lockmap ) );
     }
 
-    std::unordered_map<uint64_t, MessageData*> msgMap;
+    flat_hash_map<uint64_t, MessageData*, nohash<uint64_t>> msgMap;
     f.Read( &sz, sizeof( sz ) );
     m_data.messages.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )

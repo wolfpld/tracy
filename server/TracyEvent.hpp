@@ -177,7 +177,7 @@ struct LockMap
 {
     uint32_t srcloc;
     Vector<LockEvent*> timeline;
-    std::unordered_map<uint64_t, uint8_t> threadMap;
+    flat_hash_map<uint64_t, uint8_t, nohash<uint64_t>> threadMap;
     std::vector<uint64_t> threadList;
     LockType type;
     bool valid;

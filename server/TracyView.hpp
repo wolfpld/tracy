@@ -169,11 +169,14 @@ private:
     Animation m_zoomAnim;
 
     struct {
+        enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
+
         bool show;
         std::vector<int32_t> match;
         std::map<uint64_t, Vector<ZoneEvent*>> threads;
         size_t processed;
         int selMatch = 0;
+        uint64_t selThread = Unselected;
         char pattern[1024] = { "" };
         bool logVal = false;
         bool logTime = false;
@@ -186,6 +189,7 @@ private:
             ResetThreads();
             match.clear();
             selMatch = 0;
+            selThread = Unselected;
             highlight.active = false;
         }
 

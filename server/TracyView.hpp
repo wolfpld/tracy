@@ -103,28 +103,27 @@ private:
     void FindZones();
 #endif
 
-    template <typename T>
-    bool& Visible( const T* ptr )
-    {
-        static std::map <const T*, bool> visible;
-        if( visible.find( ptr ) == visible.end() )
-        {
-            visible[ptr] = true;
-        }
+    flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
+    flat_hash_map<const void*, bool, nohash<const void*>> m_showFull;
 
-        return visible[ptr];
+    tracy_force_inline bool& Visible( const void* ptr )
+    {
+        auto it = m_visible.find( ptr );
+        if( it == m_visible.end() )
+        {
+            it = m_visible.emplace( ptr, true ).first;
+        }
+        return it->second;
     }
 
-    template <typename T>
-    bool& ShowFull( const T* ptr )
+    tracy_force_inline bool& ShowFull( const void* ptr )
     {
-        static std::map <const T*, bool> showFull;
-        if( showFull.find( ptr ) == showFull.end() )
+        auto it = m_showFull.find( ptr );
+        if( it == m_showFull.end() )
         {
-            showFull[ptr] = true;
+            it = m_showFull.emplace( ptr, true ).first;
         }
-
-        return showFull[ptr];
+        return it->second;
     }
 
     Worker m_worker;

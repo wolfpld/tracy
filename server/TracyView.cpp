@@ -2823,6 +2823,8 @@ void View::DrawFindZone()
                         auto selBin = std::make_unique<int64_t[]>( numBins );
                         memset( selBin.get(), 0, sizeof( int64_t ) * numBins );
 
+                        int64_t selBinTime = 0;
+
                         int64_t selectionTime = 0;
                         if( m_findZone.highlight.active )
                         {
@@ -2846,6 +2848,7 @@ void View::DrawFindZone()
                                             if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
+                                                selBinTime += timeSpan;
                                             }
                                             if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                         }
@@ -2865,6 +2868,7 @@ void View::DrawFindZone()
                                             if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
+                                                selBinTime += timeSpan;
                                             }
                                             if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                         }
@@ -2925,6 +2929,7 @@ void View::DrawFindZone()
                                             if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
+                                                selBinTime += timeSpan;
                                             }
                                         }
                                     }
@@ -2943,6 +2948,7 @@ void View::DrawFindZone()
                                             if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
+                                                selBinTime += timeSpan;
                                             }
                                         }
                                     }
@@ -3034,6 +3040,14 @@ void View::DrawFindZone()
                         else
                         {
                             ImGui::Text( "Selection time: none" );
+                        }
+                        if( selThread != m_findZone.Unselected )
+                        {
+                            ImGui::Text( "Zone group time: %s", TimeToString( selBinTime ) );
+                        }
+                        else
+                        {
+                            ImGui::Text( "Zone group time: none" );
                         }
 
                         enum { Height = 200 };

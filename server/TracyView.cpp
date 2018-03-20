@@ -3213,6 +3213,7 @@ void View::DrawFindZone()
         }
         m_findZone.processed = processed;
 
+        ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
         int idx = 0;
         for( auto& v : m_findZone.threads )
         {
@@ -3281,6 +3282,7 @@ void View::DrawFindZone()
                 ImGui::TreePop();
             }
         }
+        ImGui::EndChild();
     }
 #endif
 

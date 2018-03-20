@@ -206,6 +206,12 @@ Worker::Worker( FileRead& f )
         m_data.threads.push_back_no_space_check( td );
     }
 
+    for( auto& v : m_data.sourceLocationZones )
+    {
+        auto& zones = v.second.zones;
+        std::sort( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
+    }
+
     f.Read( &sz, sizeof( sz ) );
     m_data.gpuData.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )

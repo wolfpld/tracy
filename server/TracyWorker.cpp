@@ -14,6 +14,7 @@
 #include "TracyWorker.hpp"
 
 #include "tracy_flat_hash_map.hpp"
+#include "tracy_pdqsort.h"
 
 namespace tracy
 {
@@ -212,7 +213,7 @@ Worker::Worker( FileRead& f )
     for( auto& v : m_data.sourceLocationZones )
     {
         auto& zones = v.second.zones;
-        std::sort( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
+        pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
     }
 #endif
 

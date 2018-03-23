@@ -234,7 +234,7 @@ private:
     flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
     flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_pendingPlots;
     flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_plotMap;
-    std::unordered_map<const char*, PlotData*, charutil::Hasher, charutil::Comparator> m_plotRev;
+    flat_hash_map<const char*, PlotData*, charutil::HasherPOT, charutil::Comparator> m_plotRev;
     flat_hash_map<uint64_t, int32_t, nohash<uint64_t>> m_pendingSourceLocationPayload;
     Vector<uint64_t> m_sourceLocationQueue;
     flat_hash_map<uint64_t, uint32_t, nohash<uint64_t>> m_sourceLocationShrink;

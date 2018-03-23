@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "tracy_flat_hash_map.hpp"
+
 namespace tracy
 {
 namespace charutil
@@ -44,6 +46,11 @@ struct Hasher
     {
         return hash( key );
     }
+};
+
+struct HasherPOT : public Hasher
+{
+    typedef tracy::power_of_two_hash_policy hash_policy;
 };
 
 struct Comparator

@@ -6,7 +6,6 @@
 #include <map>
 #include <string>
 #include <thread>
-#include <unordered_map>
 #include <vector>
 
 #include "../common/tracy_lz4.hpp"

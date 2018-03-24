@@ -3516,7 +3516,7 @@ void View::DrawStatistics()
 
         auto& srcloc = m_worker.GetSourceLocation( v->first );
         auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-        if( ImGui::Selectable( name, false, ImGuiSelectableFlags_SpanAllColumns ) )
+        if( ImGui::Selectable( name, m_findZone.show && m_findZone.match[m_findZone.selMatch] == v->first, ImGuiSelectableFlags_SpanAllColumns ) )
         {
             m_findZone.show = true;
             m_findZone.Reset();

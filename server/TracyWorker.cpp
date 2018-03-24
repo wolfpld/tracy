@@ -436,17 +436,16 @@ uint16_t Worker::CompressThread( uint64_t thread )
     }
     else
     {
-        auto sz = m_data.threadExpand.size();
-        m_data.threadExpand.push_back( thread );
-        m_data.threadMap.emplace( thread, sz );
-        return sz;
+        return CompressThreadNew( thread );
     }
 }
 
-uint64_t Worker::DecompressThread( uint16_t thread ) const
+uint16_t Worker::CompressThreadNew( uint64_t thread )
 {
-    assert( thread < m_data.threadExpand.size() );
-    return m_data.threadExpand[thread];
+    auto sz = m_data.threadExpand.size();
+    m_data.threadExpand.push_back( thread );
+    m_data.threadMap.emplace( thread, sz );
+    return sz;
 }
 
 void Worker::Exec()

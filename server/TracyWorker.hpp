@@ -129,8 +129,8 @@ public:
     const SourceLocationZones& GetZonesForSourceLocation( int32_t srcloc ) const;
 #endif
 
-    uint16_t CompressThread( uint64_t thread );
-    uint64_t DecompressThread( uint16_t thread ) const;
+    tracy_force_inline uint16_t CompressThread( uint64_t thread );
+    tracy_force_inline uint64_t DecompressThread( uint16_t thread ) const { assert( thread < m_data.threadExpand.size() ); return m_data.threadExpand[thread]; }
 
     NonRecursiveBenaphore& GetMbpsDataLock() { return m_mbpsData.lock; }
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }
@@ -199,6 +199,7 @@ private:
     void HandlePostponedPlots();
 
     StringLocation StoreString( char* str, size_t sz );
+    uint16_t CompressThreadNew( uint64_t thread );
 
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread );
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );

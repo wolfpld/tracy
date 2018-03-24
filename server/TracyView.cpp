@@ -288,20 +288,23 @@ void View::DrawImpl()
         DrawConnection();
     }
 
+    const auto th = ImGui::GetTextLineHeight();
+    const auto bw = 4.7f * th;
+
     std::lock_guard<NonRecursiveBenaphore> lock( m_worker.GetDataLock() );
     ImGui::Begin( m_worker.GetCaptureName().c_str(), nullptr, ImVec2( 1550, 800 ), -1, ImGuiWindowFlags_NoScrollbar );
     if( !m_worker.IsDataStatic() )
     {
-        if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 70, 0 ) ) ) m_pause = !m_pause;
+        if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( bw, 0 ) ) ) m_pause = !m_pause;
         ImGui::SameLine();
     }
-    if( ImGui::Button( "Options", ImVec2( 70, 0 ) ) ) m_showOptions = true;
+    if( ImGui::Button( "Options", ImVec2( bw, 0 ) ) ) m_showOptions = true;
     ImGui::SameLine();
-    if( ImGui::Button( "Messages", ImVec2( 70, 0 ) ) ) m_showMessages = true;
+    if( ImGui::Button( "Messages", ImVec2( bw, 0 ) ) ) m_showMessages = true;
     ImGui::SameLine();
-    if( ImGui::Button( "Find Zone", ImVec2( 70, 0 ) ) ) m_findZone.show = true;
+    if( ImGui::Button( "Find Zone", ImVec2( bw, 0 ) ) ) m_findZone.show = true;
     ImGui::SameLine();
-    if( ImGui::Button( "Statistics", ImVec2( 70, 0 ) ) ) m_showStatistics = true;
+    if( ImGui::Button( "Statistics", ImVec2( bw, 0 ) ) ) m_showStatistics = true;
     ImGui::SameLine();
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_worker.GetFrameCount(), TimeToString( m_worker.GetLastTime() - m_worker.GetFrameBegin( 0 ) ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
     DrawFrames();

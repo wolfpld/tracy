@@ -3459,7 +3459,62 @@ void View::DrawStatistics()
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable statistics view." );
 #else
-    
+    auto& slz = m_worker.GetSourceLocationZones();
+    Vector<decltype(slz.begin())> srcloc;
+    srcloc.reserve( slz.size() );
+    for( auto it = slz.begin(); it != slz.end(); ++it )
+    {
+        if( it->second.total != 0 )
+        {
+            srcloc.push_back_no_space_check( it );
+        }
+    }
+    pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total > rhs->second.total; } );
+
+    ImGui::Text( "Recorded source locations: %s", RealToString( srcloc.size(), true ) );
+
+    ImGui::Columns( 5 );
+    ImGui::Separator();
+    ImGui::Text( "Name" );
+    ImGui::NextColumn();
+    ImGui::Text( "Location" );
+    ImGui::NextColumn();
+    ImGui::Text( "Total time" );
+    ImGui::NextColumn();
+    ImGui::Text( "Counts" );
+    ImGui::NextColumn();
+    ImGui::Text( "MTPC" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Mean time per call" );
+        ImGui::EndTooltip();
+    }
+    ImGui::NextColumn();
+    ImGui::Separator();
+
+    for( auto& v : srcloc )
+    {
+        ImGui::PushID( v->first );
+
+        auto& srcloc = m_worker.GetSourceLocation( v->first );
+        if( ImGui::Selectable( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), false, ImGuiSelectableFlags_SpanAllColumns ) )
+        {
+        }
+        ImGui::NextColumn();
+        ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+        ImGui::NextColumn();
+        ImGui::Text( "%s", TimeToString( v->second.total ) );
+        ImGui::NextColumn();
+        ImGui::Text( "%s", RealToString( v->second.zones.size(), true ) );
+        ImGui::NextColumn();
+        ImGui::Text( "%s", TimeToString( v->second.total / v->second.zones.size() ) );
+        ImGui::NextColumn();
+
+        ImGui::PopID();
+    }
 #endif
     ImGui::End();
 }

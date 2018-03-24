@@ -143,6 +143,7 @@ public:
 
     bool HasData() const { return m_hasData.load( std::memory_order_acquire ); }
     bool IsConnected() const { return m_connected.load( std::memory_order_relaxed ); }
+    bool IsDataStatic() const { return !m_thread.joinable(); }
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
 
     void Write( FileWrite& f );

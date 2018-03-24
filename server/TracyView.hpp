@@ -164,6 +164,7 @@ private:
     bool m_drawLocks;
     bool m_drawPlots;
     bool m_onlyContendedLocks;
+    int m_statSort;
 
     Namespace m_namespace;
     Animation m_zoomAnim;

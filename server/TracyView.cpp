@@ -204,6 +204,7 @@ View::View( FileRead& f )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_onlyContendedLocks( false )
+    , m_statSort( 0 )
     , m_namespace( Namespace::Full )
 {
     assert( s_instance == nullptr );
@@ -3469,7 +3470,21 @@ void View::DrawStatistics()
             srcloc.push_back_no_space_check( it );
         }
     }
-    pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total > rhs->second.total; } );
+    switch( m_statSort )
+    {
+    case 0:
+        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total > rhs->second.total; } );
+        break;
+    case 1:
+        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.zones.size() > rhs->second.zones.size(); } );
+        break;
+    case 2:
+        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total / lhs->second.zones.size() > rhs->second.total / rhs->second.zones.size(); } );
+        break;
+    default:
+        assert( false );
+        break;
+    }
 
     ImGui::Text( "Recorded source locations: %s", RealToString( srcloc.size(), true ) );
 
@@ -3479,11 +3494,11 @@ void View::DrawStatistics()
     ImGui::NextColumn();
     ImGui::Text( "Location" );
     ImGui::NextColumn();
-    ImGui::Text( "Total time" );
+    if( ImGui::Button( "Total time" ) ) m_statSort = 0;
     ImGui::NextColumn();
-    ImGui::Text( "Counts" );
+    if( ImGui::Button( "Counts" ) ) m_statSort = 1;
     ImGui::NextColumn();
-    ImGui::Text( "MTPC" );
+    if( ImGui::Button( "MTPC" ) ) m_statSort = 2;
     ImGui::SameLine();
     ImGui::TextDisabled( "(?)" );
     if( ImGui::IsItemHovered() )

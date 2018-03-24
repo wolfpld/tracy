@@ -167,6 +167,7 @@ View::View( const char* addr )
     , m_gpuEnd( 0 )
     , m_showOptions( false )
     , m_showMessages( false )
+    , m_showStatistics( false )
     , m_drawGpuZones( true )
     , m_drawZones( true )
     , m_drawLocks( true )
@@ -294,7 +295,9 @@ void View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Messages", ImVec2( 70, 0 ) ) ) m_showMessages = true;
     ImGui::SameLine();
-    if ( ImGui::Button( "Find Zone", ImVec2( 70, 0 ) ) ) m_findZone.show = true;
+    if( ImGui::Button( "Find Zone", ImVec2( 70, 0 ) ) ) m_findZone.show = true;
+    ImGui::SameLine();
+    if( ImGui::Button( "Statistics", ImVec2( 70, 0 ) ) ) m_showStatistics = true;
     ImGui::SameLine();
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_worker.GetFrameCount(), TimeToString( m_worker.GetLastTime() - m_worker.GetFrameBegin( 0 ) ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
     DrawFrames();
@@ -309,6 +312,7 @@ void View::DrawImpl()
     if( m_showOptions ) DrawOptions();
     if( m_showMessages ) DrawMessages();
     if( m_findZone.show ) DrawFindZone();
+    if( m_showStatistics ) DrawStatistics();
 
     if( m_zoomAnim.active )
     {
@@ -3444,6 +3448,18 @@ void View::DrawFindZone()
     }
 #endif
 
+    ImGui::End();
+}
+
+void View::DrawStatistics()
+{
+    ImGui::Begin( "Statistics", &m_showStatistics );
+#ifdef TRACY_NO_STATISTICS
+    ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
+    ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable statistics view." );
+#else
+
+#endif
     ImGui::End();
 }
 

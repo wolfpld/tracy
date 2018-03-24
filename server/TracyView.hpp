@@ -73,6 +73,7 @@ private:
     void DrawOptions();
     void DrawMessages();
     void DrawFindZone();
+    void DrawStatistics();
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
@@ -157,6 +158,7 @@ private:
 
     bool m_showOptions;
     bool m_showMessages;
+    bool m_showStatistics;
     bool m_drawGpuZones;
     bool m_drawZones;
     bool m_drawLocks;

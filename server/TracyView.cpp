@@ -289,7 +289,7 @@ void View::DrawImpl()
     }
 
     std::lock_guard<NonRecursiveBenaphore> lock( m_worker.GetDataLock() );
-    ImGui::Begin( m_worker.GetCaptureName().c_str(), nullptr, ImGuiWindowFlags_NoScrollbar );
+    ImGui::Begin( m_worker.GetCaptureName().c_str(), nullptr, ImVec2( 1550, 800 ), -1, ImGuiWindowFlags_NoScrollbar );
     if( !m_worker.IsDataStatic() )
     {
         if( ImGui::Button( m_pause ? "Resume" : "Pause", ImVec2( 70, 0 ) ) ) m_pause = !m_pause;

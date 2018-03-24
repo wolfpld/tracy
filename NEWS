@@ -24,6 +24,7 @@ v0.2 (xxxx-xx-xx)
 - Zone info windows now show zone thread.
 - Hide pause/resume button if there's no data connection (i.e. trace was
   loaded from file).
+- Source location statistics view has been added.
 
 
 v0.1 (2017-12-18)

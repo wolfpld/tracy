@@ -248,7 +248,7 @@ Worker::Worker( FileRead& f )
 Worker::~Worker()
 {
     Shutdown();
-    if ( m_thread.joinable() )
+    if( m_thread.joinable() )
     {
         m_thread.join();
     }

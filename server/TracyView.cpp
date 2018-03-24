@@ -251,7 +251,7 @@ const char* View::ShortenNamespace( const char* name ) const
 void View::DrawHelpMarker( const char* desc ) const
 {
     ImGui::TextDisabled( "(?)" );
-    if ( ImGui::IsItemHovered() )
+    if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
         ImGui::PushTextWrapPos( 450.0f );

@@ -20,7 +20,8 @@ The following compilers are supported:
 - gcc
 - clang
 
-[A quick FAQ.](FAQ.md)
+[A quick FAQ.](FAQ.md)  
+[List of changes.](NEWS)
 
 ### High-level overview
 

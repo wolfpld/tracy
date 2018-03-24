@@ -130,8 +130,10 @@ public:
     const SourceLocation& GetSourceLocation( int32_t srcloc ) const;
 
     std::vector<int32_t> GetMatchingSourceLocation( const char* query ) const;
+
 #ifndef TRACY_NO_STATISTICS
     const SourceLocationZones& GetZonesForSourceLocation( int32_t srcloc ) const;
+    const flat_hash_map<int32_t, SourceLocationZones, nohash<int32_t>>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
 #endif
 
     tracy_force_inline uint16_t CompressThread( uint64_t thread );

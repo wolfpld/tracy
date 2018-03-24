@@ -1195,7 +1195,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 if( d > maxdepth ) maxdepth = d;
             }
 
-            if( ev.end != -1 && m_lastCpu != ev.cpu_end )
+            if( ev.end >= 0 && m_lastCpu != ev.cpu_end )
             {
                 m_lastCpu = ev.cpu_end;
                 migration = true;
@@ -3324,7 +3324,7 @@ void View::DrawFindZone()
         while( processed < sz )
         {
             auto& ev = zones[processed];
-            if( ev.zone->end == -1 ) break;
+            if( ev.zone->end < 0 ) break;
 
             const auto end = m_worker.GetZoneEndDirect( *ev.zone );
             const auto timespan = end - ev.zone->start;
@@ -3603,7 +3603,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_worker.GetDelay() * dmul ) );
     if( ev.cpu_start != -1 )
     {
-        if( ev.end == -1 || ev.cpu_start == ev.cpu_end )
+        if( ev.end < 0 || ev.cpu_start == ev.cpu_end )
         {
             ImGui::Text( "CPU: %i", ev.cpu_start );
         }
@@ -3659,7 +3659,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
         {
             auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.start, [] ( const auto& l, const auto& r ) { return l < r->start; } );
             if( it != timeline->begin() ) --it;
-            if( zone.end != -1 && (*it)->start > zone.end ) break;
+            if( zone.end >= 0 && (*it)->start > zone.end ) break;
             if( *it == &zone ) return parent;
             if( (*it)->child.empty() ) break;
             parent = *it;
@@ -3680,7 +3680,7 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
         {
             auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
             if( it != timeline->begin() ) --it;
-            if( zone.gpuEnd != -1 && (*it)->gpuStart > zone.gpuEnd ) break;
+            if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
             if( *it == &zone ) return parent;
             if( (*it)->child.empty() ) break;
             parent = *it;
@@ -3700,7 +3700,7 @@ uint64_t View::GetZoneThread( const ZoneEvent& zone ) const
         {
             auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.start, [] ( const auto& l, const auto& r ) { return l < r->start; } );
             if( it != timeline->begin() ) --it;
-            if( zone.end != -1 && (*it)->start > zone.end ) break;
+            if( zone.end >= 0 && (*it)->start > zone.end ) break;
             if( *it == &zone ) return thread->id;
             if( (*it)->child.empty() ) break;
             timeline = &(*it)->child;
@@ -3719,7 +3719,7 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
         {
             auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
             if( it != timeline->begin() ) --it;
-            if( zone.gpuEnd != -1 && (*it)->gpuStart > zone.gpuEnd ) break;
+            if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
             if( *it == &zone ) return ctx->thread;
             if( (*it)->child.empty() ) break;
             timeline = &(*it)->child;

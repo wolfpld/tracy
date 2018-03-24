@@ -115,8 +115,8 @@ public:
     // GetZoneEndDirect() will only return zone's direct timing data, without looking at children.
     static int64_t GetZoneEnd( const ZoneEvent& ev );
     static int64_t GetZoneEnd( const GpuEvent& ev );
-    static tracy_force_inline int64_t GetZoneEndDirect( const ZoneEvent& ev ) { return ev.end != -1 ? ev.end : ev.start; }
-    static tracy_force_inline int64_t GetZoneEndDirect( const GpuEvent& ev ) { return ev.gpuEnd != -1 ? ev.gpuEnd : ev.gpuStart; }
+    static tracy_force_inline int64_t GetZoneEndDirect( const ZoneEvent& ev ) { return ev.end >= 0 ? ev.end : ev.start; }
+    static tracy_force_inline int64_t GetZoneEndDirect( const GpuEvent& ev ) { return ev.gpuEnd >= 0 ? ev.gpuEnd : ev.gpuStart; }
 
     const char* GetString( uint64_t ptr ) const;
     const char* GetString( const StringRef& ref ) const;

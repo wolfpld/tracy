@@ -304,7 +304,7 @@ int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
     auto ptr = &ev;
     for(;;)
     {
-        if( ptr->end != -1 ) return ptr->end;
+        if( ptr->end >= 0 ) return ptr->end;
         if( ptr->child.empty() ) return ptr->start;
         ptr = ptr->child.back();
     }
@@ -315,7 +315,7 @@ int64_t Worker::GetZoneEnd( const GpuEvent& ev )
     auto ptr = &ev;
     for(;;)
     {
-        if( ptr->gpuEnd != -1 ) return ptr->gpuEnd;
+        if( ptr->gpuEnd >= 0 ) return ptr->gpuEnd;
         if( ptr->child.empty() ) return ptr->gpuStart;
         ptr = ptr->child.back();
     }
@@ -1664,7 +1664,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
         assert( it != m_data.sourceLocationZones.end() );
         it->second.zones.push_back( ZoneThreadData { zone, thread } );
 
-        if( zone->end != -1 )
+        if( zone->end >= 0 )
         {
             const auto timeSpan = zone->end - zone->start;
             if( timeSpan > 0 )

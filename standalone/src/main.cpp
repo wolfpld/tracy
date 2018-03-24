@@ -15,8 +15,19 @@ static void error_callback(int error, const char* description)
     fprintf(stderr, "Error %d: %s\n", error, description);
 }
 
-int main(int, char**)
+int main( int argc, char** argv )
 {
+    std::unique_ptr<tracy::View> view;
+
+    if( argc == 2 )
+    {
+        auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
+        if( f )
+        {
+            view = std::make_unique<tracy::View>( *f );
+        }
+    }
+
     // Setup window
     glfwSetErrorCallback(error_callback);
     if (!glfwInit())
@@ -65,7 +76,6 @@ int main(int, char**)
     ImVec4 clear_color = ImColor(114, 144, 154);
 
     char addr[1024] = { "127.0.0.1" };
-    std::unique_ptr<tracy::View> view;
 
     // Main loop
     while (!glfwWindowShouldClose(window))

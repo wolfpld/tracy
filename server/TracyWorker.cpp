@@ -1271,6 +1271,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         assert( it != m_data.sourceLocationZones.end() );
         it->second.min = std::min( it->second.min, timeSpan );
         it->second.max = std::max( it->second.max, timeSpan );
+        it->second.total += timeSpan;
     }
 #endif
 }
@@ -1671,6 +1672,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
             {
                 it->second.min = std::min( it->second.min, timeSpan );
                 it->second.max = std::max( it->second.max, timeSpan );
+                it->second.total += timeSpan;
             }
         }
 #endif

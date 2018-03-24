@@ -35,11 +35,16 @@ class Worker
 
     struct SourceLocationZones
     {
-        SourceLocationZones() : min( std::numeric_limits<int64_t>::max() ), max( std::numeric_limits<int64_t>::min() ) {}
+        SourceLocationZones()
+            : min( std::numeric_limits<int64_t>::max() )
+            , max( std::numeric_limits<int64_t>::min() )
+            , total( 0 )
+        {}
 
         Vector<ZoneThreadData> zones;
         int64_t min;
         int64_t max;
+        int64_t total;
     };
 
     struct DataBlock

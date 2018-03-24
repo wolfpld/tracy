@@ -3409,7 +3409,6 @@ void View::DrawFindZone()
                 ImGui::NextColumn();
                 ImGui::Separator();
 
-                uint32_t cnt = 0;
                 for( auto& ev : v->second )
                 {
                     const auto end = m_worker.GetZoneEndDirect( *ev );
@@ -3440,7 +3439,6 @@ void View::DrawFindZone()
                     ImGui::NextColumn();
 
                     ImGui::PopID();
-                    cnt++;
                 }
                 ImGui::Columns( 1 );
                 ImGui::Separator();

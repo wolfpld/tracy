@@ -2751,7 +2751,7 @@ void View::DrawFindZone()
     if( !m_findZone.match.empty() )
     {
         ImGui::Separator();
-        bool expand = ImGui::TreeNode( "Matched source locations" );
+        bool expand = ImGui::TreeNodeEx( "Matched source locations", ImGuiTreeNodeFlags_DefaultOpen );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_findZone.match.size() );
         if( expand )
@@ -2778,7 +2778,7 @@ void View::DrawFindZone()
 
         ImGui::Separator();
 
-        if( ImGui::TreeNode( "Histogram" ) )
+        if( ImGui::TreeNodeEx( "Histogram", ImGuiTreeNodeFlags_DefaultOpen ) )
         {
             const auto ty = ImGui::GetFontSize();
 

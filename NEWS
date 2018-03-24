@@ -27,6 +27,8 @@ v0.2 (xxxx-xx-xx)
 - Source location statistics view has been added.
 - Fixed crash when a saved trace was opened, but no trace capture session
   was performed before.
+- Standalone server will now open trace files passed as an argument to the
+  executable.
 
 
 v0.1 (2017-12-18)

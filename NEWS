@@ -25,6 +25,8 @@ v0.2 (xxxx-xx-xx)
 - Hide pause/resume button if there's no data connection (i.e. trace was
   loaded from file).
 - Source location statistics view has been added.
+- Fixed crash when a saved trace was opened, but no trace capture session
+  was performed before.
 
 
 v0.1 (2017-12-18)

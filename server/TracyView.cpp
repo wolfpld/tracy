@@ -3500,8 +3500,13 @@ void View::DrawStatistics()
         ImGui::PushID( v->first );
 
         auto& srcloc = m_worker.GetSourceLocation( v->first );
-        if( ImGui::Selectable( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), false, ImGuiSelectableFlags_SpanAllColumns ) )
+        auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+        if( ImGui::Selectable( name, false, ImGuiSelectableFlags_SpanAllColumns ) )
         {
+            m_findZone.show = true;
+            m_findZone.Reset();
+            m_findZone.match.emplace_back( v->first );
+            strcpy( m_findZone.pattern, name );
         }
         ImGui::NextColumn();
         ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );

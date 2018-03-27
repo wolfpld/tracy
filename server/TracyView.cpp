@@ -2466,14 +2466,17 @@ void View::DrawZoneInfoWindow()
         ImGui::TextDisabled( "(%s)", RealToString( zoneTrace.size(), true ) );
         if( expand )
         {
+            int idx = 0;
             for( auto& v : zoneTrace )
             {
                 const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
                 const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+                ImGui::PushID( idx++ );
                 auto sel = ImGui::Selectable( txt, false );
                 auto hover = ImGui::IsItemHovered();
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                ImGui::PopID();
                 if( sel )
                 {
                     m_zoneInfoWindow = v;
@@ -2527,6 +2530,7 @@ void View::DrawZoneInfoWindow()
                 const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
                 const auto txt = csl.name.active ? m_worker.GetString( csl.name ) : m_worker.GetString( csl.function );
                 bool b = false;
+                ImGui::PushID( (int)i );
                 if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
                     m_zoneInfoWindow = &cev;
@@ -2540,6 +2544,7 @@ void View::DrawZoneInfoWindow()
                     }
                     ZoneTooltip( cev );
                 }
+                ImGui::PopID();
                 ImGui::NextColumn();
                 const auto part = double( ctt[cti[i]] ) / ztime;
                 char buf[128];
@@ -2620,14 +2625,17 @@ void View::DrawGpuInfoWindow()
         ImGui::TextDisabled( "(%s)", RealToString( zoneTrace.size(), true ) );
         if( expand )
         {
+            int idx = 0;
             for( auto& v : zoneTrace )
             {
                 const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
                 const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+                ImGui::PushID( idx++ );
                 auto sel = ImGui::Selectable( txt, false );
                 auto hover = ImGui::IsItemHovered();
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                ImGui::PopID();
                 if( sel )
                 {
                     m_gpuInfoWindow = v;
@@ -2680,6 +2688,7 @@ void View::DrawGpuInfoWindow()
                 auto& cev = *ev.child[cti[i]];
                 const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
                 bool b = false;
+                ImGui::PushID( (int)i );
                 if( ImGui::Selectable( m_worker.GetString( csl.name ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
                     m_gpuInfoWindow = &cev;
@@ -2693,6 +2702,7 @@ void View::DrawGpuInfoWindow()
                     }
                     ZoneTooltip( cev );
                 }
+                ImGui::PopID();
                 ImGui::NextColumn();
                 const auto part = double( ctt[cti[i]] ) / ztime;
                 char buf[128];

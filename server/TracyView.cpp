@@ -2470,9 +2470,23 @@ void View::DrawZoneInfoWindow()
             {
                 const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
                 const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
-                ImGui::Text( "%s", txt );
+                auto sel = ImGui::Selectable( txt, false );
+                auto hover = ImGui::IsItemHovered();
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                if( sel )
+                {
+                    m_zoneInfoWindow = v;
+                }
+                if( hover )
+                {
+                    m_zoneHighlight = v;
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToZone( *v );
+                    }
+                    ZoneTooltip( *v );
+                }
             }
             ImGui::TreePop();
         }
@@ -2610,9 +2624,23 @@ void View::DrawGpuInfoWindow()
             {
                 const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
                 const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
-                ImGui::Text( "%s", txt );
+                auto sel = ImGui::Selectable( txt, false );
+                auto hover = ImGui::IsItemHovered();
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                if( sel )
+                {
+                    m_gpuInfoWindow = v;
+                }
+                if( hover )
+                {
+                    m_gpuHighlight = v;
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToZone( *v );
+                    }
+                    ZoneTooltip( *v );
+                }
             }
             ImGui::TreePop();
         }

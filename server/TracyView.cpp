@@ -2466,43 +2466,49 @@ void View::DrawZoneInfoWindow()
 
     if( !ev.child.empty() )
     {
-        const auto ty = ImGui::GetTextLineHeight();
-        ImGui::Columns( 2 );
         ImGui::Separator();
-        ImGui::Text( "Child zones: %s", RealToString( ev.child.size(), true ) );
-        ImGui::NextColumn();
-        char buf[128];
-        sprintf( buf, "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
-        ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
-        ImGui::NextColumn();
-        ImGui::Separator();
-        for( size_t i=0; i<ev.child.size(); i++ )
+        bool expand = ImGui::TreeNodeEx( "Child zones", ImGuiTreeNodeFlags_DefaultOpen );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( ev.child.size(), true ) );
+        if( expand )
         {
-            auto& cev = *ev.child[cti[i]];
-            const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
-            const auto txt = csl.name.active ? m_worker.GetString( csl.name ) : m_worker.GetString( csl.function );
-            bool b = false;
-            if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
-            {
-                m_zoneInfoWindow = &cev;
-            }
-            if( ImGui::IsItemHovered() )
-            {
-                m_zoneHighlight = &cev;
-                if( ImGui::IsMouseClicked( 2 ) )
-                {
-                    ZoomToZone( cev );
-                }
-                ZoneTooltip( cev );
-            }
+            const auto ty = ImGui::GetTextLineHeight();
+            ImGui::Columns( 2 );
+            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Exclusive time" );
             ImGui::NextColumn();
-            const auto part = double( ctt[cti[i]] ) / ztime;
             char buf[128];
-            sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
-            ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+            sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+            ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
+            for( size_t i=0; i<ev.child.size(); i++ )
+            {
+                auto& cev = *ev.child[cti[i]];
+                const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
+                const auto txt = csl.name.active ? m_worker.GetString( csl.name ) : m_worker.GetString( csl.function );
+                bool b = false;
+                if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                {
+                    m_zoneInfoWindow = &cev;
+                }
+                if( ImGui::IsItemHovered() )
+                {
+                    m_zoneHighlight = &cev;
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToZone( cev );
+                    }
+                    ZoneTooltip( cev );
+                }
+                ImGui::NextColumn();
+                const auto part = double( ctt[cti[i]] ) / ztime;
+                char buf[128];
+                sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+                ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+                ImGui::NextColumn();
+            }
+            ImGui::EndColumns();
+            ImGui::TreePop();
         }
-        ImGui::EndColumns();
     }
 
     ImGui::End();
@@ -2573,42 +2579,48 @@ void View::DrawGpuInfoWindow()
 
     if( !ev.child.empty() )
     {
-        const auto ty = ImGui::GetTextLineHeight();
-        ImGui::Columns( 2 );
         ImGui::Separator();
-        ImGui::Text( "Child zones: %s", RealToString( ev.child.size(), true ) );
-        ImGui::NextColumn();
-        char buf[128];
-        sprintf( buf, "Exclusive time: %s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
-        ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
-        ImGui::NextColumn();
-        ImGui::Separator();
-        for( size_t i=0; i<ev.child.size(); i++ )
+        bool expand = ImGui::TreeNodeEx( "Child zones", ImGuiTreeNodeFlags_DefaultOpen );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( ev.child.size(), true ) );
+        if( expand )
         {
-            auto& cev = *ev.child[cti[i]];
-            const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
-            bool b = false;
-            if( ImGui::Selectable( m_worker.GetString( csl.name ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
-            {
-                m_gpuInfoWindow = &cev;
-            }
-            if( ImGui::IsItemHovered() )
-            {
-                m_gpuHighlight = &cev;
-                if( ImGui::IsMouseClicked( 2 ) )
-                {
-                    ZoomToZone( cev );
-                }
-                ZoneTooltip( cev );
-            }
+            const auto ty = ImGui::GetTextLineHeight();
+            ImGui::Columns( 2 );
+            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Exclusive time" );
             ImGui::NextColumn();
-            const auto part = double( ctt[cti[i]] ) / ztime;
             char buf[128];
-            sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
-            ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+            sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+            ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
+            for( size_t i=0; i<ev.child.size(); i++ )
+            {
+                auto& cev = *ev.child[cti[i]];
+                const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
+                bool b = false;
+                if( ImGui::Selectable( m_worker.GetString( csl.name ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                {
+                    m_gpuInfoWindow = &cev;
+                }
+                if( ImGui::IsItemHovered() )
+                {
+                    m_gpuHighlight = &cev;
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToZone( cev );
+                    }
+                    ZoneTooltip( cev );
+                }
+                ImGui::NextColumn();
+                const auto part = double( ctt[cti[i]] ) / ztime;
+                char buf[128];
+                sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+                ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+                ImGui::NextColumn();
+            }
+            ImGui::EndColumns();
+            ImGui::TreePop();
         }
-        ImGui::EndColumns();
     }
 
     ImGui::End();

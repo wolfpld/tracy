@@ -2450,6 +2450,34 @@ void View::DrawZoneInfoWindow()
     ImGui::Text( "Execution time: %s", TimeToString( ztime ) );
     ImGui::Text( "Without profiling: %s", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
 
+    ImGui::Separator();
+
+    std::vector<const ZoneEvent*> zoneTrace;
+    auto parent = GetZoneParent( ev );
+    while( parent )
+    {
+         zoneTrace.emplace_back( parent );
+         parent = GetZoneParent( *parent );
+    }
+    if( !zoneTrace.empty() )
+    {
+        bool expand = ImGui::TreeNode( "Zone trace" );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( zoneTrace.size(), true ) );
+        if( expand )
+        {
+            for( auto& v : zoneTrace )
+            {
+                const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
+                const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+                ImGui::Text( "%s", txt );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+            }
+            ImGui::TreePop();
+        }
+    }
+
     auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
     auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
     uint64_t ctime = 0;
@@ -2561,6 +2589,34 @@ void View::DrawGpuInfoWindow()
     ImGui::Text( "GPU execution time: %s", TimeToString( ztime ) );
     ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     ImGui::Text( "Delay to execution: %s", TimeToString( ev.gpuStart - ev.cpuStart ) );
+
+    ImGui::Separator();
+
+    std::vector<const GpuEvent*> zoneTrace;
+    auto parent = GetZoneParent( ev );
+    while( parent )
+    {
+        zoneTrace.emplace_back( parent );
+        parent = GetZoneParent( *parent );
+    }
+    if( !zoneTrace.empty() )
+    {
+        bool expand = ImGui::TreeNode( "Zone trace" );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( zoneTrace.size(), true ) );
+        if( expand )
+        {
+            for( auto& v : zoneTrace )
+            {
+                const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
+                const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+                ImGui::Text( "%s", txt );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+            }
+            ImGui::TreePop();
+        }
+    }
 
     auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
     auto cti = std::make_unique<uint32_t[]>( ev.child.size() );

@@ -20,6 +20,7 @@ The following compilers are supported:
 - gcc
 - clang
 
+[Introduction to tracy](https://www.youtube.com/watch?v=fB5B46lbapc)  
 [A quick FAQ.](FAQ.md)  
 [List of changes.](NEWS)
 

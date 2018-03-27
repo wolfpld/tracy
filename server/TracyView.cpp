@@ -2466,8 +2466,7 @@ void View::DrawZoneInfoWindow()
 
     if( !ev.child.empty() )
     {
-        ImGui::Separator();
-        bool expand = ImGui::TreeNodeEx( "Child zones", ImGuiTreeNodeFlags_DefaultOpen );
+        bool expand = ImGui::TreeNode( "Child zones" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( ev.child.size(), true ) );
         if( expand )
@@ -2579,8 +2578,7 @@ void View::DrawGpuInfoWindow()
 
     if( !ev.child.empty() )
     {
-        ImGui::Separator();
-        bool expand = ImGui::TreeNodeEx( "Child zones", ImGuiTreeNodeFlags_DefaultOpen );
+        bool expand = ImGui::TreeNode( "Child zones" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( ev.child.size(), true ) );
         if( expand )

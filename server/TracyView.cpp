@@ -2474,7 +2474,7 @@ void View::DrawZoneInfoWindow()
         {
             const auto ty = ImGui::GetTextLineHeight();
             ImGui::Columns( 2 );
-            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Exclusive time" );
+            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
             ImGui::NextColumn();
             char buf[128];
             sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -2587,7 +2587,7 @@ void View::DrawGpuInfoWindow()
         {
             const auto ty = ImGui::GetTextLineHeight();
             ImGui::Columns( 2 );
-            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Exclusive time" );
+            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
             ImGui::NextColumn();
             char buf[128];
             sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );

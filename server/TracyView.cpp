@@ -2475,7 +2475,7 @@ void View::DrawZoneInfoWindow()
                 auto sel = ImGui::Selectable( txt, false );
                 auto hover = ImGui::IsItemHovered();
                 ImGui::SameLine();
-                ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->start ), m_worker.GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
                 if( sel )
                 {
@@ -2634,7 +2634,7 @@ void View::DrawGpuInfoWindow()
                 auto sel = ImGui::Selectable( txt, false );
                 auto hover = ImGui::IsItemHovered();
                 ImGui::SameLine();
-                ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->gpuStart ), m_worker.GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
                 if( sel )
                 {

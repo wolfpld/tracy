@@ -166,7 +166,7 @@ int main( int argc, char** argv )
 
     printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nSaving trace...", worker.GetFrameCount(), TimeToString( worker.GetLastTime() - worker.GetFrameBegin( 0 ) ), RealToString( worker.GetZoneCount(), true ) );
     fflush( stdout );
-    auto f = tracy::FileWrite::Open( output );
+    auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );
     if( f )
     {
         worker.Write( *f );

@@ -15,13 +15,14 @@ v0.2 (xxxx-xx-xx)
 - Implementation of a command line capture utility.
 - Support libraries have been updated.
 - Fixed an issue that prevented de-duplication of source location payloads.
-- Small improvements to zone info view window.
 - Fixed an issue that prevented the ability to disable threads in settings
   menu, if two threads had the same name.
 - Performance optimizations.
 - Visual clean up of the settings menu.
-- Visual improvements to zone info window child list.
-- Zone info windows now show zone thread.
+- Zone info windows improvements.
+  - Visual improvements to zone info window child list.
+  - Zone info windows now show zone thread.
+  - Display zone stack trace.
 - Hide pause/resume button if there's no data connection (i.e. trace was
   loaded from file).
 - Source location statistics view has been added.

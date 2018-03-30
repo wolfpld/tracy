@@ -154,7 +154,7 @@ int Socket::Recv( void* _buf, int len, const timeval* tv )
     }
 }
 
-bool Socket::Read( void* _buf, int len, const timeval* tv, std::function< bool() > exitCb )
+bool Socket::Read( void* _buf, int len, const timeval* tv, std::function<bool()> exitCb )
 {
     auto buf = (char*)_buf;
 

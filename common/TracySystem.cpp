@@ -113,8 +113,7 @@ const char* GetThreadName( uint64_t id )
     {
         if( ptr->id == id )
         {
-            strcpy( buf, ptr->name );
-            return buf;
+            return ptr->name;
         }
         ptr = ptr->next;
     }

@@ -84,6 +84,7 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
 #endif
 #ifdef TRACY_COLLECT_THREAD_NAMES
     {
+        rpmalloc_thread_initialize();
         const auto sz = strlen( name );
         char* buf = (char*)tracy_malloc( sz+1 );
         memcpy( buf, name, sz );

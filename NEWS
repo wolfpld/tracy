@@ -30,6 +30,8 @@ v0.2 (xxxx-xx-xx)
   was performed before.
 - Standalone server will now open trace files passed as an argument to the
   executable.
+- Fix possible crash in SetThreadName, that could happen if TLS init was
+  delayed until first use of thread local variable.
 
 
 v0.1 (2017-12-18)

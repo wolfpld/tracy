@@ -181,7 +181,7 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        MemWrite( &item->hdr.type = QueueType::LockRelease );
+        MemWrite( &item->hdr.type, QueueType::LockRelease );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );

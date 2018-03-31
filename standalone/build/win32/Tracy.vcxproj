@@ -97,6 +97,7 @@
     <ClCompile Include="..\..\src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\common\TracyAlign.hpp" />
     <ClInclude Include="..\..\..\common\TracyForceInline.hpp" />
     <ClInclude Include="..\..\..\common\TracyProtocol.hpp" />
     <ClInclude Include="..\..\..\common\TracyQueue.hpp" />

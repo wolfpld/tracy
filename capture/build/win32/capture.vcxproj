@@ -136,6 +136,7 @@
     <ClCompile Include="..\..\src\getopt.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\common\TracyAlign.hpp" />
     <ClInclude Include="..\..\..\common\TracyAlloc.hpp" />
     <ClInclude Include="..\..\..\common\TracyColor.hpp" />
     <ClInclude Include="..\..\..\common\TracyForceInline.hpp" />

@@ -95,5 +95,8 @@
     <ClInclude Include="..\..\src\getopt.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyAlign.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

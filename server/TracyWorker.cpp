@@ -1200,6 +1200,10 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::GpuResync:
         ProcessGpuResync( ev.gpuResync );
         break;
+    case QueueType::MemAlloc:
+        break;
+    case QueueType::MemFree:
+        break;
     case QueueType::Terminate:
         m_terminate = true;
         break;

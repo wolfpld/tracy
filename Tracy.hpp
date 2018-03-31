@@ -57,6 +57,9 @@
 #define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size );
 #define TracyMessageL( txt ) tracy::Profiler::Message( txt );
 
+#define TracyAlloc( ptr, size ) tracy::Profiler::MemAlloc( ptr, size );
+#define TracyFree( ptr ) tracy::Profiler::MemFree( ptr );
+
 #endif
 
 #endif

@@ -34,6 +34,8 @@ v0.2 (xxxx-xx-xx)
   delayed until first use of thread local variable.
 - Store full thread name if pthreads (with 15 character name limit) are
   used.
+- Properly handle unaligned memory access (no performance impact).
+- Fixed broken lock identifiers in try_lock().
 
 
 v0.1 (2017-12-18)

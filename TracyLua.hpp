@@ -101,6 +101,7 @@ static inline void LuaRemove( char* script )
 #else
 
 #include "common/TracyColor.hpp"
+#include "common/TracyAlign.hpp"
 #include "common/TracySystem.hpp"
 #include "client/TracyProfiler.hpp"
 
@@ -143,10 +144,16 @@ static inline int LuaZoneBegin( lua_State* L )
     auto& token = s_token.ptr;
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-    item->hdr.type = QueueType::ZoneBeginAllocSrcLoc;
-    item->zoneBegin.time = Profiler::GetTime( item->zoneBegin.cpu );
-    item->zoneBegin.thread = GetThreadHandle();
-    item->zoneBegin.srcloc = (uint64_t)ptr;
+    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
+#ifdef TRACY_RDTSCP_SUPPORTED
+    MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
+#else
+    uint32_t cpu;
+    MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
+    MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+    MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
+    MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
 }
@@ -188,10 +195,16 @@ static inline int LuaZoneBeginN( lua_State* L )
     auto& token = s_token.ptr;
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-    item->hdr.type = QueueType::ZoneBeginAllocSrcLoc;
-    item->zoneBegin.time = Profiler::GetTime( item->zoneBegin.cpu );
-    item->zoneBegin.thread = GetThreadHandle();
-    item->zoneBegin.srcloc = (uint64_t)ptr;
+    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
+#ifdef TRACY_RDTSCP_SUPPORTED
+    MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
+#else
+    uint32_t cpu;
+    MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
+    MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+    MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
+    MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
 }
@@ -202,9 +215,15 @@ static inline int LuaZoneEnd( lua_State* L )
     auto& token = s_token.ptr;
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-    item->hdr.type = QueueType::ZoneEnd;
-    item->zoneEnd.time = Profiler::GetTime( item->zoneEnd.cpu );
-    item->zoneEnd.thread = GetThreadHandle();
+    MemWrite( &item->hdr.type, QueueType::ZoneEnd );
+#ifdef TRACY_RDTSCP_SUPPORTED
+    MemWrite( &item->zoneEnd.time, Profiler::GetTime( item->zoneEnd.cpu ) );
+#else
+    uint32_t cpu;
+    MemWrite( &item->zoneEnd.time, Profiler::GetTime( cpu ) );
+    MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+    MemWrite( &item->zoneEnd.thread, GetThreadHandle() );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
 }
@@ -221,9 +240,9 @@ static inline int LuaZoneText( lua_State* L )
     ptr[size] = '\0';
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-    item->hdr.type = QueueType::ZoneText;
-    item->zoneText.thread = GetThreadHandle();
-    item->zoneText.text = (uint64_t)ptr;
+    MemWrite( &item->hdr.type, QueueType::ZoneText );
+    MemWrite( &item->zoneText.thread, GetThreadHandle() );
+    MemWrite( &item->zoneText.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
 }
@@ -240,10 +259,10 @@ static inline int LuaMessage( lua_State* L )
     ptr[size] = '\0';
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-    item->hdr.type = QueueType::Message;
-    item->message.time = Profiler::GetTime();
-    item->message.thread = GetThreadHandle();
-    item->message.text = (uint64_t)ptr;
+    MemWrite( &item->hdr.type, QueueType::Message );
+    MemWrite( &item->message.time, Profiler::GetTime() );
+    MemWrite( &item->message.thread, GetThreadHandle() );
+    MemWrite( &item->message.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
 }

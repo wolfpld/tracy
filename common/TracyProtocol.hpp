@@ -31,8 +31,8 @@ enum { WelcomeMessageProgramNameSize = 64 };
 struct WelcomeMessage
 {
     double timerMul;
-    uint64_t initBegin;
-    uint64_t initEnd;
+    int64_t initBegin;
+    int64_t initEnd;
     uint64_t delay;
     uint64_t resolution;
     uint64_t epoch;

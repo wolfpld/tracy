@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/TracyAlign.hpp"
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
@@ -180,12 +181,12 @@ void Profiler::Worker()
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
     WelcomeMessage welcome;
-    welcome.timerMul = m_timerMul;
-    welcome.initBegin = s_initTime.val;
-    welcome.initEnd = m_timeBegin.load( std::memory_order_relaxed );
-    welcome.delay = m_delay;
-    welcome.resolution = m_resolution;
-    welcome.epoch = m_epoch;
+    MemWrite( &welcome.timerMul, m_timerMul );
+    MemWrite( &welcome.initBegin, s_initTime.val );
+    MemWrite( &welcome.initEnd, m_timeBegin.load( std::memory_order_relaxed ) );
+    MemWrite( &welcome.delay, m_delay );
+    MemWrite( &welcome.resolution, m_resolution );
+    MemWrite( &welcome.epoch, m_epoch );
     memcpy( welcome.programName, procname, pnsz );
     memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
 
@@ -250,7 +251,7 @@ void Profiler::Worker()
     }
 
     QueueItem terminate;
-    terminate.hdr.type = QueueType::Terminate;
+    MemWrite( &terminate.hdr.type, QueueType::Terminate );
     if( !SendData( (const char*)&terminate, 1 ) ) return;
     for(;;)
     {
@@ -288,22 +289,23 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
         while( item != end )
         {
             uint64_t ptr;
-            if( item->hdr.idx < (int)QueueType::Terminate )
+            const auto idx = MemRead( &item->hdr.idx );
+            if( idx < (int)QueueType::Terminate )
             {
-                switch( item->hdr.type )
+                switch( (QueueType)idx )
                 {
                 case QueueType::ZoneText:
-                    ptr = item->zoneText.text;
+                    ptr = MemRead( &item->zoneText.text );
                     SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                     tracy_free( (void*)ptr );
                     break;
                 case QueueType::Message:
-                    ptr = item->message.text;
+                    ptr = MemRead( &item->message.text );
                     SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                     tracy_free( (void*)ptr );
                     break;
                 case QueueType::ZoneBeginAllocSrcLoc:
-                    ptr = item->zoneBegin.srcloc;
+                    ptr = MemRead( &item->zoneBegin.srcloc );
                     SendSourceLocationPayload( ptr );
                     tracy_free( (void*)ptr );
                     break;
@@ -312,7 +314,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     break;
                 }
             }
-            if( !AppendData( item, QueueDataSize[item->hdr.idx] ) ) return ConnectionLost;
+            if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
             item++;
         }
     }
@@ -362,16 +364,16 @@ bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName );
 
     QueueItem item;
-    item.hdr.type = type;
-    item.stringTransfer.ptr = str;
+    MemWrite( &item.hdr.type, type );
+    MemWrite( &item.stringTransfer.ptr, str );
 
     auto len = strlen( ptr );
     assert( len <= std::numeric_limits<uint16_t>::max() );
     auto l16 = uint16_t( len );
 
-    NeedDataSize( QueueDataSize[item.hdr.idx] + sizeof( l16 ) + l16 );
+    NeedDataSize( QueueDataSize[(int)type] + sizeof( l16 ) + l16 );
 
-    AppendData( &item, QueueDataSize[item.hdr.idx] );
+    AppendData( &item, QueueDataSize[(int)type] );
     AppendData( &l16, sizeof( l16 ) );
     AppendData( ptr, l16 );
 
@@ -382,15 +384,15 @@ void Profiler::SendSourceLocation( uint64_t ptr )
 {
     auto srcloc = (const SourceLocation*)ptr;
     QueueItem item;
-    item.hdr.type = QueueType::SourceLocation;
-    item.srcloc.name = (uint64_t)srcloc->name;
-    item.srcloc.file = (uint64_t)srcloc->file;
-    item.srcloc.function = (uint64_t)srcloc->function;
-    item.srcloc.line = srcloc->line;
-    item.srcloc.r = ( srcloc->color       ) & 0xFF;
-    item.srcloc.g = ( srcloc->color >> 8  ) & 0xFF;
-    item.srcloc.b = ( srcloc->color >> 16 ) & 0xFF;
-    AppendData( &item, QueueDataSize[item.hdr.idx] );
+    MemWrite( &item.hdr.type, QueueType::SourceLocation );
+    MemWrite( &item.srcloc.name, (uint64_t)srcloc->name );
+    MemWrite( &item.srcloc.file, (uint64_t)srcloc->file );
+    MemWrite( &item.srcloc.function, (uint64_t)srcloc->function );
+    MemWrite( &item.srcloc.line, srcloc->line );
+    MemWrite( &item.srcloc.r, uint8_t( ( srcloc->color       ) & 0xFF ) );
+    MemWrite( &item.srcloc.g, uint8_t( ( srcloc->color >> 8  ) & 0xFF ) );
+    MemWrite( &item.srcloc.b, uint8_t( ( srcloc->color >> 16 ) & 0xFF ) );
+    AppendData( &item, QueueDataSize[(int)QueueType::SourceLocation] );
 }
 
 bool Profiler::SendSourceLocationPayload( uint64_t _ptr )
@@ -398,17 +400,17 @@ bool Profiler::SendSourceLocationPayload( uint64_t _ptr )
     auto ptr = (const char*)_ptr;
 
     QueueItem item;
-    item.hdr.type = QueueType::SourceLocationPayload;
-    item.stringTransfer.ptr = _ptr;
+    MemWrite( &item.hdr.type, QueueType::SourceLocationPayload );
+    MemWrite( &item.stringTransfer.ptr, _ptr );
 
     const auto len = *((uint32_t*)ptr);
     assert( len <= std::numeric_limits<uint16_t>::max() );
     assert( len > 4 );
     const auto l16 = uint16_t( len - 4 );
 
-    NeedDataSize( QueueDataSize[item.hdr.idx] + sizeof( l16 ) + l16 );
+    NeedDataSize( QueueDataSize[(int)QueueType::SourceLocationPayload] + sizeof( l16 ) + l16 );
 
-    AppendData( &item, QueueDataSize[item.hdr.idx] );
+    AppendData( &item, QueueDataSize[(int)QueueType::SourceLocationPayload] );
     AppendData( &l16, sizeof( l16 ) );
     AppendData( ptr + 4, l16 );
 
@@ -508,19 +510,31 @@ void Profiler::CalibrateDelay()
             Magic magic;
             auto& tail = ptoken->get_tail_index();
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
-            item->hdr.type = QueueType::ZoneBegin;
-            item->zoneBegin.thread = GetThreadHandle();
-            item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
-            item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
+            MemWrite( &item->hdr.type, QueueType::ZoneBegin );
+            MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
+#ifdef TRACY_RDTSCP_SUPPORTED
+            MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
+#else
+            uint32_t cpu;
+            MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
+            MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+            MemWrite( &item->zoneBegin.srcloc, (uint64_t)&__tracy_source_location );
             tail.store( magic + 1, std::memory_order_release );
         }
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
-            item->hdr.type = QueueType::ZoneEnd;
-            item->zoneEnd.thread = 0;
-            item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
+            MemWrite( &item->hdr.type, QueueType::ZoneEnd );
+            MemWrite( &item->zoneEnd.thread, uint64_t( 0 ) );
+#ifdef TRACY_RDTSCP_SUPPORTED
+            MemWrite( &item->zoneEnd.time, GetTime( item->zoneEnd.cpu ) );
+#else
+            uint32_t cpu;
+            MemWrite( &item->zoneEnd.time, GetTime( cpu ) );
+            MemWrite( &item->zoneEnd.cpu, cpu );
+#endif
             tail.store( magic + 1, std::memory_order_release );
         }
     }
@@ -538,19 +552,31 @@ void Profiler::CalibrateDelay()
             Magic magic;
             auto& tail = ptoken->get_tail_index();
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
-            item->hdr.type = QueueType::ZoneBegin;
-            item->zoneBegin.thread = GetThreadHandle();
-            item->zoneBegin.time = GetTime( item->zoneBegin.cpu );
-            item->zoneBegin.srcloc = (uint64_t)&__tracy_source_location;
+            MemWrite( &item->hdr.type, QueueType::ZoneBegin );
+            MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
+#ifdef TRACY_RDTSCP_SUPPORTED
+            MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
+#else
+            uint32_t cpu;
+            MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
+            MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+            MemWrite( &item->zoneBegin.srcloc, (uint64_t)&__tracy_source_location );
             tail.store( magic + 1, std::memory_order_release );
         }
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
-            item->hdr.type = QueueType::ZoneEnd;
-            item->zoneEnd.thread = 0;
-            item->zoneEnd.time = GetTime( item->zoneEnd.cpu );
+            MemWrite( &item->hdr.type, QueueType::ZoneEnd );
+            MemWrite( &item->zoneEnd.thread, uint64_t( 0 ) );
+#ifdef TRACY_RDTSCP_SUPPORTED
+            MemWrite( &item->zoneEnd.time, GetTime( item->zoneEnd.cpu ) );
+#else
+            uint32_t cpu;
+            MemWrite( &item->zoneEnd.time, GetTime( cpu ) );
+            MemWrite( &item->zoneEnd.cpu, cpu );
+#endif
             tail.store( magic + 1, std::memory_order_release );
         }
     }

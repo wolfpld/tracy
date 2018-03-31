@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "../common/TracySystem.hpp"
+#include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "TracyProfiler.hpp"
 
@@ -22,10 +23,16 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::ZoneBegin;
-        item->zoneBegin.time = Profiler::GetTime( item->zoneBegin.cpu );
-        item->zoneBegin.thread = thread;
-        item->zoneBegin.srcloc = (uint64_t)srcloc;
+        MemWrite( &item->hdr.type, QueueType::ZoneBegin );
+#ifdef TRACY_RDTSCP_SUPPORTED
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
+#else
+        uint32_t cpu;
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
+        MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+        MemWrite( &item->zoneBegin.thread, thread );
+        MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -35,9 +42,15 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::ZoneEnd;
-        item->zoneEnd.time = Profiler::GetTime( item->zoneEnd.cpu );
-        item->zoneEnd.thread = m_thread;
+        MemWrite( &item->hdr.type, QueueType::ZoneEnd );
+#ifdef TRACY_RDTSCP_SUPPORTED
+        MemWrite( &item->zoneEnd.time, Profiler::GetTime( item->zoneEnd.cpu ) );
+#else
+        uint32_t cpu;
+        MemWrite( &item->zoneEnd.time, Profiler::GetTime( cpu ) );
+        MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+        MemWrite( &item->zoneEnd.thread, m_thread );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -50,9 +63,9 @@ public:
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::ZoneText;
-        item->zoneText.thread = m_thread;
-        item->zoneText.text = (uint64_t)ptr;
+        MemWrite( &item->hdr.type, QueueType::ZoneText );
+        MemWrite( &item->zoneText.thread, m_thread );
+        MemWrite( &item->zoneText.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }
 

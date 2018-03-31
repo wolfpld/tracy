@@ -9,6 +9,7 @@
 #include "concurrentqueue.h"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
+#include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracySystem.hpp"
 
@@ -109,8 +110,8 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::FrameMarkMsg;
-        item->frameMark.time = GetTime();
+        MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
+        MemWrite( &item->frameMark.time, GetTime() );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -120,11 +121,11 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::PlotData;
-        item->plotData.name = (uint64_t)name;
-        item->plotData.time = GetTime();
-        item->plotData.type = PlotDataType::Int;
-        item->plotData.data.i = val;
+        MemWrite( &item->hdr.type, QueueType::PlotData );
+        MemWrite( &item->plotData.name, (uint64_t)name );
+        MemWrite( &item->plotData.time, GetTime() );
+        MemWrite( &item->plotData.type, PlotDataType::Int );
+        MemWrite( &item->plotData.data.i, val );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -134,11 +135,11 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::PlotData;
-        item->plotData.name = (uint64_t)name;
-        item->plotData.time = GetTime();
-        item->plotData.type = PlotDataType::Float;
-        item->plotData.data.f = val;
+        MemWrite( &item->hdr.type, QueueType::PlotData );
+        MemWrite( &item->plotData.name, (uint64_t)name );
+        MemWrite( &item->plotData.time, GetTime() );
+        MemWrite( &item->plotData.type, PlotDataType::Float );
+        MemWrite( &item->plotData.data.f, val );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -148,11 +149,11 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::PlotData;
-        item->plotData.name = (uint64_t)name;
-        item->plotData.time = GetTime();
-        item->plotData.type = PlotDataType::Double;
-        item->plotData.data.d = val;
+        MemWrite( &item->hdr.type, QueueType::PlotData );
+        MemWrite( &item->plotData.name, (uint64_t)name );
+        MemWrite( &item->plotData.time, GetTime() );
+        MemWrite( &item->plotData.type, PlotDataType::Double );
+        MemWrite( &item->plotData.data.d, val );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -165,10 +166,10 @@ public:
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::Message;
-        item->message.time = GetTime();
-        item->message.thread = GetThreadHandle();
-        item->message.text = (uint64_t)ptr;
+        MemWrite( &item->hdr.type, QueueType::Message );
+        MemWrite( &item->message.time, GetTime() );
+        MemWrite( &item->message.thread, GetThreadHandle() );
+        MemWrite( &item->message.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -178,10 +179,10 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::MessageLiteral;
-        item->message.time = GetTime();
-        item->message.thread = GetThreadHandle();
-        item->message.text = (uint64_t)txt;
+        MemWrite( &item->hdr.type, QueueType::MessageLiteral );
+        MemWrite( &item->message.time, GetTime() );
+        MemWrite( &item->message.thread, GetThreadHandle() );
+        MemWrite( &item->message.text, (uint64_t)txt );
         tail.store( magic + 1, std::memory_order_release );
     }
 

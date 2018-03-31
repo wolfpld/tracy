@@ -16,6 +16,7 @@
 
 #include "Tracy.hpp"
 #include "client/TracyProfiler.hpp"
+#include "common/TracyAlign.hpp"
 #include "common/TracyAlloc.hpp"
 
 #define TracyGpuContext tracy::s_gpuCtx.ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::s_gpuCtx.ptr) tracy::GpuCtx;
@@ -53,12 +54,12 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::GpuNewContext;
-        item->gpuNewContext.cpuTime = tcpu;
-        item->gpuNewContext.gpuTime = tgpu;
-        item->gpuNewContext.thread = GetThreadHandle();
-        item->gpuNewContext.context = m_context;
-        item->gpuNewContext.accuracyBits = bits;
+        MemWrite( &item->hdr.type, QueueType::GpuNewContext );
+        MemWrite( &item->gpuNewContext.cpuTime, tcpu );
+        MemWrite( &item->gpuNewContext.gpuTime, tgpu );
+        MemWrite( &item->gpuNewContext.thread, GetThreadHandle() );
+        MemWrite( &item->gpuNewContext.context, m_context );
+        MemWrite( &item->gpuNewContext.accuracyBits, (uint8_t)bits );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -97,9 +98,9 @@ public:
             glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
 
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-            item->hdr.type = QueueType::GpuTime;
-            item->gpuTime.gpuTime = (int64_t)time;
-            item->gpuTime.context = m_context;
+            MemWrite( &item->hdr.type, QueueType::GpuTime );
+            MemWrite( &item->gpuTime.gpuTime, (int64_t)time );
+            MemWrite( &item->gpuTime.context, m_context );
             tail.store( magic + 1, std::memory_order_release );
             m_tail = ( m_tail + 1 ) % QueryCount;
         }
@@ -110,10 +111,10 @@ public:
             int64_t tcpu = Profiler::GetTime();
 
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-            item->hdr.type = QueueType::GpuResync;
-            item->gpuResync.cpuTime = tcpu;
-            item->gpuResync.gpuTime = tgpu;
-            item->gpuResync.context = m_context;
+            MemWrite( &item->hdr.type, QueueType::GpuResync );
+            MemWrite( &item->gpuResync.cpuTime, tcpu );
+            MemWrite( &item->gpuResync.gpuTime, tgpu );
+            MemWrite( &item->gpuResync.context, m_context );
             tail.store( magic + 1, std::memory_order_release );
         }
     }
@@ -152,10 +153,10 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::GpuZoneBegin;
-        item->gpuZoneBegin.cpuTime = Profiler::GetTime();
-        item->gpuZoneBegin.srcloc = (uint64_t)srcloc;
-        item->gpuZoneBegin.context = s_gpuCtx.ptr->GetId();
+        MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
+        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
+        MemWrite( &item->gpuZoneBegin.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -167,9 +168,9 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
-        item->hdr.type = QueueType::GpuZoneEnd;
-        item->gpuZoneEnd.cpuTime = Profiler::GetTime();
-        item->gpuZoneEnd.context = s_gpuCtx.ptr->GetId();
+        MemWrite( &item->hdr.type, QueueType::GpuZoneEnd );
+        MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneEnd.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
     }
 };

@@ -92,7 +92,7 @@ public:
             auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
-            MemWrite( &item->lockObtain.id, (uint64_t)&m_lockable );
+            MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, GetThreadHandle() );
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
@@ -198,7 +198,7 @@ public:
             auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
-            MemWrite( &item->lockObtain.id, (uint64_t)&m_lockable );
+            MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, GetThreadHandle() );
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
@@ -262,7 +262,7 @@ public:
             auto& tail = token->get_tail_index();
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockSharedObtain );
-            MemWrite( &item->lockObtain.id, (uint64_t)&m_lockable );
+            MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, GetThreadHandle() );
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );

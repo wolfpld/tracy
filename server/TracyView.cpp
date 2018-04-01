@@ -168,6 +168,7 @@ View::View( const char* addr )
     , m_showOptions( false )
     , m_showMessages( false )
     , m_showStatistics( false )
+    , m_showMemory( false )
     , m_drawGpuZones( true )
     , m_drawZones( true )
     , m_drawLocks( true )
@@ -200,6 +201,7 @@ View::View( FileRead& f )
     , m_showOptions( false )
     , m_showMessages( false )
     , m_showStatistics( false )
+    , m_showMemory( false )
     , m_drawGpuZones( true )
     , m_drawZones( true )
     , m_drawLocks( true )
@@ -307,6 +309,8 @@ void View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Statistics", ImVec2( bw, 0 ) ) ) m_showStatistics = true;
     ImGui::SameLine();
+    if( ImGui::Button( "Memory", ImVec2( bw, 0 ) ) ) m_showMemory = true;
+    ImGui::SameLine();
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_worker.GetFrameCount(), TimeToString( m_worker.GetLastTime() - m_worker.GetFrameBegin( 0 ) ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
     DrawFrames();
     DrawZones();
@@ -321,6 +325,7 @@ void View::DrawImpl()
     if( m_showMessages ) DrawMessages();
     if( m_findZone.show ) DrawFindZone();
     if( m_showStatistics ) DrawStatistics();
+    if( m_showMemory ) DrawMemory();
 
     if( m_zoomAnim.active )
     {
@@ -3644,6 +3649,15 @@ void View::DrawStatistics()
         ImGui::PopID();
     }
 #endif
+    ImGui::End();
+}
+
+void View::DrawMemory()
+{
+    auto& mem = m_worker.GetMemData();
+
+    ImGui::Begin( "Memory", &m_showMemory );
+    ImGui::Text( "Active allocations: %s", RealToString( mem.active.size(), true ) );
     ImGui::End();
 }
 

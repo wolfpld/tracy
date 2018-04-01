@@ -38,12 +38,24 @@ public:
         }
     }
 
+    bool IsEOF()
+    {
+        if( m_lastBlock != BufSize && m_offset == m_lastBlock ) return true;
+        if( m_offset == BufSize )
+        {
+            if( fseek( m_file, 1, SEEK_CUR ) != 0 ) return true;
+            fseek( m_file, -1, SEEK_CUR );
+        }
+        return false;
+    }
+
 private:
     FileRead( FILE* f )
         : m_stream( LZ4_createStreamDecode() )
         , m_file( f )
         , m_offset( BufSize )
         , m_active( 1 )
+        , m_lastBlock( 0 )
     {}
 
     tracy_force_inline void ReadSmall( void* ptr, size_t size )
@@ -65,7 +77,7 @@ private:
                 uint32_t sz;
                 fread( &sz, 1, sizeof( sz ), m_file );
                 fread( m_lz4buf, 1, sz, m_file );
-                LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf[m_active], sz, BufSize );
+                m_lastBlock = LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf[m_active], sz, BufSize );
             }
 
             const auto sz = std::min( size, BufSize - m_offset );
@@ -84,6 +96,7 @@ private:
     char m_buf[2][BufSize];
     size_t m_offset;
     uint8_t m_active;
+    int m_lastBlock;
 };
 
 }

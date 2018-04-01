@@ -168,7 +168,6 @@ View::View( const char* addr )
     , m_showOptions( false )
     , m_showMessages( false )
     , m_showStatistics( false )
-    , m_showMemory( false )
     , m_drawGpuZones( true )
     , m_drawZones( true )
     , m_drawLocks( true )
@@ -201,7 +200,6 @@ View::View( FileRead& f )
     , m_showOptions( false )
     , m_showMessages( false )
     , m_showStatistics( false )
-    , m_showMemory( false )
     , m_drawGpuZones( true )
     , m_drawZones( true )
     , m_drawLocks( true )
@@ -309,7 +307,7 @@ void View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Statistics", ImVec2( bw, 0 ) ) ) m_showStatistics = true;
     ImGui::SameLine();
-    if( ImGui::Button( "Memory", ImVec2( bw, 0 ) ) ) m_showMemory = true;
+    if( ImGui::Button( "Memory", ImVec2( bw, 0 ) ) ) m_memInfo.show = true;
     ImGui::SameLine();
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_worker.GetFrameCount(), TimeToString( m_worker.GetLastTime() - m_worker.GetFrameBegin( 0 ) ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
     DrawFrames();
@@ -325,7 +323,7 @@ void View::DrawImpl()
     if( m_showMessages ) DrawMessages();
     if( m_findZone.show ) DrawFindZone();
     if( m_showStatistics ) DrawStatistics();
-    if( m_showMemory ) DrawMemory();
+    if( m_memInfo.show ) DrawMemory();
 
     if( m_zoomAnim.active )
     {
@@ -3656,8 +3654,116 @@ void View::DrawMemory()
 {
     auto& mem = m_worker.GetMemData();
 
-    ImGui::Begin( "Memory", &m_showMemory );
+    ImGui::Begin( "Memory", &m_memInfo.show );
+
     ImGui::Text( "Active allocations: %s", RealToString( mem.active.size(), true ) );
+
+    ImGui::InputText( "", m_memInfo.pattern, 1024 );
+    ImGui::SameLine();
+
+    if( ImGui::Button( "Find" ) )
+    {
+        m_memInfo.ptrFind = strtoull( m_memInfo.pattern, nullptr, 0 );
+    }
+    ImGui::SameLine();
+    if( ImGui::Button( "Clear" ) )
+    {
+        m_memInfo.ptrFind = 0;
+        m_memInfo.pattern[0] = '\0';
+    }
+
+    if( m_memInfo.ptrFind != 0 )
+    {
+        std::vector<MemEvent*> match;
+        for( auto& v : mem.data )
+        {
+            if( v->ptr <= m_memInfo.ptrFind && v->ptr + v->size > m_memInfo.ptrFind )
+            {
+                match.emplace_back( v );
+            }
+        }
+
+        ImGui::Separator();
+        if( match.empty() )
+        {
+            ImGui::Text( "Found no allocations at given address" );
+        }
+        else
+        {
+            bool expand = ImGui::TreeNodeEx( "Allocations", ImGuiTreeNodeFlags_DefaultOpen );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", RealToString( match.size(), true ) );
+            if( expand )
+            {
+                ImGui::Columns( 5 );
+                ImGui::Text( "Address" );
+                ImGui::NextColumn();
+                ImGui::Text( "Size" );
+                ImGui::NextColumn();
+                ImGui::Text( "Appeared at" );
+                ImGui::NextColumn();
+                ImGui::Text( "Duration" );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(?)" );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Active allocations are displayed using green color." );
+                    ImGui::EndTooltip();
+                }
+
+                ImGui::NextColumn();
+                ImGui::Text( "Thread" );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(?)" );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Shows one thread if alloc and free was performed on the same thread." );
+                    ImGui::Text( "Otherwise two threads are displayed in order: alloc, free." );
+                    ImGui::EndTooltip();
+                }
+                ImGui::NextColumn();
+                ImGui::Separator();
+                for( auto& v : match )
+                {
+                    if( v->ptr == m_memInfo.ptrFind )
+                    {
+                        ImGui::Text( "0x%08x", m_memInfo.ptrFind );
+                    }
+                    else
+                    {
+                        ImGui::Text( "0x%08x+%" PRIu64, v->ptr, m_memInfo.ptrFind - v->ptr );
+                    }
+                    ImGui::NextColumn();
+                    ImGui::Text( "%s", RealToString( v->size, true ) );
+                    ImGui::NextColumn();
+                    ImGui::Text( "%s", TimeToString( v->timeAlloc - m_worker.GetFrameBegin( 0 ) ) );
+                    ImGui::NextColumn();
+                    if( v->timeFree < 0 )
+                    {
+                        ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "%s", TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
+                        ImGui::NextColumn();
+                        ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+                    }
+                    else
+                    {
+                        ImGui::Text( "%s", TimeToString( v->timeFree - v->timeAlloc ) );
+                        ImGui::NextColumn();
+                        ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+                        if( v->threadAlloc != v->threadFree )
+                        {
+                            ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadFree ) ) );
+                        }
+                    }
+                    ImGui::NextColumn();
+                }
+                ImGui::EndColumns();
+                ImGui::TreePop();
+            }
+        }
+    }
+
     ImGui::End();
 }
 

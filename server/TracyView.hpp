@@ -160,7 +160,6 @@ private:
     bool m_showOptions;
     bool m_showMessages;
     bool m_showStatistics;
-    bool m_showMemory;
     bool m_drawGpuZones;
     bool m_drawZones;
     bool m_drawLocks;
@@ -174,13 +173,13 @@ private:
     struct {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
 
-        bool show;
+        bool show = false;
         std::vector<int32_t> match;
         std::map<uint64_t, Vector<ZoneEvent*>> threads;
         size_t processed;
         int selMatch = 0;
         uint64_t selThread = Unselected;
-        char pattern[1024] = { "" };
+        char pattern[1024] = {};
         bool logVal = false;
         bool logTime = false;
         bool cumulateTime = false;
@@ -203,6 +202,12 @@ private:
             processed = 0;
         }
     } m_findZone;
+
+    struct {
+        bool show = false;
+        char pattern[1024] = {};
+        uint64_t ptrFind = 0;
+    } m_memInfo;
 };
 
 }

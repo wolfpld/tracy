@@ -99,6 +99,7 @@ private:
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
     uint64_t GetZoneThread( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const GpuEvent& zone ) const;
+    const ZoneEvent* FindZoneAtTime( uint64_t thread, int64_t time ) const;
 
 #ifndef TRACY_NO_STATISTICS
     void FindZones();

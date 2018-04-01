@@ -4048,6 +4048,34 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
     return 0;
 }
 
+const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
+{
+    // TODO add thread rev-map
+    ThreadData* td = nullptr;
+    for( const auto& t : m_worker.GetThreadData() )
+    {
+        if( t->id == thread )
+        {
+            td = t;
+            break;
+        }
+    }
+    if( !td ) return nullptr;
+
+    const Vector<ZoneEvent*>* timeline = &td->timeline;
+    if( timeline->empty() ) return nullptr;
+    ZoneEvent* ret = nullptr;
+    for(;;)
+    {
+        auto it = std::upper_bound( timeline->begin(), timeline->end(), time, [] ( const auto& l, const auto& r ) { return l < r->start; } );
+        if( it != timeline->begin() ) --it;
+        if( (*it)->start > time || ( (*it)->end >= 0 && (*it)->end < time ) ) return ret;
+        ret = *it;
+        if( (*it)->child.empty() ) return ret;
+        timeline = &(*it)->child;
+    }
+}
+
 #ifndef TRACY_NO_STATISTICS
 void View::FindZones()
 {

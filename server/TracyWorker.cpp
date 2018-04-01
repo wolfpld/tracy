@@ -1646,6 +1646,7 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 
     m_data.memory.low = std::min( m_data.memory.low, mem->ptr );
     m_data.memory.high = std::max( m_data.memory.high, mem->ptr + mem->size );
+    m_data.memory.usage += mem->size;
 
     assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
     m_data.memory.active.emplace( ev.ptr, mem );
@@ -1661,6 +1662,7 @@ void Worker::ProcessMemFree( const QueueMemFree& ev )
     auto mem = it->second;
     mem->timeFree = TscTime( ev.time );
     mem->threadFree = CompressThread( ev.thread );
+    m_data.memory.usage -= mem->size;
     m_data.memory.active.erase( it );
 }
 

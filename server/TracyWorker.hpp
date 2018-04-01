@@ -8,11 +8,11 @@
 #include <thread>
 #include <vector>
 
+#include "../common/tracy_benaphore.h"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracySocket.hpp"
-#include "tracy_benaphore.h"
 #include "tracy_flat_hash_map.hpp"
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"

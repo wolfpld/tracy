@@ -144,7 +144,9 @@
     <ClInclude Include="..\..\..\common\TracyQueue.hpp" />
     <ClInclude Include="..\..\..\common\TracySocket.hpp" />
     <ClInclude Include="..\..\..\common\TracySystem.hpp" />
+    <ClInclude Include="..\..\..\common\tracy_benaphore.h" />
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp" />
+    <ClInclude Include="..\..\..\common\tracy_sema.h" />
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp" />
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileWrite.hpp" />
@@ -153,9 +155,7 @@
     <ClInclude Include="..\..\..\server\TracySlab.hpp" />
     <ClInclude Include="..\..\..\server\TracyVector.hpp" />
     <ClInclude Include="..\..\..\server\TracyWorker.hpp" />
-    <ClInclude Include="..\..\..\server\tracy_benaphore.h" />
     <ClInclude Include="..\..\..\server\tracy_flat_hash_map.hpp" />
-    <ClInclude Include="..\..\..\server\tracy_sema.h" />
     <ClInclude Include="..\..\src\getopt.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

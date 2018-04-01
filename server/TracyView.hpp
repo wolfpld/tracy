@@ -7,9 +7,9 @@
 #include <thread>
 #include <vector>
 
+#include "../common/tracy_benaphore.h"
 #include "TracyVector.hpp"
 #include "TracyWorker.hpp"
-#include "tracy_benaphore.h"
 #include "tracy_flat_hash_map.hpp"
 
 struct ImVec2;

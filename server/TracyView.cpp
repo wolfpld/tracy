@@ -3695,7 +3695,7 @@ void View::DrawMemory()
             ImGui::TextDisabled( "(%s)", RealToString( match.size(), true ) );
             if( expand )
             {
-                ImGui::Columns( 5 );
+                ImGui::Columns( 6 );
                 ImGui::Text( "Address" );
                 ImGui::NextColumn();
                 ImGui::Text( "Size" );
@@ -3724,7 +3724,10 @@ void View::DrawMemory()
                     ImGui::EndTooltip();
                 }
                 ImGui::NextColumn();
+                ImGui::Text( "Zone" );
+                ImGui::NextColumn();
                 ImGui::Separator();
+                int idx = 0;
                 for( auto& v : match )
                 {
                     if( v->ptr == m_memInfo.ptrFind )
@@ -3754,6 +3757,36 @@ void View::DrawMemory()
                         if( v->threadAlloc != v->threadFree )
                         {
                             ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadFree ) ) );
+                        }
+                    }
+                    ImGui::NextColumn();
+                    auto zone = FindZoneAtTime( m_worker.DecompressThread( v->threadAlloc ), v->timeAlloc );
+                    if( !zone )
+                    {
+                        ImGui::Text( "-" );
+                    }
+                    else
+                    {
+                        const auto& srcloc = m_worker.GetSourceLocation( zone->srcloc );
+                        const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+                        ImGui::PushID( idx++ );
+                        auto sel = ImGui::Selectable( txt, false );
+                        auto hover = ImGui::IsItemHovered();
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                        ImGui::PopID();
+                        if( sel )
+                        {
+                            m_zoneInfoWindow = zone;
+                        }
+                        if( hover )
+                        {
+                            m_zoneHighlight = zone;
+                            if( ImGui::IsMouseClicked( 2 ) )
+                            {
+                                ZoomToZone( *zone );
+                            }
+                            ZoneTooltip( *zone );
                         }
                     }
                     ImGui::NextColumn();

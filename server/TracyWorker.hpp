@@ -114,6 +114,7 @@ public:
     const Vector<GpuCtxData*>& GetGpuData() const { return m_data.gpuData; }
     const Vector<PlotData*>& GetPlots() const { return m_data.plots; }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
+    const MemData& GetMemData() const { return m_data.memory; }
 
     // Some zones may have incomplete timing data (only start time is available, end hasn't arrived yet).
     // GetZoneEnd() will try to infer the end time by looking at child zones (parent zone can't end

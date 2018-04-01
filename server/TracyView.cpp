@@ -3656,7 +3656,7 @@ void View::DrawMemory()
 
     ImGui::Begin( "Memory", &m_memInfo.show );
 
-    ImGui::Text( "Active allocations: %s", RealToString( mem.active.size(), true ) );
+    ImGui::Text( "Total allocations: %-10s Active allocations: %s", RealToString( mem.data.size(), true ), RealToString( mem.active.size(), true ) );
 
     ImGui::InputText( "", m_memInfo.pattern, 1024 );
     ImGui::SameLine();

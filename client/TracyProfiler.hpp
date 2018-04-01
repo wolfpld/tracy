@@ -193,13 +193,12 @@ public:
 
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
     {
-        const auto time = GetTime();
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
         auto item = s_profiler.m_serialQueue.push_next();
         MemWrite( &item->hdr.type, QueueType::MemAlloc );
-        MemWrite( &item->memAlloc.time, time );
+        MemWrite( &item->memAlloc.time, GetTime() );
         MemWrite( &item->memAlloc.thread, thread );
         MemWrite( &item->memAlloc.ptr, (uint64_t)ptr );
         memcpy( &item->memAlloc.size, &size, 6 );
@@ -208,13 +207,12 @@ public:
 
     static tracy_force_inline void MemFree( const void* ptr )
     {
-        const auto time = GetTime();
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
         auto item = s_profiler.m_serialQueue.push_next();
         MemWrite( &item->hdr.type, QueueType::MemFree );
-        MemWrite( &item->memFree.time, time );
+        MemWrite( &item->memFree.time, GetTime() );
         MemWrite( &item->memFree.thread, thread );
         MemWrite( &item->memFree.ptr, (uint64_t)ptr );
         s_profiler.m_serialLock.unlock();

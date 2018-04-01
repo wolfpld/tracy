@@ -108,7 +108,7 @@ struct ThreadNameData;
 std::atomic<ThreadNameData*> init_order(104) s_threadNameData( nullptr );
 #endif
 
-static Profiler init_order(105) s_profiler;
+Profiler init_order(105) s_profiler;
 
 
 enum { BulkSize = TargetFrameSize / QueueItemSize };
@@ -125,6 +125,7 @@ Profiler::Profiler()
     , m_bufferStart( 0 )
     , m_itemBuf( (QueueItem*)tracy_malloc( sizeof( QueueItem ) * BulkSize ) )
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
+    , m_serialQueue( 1024*1024 )
 {
     assert( !s_instance );
     s_instance = this;

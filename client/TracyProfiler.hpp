@@ -7,7 +7,9 @@
 #include <string.h>
 
 #include "concurrentqueue.h"
+#include "TracyFastVector.hpp"
 #include "../common/tracy_lz4.hpp"
+#include "../common/tracy_benaphore.h"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
@@ -49,6 +51,9 @@ struct GpuCtxWrapper
 };
 
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
+
+class Profiler;
+extern Profiler s_profiler;
 
 class Profiler
 {
@@ -252,6 +257,9 @@ private:
 
     QueueItem* m_itemBuf;
     char* m_lz4Buf;
+
+    FastVector<QueueItem> m_serialQueue;
+    NonRecursiveBenaphore m_serialLock;
 };
 
 };

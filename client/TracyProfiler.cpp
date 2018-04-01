@@ -16,6 +16,7 @@
 #include <chrono>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <stdlib.h>
 #include <string.h>
 
@@ -213,11 +214,12 @@ void Profiler::Worker()
         for(;;)
         {
             const auto status = Dequeue( token );
-            if( status == ConnectionLost )
+            const auto serialStatus = DequeueSerial();
+            if( status == ConnectionLost || serialStatus == ConnectionLost )
             {
                 break;
             }
-            else if( status == QueueEmpty )
+            else if( status == QueueEmpty && serialStatus == QueueEmpty )
             {
                 if( ShouldExit() ) break;
                 if( m_bufferOffset != m_bufferStart ) CommitData();
@@ -235,11 +237,12 @@ void Profiler::Worker()
     for(;;)
     {
         const auto status = Dequeue( token );
-        if( status == ConnectionLost )
+        const auto serialStatus = DequeueSerial();
+        if( status == ConnectionLost || serialStatus == ConnectionLost )
         {
             break;
         }
-        else if( status == QueueEmpty )
+        else if( status == QueueEmpty && serialStatus == QueueEmpty )
         {
             if( m_bufferOffset != m_bufferStart ) CommitData();
             break;
@@ -267,6 +270,7 @@ void Profiler::Worker()
                 }
             }
             while( Dequeue( token ) == Success ) {}
+            while( DequeueSerial() == Success ) {}
             if( m_bufferOffset != m_bufferStart )
             {
                 if( !CommitData() ) return;
@@ -318,6 +322,29 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
             if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
             item++;
         }
+    }
+    else
+    {
+        return QueueEmpty;
+    }
+    return Success;
+}
+
+Profiler::DequeueStatus Profiler::DequeueSerial()
+{
+    std::lock_guard<NonRecursiveBenaphore> lock( m_serialLock );
+    const auto sz = m_serialQueue.size();
+    if( sz > 0 )
+    {
+        auto item = m_serialQueue.data();
+        auto end = item + sz;
+        while( item != end )
+        {
+            const auto idx = MemRead( &item->hdr.idx );
+            if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
+            item++;
+        }
+        m_serialQueue.clear();
     }
     else
     {

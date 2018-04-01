@@ -229,6 +229,7 @@ private:
     void Worker();
 
     DequeueStatus Dequeue( moodycamel::ConsumerToken& token );
+    DequeueStatus DequeueSerial();
     bool AppendData( const void* data, size_t len );
     bool CommitData();
     bool NeedDataSize( size_t len );

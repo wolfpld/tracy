@@ -3732,11 +3732,11 @@ void View::DrawMemory()
                 {
                     if( v->ptr == m_memInfo.ptrFind )
                     {
-                        ImGui::Text( "0x%08x", m_memInfo.ptrFind );
+                        ImGui::Text( "0x%" PRIx64, m_memInfo.ptrFind );
                     }
                     else
                     {
-                        ImGui::Text( "0x%08x+%" PRIu64, v->ptr, m_memInfo.ptrFind - v->ptr );
+                        ImGui::Text( "0x%" PRIx64 "+%" PRIu64, v->ptr, m_memInfo.ptrFind - v->ptr );
                     }
                     ImGui::NextColumn();
                     ImGui::Text( "%s", RealToString( v->size, true ) );

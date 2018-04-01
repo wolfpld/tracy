@@ -525,7 +525,6 @@ void Worker::Exec()
                 if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
 
                 HandlePostponedPlots();
-                HandlePostponedMemory();
             }
 
             auto t1 = std::chrono::high_resolution_clock::now();
@@ -1634,93 +1633,35 @@ void Worker::ProcessGpuResync( const QueueGpuResync& ev )
 
 void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 {
-    MemEvent* mem;
     const auto time = TscTime( ev.time );
 
-    auto it = m_data.memory.zombie.find( ev.ptr );
-    if( it == m_data.memory.zombie.end() )
-    {
-        mem = m_slab.Alloc<MemEvent>();
-        mem->ptr = ev.ptr;
-        mem->timeFree = -1;
-        mem->threadFree = 0;
-    }
-    else
-    {
-        mem = it->second;
-        m_data.memory.zombie.erase( it );
-    }
-
+    auto mem = m_slab.Alloc<MemEvent>();
+    mem->ptr = ev.ptr;
     mem->size = 0;
     memcpy( &mem->size, ev.size, 6 );
     mem->timeAlloc = time;
     mem->threadAlloc = CompressThread( ev.thread );
+    mem->timeFree = -1;
+    mem->threadFree = 0;
 
     m_data.memory.low = std::min( m_data.memory.low, mem->ptr );
     m_data.memory.high = std::max( m_data.memory.high, mem->ptr + mem->size );
 
-    assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );    // this assert is not valid; memory may have been freed, but the information has not yet arrived
+    assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
     m_data.memory.active.emplace( ev.ptr, mem );
 
-    if( m_data.memory.data.empty() )
-    {
-        m_data.memory.data.push_back( mem );
-    }
-    else if( m_data.memory.data.back()->timeAlloc < time )
-    {
-        m_data.memory.data.push_back_non_empty( mem );
-    }
-    else
-    {
-        if( m_data.memory.postpone.empty() )
-        {
-            m_data.memory.postponeTime = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-            m_data.memory.postpone.push_back( mem );
-        }
-        else
-        {
-            m_data.memory.postpone.push_back_non_empty( mem );
-        }
-    }
+    assert( m_data.memory.data.empty() || m_data.memory.data.back()->timeAlloc <= time );
+    m_data.memory.data.push_back( mem );
 }
 
 void Worker::ProcessMemFree( const QueueMemFree& ev )
 {
-    MemEvent* mem;
-
     auto it = m_data.memory.active.find( ev.ptr );
-    if( it == m_data.memory.active.end() )
-    {
-        mem = m_slab.Alloc<MemEvent>();
-        mem->ptr = ev.ptr;
-
-        assert( m_data.memory.zombie.find( ev.ptr ) == m_data.memory.zombie.end() );    // this assert is not valid; there may be multiple alloc+frees queued for the same address
-        m_data.memory.zombie.emplace( ev.ptr, mem );
-    }
-    else
-    {
-        mem = it->second;
-        m_data.memory.active.erase( it );
-    }
-
+    assert( it != m_data.memory.active.end() );
+    auto mem = it->second;
     mem->timeFree = TscTime( ev.time );
     mem->threadFree = CompressThread( ev.thread );
-}
-
-void Worker::HandlePostponedMemory()
-{
-    auto& src = m_data.memory.postpone;
-    if( src.empty() ) return;
-    if( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count() - m_data.memory.postponeTime < 100 ) return;
-    auto& dst = m_data.memory.data;
-    std::sort( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l->timeAlloc < r->timeAlloc; } );
-    const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front()->timeAlloc, [] ( const auto& l, const auto& r ) { return l->timeAlloc < r; } );
-    const auto dsd = std::distance( dst.begin(), ds ) ;
-    const auto de = std::lower_bound( ds, dst.end(), src.back()->timeAlloc, [] ( const auto& l, const auto& r ) { return l->timeAlloc < r; } );
-    const auto ded = std::distance( dst.begin(), de );
-    dst.insert( de, src.begin(), src.end() );
-    std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l->timeAlloc < r->timeAlloc; } );
-    src.clear();
+    m_data.memory.active.erase( it );
 }
 
 void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread )

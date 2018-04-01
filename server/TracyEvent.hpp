@@ -225,10 +225,7 @@ struct PlotData
 struct MemData
 {
     Vector<MemEvent*> data;
-    Vector<MemEvent*> postpone;
-    uint64_t postponeTime;
     flat_hash_map<uint64_t, MemEvent*, nohash<uint64_t>> active;
-    flat_hash_map<uint64_t, MemEvent*, nohash<uint64_t>> zombie;
     uint64_t high = std::numeric_limits<uint64_t>::min();
     uint64_t low = std::numeric_limits<uint64_t>::max();
 };

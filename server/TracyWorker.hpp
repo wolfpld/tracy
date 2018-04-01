@@ -209,7 +209,6 @@ private:
     void HandlePlotName( uint64_t name, char* str, size_t sz );
 
     void HandlePostponedPlots();
-    void HandlePostponedMemory();
 
     StringLocation StoreString( char* str, size_t sz );
     uint16_t CompressThreadNew( uint64_t thread );

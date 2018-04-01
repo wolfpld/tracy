@@ -57,6 +57,7 @@ class Worker
         Vector<MessageData*> messages;
         Vector<PlotData*> plots;
         Vector<ThreadData*> threads;
+        MemData memory;
         uint64_t zonesCnt;
         int64_t lastTime;
 
@@ -177,6 +178,8 @@ private:
     tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev );
     tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
     tracy_force_inline void ProcessGpuResync( const QueueGpuResync& ev );
+    tracy_force_inline void ProcessMemAlloc( const QueueMemAlloc& ev );
+    tracy_force_inline void ProcessMemFree( const QueueMemFree& ev );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );
@@ -204,7 +207,9 @@ private:
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void HandlePlotName( uint64_t name, char* str, size_t sz );
+
     void HandlePostponedPlots();
+    void HandlePostponedMemory();
 
     StringLocation StoreString( char* str, size_t sz );
     uint16_t CompressThreadNew( uint64_t thread );

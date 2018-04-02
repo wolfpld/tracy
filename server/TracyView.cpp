@@ -3731,7 +3731,7 @@ void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
             const auto& srcloc = m_worker.GetSourceLocation( zone->srcloc );
             const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
             ImGui::PushID( idx++ );
-            auto sel = ImGui::Selectable( txt, false );
+            auto sel = ImGui::Selectable( txt, m_zoneInfoWindow == zone );
             auto hover = ImGui::IsItemHovered();
             ImGui::PopID();
             if( sel )
@@ -3768,13 +3768,13 @@ void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
                 bool sel;
                 if( zoneFree == zone )
                 {
-                    sel = ImGui::Selectable( "", false );
+                    sel = ImGui::Selectable( "", m_zoneInfoWindow == zoneFree );
                     ImGui::SameLine();
                     ImGui::TextColored( ImVec4( 1.f, 1.f, 0.6f, 1.f ), txt );
                 }
                 else
                 {
-                    sel = ImGui::Selectable( txt, false );
+                    sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree );
                 }
                 auto hover = ImGui::IsItemHovered();
                 ImGui::PopID();

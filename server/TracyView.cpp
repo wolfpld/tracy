@@ -3947,6 +3947,8 @@ void View::DrawMemory()
     ImGui::Separator();
     if( ImGui::TreeNode( "Memory map" ) )
     {
+        ImGui::Text( "Single pixel: %s KB   Single line: %s KB", RealToString( ( 1 << ChunkBits ) / 1024, true ), RealToString( PageChunkSize / 1024, true ) );
+
         auto pages = GetMemoryPages();
 
         size_t lines = pages.size();

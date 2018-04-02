@@ -3808,6 +3808,13 @@ void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
     ImGui::EndChild();
 }
 
+enum { ChunkBits = 10 };
+enum { ChunkSize = 1 << ChunkBits };
+enum { PageBits = 10 };
+enum { PageChunkBits = ChunkBits + PageBits };
+enum { PageSize = 1 << PageChunkBits };
+enum { PageMask = PageSize - 1 };
+
 void View::DrawMemory()
 {
     auto& mem = m_worker.GetMemData();
@@ -3937,15 +3944,84 @@ void View::DrawMemory()
         ImGui::TreePop();
     }
 
+    ImGui::Separator();
+    if( ImGui::TreeNode( "Memory map" ) )
+    {
+        auto pages = GetMemoryPages();
+
+        size_t lines = pages.size();
+        size_t i = 0;
+        while( i < pages.size() )
+        {
+            if( pages[i].empty() )
+            {
+                i++;
+                while( pages[i].empty() )
+                {
+                    lines--;
+                    i++;
+                }
+            }
+            else
+            {
+                i++;
+            }
+        }
+
+        ImGui::BeginChild( "##memMap", ImVec2( ChunkSize + 2, lines + 2 ), false );
+        auto draw = ImGui::GetWindowDrawList();
+        const auto wpos = ImGui::GetCursorScreenPos() + ImVec2( 1, 1 );
+        draw->AddRect( wpos - ImVec2( 1, 1 ), wpos + ImVec2( ChunkSize + 1, lines + 1 ), 0xFF888888 );
+        draw->AddRectFilled( wpos, wpos + ImVec2( ChunkSize, lines ), 0xFF666666 );
+
+        size_t line = 0;
+        i = 0;
+        while( i < pages.size() )
+        {
+            auto& page = pages[i];
+            if( page.empty() )
+            {
+                i++;
+                draw->AddLine( wpos + ImVec2( 0, line ), wpos + ImVec2( ChunkSize, line ), 0xFF555555 );
+                line++;
+                while( pages[i].empty() ) i++;
+            }
+            else
+            {
+                size_t idx = 0;
+                while( idx < ChunkSize )
+                {
+                    if( page[idx] == 0 )
+                    {
+                        do
+                        {
+                            idx++;
+                        }
+                        while( idx < ChunkSize && page[idx] == 0 );
+                    }
+                    else
+                    {
+                        auto val = page[idx];
+                        const auto i0 = idx;
+                        do
+                        {
+                            idx++;
+                        }
+                        while( idx < ChunkSize && page[idx] == val );
+                        draw->AddLine( wpos + ImVec2( i0, line ), wpos + ImVec2( idx, line ), val > 0 ? 0xFF44FF44 : 0xFF4444FF );
+                    }
+                }
+                line++;
+                i++;
+            }
+        }
+
+        ImGui::EndChild();
+        ImGui::TreePop();
+    }
+
     ImGui::End();
 }
-
-enum { ChunkBits = 10 };
-enum { ChunkSize = 1 << ChunkBits };
-enum { PageBits = 10 };
-enum { PageChunkBits = ChunkBits + PageBits };
-enum { PageSize = 1 << PageChunkBits };
-enum { PageMask = PageSize - 1 };
 
 static tracy_force_inline void PreparePage( Vector<int8_t>& page )
 {

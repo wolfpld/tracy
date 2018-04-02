@@ -3826,30 +3826,53 @@ void View::DrawMemory()
         m_memInfo.ptrFind = 0;
         m_memInfo.pattern[0] = '\0';
     }
-
-    if( m_memInfo.ptrFind != 0 )
+    ImGui::SameLine();
+    ImGui::Checkbox( "Restrict time", &m_memInfo.restrictTime );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
     {
-        std::vector<MemEvent*> match;
-        for( auto& v : mem.data )
-        {
-            if( v->ptr <= m_memInfo.ptrFind && v->ptr + v->size > m_memInfo.ptrFind )
-            {
-                match.emplace_back( v );
-            }
-        }
+        ImGui::BeginTooltip();
+        ImGui::Text( "Don't show allocations beyond end of timeline display." );
+        ImGui::EndTooltip();
+    }
 
-        ImGui::Separator();
-        if( match.empty() )
+    ImGui::Separator();
+    if( ImGui::TreeNodeEx( "Allocations", ImGuiTreeNodeFlags_DefaultOpen ) )
+    {
+        if( m_memInfo.ptrFind != 0 )
         {
-            ImGui::Text( "Found no allocations at given address" );
-        }
-        else
-        {
-            bool expand = ImGui::TreeNodeEx( "Allocations", ImGuiTreeNodeFlags_DefaultOpen );
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( match.size(), true ) );
-            if( expand )
+            std::vector<MemEvent*> match;
+            match.reserve( mem.active.size() );     // heuristic
+            if( m_memInfo.restrictTime )
             {
+                for( auto& v : mem.data )
+                {
+                    if( v->ptr <= m_memInfo.ptrFind && v->ptr + v->size > m_memInfo.ptrFind && v->timeAlloc < m_zvEnd )
+                    {
+                        match.emplace_back( v );
+                    }
+                }
+            }
+            else
+            {
+                for( auto& v : mem.data )
+                {
+                    if( v->ptr <= m_memInfo.ptrFind && v->ptr + v->size > m_memInfo.ptrFind )
+                    {
+                        match.emplace_back( v );
+                    }
+                }
+            }
+
+            if( match.empty() )
+            {
+                ImGui::Text( "Found no allocations at given address" );
+            }
+            else
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( match.size(), true ) );
                 ListMemData<decltype( match.begin() )>( match.begin(), match.end(), [this]( auto& it ) {
                     auto& v = *it;
                     if( v->ptr == m_memInfo.ptrFind )
@@ -3862,9 +3885,9 @@ void View::DrawMemory()
                     }
                     return v;
                 } );
-                ImGui::TreePop();
             }
         }
+        ImGui::TreePop();
     }
 
     ImGui::Separator();
@@ -3872,11 +3895,27 @@ void View::DrawMemory()
     {
         std::vector<MemEvent*> items;
         items.reserve( mem.active.size() );
-        for( auto& v : mem.active )
+        if( m_memInfo.restrictTime )
         {
-            items.emplace_back( v.second );
+            for( auto& v : mem.data )
+            {
+                if( v->timeAlloc < m_zvEnd && ( v->timeFree > m_zvEnd || v->timeFree < 0 ) )
+                {
+                    items.emplace_back( v );
+                }
+            }
         }
-        std::sort( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->timeAlloc > rhs->timeAlloc; } );
+        else
+        {
+            for( auto& v : mem.active )
+            {
+                items.emplace_back( v.second );
+            }
+            std::sort( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->timeAlloc < rhs->timeAlloc; } );
+        }
+
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( items.size(), true ) );
 
         ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
             ImGui::Text( "0x%" PRIx64, (*v)->ptr );

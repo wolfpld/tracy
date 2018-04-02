@@ -212,6 +212,7 @@ private:
         bool show = false;
         char pattern[1024] = {};
         uint64_t ptrFind = 0;
+        bool restrictTime = false;
     } m_memInfo;
 };
 

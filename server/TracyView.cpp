@@ -3807,7 +3807,11 @@ void View::DrawMemory()
 
     ImGui::Begin( "Memory", &m_memInfo.show );
 
-    ImGui::Text( "Total allocations: %-10s Active allocations: %-10s Memory usage: %s bytes", RealToString( mem.data.size(), true ), RealToString( mem.active.size(), true ), RealToString( mem.usage, true ) );
+    ImGui::Text( "Total allocations: %-15s Active allocations: %-15s Memory usage: %-15s Memory span: %s",
+        RealToString( mem.data.size(), true ),
+        RealToString( mem.active.size(), true ),
+        RealToString( mem.usage, true ),
+        RealToString( mem.high - mem.low, true ) );
 
     ImGui::InputText( "", m_memInfo.pattern, 1024 );
     ImGui::SameLine();

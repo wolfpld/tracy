@@ -4043,14 +4043,18 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
     ret.reserve_and_use( pages );
     memset( ret.data(), 0, pages * sizeof( Vector<int8_t> ) );
 
+    const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
+
     for( auto& alloc : mem.data )
     {
+        if( m_memInfo.restrictTime && alloc->timeAlloc > zvMid ) continue;
+
         const auto a0 = alloc->ptr - mem.low;
         const auto a1 = a0 + alloc->size;
         const auto p0 = a0 >> PageChunkBits;
         const auto p1 = a1 >> PageChunkBits;
 
-        int8_t val = alloc->timeFree < 0 ? 1 : -1;
+        int8_t val = alloc->timeFree < 0 ? 1 : ( m_memInfo.restrictTime ? ( alloc->timeFree > zvMid ? 1 : -1 ) : -1 );
 
         if( p0 == p1 )
         {

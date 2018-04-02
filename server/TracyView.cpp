@@ -3653,6 +3653,7 @@ void View::DrawStatistics()
 template<class T>
 void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
 {
+    ImGui::BeginChild( "##memScroll", ImVec2( 0, std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
     ImGui::Columns( 7 );
     ImGui::Text( "Address" );
     ImGui::NextColumn();
@@ -3797,6 +3798,7 @@ void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
         ptr++;
     }
     ImGui::EndColumns();
+    ImGui::EndChild();
 }
 
 void View::DrawMemory()

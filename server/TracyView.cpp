@@ -2511,7 +2511,7 @@ void View::DrawZoneInfoWindow()
         cti[i] = uint32_t( i );
     }
 
-    std::sort( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+    pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
     if( !ev.child.empty() )
     {
@@ -2670,7 +2670,7 @@ void View::DrawGpuInfoWindow()
         cti[i] = uint32_t( i );
     }
 
-    std::sort( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+    pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
     if( !ev.child.empty() )
     {
@@ -3484,7 +3484,7 @@ void View::DrawFindZone()
         }
         if( m_findZone.sortByCounts )
         {
-            std::sort( threads.begin(), threads.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.size() > rhs->second.size(); } );
+            pdqsort_branchless( threads.begin(), threads.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.size() > rhs->second.size(); } );
         }
 
         ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
@@ -3911,7 +3911,7 @@ void View::DrawMemory()
             {
                 items.emplace_back( v.second );
             }
-            std::sort( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->timeAlloc < rhs->timeAlloc; } );
+            pdqsort_branchless( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->timeAlloc < rhs->timeAlloc; } );
         }
 
         ImGui::SameLine();

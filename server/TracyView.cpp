@@ -3940,6 +3940,82 @@ void View::DrawMemory()
     ImGui::End();
 }
 
+enum { ChunkBits = 10 };
+enum { ChunkSize = 1 << ChunkBits };
+enum { PageBits = 10 };
+enum { PageChunkBits = ChunkBits + PageBits };
+enum { PageSize = 1 << PageChunkBits };
+enum { PageMask = PageSize - 1 };
+
+static tracy_force_inline void PreparePage( Vector<int8_t>& page )
+{
+    if( page.empty() )
+    {
+        page.reserve_and_use( ChunkSize );
+        memset( page.data(), 0, ChunkSize );
+    }
+}
+
+Vector<Vector<int8_t>> View::GetMemoryPages() const
+{
+    Vector<Vector<int8_t>> ret;
+
+    const auto& mem = m_worker.GetMemData();
+    const auto span = mem.high - mem.low;
+    const auto pages = ( span / PageSize ) + 1;
+
+    ret.reserve_and_use( pages );
+    memset( ret.data(), 0, pages * sizeof( Vector<int8_t> ) );
+
+    for( auto& alloc : mem.data )
+    {
+        const auto a0 = alloc->ptr - mem.low;
+        const auto a1 = a0 + alloc->size;
+        const auto p0 = a0 >> PageChunkBits;
+        const auto p1 = a1 >> PageChunkBits;
+
+        int8_t val = alloc->timeFree < 0 ? 1 : -1;
+
+        if( p0 == p1 )
+        {
+            auto& page = ret[p0];
+            PreparePage( page );
+            const auto b0 = a0 & PageMask;
+            const auto b1 = a1 & PageMask;
+            const auto c0 = b0 >> ChunkBits;
+            const auto c1 = ( b1 >> ChunkBits ) + 1;
+            memset( page.data() + c0, val, c1 - c0 );
+        }
+        else
+        {
+            {
+                auto& page = ret[p0];
+                PreparePage( page );
+                const auto b0 = a0 & PageMask;
+                const auto c0 = b0 >> ChunkBits;
+                memset( page.data() + c0, val, ChunkSize - c0 );
+            }
+
+            for( uint64_t i=p0+1; i<p1; i++ )
+            {
+                auto& page = ret[i];
+                if( page.empty() ) page.reserve_and_use( ChunkSize );
+                memset( page.data(), val, ChunkSize );
+            }
+
+            {
+                auto& page = ret[p1];
+                PreparePage( page );
+                const auto b1 = a1 & PageMask;
+                const auto c1 = ( b1 >> ChunkBits ) + 1;
+                memset( page.data(), val, c1 );
+            }
+        }
+    }
+
+    return ret;
+}
+
 uint32_t View::GetZoneColor( const ZoneEvent& ev )
 {
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );

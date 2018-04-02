@@ -3958,7 +3958,7 @@ void View::DrawMemory()
             if( pages[i].empty() )
             {
                 i++;
-                while( pages[i].empty() )
+                while( i < pages.size() && pages[i].empty() )
                 {
                     lines--;
                     i++;

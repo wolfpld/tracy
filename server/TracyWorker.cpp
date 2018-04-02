@@ -243,6 +243,26 @@ Worker::Worker( FileRead& f )
         f.Read( pd->data.data(), psz * sizeof( PlotItem ) );
         m_data.plots.push_back_no_space_check( pd );
     }
+
+    // Support pre-0.3 traces
+    if( f.IsEOF() ) return;
+
+    f.Read( &sz, sizeof( sz ) );
+    m_data.memory.data.reserve( sz );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        auto mem = m_slab.Alloc<MemEvent>();
+        f.Read( mem, sizeof( MemEvent ) );
+        m_data.memory.data.push_back_no_space_check( mem );
+
+        if( mem->timeFree < 0 )
+        {
+            m_data.memory.active.emplace( mem->ptr, mem );
+        }
+    }
+    f.Read( &m_data.memory.high, sizeof( m_data.memory.high ) );
+    f.Read( &m_data.memory.low, sizeof( m_data.memory.low ) );
+    f.Read( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
 }
 
 Worker::~Worker()
@@ -1879,6 +1899,16 @@ void Worker::Write( FileWrite& f )
         f.Write( &sz, sizeof( sz ) );
         f.Write( plot->data.data(), sizeof( PlotItem ) * sz );
     }
+
+    sz = m_data.memory.data.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& mem : m_data.memory.data )
+    {
+        f.Write( mem, sizeof( MemEvent ) );
+    }
+    f.Write( &m_data.memory.high, sizeof( m_data.memory.high ) );
+    f.Write( &m_data.memory.low, sizeof( m_data.memory.low ) );
+    f.Write( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
 }
 
 void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )

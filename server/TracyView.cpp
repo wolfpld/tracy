@@ -3902,6 +3902,7 @@ void View::DrawMemory()
     ImGui::Separator();
     if( ImGui::TreeNode( "Active allocations" ) )
     {
+        uint64_t total = 0;
         std::vector<MemEvent*> items;
         items.reserve( mem.active.size() );
         if( m_memInfo.restrictTime )
@@ -3911,6 +3912,7 @@ void View::DrawMemory()
                 if( v->timeAlloc < zvMid && ( v->timeFree > zvMid || v->timeFree < 0 ) )
                 {
                     items.emplace_back( v );
+                    total += v->size;
                 }
             }
         }
@@ -3921,10 +3923,12 @@ void View::DrawMemory()
                 items.emplace_back( v.second );
             }
             pdqsort_branchless( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->timeAlloc < rhs->timeAlloc; } );
+            total = mem.usage;
         }
 
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( items.size(), true ) );
+        ImGui::Text( "Memory usage: %s", RealToString( total, true ) );
 
         ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
             ImGui::Text( "0x%" PRIx64, (*v)->ptr );

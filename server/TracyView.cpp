@@ -3870,9 +3870,17 @@ void View::DrawMemory()
     ImGui::Separator();
     if( ImGui::TreeNode( "Active allocations" ) )
     {
-        ListMemData<decltype( mem.active.begin() )>( mem.active.begin(), mem.active.end(), []( auto& v ) {
-            ImGui::Text( "0x%" PRIx64, v->second->ptr );
-            return v->second;
+        std::vector<MemEvent*> items;
+        items.reserve( mem.active.size() );
+        for( auto& v : mem.active )
+        {
+            items.emplace_back( v.second );
+        }
+        std::sort( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->timeAlloc > rhs->timeAlloc; } );
+
+        ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
+            ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+            return *v;
         } );
         ImGui::TreePop();
     }

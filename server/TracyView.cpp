@@ -3808,6 +3808,16 @@ void View::DrawMemory()
         }
     }
 
+    ImGui::Separator();
+    if( ImGui::TreeNode( "Active allocations" ) )
+    {
+        ListMemData<decltype( mem.active.begin() )>( mem.active.begin(), mem.active.end(), []( auto& v ) {
+            ImGui::Text( "0x%" PRIx64, v->second->ptr );
+            return v->second;
+        } );
+        ImGui::TreePop();
+    }
+
     ImGui::End();
 }
 

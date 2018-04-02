@@ -1092,6 +1092,13 @@ void View::DrawZones()
         auto& io = ImGui::GetIO();
         draw->AddLine( ImVec2( io.MousePos.x, linepos.y ), ImVec2( io.MousePos.x, linepos.y + lineh ), 0x33FFFFFF );
     }
+
+    if( m_memInfo.show && m_memInfo.restrictTime )
+    {
+        const auto zvMid = ( m_zvEnd - m_zvStart ) / 2;
+        auto& io = ImGui::GetIO();
+        draw->AddLine( ImVec2( wpos.x + zvMid * pxns, linepos.y ), ImVec2( wpos.x + zvMid * pxns, linepos.y + lineh ), 0x88FF44FF );
+    }
 }
 
 int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int _offset, int depth )
@@ -3833,9 +3840,11 @@ void View::DrawMemory()
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Don't show allocations beyond end of timeline display." );
+        ImGui::Text( "Don't show allocations beyond the middle of timeline display." );
         ImGui::EndTooltip();
     }
+
+    const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
 
     ImGui::Separator();
     if( ImGui::TreeNodeEx( "Allocations", ImGuiTreeNodeFlags_DefaultOpen ) )
@@ -3848,7 +3857,7 @@ void View::DrawMemory()
             {
                 for( auto& v : mem.data )
                 {
-                    if( v->ptr <= m_memInfo.ptrFind && v->ptr + v->size > m_memInfo.ptrFind && v->timeAlloc < m_zvEnd )
+                    if( v->ptr <= m_memInfo.ptrFind && v->ptr + v->size > m_memInfo.ptrFind && v->timeAlloc < zvMid )
                     {
                         match.emplace_back( v );
                     }
@@ -3899,7 +3908,7 @@ void View::DrawMemory()
         {
             for( auto& v : mem.data )
             {
-                if( v->timeAlloc < m_zvEnd && ( v->timeFree > m_zvEnd || v->timeFree < 0 ) )
+                if( v->timeAlloc < zvMid && ( v->timeFree > zvMid || v->timeFree < 0 ) )
                 {
                     items.emplace_back( v );
                 }

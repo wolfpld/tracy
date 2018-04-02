@@ -252,7 +252,15 @@ Worker::Worker( FileRead& f )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto mem = m_slab.Alloc<MemEvent>();
-        f.Read( mem, sizeof( MemEvent ) );
+        f.Read( &mem->ptr, sizeof( mem->ptr ) );
+        f.Read( &mem->size, sizeof( mem->size ) );
+        f.Read( &mem->timeAlloc, sizeof( mem->timeAlloc ) );
+        f.Read( &mem->timeFree, sizeof( mem->timeFree ) );
+        uint64_t t;
+        f.Read( &t, sizeof( t ) );
+        mem->threadAlloc = CompressThread( t );
+        f.Read( &t, sizeof( t ) );
+        mem->threadFree = CompressThread( t );
         m_data.memory.data.push_back_no_space_check( mem );
 
         if( mem->timeFree < 0 )
@@ -1904,7 +1912,14 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& mem : m_data.memory.data )
     {
-        f.Write( mem, sizeof( MemEvent ) );
+        f.Write( &mem->ptr, sizeof( mem->ptr ) );
+        f.Write( &mem->size, sizeof( mem->size ) );
+        f.Write( &mem->timeAlloc, sizeof( mem->timeAlloc ) );
+        f.Write( &mem->timeFree, sizeof( mem->timeFree ) );
+        uint64_t t = DecompressThread( mem->threadAlloc );
+        f.Write( &t, sizeof( t ) );
+        t = DecompressThread( mem->threadFree );
+        f.Write( &t, sizeof( t ) );
     }
     f.Write( &m_data.memory.high, sizeof( m_data.memory.high ) );
     f.Write( &m_data.memory.low, sizeof( m_data.memory.low ) );

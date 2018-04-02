@@ -3685,6 +3685,14 @@ void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
     ImGui::Text( "Zone alloc" );
     ImGui::NextColumn();
     ImGui::Text( "Zone free" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "If alloc and free is performed in the same zone, it is displayed in yellow color." );
+        ImGui::EndTooltip();
+    }
     ImGui::NextColumn();
     ImGui::Separator();
     int idx = 0;
@@ -3747,31 +3755,41 @@ void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
         }
         else
         {
-            auto zone = FindZoneAtTime( m_worker.DecompressThread( v->threadFree ), v->timeFree );
-            if( !zone )
+            auto zoneFree = FindZoneAtTime( m_worker.DecompressThread( v->threadFree ), v->timeFree );
+            if( !zoneFree )
             {
                 ImGui::Text( "-" );
             }
             else
             {
-                const auto& srcloc = m_worker.GetSourceLocation( zone->srcloc );
+                const auto& srcloc = m_worker.GetSourceLocation( zoneFree->srcloc );
                 const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
                 ImGui::PushID( idx++ );
-                auto sel = ImGui::Selectable( txt, false );
+                bool sel;
+                if( zoneFree == zone )
+                {
+                    sel = ImGui::Selectable( "", false );
+                    ImGui::SameLine();
+                    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.6f, 1.f ), txt );
+                }
+                else
+                {
+                    sel = ImGui::Selectable( txt, false );
+                }
                 auto hover = ImGui::IsItemHovered();
                 ImGui::PopID();
                 if( sel )
                 {
-                    m_zoneInfoWindow = zone;
+                    m_zoneInfoWindow = zoneFree;
                 }
                 if( hover )
                 {
-                    m_zoneHighlight = zone;
+                    m_zoneHighlight = zoneFree;
                     if( ImGui::IsMouseClicked( 2 ) )
                     {
-                        ZoomToZone( *zone );
+                        ZoomToZone( *zoneFree );
                     }
-                    ZoneTooltip( *zone );
+                    ZoneTooltip( *zoneFree );
                 }
             }
         }

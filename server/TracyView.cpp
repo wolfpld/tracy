@@ -3809,11 +3809,11 @@ void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
 }
 
 enum { ChunkBits = 10 };
-enum { ChunkSize = 1 << ChunkBits };
 enum { PageBits = 10 };
+enum { PageSize = 1 << PageBits };
 enum { PageChunkBits = ChunkBits + PageBits };
-enum { PageSize = 1 << PageChunkBits };
-enum { PageMask = PageSize - 1 };
+enum { PageChunkSize = 1 << PageChunkBits };
+enum { PageChunkMask = PageChunkSize - 1 };
 
 void View::DrawMemory()
 {
@@ -3968,11 +3968,11 @@ void View::DrawMemory()
             }
         }
 
-        ImGui::BeginChild( "##memMap", ImVec2( ChunkSize + 2, lines + 2 ), false );
+        ImGui::BeginChild( "##memMap", ImVec2( PageSize + 2, lines + 2 ), false );
         auto draw = ImGui::GetWindowDrawList();
         const auto wpos = ImGui::GetCursorScreenPos() + ImVec2( 1, 1 );
-        draw->AddRect( wpos - ImVec2( 1, 1 ), wpos + ImVec2( ChunkSize + 1, lines + 1 ), 0xFF888888 );
-        draw->AddRectFilled( wpos, wpos + ImVec2( ChunkSize, lines ), 0xFF666666 );
+        draw->AddRect( wpos - ImVec2( 1, 1 ), wpos + ImVec2( PageSize + 1, lines + 1 ), 0xFF888888 );
+        draw->AddRectFilled( wpos, wpos + ImVec2( PageSize, lines ), 0xFF666666 );
 
         size_t line = 0;
         i = 0;
@@ -3982,14 +3982,14 @@ void View::DrawMemory()
             if( page.empty() )
             {
                 i++;
-                draw->AddLine( wpos + ImVec2( 0, line ), wpos + ImVec2( ChunkSize, line ), 0xFF555555 );
+                draw->AddLine( wpos + ImVec2( 0, line ), wpos + ImVec2( PageSize, line ), 0xFF555555 );
                 line++;
                 while( pages[i].empty() ) i++;
             }
             else
             {
                 size_t idx = 0;
-                while( idx < ChunkSize )
+                while( idx < PageSize )
                 {
                     if( page[idx] == 0 )
                     {
@@ -3997,7 +3997,7 @@ void View::DrawMemory()
                         {
                             idx++;
                         }
-                        while( idx < ChunkSize && page[idx] == 0 );
+                        while( idx < PageSize && page[idx] == 0 );
                     }
                     else
                     {
@@ -4007,7 +4007,7 @@ void View::DrawMemory()
                         {
                             idx++;
                         }
-                        while( idx < ChunkSize && page[idx] == val );
+                        while( idx < PageSize && page[idx] == val );
                         draw->AddLine( wpos + ImVec2( i0, line ), wpos + ImVec2( idx, line ), val > 0 ? 0xFF44FF44 : 0xFF4444FF );
                     }
                 }
@@ -4027,8 +4027,8 @@ static tracy_force_inline void PreparePage( Vector<int8_t>& page )
 {
     if( page.empty() )
     {
-        page.reserve_and_use( ChunkSize );
-        memset( page.data(), 0, ChunkSize );
+        page.reserve_and_use( PageSize );
+        memset( page.data(), 0, PageSize );
     }
 }
 
@@ -4038,7 +4038,7 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
 
     const auto& mem = m_worker.GetMemData();
     const auto span = mem.high - mem.low;
-    const auto pages = ( span / PageSize ) + 1;
+    const auto pages = ( span / PageChunkSize ) + 1;
 
     ret.reserve_and_use( pages );
     memset( ret.data(), 0, pages * sizeof( Vector<int8_t> ) );
@@ -4060,8 +4060,8 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
         {
             auto& page = ret[p0];
             PreparePage( page );
-            const auto b0 = a0 & PageMask;
-            const auto b1 = a1 & PageMask;
+            const auto b0 = a0 & PageChunkMask;
+            const auto b1 = a1 & PageChunkMask;
             const auto c0 = b0 >> ChunkBits;
             const auto c1 = ( b1 >> ChunkBits ) + 1;
             memset( page.data() + c0, val, c1 - c0 );
@@ -4071,22 +4071,22 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
             {
                 auto& page = ret[p0];
                 PreparePage( page );
-                const auto b0 = a0 & PageMask;
+                const auto b0 = a0 & PageChunkMask;
                 const auto c0 = b0 >> ChunkBits;
-                memset( page.data() + c0, val, ChunkSize - c0 );
+                memset( page.data() + c0, val, PageSize - c0 );
             }
 
             for( uint64_t i=p0+1; i<p1; i++ )
             {
                 auto& page = ret[i];
-                if( page.empty() ) page.reserve_and_use( ChunkSize );
-                memset( page.data(), val, ChunkSize );
+                if( page.empty() ) page.reserve_and_use( PageSize );
+                memset( page.data(), val, PageSize );
             }
 
             {
                 auto& page = ret[p1];
                 PreparePage( page );
-                const auto b1 = a1 & PageMask;
+                const auto b1 = a1 & PageChunkMask;
                 const auto c1 = ( b1 >> ChunkBits ) + 1;
                 memset( page.data(), val, c1 );
             }

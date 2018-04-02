@@ -3650,6 +3650,102 @@ void View::DrawStatistics()
     ImGui::End();
 }
 
+template<class T>
+void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
+{
+    ImGui::Columns( 6 );
+    ImGui::Text( "Address" );
+    ImGui::NextColumn();
+    ImGui::Text( "Size" );
+    ImGui::NextColumn();
+    ImGui::Text( "Appeared at" );
+    ImGui::NextColumn();
+    ImGui::Text( "Duration" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Active allocations are displayed using green color." );
+        ImGui::EndTooltip();
+    }
+
+    ImGui::NextColumn();
+    ImGui::Text( "Thread" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Shows one thread if alloc and free was performed on the same thread." );
+        ImGui::Text( "Otherwise two threads are displayed in order: alloc, free." );
+        ImGui::EndTooltip();
+    }
+    ImGui::NextColumn();
+    ImGui::Text( "Zone" );
+    ImGui::NextColumn();
+    ImGui::Separator();
+    int idx = 0;
+    while( ptr != end )
+    {
+        auto v = DrawAddress( ptr );
+        ImGui::NextColumn();
+        ImGui::Text( "%s", RealToString( v->size, true ) );
+        ImGui::NextColumn();
+        ImGui::Text( "%s", TimeToString( v->timeAlloc - m_worker.GetFrameBegin( 0 ) ) );
+        ImGui::NextColumn();
+        if( v->timeFree < 0 )
+        {
+            ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "%s", TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
+            ImGui::NextColumn();
+            ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+        }
+        else
+        {
+            ImGui::Text( "%s", TimeToString( v->timeFree - v->timeAlloc ) );
+            ImGui::NextColumn();
+            ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+            if( v->threadAlloc != v->threadFree )
+            {
+                ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadFree ) ) );
+            }
+        }
+        ImGui::NextColumn();
+        auto zone = FindZoneAtTime( m_worker.DecompressThread( v->threadAlloc ), v->timeAlloc );
+        if( !zone )
+        {
+            ImGui::Text( "-" );
+        }
+        else
+        {
+            const auto& srcloc = m_worker.GetSourceLocation( zone->srcloc );
+            const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+            ImGui::PushID( idx++ );
+            auto sel = ImGui::Selectable( txt, false );
+            auto hover = ImGui::IsItemHovered();
+            ImGui::SameLine();
+            ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+            ImGui::PopID();
+            if( sel )
+            {
+                m_zoneInfoWindow = zone;
+            }
+            if( hover )
+            {
+                m_zoneHighlight = zone;
+                if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( *zone );
+                }
+                ZoneTooltip( *zone );
+            }
+        }
+        ImGui::NextColumn();
+        ptr++;
+    }
+    ImGui::EndColumns();
+}
+
 void View::DrawMemory()
 {
     auto& mem = m_worker.GetMemData();
@@ -3695,41 +3791,8 @@ void View::DrawMemory()
             ImGui::TextDisabled( "(%s)", RealToString( match.size(), true ) );
             if( expand )
             {
-                ImGui::Columns( 6 );
-                ImGui::Text( "Address" );
-                ImGui::NextColumn();
-                ImGui::Text( "Size" );
-                ImGui::NextColumn();
-                ImGui::Text( "Appeared at" );
-                ImGui::NextColumn();
-                ImGui::Text( "Duration" );
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(?)" );
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::Text( "Active allocations are displayed using green color." );
-                    ImGui::EndTooltip();
-                }
-
-                ImGui::NextColumn();
-                ImGui::Text( "Thread" );
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(?)" );
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::Text( "Shows one thread if alloc and free was performed on the same thread." );
-                    ImGui::Text( "Otherwise two threads are displayed in order: alloc, free." );
-                    ImGui::EndTooltip();
-                }
-                ImGui::NextColumn();
-                ImGui::Text( "Zone" );
-                ImGui::NextColumn();
-                ImGui::Separator();
-                int idx = 0;
-                for( auto& v : match )
-                {
+                ListMemData<decltype( match.begin() )>( match.begin(), match.end(), [this]( auto& it ) {
+                    auto& v = *it;
                     if( v->ptr == m_memInfo.ptrFind )
                     {
                         ImGui::Text( "0x%" PRIx64, m_memInfo.ptrFind );
@@ -3738,60 +3801,8 @@ void View::DrawMemory()
                     {
                         ImGui::Text( "0x%" PRIx64 "+%" PRIu64, v->ptr, m_memInfo.ptrFind - v->ptr );
                     }
-                    ImGui::NextColumn();
-                    ImGui::Text( "%s", RealToString( v->size, true ) );
-                    ImGui::NextColumn();
-                    ImGui::Text( "%s", TimeToString( v->timeAlloc - m_worker.GetFrameBegin( 0 ) ) );
-                    ImGui::NextColumn();
-                    if( v->timeFree < 0 )
-                    {
-                        ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "%s", TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
-                        ImGui::NextColumn();
-                        ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
-                    }
-                    else
-                    {
-                        ImGui::Text( "%s", TimeToString( v->timeFree - v->timeAlloc ) );
-                        ImGui::NextColumn();
-                        ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
-                        if( v->threadAlloc != v->threadFree )
-                        {
-                            ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadFree ) ) );
-                        }
-                    }
-                    ImGui::NextColumn();
-                    auto zone = FindZoneAtTime( m_worker.DecompressThread( v->threadAlloc ), v->timeAlloc );
-                    if( !zone )
-                    {
-                        ImGui::Text( "-" );
-                    }
-                    else
-                    {
-                        const auto& srcloc = m_worker.GetSourceLocation( zone->srcloc );
-                        const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
-                        ImGui::PushID( idx++ );
-                        auto sel = ImGui::Selectable( txt, false );
-                        auto hover = ImGui::IsItemHovered();
-                        ImGui::SameLine();
-                        ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-                        ImGui::PopID();
-                        if( sel )
-                        {
-                            m_zoneInfoWindow = zone;
-                        }
-                        if( hover )
-                        {
-                            m_zoneHighlight = zone;
-                            if( ImGui::IsMouseClicked( 2 ) )
-                            {
-                                ZoomToZone( *zone );
-                            }
-                            ZoneTooltip( *zone );
-                        }
-                    }
-                    ImGui::NextColumn();
-                }
-                ImGui::EndColumns();
+                    return v;
+                } );
                 ImGui::TreePop();
             }
         }

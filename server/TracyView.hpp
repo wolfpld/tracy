@@ -2,6 +2,7 @@
 #define __TRACYVIEW_HPP__
 
 #include <atomic>
+#include <functional>
 #include <map>
 #include <string>
 #include <thread>
@@ -75,6 +76,9 @@ private:
     void DrawFindZone();
     void DrawStatistics();
     void DrawMemory();
+
+    template<class T>
+    void ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();

@@ -4040,40 +4040,77 @@ Vector<int8_t> View::GetMemoryPages() const
     auto pgptr = ret.data();
     memset( pgptr, 0, pages * PageSize );
 
-    const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
-
-    for( auto& alloc : mem.data )
+    if( m_memInfo.restrictTime )
     {
-        if( m_memInfo.restrictTime && alloc.timeAlloc > zvMid ) continue;
-
-        const auto a0 = alloc.ptr - mem.low;
-        const auto a1 = a0 + alloc.size;
-        const auto p0 = a0 >> PageChunkBits;
-        const auto p1 = a1 >> PageChunkBits;
-
-        const auto b0 = a0 & PageChunkMask;
-        const auto b1 = a1 & PageChunkMask;
-        const auto c0 = b0 >> ChunkBits;
-        const auto c1 = b1 >> ChunkBits;
-
-        int8_t val = alloc.timeFree < 0 ? 1 : ( m_memInfo.restrictTime ? ( alloc.timeFree > zvMid ? 1 : -1 ) : -1 );
-
-        if( p0 == p1 )
+        const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
+        for( auto& alloc : mem.data )
         {
-            auto page = pgptr + p0 * PageSize;
-            if( c0 == c1 )
+            if( m_memInfo.restrictTime && alloc.timeAlloc > zvMid ) continue;
+
+            const auto a0 = alloc.ptr - mem.low;
+            const auto a1 = a0 + alloc.size;
+            const auto p0 = a0 >> PageChunkBits;
+            const auto p1 = a1 >> PageChunkBits;
+
+            const auto b0 = a0 & PageChunkMask;
+            const auto b1 = a1 & PageChunkMask;
+            const auto c0 = b0 >> ChunkBits;
+            const auto c1 = b1 >> ChunkBits;
+
+            int8_t val = alloc.timeFree < 0 ? 1 : ( alloc.timeFree > zvMid ? 1 : -1 );
+
+            if( p0 == p1 )
             {
-                page[c0] = val;
+                auto page = pgptr + p0 * PageSize;
+                if( c0 == c1 )
+                {
+                    page[c0] = val;
+                }
+                else
+                {
+                    memset( page + c0, val, c1 - c0 + 1 );
+                }
             }
             else
             {
-                memset( page + c0, val, c1 - c0 + 1 );
+                auto page = pgptr + p0 * PageSize;
+                memset( page + c0, val, ( PageSize - c0 ) + PageSize * ( p1 - p0 - 1 ) + ( c1 + 1 ) );
             }
         }
-        else
+    }
+    else
+    {
+        for( auto& alloc : mem.data )
         {
-            auto page = pgptr + p0 * PageSize;
-            memset( page + c0, val, ( PageSize - c0 ) + PageSize * ( p1 - p0 - 1 ) + ( c1 + 1 ) );
+            const auto a0 = alloc.ptr - mem.low;
+            const auto a1 = a0 + alloc.size;
+            const auto p0 = a0 >> PageChunkBits;
+            const auto p1 = a1 >> PageChunkBits;
+
+            const auto b0 = a0 & PageChunkMask;
+            const auto b1 = a1 & PageChunkMask;
+            const auto c0 = b0 >> ChunkBits;
+            const auto c1 = b1 >> ChunkBits;
+
+            int8_t val = alloc.timeFree < 0 ? 1 : -1;
+
+            if( p0 == p1 )
+            {
+                auto page = pgptr + p0 * PageSize;
+                if( c0 == c1 )
+                {
+                    page[c0] = val;
+                }
+                else
+                {
+                    memset( page + c0, val, c1 - c0 + 1 );
+                }
+            }
+            else
+            {
+                auto page = pgptr + p0 * PageSize;
+                memset( page + c0, val, ( PageSize - c0 ) + PageSize * ( p1 - p0 - 1 ) + ( c1 + 1 ) );
+            }
         }
     }
 

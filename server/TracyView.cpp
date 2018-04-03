@@ -4053,30 +4053,16 @@ Vector<int8_t> View::GetMemoryPages() const
             const auto a1 = a0 + alloc.size;
             int8_t val = alloc.timeFree < 0 ? 1 : ( alloc.timeFree > zvMid ? 1 : -1 );
 
-            const auto p0 = a0 >> PageChunkBits;
-            const auto p1 = a1 >> PageChunkBits;
+            const auto c0 = a0 >> ChunkBits;
+            const auto c1 = a1 >> ChunkBits;
 
-            const auto b0 = a0 & PageChunkMask;
-            const auto b1 = a1 & PageChunkMask;
-            const auto c0 = b0 >> ChunkBits;
-            const auto c1 = b1 >> ChunkBits;
-
-            if( p0 == p1 )
+            if( c0 == c1 )
             {
-                auto page = pgptr + p0 * PageSize;
-                if( c0 == c1 )
-                {
-                    page[c0] = val;
-                }
-                else
-                {
-                    memset( page + c0, val, c1 - c0 + 1 );
-                }
+                pgptr[c0] = val;
             }
             else
             {
-                auto page = pgptr + p0 * PageSize;
-                memset( page + c0, val, ( PageSize - c0 ) + PageSize * ( p1 - p0 - 1 ) + ( c1 + 1 ) );
+                memset( pgptr + c0, val, c1 - c0 + 1 );
             }
         }
     }
@@ -4088,30 +4074,16 @@ Vector<int8_t> View::GetMemoryPages() const
             const auto a1 = a0 + alloc.size;
             const int8_t val = alloc.timeFree < 0 ? 1 : -1;
 
-            const auto p0 = a0 >> PageChunkBits;
-            const auto p1 = a1 >> PageChunkBits;
+            const auto c0 = a0 >> ChunkBits;
+            const auto c1 = a1 >> ChunkBits;
 
-            const auto b0 = a0 & PageChunkMask;
-            const auto b1 = a1 & PageChunkMask;
-            const auto c0 = b0 >> ChunkBits;
-            const auto c1 = b1 >> ChunkBits;
-
-            if( p0 == p1 )
+            if( c0 == c1 )
             {
-                auto page = pgptr + p0 * PageSize;
-                if( c0 == c1 )
-                {
-                    page[c0] = val;
-                }
-                else
-                {
-                    memset( page + c0, val, c1 - c0 + 1 );
-                }
+                pgptr[c0] = val;
             }
             else
             {
-                auto page = pgptr + p0 * PageSize;
-                memset( page + c0, val, ( PageSize - c0 ) + PageSize * ( p1 - p0 - 1 ) + ( c1 + 1 ) );
+                memset( pgptr + c0, val, c1 - c0 + 1 );
             }
         }
     }

@@ -3813,7 +3813,6 @@ enum { PageBits = 10 };
 enum { PageSize = 1 << PageBits };
 enum { PageChunkBits = ChunkBits + PageBits };
 enum { PageChunkSize = 1 << PageChunkBits };
-enum { PageChunkMask = PageChunkSize - 1 };
 
 void View::DrawMemory()
 {

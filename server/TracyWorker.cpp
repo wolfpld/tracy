@@ -248,10 +248,10 @@ Worker::Worker( FileRead& f )
     if( f.IsEOF() ) return;
 
     f.Read( &sz, sizeof( sz ) );
-    m_data.memory.data.reserve( sz );
+    m_data.memory.data.reserve_and_use( sz );
+    auto mem = m_data.memory.data.data();
     for( uint64_t i=0; i<sz; i++ )
     {
-        auto mem = m_slab.Alloc<MemEvent>();
         f.Read( &mem->ptr, sizeof( mem->ptr ) );
         f.Read( &mem->size, sizeof( mem->size ) );
         f.Read( &mem->timeAlloc, sizeof( mem->timeAlloc ) );
@@ -261,12 +261,13 @@ Worker::Worker( FileRead& f )
         mem->threadAlloc = CompressThread( t );
         f.Read( &t, sizeof( t ) );
         mem->threadFree = CompressThread( t );
-        m_data.memory.data.push_back_no_space_check( mem );
 
         if( mem->timeFree < 0 )
         {
-            m_data.memory.active.emplace( mem->ptr, mem );
+            m_data.memory.active.emplace( mem->ptr, i );
         }
+
+        mem++;
     }
     f.Read( &m_data.memory.high, sizeof( m_data.memory.high ) );
     f.Read( &m_data.memory.low, sizeof( m_data.memory.low ) );
@@ -1663,34 +1664,33 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 {
     const auto time = TscTime( ev.time );
 
-    auto mem = m_slab.Alloc<MemEvent>();
-    mem->ptr = ev.ptr;
-    mem->size = 0;
-    memcpy( &mem->size, ev.size, 6 );
-    mem->timeAlloc = time;
-    mem->threadAlloc = CompressThread( ev.thread );
-    mem->timeFree = -1;
-    mem->threadFree = 0;
-
-    m_data.memory.low = std::min( m_data.memory.low, mem->ptr );
-    m_data.memory.high = std::max( m_data.memory.high, mem->ptr + mem->size );
-    m_data.memory.usage += mem->size;
-
     assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
-    m_data.memory.active.emplace( ev.ptr, mem );
+    assert( m_data.memory.data.empty() || m_data.memory.data.back().timeAlloc <= time );
 
-    assert( m_data.memory.data.empty() || m_data.memory.data.back()->timeAlloc <= time );
-    m_data.memory.data.push_back( mem );
+    m_data.memory.active.emplace( ev.ptr, m_data.memory.data.size() );
+
+    auto& mem = m_data.memory.data.push_next();
+    mem.ptr = ev.ptr;
+    mem.size = 0;
+    memcpy( &mem.size, ev.size, 6 );
+    mem.timeAlloc = time;
+    mem.threadAlloc = CompressThread( ev.thread );
+    mem.timeFree = -1;
+    mem.threadFree = 0;
+
+    m_data.memory.low = std::min( m_data.memory.low, mem.ptr );
+    m_data.memory.high = std::max( m_data.memory.high, mem.ptr + mem.size );
+    m_data.memory.usage += mem.size;
 }
 
 void Worker::ProcessMemFree( const QueueMemFree& ev )
 {
     auto it = m_data.memory.active.find( ev.ptr );
     assert( it != m_data.memory.active.end() );
-    auto mem = it->second;
-    mem->timeFree = TscTime( ev.time );
-    mem->threadFree = CompressThread( ev.thread );
-    m_data.memory.usage -= mem->size;
+    auto& mem = m_data.memory.data[it->second];
+    mem.timeFree = TscTime( ev.time );
+    mem.threadFree = CompressThread( ev.thread );
+    m_data.memory.usage -= mem.size;
     m_data.memory.active.erase( it );
 }
 
@@ -1912,13 +1912,13 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& mem : m_data.memory.data )
     {
-        f.Write( &mem->ptr, sizeof( mem->ptr ) );
-        f.Write( &mem->size, sizeof( mem->size ) );
-        f.Write( &mem->timeAlloc, sizeof( mem->timeAlloc ) );
-        f.Write( &mem->timeFree, sizeof( mem->timeFree ) );
-        uint64_t t = DecompressThread( mem->threadAlloc );
+        f.Write( &mem.ptr, sizeof( mem.ptr ) );
+        f.Write( &mem.size, sizeof( mem.size ) );
+        f.Write( &mem.timeAlloc, sizeof( mem.timeAlloc ) );
+        f.Write( &mem.timeFree, sizeof( mem.timeFree ) );
+        uint64_t t = DecompressThread( mem.threadAlloc );
         f.Write( &t, sizeof( t ) );
-        t = DecompressThread( mem->threadFree );
+        t = DecompressThread( mem.threadFree );
         f.Write( &t, sizeof( t ) );
     }
     f.Write( &m_data.memory.high, sizeof( m_data.memory.high ) );

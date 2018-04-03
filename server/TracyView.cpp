@@ -3658,7 +3658,7 @@ void View::DrawStatistics()
 }
 
 template<class T>
-void View::ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress )
+void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress )
 {
     ImGui::BeginChild( "##memScroll", ImVec2( 0, std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
     ImGui::Columns( 7 );
@@ -3858,15 +3858,15 @@ void View::DrawMemory()
     {
         if( m_memInfo.ptrFind != 0 )
         {
-            std::vector<MemEvent*> match;
+            std::vector<const MemEvent*> match;
             match.reserve( mem.active.size() );     // heuristic
             if( m_memInfo.restrictTime )
             {
                 for( auto& v : mem.data )
                 {
-                    if( v->ptr <= m_memInfo.ptrFind && v->ptr + v->size > m_memInfo.ptrFind && v->timeAlloc < zvMid )
+                    if( v.ptr <= m_memInfo.ptrFind && v.ptr + v.size > m_memInfo.ptrFind && v.timeAlloc < zvMid )
                     {
-                        match.emplace_back( v );
+                        match.emplace_back( &v );
                     }
                 }
             }
@@ -3874,9 +3874,9 @@ void View::DrawMemory()
             {
                 for( auto& v : mem.data )
                 {
-                    if( v->ptr <= m_memInfo.ptrFind && v->ptr + v->size > m_memInfo.ptrFind )
+                    if( v.ptr <= m_memInfo.ptrFind && v.ptr + v.size > m_memInfo.ptrFind )
                     {
-                        match.emplace_back( v );
+                        match.emplace_back( &v );
                     }
                 }
             }
@@ -3910,24 +3910,25 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Active allocations" ) )
     {
         uint64_t total = 0;
-        std::vector<MemEvent*> items;
+        std::vector<const MemEvent*> items;
         items.reserve( mem.active.size() );
         if( m_memInfo.restrictTime )
         {
             for( auto& v : mem.data )
             {
-                if( v->timeAlloc < zvMid && ( v->timeFree > zvMid || v->timeFree < 0 ) )
+                if( v.timeAlloc < zvMid && ( v.timeFree > zvMid || v.timeFree < 0 ) )
                 {
-                    items.emplace_back( v );
-                    total += v->size;
+                    items.emplace_back( &v );
+                    total += v.size;
                 }
             }
         }
         else
         {
+            auto ptr = mem.data.data();
             for( auto& v : mem.active )
             {
-                items.emplace_back( v.second );
+                items.emplace_back( ptr + v.second );
             }
             pdqsort_branchless( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->timeAlloc < rhs->timeAlloc; } );
             total = mem.usage;
@@ -4051,14 +4052,14 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
 
     for( auto& alloc : mem.data )
     {
-        if( m_memInfo.restrictTime && alloc->timeAlloc > zvMid ) continue;
+        if( m_memInfo.restrictTime && alloc.timeAlloc > zvMid ) continue;
 
-        const auto a0 = alloc->ptr - mem.low;
-        const auto a1 = a0 + alloc->size;
+        const auto a0 = alloc.ptr - mem.low;
+        const auto a1 = a0 + alloc.size;
         const auto p0 = a0 >> PageChunkBits;
         const auto p1 = a1 >> PageChunkBits;
 
-        int8_t val = alloc->timeFree < 0 ? 1 : ( m_memInfo.restrictTime ? ( alloc->timeFree > zvMid ? 1 : -1 ) : -1 );
+        int8_t val = alloc.timeFree < 0 ? 1 : ( m_memInfo.restrictTime ? ( alloc.timeFree > zvMid ? 1 : -1 ) : -1 );
 
         if( p0 == p1 )
         {

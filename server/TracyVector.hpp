@@ -94,6 +94,12 @@ public:
         m_ptr[m_size++] = std::move( v );
     }
 
+    T& push_next()
+    {
+        if( m_size == Capacity() ) AllocMore();
+        return m_ptr[m_size++];
+    }
+
     T* insert( T* it, const T& v )
     {
         assert( it >= m_ptr && it <= m_ptr + m_size );

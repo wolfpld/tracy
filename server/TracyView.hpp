@@ -78,7 +78,7 @@ private:
     void DrawMemory();
 
     template<class T>
-    void ListMemData( T ptr, T end, std::function<MemEvent*(T&)> DrawAddress );
+    void ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();

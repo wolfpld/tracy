@@ -4065,8 +4065,15 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
             const auto b0 = a0 & PageChunkMask;
             const auto b1 = a1 & PageChunkMask;
             const auto c0 = b0 >> ChunkBits;
-            const auto c1 = ( b1 >> ChunkBits ) + 1;
-            memset( page.data() + c0, val, c1 - c0 );
+            const auto c1 = b1 >> ChunkBits;
+            if( c0 == c1 )
+            {
+                *( page.data() + c0 ) = val;
+            }
+            else
+            {
+                memset( page.data() + c0, val, c1 - c0 + 1 );
+            }
         }
         else
         {

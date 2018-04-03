@@ -3976,8 +3976,8 @@ void View::DrawMemory()
         ImGui::BeginChild( "##memMap", ImVec2( PageSize + 2, lines + 2 ), false );
         auto draw = ImGui::GetWindowDrawList();
         const auto wpos = ImGui::GetCursorScreenPos() + ImVec2( 1, 1 );
-        draw->AddRect( wpos - ImVec2( 1, 1 ), wpos + ImVec2( PageSize + 1, lines + 1 ), 0xFF888888 );
-        draw->AddRectFilled( wpos, wpos + ImVec2( PageSize, lines ), 0xFF666666 );
+        draw->AddRect( wpos - ImVec2( 1, 1 ), wpos + ImVec2( PageSize + 1, lines + 1 ), 0xFF666666 );
+        draw->AddRectFilled( wpos, wpos + ImVec2( PageSize, lines ), 0xFF444444 );
 
         size_t line = 0;
         pgptr = pages.data();
@@ -3986,7 +3986,7 @@ void View::DrawMemory()
             if( memcmp( empty, pgptr, PageSize ) == 0 )
             {
                 pgptr += PageSize;
-                draw->AddLine( wpos + ImVec2( 0, line ), wpos + ImVec2( PageSize, line ), 0xFF555555 );
+                draw->AddLine( wpos + ImVec2( 0, line ), wpos + ImVec2( PageSize, line ), 0x11000000 );
                 line++;
                 while( pgptr != end && memcmp( empty, pgptr, PageSize ) == 0 ) pgptr += PageSize;
             }
@@ -4012,7 +4012,16 @@ void View::DrawMemory()
                             idx++;
                         }
                         while( idx < PageSize && pgptr[idx] == val );
-                        draw->AddLine( wpos + ImVec2( i0, line ), wpos + ImVec2( idx, line ), val > 0 ? 0xFF44FF44 : 0xFF4444FF );
+                        uint32_t color;
+                        if( val > 0 )
+                        {
+                            color = 0x44FF44 | ( ( 126 + val ) << 24 );
+                        }
+                        else
+                        {
+                            color = 0x4444FF | ( ( 126 - val ) << 24 );
+                        }
+                        draw->AddLine( wpos + ImVec2( i0, line ), wpos + ImVec2( idx, line ), color );
                     }
                 }
                 line++;
@@ -4050,7 +4059,11 @@ Vector<int8_t> View::GetMemoryPages() const
 
             const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;
-            int8_t val = alloc.timeFree < 0 ? 1 : ( alloc.timeFree > zvMid ? 1 : -1 );
+            int8_t val = alloc.timeFree < 0 ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
+                ( alloc.timeFree > zvMid ?
+                    int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
+                    int8_t( -std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeFree ) >> 24 ) ) ) );
 
             const auto c0 = a0 >> ChunkBits;
             const auto c1 = a1 >> ChunkBits;
@@ -4067,11 +4080,14 @@ Vector<int8_t> View::GetMemoryPages() const
     }
     else
     {
+        const auto lastTime = m_worker.GetLastTime();
         for( auto& alloc : mem.data )
         {
             const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;
-            const int8_t val = alloc.timeFree < 0 ? 1 : -1;
+            const int8_t val = alloc.timeFree < 0 ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeAlloc ) ) >> 24 ) ) ) :
+                int8_t( -std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeFree ) ) >> 24 ) ) );
 
             const auto c0 = a0 >> ChunkBits;
             const auto c1 = a1 >> ChunkBits;

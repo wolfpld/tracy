@@ -4047,7 +4047,7 @@ Vector<int8_t> View::GetMemoryPages() const
         const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
         for( auto& alloc : mem.data )
         {
-            if( m_memInfo.restrictTime && alloc.timeAlloc > zvMid ) continue;
+            if( m_memInfo.restrictTime && alloc.timeAlloc > zvMid ) break;
 
             const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;

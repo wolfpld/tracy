@@ -4049,6 +4049,8 @@ Vector<int8_t> View::GetMemoryPages() const
 
             const auto a0 = alloc.ptr - mem.low;
             const auto a1 = a0 + alloc.size;
+            int8_t val = alloc.timeFree < 0 ? 1 : ( alloc.timeFree > zvMid ? 1 : -1 );
+
             const auto p0 = a0 >> PageChunkBits;
             const auto p1 = a1 >> PageChunkBits;
 
@@ -4056,8 +4058,6 @@ Vector<int8_t> View::GetMemoryPages() const
             const auto b1 = a1 & PageChunkMask;
             const auto c0 = b0 >> ChunkBits;
             const auto c1 = b1 >> ChunkBits;
-
-            int8_t val = alloc.timeFree < 0 ? 1 : ( alloc.timeFree > zvMid ? 1 : -1 );
 
             if( p0 == p1 )
             {
@@ -4084,6 +4084,8 @@ Vector<int8_t> View::GetMemoryPages() const
         {
             const auto a0 = alloc.ptr - mem.low;
             const auto a1 = a0 + alloc.size;
+            const int8_t val = alloc.timeFree < 0 ? 1 : -1;
+
             const auto p0 = a0 >> PageChunkBits;
             const auto p1 = a1 >> PageChunkBits;
 
@@ -4091,8 +4093,6 @@ Vector<int8_t> View::GetMemoryPages() const
             const auto b1 = a1 & PageChunkMask;
             const auto c0 = b0 >> ChunkBits;
             const auto c1 = b1 >> ChunkBits;
-
-            int8_t val = alloc.timeFree < 0 ? 1 : -1;
 
             if( p0 == p1 )
             {

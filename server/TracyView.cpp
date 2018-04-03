@@ -4040,6 +4040,8 @@ Vector<int8_t> View::GetMemoryPages() const
     auto pgptr = ret.data();
     memset( pgptr, 0, pages * PageSize );
 
+    const auto memlow = mem.low;
+
     if( m_memInfo.restrictTime )
     {
         const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
@@ -4047,7 +4049,7 @@ Vector<int8_t> View::GetMemoryPages() const
         {
             if( m_memInfo.restrictTime && alloc.timeAlloc > zvMid ) continue;
 
-            const auto a0 = alloc.ptr - mem.low;
+            const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;
             int8_t val = alloc.timeFree < 0 ? 1 : ( alloc.timeFree > zvMid ? 1 : -1 );
 
@@ -4082,7 +4084,7 @@ Vector<int8_t> View::GetMemoryPages() const
     {
         for( auto& alloc : mem.data )
         {
-            const auto a0 = alloc.ptr - mem.low;
+            const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;
             const int8_t val = alloc.timeFree < 0 ? 1 : -1;
 

@@ -4059,16 +4059,17 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
         const auto p0 = a0 >> PageChunkBits;
         const auto p1 = a1 >> PageChunkBits;
 
+        const auto b0 = a0 & PageChunkMask;
+        const auto b1 = a1 & PageChunkMask;
+        const auto c0 = b0 >> ChunkBits;
+        const auto c1 = b1 >> ChunkBits;
+
         int8_t val = alloc.timeFree < 0 ? 1 : ( m_memInfo.restrictTime ? ( alloc.timeFree > zvMid ? 1 : -1 ) : -1 );
 
         if( p0 == p1 )
         {
             auto& page = ret[p0];
             PreparePage( page );
-            const auto b0 = a0 & PageChunkMask;
-            const auto b1 = a1 & PageChunkMask;
-            const auto c0 = b0 >> ChunkBits;
-            const auto c1 = b1 >> ChunkBits;
             if( c0 == c1 )
             {
                 *( page.data() + c0 ) = val;
@@ -4083,8 +4084,6 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
             {
                 auto& page = ret[p0];
                 PreparePage( page );
-                const auto b0 = a0 & PageChunkMask;
-                const auto c0 = b0 >> ChunkBits;
                 memset( page.data() + c0, val, PageSize - c0 );
             }
 
@@ -4098,9 +4097,7 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
             {
                 auto& page = ret[p1];
                 PreparePage( page );
-                const auto b1 = a1 & PageChunkMask;
-                const auto c1 = ( b1 >> ChunkBits ) + 1;
-                memset( page.data(), val, c1 );
+                memset( page.data(), val, c1 + 1 );
             }
         }
     }

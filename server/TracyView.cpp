@@ -4025,13 +4025,15 @@ void View::DrawMemory()
     ImGui::End();
 }
 
+static void PreparePageInit( Vector<int8_t>& page )
+{
+    page.reserve_and_use( PageSize );
+    memset( page.data(), 0, PageSize );
+}
+
 static tracy_force_inline void PreparePage( Vector<int8_t>& page )
 {
-    if( page.empty() )
-    {
-        page.reserve_and_use( PageSize );
-        memset( page.data(), 0, PageSize );
-    }
+    if( page.empty() ) PreparePageInit( page );
 }
 
 Vector<Vector<int8_t>> View::GetMemoryPages() const

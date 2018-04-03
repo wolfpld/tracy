@@ -109,7 +109,7 @@ private:
     void FindZones();
 #endif
 
-    Vector<Vector<int8_t>> GetMemoryPages() const;
+    Vector<int8_t> GetMemoryPages() const;
 
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
     flat_hash_map<const void*, bool, nohash<const void*>> m_showFull;

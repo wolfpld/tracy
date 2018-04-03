@@ -3952,22 +3952,25 @@ void View::DrawMemory()
 
         auto pages = GetMemoryPages();
 
-        size_t lines = pages.size();
-        size_t i = 0;
-        while( i < pages.size() )
+        const int8_t empty[PageSize] = {};
+        const auto sz = pages.size() / PageSize;
+        auto pgptr = pages.data();
+        const auto end = pgptr + sz * PageSize;
+        size_t lines = sz;
+        while( pgptr != end )
         {
-            if( pages[i].empty() )
+            if( memcmp( empty, pgptr, PageSize ) == 0 )
             {
-                i++;
-                while( i < pages.size() && pages[i].empty() )
+                pgptr += PageSize;
+                while( pgptr != end && memcmp( empty, pgptr, PageSize ) == 0 )
                 {
                     lines--;
-                    i++;
+                    pgptr += PageSize;
                 }
             }
             else
             {
-                i++;
+                pgptr += PageSize;
             }
         }
 
@@ -3978,44 +3981,43 @@ void View::DrawMemory()
         draw->AddRectFilled( wpos, wpos + ImVec2( PageSize, lines ), 0xFF666666 );
 
         size_t line = 0;
-        i = 0;
-        while( i < pages.size() )
+        pgptr = pages.data();
+        while( pgptr != end )
         {
-            auto& page = pages[i];
-            if( page.empty() )
+            if( memcmp( empty, pgptr, PageSize ) == 0 )
             {
-                i++;
+                pgptr += PageSize;
                 draw->AddLine( wpos + ImVec2( 0, line ), wpos + ImVec2( PageSize, line ), 0xFF555555 );
                 line++;
-                while( pages[i].empty() ) i++;
+                while( pgptr != end && memcmp( empty, pgptr, PageSize ) == 0 ) pgptr += PageSize;
             }
             else
             {
                 size_t idx = 0;
                 while( idx < PageSize )
                 {
-                    if( page[idx] == 0 )
+                    if( pgptr[idx] == 0 )
                     {
                         do
                         {
                             idx++;
                         }
-                        while( idx < PageSize && page[idx] == 0 );
+                        while( idx < PageSize && pgptr[idx] == 0 );
                     }
                     else
                     {
-                        auto val = page[idx];
+                        auto val = pgptr[idx];
                         const auto i0 = idx;
                         do
                         {
                             idx++;
                         }
-                        while( idx < PageSize && page[idx] == val );
+                        while( idx < PageSize && pgptr[idx] == val );
                         draw->AddLine( wpos + ImVec2( i0, line ), wpos + ImVec2( idx, line ), val > 0 ? 0xFF44FF44 : 0xFF4444FF );
                     }
                 }
                 line++;
-                i++;
+                pgptr += PageSize;
             }
         }
 
@@ -4026,27 +4028,17 @@ void View::DrawMemory()
     ImGui::End();
 }
 
-static void PreparePageInit( Vector<int8_t>& page )
+Vector<int8_t> View::GetMemoryPages() const
 {
-    page.reserve_and_use( PageSize );
-    memset( page.data(), 0, PageSize );
-}
-
-static tracy_force_inline void PreparePage( Vector<int8_t>& page )
-{
-    if( page.empty() ) PreparePageInit( page );
-}
-
-Vector<Vector<int8_t>> View::GetMemoryPages() const
-{
-    Vector<Vector<int8_t>> ret;
+    Vector<int8_t> ret;
 
     const auto& mem = m_worker.GetMemData();
     const auto span = mem.high - mem.low;
     const auto pages = ( span / PageChunkSize ) + 1;
 
-    ret.reserve_and_use( pages );
-    memset( ret.data(), 0, pages * sizeof( Vector<int8_t> ) );
+    ret.reserve_and_use( pages * PageSize );
+    auto pgptr = ret.data();
+    memset( pgptr, 0, pages * PageSize );
 
     const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
 
@@ -4068,37 +4060,20 @@ Vector<Vector<int8_t>> View::GetMemoryPages() const
 
         if( p0 == p1 )
         {
-            auto& page = ret[p0];
-            PreparePage( page );
+            auto page = pgptr + p0 * PageSize;
             if( c0 == c1 )
             {
-                *( page.data() + c0 ) = val;
+                page[c0] = val;
             }
             else
             {
-                memset( page.data() + c0, val, c1 - c0 + 1 );
+                memset( page + c0, val, c1 - c0 + 1 );
             }
         }
         else
         {
-            {
-                auto& page = ret[p0];
-                PreparePage( page );
-                memset( page.data() + c0, val, PageSize - c0 );
-            }
-
-            for( uint64_t i=p0+1; i<p1; i++ )
-            {
-                auto& page = ret[i];
-                if( page.empty() ) page.reserve_and_use( PageSize );
-                memset( page.data(), val, PageSize );
-            }
-
-            {
-                auto& page = ret[p1];
-                PreparePage( page );
-                memset( page.data(), val, c1 + 1 );
-            }
+            auto page = pgptr + p0 * PageSize;
+            memset( page + c0, val, ( PageSize - c0 ) + PageSize * ( p1 - p0 - 1 ) + ( c1 + 1 ) );
         }
     }
 

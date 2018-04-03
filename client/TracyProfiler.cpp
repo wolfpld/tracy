@@ -294,23 +294,23 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
         while( item != end )
         {
             uint64_t ptr;
-            const auto idx = MemRead( &item->hdr.idx );
+            const auto idx = MemRead<uint8_t>( &item->hdr.idx );
             if( idx < (int)QueueType::Terminate )
             {
                 switch( (QueueType)idx )
                 {
                 case QueueType::ZoneText:
-                    ptr = MemRead( &item->zoneText.text );
+                    ptr = MemRead<uint64_t>( &item->zoneText.text );
                     SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                     tracy_free( (void*)ptr );
                     break;
                 case QueueType::Message:
-                    ptr = MemRead( &item->message.text );
+                    ptr = MemRead<uint64_t>( &item->message.text );
                     SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                     tracy_free( (void*)ptr );
                     break;
                 case QueueType::ZoneBeginAllocSrcLoc:
-                    ptr = MemRead( &item->zoneBegin.srcloc );
+                    ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
                     SendSourceLocationPayload( ptr );
                     tracy_free( (void*)ptr );
                     break;

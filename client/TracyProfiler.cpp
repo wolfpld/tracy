@@ -340,7 +340,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
         auto end = item + sz;
         while( item != end )
         {
-            const auto idx = MemRead( &item->hdr.idx );
+            const auto idx = MemRead<uint8_t>( &item->hdr.idx );
             if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
             item++;
         }

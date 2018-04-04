@@ -29,6 +29,9 @@
 #define TracyMessage(x,y)
 #define TracyMessageL(x)
 
+#define TracyAlloc(x,y)
+#define TracyFree(x)
+
 #else
 
 #include "client/TracyLock.hpp"

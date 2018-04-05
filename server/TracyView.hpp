@@ -208,6 +208,14 @@ private:
             threads.clear();
             processed = 0;
         }
+
+        void ShowZone( int32_t srcloc, const char* name )
+        {
+            show = true;
+            Reset();
+            match.emplace_back( srcloc );
+            strcpy( pattern, name );
+        }
     } m_findZone;
 
     struct {

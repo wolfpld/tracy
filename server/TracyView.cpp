@@ -3636,10 +3636,7 @@ void View::DrawStatistics()
         auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
         if( ImGui::Selectable( name, m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == v->first, ImGuiSelectableFlags_SpanAllColumns ) )
         {
-            m_findZone.show = true;
-            m_findZone.Reset();
-            m_findZone.match.emplace_back( v->first );
-            strcpy( m_findZone.pattern, name );
+            m_findZone.ShowZone( v->first, name );
         }
         ImGui::NextColumn();
         ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );

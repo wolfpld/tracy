@@ -1,4 +1,4 @@
-v0.2 (xxxx-xx-xx)
+v0.2 (2018-04-05)
 -----------------
 
 - Fixed broken TRACY_NO_EXIT behavior.

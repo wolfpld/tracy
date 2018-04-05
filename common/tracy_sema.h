@@ -30,9 +30,16 @@ namespace tracy
 // Semaphore (Windows)
 //---------------------------------------------------------
 
-#include <windows.h>
-#undef min
-#undef max
+#ifndef MAXLONG
+enum { MAXLONG = 0x7fffffff };
+enum { INFINITE = 0xFFFFFFFF };
+typedef void* HANDLE;
+
+extern "C" __declspec(dllimport) HANDLE __stdcall CreateSemaphoreA( void*, long, long, const char* );
+extern "C" __declspec(dllimport) int __stdcall CloseHandle( HANDLE );
+extern "C" __declspec(dllimport) unsigned long __stdcall WaitForSingleObject( HANDLE, unsigned long );
+extern "C" __declspec(dllimport) int __stdcall ReleaseSemaphore( HANDLE, long, long* );
+#endif
 
 class Semaphore
 {
@@ -46,7 +53,7 @@ public:
     Semaphore(int initialCount = 0)
     {
         assert(initialCount >= 0);
-        m_hSema = CreateSemaphore(NULL, initialCount, MAXLONG, NULL);
+        m_hSema = CreateSemaphoreA(NULL, initialCount, MAXLONG, NULL);
     }
 
     ~Semaphore()

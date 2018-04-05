@@ -103,7 +103,9 @@
     <ClInclude Include="..\..\..\common\TracyQueue.hpp" />
     <ClInclude Include="..\..\..\common\TracySocket.hpp" />
     <ClInclude Include="..\..\..\common\TracySystem.hpp" />
+    <ClInclude Include="..\..\..\common\tracy_benaphore.h" />
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp" />
+    <ClInclude Include="..\..\..\common\tracy_sema.h" />
     <ClInclude Include="..\..\..\imgui\imconfig.h" />
     <ClInclude Include="..\..\..\imgui\imgui.h" />
     <ClInclude Include="..\..\..\imgui\imgui_internal.h" />
@@ -124,10 +126,8 @@
     <ClInclude Include="..\..\..\server\TracyVector.hpp" />
     <ClInclude Include="..\..\..\server\TracyView.hpp" />
     <ClInclude Include="..\..\..\server\TracyWorker.hpp" />
-    <ClInclude Include="..\..\..\server\tracy_benaphore.h" />
     <ClInclude Include="..\..\..\server\tracy_flat_hash_map.hpp" />
     <ClInclude Include="..\..\..\server\tracy_pdqsort.h" />
-    <ClInclude Include="..\..\..\server\tracy_sema.h" />
     <ClInclude Include="..\..\libs\gl3w\GL\gl3w.h" />
     <ClInclude Include="..\..\libs\gl3w\GL\glcorearb.h" />
     <ClInclude Include="..\..\src\imgui_impl_glfw_gl3.h" />

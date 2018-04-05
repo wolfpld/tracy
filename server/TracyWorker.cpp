@@ -243,6 +243,35 @@ Worker::Worker( FileRead& f )
         f.Read( pd->data.data(), psz * sizeof( PlotItem ) );
         m_data.plots.push_back_no_space_check( pd );
     }
+
+    // Support pre-0.3 traces
+    if( f.IsEOF() ) return;
+
+    f.Read( &sz, sizeof( sz ) );
+    m_data.memory.data.reserve_and_use( sz );
+    auto mem = m_data.memory.data.data();
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        f.Read( &mem->ptr, sizeof( mem->ptr ) );
+        f.Read( &mem->size, sizeof( mem->size ) );
+        f.Read( &mem->timeAlloc, sizeof( mem->timeAlloc ) );
+        f.Read( &mem->timeFree, sizeof( mem->timeFree ) );
+        uint64_t t;
+        f.Read( &t, sizeof( t ) );
+        mem->threadAlloc = CompressThread( t );
+        f.Read( &t, sizeof( t ) );
+        mem->threadFree = CompressThread( t );
+
+        if( mem->timeFree < 0 )
+        {
+            m_data.memory.active.emplace( mem->ptr, i );
+        }
+
+        mem++;
+    }
+    f.Read( &m_data.memory.high, sizeof( m_data.memory.high ) );
+    f.Read( &m_data.memory.low, sizeof( m_data.memory.low ) );
+    f.Read( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
 }
 
 Worker::~Worker()
@@ -1200,6 +1229,12 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::GpuResync:
         ProcessGpuResync( ev.gpuResync );
         break;
+    case QueueType::MemAlloc:
+        ProcessMemAlloc( ev.memAlloc );
+        break;
+    case QueueType::MemFree:
+        ProcessMemFree( ev.memFree );
+        break;
     case QueueType::Terminate:
         m_terminate = true;
         break;
@@ -1625,6 +1660,40 @@ void Worker::ProcessGpuResync( const QueueGpuResync& ev )
     }
 }
 
+void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
+{
+    const auto time = TscTime( ev.time );
+
+    assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
+    assert( m_data.memory.data.empty() || m_data.memory.data.back().timeAlloc <= time );
+
+    m_data.memory.active.emplace( ev.ptr, m_data.memory.data.size() );
+
+    auto& mem = m_data.memory.data.push_next();
+    mem.ptr = ev.ptr;
+    mem.size = 0;
+    memcpy( &mem.size, ev.size, 6 );
+    mem.timeAlloc = time;
+    mem.threadAlloc = CompressThread( ev.thread );
+    mem.timeFree = -1;
+    mem.threadFree = 0;
+
+    m_data.memory.low = std::min( m_data.memory.low, mem.ptr );
+    m_data.memory.high = std::max( m_data.memory.high, mem.ptr + mem.size );
+    m_data.memory.usage += mem.size;
+}
+
+void Worker::ProcessMemFree( const QueueMemFree& ev )
+{
+    auto it = m_data.memory.active.find( ev.ptr );
+    assert( it != m_data.memory.active.end() );
+    auto& mem = m_data.memory.data[it->second];
+    mem.timeFree = TscTime( ev.time );
+    mem.threadFree = CompressThread( ev.thread );
+    m_data.memory.usage -= mem.size;
+    m_data.memory.active.erase( it );
+}
+
 void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread )
 {
     uint64_t sz;
@@ -1838,6 +1907,23 @@ void Worker::Write( FileWrite& f )
         f.Write( &sz, sizeof( sz ) );
         f.Write( plot->data.data(), sizeof( PlotItem ) * sz );
     }
+
+    sz = m_data.memory.data.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& mem : m_data.memory.data )
+    {
+        f.Write( &mem.ptr, sizeof( mem.ptr ) );
+        f.Write( &mem.size, sizeof( mem.size ) );
+        f.Write( &mem.timeAlloc, sizeof( mem.timeAlloc ) );
+        f.Write( &mem.timeFree, sizeof( mem.timeFree ) );
+        uint64_t t = DecompressThread( mem.threadAlloc );
+        f.Write( &t, sizeof( t ) );
+        t = DecompressThread( mem.threadFree );
+        f.Write( &t, sizeof( t ) );
+    }
+    f.Write( &m_data.memory.high, sizeof( m_data.memory.high ) );
+    f.Write( &m_data.memory.low, sizeof( m_data.memory.low ) );
+    f.Write( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
 }
 
 void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )

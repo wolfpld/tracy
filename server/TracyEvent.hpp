@@ -137,6 +137,20 @@ struct GpuEvent
 enum { GpuEventSize = sizeof( GpuEvent ) };
 static_assert( std::is_standard_layout<GpuEvent>::value, "GpuEvent is not standard layout" );
 
+
+struct MemEvent
+{
+    uint64_t ptr;
+    uint64_t size;
+    int64_t timeAlloc;
+    uint16_t threadAlloc;
+    int64_t timeFree;
+    uint16_t threadFree;
+};
+
+enum { MemEventSize = sizeof( MemEvent ) };
+static_assert( std::is_standard_layout<MemEvent>::value, "MemEvent is not standard layout" );
+
 #pragma pack()
 
 
@@ -206,6 +220,15 @@ struct PlotData
     Vector<PlotItem> data;
     Vector<PlotItem> postpone;
     uint64_t postponeTime;
+};
+
+struct MemData
+{
+    Vector<MemEvent> data;
+    flat_hash_map<uint64_t, size_t, nohash<uint64_t>> active;
+    uint64_t high = std::numeric_limits<uint64_t>::min();
+    uint64_t low = std::numeric_limits<uint64_t>::max();
+    uint64_t usage = 0;
 };
 
 struct StringLocation

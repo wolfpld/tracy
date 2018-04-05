@@ -307,6 +307,8 @@ void View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Statistics", ImVec2( bw, 0 ) ) ) m_showStatistics = true;
     ImGui::SameLine();
+    if( ImGui::Button( "Memory", ImVec2( bw, 0 ) ) ) m_memInfo.show = true;
+    ImGui::SameLine();
     ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_worker.GetFrameCount(), TimeToString( m_worker.GetLastTime() - m_worker.GetFrameBegin( 0 ) ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
     DrawFrames();
     DrawZones();
@@ -321,6 +323,7 @@ void View::DrawImpl()
     if( m_showMessages ) DrawMessages();
     if( m_findZone.show ) DrawFindZone();
     if( m_showStatistics ) DrawStatistics();
+    if( m_memInfo.show ) DrawMemory();
 
     if( m_zoomAnim.active )
     {
@@ -1088,6 +1091,13 @@ void View::DrawZones()
     {
         auto& io = ImGui::GetIO();
         draw->AddLine( ImVec2( io.MousePos.x, linepos.y ), ImVec2( io.MousePos.x, linepos.y + lineh ), 0x33FFFFFF );
+    }
+
+    if( m_memInfo.show && m_memInfo.restrictTime )
+    {
+        const auto zvMid = ( m_zvEnd - m_zvStart ) / 2;
+        auto& io = ImGui::GetIO();
+        draw->AddLine( ImVec2( wpos.x + zvMid * pxns, linepos.y ), ImVec2( wpos.x + zvMid * pxns, linepos.y + lineh ), 0x88FF44FF );
     }
 }
 
@@ -2508,7 +2518,7 @@ void View::DrawZoneInfoWindow()
         cti[i] = uint32_t( i );
     }
 
-    std::sort( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+    pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
     if( !ev.child.empty() )
     {
@@ -2667,7 +2677,7 @@ void View::DrawGpuInfoWindow()
         cti[i] = uint32_t( i );
     }
 
-    std::sort( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+    pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
     if( !ev.child.empty() )
     {
@@ -3481,7 +3491,7 @@ void View::DrawFindZone()
         }
         if( m_findZone.sortByCounts )
         {
-            std::sort( threads.begin(), threads.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.size() > rhs->second.size(); } );
+            pdqsort_branchless( threads.begin(), threads.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.size() > rhs->second.size(); } );
         }
 
         ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
@@ -3645,6 +3655,481 @@ void View::DrawStatistics()
     }
 #endif
     ImGui::End();
+}
+
+template<class T>
+void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress )
+{
+    ImGui::BeginChild( "##memScroll", ImVec2( 0, std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
+    ImGui::Columns( 7 );
+    ImGui::Text( "Address" );
+    ImGui::NextColumn();
+    ImGui::Text( "Size" );
+    ImGui::NextColumn();
+    ImGui::Text( "Appeared at" );
+    ImGui::NextColumn();
+    ImGui::Text( "Duration" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Active allocations are displayed using green color." );
+        ImGui::EndTooltip();
+    }
+
+    ImGui::NextColumn();
+    ImGui::Text( "Thread" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Shows one thread if alloc and free was performed on the same thread." );
+        ImGui::Text( "Otherwise two threads are displayed in order: alloc, free." );
+        ImGui::EndTooltip();
+    }
+    ImGui::NextColumn();
+    ImGui::Text( "Zone alloc" );
+    ImGui::NextColumn();
+    ImGui::Text( "Zone free" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "If alloc and free is performed in the same zone, it is displayed in yellow color." );
+        ImGui::EndTooltip();
+    }
+    ImGui::NextColumn();
+    ImGui::Separator();
+    int idx = 0;
+    while( ptr != end )
+    {
+        auto v = DrawAddress( ptr );
+        ImGui::NextColumn();
+        ImGui::Text( "%s", RealToString( v->size, true ) );
+        ImGui::NextColumn();
+        ImGui::Text( "%s", TimeToString( v->timeAlloc - m_worker.GetFrameBegin( 0 ) ) );
+        ImGui::NextColumn();
+        if( v->timeFree < 0 )
+        {
+            ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "%s", TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
+            ImGui::NextColumn();
+            ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+        }
+        else
+        {
+            ImGui::Text( "%s", TimeToString( v->timeFree - v->timeAlloc ) );
+            ImGui::NextColumn();
+            ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+            if( v->threadAlloc != v->threadFree )
+            {
+                ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadFree ) ) );
+            }
+        }
+        ImGui::NextColumn();
+        auto zone = FindZoneAtTime( m_worker.DecompressThread( v->threadAlloc ), v->timeAlloc );
+        if( !zone )
+        {
+            ImGui::Text( "-" );
+        }
+        else
+        {
+            const auto& srcloc = m_worker.GetSourceLocation( zone->srcloc );
+            const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+            ImGui::PushID( idx++ );
+            auto sel = ImGui::Selectable( txt, m_zoneInfoWindow == zone );
+            auto hover = ImGui::IsItemHovered();
+            ImGui::PopID();
+            if( sel )
+            {
+                m_zoneInfoWindow = zone;
+            }
+            if( hover )
+            {
+                m_zoneHighlight = zone;
+                if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( *zone );
+                }
+                ZoneTooltip( *zone );
+            }
+        }
+        ImGui::NextColumn();
+        if( v->timeFree < 0 )
+        {
+            ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "active" );
+        }
+        else
+        {
+            auto zoneFree = FindZoneAtTime( m_worker.DecompressThread( v->threadFree ), v->timeFree );
+            if( !zoneFree )
+            {
+                ImGui::Text( "-" );
+            }
+            else
+            {
+                const auto& srcloc = m_worker.GetSourceLocation( zoneFree->srcloc );
+                const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+                ImGui::PushID( idx++ );
+                bool sel;
+                if( zoneFree == zone )
+                {
+                    sel = ImGui::Selectable( "", m_zoneInfoWindow == zoneFree );
+                    ImGui::SameLine();
+                    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.6f, 1.f ), txt );
+                }
+                else
+                {
+                    sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree );
+                }
+                auto hover = ImGui::IsItemHovered();
+                ImGui::PopID();
+                if( sel )
+                {
+                    m_zoneInfoWindow = zoneFree;
+                }
+                if( hover )
+                {
+                    m_zoneHighlight = zoneFree;
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToZone( *zoneFree );
+                    }
+                    ZoneTooltip( *zoneFree );
+                }
+            }
+        }
+        ImGui::NextColumn();
+        ptr++;
+    }
+    ImGui::EndColumns();
+    ImGui::EndChild();
+}
+
+enum { ChunkBits = 10 };
+enum { PageBits = 10 };
+enum { PageSize = 1 << PageBits };
+enum { PageChunkBits = ChunkBits + PageBits };
+enum { PageChunkSize = 1 << PageChunkBits };
+
+uint32_t MemDecayColor[256] = {
+    0x0, 0xFF077F07, 0xFF078007, 0xFF078207, 0xFF078307, 0xFF078507, 0xFF078707, 0xFF078807,
+    0xFF078A07, 0xFF078B07, 0xFF078D07, 0xFF078F07, 0xFF079007, 0xFF089208, 0xFF089308, 0xFF089508,
+    0xFF089708, 0xFF089808, 0xFF089A08, 0xFF089B08, 0xFF089D08, 0xFF089F08, 0xFF08A008, 0xFF08A208,
+    0xFF09A309, 0xFF09A509, 0xFF09A709, 0xFF09A809, 0xFF09AA09, 0xFF09AB09, 0xFF09AD09, 0xFF09AF09,
+    0xFF09B009, 0xFF09B209, 0xFF09B309, 0xFF09B509, 0xFF0AB70A, 0xFF0AB80A, 0xFF0ABA0A, 0xFF0ABB0A,
+    0xFF0ABD0A, 0xFF0ABF0A, 0xFF0AC00A, 0xFF0AC20A, 0xFF0AC30A, 0xFF0AC50A, 0xFF0AC70A, 0xFF0BC80B,
+    0xFF0BCA0B, 0xFF0BCB0B, 0xFF0BCD0B, 0xFF0BCF0B, 0xFF0BD00B, 0xFF0BD20B, 0xFF0BD30B, 0xFF0BD50B,
+    0xFF0BD70B, 0xFF0BD80B, 0xFF0BDA0B, 0xFF0CDB0C, 0xFF0CDD0C, 0xFF0CDF0C, 0xFF0CE00C, 0xFF0CE20C,
+    0xFF0CE30C, 0xFF0CE50C, 0xFF0CE70C, 0xFF0CE80C, 0xFF0CEA0C, 0xFF0CEB0C, 0xFF0DED0D, 0xFF0DEF0D,
+    0xFF0DF00D, 0xFF0DF20D, 0xFF0DF30D, 0xFF0DF50D, 0xFF0DF70D, 0xFF0DF80D, 0xFF0DFA0D, 0xFF0DFB0D,
+    0xFF0DFD0D, 0xFF0EFF0E, 0xFF0EFF0E, 0xFF0EFF0E, 0xFF0EFF0E, 0xFF0EFF0E, 0xFF0EFF0E, 0xFF0EFF0E,
+    0xFF0EFF0E, 0xFF0EFF0E, 0xFF0EFF0E, 0xFF0EFF0E, 0xFF0EFF0E, 0xFF0FFF0F, 0xFF0FFF0F, 0xFF0FFF0F,
+    0xFF0FFF0F, 0xFF0FFF0F, 0xFF0FFF0F, 0xFF0FFF0F, 0xFF0FFF0F, 0xFF0FFF0F, 0xFF0FFF0F, 0xFF0FFF0F,
+    0xFF10FF10, 0xFF10FF10, 0xFF10FF10, 0xFF10FF10, 0xFF10FF10, 0xFF10FF10, 0xFF10FF10, 0xFF10FF10,
+    0xFF10FF10, 0xFF10FF10, 0xFF10FF10, 0xFF10FF10, 0xFF11FF11, 0xFF11FF11, 0xFF11FF11, 0xFF11FF11,
+    0xFF11FF11, 0xFF11FF11, 0xFF11FF11, 0xFF11FF11, 0xFF11FF11, 0xFF11FF11, 0xFF11FF11, 0xFF12FF12,
+    0x0, 0xFF1212FF, 0xFF1111FF, 0xFF1111FF, 0xFF1111FF, 0xFF1111FF, 0xFF1111FF, 0xFF1111FF,
+    0xFF1111FF, 0xFF1111FF, 0xFF1111FF, 0xFF1111FF, 0xFF1111FF, 0xFF1010FF, 0xFF1010FF, 0xFF1010FF,
+    0xFF1010FF, 0xFF1010FF, 0xFF1010FF, 0xFF1010FF, 0xFF1010FF, 0xFF1010FF, 0xFF1010FF, 0xFF1010FF,
+    0xFF1010FF, 0xFF0F0FFF, 0xFF0F0FFF, 0xFF0F0FFF, 0xFF0F0FFF, 0xFF0F0FFF, 0xFF0F0FFF, 0xFF0F0FFF,
+    0xFF0F0FFF, 0xFF0F0FFF, 0xFF0F0FFF, 0xFF0F0FFF, 0xFF0E0EFF, 0xFF0E0EFF, 0xFF0E0EFF, 0xFF0E0EFF,
+    0xFF0E0EFF, 0xFF0E0EFF, 0xFF0E0EFF, 0xFF0E0EFF, 0xFF0E0EFF, 0xFF0E0EFF, 0xFF0E0EFF, 0xFF0E0EFF,
+    0xFF0D0DFD, 0xFF0D0DFB, 0xFF0D0DFA, 0xFF0D0DF8, 0xFF0D0DF7, 0xFF0D0DF5, 0xFF0D0DF3, 0xFF0D0DF2,
+    0xFF0D0DF0, 0xFF0D0DEF, 0xFF0D0DED, 0xFF0C0CEB, 0xFF0C0CEA, 0xFF0C0CE8, 0xFF0C0CE7, 0xFF0C0CE5,
+    0xFF0C0CE3, 0xFF0C0CE2, 0xFF0C0CE0, 0xFF0C0CDF, 0xFF0C0CDD, 0xFF0C0CDB, 0xFF0B0BDA, 0xFF0B0BD8,
+    0xFF0B0BD7, 0xFF0B0BD5, 0xFF0B0BD3, 0xFF0B0BD2, 0xFF0B0BD0, 0xFF0B0BCF, 0xFF0B0BCD, 0xFF0B0BCB,
+    0xFF0B0BCA, 0xFF0B0BC8, 0xFF0A0AC7, 0xFF0A0AC5, 0xFF0A0AC3, 0xFF0A0AC2, 0xFF0A0AC0, 0xFF0A0ABF,
+    0xFF0A0ABD, 0xFF0A0ABB, 0xFF0A0ABA, 0xFF0A0AB8, 0xFF0A0AB7, 0xFF0909B5, 0xFF0909B3, 0xFF0909B2,
+    0xFF0909B0, 0xFF0909AF, 0xFF0909AD, 0xFF0909AB, 0xFF0909AA, 0xFF0909A8, 0xFF0909A7, 0xFF0909A5,
+    0xFF0909A3, 0xFF0808A2, 0xFF0808A0, 0xFF08089F, 0xFF08089D, 0xFF08089B, 0xFF08089A, 0xFF080898,
+    0xFF080897, 0xFF080895, 0xFF080893, 0xFF080892, 0xFF070790, 0xFF07078F, 0xFF07078D, 0xFF07078B,
+    0xFF07078A, 0xFF070788, 0xFF070787, 0xFF070785, 0xFF070783, 0xFF070782, 0xFF070780, 0xFF07077F,
+};
+
+void View::DrawMemory()
+{
+    auto& mem = m_worker.GetMemData();
+
+    ImGui::Begin( "Memory", &m_memInfo.show );
+
+    ImGui::Text( "Total allocations: %-15s Active allocations: %-15s Memory usage: %-15s Memory span: %s",
+        RealToString( mem.data.size(), true ),
+        RealToString( mem.active.size(), true ),
+        RealToString( mem.usage, true ),
+        RealToString( mem.high - mem.low, true ) );
+
+    ImGui::InputText( "", m_memInfo.pattern, 1024 );
+    ImGui::SameLine();
+
+    if( ImGui::Button( "Find" ) )
+    {
+        m_memInfo.ptrFind = strtoull( m_memInfo.pattern, nullptr, 0 );
+    }
+    ImGui::SameLine();
+    if( ImGui::Button( "Clear" ) )
+    {
+        m_memInfo.ptrFind = 0;
+        m_memInfo.pattern[0] = '\0';
+    }
+    ImGui::SameLine();
+    ImGui::Checkbox( "Restrict time", &m_memInfo.restrictTime );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Don't show allocations beyond the middle of timeline display." );
+        ImGui::EndTooltip();
+    }
+
+    const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
+
+    ImGui::Separator();
+    if( ImGui::TreeNodeEx( "Allocations", ImGuiTreeNodeFlags_DefaultOpen ) )
+    {
+        if( m_memInfo.ptrFind != 0 )
+        {
+            std::vector<const MemEvent*> match;
+            match.reserve( mem.active.size() );     // heuristic
+            if( m_memInfo.restrictTime )
+            {
+                for( auto& v : mem.data )
+                {
+                    if( v.ptr <= m_memInfo.ptrFind && v.ptr + v.size > m_memInfo.ptrFind && v.timeAlloc < zvMid )
+                    {
+                        match.emplace_back( &v );
+                    }
+                }
+            }
+            else
+            {
+                for( auto& v : mem.data )
+                {
+                    if( v.ptr <= m_memInfo.ptrFind && v.ptr + v.size > m_memInfo.ptrFind )
+                    {
+                        match.emplace_back( &v );
+                    }
+                }
+            }
+
+            if( match.empty() )
+            {
+                ImGui::Text( "Found no allocations at given address" );
+            }
+            else
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( match.size(), true ) );
+                ListMemData<decltype( match.begin() )>( match.begin(), match.end(), [this]( auto& it ) {
+                    auto& v = *it;
+                    if( v->ptr == m_memInfo.ptrFind )
+                    {
+                        ImGui::Text( "0x%" PRIx64, m_memInfo.ptrFind );
+                    }
+                    else
+                    {
+                        ImGui::Text( "0x%" PRIx64 "+%" PRIu64, v->ptr, m_memInfo.ptrFind - v->ptr );
+                    }
+                    return v;
+                } );
+            }
+        }
+        ImGui::TreePop();
+    }
+
+    ImGui::Separator();
+    if( ImGui::TreeNode( "Active allocations" ) )
+    {
+        uint64_t total = 0;
+        std::vector<const MemEvent*> items;
+        items.reserve( mem.active.size() );
+        if( m_memInfo.restrictTime )
+        {
+            for( auto& v : mem.data )
+            {
+                if( v.timeAlloc < zvMid && ( v.timeFree > zvMid || v.timeFree < 0 ) )
+                {
+                    items.emplace_back( &v );
+                    total += v.size;
+                }
+            }
+        }
+        else
+        {
+            auto ptr = mem.data.data();
+            for( auto& v : mem.active )
+            {
+                items.emplace_back( ptr + v.second );
+            }
+            pdqsort_branchless( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->timeAlloc < rhs->timeAlloc; } );
+            total = mem.usage;
+        }
+
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( items.size(), true ) );
+        ImGui::Text( "Memory usage: %s", RealToString( total, true ) );
+
+        ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
+            ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+            return *v;
+        } );
+        ImGui::TreePop();
+    }
+
+    ImGui::Separator();
+    if( ImGui::TreeNode( "Memory map" ) )
+    {
+        ImGui::Text( "Single pixel: %s KB   Single line: %s KB", RealToString( ( 1 << ChunkBits ) / 1024, true ), RealToString( PageChunkSize / 1024, true ) );
+
+        auto pages = GetMemoryPages();
+
+        const int8_t empty[PageSize] = {};
+        const auto sz = pages.size() / PageSize;
+        auto pgptr = pages.data();
+        const auto end = pgptr + sz * PageSize;
+        size_t lines = sz;
+        while( pgptr != end )
+        {
+            if( memcmp( empty, pgptr, PageSize ) == 0 )
+            {
+                pgptr += PageSize;
+                while( pgptr != end && memcmp( empty, pgptr, PageSize ) == 0 )
+                {
+                    lines--;
+                    pgptr += PageSize;
+                }
+            }
+            else
+            {
+                pgptr += PageSize;
+            }
+        }
+
+        ImGui::BeginChild( "##memMap", ImVec2( PageSize + 2, lines + 2 ), false );
+        auto draw = ImGui::GetWindowDrawList();
+        const auto wpos = ImGui::GetCursorScreenPos() + ImVec2( 1, 1 );
+        draw->AddRect( wpos - ImVec2( 1, 1 ), wpos + ImVec2( PageSize + 1, lines + 1 ), 0xFF666666 );
+        draw->AddRectFilled( wpos, wpos + ImVec2( PageSize, lines ), 0xFF444444 );
+
+        size_t line = 0;
+        pgptr = pages.data();
+        while( pgptr != end )
+        {
+            if( memcmp( empty, pgptr, PageSize ) == 0 )
+            {
+                pgptr += PageSize;
+                draw->AddLine( wpos + ImVec2( 0, line ), wpos + ImVec2( PageSize, line ), 0x11000000 );
+                line++;
+                while( pgptr != end && memcmp( empty, pgptr, PageSize ) == 0 ) pgptr += PageSize;
+            }
+            else
+            {
+                size_t idx = 0;
+                while( idx < PageSize )
+                {
+                    if( pgptr[idx] == 0 )
+                    {
+                        do
+                        {
+                            idx++;
+                        }
+                        while( idx < PageSize && pgptr[idx] == 0 );
+                    }
+                    else
+                    {
+                        auto val = pgptr[idx];
+                        const auto i0 = idx;
+                        do
+                        {
+                            idx++;
+                        }
+                        while( idx < PageSize && pgptr[idx] == val );
+                        draw->AddLine( wpos + ImVec2( i0, line ), wpos + ImVec2( idx, line ), MemDecayColor[(uint8_t)val] );
+                    }
+                }
+                line++;
+                pgptr += PageSize;
+            }
+        }
+
+        ImGui::EndChild();
+        ImGui::TreePop();
+    }
+
+    ImGui::End();
+}
+
+Vector<int8_t> View::GetMemoryPages() const
+{
+    Vector<int8_t> ret;
+
+    const auto& mem = m_worker.GetMemData();
+    const auto span = mem.high - mem.low;
+    const auto pages = ( span / PageChunkSize ) + 1;
+
+    ret.reserve_and_use( pages * PageSize );
+    auto pgptr = ret.data();
+    memset( pgptr, 0, pages * PageSize );
+
+    const auto memlow = mem.low;
+
+    if( m_memInfo.restrictTime )
+    {
+        const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
+        for( auto& alloc : mem.data )
+        {
+            if( m_memInfo.restrictTime && alloc.timeAlloc > zvMid ) break;
+
+            const auto a0 = alloc.ptr - memlow;
+            const auto a1 = a0 + alloc.size;
+            int8_t val = alloc.timeFree < 0 ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
+                ( alloc.timeFree > zvMid ?
+                    int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
+                    int8_t( -std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeFree ) >> 24 ) ) ) );
+
+            const auto c0 = a0 >> ChunkBits;
+            const auto c1 = a1 >> ChunkBits;
+
+            if( c0 == c1 )
+            {
+                pgptr[c0] = val;
+            }
+            else
+            {
+                memset( pgptr + c0, val, c1 - c0 + 1 );
+            }
+        }
+    }
+    else
+    {
+        const auto lastTime = m_worker.GetLastTime();
+        for( auto& alloc : mem.data )
+        {
+            const auto a0 = alloc.ptr - memlow;
+            const auto a1 = a0 + alloc.size;
+            const int8_t val = alloc.timeFree < 0 ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeAlloc ) ) >> 24 ) ) ) :
+                int8_t( -std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeFree ) ) >> 24 ) ) );
+
+            const auto c0 = a0 >> ChunkBits;
+            const auto c1 = a1 >> ChunkBits;
+
+            if( c0 == c1 )
+            {
+                pgptr[c0] = val;
+            }
+            else
+            {
+                memset( pgptr + c0, val, c1 - c0 + 1 );
+            }
+        }
+    }
+
+    return ret;
 }
 
 uint32_t View::GetZoneColor( const ZoneEvent& ev )
@@ -3926,6 +4411,34 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
         }
     }
     return 0;
+}
+
+const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
+{
+    // TODO add thread rev-map
+    ThreadData* td = nullptr;
+    for( const auto& t : m_worker.GetThreadData() )
+    {
+        if( t->id == thread )
+        {
+            td = t;
+            break;
+        }
+    }
+    if( !td ) return nullptr;
+
+    const Vector<ZoneEvent*>* timeline = &td->timeline;
+    if( timeline->empty() ) return nullptr;
+    ZoneEvent* ret = nullptr;
+    for(;;)
+    {
+        auto it = std::upper_bound( timeline->begin(), timeline->end(), time, [] ( const auto& l, const auto& r ) { return l < r->start; } );
+        if( it != timeline->begin() ) --it;
+        if( (*it)->start > time || ( (*it)->end >= 0 && (*it)->end < time ) ) return ret;
+        ret = *it;
+        if( (*it)->child.empty() ) return ret;
+        timeline = &(*it)->child;
+    }
 }
 
 #ifndef TRACY_NO_STATISTICS

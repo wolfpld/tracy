@@ -31,6 +31,8 @@ enum class QueueType : uint8_t
     GpuZoneEnd,
     GpuTime,
     GpuResync,
+    MemAlloc,
+    MemFree,
     StringData,
     ThreadName,
     CustomStringData,
@@ -187,6 +189,21 @@ struct QueueGpuResync
     uint16_t context;
 };
 
+struct QueueMemAlloc
+{
+    int64_t time;
+    uint64_t thread;
+    uint64_t ptr;
+    char size[6];
+};
+
+struct QueueMemFree
+{
+    int64_t time;
+    uint64_t thread;
+    uint64_t ptr;
+};
+
 struct QueueHeader
 {
     union
@@ -219,6 +236,8 @@ struct QueueItem
         QueueGpuZoneEnd gpuZoneEnd;
         QueueGpuTime gpuTime;
         QueueGpuResync gpuResync;
+        QueueMemAlloc memAlloc;
+        QueueMemFree memFree;
     };
 };
 
@@ -251,6 +270,8 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
     sizeof( QueueHeader ) + sizeof( QueueGpuResync ),
+    sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),
+    sizeof( QueueHeader ) + sizeof( QueueMemFree ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

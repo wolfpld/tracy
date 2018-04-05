@@ -16,6 +16,7 @@
 #include <chrono>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <stdlib.h>
 #include <string.h>
 
@@ -108,7 +109,7 @@ struct ThreadNameData;
 std::atomic<ThreadNameData*> init_order(104) s_threadNameData( nullptr );
 #endif
 
-static Profiler init_order(105) s_profiler;
+Profiler init_order(105) s_profiler;
 
 
 enum { BulkSize = TargetFrameSize / QueueItemSize };
@@ -125,6 +126,7 @@ Profiler::Profiler()
     , m_bufferStart( 0 )
     , m_itemBuf( (QueueItem*)tracy_malloc( sizeof( QueueItem ) * BulkSize ) )
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
+    , m_serialQueue( 1024*1024 )
 {
     assert( !s_instance );
     s_instance = this;
@@ -212,11 +214,12 @@ void Profiler::Worker()
         for(;;)
         {
             const auto status = Dequeue( token );
-            if( status == ConnectionLost )
+            const auto serialStatus = DequeueSerial();
+            if( status == ConnectionLost || serialStatus == ConnectionLost )
             {
                 break;
             }
-            else if( status == QueueEmpty )
+            else if( status == QueueEmpty && serialStatus == QueueEmpty )
             {
                 if( ShouldExit() ) break;
                 if( m_bufferOffset != m_bufferStart ) CommitData();
@@ -234,11 +237,12 @@ void Profiler::Worker()
     for(;;)
     {
         const auto status = Dequeue( token );
-        if( status == ConnectionLost )
+        const auto serialStatus = DequeueSerial();
+        if( status == ConnectionLost || serialStatus == ConnectionLost )
         {
             break;
         }
-        else if( status == QueueEmpty )
+        else if( status == QueueEmpty && serialStatus == QueueEmpty )
         {
             if( m_bufferOffset != m_bufferStart ) CommitData();
             break;
@@ -266,6 +270,7 @@ void Profiler::Worker()
                 }
             }
             while( Dequeue( token ) == Success ) {}
+            while( DequeueSerial() == Success ) {}
             if( m_bufferOffset != m_bufferStart )
             {
                 if( !CommitData() ) return;
@@ -317,6 +322,29 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
             if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
             item++;
         }
+    }
+    else
+    {
+        return QueueEmpty;
+    }
+    return Success;
+}
+
+Profiler::DequeueStatus Profiler::DequeueSerial()
+{
+    std::lock_guard<NonRecursiveBenaphore> lock( m_serialLock );
+    const auto sz = m_serialQueue.size();
+    if( sz > 0 )
+    {
+        auto item = m_serialQueue.data();
+        auto end = item + sz;
+        while( item != end )
+        {
+            const auto idx = MemRead<uint8_t>( &item->hdr.idx );
+            if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
+            item++;
+        }
+        m_serialQueue.clear();
     }
     else
     {

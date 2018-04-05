@@ -146,12 +146,6 @@
     <ClInclude Include="..\..\..\server\TracyPopcnt.hpp">
       <Filter>server</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\server\tracy_benaphore.h">
-      <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\server\tracy_sema.h">
-      <Filter>server</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\server\tracy_flat_hash_map.hpp">
       <Filter>server</Filter>
     </ClInclude>
@@ -166,6 +160,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\TracyAlign.hpp">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\tracy_benaphore.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\tracy_sema.h">
+      <Filter>imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -2,14 +2,15 @@
 #define __TRACYVIEW_HPP__
 
 #include <atomic>
+#include <functional>
 #include <map>
 #include <string>
 #include <thread>
 #include <vector>
 
+#include "../common/tracy_benaphore.h"
 #include "TracyVector.hpp"
 #include "TracyWorker.hpp"
-#include "tracy_benaphore.h"
 #include "tracy_flat_hash_map.hpp"
 
 struct ImVec2;
@@ -74,6 +75,10 @@ private:
     void DrawMessages();
     void DrawFindZone();
     void DrawStatistics();
+    void DrawMemory();
+
+    template<class T>
+    void ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
@@ -98,10 +103,13 @@ private:
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
     uint64_t GetZoneThread( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const GpuEvent& zone ) const;
+    const ZoneEvent* FindZoneAtTime( uint64_t thread, int64_t time ) const;
 
 #ifndef TRACY_NO_STATISTICS
     void FindZones();
 #endif
+
+    Vector<int8_t> GetMemoryPages() const;
 
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
     flat_hash_map<const void*, bool, nohash<const void*>> m_showFull;
@@ -172,13 +180,13 @@ private:
     struct {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
 
-        bool show;
+        bool show = false;
         std::vector<int32_t> match;
         std::map<uint64_t, Vector<ZoneEvent*>> threads;
         size_t processed;
         int selMatch = 0;
         uint64_t selThread = Unselected;
-        char pattern[1024] = { "" };
+        char pattern[1024] = {};
         bool logVal = false;
         bool logTime = false;
         bool cumulateTime = false;
@@ -201,6 +209,13 @@ private:
             processed = 0;
         }
     } m_findZone;
+
+    struct {
+        bool show = false;
+        char pattern[1024] = {};
+        uint64_t ptrFind = 0;
+        bool restrictTime = false;
+    } m_memInfo;
 };
 
 }

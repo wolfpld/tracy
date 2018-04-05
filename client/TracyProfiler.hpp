@@ -7,7 +7,9 @@
 #include <string.h>
 
 #include "concurrentqueue.h"
+#include "TracyFastVector.hpp"
 #include "../common/tracy_lz4.hpp"
+#include "../common/tracy_benaphore.h"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
@@ -49,6 +51,9 @@ struct GpuCtxWrapper
 };
 
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
+
+class Profiler;
+extern Profiler s_profiler;
 
 class Profiler
 {
@@ -186,6 +191,33 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
+    {
+        const auto thread = GetThreadHandle();
+
+        s_profiler.m_serialLock.lock();
+        auto item = s_profiler.m_serialQueue.push_next();
+        MemWrite( &item->hdr.type, QueueType::MemAlloc );
+        MemWrite( &item->memAlloc.time, GetTime() );
+        MemWrite( &item->memAlloc.thread, thread );
+        MemWrite( &item->memAlloc.ptr, (uint64_t)ptr );
+        memcpy( &item->memAlloc.size, &size, 6 );
+        s_profiler.m_serialLock.unlock();
+    }
+
+    static tracy_force_inline void MemFree( const void* ptr )
+    {
+        const auto thread = GetThreadHandle();
+
+        s_profiler.m_serialLock.lock();
+        auto item = s_profiler.m_serialQueue.push_next();
+        MemWrite( &item->hdr.type, QueueType::MemFree );
+        MemWrite( &item->memFree.time, GetTime() );
+        MemWrite( &item->memFree.thread, thread );
+        MemWrite( &item->memFree.ptr, (uint64_t)ptr );
+        s_profiler.m_serialLock.unlock();
+    }
+
     static bool ShouldExit();
 
 private:
@@ -195,6 +227,7 @@ private:
     void Worker();
 
     DequeueStatus Dequeue( moodycamel::ConsumerToken& token );
+    DequeueStatus DequeueSerial();
     bool AppendData( const void* data, size_t len );
     bool CommitData();
     bool NeedDataSize( size_t len );
@@ -225,6 +258,9 @@ private:
 
     QueueItem* m_itemBuf;
     char* m_lz4Buf;
+
+    FastVector<QueueItem> m_serialQueue;
+    NonRecursiveBenaphore m_serialLock;
 };
 
 };

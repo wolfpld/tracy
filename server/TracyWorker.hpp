@@ -8,11 +8,11 @@
 #include <thread>
 #include <vector>
 
+#include "../common/tracy_benaphore.h"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracySocket.hpp"
-#include "tracy_benaphore.h"
 #include "tracy_flat_hash_map.hpp"
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
@@ -57,6 +57,7 @@ class Worker
         Vector<MessageData*> messages;
         Vector<PlotData*> plots;
         Vector<ThreadData*> threads;
+        MemData memory;
         uint64_t zonesCnt;
         int64_t lastTime;
 
@@ -113,6 +114,7 @@ public:
     const Vector<GpuCtxData*>& GetGpuData() const { return m_data.gpuData; }
     const Vector<PlotData*>& GetPlots() const { return m_data.plots; }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
+    const MemData& GetMemData() const { return m_data.memory; }
 
     // Some zones may have incomplete timing data (only start time is available, end hasn't arrived yet).
     // GetZoneEnd() will try to infer the end time by looking at child zones (parent zone can't end
@@ -177,6 +179,8 @@ private:
     tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev );
     tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
     tracy_force_inline void ProcessGpuResync( const QueueGpuResync& ev );
+    tracy_force_inline void ProcessMemAlloc( const QueueMemAlloc& ev );
+    tracy_force_inline void ProcessMemFree( const QueueMemFree& ev );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );
@@ -204,6 +208,7 @@ private:
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void HandlePlotName( uint64_t name, char* str, size_t sz );
+
     void HandlePostponedPlots();
 
     StringLocation StoreString( char* str, size_t sz );

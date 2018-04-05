@@ -2411,6 +2411,8 @@ void View::DrawZoneInfoWindow()
     auto& ev = *m_zoneInfoWindow;
     int dmul = 1;
 
+    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+
     bool show = true;
     ImGui::Begin( "Zone info", &show );
 
@@ -2427,11 +2429,15 @@ void View::DrawZoneInfoWindow()
             m_zoneInfoWindow = parent;
         }
     }
+    ImGui::SameLine();
+    if( ImGui::Button( "Statistics" ) )
+    {
+        m_findZone.ShowZone( ev.srcloc, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+    }
 
     ImGui::Separator();
 
     const auto tid = GetZoneThread( ev );
-    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     if( srcloc.name.active )
     {
         ImGui::Text( "Zone name: %s", m_worker.GetString( srcloc.name ) );

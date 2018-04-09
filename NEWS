@@ -24,6 +24,7 @@ v0.3 (xxxx-xx-xx)
   zone info window.
 - Fixed regression with lock announce processing that appeared during
   worker/viewer split.
+- Allow selecting/unselecting all locks for display.
 
 
 v0.2 (2018-04-05)

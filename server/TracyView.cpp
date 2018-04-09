@@ -2783,6 +2783,22 @@ void View::DrawOptions()
         }
         if( expand )
         {
+            if( ImGui::SmallButton( "Select all" ) )
+            {
+                for( const auto& l : m_worker.GetLockMap() )
+                {
+                    Visible( &l.second ) = true;
+                }
+            }
+            ImGui::SameLine();
+            if( ImGui::SmallButton( "Unselect all" ) )
+            {
+                for( const auto& l : m_worker.GetLockMap() )
+                {
+                    Visible( &l.second ) = false;
+                }
+            }
+
             for( const auto& l : m_worker.GetLockMap() )
             {
                 if( l.second.valid )

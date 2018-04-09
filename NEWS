@@ -22,6 +22,8 @@ v0.3 (xxxx-xx-xx)
   v0.2). 
 - Added ability to display global statistics of a selected zone from the
   zone info window.
+- Fixed regression with lock announce processing that appeared during
+  worker/viewer split.
 
 
 v0.2 (2018-04-05)

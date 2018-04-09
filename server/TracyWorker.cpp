@@ -1344,6 +1344,7 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
         LockMap lm;
         lm.srcloc = ShrinkSourceLocation( ev.lckloc );
         lm.type = ev.type;
+        lm.valid = true;
         m_data.lockMap.emplace( ev.id, std::move( lm ) );
     }
     else

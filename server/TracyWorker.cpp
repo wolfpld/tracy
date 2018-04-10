@@ -1668,18 +1668,28 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 
     m_data.memory.active.emplace( ev.ptr, m_data.memory.data.size() );
 
+    const auto ptr = ev.ptr;
+    uint32_t lo;
+    uint16_t hi;
+    memcpy( &lo, ev.size, 4 );
+    memcpy( &hi, ev.size+4, 2 );
+    const uint64_t size = lo | ( uint64_t( hi ) << 32 );
+
     auto& mem = m_data.memory.data.push_next();
-    mem.ptr = ev.ptr;
-    mem.size = 0;
-    memcpy( &mem.size, ev.size, 6 );
+    mem.ptr = ptr;
+    mem.size = size;
     mem.timeAlloc = time;
     mem.threadAlloc = CompressThread( ev.thread );
     mem.timeFree = -1;
     mem.threadFree = 0;
 
-    m_data.memory.low = std::min( m_data.memory.low, mem.ptr );
-    m_data.memory.high = std::max( m_data.memory.high, mem.ptr + mem.size );
-    m_data.memory.usage += mem.size;
+    const auto low = m_data.memory.low;
+    const auto high = m_data.memory.high;
+    const auto ptrend = ptr + size;
+
+    m_data.memory.low = std::min( low, ptr );
+    m_data.memory.high = std::max( high, ptrend );
+    m_data.memory.usage += size;
 }
 
 void Worker::ProcessMemFree( const QueueMemFree& ev )

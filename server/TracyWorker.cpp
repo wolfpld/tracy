@@ -817,7 +817,6 @@ static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
         tl->lockingThread = lockingThread;
         tl->waitList = waitList;
         tl->lockCount = lockCount;
-        assert( tl->lockingThread == lockingThread );
         pos++;
     }
 }
@@ -893,7 +892,6 @@ static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
         tl->waitList = waitList;
         tl->sharedList = sharedList;
         tl->lockCount = lockCount;
-        assert( tl->lockingThread == lockingThread );
         pos++;
     }
 }

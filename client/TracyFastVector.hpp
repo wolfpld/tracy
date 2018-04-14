@@ -68,6 +68,23 @@ public:
         m_size = 0;
     }
 
+    void swap( FastVector& vec )
+    {
+        const auto ptr1 = m_ptr;
+        const auto ptr2 = vec.m_ptr;
+        const auto size1 = m_size;
+        const auto size2 = vec.m_size;
+        const auto cap1 = m_capacity;
+        const auto cap2 = vec.m_capacity;
+
+        m_ptr = ptr2;
+        vec.m_ptr = ptr1;
+        m_size = size2;
+        vec.m_size = size1;
+        m_capacity = cap2;
+        vec.m_capacity = cap1;
+    }
+
 private:
     tracy_no_inline void AllocMore()
     {

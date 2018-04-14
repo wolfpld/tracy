@@ -10,7 +10,7 @@
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyView.hpp"
 
-static void error_callback(int error, const char* description)
+static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error %d: %s\n", error, description);
 }
@@ -29,11 +29,11 @@ int main( int argc, char** argv )
     }
 
     // Setup window
-    glfwSetErrorCallback(error_callback);
+    glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #if __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -44,6 +44,7 @@ int main( int argc, char** argv )
     gl3wInit();
 
     // Setup ImGui binding
+    ImGui::CreateContext();
     ImGui_ImplGlfwGL3_Init(window, true);
 
     // Load Fonts
@@ -119,11 +120,13 @@ int main( int argc, char** argv )
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui::Render();
+        ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
     }
 
     // Cleanup
     ImGui_ImplGlfwGL3_Shutdown();
+    ImGui::DestroyContext();
     glfwTerminate();
 
     return 0;

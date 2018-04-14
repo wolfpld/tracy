@@ -201,7 +201,16 @@ public:
         MemWrite( &item->memAlloc.time, GetTime() );
         MemWrite( &item->memAlloc.thread, thread );
         MemWrite( &item->memAlloc.ptr, (uint64_t)ptr );
-        memcpy( &item->memAlloc.size, &size, 6 );
+        if( sizeof( size ) == 4 )
+        {
+            memcpy( &item->memAlloc.size, &size, 4 );
+            memset( &item->memAlloc.size + 4, 0, 2 );
+        }
+        else
+        {
+            assert( sizeof( size ) == 8 );
+            memcpy( &item->memAlloc.size, &size, 6 );
+        }
         s_profiler.m_serialLock.unlock();
     }
 

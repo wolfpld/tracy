@@ -431,7 +431,7 @@ static ImU32 GetFrameColor( uint64_t frameTime )
 
 static int GetFrameWidth( int frameScale )
 {
-    return frameScale == 0 ? 4 : ( frameScale == -1 ? 6 : 1 );
+    return frameScale == 0 ? 4 : ( frameScale < 0 ? 6 : 1 );
 }
 
 static int GetFrameGroup( int frameScale )
@@ -466,7 +466,7 @@ void View::DrawFrames()
     {
         if( wheel > 0 )
         {
-            if( m_frameScale > -1 ) m_frameScale--;
+            if( m_frameScale >= 0 ) m_frameScale--;
         }
         else if( wheel < 0 )
         {
@@ -758,7 +758,7 @@ bool View::DrawZoneFrames()
     }
 
     const std::pair <int, int> zrange = m_worker.GetFrameRange( m_zvStart, m_zvEnd );
-    if( zrange.first == -1 ) return hover;
+    if( zrange.first < 0 ) return hover;
 
     for( int i = zrange.first; i < zrange.second; i++ )
     {
@@ -1204,7 +1204,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             bool migration = false;
             if( m_lastCpu != ev.cpu_start )
             {
-                if( m_lastCpu != -1 )
+                if( m_lastCpu >= 0 )
                 {
                     migration = true;
                 }
@@ -4312,7 +4312,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::Separator();
     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
     ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_worker.GetDelay() * dmul ) );
-    if( ev.cpu_start != -1 )
+    if( ev.cpu_start >= 0 )
     {
         if( ev.end < 0 || ev.cpu_start == ev.cpu_end )
         {

@@ -3423,11 +3423,6 @@ void View::DrawFindZone()
         ImGui::Separator();
         ImGui::Text( "Found zones:" );
         ImGui::SameLine();
-        if( ImGui::SmallButton( "Unselect" ) )
-        {
-            m_findZone.selThread = m_findZone.Unselected;
-        }
-        ImGui::SameLine();
         if( m_findZone.showThreads )
         {
             if( ImGui::SmallButton( "Group by user text" ) )
@@ -3460,6 +3455,14 @@ void View::DrawFindZone()
             {
                 m_findZone.sortByCounts = true;
             }
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(?)" );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "Left click to highlight entry. Right click to clear selection." );
+            ImGui::EndTooltip();
         }
 
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
@@ -3587,6 +3590,10 @@ void View::DrawFindZone()
             }
         }
         ImGui::EndChild();
+        if( ImGui::IsItemHovered() && ImGui::IsMouseClicked( 1 ) )
+        {
+            m_findZone.selThread = m_findZone.Unselected;
+        }
     }
 #endif
 

@@ -259,7 +259,7 @@ private:
     QueueItem* m_itemBuf;
     char* m_lz4Buf;
 
-    FastVector<QueueItem> m_serialQueue;
+    FastVector<QueueItem> m_serialQueue, m_serialDequeue;
     NonRecursiveBenaphore m_serialLock;
 };
 

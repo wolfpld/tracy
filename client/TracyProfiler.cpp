@@ -127,6 +127,7 @@ Profiler::Profiler()
     , m_itemBuf( (QueueItem*)tracy_malloc( sizeof( QueueItem ) * BulkSize ) )
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
     , m_serialQueue( 1024*1024 )
+    , m_serialDequeue( 1024*1024 )
 {
     assert( !s_instance );
     s_instance = this;
@@ -332,11 +333,15 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
-    std::lock_guard<NonRecursiveBenaphore> lock( m_serialLock );
-    const auto sz = m_serialQueue.size();
+    {
+        std::lock_guard<NonRecursiveBenaphore> lock( m_serialLock );
+        m_serialQueue.swap( m_serialDequeue );
+    }
+
+    const auto sz = m_serialDequeue.size();
     if( sz > 0 )
     {
-        auto item = m_serialQueue.data();
+        auto item = m_serialDequeue.data();
         auto end = item + sz;
         while( item != end )
         {
@@ -344,7 +349,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
             if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
             item++;
         }
-        m_serialQueue.clear();
+        m_serialDequeue.clear();
     }
     else
     {

@@ -38,6 +38,34 @@ public:
         }
     }
 
+    void Skip( size_t size )
+    {
+        if( size <= BufSize - m_offset )
+        {
+            m_offset += size;
+        }
+        else
+        {
+            char m_lz4buf[LZ4Size];
+            while( size > 0 )
+            {
+                if( m_offset == BufSize )
+                {
+                    m_active = 1 - m_active;
+                    m_offset = 0;
+                    uint32_t sz;
+                    fread( &sz, 1, sizeof( sz ), m_file );
+                    fread( m_lz4buf, 1, sz, m_file );
+                    m_lastBlock = LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf[m_active], sz, BufSize );
+                }
+
+                const auto sz = std::min( size, BufSize - m_offset );
+                m_offset += sz;
+                size -= sz;
+            }
+        }
+    }
+
     bool IsEOF()
     {
         if( m_lastBlock != BufSize && m_offset == m_lastBlock ) return true;

@@ -879,6 +879,9 @@ void View::DrawZones()
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
 
+    const auto yMin = linepos.y;
+    const auto yMax = yMin + lineh;
+
     // gpu zones
     if( m_drawGpuZones )
     {
@@ -886,45 +889,49 @@ void View::DrawZones()
         {
             const auto& v = m_worker.GetGpuData()[i];
             if( !Visible( v ) ) continue;
-
-            draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
-
             bool& showFull = ShowFull( v );
-            if( showFull )
-            {
-                draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFAAAA );
-            }
-            else
-            {
-                draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF886666 );
-            }
-            char buf[64];
-            sprintf( buf, "GPU context %zu", i );
-            draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
+            const auto yPos = wpos.y + offset;
+            if( yPos + ostep >= yMin && yPos <= yMax )
             {
-                if( ImGui::IsMouseClicked( 0 ) )
+                draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
+
+                if( showFull )
                 {
-                    showFull = !showFull;
+                    draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFAAAA );
                 }
-
-                ImGui::BeginTooltip();
-                ImGui::Text( "%s", buf );
-                ImGui::Separator();
-                ImGui::Text( "Thread: %s", m_worker.GetThreadString( v->thread ) );
-                if( !v->timeline.empty() )
+                else
                 {
-                    const auto t = v->timeline.front()->gpuStart;
-                    if( t != std::numeric_limits<int64_t>::max() )
+                    draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF886666 );
+                }
+                char buf[64];
+                sprintf( buf, "GPU context %zu", i );
+                draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
+
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
+                {
+                    if( ImGui::IsMouseClicked( 0 ) )
                     {
-                        ImGui::Text( "Appeared at %s", TimeToString( t - m_worker.GetFrameTime( 0 ) ) );
+                        showFull = !showFull;
                     }
+
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "%s", buf );
+                    ImGui::Separator();
+                    ImGui::Text( "Thread: %s", m_worker.GetThreadString( v->thread ) );
+                    if( !v->timeline.empty() )
+                    {
+                        const auto t = v->timeline.front()->gpuStart;
+                        if( t != std::numeric_limits<int64_t>::max() )
+                        {
+                            ImGui::Text( "Appeared at %s", TimeToString( t - m_worker.GetFrameTime( 0 ) ) );
+                        }
+                    }
+                    ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
+                    ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
+                    ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
+                    ImGui::EndTooltip();
                 }
-                ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
-                ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
-                ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
-                ImGui::EndTooltip();
             }
 
             offset += ostep;
@@ -942,84 +949,87 @@ void View::DrawZones()
     for( const auto& v : m_worker.GetThreadData() )
     {
         if( !Visible( v ) ) continue;
-
-        draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
-
         bool& showFull = ShowFull( v );
-        if( showFull )
+
+        const auto yPos = wpos.y + offset;
+        if( yPos + ostep >= yMin && yPos <= yMax )
         {
-            draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFFFFF );
+            draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
 
-            auto it = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-            auto end = std::lower_bound( it, v->messages.end(), m_zvEnd, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-
-            while( it < end )
+            if( showFull )
             {
-                const auto next = std::upper_bound( it, v->messages.end(), (*it)->time + MinVisSize * nspx, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
-                const auto dist = std::distance( it, next );
+                draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFFFFF );
 
-                const auto px = ( (*it)->time - m_zvStart ) * pxns;
-                if( dist > 1 )
+                auto it = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+                auto end = std::lower_bound( it, v->messages.end(), m_zvEnd, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+
+                while( it < end )
                 {
-                    draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
-                }
-                draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
-                {
-                    ImGui::BeginTooltip();
+                    const auto next = std::upper_bound( it, v->messages.end(), (*it)->time + MinVisSize * nspx, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
+                    const auto dist = std::distance( it, next );
+
+                    const auto px = ( (*it)->time - m_zvStart ) * pxns;
                     if( dist > 1 )
                     {
-                        ImGui::Text( "%i messages", (int)dist );
+                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
                     }
-                    else
+                    draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
+                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
                     {
-                        ImGui::Text( "%s", TimeToString( (*it)->time - m_worker.GetFrameBegin( 0 ) ) );
-                        ImGui::Separator();
-                        ImGui::Text( "Message text:" );
-                        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( (*it)->ref ) );
+                        ImGui::BeginTooltip();
+                        if( dist > 1 )
+                        {
+                            ImGui::Text( "%i messages", (int)dist );
+                        }
+                        else
+                        {
+                            ImGui::Text( "%s", TimeToString( (*it)->time - m_worker.GetFrameBegin( 0 ) ) );
+                            ImGui::Separator();
+                            ImGui::Text( "Message text:" );
+                            ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( (*it)->ref ) );
+                        }
+                        ImGui::EndTooltip();
+                        m_msgHighlight = *it;
                     }
-                    ImGui::EndTooltip();
-                    m_msgHighlight = *it;
+                    it = next;
                 }
-                it = next;
             }
-        }
-        else
-        {
-            draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF888888 );
-        }
-        const auto txt = m_worker.GetThreadString( v->id );
-        const auto txtsz = ImGui::CalcTextSize( txt );
-        if( m_gpuThread == v->id )
-        {
-            draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x448888DD );
-            draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x888888DD );
-        }
-        if( m_gpuInfoWindow && m_gpuInfoWindowThread == v->id )
-        {
-            draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x4488DD88 );
-            draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x8888DD88 );
-        }
-        draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFFFFFFFF : 0xFF888888, txt );
-
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x, offset + ty ) ) )
-        {
-            if( ImGui::IsMouseClicked( 0 ) )
+            else
             {
-                showFull = !showFull;
+                draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF888888 );
             }
-
-            ImGui::BeginTooltip();
-            ImGui::Text( "%s", m_worker.GetThreadString( v->id ) );
-            if( !v->timeline.empty() )
+            const auto txt = m_worker.GetThreadString( v->id );
+            const auto txtsz = ImGui::CalcTextSize( txt );
+            if( m_gpuThread == v->id )
             {
-                ImGui::Separator();
-                ImGui::Text( "Appeared at %s", TimeToString( v->timeline.front()->start - m_worker.GetFrameBegin( 0 ) ) );
-                ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
-                ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
+                draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x448888DD );
+                draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x888888DD );
             }
-            ImGui::EndTooltip();
+            if( m_gpuInfoWindow && m_gpuInfoWindowThread == v->id )
+            {
+                draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x4488DD88 );
+                draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x8888DD88 );
+            }
+            draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFFFFFFFF : 0xFF888888, txt );
 
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x, offset + ty ) ) )
+            {
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    showFull = !showFull;
+                }
+
+                ImGui::BeginTooltip();
+                ImGui::Text( "%s", m_worker.GetThreadString( v->id ) );
+                if( !v->timeline.empty() )
+                {
+                    ImGui::Separator();
+                    ImGui::Text( "Appeared at %s", TimeToString( v->timeline.front()->start - m_worker.GetFrameBegin( 0 ) ) );
+                    ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
+                    ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
+                }
+                ImGui::EndTooltip();
+            }
         }
 
         offset += ostep;

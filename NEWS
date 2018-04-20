@@ -25,6 +25,7 @@ v0.3 (xxxx-xx-xx)
 - Fixed regression with lock announce processing that appeared during
   worker/viewer split.
 - Allow selecting/unselecting all locks for display.
+- Performance improvements.
 
 
 v0.2 (2018-04-05)

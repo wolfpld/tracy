@@ -23,6 +23,20 @@ namespace tracy
 class FileRead;
 class FileWrite;
 
+namespace EventType
+{
+    enum Type : uint32_t
+    {
+        Locks       = 1 << 0,
+        Messages    = 1 << 1,
+        Plots       = 1 << 2,
+        Memory      = 1 << 3,
+
+        None        = 0,
+        All         = std::numeric_limits<uint32_t>::max()
+    };
+}
+
 class Worker
 {
 #pragma pack( 1 )
@@ -91,7 +105,7 @@ class Worker
 
 public:
     Worker( const char* addr );
-    Worker( FileRead& f );
+    Worker( FileRead& f, EventType::Type eventMask = EventType::All );
     ~Worker();
 
     const std::string& GetAddr() const { return m_addr; }

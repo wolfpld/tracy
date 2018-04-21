@@ -3808,11 +3808,11 @@ void View::DrawStatistics()
     ImGui::NextColumn();
     ImGui::Text( "Location" );
     ImGui::NextColumn();
-    if( ImGui::Button( "Total time" ) ) m_statSort = 0;
+    if( ImGui::SmallButton( "Total time" ) ) m_statSort = 0;
     ImGui::NextColumn();
-    if( ImGui::Button( "Counts" ) ) m_statSort = 1;
+    if( ImGui::SmallButton( "Counts" ) ) m_statSort = 1;
     ImGui::NextColumn();
-    if( ImGui::Button( "MTPC" ) ) m_statSort = 2;
+    if( ImGui::SmallButton( "MTPC" ) ) m_statSort = 2;
     ImGui::SameLine();
     ImGui::TextDisabled( "(?)" );
     if( ImGui::IsItemHovered() )

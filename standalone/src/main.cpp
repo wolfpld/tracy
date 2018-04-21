@@ -18,6 +18,7 @@ static void glfw_error_callback(int error, const char* description)
 int main( int argc, char** argv )
 {
     std::unique_ptr<tracy::View> view;
+    int badVer = 0;
 
     if( argc == 2 )
     {
@@ -103,10 +104,31 @@ int main( int argc, char** argv )
                     auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
                     if( f )
                     {
-                        view = std::make_unique<tracy::View>( *f );
+                        try
+                        {
+                            view = std::make_unique<tracy::View>( *f );
+                        }
+                        catch( const tracy::UnsupportedVersion& e )
+                        {
+                            badVer = e.version;
+                        }
                     }
                 }
             }
+
+            if( badVer != 0 ) ImGui::OpenPopup( "Unsupported file version" );
+            if( ImGui::BeginPopupModal( "Unsupported file version", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+            {
+                ImGui::Text( "The file you are trying to open is unsupported.\nYou should update to tracy %i.%i.%i or newer and try again.", badVer >> 16, ( badVer >> 8 ) & 0xFF, badVer & 0xFF );
+                ImGui::Separator();
+                if( ImGui::Button( "I understand" ) )
+                {
+                    ImGui::CloseCurrentPopup();
+                    badVer = 0;
+                }
+                ImGui::EndPopup();
+            }
+
             ImGui::End();
         }
         else

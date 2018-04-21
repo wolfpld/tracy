@@ -813,7 +813,7 @@ void Worker::Exec()
             auto lt = localtime( &date );
             strftime( dtmp, 64, "%F %T", lt );
             char tmp[1024];
-            sprintf( tmp, "%s @ %s###Profiler", welcome.programName, dtmp );
+            sprintf( tmp, "%s @ %s", welcome.programName, dtmp );
             m_captureName = tmp;
         }
 

@@ -400,7 +400,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( &tsz, sizeof( tsz ) );
             f.Skip( tsz * sizeof( uint64_t ) );
             f.Read( &tsz, sizeof( tsz ) );
-            f.Skip( tsz * ( type == LockType::Lockable ? sizeof( LockEvent ) : sizeof( LockEventShared ) ) );
+            if( fileVer >= FileVersion( 0, 3, 0 ) )
+            {
+                f.Skip( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) );
+            }
+            else
+            {
+                f.Skip( tsz * ( type == LockType::Lockable ? sizeof( LockEvent ) : sizeof( LockEventShared ) ) );
+            }
         }
     }
 

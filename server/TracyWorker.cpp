@@ -550,6 +550,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 }
 
+template<class T>
+static inline void ZoneCleanup( Vector<T>& vec )
+{
+    for( auto& v : vec )
+    {
+        ZoneCleanup( v->child );
+    }
+    vec.~Vector<T>();
+}
+
 Worker::~Worker()
 {
     Shutdown();
@@ -560,6 +570,14 @@ Worker::~Worker()
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );
 
+    for( auto& v : m_data.threads )
+    {
+        ZoneCleanup( v->timeline );
+    }
+    for( auto& v : m_data.gpuData )
+    {
+        ZoneCleanup( v->timeline );
+    }
     for( auto& v : m_data.plots )
     {
         v->~PlotData();

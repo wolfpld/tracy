@@ -3816,7 +3816,7 @@ void View::DrawCompare()
                     auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
                     if( f )
                     {
-                        m_compare.second = std::make_unique<Worker>( *f );
+                        m_compare.second = std::make_unique<Worker>( *f, EventType::None );
                     }
                 }
                 catch( const tracy::UnsupportedVersion& e )

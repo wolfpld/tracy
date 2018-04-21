@@ -71,7 +71,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
     else
     {
-        assert( sizeof( m_delay ) == sizeof( hdr ) );
+        static_assert( sizeof( m_delay ) == sizeof( hdr ), "Size mismatch" );
         memcpy( &m_delay, hdr, sizeof( m_delay ) );
     }
 

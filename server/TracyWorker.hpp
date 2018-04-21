@@ -4,6 +4,7 @@
 #include <atomic>
 #include <limits>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -36,6 +37,12 @@ namespace EventType
         All         = std::numeric_limits<uint32_t>::max()
     };
 }
+
+struct UnsupportedVersion : public std::exception
+{
+    UnsupportedVersion( int version ) : version( version ) {}
+    int version;
+};
 
 class Worker
 {

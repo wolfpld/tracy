@@ -19,13 +19,14 @@
 namespace tracy
 {
 
-static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 0 };
-enum { FileHeaderMagic = 5 };
-
 static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
 {
     return ( h5 << 16 ) | ( h6 << 8 ) | h7;
 }
+
+static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 0 };
+enum { FileHeaderMagic = 5 };
+static const int CurrentVersion = FileVersion( FileHeader[FileHeaderMagic], FileHeader[FileHeaderMagic+1], FileHeader[FileHeaderMagic+2] );
 
 Worker::Worker( const char* addr )
     : m_addr( addr )
@@ -61,6 +62,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     if( memcmp( FileHeader, hdr, FileHeaderMagic ) == 0 )
     {
         fileVer = FileVersion( hdr[FileHeaderMagic], hdr[FileHeaderMagic+1], hdr[FileHeaderMagic+2] );
+        if( fileVer > CurrentVersion )
+        {
+            throw UnsupportedVersion( fileVer );
+        }
+
         f.Read( &m_delay, sizeof( m_delay ) );
     }
     else

@@ -28,6 +28,147 @@ static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 0 };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( FileHeader[FileHeaderMagic], FileHeader[FileHeaderMagic+1], FileHeader[FileHeaderMagic+2] );
 
+
+static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
+{
+    auto& timeline = lockmap.timeline;
+    uint8_t lockingThread;
+    uint8_t lockCount;
+    uint64_t waitList;
+
+    if( pos == 0 )
+    {
+        lockingThread = 0;
+        lockCount = 0;
+        waitList = 0;
+    }
+    else
+    {
+        const auto tl = timeline[pos-1];
+        lockingThread = tl->lockingThread;
+        lockCount = tl->lockCount;
+        waitList = tl->waitList;
+    }
+    const auto end = timeline.size();
+
+    while( pos != end )
+    {
+        const auto tl = timeline[pos];
+        const auto tbit = uint64_t( 1 ) << tl->thread;
+        switch( (LockEvent::Type)tl->type )
+        {
+        case LockEvent::Type::Wait:
+            waitList |= tbit;
+            break;
+        case LockEvent::Type::Obtain:
+            assert( lockCount < std::numeric_limits<uint8_t>::max() );
+            assert( ( waitList & tbit ) != 0 );
+            waitList &= ~tbit;
+            lockingThread = tl->thread;
+            lockCount++;
+            break;
+        case LockEvent::Type::Release:
+            assert( lockCount > 0 );
+            lockCount--;
+            break;
+        default:
+            break;
+        }
+        tl->lockingThread = lockingThread;
+        tl->waitList = waitList;
+        tl->lockCount = lockCount;
+        pos++;
+    }
+}
+
+static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
+{
+    auto& timeline = lockmap.timeline;
+    uint8_t lockingThread;
+    uint8_t lockCount;
+    uint64_t waitShared;
+    uint64_t waitList;
+    uint64_t sharedList;
+
+    if( pos == 0 )
+    {
+        lockingThread = 0;
+        lockCount = 0;
+        waitShared = 0;
+        waitList = 0;
+        sharedList = 0;
+    }
+    else
+    {
+        const auto tl = (LockEventShared*)timeline[pos-1];
+        lockingThread = tl->lockingThread;
+        lockCount = tl->lockCount;
+        waitShared = tl->waitShared;
+        waitList = tl->waitList;
+        sharedList = tl->sharedList;
+    }
+    const auto end = timeline.size();
+
+    // ObtainShared and ReleaseShared should assert on lockCount == 0, but
+    // due to the async retrieval of data from threads that not possible.
+    while( pos != end )
+    {
+        const auto tl = (LockEventShared*)timeline[pos];
+        const auto tbit = uint64_t( 1 ) << tl->thread;
+        switch( (LockEvent::Type)tl->type )
+        {
+        case LockEvent::Type::Wait:
+            waitList |= tbit;
+            break;
+        case LockEvent::Type::WaitShared:
+            waitShared |= tbit;
+            break;
+        case LockEvent::Type::Obtain:
+            assert( lockCount < std::numeric_limits<uint8_t>::max() );
+            assert( ( waitList & tbit ) != 0 );
+            waitList &= ~tbit;
+            lockingThread = tl->thread;
+            lockCount++;
+            break;
+        case LockEvent::Type::Release:
+            assert( lockCount > 0 );
+            lockCount--;
+            break;
+        case LockEvent::Type::ObtainShared:
+            assert( ( waitShared & tbit ) != 0 );
+            assert( ( sharedList & tbit ) == 0 );
+            waitShared &= ~tbit;
+            sharedList |= tbit;
+            break;
+        case LockEvent::Type::ReleaseShared:
+            assert( ( sharedList & tbit ) != 0 );
+            sharedList &= ~tbit;
+            break;
+        default:
+            break;
+        }
+        tl->lockingThread = lockingThread;
+        tl->waitShared = waitShared;
+        tl->waitList = waitList;
+        tl->sharedList = sharedList;
+        tl->lockCount = lockCount;
+        pos++;
+    }
+}
+
+static inline void UpdateLockCount( LockMap& lockmap, size_t pos )
+{
+    if( lockmap.type == LockType::Lockable )
+    {
+        UpdateLockCountLockable( lockmap, pos );
+    }
+    else
+    {
+        UpdateLockCountSharedLockable( lockmap, pos );
+    }
+}
+
+
 Worker::Worker( const char* addr )
     : m_addr( addr )
     , m_connected( false )
@@ -185,24 +326,65 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             }
             f.Read( &tsz, sizeof( tsz ) );
             lockmap.timeline.reserve( tsz );
-            if( lockmap.type == LockType::Lockable )
+            if( fileVer >= FileVersion( 0, 3, 0 ) )
             {
-                for( uint64_t i=0; i<tsz; i++ )
+                if( lockmap.type == LockType::Lockable )
                 {
-                    auto lev = m_slab.Alloc<LockEvent>();
-                    f.Read( lev, sizeof( LockEvent ) );
-                    lockmap.timeline.push_back_no_space_check( lev );
+                    for( uint64_t i=0; i<tsz; i++ )
+                    {
+                        auto lev = m_slab.Alloc<LockEvent>();
+                        f.Read( &lev->time, sizeof( lev->time ) );
+                        f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
+                        f.Read( &lev->thread, sizeof( lev->thread ) );
+                        f.Read( &lev->type, sizeof( lev->type ) );
+                        lockmap.timeline.push_back_no_space_check( lev );
+                    }
+                }
+                else
+                {
+                    for( uint64_t i=0; i<tsz; i++ )
+                    {
+                        auto lev = m_slab.Alloc<LockEventShared>();
+                        f.Read( &lev->time, sizeof( lev->time ) );
+                        f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
+                        f.Read( &lev->thread, sizeof( lev->thread ) );
+                        f.Read( &lev->type, sizeof( lev->type ) );
+                        lockmap.timeline.push_back_no_space_check( lev );
+                    }
                 }
             }
             else
             {
-                for( uint64_t i=0; i<tsz; i++ )
+                if( lockmap.type == LockType::Lockable )
                 {
-                    auto lev = m_slab.Alloc<LockEventShared>();
-                    f.Read( lev, sizeof( LockEventShared ) );
-                    lockmap.timeline.push_back_no_space_check( lev );
+                    for( uint64_t i=0; i<tsz; i++ )
+                    {
+                        auto lev = m_slab.Alloc<LockEvent>();
+                        f.Read( &lev->time, sizeof( lev->time ) );
+                        f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
+                        f.Read( &lev->thread, sizeof( lev->thread ) );
+                        f.Skip( sizeof( uint8_t ) );
+                        f.Read( &lev->type, sizeof( lev->type ) );
+                        f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) );
+                        lockmap.timeline.push_back_no_space_check( lev );
+                    }
+                }
+                else
+                {
+                    for( uint64_t i=0; i<tsz; i++ )
+                    {
+                        auto lev = m_slab.Alloc<LockEventShared>();
+                        f.Read( &lev->time, sizeof( lev->time ) );
+                        f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
+                        f.Read( &lev->thread, sizeof( lev->thread ) );
+                        f.Skip( sizeof( uint8_t ) );
+                        f.Read( &lev->type, sizeof( lev->type ) );
+                        f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) * 3 );
+                        lockmap.timeline.push_back_no_space_check( lev );
+                    }
                 }
             }
+            UpdateLockCount( lockmap, 0 );
             m_data.lockMap.emplace( id, std::move( lockmap ) );
         }
     }
@@ -853,145 +1035,6 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     {
         td->stack.back()->child.push_back( zone );
         td->stack.push_back_non_empty( zone );
-    }
-}
-
-static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
-{
-    auto& timeline = lockmap.timeline;
-    uint8_t lockingThread;
-    uint8_t lockCount;
-    uint64_t waitList;
-
-    if( pos == 0 )
-    {
-        lockingThread = 0;
-        lockCount = 0;
-        waitList = 0;
-    }
-    else
-    {
-        const auto tl = timeline[pos-1];
-        lockingThread = tl->lockingThread;
-        lockCount = tl->lockCount;
-        waitList = tl->waitList;
-    }
-    const auto end = timeline.size();
-
-    while( pos != end )
-    {
-        const auto tl = timeline[pos];
-        const auto tbit = uint64_t( 1 ) << tl->thread;
-        switch( (LockEvent::Type)tl->type )
-        {
-        case LockEvent::Type::Wait:
-            waitList |= tbit;
-            break;
-        case LockEvent::Type::Obtain:
-            assert( lockCount < std::numeric_limits<uint8_t>::max() );
-            assert( ( waitList & tbit ) != 0 );
-            waitList &= ~tbit;
-            lockingThread = tl->thread;
-            lockCount++;
-            break;
-        case LockEvent::Type::Release:
-            assert( lockCount > 0 );
-            lockCount--;
-            break;
-        default:
-            break;
-        }
-        tl->lockingThread = lockingThread;
-        tl->waitList = waitList;
-        tl->lockCount = lockCount;
-        pos++;
-    }
-}
-
-static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
-{
-    auto& timeline = lockmap.timeline;
-    uint8_t lockingThread;
-    uint8_t lockCount;
-    uint64_t waitShared;
-    uint64_t waitList;
-    uint64_t sharedList;
-
-    if( pos == 0 )
-    {
-        lockingThread = 0;
-        lockCount = 0;
-        waitShared = 0;
-        waitList = 0;
-        sharedList = 0;
-    }
-    else
-    {
-        const auto tl = (LockEventShared*)timeline[pos-1];
-        lockingThread = tl->lockingThread;
-        lockCount = tl->lockCount;
-        waitShared = tl->waitShared;
-        waitList = tl->waitList;
-        sharedList = tl->sharedList;
-    }
-    const auto end = timeline.size();
-
-    // ObtainShared and ReleaseShared should assert on lockCount == 0, but
-    // due to the async retrieval of data from threads that not possible.
-    while( pos != end )
-    {
-        const auto tl = (LockEventShared*)timeline[pos];
-        const auto tbit = uint64_t( 1 ) << tl->thread;
-        switch( (LockEvent::Type)tl->type )
-        {
-        case LockEvent::Type::Wait:
-            waitList |= tbit;
-            break;
-        case LockEvent::Type::WaitShared:
-            waitShared |= tbit;
-            break;
-        case LockEvent::Type::Obtain:
-            assert( lockCount < std::numeric_limits<uint8_t>::max() );
-            assert( ( waitList & tbit ) != 0 );
-            waitList &= ~tbit;
-            lockingThread = tl->thread;
-            lockCount++;
-            break;
-        case LockEvent::Type::Release:
-            assert( lockCount > 0 );
-            lockCount--;
-            break;
-        case LockEvent::Type::ObtainShared:
-            assert( ( waitShared & tbit ) != 0 );
-            assert( ( sharedList & tbit ) == 0 );
-            waitShared &= ~tbit;
-            sharedList |= tbit;
-            break;
-        case LockEvent::Type::ReleaseShared:
-            assert( ( sharedList & tbit ) != 0 );
-            sharedList &= ~tbit;
-            break;
-        default:
-            break;
-        }
-        tl->lockingThread = lockingThread;
-        tl->waitShared = waitShared;
-        tl->waitList = waitList;
-        tl->sharedList = sharedList;
-        tl->lockCount = lockCount;
-        pos++;
-    }
-}
-
-static inline void UpdateLockCount( LockMap& lockmap, size_t pos )
-{
-    if( lockmap.type == LockType::Lockable )
-    {
-        UpdateLockCountLockable( lockmap, pos );
-    }
-    else
-    {
-        UpdateLockCountSharedLockable( lockmap, pos );
     }
 }
 
@@ -1943,19 +1986,12 @@ void Worker::Write( FileWrite& f )
         }
         sz = v.second.timeline.size();
         f.Write( &sz, sizeof( sz ) );
-        if( v.second.type == LockType::Lockable )
+        for( auto& lev : v.second.timeline )
         {
-            for( auto& lev : v.second.timeline )
-            {
-                f.Write( lev, sizeof( LockEvent ) );
-            }
-        }
-        else
-        {
-            for( auto& lev : v.second.timeline )
-            {
-                f.Write( lev, sizeof( LockEventShared ) );
-            }
+            f.Write( &lev->time, sizeof( lev->time ) );
+            f.Write( &lev->srcloc, sizeof( lev->srcloc ) );
+            f.Write( &lev->thread, sizeof( lev->thread ) );
+            f.Write( &lev->type, sizeof( lev->type ) );
         }
     }
 

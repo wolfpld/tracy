@@ -19,6 +19,14 @@
 namespace tracy
 {
 
+static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 0 };
+enum { FileHeaderMagic = 5 };
+
+static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
+{
+    return ( h5 << 16 ) | ( h6 << 8 ) | h7;
+}
+
 Worker::Worker( const char* addr )
     : m_addr( addr )
     , m_connected( false )
@@ -46,7 +54,21 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     , m_stream( nullptr )
     , m_buffer( nullptr )
 {
-    f.Read( &m_delay, sizeof( m_delay ) );
+    int fileVer = 0;
+
+    uint8_t hdr[8];
+    f.Read( hdr, sizeof( hdr ) );
+    if( memcmp( FileHeader, hdr, FileHeaderMagic ) == 0 )
+    {
+        fileVer = FileVersion( hdr[FileHeaderMagic], hdr[FileHeaderMagic+1], hdr[FileHeaderMagic+2] );
+        f.Read( &m_delay, sizeof( m_delay ) );
+    }
+    else
+    {
+        assert( sizeof( m_delay ) == sizeof( hdr ) );
+        memcpy( &m_delay, hdr, sizeof( m_delay ) );
+    }
+
     f.Read( &m_resolution, sizeof( m_resolution ) );
     f.Read( &m_timerMul, sizeof( m_timerMul ) );
     f.Read( &m_data.lastTime, sizeof( m_data.lastTime ) );
@@ -290,7 +312,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
     // Support pre-0.3 traces
-    if( f.IsEOF() ) return;
+    if( fileVer == 0 && f.IsEOF() ) return;
 
     f.Read( &sz, sizeof( sz ) );
     if( eventMask & EventType::Memory )
@@ -1833,6 +1855,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size )
 
 void Worker::Write( FileWrite& f )
 {
+    f.Write( FileHeader, sizeof( FileHeader ) );
+
     f.Write( &m_delay, sizeof( m_delay ) );
     f.Write( &m_resolution, sizeof( m_resolution ) );
     f.Write( &m_timerMul, sizeof( m_timerMul ) );

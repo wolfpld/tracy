@@ -71,6 +71,7 @@ int main( int argc, char** argv )
     auto& style = ImGui::GetStyle();
     style.WindowBorderSize = 1.f;
     style.FrameBorderSize = 1.f;
+    style.FrameRounding = 5.f;
     style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 0.94f );
     style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
 

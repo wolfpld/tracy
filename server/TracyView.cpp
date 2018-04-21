@@ -4265,6 +4265,7 @@ void View::DrawCompare()
                 }
             }
         }
+        ImGui::TreePop();
     }
 
 #endif

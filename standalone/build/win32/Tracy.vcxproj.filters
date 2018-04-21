@@ -167,6 +167,9 @@
     <ClInclude Include="..\..\..\common\tracy_sema.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyFileHeader.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

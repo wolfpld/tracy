@@ -2,14 +2,18 @@
 #define __TRACYFILEREAD_HPP__
 
 #include <algorithm>
+#include <stdexcept>
 #include <stdio.h>
 #include <string.h>
 
+#include "TracyFileHeader.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
 
 namespace tracy
 {
+
+struct NotTracyDump : public std::exception {};
 
 class FileRead
 {
@@ -84,7 +88,18 @@ private:
         , m_offset( BufSize )
         , m_active( 1 )
         , m_lastBlock( 0 )
-    {}
+    {
+        char hdr[4];
+        if( fread( hdr, 1, sizeof( hdr ), m_file ) != sizeof( hdr ) ) throw NotTracyDump();
+        if( memcmp( hdr, Lz4Header, sizeof( hdr ) ) != 0 )
+        {
+            fseek( m_file, 0, SEEK_SET );
+            uint32_t sz;
+            static_assert( sizeof( sz ) == sizeof( hdr ), "Size mismatch" );
+            memcpy( &sz, hdr, sizeof( sz ) );
+            if( sz > LZ4Size ) throw NotTracyDump();
+        }
+    }
 
     tracy_force_inline void ReadSmall( void* ptr, size_t size )
     {

@@ -117,6 +117,7 @@
     <ClInclude Include="..\..\..\nfd\nfd_common.h" />
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp" />
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />
+    <ClInclude Include="..\..\..\server\TracyFileHeader.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileRead.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileWrite.hpp" />
     <ClInclude Include="..\..\..\server\TracyImGui.hpp" />

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "TracyFileHeader.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
 
@@ -48,7 +49,9 @@ private:
         , m_file( f )
         , m_offset( 0 )
         , m_active( 0 )
-    {}
+    {
+        fwrite( Lz4Header, 1, sizeof( Lz4Header ), m_file );
+    }
 
     tracy_force_inline void WriteSmall( const void* ptr, size_t size )
     {

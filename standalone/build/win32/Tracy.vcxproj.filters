@@ -63,6 +63,9 @@
     <ClCompile Include="..\..\..\nfd\nfd_win.cpp">
       <Filter>nfd</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyBadVersion.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -168,6 +171,9 @@
       <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyFileHeader.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyBadVersion.hpp">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

@@ -557,7 +557,7 @@ Worker::~Worker()
     {
         m_thread.join();
     }
-    delete [] m_buffer;
+    delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );
 }
 

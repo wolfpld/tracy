@@ -297,7 +297,7 @@ void View::DrawImpl()
     }
 
     const auto th = ImGui::GetTextLineHeight();
-    const auto bw = 4.7f * th;
+    const auto bw = 6 * th;
 
     std::lock_guard<NonRecursiveBenaphore> lock( m_worker.GetDataLock() );
     ImGui::Begin( m_worker.GetCaptureName().c_str(), nullptr, ImVec2( 1550, 800 ), -1, ImGuiWindowFlags_NoScrollbar );

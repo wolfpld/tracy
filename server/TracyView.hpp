@@ -80,6 +80,7 @@ private:
     void DrawFindZone();
     void DrawStatistics();
     void DrawMemory();
+    void DrawCompare();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress );
@@ -111,6 +112,7 @@ private:
 
 #ifndef TRACY_NO_STATISTICS
     void FindZones();
+    void FindZonesCompare();
 #endif
 
     Vector<int8_t> GetMemoryPages() const;
@@ -221,6 +223,27 @@ private:
             strcpy( pattern, name );
         }
     } m_findZone;
+
+    struct {
+        bool show = false;
+        std::unique_ptr<Worker> second;
+        int badVer = 0;
+        char pattern[1024] = {};
+        std::vector<int32_t> match[2];
+        int selMatch[2] = { 0, 0 };
+        bool logVal = false;
+        bool logTime = true;
+        bool cumulateTime = false;
+
+        void Reset()
+        {
+            for( int i=0; i<2; i++ )
+            {
+                match[i].clear();
+                selMatch[i] = 0;
+            }
+        }
+    } m_compare;
 
     struct {
         bool show = false;

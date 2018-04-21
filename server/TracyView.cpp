@@ -54,11 +54,18 @@ static const char* TimeToString( int64_t ns )
     {
         sprintf( buf, "%s%.2f s", sign, ns / ( 1000. * 1000. * 1000. ) );
     }
-    else
+    else if( ns < 1000ll * 1000 * 1000 * 60 * 60 )
     {
         const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) );
         const auto s = int64_t( ns - m * ( 1000ll * 1000 * 1000 * 60 ) );
         sprintf( buf, "%s%" PRIi64 ":%04.1f", sign, m, s / ( 1000. * 1000. * 1000. ) );
+    }
+    else
+    {
+        const auto h = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 * 60 ) );
+        const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) - h * 60 );
+        const auto s = int64_t( ns - h * ( 1000ll * 1000 * 1000 * 60 * 60 ) - m * ( 1000ll * 1000 * 1000 * 60 ) );
+        sprintf( buf, "%s%" PRIi64 ":%02" PRIi64 ":%02" PRIi64, sign, h, m, int64_t( s / ( 1000ll * 1000 * 1000 ) ) );
     }
     return buf;
 }

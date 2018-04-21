@@ -559,6 +559,11 @@ Worker::~Worker()
     }
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );
+
+    for( auto& v : m_data.plots )
+    {
+        v->~PlotData();
+    }
 }
 
 int64_t Worker::GetFrameTime( size_t idx ) const

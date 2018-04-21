@@ -3751,9 +3751,9 @@ void View::DrawFindZone()
 
                     ImGui::NextColumn();
 
-                    ImGui::Text( TimeToString( ev->start - m_worker.GetFrameBegin( 0 ) ) );
+                    ImGui::Text( "%s", TimeToString( ev->start - m_worker.GetFrameBegin( 0 ) ) );
                     ImGui::NextColumn();
-                    ImGui::Text( TimeToString( timespan ) );
+                    ImGui::Text( "%s", TimeToString( timespan ) );
                     ImGui::NextColumn();
 
                     ImGui::PopID();
@@ -3978,7 +3978,7 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
                 {
                     sel = ImGui::Selectable( "", m_zoneInfoWindow == zoneFree );
                     ImGui::SameLine();
-                    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.6f, 1.f ), txt );
+                    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.6f, 1.f ), "%s", txt );
                 }
                 else
                 {

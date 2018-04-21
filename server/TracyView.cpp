@@ -3717,10 +3717,8 @@ void View::DrawFindZone()
 
             if( expand )
             {
-                ImGui::Columns( 3, hdrString );
+                ImGui::Columns( 2, hdrString );
                 ImGui::Separator();
-                ImGui::Text( "Name" );
-                ImGui::NextColumn();
                 ImGui::Text( "Time from start" );
                 ImGui::NextColumn();
                 ImGui::Text( "Execution time" );
@@ -3735,7 +3733,7 @@ void View::DrawFindZone()
                     ImGui::PushID( ev );
 
                     auto& srcloc = m_worker.GetSourceLocation( ev->srcloc );
-                    if( ImGui::Selectable( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
+                    if( ImGui::Selectable( TimeToString( ev->start - m_worker.GetFrameBegin( 0 ) ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
                     {
                         m_zoneInfoWindow = ev;
                     }
@@ -3749,9 +3747,6 @@ void View::DrawFindZone()
                         ZoneTooltip( *ev );
                     }
 
-                    ImGui::NextColumn();
-
-                    ImGui::Text( "%s", TimeToString( ev->start - m_worker.GetFrameBegin( 0 ) ) );
                     ImGui::NextColumn();
                     ImGui::Text( "%s", TimeToString( timespan ) );
                     ImGui::NextColumn();

@@ -36,6 +36,10 @@ v0.3 (xxxx-xx-xx)
 - Performance improvements.
 - Don't save unneeded lock information in trace file.
 - Allow expanding view span up to one hour, instead of one minute.
+- Added trace comparison window.
+  - An external trace has to be loaded first.
+  - Zone query in both traces (current and external).
+  - Both results are overlaid on the same histogram.
 
 
 v0.2 (2018-04-05)

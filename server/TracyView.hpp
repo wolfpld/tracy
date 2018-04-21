@@ -192,7 +192,7 @@ private:
         uint64_t selThread = Unselected;
         char pattern[1024] = {};
         bool logVal = false;
-        bool logTime = false;
+        bool logTime = true;
         bool cumulateTime = false;
         bool showThreads = true;
         bool sortByCounts = false;

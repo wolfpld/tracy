@@ -6,6 +6,14 @@ here.
 v0.3 (xxxx-xx-xx)
 -----------------
 
+- Breaking change: the format of trace files has changed.
+  - Previous tracy version will crash when trying to open new traces.
+  - Loading of traces saved by previous version is supported.
+  - Tracy will no longer crash when trying to load traces saved by future
+    versions. Instead, a dialog advising to update will be displayed.
+  - Tracy will no longer crash in most cases when trying to open files that
+    are not traces. Some crashes are still possible, due to support of old,
+    header-less traces.
 - Ability to track every memory allocation in profiled program.
   - Allocation event queuing must be done in order, which requires exclusive
     access to the serialized queue on the client side. This has no effect on

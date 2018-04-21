@@ -402,7 +402,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( &tsz, sizeof( tsz ) );
             if( fileVer >= FileVersion( 0, 3, 0 ) )
             {
-                f.Skip( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) );
+                f.Skip( tsz * ( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) ) );
             }
             else
             {

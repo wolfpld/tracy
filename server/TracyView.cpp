@@ -666,7 +666,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             m_zvStart += int64_t( p1 * 0.25 );
             m_zvEnd -= int64_t( p2 * 0.25 );
         }
-        else if( timespan < 1000ll * 1000 * 1000 * 60 )
+        else if( timespan < 1000ll * 1000 * 1000 * 60 * 60 )
         {
             m_zvStart -= std::max( int64_t( 1 ), int64_t( p1 * 0.25 ) );
             m_zvEnd += std::max( int64_t( 1 ), int64_t( p2 * 0.25 ) );

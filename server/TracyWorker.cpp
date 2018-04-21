@@ -573,6 +573,7 @@ Worker::~Worker()
     for( auto& v : m_data.threads )
     {
         ZoneCleanup( v->timeline );
+        v->messages.~Vector();
     }
     for( auto& v : m_data.gpuData )
     {

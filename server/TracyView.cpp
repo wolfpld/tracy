@@ -3995,7 +3995,7 @@ void View::DrawCompare()
                         else
                         {
                             adj0 = double( zones1.size() ) / zones0.size();
-                            adj1 = 0;
+                            adj1 = 1;
                         }
 
                         if( m_compare.logTime )

@@ -3788,8 +3788,8 @@ void View::DrawFindZone()
 
 struct CompVal
 {
-    int64_t v0;
-    int64_t v1;
+    double v0;
+    double v1;
 };
 
 void View::DrawCompare()
@@ -3955,6 +3955,16 @@ void View::DrawCompare()
                 ImGui::Text( "Show total time taken by calls in each bin instead of call counts." );
                 ImGui::EndTooltip();
             }
+            ImGui::SameLine();
+            ImGui::Checkbox( "Normalize values", &m_compare.normalize );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(?)" );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "Normalization will fudge reported data values!" );
+                ImGui::EndTooltip();
+            }
 
             ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
@@ -3974,59 +3984,126 @@ void View::DrawCompare()
                     auto binTime = std::make_unique<CompVal[]>( numBins );
                     memset( binTime.get(), 0, sizeof( CompVal ) * numBins );
 
-                    if( m_compare.logTime )
+                    if( m_compare.normalize )
                     {
-                        const auto tMinLog = log10( tmin );
-                        const auto idt = numBins / ( log10( tmax ) - tMinLog );
-                        for( auto& ev : zones0 )
+                        double adj0, adj1;
+                        if( zones0.size() > zones1.size() )
                         {
-                            const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                            if( timeSpan != 0 )
+                            adj0 = 1;
+                            adj1 = double( zones0.size() ) / zones1.size();
+                        }
+                        else
+                        {
+                            adj0 = double( zones1.size() ) / zones0.size();
+                            adj1 = 0;
+                        }
+
+                        if( m_compare.logTime )
+                        {
+                            const auto tMinLog = log10( tmin );
+                            const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                            for( auto& ev : zones0 )
                             {
-                                const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
-                                bins[bin].v0++;
-                                binTime[bin].v0 += timeSpan;
+                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                    bins[bin].v0 += adj0;
+                                    binTime[bin].v0 += timeSpan * adj0;
+                                }
+                            }
+                            for( auto& ev : zones1 )
+                            {
+                                const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                    bins[bin].v1 += adj1;
+                                    binTime[bin].v1 += timeSpan * adj1;
+                                }
                             }
                         }
-                        for( auto& ev : zones1 )
+                        else
                         {
-                            const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                            if( timeSpan != 0 )
+                            const auto idt = numBins / dt;
+                            for( auto& ev : zones0 )
                             {
-                                const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
-                                bins[bin].v1++;
-                                binTime[bin].v1 += timeSpan;
+                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                    bins[bin].v0 += adj0;
+                                    binTime[bin].v0 += timeSpan * adj0;
+                                }
+                            }
+                            for( auto& ev : zones1 )
+                            {
+                                const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                    bins[bin].v1 += adj1;
+                                    binTime[bin].v1 += timeSpan * adj1;
+                                }
                             }
                         }
                     }
                     else
                     {
-                        const auto idt = numBins / dt;
-                        for( auto& ev : zones0 )
+                        if( m_compare.logTime )
                         {
-                            const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                            if( timeSpan != 0 )
+                            const auto tMinLog = log10( tmin );
+                            const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                            for( auto& ev : zones0 )
                             {
-                                const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                bins[bin].v0++;
-                                binTime[bin].v0 += timeSpan;
+                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                    bins[bin].v0++;
+                                    binTime[bin].v0 += timeSpan;
+                                }
+                            }
+                            for( auto& ev : zones1 )
+                            {
+                                const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                    bins[bin].v1++;
+                                    binTime[bin].v1 += timeSpan;
+                                }
                             }
                         }
-                        for( auto& ev : zones1 )
+                        else
                         {
-                            const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                            if( timeSpan != 0 )
+                            const auto idt = numBins / dt;
+                            for( auto& ev : zones0 )
                             {
-                                const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                bins[bin].v1++;
-                                binTime[bin].v1 += timeSpan;
+                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                    bins[bin].v0++;
+                                    binTime[bin].v0 += timeSpan;
+                                }
+                            }
+                            for( auto& ev : zones1 )
+                            {
+                                const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                    bins[bin].v1++;
+                                    binTime[bin].v1 += timeSpan;
+                                }
                             }
                         }
                     }
 
-                    int64_t timeTotal0 = binTime[0].v0;
-                    int64_t timeTotal1 = binTime[0].v1;
-                    int64_t maxVal;
+                    double timeTotal0 = binTime[0].v0;
+                    double timeTotal1 = binTime[0].v1;
+                    double maxVal;
                     if( cumulateTime )
                     {
                         maxVal = std::max( binTime[0].v0, binTime[0].v1 );
@@ -4050,7 +4127,7 @@ void View::DrawCompare()
 
                     ImGui::Text( "Total time (this): %s", TimeToString( timeTotal0 ) );
                     ImGui::Text( "Total time (external): %s", TimeToString( timeTotal1 ) );
-                    ImGui::Text( "Max counts: %s", cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
+                    ImGui::Text( "Max counts: %s", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
 
                     ImGui::ColorButton( "c1", ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                     ImGui::SameLine();
@@ -4255,7 +4332,7 @@ void View::DrawCompare()
 
                         ImGui::BeginTooltip();
                         ImGui::Text( "Time range: %s - %s", TimeToString( t0 ), TimeToString( t1 ) );
-                        ImGui::Text( "Count: %" PRIu64 " / %" PRIu64, bins[bin].v0, bins[bin].v1 );
+                        ImGui::Text( "Count: %g / %g", floor( bins[bin].v0 ), floor( bins[bin].v1 ) );
                         ImGui::Text( "Time spent in bin: %s / %s", TimeToString( binTime[bin].v0 ), TimeToString( binTime[bin].v1 ) );
                         ImGui::Text( "Time spent in the left bins: %s / %s", TimeToString( tBefore[0] ), TimeToString( tBefore[1] ) );
                         ImGui::Text( "Time spent in the right bins: %s / %s", TimeToString( tAfter[0] ), TimeToString( tAfter[1] ) );

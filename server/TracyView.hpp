@@ -234,6 +234,7 @@ private:
         bool logVal = false;
         bool logTime = true;
         bool cumulateTime = false;
+        bool normalize = false;
 
         void Reset()
         {

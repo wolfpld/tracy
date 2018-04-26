@@ -20,7 +20,7 @@
 #endif
 
 #if defined _MSC_VER || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __ANDROID__ )
-#  define TRACY_RDTSCP_SUPPORTED
+#  define TRACY_HW_TIMER
 #endif
 
 namespace tracy
@@ -61,7 +61,7 @@ public:
     Profiler();
     ~Profiler();
 
-#ifdef TRACY_RDTSCP_SUPPORTED
+#ifdef TRACY_HW_TIMER
     static tracy_force_inline int64_t tracy_rdtscp( uint32_t& cpu )
     {
 #if defined _MSC_VER || defined __CYGWIN__
@@ -75,7 +75,7 @@ public:
     }
 #endif
 
-#ifdef TRACY_RDTSCP_SUPPORTED
+#ifdef TRACY_HW_TIMER
     static tracy_force_inline int64_t tracy_rdtscp()
     {
 #if defined _MSC_VER || defined __CYGWIN__
@@ -92,7 +92,7 @@ public:
 
     static tracy_force_inline int64_t GetTime( uint32_t& cpu )
     {
-#ifdef TRACY_RDTSCP_SUPPORTED
+#ifdef TRACY_HW_TIMER
         return tracy_rdtscp( cpu );
 #else
         cpu = 0xFFFFFFFF;
@@ -102,7 +102,7 @@ public:
 
     static tracy_force_inline int64_t GetTime()
     {
-#ifdef TRACY_RDTSCP_SUPPORTED
+#ifdef TRACY_HW_TIMER
         return tracy_rdtscp();
 #else
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();

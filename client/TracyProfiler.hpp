@@ -23,7 +23,7 @@
 #  define TRACY_HW_TIMER
 #endif
 
-#if defined __aarch64__
+#if defined __aarch64__ || __ARM_ARCH >= 6
 #  define TRACY_HW_TIMER
 #endif
 
@@ -68,7 +68,12 @@ public:
     static tracy_force_inline int64_t GetTime( uint32_t& cpu )
     {
 #ifdef TRACY_HW_TIMER
-#  if defined __aarch64__
+#  if __ARM_ARCH >= 6
+        int64_t t;
+        cpu = 0xFFFFFFFF;
+        asm volatile ( "mrrc p15, 1, %Q0, %R0, c14" : "=r" (t) );
+        return t;
+#  elif defined __aarch64__
         int64_t t;
         cpu = 0xFFFFFFFF;
         asm volatile ( "mrs %0, cntvct_el0" : "=r" (t) );
@@ -90,7 +95,11 @@ public:
     static tracy_force_inline int64_t GetTime()
     {
 #ifdef TRACY_HW_TIMER
-#  if defined __aarch64__
+#  if __ARM_ARCH >= 6
+        int64_t t;
+        asm volatile ( "mrrc p15, 1, %Q0, %R0, c14" : "=r" (t) );
+        return t;
+#  elif defined __aarch64__
         int64_t t;
         asm volatile ( "mrs %0, cntvct_el0" : "=r" (t) );
         return t;

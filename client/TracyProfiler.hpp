@@ -61,39 +61,17 @@ public:
     Profiler();
     ~Profiler();
 
-#ifdef TRACY_HW_TIMER
-    static tracy_force_inline int64_t tracy_rdtscp( uint32_t& cpu )
-    {
-#if defined _MSC_VER || defined __CYGWIN__
-        const auto t = int64_t( __rdtscp( &cpu ) );
-        return t;
-#elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
-        uint32_t eax, edx;
-        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx), "=c" (cpu) :: );
-        return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
-#endif
-    }
-#endif
-
-#ifdef TRACY_HW_TIMER
-    static tracy_force_inline int64_t tracy_rdtscp()
-    {
-#if defined _MSC_VER || defined __CYGWIN__
-        static unsigned int dontcare;
-        const auto t = int64_t( __rdtscp( &dontcare ) );
-        return t;
-#elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
-        uint32_t eax, edx;
-        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx) :: "%ecx" );
-        return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
-#endif
-    }
-#endif
-
     static tracy_force_inline int64_t GetTime( uint32_t& cpu )
     {
 #ifdef TRACY_HW_TIMER
-        return tracy_rdtscp( cpu );
+#  if defined _MSC_VER || defined __CYGWIN__
+        const auto t = int64_t( __rdtscp( &cpu ) );
+        return t;
+#  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+        uint32_t eax, edx;
+        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx), "=c" (cpu) :: );
+        return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
+#  endif
 #else
         cpu = 0xFFFFFFFF;
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
@@ -103,7 +81,15 @@ public:
     static tracy_force_inline int64_t GetTime()
     {
 #ifdef TRACY_HW_TIMER
-        return tracy_rdtscp();
+#  if defined _MSC_VER || defined __CYGWIN__
+        static unsigned int dontcare;
+        const auto t = int64_t( __rdtscp( &dontcare ) );
+        return t;
+#  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+        uint32_t eax, edx;
+        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx) :: "%ecx" );
+        return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
+#  endif
 #else
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
 #endif

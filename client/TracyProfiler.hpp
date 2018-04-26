@@ -95,7 +95,7 @@ public:
         asm volatile ( "mrs %0, cntvct_el0" : "=r" (t) );
         return t;
 #  elif defined _MSC_VER || defined __CYGWIN__
-        static unsigned int dontcare;
+        unsigned int dontcare;
         const auto t = int64_t( __rdtscp( &dontcare ) );
         return t;
 #  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64

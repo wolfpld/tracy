@@ -498,15 +498,14 @@ bool Profiler::HandleServerQuery()
 void Profiler::CalibrateTimer()
 {
 #ifdef TRACY_HW_TIMER
-    uint32_t cpu;
     std::atomic_signal_fence( std::memory_order_acq_rel );
     const auto t0 = std::chrono::high_resolution_clock::now();
-    const auto r0 = tracy_rdtscp( cpu );
+    const auto r0 = GetTime();
     std::atomic_signal_fence( std::memory_order_acq_rel );
     std::this_thread::sleep_for( std::chrono::milliseconds( 200 ) );
     std::atomic_signal_fence( std::memory_order_acq_rel );
     const auto t1 = std::chrono::high_resolution_clock::now();
-    const auto r1 = tracy_rdtscp( cpu );
+    const auto r1 = GetTime();
     std::atomic_signal_fence( std::memory_order_acq_rel );
 
     const auto dt = std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count();

@@ -23,6 +23,10 @@
 #  define TRACY_HW_TIMER
 #endif
 
+#if defined __aarch64__
+#  define TRACY_HW_TIMER
+#endif
+
 namespace tracy
 {
 
@@ -64,7 +68,12 @@ public:
     static tracy_force_inline int64_t GetTime( uint32_t& cpu )
     {
 #ifdef TRACY_HW_TIMER
-#  if defined _MSC_VER || defined __CYGWIN__
+#  if defined __aarch64__
+        int64_t t;
+        cpu = 0xFFFFFFFF;
+        asm volatile ( "mrs %0, cntvct_el0" : "=r" (t) );
+        return t;
+#  elif defined _MSC_VER || defined __CYGWIN__
         const auto t = int64_t( __rdtscp( &cpu ) );
         return t;
 #  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
@@ -81,7 +90,11 @@ public:
     static tracy_force_inline int64_t GetTime()
     {
 #ifdef TRACY_HW_TIMER
-#  if defined _MSC_VER || defined __CYGWIN__
+#  if defined __aarch64__
+        int64_t t;
+        asm volatile ( "mrs %0, cntvct_el0" : "=r" (t) );
+        return t;
+#  elif defined _MSC_VER || defined __CYGWIN__
         static unsigned int dontcare;
         const auto t = int64_t( __rdtscp( &dontcare ) );
         return t;

@@ -35,6 +35,11 @@
 #define init_order(x)
 #endif
 
+#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
+#  include <signal.h>
+#  include <setjmp.h>
+#endif
+
 namespace tracy
 {
 
@@ -52,6 +57,69 @@ struct InitTimeWrapper
 {
     int64_t val;
 };
+
+#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
+int64_t (*GetTimeImpl)();
+
+int64_t GetTimeImplFallback()
+{
+    return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
+}
+
+int64_t GetTimeImplCntvct()
+{
+    int64_t t;
+#  ifdef __aarch64__
+    asm volatile ( "mrs %0, cntvct_el0" : "=r" (t) );
+#  else
+    asm volatile ( "mrrc p15, 1, %Q0, %R0, c14" : "=r" (t) );
+#  endif
+    return t;
+}
+
+static sigjmp_buf SigIllEnv;
+
+static int SetupHwTimerFailed()
+{
+    return sigsetjmp( SigIllEnv, 1 );
+}
+
+static void SetupHwTimerSigIllHandler( int signum )
+{
+    siglongjmp( SigIllEnv, 1 );
+}
+
+static int64_t SetupHwTimer()
+{
+    struct sigaction act, oldact;
+    memset( &act, 0, sizeof( act ) );
+    act.sa_handler = SetupHwTimerSigIllHandler;
+
+    if( sigaction( SIGILL, &act, &oldact ) )
+    {
+        GetTimeImpl = GetTimeImplFallback;
+        return Profiler::GetTime();
+    }
+
+    if( SetupHwTimerFailed() )
+    {
+        sigaction( SIGILL, &oldact, nullptr );
+        GetTimeImpl = GetTimeImplFallback;
+        return Profiler::GetTime();
+    }
+
+    GetTimeImplCntvct();
+
+    sigaction( SIGILL, &oldact, nullptr );
+    GetTimeImpl = GetTimeImplCntvct;
+    return Profiler::GetTime();
+}
+#else
+static int64_t SetupHwTimer()
+{
+    return Profiler::GetTime();
+}
+#endif
 
 static const char* GetProcessName()
 {
@@ -96,7 +164,7 @@ thread_local ProducerWrapper init_order(108) s_token { s_queue.get_explicit_prod
 #  pragma init_seg( ".CRT$XCB" )
 #endif
 
-static InitTimeWrapper init_order(101) s_initTime { Profiler::GetTime() };
+static InitTimeWrapper init_order(101) s_initTime { SetupHwTimer() };
 static RPMallocInit init_order(102) s_rpmalloc_init;
 moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
@@ -498,6 +566,14 @@ bool Profiler::HandleServerQuery()
 void Profiler::CalibrateTimer()
 {
 #ifdef TRACY_HW_TIMER
+#  if __ARM_ARCH >= 6
+    if( GetTimeImpl == GetTimeImplFallback )
+    {
+        m_timerMul = 1.;
+        return;
+    }
+#  endif
+
     std::atomic_signal_fence( std::memory_order_acq_rel );
     const auto t0 = std::chrono::high_resolution_clock::now();
     const auto r0 = GetTime();

@@ -19,11 +19,7 @@
 #  include <intrin.h>
 #endif
 
-#if defined _MSC_VER || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __ANDROID__ )
-#  define TRACY_HW_TIMER
-#endif
-
-#if defined __aarch64__ || __ARM_ARCH >= 6
+#if defined _MSC_VER || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __ANDROID__ ) || __ARM_ARCH >= 6
 #  define TRACY_HW_TIMER
 #endif
 
@@ -56,6 +52,10 @@ struct GpuCtxWrapper
 
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
+#if __ARM_ARCH >= 6
+extern int64_t (*GetTimeImpl)();
+#endif
+
 class Profiler;
 extern Profiler s_profiler;
 
@@ -68,16 +68,9 @@ public:
     static tracy_force_inline int64_t GetTime( uint32_t& cpu )
     {
 #ifdef TRACY_HW_TIMER
-#  if defined __aarch64__
-        int64_t t;
+#  if __ARM_ARCH >= 6
         cpu = 0xFFFFFFFF;
-        asm volatile ( "mrs %0, cntvct_el0" : "=r" (t) );
-        return t;
-#  elif __ARM_ARCH >= 6
-        int64_t t;
-        cpu = 0xFFFFFFFF;
-        asm volatile ( "mrrc p15, 1, %Q0, %R0, c14" : "=r" (t) );
-        return t;
+        return GetTimeImpl();
 #  elif defined _MSC_VER || defined __CYGWIN__
         const auto t = int64_t( __rdtscp( &cpu ) );
         return t;
@@ -95,14 +88,8 @@ public:
     static tracy_force_inline int64_t GetTime()
     {
 #ifdef TRACY_HW_TIMER
-#  if defined __aarch64__
-        int64_t t;
-        asm volatile ( "mrs %0, cntvct_el0" : "=r" (t) );
-        return t;
-#  elif __ARM_ARCH >= 6
-        int64_t t;
-        asm volatile ( "mrrc p15, 1, %Q0, %R0, c14" : "=r" (t) );
-        return t;
+#  if __ARM_ARCH >= 6
+        return GetTimeImpl();
 #  elif defined _MSC_VER || defined __CYGWIN__
         unsigned int dontcare;
         const auto t = int64_t( __rdtscp( &dontcare ) );

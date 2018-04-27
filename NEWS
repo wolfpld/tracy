@@ -40,6 +40,14 @@ v0.3 (xxxx-xx-xx)
   - An external trace has to be loaded first.
   - Zone query in both traces (current and external).
   - Both results are overlaid on the same histogram.
+  - Graphs can be adjusted as-if there was the same number of zones
+    collected.
+- Read time directly from a hardware register on ARM/ARM64, if possible.
+  - User-space access to the timer needs to be enabled in the kernel, so
+    tracy will perform run-time checks and fallback to the old method if the
+    check fails.
+- Prevent connections in a TIME-WAIT state from blocking new listen
+  connections.
 
 
 v0.2 (2018-04-05)

@@ -620,7 +620,7 @@ void Profiler::CalibrateDelay()
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneBegin );
             MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
-#ifdef TRACY_HW_TIMER
+#ifdef TRACY_RDTSCP_OPT
             MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
 #else
             uint32_t cpu;
@@ -636,7 +636,7 @@ void Profiler::CalibrateDelay()
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneEnd );
             MemWrite( &item->zoneEnd.thread, uint64_t( 0 ) );
-#ifdef TRACY_HW_TIMER
+#ifdef TRACY_RDTSCP_OPT
             MemWrite( &item->zoneEnd.time, GetTime( item->zoneEnd.cpu ) );
 #else
             uint32_t cpu;
@@ -662,7 +662,7 @@ void Profiler::CalibrateDelay()
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneBegin );
             MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
-#ifdef TRACY_HW_TIMER
+#ifdef TRACY_RDTSCP_OPT
             MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
 #else
             uint32_t cpu;
@@ -678,7 +678,7 @@ void Profiler::CalibrateDelay()
             auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneEnd );
             MemWrite( &item->zoneEnd.thread, uint64_t( 0 ) );
-#ifdef TRACY_HW_TIMER
+#ifdef TRACY_RDTSCP_OPT
             MemWrite( &item->zoneEnd.time, GetTime( item->zoneEnd.cpu ) );
 #else
             uint32_t cpu;

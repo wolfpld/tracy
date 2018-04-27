@@ -24,7 +24,7 @@ public:
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBegin );
-#ifdef TRACY_HW_TIMER
+#ifdef TRACY_RDTSCP_OPT
         MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
 #else
         uint32_t cpu;
@@ -43,7 +43,7 @@ public:
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneEnd );
-#ifdef TRACY_HW_TIMER
+#ifdef TRACY_RDTSCP_OPT
         MemWrite( &item->zoneEnd.time, Profiler::GetTime( item->zoneEnd.cpu ) );
 #else
         uint32_t cpu;

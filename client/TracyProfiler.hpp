@@ -21,6 +21,11 @@
 
 #if defined _MSC_VER || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __ANDROID__ ) || __ARM_ARCH >= 6
 #  define TRACY_HW_TIMER
+#  if defined _MSC_VER || defined __CYGWIN__
+     // Enable optimization for MSVC __rdtscp() intrin, saving one LHS of a cpu value on the stack.
+     // This comes at the cost of an unaligned memory write.
+#    define TRACY_RDTSCP_OPT
+#  endif
 #endif
 
 namespace tracy

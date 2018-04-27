@@ -228,6 +228,9 @@ bool ListenSocket::Listen( const char* port, int backlog )
 #if defined _MSC_VER || defined __CYGWIN__
     unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
+#else
+    int val = 1;
+    setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof( val ) );
 #endif
     if( bind( m_sock, res->ai_addr, res->ai_addrlen ) == -1 ) return false;
     if( listen( m_sock, backlog ) == -1 ) return false;

@@ -1853,17 +1853,52 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     m_data.memory.low = std::min( low, ptr );
     m_data.memory.high = std::max( high, ptrend );
     m_data.memory.usage += size;
+
+    MemAllocChanged( time );
 }
 
 void Worker::ProcessMemFree( const QueueMemFree& ev )
 {
+    const auto time = TscTime( ev.time );
+
     auto it = m_data.memory.active.find( ev.ptr );
     assert( it != m_data.memory.active.end() );
     auto& mem = m_data.memory.data[it->second];
-    mem.timeFree = TscTime( ev.time );
+    mem.timeFree = time;
     mem.threadFree = CompressThread( ev.thread );
     m_data.memory.usage -= mem.size;
     m_data.memory.active.erase( it );
+
+    MemAllocChanged( time );
+}
+
+void Worker::MemAllocChanged( int64_t time )
+{
+    const auto val = (double)m_data.memory.usage;
+    if( !m_data.memory.plot )
+    {
+        CreateMemAllocPlot();
+        m_data.memory.plot->min = val;
+        m_data.memory.plot->max = val;
+        m_data.memory.plot->data.push_back( { time, val } );
+    }
+    else
+    {
+        assert( !m_data.memory.plot->data.empty() );
+        assert( m_data.memory.plot->data.back().time <= time );
+        if( m_data.memory.plot->min > val ) m_data.memory.plot->min = val;
+        else if( m_data.memory.plot->max < val ) m_data.memory.plot->max = val;
+        m_data.memory.plot->data.push_back_non_empty( { time, val } );
+    }
+}
+
+void Worker::CreateMemAllocPlot()
+{
+    assert( !m_data.memory.plot );
+    m_data.memory.plot = m_slab.AllocInit<PlotData>();
+    m_data.memory.plot->name = 0;
+    m_data.memory.plot->type = PlotType::Memory;
+    m_data.plots.push_back( m_data.memory.plot );
 }
 
 void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread )

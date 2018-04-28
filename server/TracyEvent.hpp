@@ -236,6 +236,7 @@ struct MemData
     uint64_t high = std::numeric_limits<uint64_t>::min();
     uint64_t low = std::numeric_limits<uint64_t>::max();
     uint64_t usage = 0;
+    PlotData* plot = nullptr;
 };
 
 struct StringLocation

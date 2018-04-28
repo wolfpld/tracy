@@ -208,6 +208,9 @@ private:
     tracy_force_inline uint32_t ShrinkSourceLocation( uint64_t srcloc );
     uint32_t NewShrinkedSourceLocation( uint64_t srcloc );
 
+    tracy_force_inline void MemAllocChanged( int64_t time );
+    void CreateMemAllocPlot();
+
     void InsertMessageData( MessageData* msg, uint64_t thread );
 
     ThreadData* NewThread( uint64_t thread );

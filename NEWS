@@ -49,6 +49,7 @@ v0.3 (xxxx-xx-xx)
     check fails.
 - Prevent connections in a TIME-WAIT state from blocking new listen
   connections.
+- Display y-range of plots.
 
 
 v0.2 (2018-04-05)

@@ -2392,7 +2392,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             {
                 draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF226E6E );
             }
-            const auto txt = m_worker.GetString( v->name );
+            const auto txt = GetPlotName( v );
             draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFF44DDDD : 0xFF226E6E, txt );
             draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
 
@@ -3014,7 +3014,7 @@ void View::DrawOptions()
         {
             for( const auto& p : m_worker.GetPlots() )
             {
-                ImGui::Checkbox( m_worker.GetString( p->name ), &Visible( p ) );
+                ImGui::Checkbox( GetPlotName( p ), &Visible( p ) );
             }
             ImGui::TreePop();
         }
@@ -4905,6 +4905,20 @@ Vector<int8_t> View::GetMemoryPages() const
     }
 
     return ret;
+}
+
+const char* View::GetPlotName( const PlotData* plot ) const
+{
+    switch( plot->type )
+    {
+    case PlotType::User:
+        return m_worker.GetString( plot->name );
+    case PlotType::Memory:
+        return "Memory usage";
+    default:
+        assert( false );
+        return nullptr;
+    }
 }
 
 uint32_t View::GetZoneColor( const ZoneEvent& ev )

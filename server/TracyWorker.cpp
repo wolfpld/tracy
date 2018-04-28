@@ -513,6 +513,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( &sz, sizeof( sz ) );
     if( eventMask & EventType::Memory )
     {
+        Vector<std::pair<int64_t, uint64_t>> frees;
+        frees.reserve( sz );
+
         m_data.memory.data.reserve_and_use( sz );
         auto mem = m_data.memory.data.data();
         for( uint64_t i=0; i<sz; i++ )
@@ -531,12 +534,79 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             {
                 m_data.memory.active.emplace( mem->ptr, i );
             }
+            else
+            {
+                frees.push_back( std::make_pair( mem->timeFree, mem->size ) );
+            }
 
             mem++;
         }
         f.Read( &m_data.memory.high, sizeof( m_data.memory.high ) );
         f.Read( &m_data.memory.low, sizeof( m_data.memory.low ) );
         f.Read( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
+
+        std::sort( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
+
+        const auto psz = m_data.memory.data.size() + frees.size();
+        PlotData* plot = m_slab.AllocInit<PlotData>();
+        plot->name = 0;
+        plot->type = PlotType::Memory;
+        plot->data.reserve_and_use( psz );
+        m_data.plots.insert( m_data.plots.begin(), plot );
+
+        auto aptr = m_data.memory.data.begin();
+        auto aend = m_data.memory.data.end();
+        auto fptr = frees.begin();
+        auto fend = frees.end();
+
+        double min = 0;
+        double max = std::numeric_limits<double>::min();
+        uint64_t usage = 0;
+        size_t idx = 0;
+
+        while( aptr != aend && fptr != fend )
+        {
+            int64_t time;
+            if( aptr->timeAlloc < fptr->first )
+            {
+                time = aptr->timeAlloc;
+                usage += aptr->size;
+                aptr++;
+            }
+            else
+            {
+                time = fptr->first;
+                usage -= fptr->second;
+                fptr++;
+            }
+            assert( min <= usage );
+            if( max < usage ) max = usage;
+            plot->data[idx++] = { time, double( usage ) };
+        }
+        while( aptr != aend )
+        {
+            assert( aptr->timeFree < 0 );
+            int64_t time = aptr->timeAlloc;
+            usage += aptr->size;
+            assert( min <= usage );
+            if( max < usage ) max = usage;
+            plot->data[idx++] = { time, double( usage ) };
+            aptr++;
+        }
+        while( fptr != fend )
+        {
+            int64_t time = fptr->first;
+            usage -= fptr->second;
+            assert( min <= usage );
+            assert( max >= usage );
+            plot->data[idx++] = { time, double( usage ) };
+            fptr++;
+        }
+
+        assert( idx == psz );
+
+        plot->min = min;
+        plot->max = max;
     }
     else
     {

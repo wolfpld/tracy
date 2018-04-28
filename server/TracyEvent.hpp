@@ -212,6 +212,12 @@ struct PlotItem
     double val;
 };
 
+enum class PlotType
+{
+    User,
+    Memory
+};
+
 struct PlotData
 {
     uint64_t name;
@@ -220,6 +226,7 @@ struct PlotData
     Vector<PlotItem> data;
     Vector<PlotItem> postpone;
     uint64_t postponeTime;
+    PlotType type;
 };
 
 struct MemData

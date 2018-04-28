@@ -485,6 +485,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         for( uint64_t i=0; i<sz; i++ )
         {
             auto pd = m_slab.AllocInit<PlotData>();
+            pd->type = PlotType::User;
             f.Read( &pd->name, sizeof( pd->name ) );
             f.Read( &pd->min, sizeof( pd->min ) );
             f.Read( &pd->max, sizeof( pd->max ) );
@@ -1649,6 +1650,7 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
         {
             plot = m_slab.AllocInit<PlotData>();
             plot->name = ev.name;
+            plot->type = PlotType::User;
             m_pendingPlots.emplace( ev.name, plot );
             ServerQuery( ServerQueryPlotName, ev.name );
         }
@@ -2062,9 +2064,11 @@ void Worker::Write( FileWrite& f )
     }
 
     sz = m_data.plots.size();
+    for( auto& plot : m_data.plots ) { if( plot->type != PlotType::User ) sz--; }
     f.Write( &sz, sizeof( sz ) );
     for( auto& plot : m_data.plots )
     {
+        if( plot->type != PlotType::User ) continue;
         f.Write( &plot->name, sizeof( plot->name ) );
         f.Write( &plot->min, sizeof( plot->min ) );
         f.Write( &plot->max, sizeof( plot->max ) );

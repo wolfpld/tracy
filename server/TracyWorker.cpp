@@ -545,7 +545,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( &m_data.memory.low, sizeof( m_data.memory.low ) );
         f.Read( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
 
-        std::sort( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
+        pdqsort_branchless( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
 
         const auto psz = m_data.memory.data.size() + frees.size() + 1;
         PlotData* plot = m_slab.AllocInit<PlotData>();
@@ -1355,7 +1355,7 @@ void Worker::HandlePostponedPlots()
         if( src.empty() ) continue;
         if( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count() - plot->postponeTime < 100 ) continue;
         auto& dst = plot->data;
-        std::sort( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
+        pdqsort_branchless( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
         const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );
         const auto dsd = std::distance( dst.begin(), ds ) ;
         const auto de = std::lower_bound( ds, dst.end(), src.back().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );

@@ -547,7 +547,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
         std::sort( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
 
-        const auto psz = m_data.memory.data.size() + frees.size();
+        const auto psz = m_data.memory.data.size() + frees.size() + 1;
         PlotData* plot = m_slab.AllocInit<PlotData>();
         plot->name = 0;
         plot->type = PlotType::Memory;
@@ -562,7 +562,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         double min = 0;
         double max = std::numeric_limits<double>::min();
         uint64_t usage = 0;
-        size_t idx = 0;
+        size_t idx = 1;
+
+        plot->data[0] = { GetFrameBegin( 0 ), 0. };
 
         while( aptr != aend && fptr != fend )
         {
@@ -1968,6 +1970,7 @@ void Worker::CreateMemAllocPlot()
     m_data.memory.plot = m_slab.AllocInit<PlotData>();
     m_data.memory.plot->name = 0;
     m_data.memory.plot->type = PlotType::Memory;
+    m_data.memory.plot->data.push_back( { GetFrameBegin( 0 ), 0. } );
     m_data.plots.push_back( m_data.memory.plot );
 }
 

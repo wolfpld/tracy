@@ -536,7 +536,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             }
             else
             {
-                frees.push_back( std::make_pair( mem->timeFree, mem->size ) );
+                frees.push_back_no_space_check( std::make_pair( mem->timeFree, mem->size ) );
             }
 
             mem++;

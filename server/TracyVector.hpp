@@ -85,6 +85,7 @@ public:
 
     void push_back_no_space_check( const T& v )
     {
+        assert( m_size < Capacity() );
         m_ptr[m_size++] = v;
     }
 

@@ -2381,6 +2381,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
         assert( !v->data.empty() );
         bool& showFull = ShowFull( v );
 
+        float txtx;
         auto yPos = wpos.y + offset;
         if( yPos + ty >= yMin && yPos <= yMax )
         {
@@ -2393,10 +2394,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF226E6E );
             }
             const auto txt = GetPlotName( v );
+            txtx = ImGui::CalcTextSize( txt ).x;
             draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFF44DDDD : 0xFF226E6E, txt );
             draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( txt ).x, offset + ty ) ) )
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
             {
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
@@ -2541,6 +2543,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 }
 
                 char tmp[64];
+                if( yPos + ty >= yMin && yPos <= yMax )
+                {
+                    sprintf( tmp, "(y-range: %s)", RealToString( max - min, true ) );
+                    draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0x8844DDDD, tmp );
+                }
                 sprintf( tmp, "%s", RealToString( max, true ) );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
                 offset += PlotHeight - ty;

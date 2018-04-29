@@ -565,7 +565,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         auto fptr = frees.begin();
         auto fend = frees.end();
 
-        double min = 0;
         double max = 0;
         double usage = 0;
 
@@ -589,7 +588,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 usage -= fptr->second;
                 fptr++;
             }
-            assert( min <= usage );
+            assert( usage >= 0 );
             if( max < usage ) max = usage;
             ptr->time = time;
             ptr->val = usage;
@@ -600,7 +599,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             assert( aptr->timeFree < 0 );
             int64_t time = aptr->timeAlloc;
             usage += int64_t( aptr->size );
-            assert( min <= usage );
+            assert( usage >= 0 );
             if( max < usage ) max = usage;
             ptr->time = time;
             ptr->val = usage;
@@ -611,7 +610,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             int64_t time = fptr->first;
             usage -= fptr->second;
-            assert( min <= usage );
+            assert( usage >= 0 );
             assert( max >= usage );
             ptr->time = time;
             ptr->val = usage;
@@ -619,7 +618,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             fptr++;
         }
 
-        plot->min = min;
+        plot->min = 0;
         plot->max = max;
     }
     else

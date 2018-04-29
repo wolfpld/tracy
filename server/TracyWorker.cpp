@@ -570,7 +570,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         double usage = 0;
 
         auto ptr = plot->data.data();
-        *ptr++ = { GetFrameBegin( 0 ), 0. };
+        ptr->time = GetFrameBegin( 0 );
+        ptr->val = 0;
+        ptr++;
 
         while( aptr != aend && fptr != fend )
         {
@@ -589,7 +591,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             }
             assert( min <= usage );
             if( max < usage ) max = usage;
-            *ptr++ = { time, double( usage ) };
+            ptr->time = time;
+            ptr->val = usage;
+            ptr++;
         }
         while( aptr != aend )
         {
@@ -598,7 +602,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             usage += aptr->size;
             assert( min <= usage );
             if( max < usage ) max = usage;
-            *ptr++ = { time, double( usage ) };
+            ptr->time = time;
+            ptr->val = usage;
+            ptr++;
             aptr++;
         }
         while( fptr != fend )
@@ -607,7 +613,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             usage -= fptr->second;
             assert( min <= usage );
             assert( max >= usage );
-            *ptr++ = { time, double( usage ) };
+            ptr->time = time;
+            ptr->val = usage;
+            ptr++;
             fptr++;
         }
 

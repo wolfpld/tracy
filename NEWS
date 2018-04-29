@@ -50,6 +50,9 @@ v0.3 (xxxx-xx-xx)
 - Prevent connections in a TIME-WAIT state from blocking new listen
   connections.
 - Display y-range of plots.
+- Added ability to unload traces loaded from files. To do so close the main
+  profiler window. You will return to the connect/open selection dialog.
+  Live captures cannot be terminated this way.
 
 
 v0.2 (2018-04-05)

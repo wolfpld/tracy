@@ -210,6 +210,7 @@ private:
 
     tracy_force_inline void MemAllocChanged( int64_t time );
     void CreateMemAllocPlot();
+    void ReconstructMemAllocPlot();
 
     void InsertMessageData( MessageData* msg, uint64_t thread );
 
@@ -253,7 +254,7 @@ private:
     Socket m_sock;
     std::string m_addr;
 
-    std::thread m_thread;
+    std::thread m_thread, m_loadThread;
     std::atomic<bool> m_connected;
     std::atomic<bool> m_hasData;
     std::atomic<bool> m_shutdown;

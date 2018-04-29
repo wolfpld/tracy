@@ -504,9 +504,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( &sz, sizeof( sz ) );
     if( eventMask & EventType::Memory )
     {
-        Vector<std::pair<int64_t, double>> frees;
-        frees.reserve( sz );
-
         m_data.memory.data.reserve_and_use( sz );
         auto mem = m_data.memory.data.data();
         for( uint64_t i=0; i<sz; i++ )
@@ -528,10 +525,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             {
                 m_data.memory.active.emplace( mem->ptr, i );
             }
-            else
-            {
-                frees.push_back_no_space_check( std::make_pair( mem->timeFree, double( mem->size ) ) );
-            }
 
             mem++;
         }
@@ -539,75 +532,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( &m_data.memory.low, sizeof( m_data.memory.low ) );
         f.Read( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
 
-        pdqsort_branchless( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
-
-        const auto psz = m_data.memory.data.size() + frees.size() + 1;
-        PlotData* plot = m_slab.AllocInit<PlotData>();
-        plot->name = 0;
-        plot->type = PlotType::Memory;
-        plot->data.reserve_and_use( psz );
-        m_data.plots.insert( m_data.plots.begin(), plot );
-
-        auto aptr = m_data.memory.data.begin();
-        auto aend = m_data.memory.data.end();
-        auto fptr = frees.begin();
-        auto fend = frees.end();
-
-        double max = 0;
-        double usage = 0;
-
-        auto ptr = plot->data.data();
-        ptr->time = GetFrameBegin( 0 );
-        ptr->val = 0;
-        ptr++;
-
-        while( aptr != aend && fptr != fend )
-        {
-            int64_t time;
-            if( aptr->timeAlloc < fptr->first )
-            {
-                time = aptr->timeAlloc;
-                usage += int64_t( aptr->size );
-                aptr++;
-            }
-            else
-            {
-                time = fptr->first;
-                usage -= fptr->second;
-                fptr++;
-            }
-            assert( usage >= 0 );
-            if( max < usage ) max = usage;
-            ptr->time = time;
-            ptr->val = usage;
-            ptr++;
-        }
-        while( aptr != aend )
-        {
-            assert( aptr->timeFree < 0 );
-            int64_t time = aptr->timeAlloc;
-            usage += int64_t( aptr->size );
-            assert( usage >= 0 );
-            if( max < usage ) max = usage;
-            ptr->time = time;
-            ptr->val = usage;
-            ptr++;
-            aptr++;
-        }
-        while( fptr != fend )
-        {
-            int64_t time = fptr->first;
-            usage -= fptr->second;
-            assert( usage >= 0 );
-            assert( max >= usage );
-            ptr->time = time;
-            ptr->val = usage;
-            ptr++;
-            fptr++;
-        }
-
-        plot->min = 0;
-        plot->max = max;
+        m_loadThread = std::thread( [this] { ReconstructMemAllocPlot(); } );
     }
     else
     {
@@ -635,10 +560,10 @@ static inline void ZoneCleanup( Vector<T>& vec )
 Worker::~Worker()
 {
     Shutdown();
-    if( m_thread.joinable() )
-    {
-        m_thread.join();
-    }
+
+    if( m_thread.joinable() ) m_thread.join();
+    if( m_loadThread.joinable() ) m_loadThread.join();
+
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );
 
@@ -1971,6 +1896,99 @@ void Worker::CreateMemAllocPlot()
     m_data.memory.plot->type = PlotType::Memory;
     m_data.memory.plot->data.push_back( { GetFrameBegin( 0 ), 0. } );
     m_data.plots.push_back( m_data.memory.plot );
+}
+
+void Worker::ReconstructMemAllocPlot()
+{
+    Vector<std::pair<int64_t, double>> frees;
+    frees.reserve( m_data.memory.data.size() );
+    for( auto& v : m_data.memory.data )
+    {
+        if( v.timeFree >= 0 )
+        {
+            auto& f = frees.push_next_no_space_check();
+            f.first = v.timeFree;
+            f.second = double( v.size );
+        }
+    }
+
+    pdqsort_branchless( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
+
+    const auto psz = m_data.memory.data.size() + frees.size() + 1;
+
+    PlotData* plot;
+    {
+        std::lock_guard<NonRecursiveBenaphore> lock( m_data.lock );
+        plot = m_slab.AllocInit<PlotData>();
+    }
+
+    plot->name = 0;
+    plot->type = PlotType::Memory;
+    plot->data.reserve_and_use( psz );
+
+    auto aptr = m_data.memory.data.begin();
+    auto aend = m_data.memory.data.end();
+    auto fptr = frees.begin();
+    auto fend = frees.end();
+
+    double max = 0;
+    double usage = 0;
+
+    auto ptr = plot->data.data();
+    ptr->time = GetFrameBegin( 0 );
+    ptr->val = 0;
+    ptr++;
+
+    while( aptr != aend && fptr != fend )
+    {
+        int64_t time;
+        if( aptr->timeAlloc < fptr->first )
+        {
+            time = aptr->timeAlloc;
+            usage += int64_t( aptr->size );
+            aptr++;
+        }
+        else
+        {
+            time = fptr->first;
+            usage -= fptr->second;
+            fptr++;
+        }
+        assert( usage >= 0 );
+        if( max < usage ) max = usage;
+        ptr->time = time;
+        ptr->val = usage;
+        ptr++;
+    }
+    while( aptr != aend )
+    {
+        assert( aptr->timeFree < 0 );
+        int64_t time = aptr->timeAlloc;
+        usage += int64_t( aptr->size );
+        assert( usage >= 0 );
+        if( max < usage ) max = usage;
+        ptr->time = time;
+        ptr->val = usage;
+        ptr++;
+        aptr++;
+    }
+    while( fptr != fend )
+    {
+        int64_t time = fptr->first;
+        usage -= fptr->second;
+        assert( usage >= 0 );
+        assert( max >= usage );
+        ptr->time = time;
+        ptr->val = usage;
+        ptr++;
+        fptr++;
+    }
+
+    plot->min = 0;
+    plot->max = max;
+
+    std::lock_guard<NonRecursiveBenaphore> lock( m_data.lock );
+    m_data.plots.insert( m_data.plots.begin(), plot );
 }
 
 void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread )

@@ -334,10 +334,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
-                        f.Read( &lev->time, sizeof( lev->time ) );
-                        f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
-                        f.Read( &lev->thread, sizeof( lev->thread ) );
-                        f.Read( &lev->type, sizeof( lev->type ) );
+                        f.Read( lev, sizeof( LockEvent::time ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = lev;
                     }
                 }
@@ -346,10 +343,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
-                        f.Read( &lev->time, sizeof( lev->time ) );
-                        f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
-                        f.Read( &lev->thread, sizeof( lev->thread ) );
-                        f.Read( &lev->type, sizeof( lev->type ) );
+                        f.Read( lev, sizeof( LockEventShared::time ) + sizeof( LockEventShared::srcloc ) + sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = lev;
                     }
                 }
@@ -361,9 +355,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
-                        f.Read( &lev->time, sizeof( lev->time ) );
-                        f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
-                        f.Read( &lev->thread, sizeof( lev->thread ) );
+                        f.Read( lev, sizeof( LockEvent::time ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) );
                         f.Skip( sizeof( uint8_t ) );
                         f.Read( &lev->type, sizeof( lev->type ) );
                         f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) );
@@ -375,9 +367,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
-                        f.Read( &lev->time, sizeof( lev->time ) );
-                        f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
-                        f.Read( &lev->thread, sizeof( lev->thread ) );
+                        f.Read( lev, sizeof( LockEventShared::time ) + sizeof( LockEventShared::srcloc ) + sizeof( LockEventShared::thread ) );
                         f.Skip( sizeof( uint8_t ) );
                         f.Read( &lev->type, sizeof( lev->type ) );
                         f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) * 3 );
@@ -2138,10 +2128,7 @@ void Worker::Write( FileWrite& f )
         f.Write( &sz, sizeof( sz ) );
         for( auto& lev : v.second.timeline )
         {
-            f.Write( &lev->time, sizeof( lev->time ) );
-            f.Write( &lev->srcloc, sizeof( lev->srcloc ) );
-            f.Write( &lev->thread, sizeof( lev->thread ) );
-            f.Write( &lev->type, sizeof( lev->type ) );
+            f.Write( lev, sizeof( LockEvent::time ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
         }
     }
 

@@ -103,8 +103,10 @@ struct LockEvent
     int64_t time;
     int32_t srcloc;
     uint8_t thread;
-    uint8_t lockingThread;
     Type type;
+    // All above is read/saved as-is.
+
+    uint8_t lockingThread;
     uint8_t lockCount;
     uint64_t waitList;
 };

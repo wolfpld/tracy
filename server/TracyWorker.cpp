@@ -524,11 +524,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( &mem->size, sizeof( mem->size ) );
             f.Read( &mem->timeAlloc, sizeof( mem->timeAlloc ) );
             f.Read( &mem->timeFree, sizeof( mem->timeFree ) );
-            uint64_t t;
-            f.Read( &t, sizeof( t ) );
-            mem->threadAlloc = CompressThread( t );
-            f.Read( &t, sizeof( t ) );
-            mem->threadFree = CompressThread( t );
+            uint64_t t[2];
+            f.Read( t, sizeof( t ) );
+            mem->threadAlloc = CompressThread( t[0] );
+            if( t[0] == t[1] )
+            {
+                mem->threadFree = mem->threadAlloc;
+            }
+            else
+            {
+                mem->threadFree = CompressThread( t[1] );
+            }
 
             if( mem->timeFree < 0 )
             {

@@ -325,7 +325,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 lockmap.threadList.emplace_back( t );
             }
             f.Read( &tsz, sizeof( tsz ) );
-            lockmap.timeline.reserve( tsz );
+            lockmap.timeline.reserve_and_use( tsz );
+            auto ptr = lockmap.timeline.data();
             if( fileVer >= FileVersion( 0, 3, 0 ) )
             {
                 if( lockmap.type == LockType::Lockable )
@@ -337,7 +338,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
                         f.Read( &lev->thread, sizeof( lev->thread ) );
                         f.Read( &lev->type, sizeof( lev->type ) );
-                        lockmap.timeline.push_back_no_space_check( lev );
+                        *ptr++ = lev;
                     }
                 }
                 else
@@ -349,7 +350,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         f.Read( &lev->srcloc, sizeof( lev->srcloc ) );
                         f.Read( &lev->thread, sizeof( lev->thread ) );
                         f.Read( &lev->type, sizeof( lev->type ) );
-                        lockmap.timeline.push_back_no_space_check( lev );
+                        *ptr++ = lev;
                     }
                 }
             }
@@ -366,7 +367,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         f.Skip( sizeof( uint8_t ) );
                         f.Read( &lev->type, sizeof( lev->type ) );
                         f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) );
-                        lockmap.timeline.push_back_no_space_check( lev );
+                        *ptr++ = lev;
                     }
                 }
                 else
@@ -380,7 +381,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         f.Skip( sizeof( uint8_t ) );
                         f.Read( &lev->type, sizeof( lev->type ) );
                         f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) * 3 );
-                        lockmap.timeline.push_back_no_space_check( lev );
+                        *ptr++ = lev;
                     }
                 }
             }

@@ -1900,19 +1900,25 @@ void Worker::CreateMemAllocPlot()
 
 void Worker::ReconstructMemAllocPlot()
 {
-    Vector<std::pair<int64_t, double>> frees;
+    struct FreeData
+    {
+        int64_t time;
+        double size;
+    };
+
+    Vector<FreeData> frees;
     frees.reserve( m_data.memory.data.size() );
     for( auto& v : m_data.memory.data )
     {
         if( v.timeFree >= 0 )
         {
             auto& f = frees.push_next_no_space_check();
-            f.first = v.timeFree;
-            f.second = double( v.size );
+            f.time = v.timeFree;
+            f.size = double( int64_t( v.size ) );
         }
     }
 
-    pdqsort_branchless( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.first < rhs.first; } );
+    pdqsort_branchless( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time < rhs.time; } );
 
     const auto psz = m_data.memory.data.size() + frees.size() + 1;
 
@@ -1942,7 +1948,7 @@ void Worker::ReconstructMemAllocPlot()
     while( aptr != aend && fptr != fend )
     {
         int64_t time;
-        if( aptr->timeAlloc < fptr->first )
+        if( aptr->timeAlloc < fptr->time )
         {
             time = aptr->timeAlloc;
             usage += int64_t( aptr->size );
@@ -1950,8 +1956,8 @@ void Worker::ReconstructMemAllocPlot()
         }
         else
         {
-            time = fptr->first;
-            usage -= fptr->second;
+            time = fptr->time;
+            usage -= fptr->size;
             fptr++;
         }
         assert( usage >= 0 );
@@ -1974,8 +1980,8 @@ void Worker::ReconstructMemAllocPlot()
     }
     while( fptr != fend )
     {
-        int64_t time = fptr->first;
-        usage -= fptr->second;
+        int64_t time = fptr->time;
+        usage -= fptr->size;
         assert( usage >= 0 );
         assert( max >= usage );
         ptr->time = time;

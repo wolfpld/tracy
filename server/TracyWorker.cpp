@@ -566,7 +566,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         auto fend = frees.end();
 
         double min = 0;
-        double max = std::numeric_limits<double>::min();
+        double max = 0;
         double usage = 0;
 
         auto ptr = plot->data.data();

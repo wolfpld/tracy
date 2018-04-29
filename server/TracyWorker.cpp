@@ -580,7 +580,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             if( aptr->timeAlloc < fptr->first )
             {
                 time = aptr->timeAlloc;
-                usage += aptr->size;
+                usage += int64_t( aptr->size );
                 aptr++;
             }
             else
@@ -599,7 +599,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             assert( aptr->timeFree < 0 );
             int64_t time = aptr->timeAlloc;
-            usage += aptr->size;
+            usage += int64_t( aptr->size );
             assert( min <= usage );
             if( max < usage ) max = usage;
             ptr->time = time;

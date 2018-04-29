@@ -127,7 +127,10 @@ int main( int argc, char** argv )
         }
         else
         {
-            view->Draw();
+            if( !view->Draw() )
+            {
+                view.reset();
+            }
         }
 
         // Rendering

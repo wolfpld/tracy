@@ -278,9 +278,9 @@ void View::DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color
     draw->AddText( pos, color, text );
 }
 
-void View::Draw()
+bool View::Draw()
 {
-    s_instance->DrawImpl();
+    return s_instance->DrawImpl();
 }
 
 static const char* MainWindowButtons[] = {
@@ -290,19 +290,14 @@ static const char* MainWindowButtons[] = {
 
 enum { MainWindowButtonsCount = sizeof( MainWindowButtons ) / sizeof( *MainWindowButtons ) };
 
-void View::DrawImpl()
+bool View::DrawImpl()
 {
     if( !m_worker.HasData() )
     {
         ImGui::Begin( m_worker.GetAddr().c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize );
         ImGui::Text( "Waiting for connection..." );
         ImGui::End();
-        return;
-    }
-
-    if( !m_staticView )
-    {
-        DrawConnection();
+        return true;
     }
 
     const auto th = ImGui::GetTextLineHeight();
@@ -313,8 +308,19 @@ void View::DrawImpl()
     }
     bw += th;
 
+    bool keepOpen = true;
+    bool* keepOpenPtr = nullptr;
+    if( !m_staticView )
+    {
+        DrawConnection();
+    }
+    else
+    {
+        keepOpenPtr = &keepOpen;
+    }
+
     std::lock_guard<NonRecursiveBenaphore> lock( m_worker.GetDataLock() );
-    ImGui::Begin( m_worker.GetCaptureName().c_str(), nullptr, ImVec2( 1550, 800 ), -1, ImGuiWindowFlags_NoScrollbar );
+    ImGui::Begin( m_worker.GetCaptureName().c_str(), keepOpenPtr, ImVec2( 1550, 800 ), -1, ImGuiWindowFlags_NoScrollbar );
     if( !m_worker.IsDataStatic() )
     {
         if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;
@@ -366,6 +372,8 @@ void View::DrawImpl()
             m_zvEnd = int64_t( m_zoomAnim.end0 + ( m_zoomAnim.end1 - m_zoomAnim.end0 ) * v );
         }
     }
+
+    return keepOpen;
 }
 
 void View::DrawConnection()

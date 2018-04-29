@@ -101,6 +101,12 @@ public:
         return m_ptr[m_size++];
     }
 
+    T& push_next_no_space_check()
+    {
+        assert( m_size < Capacity() );
+        return m_ptr[m_size++];
+    }
+
     T* insert( T* it, const T& v )
     {
         assert( it >= m_ptr && it <= m_ptr + m_size );

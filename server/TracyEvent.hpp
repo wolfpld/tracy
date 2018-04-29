@@ -143,8 +143,10 @@ struct MemEvent
     uint64_t ptr;
     uint64_t size;
     int64_t timeAlloc;
-    uint16_t threadAlloc;
     int64_t timeFree;
+    // All above is read/saved as-is.
+
+    uint16_t threadAlloc;
     uint16_t threadFree;
 };
 

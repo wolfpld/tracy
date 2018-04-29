@@ -520,10 +520,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         auto mem = m_data.memory.data.data();
         for( uint64_t i=0; i<sz; i++ )
         {
-            f.Read( &mem->ptr, sizeof( mem->ptr ) );
-            f.Read( &mem->size, sizeof( mem->size ) );
-            f.Read( &mem->timeAlloc, sizeof( mem->timeAlloc ) );
-            f.Read( &mem->timeFree, sizeof( mem->timeFree ) );
+            f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
             uint64_t t[2];
             f.Read( t, sizeof( t ) );
             mem->threadAlloc = CompressThread( t[0] );
@@ -2200,10 +2197,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& mem : m_data.memory.data )
     {
-        f.Write( &mem.ptr, sizeof( mem.ptr ) );
-        f.Write( &mem.size, sizeof( mem.size ) );
-        f.Write( &mem.timeAlloc, sizeof( mem.timeAlloc ) );
-        f.Write( &mem.timeFree, sizeof( mem.timeFree ) );
+        f.Write( &mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
         uint64_t t = DecompressThread( mem.threadAlloc );
         f.Write( &t, sizeof( t ) );
         t = DecompressThread( mem.threadFree );

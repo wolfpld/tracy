@@ -568,9 +568,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         double min = 0;
         double max = std::numeric_limits<double>::min();
         uint64_t usage = 0;
-        size_t idx = 1;
 
-        plot->data[0] = { GetFrameBegin( 0 ), 0. };
+        auto ptr = plot->data.data();
+        *ptr++ = { GetFrameBegin( 0 ), 0. };
 
         while( aptr != aend && fptr != fend )
         {
@@ -589,7 +589,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             }
             assert( min <= usage );
             if( max < usage ) max = usage;
-            plot->data[idx++] = { time, double( usage ) };
+            *ptr++ = { time, double( usage ) };
         }
         while( aptr != aend )
         {
@@ -598,7 +598,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             usage += aptr->size;
             assert( min <= usage );
             if( max < usage ) max = usage;
-            plot->data[idx++] = { time, double( usage ) };
+            *ptr++ = { time, double( usage ) };
             aptr++;
         }
         while( fptr != fend )
@@ -607,11 +607,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             usage -= fptr->second;
             assert( min <= usage );
             assert( max >= usage );
-            plot->data[idx++] = { time, double( usage ) };
+            *ptr++ = { time, double( usage ) };
             fptr++;
         }
-
-        assert( idx == psz );
 
         plot->min = min;
         plot->max = max;

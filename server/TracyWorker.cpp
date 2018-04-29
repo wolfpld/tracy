@@ -513,7 +513,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( &sz, sizeof( sz ) );
     if( eventMask & EventType::Memory )
     {
-        Vector<std::pair<int64_t, uint64_t>> frees;
+        Vector<std::pair<int64_t, double>> frees;
         frees.reserve( sz );
 
         m_data.memory.data.reserve_and_use( sz );
@@ -542,7 +542,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             }
             else
             {
-                frees.push_back_no_space_check( std::make_pair( mem->timeFree, mem->size ) );
+                frees.push_back_no_space_check( std::make_pair( mem->timeFree, double( mem->size ) ) );
             }
 
             mem++;
@@ -567,7 +567,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
         double min = 0;
         double max = std::numeric_limits<double>::min();
-        uint64_t usage = 0;
+        double usage = 0;
 
         auto ptr = plot->data.data();
         *ptr++ = { GetFrameBegin( 0 ), 0. };

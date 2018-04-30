@@ -93,6 +93,7 @@ class Worker
         Vector<uint64_t> sourceLocationExpand;
 #ifndef TRACY_NO_STATISTICS
         flat_hash_map<int32_t, SourceLocationZones, nohash<int32_t>> sourceLocationZones;
+        bool sourceLocationZonesReady;
 #endif
 
         std::map<uint32_t, LockMap> lockMap;
@@ -157,6 +158,7 @@ public:
 #ifndef TRACY_NO_STATISTICS
     const SourceLocationZones& GetZonesForSourceLocation( int32_t srcloc ) const;
     const flat_hash_map<int32_t, SourceLocationZones, nohash<int32_t>>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
+    bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
 #endif
 
     tracy_force_inline uint16_t CompressThread( uint64_t thread );
@@ -254,10 +256,12 @@ private:
     Socket m_sock;
     std::string m_addr;
 
-    std::thread m_thread, m_loadThread;
+    std::thread m_thread;
     std::atomic<bool> m_connected;
     std::atomic<bool> m_hasData;
     std::atomic<bool> m_shutdown;
+
+    std::thread m_threadMemory, m_threadZones;
 
     int64_t m_delay;
     int64_t m_resolution;

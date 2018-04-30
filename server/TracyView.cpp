@@ -3085,6 +3085,13 @@ void View::DrawFindZone()
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable zone search." );
 #else
+    if( !m_worker.AreSourceLocationZonesReady() )
+    {
+        ImGui::TextWrapped( "Please wait, computing data..." );
+        ImGui::End();
+        return;
+    }
+
     ImGui::InputText( "", m_findZone.pattern, 1024 );
     ImGui::SameLine();
 
@@ -3849,6 +3856,13 @@ void View::DrawCompare()
         return;
     }
 
+    if( !m_worker.AreSourceLocationZonesReady() || !m_compare.second->AreSourceLocationZonesReady() )
+    {
+        ImGui::TextWrapped( "Please wait, computing data..." );
+        ImGui::End();
+        return;
+    }
+
     ImGui::TextDisabled( "This trace:" );
     ImGui::SameLine();
     ImGui::Text( "%s", m_worker.GetCaptureName().c_str() );
@@ -4371,6 +4385,13 @@ void View::DrawStatistics()
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable statistics view." );
 #else
+    if( !m_worker.AreSourceLocationZonesReady() )
+    {
+        ImGui::TextWrapped( "Please wait, computing data..." );
+        ImGui::End();
+        return;
+    }
+
     auto& slz = m_worker.GetSourceLocationZones();
     Vector<decltype(slz.begin())> srcloc;
     srcloc.reserve( slz.size() );

@@ -184,6 +184,10 @@ Worker::Worker( const char* addr )
 {
     m_data.sourceLocationExpand.push_back( 0 );
 
+#ifndef TRACY_NO_STATISTICS
+    m_data.sourceLocationZonesReady = true;
+#endif
+
     m_thread = std::thread( [this] { Exec(); } );
     SetThreadName( m_thread, "Tracy Worker" );
 }
@@ -293,6 +297,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
 #ifndef TRACY_NO_STATISTICS
+    m_data.sourceLocationZonesReady = false;
     m_data.sourceLocationZones.reserve( sle + sz );
     for( uint64_t i=1; i<sle; i++ )
     {
@@ -450,11 +455,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
 #ifndef TRACY_NO_STATISTICS
-    for( auto& v : m_data.sourceLocationZones )
-    {
-        auto& zones = v.second.zones;
-        pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
-    }
+    m_threadZones = std::thread( [this] {
+        for( auto& v : m_data.sourceLocationZones )
+        {
+            auto& zones = v.second.zones;
+            pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
+        }
+        std::lock_guard<NonRecursiveBenaphore> lock( m_data.lock );
+        m_data.sourceLocationZonesReady = true;
+    } );
 #endif
 
     f.Read( &sz, sizeof( sz ) );
@@ -532,7 +541,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( &m_data.memory.low, sizeof( m_data.memory.low ) );
         f.Read( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
 
-        m_loadThread = std::thread( [this] { ReconstructMemAllocPlot(); } );
+        m_threadMemory = std::thread( [this] { ReconstructMemAllocPlot(); } );
     }
     else
     {
@@ -562,7 +571,8 @@ Worker::~Worker()
     Shutdown();
 
     if( m_thread.joinable() ) m_thread.join();
-    if( m_loadThread.joinable() ) m_loadThread.join();
+    if( m_threadMemory.joinable() ) m_threadMemory.join();
+    if( m_threadZones.joinable() ) m_threadZones.join();
 
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );

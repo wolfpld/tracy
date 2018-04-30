@@ -15,6 +15,8 @@
 #include <utility>
 #include <type_traits>
 
+#include "../common/TracyForceInline.hpp"
+
 #ifdef _MSC_VER
 #define SKA_NOINLINE(...) __declspec(noinline) __VA_ARGS__
 #else
@@ -554,7 +556,7 @@ public:
         return end();
     }
 
-    iterator find(const FindKey & key)
+    tracy_force_inline iterator find(const FindKey & key)
     {
         size_t index = hash_policy.index_for_hash(hash_object(key), num_slots_minus_one);
         EntryPointer it = entries + ptrdiff_t(index);
@@ -565,7 +567,7 @@ public:
         }
         return end();
     }
-    const_iterator find(const FindKey & key) const
+    tracy_force_inline const_iterator find(const FindKey & key) const
     {
         return const_cast<sherwood_v3_table *>(this)->find(key);
     }

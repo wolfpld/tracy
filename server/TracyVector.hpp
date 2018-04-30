@@ -54,6 +54,8 @@ public:
     bool empty() const { return m_size == 0; }
     size_t size() const { return m_size; }
 
+    void set_size( size_t sz ) { m_size = sz; }
+
     T* data() { return m_ptr; }
     const T* data() const { return m_ptr; };
 

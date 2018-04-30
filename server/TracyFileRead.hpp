@@ -55,12 +55,12 @@ public:
             {
                 if( m_offset == BufSize )
                 {
-                    m_active = 1 - m_active;
+                    std::swap( m_buf, m_second );
                     m_offset = 0;
                     uint32_t sz;
                     fread( &sz, 1, sizeof( sz ), m_file );
                     fread( m_lz4buf, 1, sz, m_file );
-                    m_lastBlock = LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf[m_active], sz, BufSize );
+                    m_lastBlock = LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf, sz, BufSize );
                 }
 
                 const auto sz = std::min( size, BufSize - m_offset );
@@ -85,8 +85,9 @@ private:
     FileRead( FILE* f )
         : m_stream( LZ4_createStreamDecode() )
         , m_file( f )
+        , m_buf( m_bufData[0] )
+        , m_second( m_bufData[1] )
         , m_offset( BufSize )
-        , m_active( 1 )
         , m_lastBlock( 0 )
     {
         char hdr[4];
@@ -103,7 +104,7 @@ private:
 
     tracy_force_inline void ReadSmall( void* ptr, size_t size )
     {
-        memcpy( ptr, m_buf[m_active] + m_offset, size );
+        memcpy( ptr, m_buf + m_offset, size );
         m_offset += size;
     }
 
@@ -115,16 +116,16 @@ private:
         {
             if( m_offset == BufSize )
             {
-                m_active = 1 - m_active;
+                std::swap( m_buf, m_second );
                 m_offset = 0;
                 uint32_t sz;
                 fread( &sz, 1, sizeof( sz ), m_file );
                 fread( m_lz4buf, 1, sz, m_file );
-                m_lastBlock = LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf[m_active], sz, BufSize );
+                m_lastBlock = LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf, sz, BufSize );
             }
 
             const auto sz = std::min( size, BufSize - m_offset );
-            memcpy( dst, m_buf[m_active] + m_offset, sz );
+            memcpy( dst, m_buf + m_offset, sz );
             m_offset += sz;
             dst += sz;
             size -= sz;
@@ -136,9 +137,10 @@ private:
 
     LZ4_streamDecode_t* m_stream;
     FILE* m_file;
-    char m_buf[2][BufSize];
+    char m_bufData[2][BufSize];
+    char* m_buf;
+    char* m_second;
     size_t m_offset;
-    uint8_t m_active;
     int m_lastBlock;
 };
 

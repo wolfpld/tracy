@@ -70,7 +70,7 @@ class Worker
 
     struct DataBlock
     {
-        DataBlock() : zonesCnt( 0 ), lastTime( 0 ) {}
+        DataBlock() : zonesCnt( 0 ), lastTime( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
 
         NonRecursiveBenaphore lock;
         Vector<int64_t> frames;
@@ -100,6 +100,7 @@ class Worker
 
         flat_hash_map<uint64_t, uint16_t, nohash<uint64_t>> threadMap;
         Vector<uint64_t> threadExpand;
+        std::pair<uint64_t, uint16_t> threadLast;
     };
 
     struct MbpsBlock
@@ -239,6 +240,7 @@ private:
     void HandlePostponedPlots();
 
     StringLocation StoreString( char* str, size_t sz );
+    uint16_t CompressThreadReal( uint64_t thread );
     uint16_t CompressThreadNew( uint64_t thread );
 
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread );

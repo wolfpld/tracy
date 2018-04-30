@@ -765,9 +765,23 @@ const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int32_t sr
 
 uint16_t Worker::CompressThread( uint64_t thread )
 {
+    if( m_data.threadLast.first == thread )
+    {
+        return m_data.threadLast.second;
+    }
+    else
+    {
+        return CompressThreadReal( thread );
+    }
+}
+
+uint16_t Worker::CompressThreadReal( uint64_t thread )
+{
     auto it = m_data.threadMap.find( thread );
     if( it != m_data.threadMap.end() )
     {
+        m_data.threadLast.first = thread;
+        m_data.threadLast.second = it->second;
         return it->second;
     }
     else
@@ -781,6 +795,8 @@ uint16_t Worker::CompressThreadNew( uint64_t thread )
     auto sz = m_data.threadExpand.size();
     m_data.threadExpand.push_back( thread );
     m_data.threadMap.emplace( thread, sz );
+    m_data.threadLast.first = thread;
+    m_data.threadLast.second = sz;
     return sz;
 }
 

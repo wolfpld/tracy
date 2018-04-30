@@ -54,6 +54,41 @@ public:
         }
     }
 
+    template<class T>
+    tracy_force_inline void Read( T& v )
+    {
+        if( sizeof( T ) < BufSize - m_offset )
+        {
+            memcpy( &v, m_buf + m_offset, sizeof( T ) );
+            m_offset += sizeof( T );
+        }
+        else
+        {
+            T tmp;
+            ReadBig( &tmp, sizeof( T ) );
+            memcpy( &v, &tmp, sizeof( T ) );
+        }
+
+    }
+
+    template<class T>
+    tracy_force_inline void Read2( T& v0, T& v1 )
+    {
+        if( sizeof( T ) * 2 < BufSize - m_offset )
+        {
+            memcpy( &v0, m_buf + m_offset, sizeof( T ) );
+            memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( T ) );
+            m_offset += sizeof( T ) * 2;
+        }
+        else
+        {
+            T tmp[2];
+            ReadBig( tmp, sizeof( T ) * 2 );
+            memcpy( &v0, tmp, sizeof( T ) );
+            memcpy( &v1, tmp+1, sizeof( T ) );
+        }
+    }
+
     bool IsEOF()
     {
         if( m_lastBlock != BufSize && m_offset == m_lastBlock ) return true;

@@ -47,15 +47,16 @@ private:
     FileWrite( FILE* f )
         : m_stream( LZ4_createStream() )
         , m_file( f )
+        , m_buf( m_bufData[0] )
+        , m_second( m_bufData[1] )
         , m_offset( 0 )
-        , m_active( 0 )
     {
         fwrite( Lz4Header, 1, sizeof( Lz4Header ), m_file );
     }
 
     tracy_force_inline void WriteSmall( const void* ptr, size_t size )
     {
-        memcpy( m_buf[m_active] + m_offset, ptr, size );
+        memcpy( m_buf + m_offset, ptr, size );
         m_offset += size;
     }
 
@@ -65,7 +66,7 @@ private:
         while( size > 0 )
         {
             const auto sz = std::min( size, BufSize - m_offset );
-            memcpy( m_buf[m_active] + m_offset, src, sz );
+            memcpy( m_buf + m_offset, src, sz );
             m_offset += sz;
             src += sz;
             size -= sz;
@@ -80,11 +81,11 @@ private:
     void WriteLz4Block()
     {
         char lz4[LZ4Size];
-        const uint32_t sz = LZ4_compress_fast_continue( m_stream, m_buf[m_active], lz4, m_offset, LZ4Size, 1 );
+        const uint32_t sz = LZ4_compress_fast_continue( m_stream, m_buf, lz4, m_offset, LZ4Size, 1 );
         fwrite( &sz, 1, sizeof( sz ), m_file );
         fwrite( lz4, 1, sz, m_file );
         m_offset = 0;
-        m_active = 1 - m_active;
+        std::swap( m_buf, m_second );
     }
 
     enum { BufSize = 64 * 1024 };
@@ -92,9 +93,10 @@ private:
 
     LZ4_stream_t* m_stream;
     FILE* m_file;
-    char m_buf[2][BufSize];
+    char m_bufData[2][BufSize];
+    char* m_buf;
+    char* m_second;
     size_t m_offset;
-    uint8_t m_active;
 };
 
 }

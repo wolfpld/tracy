@@ -1917,15 +1917,19 @@ void Worker::ReconstructMemAllocPlot()
     };
 
     Vector<FreeData> frees;
-    frees.reserve( m_data.memory.data.size() );
-    for( auto& v : m_data.memory.data )
     {
-        if( v.timeFree >= 0 )
+        frees.reserve( m_data.memory.data.size() );
+        auto ptr = frees.data();
+        for( auto& v : m_data.memory.data )
         {
-            auto& f = frees.push_next_no_space_check();
-            f.time = v.timeFree;
-            f.size = double( int64_t( v.size ) );
+            if( v.timeFree >= 0 )
+            {
+                ptr->time = v.timeFree;
+                ptr->size = double( int64_t( v.size ) );
+                ptr++;
+            }
         }
+        frees.set_size( ptr - frees.data() );
     }
 
     pdqsort_branchless( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time < rhs.time; } );

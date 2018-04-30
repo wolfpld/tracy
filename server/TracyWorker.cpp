@@ -1955,27 +1955,40 @@ void Worker::ReconstructMemAllocPlot()
     ptr->val = 0;
     ptr++;
 
-    while( aptr != aend && fptr != fend )
+    if( aptr != aend && fptr != fend )
     {
-        int64_t time;
-        if( aptr->timeAlloc < fptr->time )
+        auto atime = aptr->timeAlloc;
+        auto ftime = fptr->time;
+
+        for(;;)
         {
-            time = aptr->timeAlloc;
-            usage += int64_t( aptr->size );
-            aptr++;
+            if( atime < ftime )
+            {
+                usage += int64_t( aptr->size );
+                assert( usage >= 0 );
+                if( max < usage ) max = usage;
+                ptr->time = atime;
+                ptr->val = usage;
+                ptr++;
+                aptr++;
+                if( aptr == aend ) break;
+                atime = aptr->timeAlloc;
+            }
+            else
+            {
+                usage -= fptr->size;
+                assert( usage >= 0 );
+                if( max < usage ) max = usage;
+                ptr->time = ftime;
+                ptr->val = usage;
+                ptr++;
+                fptr++;
+                if( fptr == fend ) break;
+                ftime = fptr->time;
+            }
         }
-        else
-        {
-            time = fptr->time;
-            usage -= fptr->size;
-            fptr++;
-        }
-        assert( usage >= 0 );
-        if( max < usage ) max = usage;
-        ptr->time = time;
-        ptr->val = usage;
-        ptr++;
     }
+
     while( aptr != aend )
     {
         assert( aptr->timeFree < 0 );

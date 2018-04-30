@@ -2035,7 +2035,9 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
 #ifndef TRACY_NO_STATISTICS
         auto it = m_data.sourceLocationZones.find( zone->srcloc );
         assert( it != m_data.sourceLocationZones.end() );
-        it->second.zones.push_back( ZoneThreadData { zone, thread } );
+        auto& ztd = it->second.zones.push_next();
+        ztd.zone = zone;
+        ztd.thread = thread;
 
         if( zone->end >= 0 )
         {

@@ -42,7 +42,7 @@ public:
         }
     }
 
-    void Skip( size_t size )
+    tracy_force_inline void Skip( size_t size )
     {
         if( size <= BufSize - m_offset )
         {
@@ -50,23 +50,7 @@ public:
         }
         else
         {
-            char m_lz4buf[LZ4Size];
-            while( size > 0 )
-            {
-                if( m_offset == BufSize )
-                {
-                    std::swap( m_buf, m_second );
-                    m_offset = 0;
-                    uint32_t sz;
-                    fread( &sz, 1, sizeof( sz ), m_file );
-                    fread( m_lz4buf, 1, sz, m_file );
-                    m_lastBlock = LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf, sz, BufSize );
-                }
-
-                const auto sz = std::min( size, BufSize - m_offset );
-                m_offset += sz;
-                size -= sz;
-            }
+            SkipBig( size );
         }
     }
 
@@ -128,6 +112,27 @@ private:
             memcpy( dst, m_buf + m_offset, sz );
             m_offset += sz;
             dst += sz;
+            size -= sz;
+        }
+    }
+
+    void SkipBig( size_t size )
+    {
+        char m_lz4buf[LZ4Size];
+        while( size > 0 )
+        {
+            if( m_offset == BufSize )
+            {
+                std::swap( m_buf, m_second );
+                m_offset = 0;
+                uint32_t sz;
+                fread( &sz, 1, sizeof( sz ), m_file );
+                fread( m_lz4buf, 1, sz, m_file );
+                m_lastBlock = LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_buf, sz, BufSize );
+            }
+
+            const auto sz = std::min( size, BufSize - m_offset );
+            m_offset += sz;
             size -= sz;
         }
     }

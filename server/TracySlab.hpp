@@ -30,15 +30,12 @@ public:
         }
     }
 
-    void* AllocRaw( size_t size )
+    tracy_force_inline void* AllocRaw( size_t size )
     {
         assert( size <= BlockSize );
         if( m_offset + size > BlockSize )
         {
-            m_ptr = new char[BlockSize];
-            m_offset = 0;
-            m_buffer.emplace_back( m_ptr );
-            memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
+            DoAlloc();
         }
         void* ret = m_ptr + m_offset;
         m_offset += size;
@@ -52,10 +49,7 @@ public:
         assert( size <= BlockSize );
         if( m_offset + size > BlockSize )
         {
-            m_ptr = new char[BlockSize];
-            m_offset = 0;
-            m_buffer.emplace_back( m_ptr );
-            memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
+            DoAlloc();
         }
         void* ret = m_ptr + m_offset;
         new( ret ) T;
@@ -64,18 +58,18 @@ public:
     }
 
     template<typename T>
-    T* Alloc()
+    tracy_force_inline T* Alloc()
     {
         return (T*)AllocRaw( sizeof( T ) );
     }
 
     template<typename T>
-    T* Alloc( size_t size )
+    tracy_force_inline T* Alloc( size_t size )
     {
         return (T*)AllocRaw( sizeof( T ) * size );
     }
 
-    void Unalloc( size_t size )
+    tracy_force_inline void Unalloc( size_t size )
     {
         assert( size <= m_offset );
         m_offset -= size;
@@ -104,6 +98,14 @@ public:
     Slab& operator=( Slab&& ) = delete;
 
 private:
+    void DoAlloc()
+    {
+        m_ptr = new char[BlockSize];
+        m_offset = 0;
+        m_buffer.emplace_back( m_ptr );
+        memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
+    }
+
     char* m_ptr;
     uint32_t m_offset;
     std::vector<char*> m_buffer;

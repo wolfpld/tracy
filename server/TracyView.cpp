@@ -4666,6 +4666,13 @@ void View::DrawMemory()
 
     ImGui::Begin( "Memory", &m_memInfo.show );
 
+    if( mem.data.empty() )
+    {
+        ImGui::TextWrapped( "No memory data collected." );
+        ImGui::End();
+        return;
+    }
+
     ImGui::Text( "Total allocations: %-15s Active allocations: %-15s Memory usage: %-15s Memory span: %s",
         RealToString( mem.data.size(), true ),
         RealToString( mem.active.size(), true ),

@@ -115,7 +115,7 @@ private:
     void FindZonesCompare();
 #endif
 
-    Vector<int8_t> GetMemoryPages() const;
+    std::pair<int8_t*, size_t> GetMemoryPages() const;
     const char* GetPlotName( const PlotData* plot ) const;
 
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;

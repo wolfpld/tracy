@@ -4798,8 +4798,8 @@ void View::DrawMemory()
         auto pages = GetMemoryPages();
 
         const int8_t empty[PageSize] = {};
-        const auto sz = pages.size() / PageSize;
-        auto pgptr = pages.data();
+        const auto sz = pages.second / PageSize;
+        auto pgptr = pages.first;
         const auto end = pgptr + sz * PageSize;
         size_t lines = sz;
         while( pgptr != end )
@@ -4826,7 +4826,7 @@ void View::DrawMemory()
         draw->AddRectFilled( wpos, wpos + ImVec2( PageSize, lines ), 0xFF444444 );
 
         size_t line = 0;
-        pgptr = pages.data();
+        pgptr = pages.first;
         while( pgptr != end )
         {
             if( memcmp( empty, pgptr, PageSize ) == 0 )
@@ -4866,6 +4866,8 @@ void View::DrawMemory()
             }
         }
 
+        delete[] pages.first;
+
         ImGui::EndChild();
         ImGui::TreePop();
     }
@@ -4873,16 +4875,15 @@ void View::DrawMemory()
     ImGui::End();
 }
 
-Vector<int8_t> View::GetMemoryPages() const
+std::pair<int8_t*, size_t> View::GetMemoryPages() const
 {
-    Vector<int8_t> ret;
-
     const auto& mem = m_worker.GetMemData();
     const auto span = mem.high - mem.low;
     const auto pages = ( span / PageChunkSize ) + 1;
 
-    ret.reserve_and_use( pages * PageSize );
-    auto pgptr = ret.data();
+    const auto datasz = pages * PageSize;
+    int8_t* data = new int8_t[datasz];
+    auto pgptr = data;
     memset( pgptr, 0, pages * PageSize );
 
     const auto memlow = mem.low;
@@ -4940,7 +4941,7 @@ Vector<int8_t> View::GetMemoryPages() const
         }
     }
 
-    return ret;
+    return std::make_pair( data, datasz );
 }
 
 const char* View::GetPlotName( const PlotData* plot ) const

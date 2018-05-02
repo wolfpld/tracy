@@ -2034,6 +2034,7 @@ void Worker::ReconstructMemAllocPlot()
 
     std::lock_guard<NonRecursiveBenaphore> lock( m_data.lock );
     m_data.plots.insert( m_data.plots.begin(), plot );
+    m_data.memory.plot = plot;
 }
 
 void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread )

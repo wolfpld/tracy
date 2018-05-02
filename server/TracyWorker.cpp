@@ -530,6 +530,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             {
                 m_data.memory.active.emplace( mem->ptr, i );
             }
+            else
+            {
+                m_data.memory.frees.push_back( i );
+            }
 
             mem++;
         }
@@ -1881,6 +1885,7 @@ void Worker::ProcessMemFree( const QueueMemFree& ev )
 
     auto it = m_data.memory.active.find( ev.ptr );
     assert( it != m_data.memory.active.end() );
+    m_data.memory.frees.push_back( it->second );
     auto& mem = m_data.memory.data[it->second];
     mem.timeFree = time;
     mem.threadFree = CompressThread( ev.thread );
@@ -1922,31 +1927,10 @@ void Worker::CreateMemAllocPlot()
 
 void Worker::ReconstructMemAllocPlot()
 {
-    struct FreeData
-    {
-        int64_t time;
-        double size;
-    };
+    auto& mem = m_data.memory;
+    pdqsort_branchless( mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].timeFree < mem.data[rhs].timeFree; } );
 
-    Vector<FreeData> frees;
-    {
-        frees.reserve( m_data.memory.data.size() );
-        auto ptr = frees.data();
-        for( auto& v : m_data.memory.data )
-        {
-            if( v.timeFree >= 0 )
-            {
-                ptr->time = v.timeFree;
-                ptr->size = double( int64_t( v.size ) );
-                ptr++;
-            }
-        }
-        frees.set_size( ptr - frees.data() );
-    }
-
-    pdqsort_branchless( frees.begin(), frees.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time < rhs.time; } );
-
-    const auto psz = m_data.memory.data.size() + frees.size() + 1;
+    const auto psz = mem.data.size() + mem.frees.size() + 1;
 
     PlotData* plot;
     {
@@ -1958,10 +1942,10 @@ void Worker::ReconstructMemAllocPlot()
     plot->type = PlotType::Memory;
     plot->data.reserve_and_use( psz );
 
-    auto aptr = m_data.memory.data.begin();
-    auto aend = m_data.memory.data.end();
-    auto fptr = frees.begin();
-    auto fend = frees.end();
+    auto aptr = mem.data.begin();
+    auto aend = mem.data.end();
+    auto fptr = mem.frees.begin();
+    auto fend = mem.frees.end();
 
     double max = 0;
     double usage = 0;
@@ -1974,7 +1958,7 @@ void Worker::ReconstructMemAllocPlot()
     if( aptr != aend && fptr != fend )
     {
         auto atime = aptr->timeAlloc;
-        auto ftime = fptr->time;
+        auto ftime = mem.data[*fptr].timeFree;
 
         for(;;)
         {
@@ -1992,7 +1976,7 @@ void Worker::ReconstructMemAllocPlot()
             }
             else
             {
-                usage -= fptr->size;
+                usage -= int64_t( mem.data[*fptr].size );
                 assert( usage >= 0 );
                 if( max < usage ) max = usage;
                 ptr->time = ftime;
@@ -2000,7 +1984,7 @@ void Worker::ReconstructMemAllocPlot()
                 ptr++;
                 fptr++;
                 if( fptr == fend ) break;
-                ftime = fptr->time;
+                ftime = mem.data[*fptr].timeFree;
             }
         }
     }
@@ -2019,8 +2003,8 @@ void Worker::ReconstructMemAllocPlot()
     }
     while( fptr != fend )
     {
-        int64_t time = fptr->time;
-        usage -= fptr->size;
+        int64_t time = mem.data[*fptr].timeFree;
+        usage -= int64_t( mem.data[*fptr].size );
         assert( usage >= 0 );
         assert( max >= usage );
         ptr->time = time;

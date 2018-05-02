@@ -2678,6 +2678,8 @@ void View::DrawZoneInfoWindow()
     {
         ImGui::Separator();
 
+        const auto thread = m_worker.CompressThread( tid );
+
         auto ait = std::lower_bound( mem.data.begin(), mem.data.end(), ev.start, [] ( const auto& l, const auto& r ) { return l.timeAlloc < r; } );
         const auto aend = std::upper_bound( mem.data.begin(), mem.data.end(), end, [] ( const auto& l, const auto& r ) { return l < r.timeAlloc; } );
 
@@ -2692,29 +2694,45 @@ void View::DrawZoneInfoWindow()
         }
         else
         {
-            ImGui::Text( "%s memory events.", RealToString( aDist + fDist, true ) );
-
             int64_t change = 0;
             int64_t cAlloc = 0;
             int64_t cFree = 0;
+            int64_t nAlloc = 0;
+            int64_t nFree = 0;
 
             while( ait != aend )
             {
-                change += ait->size;
-                cAlloc += ait->size;
+                if( ait->threadAlloc == thread )
+                {
+                    change += ait->size;
+                    cAlloc += ait->size;
+                    nAlloc++;
+                }
                 ait++;
             }
             while( fit != fend )
             {
-                change -= mem.data[*fit].size;
-                cFree += mem.data[*fit].size;
+                if( mem.data[*fit].threadFree == thread )
+                {
+                    change -= mem.data[*fit].size;
+                    cFree += mem.data[*fit].size;
+                    nFree++;
+                }
                 fit++;
             }
 
-            ImGui::Text( "%s allocs, %s frees.", RealToString( aDist, true ), RealToString( fDist, true ) );
-            ImGui::Text( "Memory allocated: %s bytes", RealToString( cAlloc, true ) );
-            ImGui::Text( "Memory freed: %s bytes", RealToString( cFree, true ) );
-            ImGui::Text( "Overall change: %s bytes", RealToString( change, true ) );
+            if( nAlloc == 0 && nFree == 0 )
+            {
+                ImGui::Text( "No memory events." );
+            }
+            else
+            {
+                ImGui::Text( "%s memory events.", RealToString( nAlloc + nFree, true ) );
+                ImGui::Text( "%s allocs, %s frees.", RealToString( nAlloc, true ), RealToString( nFree, true ) );
+                ImGui::Text( "Memory allocated: %s bytes", RealToString( cAlloc, true ) );
+                ImGui::Text( "Memory freed: %s bytes", RealToString( cFree, true ) );
+                ImGui::Text( "Overall change: %s bytes", RealToString( change, true ) );
+            }
         }
     }
 

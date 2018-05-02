@@ -102,6 +102,9 @@ private:
     void ZoomToZone( const GpuEvent& ev );
     void ZoomToRange( int64_t start, int64_t end );
 
+    void ShowZoneInfo( const ZoneEvent& ev );
+    void ShowZoneInfo( const GpuEvent& ev, uint64_t thread );
+
     void ZoneTooltip( const ZoneEvent& ev );
     void ZoneTooltip( const GpuEvent& ev );
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
@@ -183,6 +186,9 @@ private:
 
     Namespace m_namespace;
     Animation m_zoomAnim;
+
+    Vector<const ZoneEvent*> m_zoneInfoStack;
+    Vector<const GpuEvent*> m_gpuInfoStack;
 
     struct {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

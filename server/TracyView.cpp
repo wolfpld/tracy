@@ -1232,8 +1232,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                     }
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
-                        m_zoneInfoWindow = &ev;
-                        m_gpuInfoWindow = nullptr;
+                        ShowZoneInfo( ev );
                     }
                 }
             }
@@ -1345,8 +1344,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 }
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
-                    m_zoneInfoWindow = &ev;
-                    m_gpuInfoWindow = nullptr;
+                    ShowZoneInfo( ev );
                 }
             }
 
@@ -1499,9 +1497,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                     }
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
-                        m_zoneInfoWindow = nullptr;
-                        m_gpuInfoWindow = &ev;
-                        m_gpuInfoWindowThread = thread;
+                        ShowZoneInfo( ev, thread );
                     }
 
                     m_gpuThread = thread;
@@ -1585,9 +1581,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 }
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
-                    m_zoneInfoWindow = nullptr;
-                    m_gpuInfoWindow = &ev;
-                    m_gpuInfoWindowThread = thread;
+                    ShowZoneInfo( ev, thread );
                 }
 
                 m_gpuThread = thread;
@@ -2632,7 +2626,7 @@ void View::DrawZoneInfoWindow()
         auto parent = GetZoneParent( ev );
         if( parent )
         {
-            m_zoneInfoWindow = parent;
+            ShowZoneInfo( *parent );
         }
     }
     ImGui::SameLine();
@@ -2799,7 +2793,7 @@ void View::DrawZoneInfoWindow()
                 ImGui::PopID();
                 if( sel )
                 {
-                    m_zoneInfoWindow = v;
+                    ShowZoneInfo( *v );
                 }
                 if( hover )
                 {
@@ -2853,7 +2847,7 @@ void View::DrawZoneInfoWindow()
                 ImGui::PushID( (int)i );
                 if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
-                    m_zoneInfoWindow = &cev;
+                    ShowZoneInfo( cev );
                 }
                 if( ImGui::IsItemHovered() )
                 {
@@ -2879,7 +2873,11 @@ void View::DrawZoneInfoWindow()
 
     ImGui::End();
 
-    if( !show ) m_zoneInfoWindow = nullptr;
+    if( !show )
+    {
+        m_zoneInfoWindow = nullptr;
+        m_zoneInfoStack.clear();
+    }
 }
 
 void View::DrawGpuInfoWindow()
@@ -2899,7 +2897,7 @@ void View::DrawGpuInfoWindow()
         auto parent = GetZoneParent( ev );
         if( parent )
         {
-            m_gpuInfoWindow = parent;
+            ShowZoneInfo( *parent, m_gpuInfoWindowThread );
         }
     }
 
@@ -2958,7 +2956,7 @@ void View::DrawGpuInfoWindow()
                 ImGui::PopID();
                 if( sel )
                 {
-                    m_gpuInfoWindow = v;
+                    ShowZoneInfo( *v, m_gpuInfoWindowThread );
                 }
                 if( hover )
                 {
@@ -3011,7 +3009,7 @@ void View::DrawGpuInfoWindow()
                 ImGui::PushID( (int)i );
                 if( ImGui::Selectable( m_worker.GetString( csl.name ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
-                    m_gpuInfoWindow = &cev;
+                    ShowZoneInfo( cev, m_gpuInfoWindowThread );
                 }
                 if( ImGui::IsItemHovered() )
                 {
@@ -3037,7 +3035,11 @@ void View::DrawGpuInfoWindow()
 
     ImGui::End();
 
-    if( !show ) m_gpuInfoWindow = nullptr;
+    if( !show )
+    {
+        m_gpuInfoWindow = nullptr;
+        m_gpuInfoStack.clear();
+    }
 }
 
 void View::DrawOptions()
@@ -3871,7 +3873,7 @@ void View::DrawFindZone()
                     auto& srcloc = m_worker.GetSourceLocation( ev->srcloc );
                     if( ImGui::Selectable( TimeToString( ev->start - m_worker.GetFrameBegin( 0 ) ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
                     {
-                        m_zoneInfoWindow = ev;
+                        ShowZoneInfo( *ev );
                     }
                     if( ImGui::IsItemHovered() )
                     {
@@ -4655,7 +4657,7 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
             ImGui::PopID();
             if( sel )
             {
-                m_zoneInfoWindow = zone;
+                ShowZoneInfo( *zone );
             }
             if( hover )
             {
@@ -4699,7 +4701,7 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
                 ImGui::PopID();
                 if( sel )
                 {
-                    m_zoneInfoWindow = zoneFree;
+                    ShowZoneInfo( *zoneFree );
                 }
                 if( hover )
                 {
@@ -5175,6 +5177,37 @@ void View::ZoomToRange( int64_t start, int64_t end )
     const auto d1 = double( m_zoomAnim.end1 - m_zoomAnim.start1 );
     const auto diff = d0>d1 ? d0/d1 : d1/d0;
     m_zoomAnim.lenMod = 10.0 / log10( diff );
+}
+
+void View::ShowZoneInfo( const ZoneEvent& ev )
+{
+    if( m_zoneInfoWindow )
+    {
+        m_zoneInfoStack.push_back( m_zoneInfoWindow );
+    }
+    m_zoneInfoWindow = &ev;
+
+    if( m_gpuInfoWindow )
+    {
+        m_gpuInfoWindow = nullptr;
+        m_gpuInfoStack.clear();
+    }
+}
+
+void View::ShowZoneInfo( const GpuEvent& ev, uint64_t thread )
+{
+    if( m_gpuInfoWindow )
+    {
+        m_gpuInfoStack.push_back( m_gpuInfoWindow );
+    }
+    m_gpuInfoWindow = &ev;
+    m_gpuInfoWindowThread = thread;
+
+    if( m_zoneInfoWindow )
+    {
+        m_zoneInfoWindow = nullptr;
+        m_zoneInfoStack.clear();
+    }
 }
 
 void View::ZoneTooltip( const ZoneEvent& ev )

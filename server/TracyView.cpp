@@ -2718,20 +2718,6 @@ void View::DrawZoneInfoWindow()
         }
     }
 
-    auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
-    auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
-    uint64_t ctime = 0;
-    for( size_t i=0; i<ev.child.size(); i++ )
-    {
-        const auto cend = m_worker.GetZoneEnd( *ev.child[i] );
-        const auto ct = cend - ev.child[i]->start;
-        ctime += ct;
-        ctt[i] = ct;
-        cti[i] = uint32_t( i );
-    }
-
-    pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
-
     if( !ev.child.empty() )
     {
         bool expand = ImGui::TreeNode( "Child zones" );
@@ -2739,6 +2725,20 @@ void View::DrawZoneInfoWindow()
         ImGui::TextDisabled( "(%s)", RealToString( ev.child.size(), true ) );
         if( expand )
         {
+            auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
+            auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
+            uint64_t ctime = 0;
+            for( size_t i=0; i<ev.child.size(); i++ )
+            {
+                const auto cend = m_worker.GetZoneEnd( *ev.child[i] );
+                const auto ct = cend - ev.child[i]->start;
+                ctime += ct;
+                ctt[i] = ct;
+                cti[i] = uint32_t( i );
+            }
+
+            pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+
             const auto ty = ImGui::GetTextLineHeight();
             ImGui::Columns( 2 );
             ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
@@ -2877,20 +2877,6 @@ void View::DrawGpuInfoWindow()
         }
     }
 
-    auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
-    auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
-    uint64_t ctime = 0;
-    for( size_t i=0; i<ev.child.size(); i++ )
-    {
-        const auto cend = m_worker.GetZoneEnd( *ev.child[i] );
-        const auto ct = cend - ev.child[i]->gpuStart;
-        ctime += ct;
-        ctt[i] = ct;
-        cti[i] = uint32_t( i );
-    }
-
-    pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
-
     if( !ev.child.empty() )
     {
         bool expand = ImGui::TreeNode( "Child zones" );
@@ -2898,6 +2884,20 @@ void View::DrawGpuInfoWindow()
         ImGui::TextDisabled( "(%s)", RealToString( ev.child.size(), true ) );
         if( expand )
         {
+            auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
+            auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
+            uint64_t ctime = 0;
+            for( size_t i=0; i<ev.child.size(); i++ )
+            {
+                const auto cend = m_worker.GetZoneEnd( *ev.child[i] );
+                const auto ct = cend - ev.child[i]->gpuStart;
+                ctime += ct;
+                ctt[i] = ct;
+                cti[i] = uint32_t( i );
+            }
+
+            pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+
             const auto ty = ImGui::GetTextLineHeight();
             ImGui::Columns( 2 );
             ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );

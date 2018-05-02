@@ -2699,6 +2699,9 @@ void View::DrawZoneInfoWindow()
             int64_t nAlloc = 0;
             int64_t nFree = 0;
 
+            auto ait2 = ait;
+            auto fit2 = fit;
+
             while( ait != aend )
             {
                 if( ait->threadAlloc == thread )
@@ -2729,6 +2732,40 @@ void View::DrawZoneInfoWindow()
                 ImGui::Text( "Memory allocated: %s bytes", RealToString( cAlloc, true ) );
                 ImGui::Text( "Memory freed: %s bytes", RealToString( cFree, true ) );
                 ImGui::Text( "Overall change: %s bytes", RealToString( cAlloc - cFree, true ) );
+
+                if( ImGui::TreeNode( "Allocations list" ) )
+                {
+                    std::vector<const MemEvent*> v;
+                    v.reserve( nAlloc + nFree );
+
+                    auto it = ait2;
+                    while( it != aend )
+                    {
+                        if( it->threadAlloc == thread )
+                        {
+                            v.emplace_back( it );
+                        }
+                        it++;
+                    }
+                    while( fit2 != fend )
+                    {
+                        const auto ptr = &mem.data[*fit2++];
+                        if( ptr->threadFree == thread )
+                        {
+                            if( ptr < ait2 || ptr >= aend )
+                            {
+                                v.emplace_back( ptr );
+                            }
+                        }
+                    }
+                    pdqsort_branchless( v.begin(), v.end(), [] ( const auto& l, const auto& r ) { return l->timeAlloc < r->timeAlloc; } );
+
+                    ListMemData<decltype( v.begin() )>( v.begin(), v.end(), []( auto& v ) {
+                        ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+                        return *v;
+                    } );
+                    ImGui::TreePop();
+                }
             }
         }
     }

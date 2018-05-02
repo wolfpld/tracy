@@ -4586,7 +4586,11 @@ void View::DrawStatistics()
 template<class T>
 void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress )
 {
-    ImGui::BeginChild( "##memScroll", ImVec2( 0, std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
+    const auto& style = ImGui::GetStyle();
+    const auto dist = std::distance( ptr, end ) + 1;
+    const auto ty = ImGui::GetTextLineHeight() + style.ItemSpacing.y;
+
+    ImGui::BeginChild( "##memScroll", ImVec2( 0, std::max( ty * std::min<int64_t>( dist, 5 ), std::min( ty * dist, ImGui::GetContentRegionAvail().y ) ) ) );
     ImGui::Columns( 7 );
     ImGui::Text( "Address" );
     ImGui::NextColumn();

@@ -2678,47 +2678,40 @@ void View::DrawZoneInfoWindow()
     {
         ImGui::Separator();
 
-        const auto& vec = mem.plot->data;
-        auto mit = std::lower_bound( vec.begin(), vec.end(), ev.start, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-        auto mend = std::upper_bound( mit, vec.end(), end, [] ( const auto& l, const auto& r ) { return l < r.time; } );
+        auto ait = std::lower_bound( mem.data.begin(), mem.data.end(), ev.start, [] ( const auto& l, const auto& r ) { return l.timeAlloc < r; } );
+        const auto aend = std::upper_bound( mem.data.begin(), mem.data.end(), end, [] ( const auto& l, const auto& r ) { return l < r.timeAlloc; } );
 
-        const auto dist = std::distance( mit, mend );
-        if( dist == 0 )
+        auto fit = std::lower_bound( mem.frees.begin(), mem.frees.end(), ev.start, [&mem] ( const auto& l, const auto& r ) { return mem.data[l].timeFree < r; } );
+        const auto fend = std::upper_bound( mem.frees.begin(), mem.frees.end(), end, [&mem] ( const auto& l, const auto& r ) { return l < mem.data[r].timeFree; } );
+
+        const auto aDist = std::distance( ait, aend );
+        const auto fDist = std::distance( fit, fend );
+        if( aDist == 0 && fDist == 0 )
         {
             ImGui::Text( "No memory events." );
         }
         else
         {
-            ImGui::Text( "%s memory events.", RealToString( dist, true ) );
+            ImGui::Text( "%s memory events.", RealToString( aDist + fDist, true ) );
 
-            double change = 0;
-            double cAlloc = 0;
-            double cFree = 0;
-            uint64_t nAlloc = 0;
-            uint64_t nFree = 0;
+            int64_t change = 0;
+            int64_t cAlloc = 0;
+            int64_t cFree = 0;
 
-            if( mit != vec.begin() ) --mit;
-            auto prev = mit->val;
-            ++mit;
-            while( mit != mend )
+            while( ait != aend )
             {
-                double curr = mit->val;
-                change += curr - prev;
-                if( curr > prev )
-                {
-                    cAlloc += curr - prev;
-                    nAlloc++;
-                }
-                else
-                {
-                    cFree += prev - curr;
-                    nFree++;
-                }
-                prev = curr;
-                ++mit;
+                change += ait->size;
+                cAlloc += ait->size;
+                ait++;
+            }
+            while( fit != fend )
+            {
+                change -= mem.data[*fit].size;
+                cFree += mem.data[*fit].size;
+                fit++;
             }
 
-            ImGui::Text( "%s allocs, %s frees.", RealToString( nAlloc, true ), RealToString( nFree, true ) );
+            ImGui::Text( "%s allocs, %s frees.", RealToString( aDist, true ), RealToString( fDist, true ) );
             ImGui::Text( "Memory allocated: %s bytes", RealToString( cAlloc, true ) );
             ImGui::Text( "Memory freed: %s bytes", RealToString( cFree, true ) );
             ImGui::Text( "Overall change: %s bytes", RealToString( change, true ) );

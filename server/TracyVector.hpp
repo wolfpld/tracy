@@ -51,59 +51,59 @@ public:
         return *this;
     }
 
-    bool empty() const { return m_size == 0; }
-    size_t size() const { return m_size; }
+    tracy_force_inline bool empty() const { return m_size == 0; }
+    tracy_force_inline size_t size() const { return m_size; }
 
-    void set_size( size_t sz ) { m_size = sz; }
+    tracy_force_inline void set_size( size_t sz ) { m_size = sz; }
 
-    T* data() { return m_ptr; }
-    const T* data() const { return m_ptr; };
+    tracy_force_inline T* data() { return m_ptr; }
+    tracy_force_inline const T* data() const { return m_ptr; };
 
-    T* begin() { return m_ptr; }
-    const T* begin() const { return m_ptr; }
-    T* end() { return m_ptr + m_size; }
-    const T* end() const { return m_ptr + m_size; }
+    tracy_force_inline T* begin() { return m_ptr; }
+    tracy_force_inline const T* begin() const { return m_ptr; }
+    tracy_force_inline T* end() { return m_ptr + m_size; }
+    tracy_force_inline const T* end() const { return m_ptr + m_size; }
 
-    T& front() { assert( m_size > 0 ); return m_ptr[0]; }
-    const T& front() const { assert( m_size > 0 ); return m_ptr[0]; }
+    tracy_force_inline T& front() { assert( m_size > 0 ); return m_ptr[0]; }
+    tracy_force_inline const T& front() const { assert( m_size > 0 ); return m_ptr[0]; }
 
-    T& back() { assert( m_size > 0 ); return m_ptr[m_size - 1]; }
-    const T& back() const { assert( m_size > 0 ); return m_ptr[m_size - 1]; }
+    tracy_force_inline T& back() { assert( m_size > 0 ); return m_ptr[m_size - 1]; }
+    tracy_force_inline const T& back() const { assert( m_size > 0 ); return m_ptr[m_size - 1]; }
 
-    T& operator[]( size_t idx ) { return m_ptr[idx]; }
-    const T& operator[]( size_t idx ) const { return m_ptr[idx]; }
+    tracy_force_inline T& operator[]( size_t idx ) { return m_ptr[idx]; }
+    tracy_force_inline const T& operator[]( size_t idx ) const { return m_ptr[idx]; }
 
-    void push_back( const T& v )
+    tracy_force_inline void push_back( const T& v )
     {
         if( m_size == Capacity() ) AllocMore();
         m_ptr[m_size++] = v;
     }
 
-    void push_back_non_empty( const T& v )
+    tracy_force_inline void push_back_non_empty( const T& v )
     {
         if( m_size == CapacityNoNullptrCheck() ) AllocMore();
         m_ptr[m_size++] = v;
     }
 
-    void push_back_no_space_check( const T& v )
+    tracy_force_inline void push_back_no_space_check( const T& v )
     {
         assert( m_size < Capacity() );
         m_ptr[m_size++] = v;
     }
 
-    void push_back( T&& v )
+    tracy_force_inline void push_back( T&& v )
     {
         if( m_size == Capacity() ) AllocMore();
         m_ptr[m_size++] = std::move( v );
     }
 
-    T& push_next()
+    tracy_force_inline T& push_next()
     {
         if( m_size == Capacity() ) AllocMore();
         return m_ptr[m_size++];
     }
 
-    T& push_next_no_space_check()
+    tracy_force_inline T& push_next_no_space_check()
     {
         assert( m_size < Capacity() );
         return m_ptr[m_size++];
@@ -165,20 +165,20 @@ public:
         return begin;
     }
 
-    void pop_back()
+    tracy_force_inline void pop_back()
     {
         assert( m_size > 0 );
         m_size--;
     }
 
-    T& back_and_pop()
+    tracy_force_inline T& back_and_pop()
     {
         assert( m_size > 0 );
         m_size--;
         return m_ptr[m_size];
     }
 
-    void reserve( size_t cap )
+    tracy_force_inline void reserve( size_t cap )
     {
         if( cap == 0 || cap <= Capacity() ) return;
         reserve_non_zero( cap );
@@ -198,13 +198,13 @@ public:
         Realloc();
     }
 
-    void reserve_and_use( size_t sz )
+    tracy_force_inline void reserve_and_use( size_t sz )
     {
         reserve( sz );
         m_size = sz;
     }
 
-    void clear()
+    tracy_force_inline void clear()
     {
         m_size = 0;
     }
@@ -237,12 +237,12 @@ private:
         m_ptr = ptr;
     }
 
-    uint32_t Capacity() const
+    tracy_force_inline uint32_t Capacity() const
     {
         return m_ptr == nullptr ? 0 : 1 << m_capacity;
     }
 
-    uint32_t CapacityNoNullptrCheck() const
+    tracy_force_inline uint32_t CapacityNoNullptrCheck() const
     {
         return 1 << m_capacity;
     }

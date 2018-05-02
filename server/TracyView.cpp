@@ -2673,6 +2673,58 @@ void View::DrawZoneInfoWindow()
     ImGui::Text( "Execution time: %s", TimeToString( ztime ) );
     ImGui::Text( "Without profiling: %s", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
 
+    auto& mem = m_worker.GetMemData();
+    if( mem.plot )
+    {
+        ImGui::Separator();
+
+        const auto& vec = mem.plot->data;
+        auto mit = std::lower_bound( vec.begin(), vec.end(), ev.start, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+        auto mend = std::upper_bound( mit, vec.end(), end, [] ( const auto& l, const auto& r ) { return l < r.time; } );
+
+        const auto dist = std::distance( mit, mend );
+        if( dist == 0 )
+        {
+            ImGui::Text( "No memory events." );
+        }
+        else
+        {
+            ImGui::Text( "%s memory events.", RealToString( dist, true ) );
+
+            double change = 0;
+            double cAlloc = 0;
+            double cFree = 0;
+            uint64_t nAlloc = 0;
+            uint64_t nFree = 0;
+
+            if( mit != vec.begin() ) --mit;
+            auto prev = mit->val;
+            ++mit;
+            while( mit != mend )
+            {
+                double curr = mit->val;
+                change += curr - prev;
+                if( curr > prev )
+                {
+                    cAlloc += curr - prev;
+                    nAlloc++;
+                }
+                else
+                {
+                    cFree += prev - curr;
+                    nFree++;
+                }
+                prev = curr;
+                ++mit;
+            }
+
+            ImGui::Text( "%s allocs, %s frees.", RealToString( nAlloc, true ), RealToString( nFree, true ) );
+            ImGui::Text( "Memory allocated: %s bytes", RealToString( cAlloc, true ) );
+            ImGui::Text( "Memory freed: %s bytes", RealToString( cFree, true ) );
+            ImGui::Text( "Overall change: %s bytes", RealToString( change, true ) );
+        }
+    }
+
     ImGui::Separator();
 
     std::vector<const ZoneEvent*> zoneTrace;

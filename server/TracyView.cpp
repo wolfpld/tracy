@@ -4630,10 +4630,13 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         {
             ImGui::Text( "%s", TimeToString( v->timeFree - v->timeAlloc ) );
             ImGui::NextColumn();
-            ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
-            if( v->threadAlloc != v->threadFree )
+            if( v->threadAlloc == v->threadFree )
             {
-                ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadFree ) ) );
+                ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+            }
+            else
+            {
+                ImGui::Text( "%s / %s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ), m_worker.GetThreadString( m_worker.DecompressThread( v->threadFree ) ) );
             }
         }
         ImGui::NextColumn();

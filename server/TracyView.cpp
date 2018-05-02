@@ -2634,6 +2634,14 @@ void View::DrawZoneInfoWindow()
     {
         m_findZone.ShowZone( ev.srcloc, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
     }
+    if( !m_zoneInfoStack.empty() )
+    {
+        ImGui::SameLine();
+        if( ImGui::Button( "Go back" ) )
+        {
+            m_zoneInfoWindow = m_zoneInfoStack.back_and_pop();
+        }
+    }
 
     ImGui::Separator();
 
@@ -2898,6 +2906,14 @@ void View::DrawGpuInfoWindow()
         if( parent )
         {
             ShowZoneInfo( *parent, m_gpuInfoWindowThread );
+        }
+    }
+    if( !m_gpuInfoStack.empty() )
+    {
+        ImGui::SameLine();
+        if( ImGui::Button( "Go back" ) )
+        {
+            m_gpuInfoWindow = m_gpuInfoStack.back_and_pop();
         }
     }
 

@@ -2694,7 +2694,6 @@ void View::DrawZoneInfoWindow()
         }
         else
         {
-            int64_t change = 0;
             int64_t cAlloc = 0;
             int64_t cFree = 0;
             int64_t nAlloc = 0;
@@ -2704,7 +2703,6 @@ void View::DrawZoneInfoWindow()
             {
                 if( ait->threadAlloc == thread )
                 {
-                    change += ait->size;
                     cAlloc += ait->size;
                     nAlloc++;
                 }
@@ -2714,7 +2712,6 @@ void View::DrawZoneInfoWindow()
             {
                 if( mem.data[*fit].threadFree == thread )
                 {
-                    change -= mem.data[*fit].size;
                     cFree += mem.data[*fit].size;
                     nFree++;
                 }
@@ -2731,7 +2728,7 @@ void View::DrawZoneInfoWindow()
                 ImGui::Text( "%s allocs, %s frees.", RealToString( nAlloc, true ), RealToString( nFree, true ) );
                 ImGui::Text( "Memory allocated: %s bytes", RealToString( cAlloc, true ) );
                 ImGui::Text( "Memory freed: %s bytes", RealToString( cFree, true ) );
-                ImGui::Text( "Overall change: %s bytes", RealToString( change, true ) );
+                ImGui::Text( "Overall change: %s bytes", RealToString( cAlloc - cFree, true ) );
             }
         }
     }

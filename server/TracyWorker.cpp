@@ -763,18 +763,6 @@ const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int32_t sr
 }
 #endif
 
-uint16_t Worker::CompressThread( uint64_t thread )
-{
-    if( m_data.threadLast.first == thread )
-    {
-        return m_data.threadLast.second;
-    }
-    else
-    {
-        return CompressThreadReal( thread );
-    }
-}
-
 uint16_t Worker::CompressThreadReal( uint64_t thread )
 {
     auto it = m_data.threadMap.find( thread );

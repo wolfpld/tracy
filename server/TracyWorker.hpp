@@ -162,7 +162,11 @@ public:
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
 #endif
 
-    tracy_force_inline uint16_t CompressThread( uint64_t thread );
+    tracy_force_inline uint16_t CompressThread( uint64_t thread )
+    {
+        if( m_data.threadLast.first == thread ) return m_data.threadLast.second;
+        return CompressThreadReal( thread );
+    }
     tracy_force_inline uint64_t DecompressThread( uint16_t thread ) const { assert( thread < m_data.threadExpand.size() ); return m_data.threadExpand[thread]; }
 
     NonRecursiveBenaphore& GetMbpsDataLock() { return m_mbpsData.lock; }

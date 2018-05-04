@@ -2224,9 +2224,9 @@ void Worker::Write( FileWrite& f )
     for( auto& mem : m_data.memory.data )
     {
         f.Write( &mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
-        uint64_t t = DecompressThread( mem.threadAlloc );
-        f.Write( &t, sizeof( t ) );
-        t = DecompressThread( mem.threadFree );
+        uint64_t t[2];
+        t[0] = DecompressThread( mem.threadAlloc );
+        t[1] = DecompressThread( mem.threadFree );
         f.Write( &t, sizeof( t ) );
     }
     f.Write( &m_data.memory.high, sizeof( m_data.memory.high ) );

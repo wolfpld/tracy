@@ -153,6 +153,28 @@ static const char* RealToString( double val, bool separator )
     return buf;
 }
 
+tracy_force_inline float log2fast( float x )
+{
+    float y, f;
+    int e;
+    f = frexpf( fabsf( x ), &e );
+    y = 1.23149591368684f;
+    y *= f;
+    y += -4.11852516267426f;
+    y *= f;
+    y += 6.02197014179219f;
+    y *= f;
+    y += -3.13396450166353f;
+    y += e;
+    return y;
+}
+
+static const float i10 = 1.f / log2f( 10 );
+
+tracy_force_inline float log10fast( float x )
+{
+    return log2fast( x ) * i10;
+}
 
 enum { MinVisSize = 3 };
 

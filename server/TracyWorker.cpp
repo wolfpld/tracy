@@ -541,7 +541,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( m_data.memory.low );
         f.Read( m_data.memory.usage );
 
-        m_threadMemory = std::thread( [this] { ReconstructMemAllocPlot(); } );
+        if( sz != 0 )
+        {
+            m_threadMemory = std::thread( [this] { ReconstructMemAllocPlot(); } );
+        }
     }
     else
     {

@@ -155,18 +155,12 @@ static const char* RealToString( double val, bool separator )
 
 tracy_force_inline float log2fast( float x )
 {
-    float y, f;
     int e;
-    f = frexpf( fabsf( x ), &e );
-    y = 1.23149591368684f;
-    y *= f;
-    y += -4.11852516267426f;
-    y *= f;
-    y += 6.02197014179219f;
-    y *= f;
-    y += -3.13396450166353f;
-    y += e;
-    return y;
+    auto f = frexpf( fabsf( x ), &e );
+    auto t0 = 1.23149591368684f * f - 4.11852516267426f;
+    auto t1 = t0 * f + 6.02197014179219f;
+    auto t2 = t1 * f - 3.13396450166353f;
+    return t2 + e;
 }
 
 static const float i10 = 1.f / log2f( 10 );

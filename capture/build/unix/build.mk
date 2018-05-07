@@ -1,5 +1,5 @@
 CFLAGS +=
-CXXFLAGS := $(CFLAGS) -std=gnu++14
+CXXFLAGS := $(CFLAGS) -std=gnu++17
 DEFINES += -DTRACY_NO_STATISTICS
 INCLUDES :=
 LIBS := -lpthread

@@ -55,6 +55,7 @@
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;opengl32.lib;..\..\libs\glfw\lib-vc2015\glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -74,6 +75,7 @@
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <DiagnosticsFormat>Caret</DiagnosticsFormat>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

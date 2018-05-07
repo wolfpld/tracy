@@ -1,5 +1,5 @@
 CFLAGS += 
-CXXFLAGS := $(CFLAGS) -std=c++14
+CXXFLAGS := $(CFLAGS) -std=c++17
 DEFINES +=
 INCLUDES := $(shell pkg-config --cflags glfw3 gtk+-2.0) -I../../../imgui -I../../libs/gl3w
 LIBS := $(shell pkg-config --libs glfw3 gtk+-2.0) -lpthread -ldl -lGL

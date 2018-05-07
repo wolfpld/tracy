@@ -54,6 +54,7 @@
       <MinimalRebuild>false</MinimalRebuild>
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Link>
       <AdditionalDependencies>ws2_32.lib;opengl32.lib;..\..\libs\glfw\lib-vc2015\glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -72,6 +73,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <DiagnosticsFormat>Caret</DiagnosticsFormat>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

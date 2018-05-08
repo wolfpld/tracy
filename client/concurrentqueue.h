@@ -688,6 +688,9 @@ template<typename T, typename Traits = ConcurrentQueueDefaultTraits>
 class ConcurrentQueue
 {
 public:
+    struct ExplicitProducer;
+    struct ImplicitProducer;
+
 	typedef ::moodycamel::ProducerToken producer_token_t;
 	typedef ::moodycamel::ConsumerToken consumer_token_t;
 	

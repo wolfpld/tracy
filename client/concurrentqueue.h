@@ -687,9 +687,10 @@ inline void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& a, ty
 template<typename T, typename Traits = ConcurrentQueueDefaultTraits>
 class ConcurrentQueue
 {
+    struct ImplicitProducer;
+
 public:
     struct ExplicitProducer;
-    struct ImplicitProducer;
 
 	typedef ::moodycamel::ProducerToken producer_token_t;
 	typedef ::moodycamel::ConsumerToken consumer_token_t;

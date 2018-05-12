@@ -5,8 +5,14 @@
 #endif
 
 #include <chrono>
-#include <execution>
 #include <mutex>
+
+#if __has_include(<execution>)
+#  include <execution>
+#else
+#  include "tracy_pdqsort.h"
+#  define MY_LIBCPP_SUCKS
+#endif
 
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
@@ -455,7 +461,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         for( auto& v : m_data.sourceLocationZones )
         {
             auto& zones = v.second.zones;
+#ifdef MY_LIBCPP_SUCKS
+            pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
+#else
             std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
+#endif
         }
         std::lock_guard lock( m_data.lock );
         m_data.sourceLocationZonesReady = true;
@@ -1296,7 +1306,11 @@ void Worker::HandlePostponedPlots()
         if( src.empty() ) continue;
         if( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count() - plot->postponeTime < 100 ) continue;
         auto& dst = plot->data;
+#ifdef MY_LIBCPP_SUCKS
+        pdqsort_branchless( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
+#else
         std::sort( std::execution::par_unseq, src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
+#endif
         const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );
         const auto dsd = std::distance( dst.begin(), ds ) ;
         const auto de = std::lower_bound( ds, dst.end(), src.back().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );
@@ -1919,7 +1933,11 @@ void Worker::CreateMemAllocPlot()
 void Worker::ReconstructMemAllocPlot()
 {
     auto& mem = m_data.memory;
+#ifdef MY_LIBCPP_SUCKS
+    pdqsort_branchless( mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].timeFree < mem.data[rhs].timeFree; } );
+#else
     std::sort( std::execution::par_unseq, mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].timeFree < mem.data[rhs].timeFree; } );
+#endif
 
     const auto psz = mem.data.size() + mem.frees.size() + 1;
 

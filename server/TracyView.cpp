@@ -3171,25 +3171,28 @@ void View::DrawOptions()
 void View::DrawMessages()
 {
     ImGui::Begin( "Messages", &m_showMessages );
+    ImGui::Columns( 2 );
+    ImGui::Text( "Time" );
+    ImGui::NextColumn();
+    ImGui::Text( "Message" );
+    ImGui::NextColumn();
+    ImGui::Separator();
+
     for( const auto& v : m_worker.GetMessages() )
     {
-        char tmp[64 * 1024];
-        sprintf( tmp, "%10s | %s", TimeToString( v->time - m_worker.GetFrameBegin( 0 ) ), m_worker.GetString( v->ref ) );
-        if( m_msgHighlight == v )
-        {
-            ImGui::TextColored( ImVec4( 0xDD / 255.f, 0x22 / 255.f, 0x22 / 255.f, 1.f ), "%s", tmp );
-        }
-        else
-        {
-            ImGui::Text( "%s", tmp );
-        }
-        if( ImGui::IsItemClicked() )
+        ImGui::PushID( v );
+        if( ImGui::Selectable( TimeToString( v->time - m_worker.GetFrameBegin( 0 ) ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns ) )
         {
             m_pause = true;
             const auto hr = std::max<uint64_t>( 1, ( m_zvEnd - m_zvStart ) / 2 );
             ZoomToRange( v->time - hr, v->time + hr );
         }
+        ImGui::PopID();
+        ImGui::NextColumn();
+        ImGui::TextWrapped( "%s", m_worker.GetString( v->ref ) );
+        ImGui::NextColumn();
     }
+    ImGui::EndColumns();
     ImGui::End();
 }
 

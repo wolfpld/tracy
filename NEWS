@@ -2,9 +2,13 @@ Note: There is no guarantee that version mismatched client and server will
 be able to talk with each other. Network protocol breakages won't be listed
 here.
 
+Note: Release numbers are nothing more than numbers. There are some
+"missing" versions due to trace file changes during development. This is not
+a mistake.
 
-v0.3 (xxxx-xx-xx)
------------------
+
+v0.3.1 (xxxx-xx-xx)
+-------------------
 
 - Breaking change: the format of trace files has changed.
   - Previous tracy version will crash when trying to open new traces.

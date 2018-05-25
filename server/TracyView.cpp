@@ -3171,8 +3171,10 @@ void View::DrawOptions()
 void View::DrawMessages()
 {
     ImGui::Begin( "Messages", &m_showMessages );
-    ImGui::Columns( 2 );
+    ImGui::Columns( 3 );
     ImGui::Text( "Time" );
+    ImGui::NextColumn();
+    ImGui::Text( "Thread" );
     ImGui::NextColumn();
     ImGui::Text( "Message" );
     ImGui::NextColumn();
@@ -3188,6 +3190,10 @@ void View::DrawMessages()
             ZoomToRange( v->time - hr, v->time + hr );
         }
         ImGui::PopID();
+        ImGui::NextColumn();
+        ImGui::Text( "%s", m_worker.GetThreadString( v->thread ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(0x%" PRIX64 ")", v->thread );
         ImGui::NextColumn();
         ImGui::TextWrapped( "%s", m_worker.GetString( v->ref ) );
         ImGui::NextColumn();

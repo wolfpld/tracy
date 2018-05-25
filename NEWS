@@ -38,6 +38,7 @@ v0.3 (xxxx-xx-xx)
 - Allow selecting/unselecting all locks for display.
 - Performance improvements.
 - Don't save unneeded lock information in trace file.
+- Don't save thrash in message list data.
 - Allow expanding view span up to one hour, instead of one minute.
 - Added trace comparison window.
   - An external trace has to be loaded first.
@@ -58,6 +59,9 @@ v0.3 (xxxx-xx-xx)
 - Zones previously displayed in zone info window are remembered and you can
   go back to them. Closing the zone info window or switching between CPU and
   GPU zones will clear the memory.
+- Improved message list window.
+  - Messages are now displayed in columns.
+  - Originating thread of each message is now included in the list.
 
 
 v0.2 (2018-04-05)

@@ -30,7 +30,7 @@ static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
     return ( h5 << 16 ) | ( h6 << 8 ) | h7;
 }
 
-static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 0 };
+static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 1 };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( FileHeader[FileHeaderMagic], FileHeader[FileHeaderMagic+1], FileHeader[FileHeaderMagic+2] );
 
@@ -419,14 +419,23 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             uint64_t ptr;
             f.Read( ptr );
             auto msgdata = m_slab.Alloc<MessageData>();
-            f.Read( msgdata, sizeof( *msgdata ) );
+            f.Read( msgdata, sizeof( MessageData::time ) + sizeof( MessageData::ref ) );
+            if( fileVer <= FileVersion( 0, 3, 0 ) ) f.Skip( 7 );
             m_data.messages.push_back_no_space_check( msgdata );
             msgMap.emplace( ptr, msgdata );
         }
     }
     else
     {
-        f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData ) ) );
+        // Prior to 0.3.1 MessageData was saved with padding.
+        if( fileVer <= FileVersion( 0, 3, 0 ) )
+        {
+            f.Skip( sz * ( sizeof( uint64_t ) + 24 ) );
+        }
+        else
+        {
+            f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) ) );
+        }
     }
 
     f.Read( sz );
@@ -2197,7 +2206,7 @@ void Worker::Write( FileWrite& f )
     {
         const auto ptr = (uint64_t)v;
         f.Write( &ptr, sizeof( ptr ) );
-        f.Write( v, sizeof( *v ) );
+        f.Write( v, sizeof( MessageData::time ) + sizeof( MessageData::ref ) );
     }
 
     sz = m_data.threads.size();

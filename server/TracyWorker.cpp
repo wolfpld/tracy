@@ -443,9 +443,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto td = m_slab.AllocInit<ThreadData>();
-        f.Read( td->id );
+        uint64_t tid;
+        f.Read( tid );
+        td->id = tid;
         f.Read( td->count );
-        ReadTimeline( f, td->timeline, CompressThread( td->id ) );
+        ReadTimeline( f, td->timeline, CompressThread( tid ) );
         uint64_t msz;
         f.Read( msz );
         if( eventMask & EventType::Messages )
@@ -455,7 +457,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             {
                 uint64_t ptr;
                 f.Read( ptr );
-                td->messages.push_back_no_space_check( msgMap[ptr] );
+                auto md = msgMap[ptr];
+                td->messages.push_back_no_space_check( md );
+                md->thread = tid;
             }
         }
         else
@@ -1726,6 +1730,7 @@ void Worker::ProcessMessage( const QueueMessage& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
+    msg->thread = ev.thread;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
     m_pendingCustomStrings.erase( it );
@@ -1737,6 +1742,7 @@ void Worker::ProcessMessageLiteral( const QueueMessage& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
+    msg->thread = ev.thread;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
 }

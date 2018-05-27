@@ -2470,7 +2470,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 {
                     const auto x = ( it->time - m_zvStart ) * pxns;
                     const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-                    DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it->val, 0, false );
+                    DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type );
                 }
 
                 auto prevx = it;
@@ -2493,7 +2493,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     const auto rsz = std::distance( it, range );
                     if( rsz == 1 )
                     {
-                        DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it->val, prevy->val, false );
+                        DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it, prevy->val, false, v->type );
                         prevx = it;
                         prevy = it;
                         ++it;
@@ -2589,6 +2589,30 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
         if( hasPrev )
         {
             ImGui::Text( "Change: %s", RealToString( val - prev, true ) );
+        }
+        ImGui::EndTooltip();
+    }
+}
+
+void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type )
+{
+    auto draw = ImGui::GetWindowDrawList();
+    if( merged )
+    {
+        draw->AddRectFilled( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), color );
+    }
+    else
+    {
+        draw->AddRect( wpos + ImVec2( x - 1.5f, offset + y - 1.5f ), wpos + ImVec2( x + 2.5f, offset + y + 2.5f ), color );
+    }
+
+    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Value: %s", RealToString( item->val, true ) );
+        if( hasPrev )
+        {
+            ImGui::Text( "Change: %s", RealToString( item->val - prev, true ) );
         }
         ImGui::EndTooltip();
     }

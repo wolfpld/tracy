@@ -2612,7 +2612,64 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
         ImGui::Text( "Value: %s", RealToString( item->val, true ) );
         if( hasPrev )
         {
-            ImGui::Text( "Change: %s", RealToString( item->val - prev, true ) );
+            const auto change = item->val - prev;
+            ImGui::Text( "Change: %s", RealToString( change, true ) );
+
+            if( type == PlotType::Memory )
+            {
+                auto& mem = m_worker.GetMemData();
+                const MemEvent* ev = nullptr;
+                if( change > 0 )
+                {
+                    auto it = std::lower_bound( mem.data.begin(), mem.data.end(), item->time, [] ( const auto& lhs, const auto& rhs ) { return lhs.timeAlloc < rhs; } );
+                    if( it != mem.data.end() && it->timeAlloc == item->time )
+                    {
+                        ev = it;
+                    }
+                }
+                else
+                {
+                    const auto& data = mem.data;
+                    auto it = std::lower_bound( mem.frees.begin(), mem.frees.end(), item->time, [&data] ( const auto& lhs, const auto& rhs ) { return data[lhs].timeFree < rhs; } );
+                    if( it != mem.frees.end() && data[*it].timeFree == item->time )
+                    {
+                        ev = &data[*it];
+                    }
+                }
+                if( ev )
+                {
+                    ImGui::Separator();
+                    ImGui::Text( "Address: 0x%" PRIx64, ev->ptr );
+                    ImGui::Text( "Appeared at %s", TimeToString( m_worker.GetLastTime() - ev->timeAlloc ) );
+                    if( change > 0 )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(this event)" );
+                    }
+                    if( ev->timeFree < 0 )
+                    {
+                        ImGui::Text( "Allocation still active" );
+                    }
+                    else
+                    {
+                        ImGui::Text( "Freed at %s", TimeToString( m_worker.GetLastTime() - ev->timeFree ) );
+                        if( change < 0 )
+                        {
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(this event)" );
+                        }
+                        ImGui::Text( "Duration: %s", TimeToString( ev->timeFree - ev->timeAlloc ) );
+                    }
+                    if( change > 0 )
+                    {
+                        ImGui::Text( "Thread: %s", m_worker.GetThreadString( m_worker.DecompressThread( ev->threadAlloc ) ) );
+                    }
+                    else
+                    {
+                        ImGui::Text( "Thread: %s", m_worker.GetThreadString( m_worker.DecompressThread( ev->threadFree ) ) );
+                    }
+                }
+            }
         }
         ImGui::EndTooltip();
     }

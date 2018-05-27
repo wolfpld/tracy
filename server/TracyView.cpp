@@ -2640,7 +2640,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                 {
                     ImGui::Separator();
                     ImGui::Text( "Address: 0x%" PRIx64, ev->ptr );
-                    ImGui::Text( "Appeared at %s", TimeToString( m_worker.GetLastTime() - ev->timeAlloc ) );
+                    ImGui::Text( "Appeared at %s", TimeToString( ev->timeAlloc - m_worker.GetFrameBegin( 0 ) ) );
                     if( change > 0 )
                     {
                         ImGui::SameLine();
@@ -2652,7 +2652,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     }
                     else
                     {
-                        ImGui::Text( "Freed at %s", TimeToString( m_worker.GetLastTime() - ev->timeFree ) );
+                        ImGui::Text( "Freed at %s", TimeToString( ev->timeFree - m_worker.GetFrameBegin( 0 ) ) );
                         if( change < 0 )
                         {
                             ImGui::SameLine();

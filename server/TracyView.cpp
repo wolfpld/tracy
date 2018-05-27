@@ -2668,6 +2668,13 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     {
                         ImGui::Text( "Thread: %s", m_worker.GetThreadString( m_worker.DecompressThread( ev->threadFree ) ) );
                     }
+
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_memInfo.show = true;
+                        sprintf( m_memInfo.pattern, "0x%" PRIx64, ev->ptr );
+                        m_memInfo.ptrFind = ev->ptr;
+                    }
                 }
             }
         }

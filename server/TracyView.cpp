@@ -810,7 +810,6 @@ bool View::DrawZoneFrames()
             if( ImGui::IsMouseClicked( 2 ) )
             {
                 ZoomToRange( fbegin, fend );
-                m_pause = true;
             }
         }
 
@@ -3273,7 +3272,6 @@ void View::DrawMessages()
         ImGui::PushID( v );
         if( ImGui::Selectable( TimeToString( v->time - m_worker.GetFrameBegin( 0 ) ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns ) )
         {
-            m_pause = true;
             const auto hr = std::max<uint64_t>( 1, ( m_zvEnd - m_zvStart ) / 2 );
             ZoomToRange( v->time - hr, v->time + hr );
         }

@@ -67,6 +67,7 @@ v0.3.1 (xxxx-xx-xx)
 - Improved message list window.
   - Messages are now displayed in columns.
   - Originating thread of each message is now included in the list.
+- You can now navigate to next and previous frame.
 
 
 v0.2 (2018-04-05)

@@ -338,7 +338,13 @@ bool View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Compare" ) ) m_compare.show = true;
     ImGui::SameLine();
-    ImGui::Text( "Frames: %-7" PRIu64 " Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", m_worker.GetFrameCount(), TimeToString( m_worker.GetLastTime() - m_worker.GetFrameBegin( 0 ) ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
+    if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
+    ImGui::SameLine();
+    ImGui::Text( "Frames: %" PRIu64, m_worker.GetFrameCount() );
+    ImGui::SameLine();
+    if( ImGui::SmallButton( ">" ) ) ZoomToNextFrame();
+    ImGui::SameLine();
+    ImGui::Text( "Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", TimeToString( m_worker.GetLastTime() - m_worker.GetFrameBegin( 0 ) ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
     DrawFrames();
     DrawZones();
     ImGui::End();
@@ -5292,6 +5298,41 @@ void View::ZoomToRange( int64_t start, int64_t end )
     const auto d1 = double( m_zoomAnim.end1 - m_zoomAnim.start1 );
     const auto diff = d0>d1 ? d0/d1 : d1/d0;
     m_zoomAnim.lenMod = 10.0 / log10( diff );
+}
+
+void View::ZoomToPrevFrame()
+{
+    if( m_zvStart >= m_worker.GetFrameBegin( 0 ) )
+    {
+        auto frame = m_worker.GetFrameRange( m_zvStart, m_zvStart ).first;
+        if( frame > 0 )
+        {
+            frame--;
+            const auto fbegin = m_worker.GetFrameBegin( frame );
+            const auto fend = m_worker.GetFrameEnd( frame );
+            ZoomToRange( fbegin, fend );
+        }
+    }
+}
+
+void View::ZoomToNextFrame()
+{
+    int frame;
+    if( m_zvStart < m_worker.GetFrameBegin( 0 ) )
+    {
+        frame = -1;
+    }
+    else
+    {
+        frame = m_worker.GetFrameRange( m_zvStart, m_zvStart ).first;
+        if( frame == -1 ) return;
+    }
+    frame++;
+    if( frame >= m_worker.GetFrameCount() ) return;
+
+    const auto fbegin = m_worker.GetFrameBegin( frame );
+    const auto fend = m_worker.GetFrameEnd( frame );
+    ZoomToRange( fbegin, fend );
 }
 
 void View::ShowZoneInfo( const ZoneEvent& ev )

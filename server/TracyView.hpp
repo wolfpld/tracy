@@ -102,6 +102,8 @@ private:
     void ZoomToZone( const ZoneEvent& ev );
     void ZoomToZone( const GpuEvent& ev );
     void ZoomToRange( int64_t start, int64_t end );
+    void ZoomToPrevFrame();
+    void ZoomToNextFrame();
 
     void ShowZoneInfo( const ZoneEvent& ev );
     void ShowZoneInfo( const GpuEvent& ev, uint64_t thread );

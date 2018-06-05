@@ -1499,7 +1499,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     m_data.lastTime = std::max( m_data.lastTime, zone->end );
 
 #ifndef TRACY_NO_STATISTICS
-    const auto timeSpan = zone->end - zone->start;
+    auto timeSpan = zone->end - zone->start;
     if( timeSpan > 0 )
     {
         auto it = m_data.sourceLocationZones.find( zone->srcloc );
@@ -1507,6 +1507,12 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         it->second.min = std::min( it->second.min, timeSpan );
         it->second.max = std::max( it->second.max, timeSpan );
         it->second.total += timeSpan;
+        for( auto& v : zone->child )
+        {
+            const auto childSpan = std::max( 0ll, v->end - v->start );
+            timeSpan -= childSpan;
+        }
+        it->second.selfTotal += timeSpan;
     }
 #endif
 }
@@ -2089,12 +2095,18 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
 
         if( zone->end >= 0 )
         {
-            const auto timeSpan = zone->end - zone->start;
+            auto timeSpan = zone->end - zone->start;
             if( timeSpan > 0 )
             {
                 it->second.min = std::min( it->second.min, timeSpan );
                 it->second.max = std::max( it->second.max, timeSpan );
                 it->second.total += timeSpan;
+                for( auto& v : zone->child )
+                {
+                    const auto childSpan = std::max( 0ll, v->end - v->start );
+                    timeSpan -= childSpan;
+                }
+                it->second.selfTotal += timeSpan;
             }
         }
 #endif

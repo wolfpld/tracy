@@ -60,12 +60,14 @@ class Worker
             : min( std::numeric_limits<int64_t>::max() )
             , max( std::numeric_limits<int64_t>::min() )
             , total( 0 )
+            , selfTotal( 0 )
         {}
 
         Vector<ZoneThreadData> zones;
         int64_t min;
         int64_t max;
         int64_t total;
+        int64_t selfTotal;
     };
 
     struct DataBlock

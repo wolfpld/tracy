@@ -183,6 +183,7 @@ View::View( const char* addr )
     , m_drawPlots( true )
     , m_onlyContendedLocks( false )
     , m_statSort( 0 )
+    , m_statSelf( false )
     , m_namespace( Namespace::Full )
 {
     assert( s_instance == nullptr );
@@ -216,6 +217,7 @@ View::View( FileRead& f )
     , m_drawPlots( true )
     , m_onlyContendedLocks( false )
     , m_statSort( 0 )
+    , m_statSelf( false )
     , m_namespace( Namespace::Full )
 {
     assert( s_instance == nullptr );
@@ -4609,6 +4611,8 @@ void View::DrawStatistics()
         return;
     }
 
+    ImGui::Checkbox( "Show self times", &m_statSelf );
+
     auto& slz = m_worker.GetSourceLocationZones();
     Vector<decltype(slz.begin())> srcloc;
     srcloc.reserve( slz.size() );
@@ -4619,16 +4623,31 @@ void View::DrawStatistics()
             srcloc.push_back_no_space_check( it );
         }
     }
+
     switch( m_statSort )
     {
     case 0:
-        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total > rhs->second.total; } );
+        if( m_statSelf )
+        {
+            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.selfTotal > rhs->second.selfTotal; } );
+        }
+        else
+        {
+            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total > rhs->second.total; } );
+        }
         break;
     case 1:
         pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.zones.size() > rhs->second.zones.size(); } );
         break;
     case 2:
-        pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total / lhs->second.zones.size() > rhs->second.total / rhs->second.zones.size(); } );
+        if( m_statSelf )
+        {
+            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.selfTotal / lhs->second.zones.size() > rhs->second.selfTotal / rhs->second.zones.size(); } );
+        }
+        else
+        {
+            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total / lhs->second.zones.size() > rhs->second.total / rhs->second.zones.size(); } );
+        }
         break;
     default:
         assert( false );
@@ -4672,11 +4691,11 @@ void View::DrawStatistics()
         ImGui::NextColumn();
         ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
         ImGui::NextColumn();
-        ImGui::Text( "%s", TimeToString( v->second.total ) );
+        ImGui::Text( "%s", TimeToString( m_statSelf ? v->second.selfTotal : v->second.total ) );
         ImGui::NextColumn();
         ImGui::Text( "%s", RealToString( v->second.zones.size(), true ) );
         ImGui::NextColumn();
-        ImGui::Text( "%s", TimeToString( v->second.total / v->second.zones.size() ) );
+        ImGui::Text( "%s", TimeToString( ( m_statSelf ? v->second.selfTotal : v->second.total ) / v->second.zones.size() ) );
         ImGui::NextColumn();
 
         ImGui::PopID();

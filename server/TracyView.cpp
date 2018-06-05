@@ -153,10 +153,23 @@ static const char* RealToString( double val, bool separator )
     return buf;
 }
 
+tracy_force_inline float frexpf_fast( float f, int& power )
+{
+    float ret;
+    int32_t fl;
+    memcpy( &fl, &f, 4 );
+    power = ( fl >> 23 ) & 0x000000ff;
+    power -= 0x7e;
+    fl &= 0x807fffff;
+    fl |= 0x3f000000;
+    memcpy( &ret, &fl, 4 );
+    return ret;
+}
+
 tracy_force_inline float log2fast( float x )
 {
     int e;
-    auto f = frexpf( fabsf( x ), &e );
+    auto f = frexpf_fast( fabsf( x ), e );
     auto t0 = 1.23149591368684f * f - 4.11852516267426f;
     auto t1 = t0 * f + 6.02197014179219f;
     auto t2 = t1 * f - 3.13396450166353f;

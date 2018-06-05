@@ -68,6 +68,7 @@ v0.3.1 (xxxx-xx-xx)
   - Messages are now displayed in columns.
   - Originating thread of each message is now included in the list.
 - You can now navigate to next and previous frame.
+- Zone statistics can be now displayed using only self times.
 
 
 v0.2 (2018-04-05)

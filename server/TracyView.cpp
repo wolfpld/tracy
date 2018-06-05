@@ -3445,14 +3445,14 @@ void View::DrawFindZone()
                             {
                                 if( m_findZone.logTime )
                                 {
-                                    const auto tMinLog = log10( tmin );
-                                    const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                                    const auto tMinLog = log10fast( tmin );
+                                    const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
                                     for( auto& ev : zones )
                                     {
                                         const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                         if( timeSpan != 0 )
                                         {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                            const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
                                             if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
@@ -3489,14 +3489,14 @@ void View::DrawFindZone()
                             {
                                 if( m_findZone.logTime )
                                 {
-                                    const auto tMinLog = log10( tmin );
-                                    const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                                    const auto tMinLog = log10fast( tmin );
+                                    const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
                                     for( auto& ev : zones )
                                     {
                                         const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                         if( timeSpan != 0 )
                                         {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                            const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
                                             if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
@@ -3526,14 +3526,14 @@ void View::DrawFindZone()
                             {
                                 if( m_findZone.logTime )
                                 {
-                                    const auto tMinLog = log10( tmin );
-                                    const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                                    const auto tMinLog = log10fast( tmin );
+                                    const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
                                     for( auto& ev : zones )
                                     {
                                         const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                         if( timeSpan != 0 )
                                         {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                            const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
                                             if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
@@ -3568,14 +3568,14 @@ void View::DrawFindZone()
                             {
                                 if( m_findZone.logTime )
                                 {
-                                    const auto tMinLog = log10( tmin );
-                                    const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                                    const auto tMinLog = log10fast( tmin );
+                                    const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
                                     for( auto& ev : zones )
                                     {
                                         const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                         if( timeSpan != 0 )
                                         {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                            const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
                                         }
@@ -3672,16 +3672,16 @@ void View::DrawFindZone()
 
                         if( m_findZone.logVal )
                         {
-                            const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
+                            const auto hAdj = double( Height - 4 ) / log10fast( maxVal + 1 );
                             for( int i=0; i<numBins; i++ )
                             {
                                 const auto val = cumulateTime ? binTime[i] : bins[i];
                                 if( val > 0 )
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFF22DDDD );
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), 0xFF22DDDD );
                                     if( selBin[i] > 0 )
                                     {
-                                        draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( selBin[i] + 1 ) * hAdj ), 0xFFDD7777 );
+                                        draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10fast( selBin[i] + 1 ) * hAdj ), 0xFFDD7777 );
                                     }
                                 }
                             }
@@ -3708,8 +3708,8 @@ void View::DrawFindZone()
 
                         if( m_findZone.logTime )
                         {
-                            const auto ltmin = log10( tmin );
-                            const auto ltmax = log10( tmax );
+                            const auto ltmin = log10fast( tmin );
+                            const auto ltmax = log10fast( tmax );
                             const auto start = int( floor( ltmin ) );
                             const auto end = int( ceil( ltmax ) );
 
@@ -3755,7 +3755,7 @@ void View::DrawFindZone()
                         {
                             const auto pxns = numBins / dt;
                             const auto nspx = 1.0 / pxns;
-                            const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
+                            const auto scale = std::max( 0.0f, round( log10fast( nspx ) + 2 ) );
                             const auto step = pow( 10, scale );
 
                             const auto dx = step * pxns;
@@ -3792,8 +3792,8 @@ void View::DrawFindZone()
 
                         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
                         {
-                            const auto ltmin = log10( tmin );
-                            const auto ltmax = log10( tmax );
+                            const auto ltmin = log10fast( tmin );
+                            const auto ltmax = log10fast( tmax );
 
                             auto& io = ImGui::GetIO();
                             draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
@@ -3857,11 +3857,11 @@ void View::DrawFindZone()
                             float t0, t1;
                             if( m_findZone.logTime )
                             {
-                                const auto ltmin = log10( tmin );
-                                const auto ltmax = log10( tmax );
+                                const auto ltmin = log10fast( tmin );
+                                const auto ltmax = log10fast( tmax );
 
-                                t0 = ( log10( s ) - ltmin ) / float( ltmax - ltmin ) * numBins;
-                                t1 = ( log10( e ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                                t0 = ( log10fast( s ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                                t1 = ( log10fast( e ) - ltmin ) / float( ltmax - ltmin ) * numBins;
                             }
                             else
                             {
@@ -4275,14 +4275,14 @@ void View::DrawCompare()
 
                         if( m_compare.logTime )
                         {
-                            const auto tMinLog = log10( tmin );
-                            const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                            const auto tMinLog = log10fast( tmin );
+                            const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
                             for( auto& ev : zones0 )
                             {
                                 const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                 if( timeSpan != 0 )
                                 {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                     bins[bin].v0 += adj0;
                                     binTime[bin].v0 += timeSpan * adj0;
                                 }
@@ -4292,7 +4292,7 @@ void View::DrawCompare()
                                 const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                 if( timeSpan != 0 )
                                 {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                     bins[bin].v1 += adj1;
                                     binTime[bin].v1 += timeSpan * adj1;
                                 }
@@ -4327,14 +4327,14 @@ void View::DrawCompare()
                     {
                         if( m_compare.logTime )
                         {
-                            const auto tMinLog = log10( tmin );
-                            const auto idt = numBins / ( log10( tmax ) - tMinLog );
+                            const auto tMinLog = log10fast( tmin );
+                            const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
                             for( auto& ev : zones0 )
                             {
                                 const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                 if( timeSpan != 0 )
                                 {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                     bins[bin].v0++;
                                     binTime[bin].v0 += timeSpan;
                                 }
@@ -4344,7 +4344,7 @@ void View::DrawCompare()
                                 const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
                                 if( timeSpan != 0 )
                                 {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                     bins[bin].v1++;
                                     binTime[bin].v1 += timeSpan;
                                 }
@@ -4434,7 +4434,7 @@ void View::DrawCompare()
 
                     if( m_compare.logVal )
                     {
-                        const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
+                        const auto hAdj = double( Height - 4 ) / log10fast( maxVal + 1 );
                         for( int i=0; i<numBins; i++ )
                         {
                             const auto val0 = cumulateTime ? binTime[i].v0 : bins[i].v0;
@@ -4444,15 +4444,15 @@ void View::DrawCompare()
                                 const auto val = std::min( val0, val1 );
                                 if( val > 0 )
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFFBBBB44 );
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), 0xFFBBBB44 );
                                 }
                                 if( val1 == val )
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), wpos + ImVec2( 2+i, Height-3 - log10( val0 + 1 ) * hAdj ), 0xFF22DDDD );
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), wpos + ImVec2( 2+i, Height-3 - log10fast( val0 + 1 ) * hAdj ), 0xFF22DDDD );
                                 }
                                 else
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), wpos + ImVec2( 2+i, Height-3 - log10( val1 + 1 ) * hAdj ), 0xFF2222DD );
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), wpos + ImVec2( 2+i, Height-3 - log10fast( val1 + 1 ) * hAdj ), 0xFF2222DD );
                                 }
                             }
                         }
@@ -4488,8 +4488,8 @@ void View::DrawCompare()
 
                     if( m_compare.logTime )
                     {
-                        const auto ltmin = log10( tmin );
-                        const auto ltmax = log10( tmax );
+                        const auto ltmin = log10fast( tmin );
+                        const auto ltmax = log10fast( tmax );
                         const auto start = int( floor( ltmin ) );
                         const auto end = int( ceil( ltmax ) );
 
@@ -4535,7 +4535,7 @@ void View::DrawCompare()
                     {
                         const auto pxns = numBins / dt;
                         const auto nspx = 1.0 / pxns;
-                        const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
+                        const auto scale = std::max( 0.0f, round( log10fast( nspx ) + 2 ) );
                         const auto step = pow( 10, scale );
 
                         const auto dx = step * pxns;
@@ -4572,8 +4572,8 @@ void View::DrawCompare()
 
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
                     {
-                        const auto ltmin = log10( tmin );
-                        const auto ltmax = log10( tmax );
+                        const auto ltmin = log10fast( tmin );
+                        const auto ltmax = log10fast( tmax );
 
                         auto& io = ImGui::GetIO();
                         draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );

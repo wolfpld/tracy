@@ -182,6 +182,7 @@ View::View( const char* addr )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_onlyContendedLocks( false )
+    , m_statSort( 0 )
     , m_namespace( Namespace::Full )
 {
     assert( s_instance == nullptr );

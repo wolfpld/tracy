@@ -163,11 +163,9 @@ tracy_force_inline float log2fast( float x )
     return t2 + e;
 }
 
-static const float i10 = 1.f / log2f( 10 );
-
 tracy_force_inline float log10fast( float x )
 {
-    return log2fast( x ) * i10;
+    return log2fast( x ) * 0.301029995663981195213738894724493026768189881462108541310f;    // 1/log2(10)
 }
 
 enum { MinVisSize = 3 };

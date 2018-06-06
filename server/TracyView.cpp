@@ -4265,18 +4265,17 @@ void View::DrawCompare()
                     memset( bins.get(), 0, sizeof( CompVal ) * numBins );
                     memset( binTime.get(), 0, sizeof( CompVal ) * numBins );
 
+                    double adj0 = 1;
+                    double adj1 = 1;
                     if( m_compare.normalize )
                     {
-                        double adj0, adj1;
                         if( zones0.size() > zones1.size() )
                         {
-                            adj0 = 1;
                             adj1 = double( zones0.size() ) / zones1.size();
                         }
                         else
                         {
                             adj0 = double( zones1.size() ) / zones0.size();
-                            adj1 = 1;
                         }
 
                         if( m_compare.logTime )
@@ -4382,8 +4381,6 @@ void View::DrawCompare()
                         }
                     }
 
-                    double timeTotal0 = binTime[0].v0;
-                    double timeTotal1 = binTime[0].v1;
                     double maxVal;
                     if( cumulateTime )
                     {
@@ -4391,8 +4388,6 @@ void View::DrawCompare()
                         for( int i=1; i<numBins; i++ )
                         {
                             maxVal = std::max( { maxVal, binTime[i].v0, binTime[i].v1 } );
-                            timeTotal0 += binTime[i].v0;
-                            timeTotal1 += binTime[i].v1;
                         }
                     }
                     else
@@ -4401,13 +4396,11 @@ void View::DrawCompare()
                         for( int i=1; i<numBins; i++ )
                         {
                             maxVal = std::max( { maxVal, bins[i].v0, bins[i].v1 } );
-                            timeTotal0 += binTime[i].v0;
-                            timeTotal1 += binTime[i].v1;
                         }
                     }
 
-                    ImGui::Text( "Total time (this): %s", TimeToString( timeTotal0 ) );
-                    ImGui::Text( "Total time (external): %s", TimeToString( timeTotal1 ) );
+                    ImGui::Text( "Total time (this): %s", TimeToString( zoneData0.total * adj0 ) );
+                    ImGui::Text( "Total time (external): %s", TimeToString( zoneData1.total * adj1 ) );
                     ImGui::Text( "Max counts: %s", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
 
                     ImGui::ColorButton( "c1", ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );

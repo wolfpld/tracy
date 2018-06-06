@@ -3391,8 +3391,8 @@ void View::DrawFindZone()
 
             auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
             auto& zones = zoneData.zones;
-            auto tmin = zoneData.min;
-            auto tmax = zoneData.max;
+            const auto tmin = zoneData.min;
+            const auto tmax = zoneData.max;
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {

@@ -3393,6 +3393,7 @@ void View::DrawFindZone()
             auto& zones = zoneData.zones;
             const auto tmin = zoneData.min;
             const auto tmax = zoneData.max;
+            const auto timeTotal = zoneData.total;
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
@@ -3598,7 +3599,6 @@ void View::DrawFindZone()
                             }
                         }
 
-                        int64_t timeTotal = binTime[0];
                         int64_t maxVal;
                         if( cumulateTime )
                         {
@@ -3606,7 +3606,6 @@ void View::DrawFindZone()
                             for( int i=1; i<numBins; i++ )
                             {
                                 maxVal = std::max( maxVal, binTime[i] );
-                                timeTotal += binTime[i];
                             }
                         }
                         else
@@ -3615,7 +3614,6 @@ void View::DrawFindZone()
                             for( int i=1; i<numBins; i++ )
                             {
                                 maxVal = std::max( maxVal, bins[i] );
-                                timeTotal += binTime[i];
                             }
                         }
 

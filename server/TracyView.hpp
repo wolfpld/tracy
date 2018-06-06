@@ -238,6 +238,12 @@ private:
         }
     } m_findZone;
 
+    struct CompVal
+    {
+        double v0;
+        double v1;
+    };
+
     struct {
         bool show = false;
         std::unique_ptr<Worker> second;
@@ -249,6 +255,8 @@ private:
         bool logTime = true;
         bool cumulateTime = false;
         bool normalize = false;
+        int64_t numBins = -1;
+        std::unique_ptr<CompVal[]> bins, binTime;
 
         void Reset()
         {

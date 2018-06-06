@@ -4059,12 +4059,6 @@ void View::DrawFindZone()
     ImGui::End();
 }
 
-struct CompVal
-{
-    double v0;
-    double v1;
-};
-
 void View::DrawCompare()
 {
     ImGui::Begin( "Compare traces", &m_compare.show );
@@ -4258,10 +4252,17 @@ void View::DrawCompare()
                 const auto numBins = int64_t( w - 4 );
                 if( numBins > 1 )
                 {
-                    auto bins = std::make_unique<CompVal[]>( numBins );
-                    memset( bins.get(), 0, sizeof( CompVal ) * numBins );
+                    if( numBins != m_compare.numBins )
+                    {
+                        m_compare.numBins = numBins;
+                        m_compare.bins = std::make_unique<CompVal[]>( numBins );
+                        m_compare.binTime = std::make_unique<CompVal[]>( numBins );
+                    }
 
-                    auto binTime = std::make_unique<CompVal[]>( numBins );
+                    const auto& bins = m_compare.bins;
+                    const auto& binTime = m_compare.binTime;
+
+                    memset( bins.get(), 0, sizeof( CompVal ) * numBins );
                     memset( binTime.get(), 0, sizeof( CompVal ) * numBins );
 
                     if( m_compare.normalize )

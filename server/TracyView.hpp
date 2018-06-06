@@ -211,6 +211,8 @@ private:
         bool showThreads = true;
         bool sortByCounts = false;
         Region highlight;
+        int64_t numBins = -1;
+        std::unique_ptr<int64_t[]> bins, binTime, selBin;
 
         void Reset()
         {

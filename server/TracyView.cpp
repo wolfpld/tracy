@@ -3808,7 +3808,17 @@ void View::DrawFindZone()
                             if( m_findZone.logTime )
                             {
                                 t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
-                                t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
+
+                                // Hackfix for inability to select data in last bin.
+                                // A proper solution would be nice.
+                                if( bin+1 == numBins )
+                                {
+                                    t1 = tmax;
+                                }
+                                else
+                                {
+                                    t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
+                                }
                             }
                             else
                             {

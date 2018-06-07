@@ -1509,7 +1509,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         it->second.total += timeSpan;
         for( auto& v : zone->child )
         {
-            const auto childSpan = std::max( 0ll, v->end - v->start );
+            const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
             timeSpan -= childSpan;
         }
         it->second.selfTotal += timeSpan;
@@ -2103,7 +2103,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
                 it->second.total += timeSpan;
                 for( auto& v : zone->child )
                 {
-                    const auto childSpan = std::max( 0ll, v->end - v->start );
+                    const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
                     timeSpan -= childSpan;
                 }
                 it->second.selfTotal += timeSpan;

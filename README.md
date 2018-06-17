@@ -1,6 +1,6 @@
 # Tracy Profiler
 
-Tracy is a real time, nanosecond resolution frame profiler that can be used for remote or embedded telemetry of your application. It can profile both CPU (C++, Lua) and GPU (OpenGL). It also can display locks held by threads and their interactions with each other.
+Tracy is a real time, nanosecond resolution frame profiler that can be used for remote or embedded telemetry of your application. It can profile both CPU (C++, Lua) and GPU (OpenGL, Vulkan). It also can display locks held by threads and their interactions with each other.
 
 ![](doc/profiler.png)
 
@@ -103,13 +103,27 @@ Even if tracy is disabled, you still have to pay the no-op function call cost. T
 
 #### GPU profiling
 
-Tracy provides bindings for profiling OpenGL execution time on GPU. To use it, you will need to include the `tracy/TracyOpenGL.hpp` header file and declare each of your rendering contexts using the `TracyGpuContext` macro (typically you will only have one context). Tracy expects no more than one context per thread and no context migration.
+Tracy provides bindings for profiling OpenGL and Vulkan execution time on GPU.
+
+##### OpenGL
+
+You will need to include the `tracy/TracyOpenGL.hpp` header file and declare each of your rendering contexts using the `TracyGpuContext` macro (typically you will only have one context). Tracy expects no more than one context per thread and no context migration.
 
 To mark a GPU zone use the `TracyGpuZone( name )` macro, where `name` is a string literal name of the zone. Alternatively you may use `TracyGpuZoneC( name, color )` to specify zone color.
 
 You also need to periodically collect the GPU events using the `TracyGpuCollect` macro. A good place to do it is after swap buffers function call.
 
 GPU profiling is not supported on OSX, iOS (because Apple is unable to implement standards properly). Android devices do work, if GPU drivers are not broken. Disjoint events are not currently handled, so some readings may be a bit spotty. NVIDIA drivers are unable to provide consistent timing results when two OpenGL contexts are used simultaneously.
+
+##### Vulkan
+
+Include the `tracy/TracyVulkan.hpp` header file and initialize the Vulkan instance using the `TracyVkContext( physdev, device, queue, cmdbuf )` macro. Cleanup is performed using the `TracyVkDestroy()` macro. Currently you can't track more than one instance.
+
+The physical device, logical device, queue and command buffer must relate with each other. The queue must support graphics or compute operations. The command buffer must be in the initial state and be able to be reset. It will be rerecorded and submitted to the queue multiple times and it will be in the executable state on exit from the initialization function.
+
+To mark a GPU zone use the `TracyVkZone( cmdbuf, name )` macro, where `name` is a string literal name of the zone. Alternatively you may use `TracyVkZoneC( cmdbuf, name, color )` to specify zone color. The provided command buffer must be in the recording state.
+
+You also need to periodically collect the GPU events using the `TracyVkCollect( cmdbuf )` macro. The provided command buffer must be in the recording state and outside of a render pass instance.
 
 ## Good practices
 

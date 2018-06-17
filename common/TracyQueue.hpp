@@ -168,6 +168,7 @@ struct QueueGpuZoneBegin
 {
     int64_t cpuTime;
     uint64_t srcloc;
+    uint64_t thread;
     uint16_t context;
 };
 

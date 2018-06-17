@@ -174,6 +174,7 @@ public:
         MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
+        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
     }

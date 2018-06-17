@@ -13,6 +13,7 @@
 #else
 
 #include <atomic>
+#include <stdlib.h>
 
 #include "Tracy.hpp"
 #include "client/TracyProfiler.hpp"
@@ -158,6 +159,7 @@ public:
         MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
+        memset( &item->gpuZoneBegin.thread, 0, sizeof( item->gpuZoneBegin.thread ) );
         MemWrite( &item->gpuZoneBegin.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
     }

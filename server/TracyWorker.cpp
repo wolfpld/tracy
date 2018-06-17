@@ -499,12 +499,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         if( fileVer <= FileVersion( 0, 3, 1 ) )
         {
             ctx->period = 1.f;
+            ReadTimelinePre032( f, ctx->timeline );
         }
         else
         {
             f.Read( ctx->period );
+            ReadTimeline( f, ctx->timeline );
         }
-        ReadTimeline( f, ctx->timeline );
         m_data.gpuData.push_back_no_space_check( ctx );
     }
 
@@ -1803,6 +1804,7 @@ void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
     zone->gpuStart = std::numeric_limits<int64_t>::max();
     zone->gpuEnd = -1;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
+    zone->thread = CompressThread( ev.thread );
 
     m_data.lastTime = std::max( m_data.lastTime, zone->cpuStart );
 
@@ -2113,6 +2115,16 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
     }
 }
 
+void Worker::ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec )
+{
+    uint64_t sz;
+    f.Read( sz );
+    if( sz != 0 )
+    {
+        ReadTimelinePre032( f, vec, sz );
+    }
+}
+
 void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size )
 {
     assert( size != 0 );
@@ -2167,6 +2179,22 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size )
 
         f.Read( zone, sizeof( GpuEvent ) - sizeof( GpuEvent::child ) );
         ReadTimeline( f, zone->child );
+    }
+}
+
+void Worker::ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size )
+{
+    assert( size != 0 );
+    vec.reserve_non_zero( size );
+
+    for( uint64_t i=0; i<size; i++ )
+    {
+        auto zone = m_slab.AllocInit<GpuEvent>();
+        vec.push_back_no_space_check( zone );
+
+        f.Read( zone, 36 );
+        zone->thread = 0;
+        ReadTimelinePre032( f, zone->child );
     }
 }
 

@@ -251,9 +251,11 @@ private:
 
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread );
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
+    tracy_force_inline void ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec );
 
     void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size );
     void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
+    void ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
 
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
     void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec );

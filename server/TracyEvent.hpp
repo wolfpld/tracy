@@ -131,6 +131,7 @@ struct GpuEvent
     int64_t gpuStart;
     int64_t gpuEnd;
     int32_t srcloc;
+    uint16_t thread;
 
     // This must be last. All above is read/saved as-is.
     Vector<GpuEvent*> child;

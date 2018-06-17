@@ -55,6 +55,12 @@ struct GpuCtxWrapper
     GpuCtx* ptr;
 };
 
+class VkCtx;
+struct VkCtxWrapper
+{
+    VkCtx* ptr;
+};
+
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
 #if __ARM_ARCH >= 6

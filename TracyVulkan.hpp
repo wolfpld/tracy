@@ -107,16 +107,38 @@ public:
 
         if( m_tail == m_head ) return;
 
+        auto cnt = m_head < m_tail ? QueryCount - m_tail : m_head - m_tail;
         int64_t res[QueryCount];
-        const auto cnt = m_head < m_tail ? QueryCount - m_tail : m_head - m_tail;
-        vkGetQueryPoolResults( m_device, m_query, m_tail, cnt, sizeof( res ), res, sizeof( *res ), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT );
+
+        // This memset is required, because Nvidia drivers seem to break Vulkan spec: "If VK_QUERY_RESULT_WITH_AVAILABILITY_BIT
+        // is set, the final integer value written for each query is non-zero if the query's status was available or zero if the
+        // status was unavailable."
+        // Nvidia drivers in some cases do not write the non-zero value, even if the following zero values are written.
+        memset( res, 0xFF, sizeof( *res ) * cnt );
+
+        if( vkGetQueryPoolResults( m_device, m_query, m_tail, cnt, sizeof( res ), res, sizeof( *res ), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT ) == VK_NOT_READY )
+        {
+            unsigned int idx;
+            for( idx=0; idx<cnt; idx++ )
+            {
+                if( res[idx] == 0 ) break;
+            }
+            if( idx == 0 ) return;
+            cnt = idx;
+
+            // The spec states that the query values MUST be available: "When VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is used,
+            // implementations must guarantee that if they return a non-zero availability value then the numerical results must
+            // be valid".
+            // In some cases Nvidia drivers can still return VK_NOT_READY here, so we have to use VK_QUERY_RESULT_WAIT_BIT.
+            auto status = vkGetQueryPoolResults( m_device, m_query, m_tail, cnt, sizeof( res ), res, sizeof( *res ), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT );
+            assert( status == VK_SUCCESS );
+        }
 
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
 
-        unsigned int idx;
-        for( idx=0; idx<cnt; idx++ )
+        for( unsigned int idx=0; idx<cnt; idx++ )
         {
             if( res[idx] == 0 ) break;
 
@@ -127,9 +149,9 @@ public:
             tail.store( magic + 1, std::memory_order_release );
         }
 
-        vkCmdResetQueryPool( cmdbuf, m_query, m_tail, idx );
+        vkCmdResetQueryPool( cmdbuf, m_query, m_tail, cnt );
 
-        m_tail += idx;
+        m_tail += cnt;
         if( m_tail == QueryCount ) m_tail = 0;
     }
 

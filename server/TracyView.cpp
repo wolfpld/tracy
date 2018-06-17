@@ -971,8 +971,16 @@ void View::DrawZones()
                 {
                     draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF886666 );
                 }
+                const bool isVulkan = v->thread == 0;
                 char buf[64];
-                sprintf( buf, "GPU context %zu", i );
+                if( isVulkan )
+                {
+                    sprintf( buf, "Vulkan context %zu", i );
+                }
+                else
+                {
+                    sprintf( buf, "OpenGL context %zu", i );
+                }
                 draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
 
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
@@ -985,7 +993,10 @@ void View::DrawZones()
                     ImGui::BeginTooltip();
                     ImGui::Text( "%s", buf );
                     ImGui::Separator();
-                    ImGui::Text( "Thread: %s", m_worker.GetThreadString( v->thread ) );
+                    if( !isVulkan )
+                    {
+                        ImGui::Text( "Thread: %s", m_worker.GetThreadString( v->thread ) );
+                    }
                     if( !v->timeline.empty() )
                     {
                         const auto t = v->timeline.front()->gpuStart;
@@ -996,7 +1007,14 @@ void View::DrawZones()
                     }
                     ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
                     ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
-                    ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
+                    if( isVulkan )
+                    {
+                        ImGui::Text( "Timestamp accuracy: %s", TimeToString( v->period ) );
+                    }
+                    else
+                    {
+                        ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
+                    }
                     ImGui::EndTooltip();
                 }
             }

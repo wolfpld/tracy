@@ -3204,20 +3204,28 @@ void View::DrawOptions()
     const auto tw = ImGui::GetFontSize();
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
 
-    auto sz = m_worker.GetGpuData().size();
-    if( sz > 0 )
+    const auto& gpuData = m_worker.GetGpuData();
+    if( !gpuData.empty() )
     {
         ImGui::Checkbox( "Draw GPU zones", &m_drawGpuZones );
         const auto expand = ImGui::TreeNode( "GPU zones" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%zu)", sz );
+        ImGui::TextDisabled( "(%zu)", gpuData.size() );
         if( expand )
         {
-            for( size_t i=0; i<sz; i++ )
+            for( size_t i=0; i<gpuData.size(); i++ )
             {
+                const bool isVulkan = gpuData[i]->thread == 0;
                 char buf[1024];
-                sprintf( buf, "GPU context %zu", i );
-                ImGui::Checkbox( buf, &Visible( m_worker.GetGpuData()[i] ) );
+                if( isVulkan )
+                {
+                    sprintf( buf, "Vulkan context %zu", i );
+                }
+                else
+                {
+                    sprintf( buf, "OpenGL context %zu", i );
+                }
+                ImGui::Checkbox( buf, &Visible( gpuData[i] ) );
             }
             ImGui::TreePop();
         }

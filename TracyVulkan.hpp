@@ -81,6 +81,7 @@ public:
         vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
         vkQueueWaitIdle( queue );
 
+        uint64_t zero = 0;
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -88,7 +89,7 @@ public:
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
-        MemWrite( &item->gpuNewContext.thread, GetThreadHandle() );
+        MemWrite( &item->gpuNewContext.thread, zero );
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, uint8_t( 0 ) );

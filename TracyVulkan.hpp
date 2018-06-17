@@ -42,7 +42,7 @@ public:
     {
         VkPhysicalDeviceProperties prop;
         vkGetPhysicalDeviceProperties( physdev, &prop );
-        m_period = prop.limits.timestampPeriod;
+        const float period = prop.limits.timestampPeriod;
 
         VkQueryPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
@@ -89,6 +89,7 @@ public:
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
         MemWrite( &item->gpuNewContext.thread, GetThreadHandle() );
+        MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, uint8_t( 0 ) );
         tail.store( magic + 1, std::memory_order_release );
@@ -149,7 +150,6 @@ private:
     VkQueue m_queue;
     VkQueryPool m_query;
     uint16_t m_context;
-    float m_period;
 
     unsigned int m_head;
     unsigned int m_tail;

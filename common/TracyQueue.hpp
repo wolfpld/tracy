@@ -159,6 +159,7 @@ struct QueueGpuNewContext
     int64_t cpuTime;
     int64_t gpuTime;
     uint64_t thread;
+    float period;
     uint16_t context;
     uint8_t accuracyBits;
 };

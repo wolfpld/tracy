@@ -50,6 +50,7 @@ public:
         GLint bits;
         glGetQueryiv( GL_TIMESTAMP, GL_QUERY_COUNTER_BITS, &bits );
 
+        const float period = 1.f;
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -58,6 +59,7 @@ public:
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
         MemWrite( &item->gpuNewContext.thread, GetThreadHandle() );
+        MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, (uint8_t)bits );
         tail.store( magic + 1, std::memory_order_release );

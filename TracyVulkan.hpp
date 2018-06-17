@@ -25,7 +25,7 @@
 namespace tracy
 {
 
-extern std::atomic<uint16_t> s_vkCtxCounter;
+extern std::atomic<uint16_t> s_gpuCtxCounter;
 
 class VkCtx
 {
@@ -37,7 +37,7 @@ public:
     VkCtx( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf )
         : m_device( device )
         , m_queue( queue )
-        , m_context( s_vkCtxCounter.fetch_add( 1, std::memory_order_relaxed ) )
+        , m_context( s_gpuCtxCounter.fetch_add( 1, std::memory_order_relaxed ) )
         , m_head( 0 )
         , m_tail( 0 )
         , m_oldCnt( 0 )

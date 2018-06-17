@@ -190,6 +190,7 @@ struct GpuCtxData
     Vector<GpuEvent*> queue;
     Vector<GpuCtxResync> resync;
     uint8_t accuracyBits;
+    float period;
 };
 
 struct LockMap

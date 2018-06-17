@@ -30,7 +30,7 @@ static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
     return ( h5 << 16 ) | ( h6 << 8 ) | h7;
 }
 
-static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 1 };
+static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 2 };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( FileHeader[FileHeaderMagic], FileHeader[FileHeaderMagic+1], FileHeader[FileHeaderMagic+2] );
 
@@ -493,6 +493,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( ctx->thread );
         f.Read( ctx->accuracyBits );
         f.Read( ctx->count );
+        if( fileVer <= FileVersion( 0, 3, 1 ) )
+        {
+            ctx->period = 1.f;
+        }
+        else
+        {
+            f.Read( ctx->period );
+        }
         ReadTimeline( f, ctx->timeline );
         m_data.gpuData.push_back_no_space_check( ctx );
     }
@@ -1761,6 +1769,7 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     gpu->timeDiff = TscTime( ev.cpuTime ) - ev.gpuTime;
     gpu->thread = ev.thread;
     gpu->accuracyBits = ev.accuracyBits;
+    gpu->period = ev.period;
     gpu->count = 0;
     m_data.gpuData.push_back( gpu );
     m_gpuCtxMap.emplace( ev.context, gpu );
@@ -2250,6 +2259,7 @@ void Worker::Write( FileWrite& f )
         f.Write( &ctx->thread, sizeof( ctx->thread ) );
         f.Write( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
         f.Write( &ctx->count, sizeof( ctx->count ) );
+        f.Write( &ctx->period, sizeof( ctx->period ) );
         WriteTimeline( f, ctx->timeline );
     }
 

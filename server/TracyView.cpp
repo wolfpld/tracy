@@ -1002,7 +1002,7 @@ void View::DrawZones()
                         const auto t = v->timeline.front()->gpuStart;
                         if( t != std::numeric_limits<int64_t>::max() )
                         {
-                            ImGui::Text( "Appeared at %s", TimeToString( t - m_worker.GetFrameTime( 0 ) ) );
+                            ImGui::Text( "Appeared at %s", TimeToString( t - m_worker.GetFrameBegin( 0 ) ) );
                         }
                     }
                     ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );

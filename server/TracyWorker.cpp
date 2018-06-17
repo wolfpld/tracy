@@ -189,6 +189,7 @@ Worker::Worker( const char* addr )
     , m_pendingSourceLocation( 0 )
 {
     m_data.sourceLocationExpand.push_back( 0 );
+    m_data.threadExpand.push_back( 0 );
 
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = true;
@@ -206,6 +207,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     , m_stream( nullptr )
     , m_buffer( nullptr )
 {
+    m_data.threadExpand.push_back( 0 );
+
     int fileVer = 0;
 
     uint8_t hdr[8];

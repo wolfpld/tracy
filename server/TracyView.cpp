@@ -5592,21 +5592,28 @@ uint64_t View::GetZoneThread( const ZoneEvent& zone ) const
 
 uint64_t View::GetZoneThread( const GpuEvent& zone ) const
 {
-    for( const auto& ctx : m_worker.GetGpuData() )
+    if( zone.thread == 0 )
     {
-        const Vector<GpuEvent*>* timeline = &ctx->timeline;
-        if( timeline->empty() ) continue;
-        for(;;)
+        for( const auto& ctx : m_worker.GetGpuData() )
         {
-            auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
-            if( it != timeline->begin() ) --it;
-            if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
-            if( *it == &zone ) return ctx->thread;
-            if( (*it)->child.empty() ) break;
-            timeline = &(*it)->child;
+            const Vector<GpuEvent*>* timeline = &ctx->timeline;
+            if( timeline->empty() ) continue;
+            for(;;)
+            {
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
+                if( it != timeline->begin() ) --it;
+                if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
+                if( *it == &zone ) return ctx->thread;
+                if( (*it)->child.empty() ) break;
+                timeline = &(*it)->child;
+            }
         }
+        return 0;
     }
-    return 0;
+    else
+    {
+        return m_worker.DecompressThread( zone.thread );
+    }
 }
 
 const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const

@@ -1765,8 +1765,18 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
 {
     assert( m_gpuCtxMap.find( ev.context ) == m_gpuCtxMap.end() );
 
+    int64_t gpuTime;
+    if( ev.period == 1.f )
+    {
+        gpuTime = ev.gpuTime;
+    }
+    else
+    {
+        gpuTime = int64_t( double( ev.period ) * ev.gpuTime );      // precision loss
+    }
+
     auto gpu = m_slab.AllocInit<GpuCtxData>();
-    gpu->timeDiff = TscTime( ev.cpuTime ) - ev.gpuTime;
+    gpu->timeDiff = TscTime( ev.cpuTime ) - gpuTime;
     gpu->thread = ev.thread;
     gpu->accuracyBits = ev.accuracyBits;
     gpu->period = ev.period;
@@ -1825,16 +1835,26 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     assert( it != m_gpuCtxMap.end() );
     auto ctx = it->second;
 
+    int64_t gpuTime;
+    if( ctx->period == 1.f )
+    {
+        gpuTime = ev.gpuTime;
+    }
+    else
+    {
+        gpuTime = int64_t( double( ctx->period ) * ev.gpuTime );      // precision loss
+    }
+
     auto zone = ctx->queue.front();
     if( zone->gpuStart == std::numeric_limits<int64_t>::max() )
     {
-        zone->gpuStart = ctx->timeDiff + ev.gpuTime;
+        zone->gpuStart = ctx->timeDiff + gpuTime;
         m_data.lastTime = std::max( m_data.lastTime, zone->gpuStart );
         ctx->count++;
     }
     else
     {
-        zone->gpuEnd = ctx->timeDiff + ev.gpuTime;
+        zone->gpuEnd = ctx->timeDiff + gpuTime;
         m_data.lastTime = std::max( m_data.lastTime, zone->gpuEnd );
     }
 
@@ -1858,7 +1878,17 @@ void Worker::ProcessGpuResync( const QueueGpuResync& ev )
     assert( it != m_gpuCtxMap.end() );
     auto ctx = it->second;
 
-    const auto timeDiff = TscTime( ev.cpuTime ) - ev.gpuTime;
+    int64_t gpuTime;
+    if( ctx->period == 1.f )
+    {
+        gpuTime = ev.gpuTime;
+    }
+    else
+    {
+        gpuTime = int64_t( double( ctx->period ) * ev.gpuTime );      // precision loss
+    }
+
+    const auto timeDiff = TscTime( ev.cpuTime ) - gpuTime;
 
     if( ctx->queue.empty() )
     {

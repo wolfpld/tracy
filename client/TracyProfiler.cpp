@@ -25,6 +25,7 @@
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
 #include "tracy_rpmalloc.hpp"
+#include "TracyCallstack.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
@@ -213,6 +214,10 @@ Profiler::Profiler()
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
     SetThreadName( s_thread->Handle(), "Tracy Profiler" );
+
+#ifdef TRACY_HAS_CALLSTACK
+    InitCallstack();
+#endif
 
     m_timeBegin.store( GetTime(), std::memory_order_relaxed );
 }

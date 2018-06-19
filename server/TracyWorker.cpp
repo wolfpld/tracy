@@ -2116,8 +2116,10 @@ void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
 void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
 {
     auto fmit = m_data.callstackFrameMap.find( ev.ptr );
-    auto it = m_pendingCustomStrings.find( ev.name );
-    assert( it != m_pendingCustomStrings.end() );
+    auto nit = m_pendingCustomStrings.find( ev.name );
+    assert( nit != m_pendingCustomStrings.end() );
+    auto fit = m_pendingCustomStrings.find( ev.file );
+    assert( fit != m_pendingCustomStrings.end() );
 
     // Frames may be duplicated due to recursion
     if( fmit == m_data.callstackFrameMap.end() )
@@ -2125,14 +2127,15 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
         CheckString( ev.file );
 
         auto frame = m_slab.Alloc<CallstackFrame>();
-        frame->name = StringIdx( it->second.idx );
-        frame->file = ev.file;
+        frame->name = StringIdx( nit->second.idx );
+        frame->file = StringIdx( fit->second.idx );
         frame->line = ev.line;
 
         m_data.callstackFrameMap.emplace( ev.ptr, frame );
     }
 
-    m_pendingCustomStrings.erase( it );
+    m_pendingCustomStrings.erase( nit );
+    m_pendingCustomStrings.erase( m_pendingCustomStrings.find( ev.file ) );
 }
 
 void Worker::MemAllocChanged( int64_t time )

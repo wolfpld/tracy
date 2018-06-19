@@ -161,8 +161,8 @@ static_assert( std::is_standard_layout<MemEvent>::value, "MemEvent is not standa
 
 struct CallstackFrame
 {
-    uint64_t file;
     StringIdx name;
+    StringIdx file;
     uint32_t line;
 };
 

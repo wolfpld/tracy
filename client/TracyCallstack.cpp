@@ -78,14 +78,20 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     line.SizeOfStruct = sizeof( IMAGEHLP_LINE64 );
     if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
     {
-        ret.file = "[unknown]";
+        line.FileName = "[unknown]";
         ret.line = 0;
     }
     else
     {
-        ret.file = line.FileName;
         ret.line = line.LineNumber;
     }
+
+    const auto fsz = strlen( line.FileName );
+    auto file = (char*)tracy_malloc( fsz + 1 );
+    memcpy( file, line.FileName, fsz );
+    file[fsz] = '\0';
+
+    ret.file = file;
 
     return ret;
 }

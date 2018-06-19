@@ -565,6 +565,7 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
     auto frame = DecodeCallstackPtr( ptr );
 
     SendString( uint64_t( frame.name ), frame.name, QueueType::CustomStringData );
+    SendString( uint64_t( frame.file ), frame.file, QueueType::CustomStringData );
 
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::CallstackFrame );
@@ -577,6 +578,7 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
     AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrame] );
 
     tracy_free( (void*)frame.name );
+    tracy_free( (void*)frame.file );
 #endif
 }
 

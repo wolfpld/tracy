@@ -12,6 +12,10 @@ SRC := \
 
 OBJ := $(SRC:%.cpp=%.o)
 
+ifeq ($(shell uname -o),Cygwin)
+LIBS += -ldbghelp
+endif
+
 all: $(IMAGE)
 
 %.o: %.cpp

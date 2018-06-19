@@ -548,7 +548,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         auto mem = m_data.memory.data.data();
         for( uint64_t i=0; i<sz; i++ )
         {
-            f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
+            if( fileVer <= FileVersion( 0, 3, 1 ) )
+            {
+                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
+                mem->callstack = 0;
+            }
+            else
+            {
+                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::callstack ) );
+            }
+
             uint64_t t0, t1;
             f.Read2( t0, t1 );
             mem->threadAlloc = CompressThread( t0 );

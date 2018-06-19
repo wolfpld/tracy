@@ -2407,7 +2407,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& mem : m_data.memory.data )
     {
-        f.Write( &mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
+        f.Write( &mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::callstack ) );
         uint64_t t[2];
         t[0] = DecompressThread( mem.threadAlloc );
         t[1] = DecompressThread( mem.threadFree );

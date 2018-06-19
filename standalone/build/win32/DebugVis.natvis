@@ -10,4 +10,13 @@
       </ArrayItems>
     </Expand>
   </Type>
+  <Type Name="tracy::VarArray&lt;*&gt;">
+    <DisplayString>{{ size={m_size} hash={m_hash} }}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>m_size</Size>
+        <ValuePointer>m_ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
 </AutoVisualizer>

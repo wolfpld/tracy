@@ -958,8 +958,7 @@ void Worker::ServerQuery( uint8_t type, uint64_t data )
 
 void Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
 {
-    if( ev.hdr.type == QueueType::CustomStringData || ev.hdr.type == QueueType::StringData
-        || ev.hdr.type == QueueType::ThreadName || ev.hdr.type == QueueType::PlotName || ev.hdr.type == QueueType::SourceLocationPayload )
+    if( ev.hdr.idx >= (int)QueueType::StringData )
     {
         ptr += sizeof( QueueHeader ) + sizeof( QueueStringTransfer );
         uint16_t sz;

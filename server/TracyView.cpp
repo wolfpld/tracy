@@ -4774,7 +4774,7 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
     const auto ty = ImGui::GetTextLineHeight() + style.ItemSpacing.y;
 
     ImGui::BeginChild( "##memScroll", ImVec2( 0, std::max( ty * std::min<int64_t>( dist, 5 ), std::min( ty * dist, ImGui::GetContentRegionAvail().y ) ) ) );
-    ImGui::Columns( 7 );
+    ImGui::Columns( 8 );
     ImGui::Text( "Address" );
     ImGui::NextColumn();
     ImGui::Text( "Size" );
@@ -4814,6 +4814,8 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         ImGui::Text( "If alloc and free is performed in the same zone, it is displayed in yellow color." );
         ImGui::EndTooltip();
     }
+    ImGui::NextColumn();
+    ImGui::Text( "Callstack" );
     ImGui::NextColumn();
     ImGui::Separator();
     int idx = 0;
@@ -4915,6 +4917,34 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
                     }
                     ZoneTooltip( *zoneFree );
                 }
+            }
+        }
+        ImGui::NextColumn();
+        if( v->csAlloc == 0 )
+        {
+            ImGui::TextDisabled( "[alloc]" );
+        }
+        else
+        {
+            ImGui::Text( "[alloc]" );
+            if( ImGui::IsItemHovered() )
+            {
+                CallstackTooltip( v->csAlloc );
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( v->csFree == 0 )
+        {
+            ImGui::TextDisabled( "[free]" );
+        }
+        else
+        {
+            ImGui::Text( "[free]" );
+            if( ImGui::IsItemHovered() )
+            {
+                CallstackTooltip( v->csFree );
             }
         }
         ImGui::NextColumn();
@@ -5534,6 +5564,18 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     ImGui::Text( "Delay to execution: %s", TimeToString( ev.gpuStart - ev.cpuStart ) );
 
+    ImGui::EndTooltip();
+}
+
+void View::CallstackTooltip( uint32_t idx )
+{
+    auto& cs = m_worker.GetCallstack( idx );
+
+    ImGui::BeginTooltip();
+    for( auto& entry : cs )
+    {
+        ImGui::Text( "0x%" PRIX64, entry );
+    }
     ImGui::EndTooltip();
 }
 

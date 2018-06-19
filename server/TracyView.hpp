@@ -110,6 +110,8 @@ private:
 
     void ZoneTooltip( const ZoneEvent& ev );
     void ZoneTooltip( const GpuEvent& ev );
+    void CallstackTooltip( uint32_t idx );
+
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
     uint64_t GetZoneThread( const ZoneEvent& zone ) const;

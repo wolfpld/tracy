@@ -61,7 +61,11 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = 255;
 
-    SymFromAddr( proc, ptr, nullptr, si );
+    if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
+    {
+        memcpy( si->Name, "[unknown]", 10 );
+        si->NameLen = 9;
+    }
 
     auto name = (char*)tracy_malloc( si->NameLen + 1 );
     memcpy( name, si->Name, si->NameLen );
@@ -72,10 +76,16 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     IMAGEHLP_LINE64 line;
     unsigned long displacement = 0;
     line.SizeOfStruct = sizeof( IMAGEHLP_LINE64 );
-    SymGetLineFromAddr64( proc, ptr, &displacement, &line );
-
-    ret.file = line.FileName;
-    ret.line = line.LineNumber;
+    if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
+    {
+        ret.file = "[unknown]";
+        ret.line = 0;
+    }
+    else
+    {
+        ret.file = line.FileName;
+        ret.line = line.LineNumber;
+    }
 
     return ret;
 }

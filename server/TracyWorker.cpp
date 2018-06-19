@@ -1333,6 +1333,15 @@ void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t sz )
         idx = m_data.callstackPayload.size();
         m_data.callstackMap.emplace( arr, idx );
         m_data.callstackPayload.push_back( arr );
+
+        for( auto& frame : *arr )
+        {
+            auto fit = m_data.callstackFrameMap.find( frame );
+            if( fit == m_data.callstackFrameMap.end() )
+            {
+                ServerQuery( ServerQueryCallstackFrame, frame );
+            }
+        }
     }
     else
     {

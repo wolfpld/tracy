@@ -101,6 +101,7 @@ class Worker
 
         flat_hash_map<VarArray<uint64_t>*, uint32_t, VarArrayHasherPOT<uint64_t>, VarArrayComparator<uint64_t>> callstackMap;
         Vector<VarArray<uint64_t>*> callstackPayload;
+        flat_hash_map<uint64_t, CallstackFrame*> callstackFrameMap;
 
         std::map<uint32_t, LockMap> lockMap;
 

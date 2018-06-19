@@ -553,11 +553,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             if( fileVer <= FileVersion( 0, 3, 1 ) )
             {
                 f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
-                mem->callstack = 0;
+                mem->csAlloc = 0;
+                mem->csFree = 0;
             }
             else
             {
-                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::callstack ) );
+                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
             }
 
             uint64_t t0, t1;
@@ -611,7 +612,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 sizeof( MemEvent::size ) +
                 sizeof( MemEvent::timeAlloc ) +
                 sizeof( MemEvent::timeFree ) +
-                sizeof( MemEvent::callstack ) +
+                sizeof( MemEvent::csAlloc ) +
+                sizeof( MemEvent::csFree ) +
                 sizeof( uint64_t ) +
                 sizeof( uint64_t ) ) );
         }
@@ -2024,7 +2026,8 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     mem.threadAlloc = CompressThread( ev.thread );
     mem.timeFree = -1;
     mem.threadFree = 0;
-    mem.callstack = 0;
+    mem.csAlloc = 0;
+    mem.csFree = 0;
 
     const auto low = m_data.memory.low;
     const auto high = m_data.memory.high;
@@ -2057,12 +2060,14 @@ void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
 {
     m_lastMemActionCallstack = m_data.memory.data.size();
     ProcessMemAlloc( ev );
+    m_lastMemActionWasAlloc = true;
 }
 
 void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
 {
     ProcessMemFree( ev );
     m_lastMemActionCallstack = m_data.memory.frees.back();
+    m_lastMemActionWasAlloc = false;
 }
 
 void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
@@ -2071,7 +2076,14 @@ void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
     assert( it != m_pendingCallstacks.end() );
 
     auto& mem = m_data.memory.data[m_lastMemActionCallstack];
-    mem.callstack = it->second;
+    if( m_lastMemActionWasAlloc )
+    {
+        mem.csAlloc = it->second;
+    }
+    else
+    {
+        mem.csFree = it->second;
+    }
 
     m_pendingCallstacks.erase( it );
 }
@@ -2453,7 +2465,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& mem : m_data.memory.data )
     {
-        f.Write( &mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::callstack ) );
+        f.Write( &mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
         uint64_t t[2];
         t[0] = DecompressThread( mem.threadAlloc );
         t[1] = DecompressThread( mem.threadFree );

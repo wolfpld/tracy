@@ -307,6 +307,7 @@ private:
     uint32_t m_pendingSourceLocation;
 
     uint64_t m_lastMemActionCallstack;
+    bool m_lastMemActionWasAlloc;
 
     Slab<64*1024*1024> m_slab;
 

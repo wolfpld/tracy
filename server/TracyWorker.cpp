@@ -2021,8 +2021,13 @@ void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
 
 void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
 {
+    auto it = m_pendingCallstacks.find( ev.ptr );
+    assert( it != m_pendingCallstacks.end() );
+
     auto& mem = m_data.memory.data[m_lastMemActionCallstack];
-    mem.callstack = ev.ptr;
+    mem.callstack = it->second;
+
+    m_pendingCallstacks.erase( it );
 }
 
 void Worker::MemAllocChanged( int64_t time )

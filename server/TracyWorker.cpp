@@ -721,6 +721,19 @@ std::pair <int, int> Worker::GetFrameRange( int64_t from, int64_t to )
     return std::make_pair( zbegin, zend );
 }
 
+const CallstackFrame* Worker::GetCallstackFrame( uint64_t ptr )
+{
+    auto it = m_data.callstackFrameMap.find( ptr );
+    if( it == m_data.callstackFrameMap.end() )
+    {
+        return nullptr;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
 int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
 {
     auto ptr = &ev;

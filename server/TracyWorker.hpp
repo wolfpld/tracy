@@ -145,7 +145,9 @@ public:
     const Vector<PlotData*>& GetPlots() const { return m_data.plots; }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
     const MemData& GetMemData() const { return m_data.memory; }
+
     const VarArray<uint64_t>& GetCallstack( uint32_t idx ) { return *m_data.callstackPayload[idx]; }
+    const CallstackFrame* GetCallstackFrame( uint64_t ptr );
 
     // Some zones may have incomplete timing data (only start time is available, end hasn't arrived yet).
     // GetZoneEnd() will try to infer the end time by looking at child zones (parent zone can't end

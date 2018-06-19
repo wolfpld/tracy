@@ -559,6 +559,27 @@ void Profiler::SendCallstackPayload( uint64_t _ptr )
     }
 }
 
+void Profiler::SendCallstackFrame( uint64_t ptr )
+{
+#ifdef TRACY_HAS_CALLSTACK
+    auto frame = DecodeCallstackPtr( ptr );
+
+    SendString( uint64_t( frame.name ), frame.name, QueueType::CustomStringData );
+
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::CallstackFrame );
+    MemWrite( &item.callstackFrame.ptr, ptr );
+    MemWrite( &item.callstackFrame.name, (uint64_t)frame.name );
+    MemWrite( &item.callstackFrame.file, (uint64_t)frame.file );
+    MemWrite( &item.callstackFrame.line, frame.line );
+
+    NeedDataSize( QueueDataSize[(int)QueueType::CallstackFrame] );
+    AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrame] );
+
+    tracy_free( (void*)frame.name );
+#endif
+}
+
 
 static bool DontExit() { return false; }
 
@@ -597,6 +618,9 @@ bool Profiler::HandleServerQuery()
         break;
     case ServerQueryTerminate:
         return false;
+    case ServerQueryCallstackFrame:
+        SendCallstackFrame( ptr );
+        break;
     default:
         assert( false );
         break;

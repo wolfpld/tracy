@@ -17,6 +17,7 @@
 #include "tracy_flat_hash_map.hpp"
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
+#include "TracyVarArray.hpp"
 
 namespace tracy
 {
@@ -97,6 +98,9 @@ class Worker
         flat_hash_map<int32_t, SourceLocationZones, nohash<int32_t>> sourceLocationZones;
         bool sourceLocationZonesReady;
 #endif
+
+        flat_hash_map<VarArray<uint64_t>*, uint32_t, VarArrayHasherPOT<uint64_t>, VarArrayComparator<uint64_t>> callstackMap;
+        Vector<VarArray<uint64_t>*> callstackPayload;
 
         std::map<uint32_t, LockMap> lockMap;
 
@@ -243,6 +247,8 @@ private:
     void AddThreadString( uint64_t id, char* str, size_t sz );
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
 
+    void AddCallstackPayload( uint64_t ptr, char* data, size_t sz );
+
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void HandlePlotName( uint64_t name, char* str, size_t sz );
 
@@ -288,6 +294,7 @@ private:
     flat_hash_map<uint16_t, GpuCtxData*, nohash<uint16_t>> m_gpuCtxMap;
     flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
     flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_pendingPlots;
+    flat_hash_map<uint64_t, uint32_t> m_pendingCallstacks;
     flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_plotMap;
     flat_hash_map<const char*, PlotData*, charutil::HasherPOT, charutil::Comparator> m_plotRev;
     flat_hash_map<uint64_t, int32_t, nohash<uint64_t>> m_pendingSourceLocationPayload;

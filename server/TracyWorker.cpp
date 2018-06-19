@@ -982,7 +982,7 @@ void Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
             AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
             break;
         case QueueType::CallstackPayload:
-            //AddCallstackPayload( ev.stringTransfer.ptr, ptr, sz );
+            AddCallstackPayload( ev.stringTransfer.ptr, ptr, sz );
             break;
         default:
             assert( false );
@@ -1263,6 +1263,36 @@ void Worker::AddCustomString( uint64_t ptr, char* str, size_t sz )
 {
     assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
+}
+
+void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t sz )
+{
+    assert( m_pendingCallstacks.find( ptr ) == m_pendingCallstacks.end() );
+
+    const auto memsize = sizeof( VarArray<uint64_t> ) + sz;
+    auto mem = (char*)m_slab.AllocRaw( memsize );
+
+    auto data = (uint64_t*)mem;
+    memcpy( data, _data, sz );
+
+    auto arr = (VarArray<uint64_t>*)( mem + sz );
+    new(arr) VarArray<uint64_t>( sz / sizeof( uint64_t ), data );
+
+    uint32_t idx;
+    auto it = m_data.callstackMap.find( arr );
+    if( it == m_data.callstackMap.end() )
+    {
+        idx = m_data.callstackPayload.size();
+        m_data.callstackMap.emplace( arr, idx );
+        m_data.callstackPayload.push_back( arr );
+    }
+    else
+    {
+        idx = it->second;
+        m_slab.Unalloc( memsize );
+    }
+
+    m_pendingCallstacks.emplace( ptr, idx );
 }
 
 void Worker::InsertPlot( PlotData* plot, int64_t time, double val )

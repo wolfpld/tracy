@@ -419,7 +419,22 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
         auto end = item + sz;
         while( item != end )
         {
+            uint64_t ptr;
             const auto idx = MemRead<uint8_t>( &item->hdr.idx );
+            if( idx < (int)QueueType::Terminate )
+            {
+                switch( (QueueType)idx )
+                {
+                case QueueType::CallstackMemory:
+                    ptr = MemRead<uint64_t>( &item->callstackMemory.ptr );
+                    SendCallstackPayload( ptr );
+                    tracy_free( (void*)ptr );
+                    break;
+                default:
+                    assert( false );
+                    break;
+                }
+            }
             if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
             item++;
         }

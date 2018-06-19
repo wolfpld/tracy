@@ -11,6 +11,7 @@ enum class QueueType : uint8_t
     ZoneText,
     Message,
     ZoneBeginAllocSrcLoc,
+    CallstackMemory,
     Terminate,
     ZoneBegin,
     ZoneEnd,
@@ -35,7 +36,6 @@ enum class QueueType : uint8_t
     MemFree,
     MemAllocCallstack,
     MemFreeCallstack,
-    CallstackMemory,
     StringData,
     ThreadName,
     CustomStringData,
@@ -261,6 +261,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
+    sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
@@ -286,7 +287,6 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // callstack
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // callstack
-    sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

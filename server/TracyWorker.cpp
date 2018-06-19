@@ -2416,6 +2416,15 @@ void Worker::Write( FileWrite& f )
     f.Write( &m_data.memory.high, sizeof( m_data.memory.high ) );
     f.Write( &m_data.memory.low, sizeof( m_data.memory.low ) );
     f.Write( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
+
+    sz = m_data.callstackPayload.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& cs : m_data.callstackPayload )
+    {
+        uint8_t csz = cs->size();
+        f.Write( &csz, sizeof( csz ) );
+        f.Write( cs->data(), sizeof( uint64_t ) * csz );
+    }
 }
 
 void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )

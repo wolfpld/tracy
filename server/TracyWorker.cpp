@@ -640,6 +640,19 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
         m_data.callstackPayload.push_back_no_space_check( arr );
     }
+
+    f.Read( sz );
+    m_data.callstackFrameMap.reserve( sz );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint64_t ptr;
+        f.Read( ptr );
+
+        auto frame = m_slab.Alloc<CallstackFrame>();
+        f.Read( frame, sizeof( CallstackFrame ) );
+
+        m_data.callstackFrameMap.emplace( ptr, frame );
+    }
 }
 
 template<class T>
@@ -2533,6 +2546,14 @@ void Worker::Write( FileWrite& f )
         uint8_t csz = cs->size();
         f.Write( &csz, sizeof( csz ) );
         f.Write( cs->data(), sizeof( uint64_t ) * csz );
+    }
+
+    sz = m_data.callstackFrameMap.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& frame : m_data.callstackFrameMap )
+    {
+        f.Write( &frame.first, sizeof( uint64_t ) );
+        f.Write( frame.second, sizeof( CallstackFrame ) );
     }
 }
 

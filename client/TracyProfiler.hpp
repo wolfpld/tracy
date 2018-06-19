@@ -295,9 +295,9 @@ private:
     bool NeedDataSize( size_t len );
 
     bool SendData( const char* data, size_t len );
-    bool SendString( uint64_t ptr, const char* str, QueueType type );
+    void SendString( uint64_t ptr, const char* str, QueueType type );
     void SendSourceLocation( uint64_t ptr );
-    bool SendSourceLocationPayload( uint64_t ptr );
+    void SendSourceLocationPayload( uint64_t ptr );
 
     bool HandleServerQuery();
 

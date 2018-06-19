@@ -466,7 +466,7 @@ bool Profiler::SendData( const char* data, size_t len )
     return m_sock->Send( m_lz4Buf, lz4sz + sizeof( lz4sz_t ) ) != -1;
 }
 
-bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
+void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
     assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName );
 
@@ -483,8 +483,6 @@ bool Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     AppendData( &item, QueueDataSize[(int)type] );
     AppendData( &l16, sizeof( l16 ) );
     AppendData( ptr, l16 );
-
-    return true;
 }
 
 void Profiler::SendSourceLocation( uint64_t ptr )
@@ -502,7 +500,7 @@ void Profiler::SendSourceLocation( uint64_t ptr )
     AppendData( &item, QueueDataSize[(int)QueueType::SourceLocation] );
 }
 
-bool Profiler::SendSourceLocationPayload( uint64_t _ptr )
+void Profiler::SendSourceLocationPayload( uint64_t _ptr )
 {
     auto ptr = (const char*)_ptr;
 
@@ -520,8 +518,6 @@ bool Profiler::SendSourceLocationPayload( uint64_t _ptr )
     AppendData( &item, QueueDataSize[(int)QueueType::SourceLocationPayload] );
     AppendData( &l16, sizeof( l16 ) );
     AppendData( ptr + 4, l16 );
-
-    return true;
 }
 
 static bool DontExit() { return false; }

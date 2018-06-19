@@ -1545,6 +1545,9 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::CallstackMemory:
         ProcessCallstackMemory( ev.callstackMemory );
         break;
+    case QueueType::CallstackFrame:
+        ProcessCallstackFrame( ev.callstackFrame );
+        break;
     case QueueType::Terminate:
         m_terminate = true;
         break;
@@ -2095,6 +2098,28 @@ void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
     }
 
     m_pendingCallstacks.erase( it );
+}
+
+void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
+{
+    auto fmit = m_data.callstackFrameMap.find( ev.ptr );
+    auto it = m_pendingCustomStrings.find( ev.name );
+    assert( it != m_pendingCustomStrings.end() );
+
+    // Frames may be duplicated due to recursion
+    if( fmit == m_data.callstackFrameMap.end() )
+    {
+        CheckString( ev.file );
+
+        auto frame = m_slab.Alloc<CallstackFrame>();
+        frame->name = StringIdx( it->second.idx );
+        frame->file = ev.file;
+        frame->line = ev.line;
+
+        m_data.callstackFrameMap.emplace( ev.ptr, frame );
+    }
+
+    m_pendingCustomStrings.erase( it );
 }
 
 void Worker::MemAllocChanged( int64_t time )

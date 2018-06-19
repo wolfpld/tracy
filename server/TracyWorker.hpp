@@ -220,6 +220,7 @@ private:
     tracy_force_inline void ProcessMemAllocCallstack( const QueueMemAlloc& ev );
     tracy_force_inline void ProcessMemFreeCallstack( const QueueMemFree& ev );
     tracy_force_inline void ProcessCallstackMemory( const QueueCallstackMemory& ev );
+    tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );

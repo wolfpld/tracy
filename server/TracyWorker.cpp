@@ -617,6 +617,27 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
         f.Skip( sizeof( MemData::high ) + sizeof( MemData::low ) + sizeof( MemData::usage ) );
     }
+
+    if( fileVer <= FileVersion( 0, 3, 1 ) ) return;
+
+    f.Read( sz );
+    m_data.callstackPayload.reserve( sz );
+    for( uint64_t i=0; i<sz; i++ )
+    {
+        uint8_t csz;
+        f.Read( csz );
+
+        const auto memsize = sizeof( VarArray<uint64_t> ) + csz * sizeof( uint64_t );
+        auto mem = (char*)m_slab.AllocRaw( memsize );
+
+        auto data = (uint64_t*)mem;
+        f.Read( data, csz * sizeof( uint64_t ) );
+
+        auto arr = (VarArray<uint64_t>*)( mem + csz * sizeof( uint64_t ) );
+        new(arr) VarArray<uint64_t>( csz, data );
+
+        m_data.callstackPayload.push_back_no_space_check( arr );
+    }
 }
 
 template<class T>

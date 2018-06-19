@@ -594,13 +594,27 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
     else
     {
-        f.Skip( sz * (
-            sizeof( MemEvent::ptr ) +
-            sizeof( MemEvent::size ) +
-            sizeof( MemEvent::timeAlloc ) +
-            sizeof( MemEvent::timeFree ) +
-            sizeof( uint64_t ) +
-            sizeof( uint64_t ) ) );
+        if( fileVer <= FileVersion( 0, 3, 1 ) )
+        {
+            f.Skip( sz * (
+                sizeof( MemEvent::ptr ) +
+                sizeof( MemEvent::size ) +
+                sizeof( MemEvent::timeAlloc ) +
+                sizeof( MemEvent::timeFree ) +
+                sizeof( uint64_t ) +
+                sizeof( uint64_t ) ) );
+        }
+        else
+        {
+            f.Skip( sz * (
+                sizeof( MemEvent::ptr ) +
+                sizeof( MemEvent::size ) +
+                sizeof( MemEvent::timeAlloc ) +
+                sizeof( MemEvent::timeFree ) +
+                sizeof( MemEvent::callstack ) +
+                sizeof( uint64_t ) +
+                sizeof( uint64_t ) ) );
+        }
         f.Skip( sizeof( MemData::high ) + sizeof( MemData::low ) + sizeof( MemData::usage ) );
     }
 }

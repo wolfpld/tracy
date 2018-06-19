@@ -5572,9 +5572,20 @@ void View::CallstackTooltip( uint32_t idx )
     auto& cs = m_worker.GetCallstack( idx );
 
     ImGui::BeginTooltip();
+    int fidx = 0;
     for( auto& entry : cs )
     {
-        ImGui::Text( "0x%" PRIX64, entry );
+        auto frame = m_worker.GetCallstackFrame( entry );
+        if( !frame )
+        {
+            ImGui::Text( "%i. 0x%" PRIX64, fidx++, entry );
+        }
+        else
+        {
+            ImGui::Text( "%i. %s", fidx++, m_worker.GetString( frame->name ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s:%i)", m_worker.GetString( frame->file ), frame->line );
+        }
     }
     ImGui::EndTooltip();
 }

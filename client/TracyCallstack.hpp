@@ -31,7 +31,7 @@ struct CallstackEntry
 void InitCallstack();
 CallstackEntry DecodeCallstackPtr( uint64_t ptr );
 
-tracy_force_inline const char* Callstack()
+static tracy_force_inline const char* Callstack()
 {
     enum { StackDepth = 24 };
     static_assert( StackDepth <= 63, "Stack depth can't be greater than 63." );

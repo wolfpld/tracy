@@ -64,8 +64,14 @@
 
 #define TracyAlloc( ptr, size ) tracy::Profiler::MemAlloc( ptr, size );
 #define TracyFree( ptr ) tracy::Profiler::MemFree( ptr );
-#define TracyAllocS( ptr, size, depth ) tracy::Profiler::MemAllocCallstack( ptr, size, depth );
-#define TracyFreeS( ptr, depth ) tracy::Profiler::MemFreeCallstack( ptr, depth );
+
+#ifdef TRACY_HAS_CALLSTACK
+#  define TracyAllocS( ptr, size, depth ) tracy::Profiler::MemAllocCallstack( ptr, size, depth );
+#  define TracyFreeS( ptr, depth ) tracy::Profiler::MemFreeCallstack( ptr, depth );
+#else
+#  define TracyAllocS( ptr, size, depth ) TracyAlloc( ptr, size )
+#  define TracyFreeS( ptr, depth ) TracyFree( ptr )
+#endif
 
 #endif
 

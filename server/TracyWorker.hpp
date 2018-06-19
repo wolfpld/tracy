@@ -211,6 +211,9 @@ private:
     tracy_force_inline void ProcessGpuResync( const QueueGpuResync& ev );
     tracy_force_inline void ProcessMemAlloc( const QueueMemAlloc& ev );
     tracy_force_inline void ProcessMemFree( const QueueMemFree& ev );
+    tracy_force_inline void ProcessMemAllocCallstack( const QueueMemAlloc& ev );
+    tracy_force_inline void ProcessMemFreeCallstack( const QueueMemFree& ev );
+    tracy_force_inline void ProcessCallstackMemory( const QueueCallstackMemory& ev );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );
@@ -295,6 +298,8 @@ private:
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;
     uint32_t m_pendingSourceLocation;
+
+    uint64_t m_lastMemActionCallstack;
 
     Slab<64*1024*1024> m_slab;
 

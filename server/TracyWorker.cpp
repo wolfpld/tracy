@@ -1447,6 +1447,15 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::MemFree:
         ProcessMemFree( ev.memFree );
         break;
+    case QueueType::MemAllocCallstack:
+        ProcessMemAllocCallstack( ev.memAlloc );
+        break;
+    case QueueType::MemFreeCallstack:
+        ProcessMemFreeCallstack( ev.memFree );
+        break;
+    case QueueType::CallstackMemory:
+        ProcessCallstackMemory( ev.callstackMemory );
+        break;
     case QueueType::Terminate:
         m_terminate = true;
         break;
@@ -1964,6 +1973,24 @@ void Worker::ProcessMemFree( const QueueMemFree& ev )
     m_data.memory.active.erase( it );
 
     MemAllocChanged( time );
+}
+
+void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
+{
+    m_lastMemActionCallstack = m_data.memory.data.size();
+    ProcessMemAlloc( ev );
+}
+
+void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
+{
+    ProcessMemFree( ev );
+    m_lastMemActionCallstack = m_data.memory.frees.back();
+}
+
+void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
+{
+    auto& mem = m_data.memory.data[m_lastMemActionCallstack];
+    mem.callstack = ev.ptr;
 }
 
 void Worker::MemAllocChanged( int64_t time )

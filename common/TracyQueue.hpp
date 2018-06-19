@@ -41,6 +41,7 @@ enum class QueueType : uint8_t
     CustomStringData,
     PlotName,
     SourceLocationPayload,
+    CallstackPayload,
     NUM_TYPES
 };
 
@@ -292,6 +293,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // custom string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // allocated source location payload
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // callstack payload
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

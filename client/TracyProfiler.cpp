@@ -520,6 +520,31 @@ void Profiler::SendSourceLocationPayload( uint64_t _ptr )
     AppendData( ptr + 4, l16 );
 }
 
+void Profiler::SendCallstackPayload( uint64_t _ptr )
+{
+    auto ptr = (uintptr_t*)_ptr;
+
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::CallstackPayload );
+    MemWrite( &item.stringTransfer.ptr, _ptr );
+
+    const auto sz = *ptr++;
+    const auto len = sz * sizeof( uint64_t );
+    const auto l16 = uint16_t( len );
+
+    NeedDataSize( QueueDataSize[(int)QueueType::CallstackPayload] + sizeof( l16 ) + l16 );
+
+    AppendData( &item, QueueDataSize[(int)QueueType::CallstackPayload] );
+    AppendData( &l16, sizeof( l16 ) );
+
+    for( uintptr_t i=0; i<sz; i++ )
+    {
+        const auto val = uint64_t( *ptr++ );
+        AppendData( &val, sizeof( uint64_t ) );
+    }
+}
+
+
 static bool DontExit() { return false; }
 
 bool Profiler::HandleServerQuery()

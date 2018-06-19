@@ -298,6 +298,7 @@ private:
     void SendString( uint64_t ptr, const char* str, QueueType type );
     void SendSourceLocation( uint64_t ptr );
     void SendSourceLocationPayload( uint64_t ptr );
+    void SendCallstackPayload( uint64_t ptr );
 
     bool HandleServerQuery();
 

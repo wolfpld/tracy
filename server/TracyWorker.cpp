@@ -190,6 +190,7 @@ Worker::Worker( const char* addr )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.threadExpand.push_back( 0 );
+    m_data.callstackPayload.push_back( nullptr );
 
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = true;
@@ -208,6 +209,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     , m_buffer( nullptr )
 {
     m_data.threadExpand.push_back( 0 );
+    m_data.callstackPayload.push_back( nullptr );
 
     int fileVer = 0;
 
@@ -2426,10 +2428,11 @@ void Worker::Write( FileWrite& f )
     f.Write( &m_data.memory.low, sizeof( m_data.memory.low ) );
     f.Write( &m_data.memory.usage, sizeof( m_data.memory.usage ) );
 
-    sz = m_data.callstackPayload.size();
+    sz = m_data.callstackPayload.size() - 1;
     f.Write( &sz, sizeof( sz ) );
-    for( auto& cs : m_data.callstackPayload )
+    for( size_t i=1; i<sz; i++ )
     {
+        auto cs = m_data.callstackPayload[i];
         uint8_t csz = cs->size();
         f.Write( &csz, sizeof( csz ) );
         f.Write( cs->data(), sizeof( uint64_t ) * csz );

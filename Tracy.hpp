@@ -31,6 +31,8 @@
 
 #define TracyAlloc(x,y)
 #define TracyFree(x)
+#define TracyAllocS(x,y,z)
+#define TracyFreeS(x,y)
 
 #else
 

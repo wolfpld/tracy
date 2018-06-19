@@ -274,10 +274,12 @@ public:
 
     static tracy_force_inline void SendCallstackMemory( int depth )
     {
+#ifdef TRACY_HAS_CALLSTACK
         auto ptr = Callstack( depth );
         auto item = s_profiler.m_serialQueue.push_next();
         MemWrite( &item->hdr.type, QueueType::CallstackMemory );
         MemWrite( &item->callstackMemory.ptr, (uint64_t)ptr );
+#endif
     }
 
     static bool ShouldExit();

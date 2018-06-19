@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "concurrentqueue.h"
+#include "TracyCallstack.hpp"
 #include "TracyFastVector.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "../common/tracy_benaphore.h"
@@ -231,6 +232,52 @@ public:
         MemWrite( &item->memFree.thread, thread );
         MemWrite( &item->memFree.ptr, (uint64_t)ptr );
         s_profiler.m_serialLock.unlock();
+    }
+
+    static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth )
+    {
+        const auto thread = GetThreadHandle();
+
+        s_profiler.m_serialLock.lock();
+        auto item = s_profiler.m_serialQueue.push_next();
+        MemWrite( &item->hdr.type, QueueType::MemAllocCallstack );
+        MemWrite( &item->memAlloc.time, GetTime() );
+        MemWrite( &item->memAlloc.thread, thread );
+        MemWrite( &item->memAlloc.ptr, (uint64_t)ptr );
+        if( sizeof( size ) == 4 )
+        {
+            memcpy( &item->memAlloc.size, &size, 4 );
+            memset( &item->memAlloc.size + 4, 0, 2 );
+        }
+        else
+        {
+            assert( sizeof( size ) == 8 );
+            memcpy( &item->memAlloc.size, &size, 6 );
+        }
+        SendCallstackMemory( depth );
+        s_profiler.m_serialLock.unlock();
+    }
+
+    static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth )
+    {
+        const auto thread = GetThreadHandle();
+
+        s_profiler.m_serialLock.lock();
+        auto item = s_profiler.m_serialQueue.push_next();
+        MemWrite( &item->hdr.type, QueueType::MemFreeCallstack );
+        MemWrite( &item->memFree.time, GetTime() );
+        MemWrite( &item->memFree.thread, thread );
+        MemWrite( &item->memFree.ptr, (uint64_t)ptr );
+        SendCallstackMemory( depth );
+        s_profiler.m_serialLock.unlock();
+    }
+
+    static tracy_force_inline void SendCallstackMemory( int depth )
+    {
+        auto ptr = Callstack( depth );
+        auto item = s_profiler.m_serialQueue.push_next();
+        MemWrite( &item->hdr.type, QueueType::CallstackMemory );
+        MemWrite( &item->callstackMemory.ptr, (uint64_t)ptr );
     }
 
     static bool ShouldExit();

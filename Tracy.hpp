@@ -62,6 +62,8 @@
 
 #define TracyAlloc( ptr, size ) tracy::Profiler::MemAlloc( ptr, size );
 #define TracyFree( ptr ) tracy::Profiler::MemFree( ptr );
+#define TracyAllocS( ptr, size, depth ) tracy::Profiler::MemAllocCallstack( ptr, size, depth );
+#define TracyFreeS( ptr, depth ) tracy::Profiler::MemFreeCallstack( ptr, depth );
 
 #endif
 

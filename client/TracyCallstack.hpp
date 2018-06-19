@@ -36,7 +36,7 @@ tracy_force_inline const char* Callstack()
     enum { StackDepth = 24 };
     static_assert( StackDepth <= 63, "Stack depth can't be greater than 63." );
 
-    auto trace = (uint64_t*)tracy_malloc( ( 1 + StackDepth ) * sizeof( uint64_t ) );
+    auto trace = (uintptr_t*)tracy_malloc( ( 1 + StackDepth ) * sizeof( uintptr_t ) );
     const auto num = RtlCaptureStackBackTrace( 0, StackDepth, (void**)( trace+1 ), nullptr );
     *trace = num;
 

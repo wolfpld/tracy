@@ -10,6 +10,7 @@ extern "C" __declspec(dllimport) unsigned short __stdcall RtlCaptureStackBackTra
 
 #ifdef TRACY_HAS_CALLSTACK
 
+#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -31,13 +32,12 @@ struct CallstackEntry
 void InitCallstack();
 CallstackEntry DecodeCallstackPtr( uint64_t ptr );
 
-static tracy_force_inline void* Callstack()
+static tracy_force_inline void* Callstack( int depth )
 {
-    enum { StackDepth = 24 };
-    static_assert( StackDepth <= 63, "Stack depth can't be greater than 63." );
+    assert( depth >= 1 && depth <= 63 );
 
-    auto trace = (uintptr_t*)tracy_malloc( ( 1 + StackDepth ) * sizeof( uintptr_t ) );
-    const auto num = RtlCaptureStackBackTrace( 0, StackDepth, (void**)( trace+1 ), nullptr );
+    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
+    const auto num = RtlCaptureStackBackTrace( 0, depth, (void**)( trace+1 ), nullptr );
     *trace = num;
 
     return trace;

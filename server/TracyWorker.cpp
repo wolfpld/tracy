@@ -2527,7 +2527,7 @@ void Worker::Write( FileWrite& f )
 
     sz = m_data.callstackPayload.size() - 1;
     f.Write( &sz, sizeof( sz ) );
-    for( size_t i=1; i<sz; i++ )
+    for( size_t i=1; i<=sz; i++ )
     {
         auto cs = m_data.callstackPayload[i];
         uint8_t csz = cs->size();

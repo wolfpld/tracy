@@ -981,6 +981,9 @@ void Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
         case QueueType::SourceLocationPayload:
             AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
             break;
+        case QueueType::CallstackPayload:
+            //AddCallstackPayload( ev.stringTransfer.ptr, ptr, sz );
+            break;
         default:
             assert( false );
             break;

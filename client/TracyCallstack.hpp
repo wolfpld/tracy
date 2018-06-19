@@ -1,10 +1,14 @@
 #ifndef __TRACYCALLSTACK_HPP__
 #define __TRACYCALLSTACK_HPP__
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 #  define TRACY_HAS_CALLSTACK
 #  ifndef MAXLONG
+#    ifdef __CYGWIN__
+extern "C" __declspec(dllimport) unsigned short __stdcall RtlCaptureStackBackTrace( unsigned int, unsigned int, void**, unsigned int* );
+#    else
 extern "C" __declspec(dllimport) unsigned short __stdcall RtlCaptureStackBackTrace( unsigned long, unsigned long, void**, unsigned long* );
+#    endif
 #  endif
 #endif
 
@@ -27,7 +31,7 @@ struct CallstackEntry
     uint32_t line;
 };
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 
 void InitCallstack();
 CallstackEntry DecodeCallstackPtr( uint64_t ptr );

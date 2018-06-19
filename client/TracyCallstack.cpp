@@ -2,7 +2,7 @@
 
 #ifdef TRACY_HAS_CALLSTACK
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 #  ifndef MAXLONG
 enum { SYMOPT_LOAD_LINES = 0x00000010 };
 typedef struct _SYMBOL_INFO

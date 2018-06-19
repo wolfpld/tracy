@@ -147,6 +147,7 @@ struct MemEvent
     uint64_t size;
     int64_t timeAlloc;
     int64_t timeFree;
+    uint64_t callstack;
     // All above is read/saved as-is.
 
     uint16_t threadAlloc;

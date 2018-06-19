@@ -1937,6 +1937,7 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     mem.threadAlloc = CompressThread( ev.thread );
     mem.timeFree = -1;
     mem.threadFree = 0;
+    mem.callstack = 0;
 
     const auto low = m_data.memory.low;
     const auto high = m_data.memory.high;

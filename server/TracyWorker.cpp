@@ -187,6 +187,7 @@ Worker::Worker( const char* addr )
     , m_pendingStrings( 0 )
     , m_pendingThreads( 0 )
     , m_pendingSourceLocation( 0 )
+    , m_pendingCallbackFrames( 0 )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.threadExpand.push_back( 0 );
@@ -995,7 +996,7 @@ void Worker::Exec()
 
             if( m_terminate )
             {
-                if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 ||
+                if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallbackFrames != 0 ||
                     !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() || !m_pendingCallstacks.empty() )
                 {
                     continue;
@@ -1365,6 +1366,7 @@ void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t sz )
             auto fit = m_data.callstackFrameMap.find( frame );
             if( fit == m_data.callstackFrameMap.end() )
             {
+                m_pendingCallbackFrames++;
                 ServerQuery( ServerQueryCallstackFrame, frame );
             }
         }
@@ -2128,6 +2130,9 @@ void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
 
 void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
 {
+    assert( m_pendingCallbackFrames > 0 );
+    m_pendingCallbackFrames--;
+
     auto fmit = m_data.callstackFrameMap.find( ev.ptr );
     auto nit = m_pendingCustomStrings.find( ev.name );
     assert( nit != m_pendingCustomStrings.end() );

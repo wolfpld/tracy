@@ -310,6 +310,7 @@ private:
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;
     uint32_t m_pendingSourceLocation;
+    uint32_t m_pendingCallbackFrames;
 
     uint64_t m_lastMemActionCallstack;
     bool m_lastMemActionWasAlloc;

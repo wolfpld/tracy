@@ -4986,10 +4986,12 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
                 ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
                 ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
             }
+            ImGui::PushID( idx++ );
             if( ImGui::SmallButton( "alloc" ) )
             {
                 m_callstackInfoWindow = v->csAlloc;
             }
+            ImGui::PopID();
             if( hilite )
             {
                 ImGui::PopStyleColor( 3 );
@@ -5015,10 +5017,12 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
                 ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
                 ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
             }
+            ImGui::PushID( idx++ );
             if( ImGui::SmallButton( "free" ) )
             {
                 m_callstackInfoWindow = v->csFree;
             }
+            ImGui::PopID();
             if( hilite )
             {
                 ImGui::PopStyleColor( 3 );

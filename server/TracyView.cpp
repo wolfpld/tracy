@@ -4777,24 +4777,40 @@ void View::DrawCallstackWindow()
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
 
+    ImGui::Columns( 3 );
+    ImGui::Text( "Frame" );
+    ImGui::NextColumn();
+    ImGui::Text( "Function" );
+    ImGui::NextColumn();
+    ImGui::Text( "Location" );
+    ImGui::NextColumn();
+
     int fidx = 0;
     for( auto& entry : cs )
     {
+        ImGui::Separator();
+        ImGui::Text( "%i", fidx++ );
+        ImGui::NextColumn();
+
         auto frame = m_worker.GetCallstackFrame( entry );
         if( !frame )
         {
-            ImGui::Text( "%i. 0x%" PRIX64, fidx++, entry );
+            ImGui::Text( "0x%" PRIX64, entry );
+            ImGui::NextColumn();
+            ImGui::NextColumn();
         }
         else
         {
-            ImGui::Text( "%i. %s", fidx++, m_worker.GetString( frame->name ) );
-            ImGui::SameLine();
+            ImGui::TextWrapped( "%s", m_worker.GetString( frame->name ) );
+            ImGui::NextColumn();
             ImGui::PushTextWrapPos( 0.0f );
             ImGui::TextDisabled( "(%s:%i)", m_worker.GetString( frame->file ), frame->line );
             ImGui::PopTextWrapPos();
+            ImGui::NextColumn();
         }
     }
 
+    ImGui::EndColumns();
     ImGui::End();
 
     if( !show )

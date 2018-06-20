@@ -73,22 +73,24 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 
     ret.name = name;
 
+    const char* filename;
     IMAGEHLP_LINE64 line;
     unsigned long displacement = 0;
     line.SizeOfStruct = sizeof( IMAGEHLP_LINE64 );
     if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
     {
-        line.FileName = "[unknown]";
+        filename = "[unknown]";
         ret.line = 0;
     }
     else
     {
+        filename = line.FileName;
         ret.line = line.LineNumber;
     }
 
-    const auto fsz = strlen( line.FileName );
+    const auto fsz = strlen( filename );
     auto file = (char*)tracy_malloc( fsz + 1 );
-    memcpy( file, line.FileName, fsz );
+    memcpy( file, filename, fsz );
     file[fsz] = '\0';
 
     ret.file = file;

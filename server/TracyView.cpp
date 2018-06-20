@@ -4765,6 +4765,7 @@ void View::DrawStatistics()
 
         ImGui::PopID();
     }
+    ImGui::EndColumns();
 #endif
     ImGui::End();
 }

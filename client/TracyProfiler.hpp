@@ -236,16 +236,6 @@ public:
         s_profiler.m_serialLock.unlock();
     }
 
-    static tracy_force_inline void SendCallstackMemory( int depth )
-    {
-#ifdef TRACY_HAS_CALLSTACK
-        auto ptr = Callstack( depth );
-        auto item = s_profiler.m_serialQueue.push_next();
-        MemWrite( &item->hdr.type, QueueType::CallstackMemory );
-        MemWrite( &item->callstackMemory.ptr, (uint64_t)ptr );
-#endif
-    }
-
     static bool ShouldExit();
 
 private:
@@ -271,6 +261,16 @@ private:
 
     void CalibrateTimer();
     void CalibrateDelay();
+
+    static tracy_force_inline void SendCallstackMemory( int depth )
+    {
+#ifdef TRACY_HAS_CALLSTACK
+        auto ptr = Callstack( depth );
+        auto item = s_profiler.m_serialQueue.push_next();
+        MemWrite( &item->hdr.type, QueueType::CallstackMemory );
+        MemWrite( &item->callstackMemory.ptr, (uint64_t)ptr );
+#endif
+    }
 
     static tracy_force_inline void SendMemAlloc( QueueType type, const uint64_t thread, const void* ptr, size_t size )
     {

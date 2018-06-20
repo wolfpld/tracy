@@ -82,7 +82,6 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     else
     {
         symname = *sym;
-        free( sym );
     }
 
     const auto namelen = strlen( symname );
@@ -98,6 +97,8 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 
     ret.file = unknown;
     ret.line = 0;
+
+    if( sym ) free( sym );
 
     return ret;
 }

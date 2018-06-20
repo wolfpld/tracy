@@ -203,21 +203,7 @@ public:
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
-        auto item = s_profiler.m_serialQueue.push_next();
-        MemWrite( &item->hdr.type, QueueType::MemAlloc );
-        MemWrite( &item->memAlloc.time, GetTime() );
-        MemWrite( &item->memAlloc.thread, thread );
-        MemWrite( &item->memAlloc.ptr, (uint64_t)ptr );
-        if( sizeof( size ) == 4 )
-        {
-            memcpy( &item->memAlloc.size, &size, 4 );
-            memset( &item->memAlloc.size + 4, 0, 2 );
-        }
-        else
-        {
-            assert( sizeof( size ) == 8 );
-            memcpy( &item->memAlloc.size, &size, 6 );
-        }
+        SendMemAlloc( QueueType::MemAlloc, thread, ptr, size );
         s_profiler.m_serialLock.unlock();
     }
 
@@ -226,11 +212,7 @@ public:
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
-        auto item = s_profiler.m_serialQueue.push_next();
-        MemWrite( &item->hdr.type, QueueType::MemFree );
-        MemWrite( &item->memFree.time, GetTime() );
-        MemWrite( &item->memFree.thread, thread );
-        MemWrite( &item->memFree.ptr, (uint64_t)ptr );
+        SendMemFree( QueueType::MemFree, thread, ptr );
         s_profiler.m_serialLock.unlock();
     }
 
@@ -239,21 +221,7 @@ public:
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
-        auto item = s_profiler.m_serialQueue.push_next();
-        MemWrite( &item->hdr.type, QueueType::MemAllocCallstack );
-        MemWrite( &item->memAlloc.time, GetTime() );
-        MemWrite( &item->memAlloc.thread, thread );
-        MemWrite( &item->memAlloc.ptr, (uint64_t)ptr );
-        if( sizeof( size ) == 4 )
-        {
-            memcpy( &item->memAlloc.size, &size, 4 );
-            memset( &item->memAlloc.size + 4, 0, 2 );
-        }
-        else
-        {
-            assert( sizeof( size ) == 8 );
-            memcpy( &item->memAlloc.size, &size, 6 );
-        }
+        SendMemAlloc( QueueType::MemAllocCallstack, thread, ptr, size );
         SendCallstackMemory( depth );
         s_profiler.m_serialLock.unlock();
     }
@@ -263,11 +231,7 @@ public:
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
-        auto item = s_profiler.m_serialQueue.push_next();
-        MemWrite( &item->hdr.type, QueueType::MemFreeCallstack );
-        MemWrite( &item->memFree.time, GetTime() );
-        MemWrite( &item->memFree.thread, thread );
-        MemWrite( &item->memFree.ptr, (uint64_t)ptr );
+        SendMemFree( QueueType::MemFreeCallstack, thread, ptr );
         SendCallstackMemory( depth );
         s_profiler.m_serialLock.unlock();
     }
@@ -307,6 +271,38 @@ private:
 
     void CalibrateTimer();
     void CalibrateDelay();
+
+    static tracy_force_inline void SendMemAlloc( QueueType type, const uint64_t thread, const void* ptr, size_t size )
+    {
+        assert( type == QueueType::MemAlloc || type == QueueType::MemAllocCallstack );
+
+        auto item = s_profiler.m_serialQueue.push_next();
+        MemWrite( &item->hdr.type, type );
+        MemWrite( &item->memAlloc.time, GetTime() );
+        MemWrite( &item->memAlloc.thread, thread );
+        MemWrite( &item->memAlloc.ptr, (uint64_t)ptr );
+        if( sizeof( size ) == 4 )
+        {
+            memcpy( &item->memAlloc.size, &size, 4 );
+            memset( &item->memAlloc.size + 4, 0, 2 );
+        }
+        else
+        {
+            assert( sizeof( size ) == 8 );
+            memcpy( &item->memAlloc.size, &size, 6 );
+        }
+    }
+
+    static tracy_force_inline void SendMemFree( QueueType type, const uint64_t thread, const void* ptr )
+    {
+        assert( type == QueueType::MemFree || type == QueueType::MemFreeCallstack );
+
+        auto item = s_profiler.m_serialQueue.push_next();
+        MemWrite( &item->hdr.type, type );
+        MemWrite( &item->memFree.time, GetTime() );
+        MemWrite( &item->memFree.thread, thread );
+        MemWrite( &item->memFree.ptr, (uint64_t)ptr );
+    }
 
     double m_timerMul;
     uint64_t m_resolution;

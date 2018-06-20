@@ -4962,9 +4962,20 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         }
         else
         {
+            bool hilite = m_callstackInfoWindow == v->csAlloc;
+            if( hilite )
+            {
+                ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
+                ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
+                ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            }
             if( ImGui::SmallButton( "alloc" ) )
             {
                 m_callstackInfoWindow = v->csAlloc;
+            }
+            if( hilite )
+            {
+                ImGui::PopStyleColor( 3 );
             }
             if( ImGui::IsItemHovered() )
             {
@@ -4980,9 +4991,20 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         }
         else
         {
+            bool hilite = m_callstackInfoWindow == v->csFree;
+            if( hilite )
+            {
+                ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
+                ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
+                ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            }
             if( ImGui::SmallButton( "free" ) )
             {
                 m_callstackInfoWindow = v->csFree;
+            }
+            if( hilite )
+            {
+                ImGui::PopStyleColor( 3 );
             }
             if( ImGui::IsItemHovered() )
             {

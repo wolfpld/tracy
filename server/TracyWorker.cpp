@@ -2368,7 +2368,10 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size )
         auto zone = m_slab.AllocInit<GpuEvent>();
         vec.push_back_no_space_check( zone );
 
-        f.Read( zone, sizeof( GpuEvent ) - sizeof( GpuEvent::child ) );
+        f.Read( zone, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) );
+        uint64_t thread;
+        f.Read( thread );
+        zone->thread = CompressThread( thread );
         ReadTimeline( f, zone->child );
     }
 }
@@ -2581,7 +2584,9 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec )
 
     for( auto& v : vec )
     {
-        f.Write( v, sizeof( GpuEvent ) - sizeof( GpuEvent::child ) );
+        f.Write( v, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) );
+        uint64_t thread = DecompressThread( v->thread );
+        f.Write( &thread, sizeof( thread ) );
         WriteTimeline( f, v->child );
     }
 }

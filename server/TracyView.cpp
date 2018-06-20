@@ -4804,7 +4804,7 @@ void View::DrawCallstackWindow()
             ImGui::TextWrapped( "%s", m_worker.GetString( frame->name ) );
             ImGui::NextColumn();
             ImGui::PushTextWrapPos( 0.0f );
-            ImGui::TextDisabled( "(%s:%i)", m_worker.GetString( frame->file ), frame->line );
+            ImGui::TextDisabled( "%s:%i", m_worker.GetString( frame->file ), frame->line );
             ImGui::PopTextWrapPos();
             ImGui::NextColumn();
         }

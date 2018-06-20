@@ -198,6 +198,7 @@ View::View( const char* addr )
     , m_zoneInfoWindow( nullptr )
     , m_lockHighlight { -1 }
     , m_gpuInfoWindow( nullptr )
+    , m_callstackInfoWindow( 0 )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -232,6 +233,7 @@ View::View( FileRead& f )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
     , m_gpuInfoWindow( nullptr )
+    , m_callstackInfoWindow( 0 )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -390,6 +392,7 @@ bool View::DrawImpl()
     if( m_showStatistics ) DrawStatistics();
     if( m_memInfo.show ) DrawMemory();
     if( m_compare.show ) DrawCompare();
+    if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
 
     if( m_zoomAnim.active )
     {
@@ -4766,6 +4769,39 @@ void View::DrawStatistics()
     ImGui::End();
 }
 
+void View::DrawCallstackWindow()
+{
+    bool show = true;
+    ImGui::Begin( "Callstack", &show );
+
+    auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
+
+    int fidx = 0;
+    for( auto& entry : cs )
+    {
+        auto frame = m_worker.GetCallstackFrame( entry );
+        if( !frame )
+        {
+            ImGui::Text( "%i. 0x%" PRIX64, fidx++, entry );
+        }
+        else
+        {
+            ImGui::Text( "%i. %s", fidx++, m_worker.GetString( frame->name ) );
+            ImGui::SameLine();
+            ImGui::PushTextWrapPos( 0.0f );
+            ImGui::TextDisabled( "(%s:%i)", m_worker.GetString( frame->file ), frame->line );
+            ImGui::PopTextWrapPos();
+        }
+    }
+
+    ImGui::End();
+
+    if( !show )
+    {
+        m_callstackInfoWindow = 0;
+    }
+}
+
 template<class T>
 void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress )
 {
@@ -4926,7 +4962,10 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         }
         else
         {
-            ImGui::Text( "[alloc]" );
+            if( ImGui::SmallButton( "alloc" ) )
+            {
+                m_callstackInfoWindow = v->csAlloc;
+            }
             if( ImGui::IsItemHovered() )
             {
                 CallstackTooltip( v->csAlloc );
@@ -4941,7 +4980,10 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         }
         else
         {
-            ImGui::Text( "[free]" );
+            if( ImGui::SmallButton( "free" ) )
+            {
+                m_callstackInfoWindow = v->csFree;
+            }
             if( ImGui::IsItemHovered() )
             {
                 CallstackTooltip( v->csFree );
@@ -5583,8 +5625,6 @@ void View::CallstackTooltip( uint32_t idx )
         else
         {
             ImGui::Text( "%i. %s", fidx++, m_worker.GetString( frame->name ) );
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(%s:%i)", m_worker.GetString( frame->file ), frame->line );
         }
     }
     ImGui::EndTooltip();

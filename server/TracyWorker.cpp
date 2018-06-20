@@ -996,7 +996,7 @@ void Worker::Exec()
             if( m_terminate )
             {
                 if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 ||
-                    !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() )
+                    !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() || !m_pendingCallstacks.empty() )
                 {
                     continue;
                 }

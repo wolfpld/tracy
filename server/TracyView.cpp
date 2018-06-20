@@ -4947,9 +4947,9 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
                 bool sel;
                 if( zoneFree == zone )
                 {
-                    sel = ImGui::Selectable( "", m_zoneInfoWindow == zoneFree );
-                    ImGui::SameLine();
-                    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.6f, 1.f ), "%s", txt );
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 1.f, 0.6f, 1.f ) );
+                    sel = ImGui::Selectable( txt, m_zoneInfoWindow == zoneFree );
+                    ImGui::PopStyleColor( 1 );
                 }
                 else
                 {

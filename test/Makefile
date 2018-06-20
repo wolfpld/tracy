@@ -3,7 +3,7 @@ CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE -rdynamic
 CXXFLAGS := $(CFLAGS) -std=gnu++17
 DEFINES +=
 INCLUDES :=
-LIBS := -lpthread
+LIBS := -lpthread -ldl
 IMAGE := tracy_test
 
 SRC := \

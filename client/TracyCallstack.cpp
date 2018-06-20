@@ -5,6 +5,8 @@
 #if defined _WIN32 || defined __CYGWIN__
 #  include <windows.h>
 #  include <dbghelp.h>
+#elif defined _GNU_SOURCE
+#  include <dlfcn.h>
 #endif
 
 namespace tracy
@@ -71,32 +73,48 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 {
     CallstackEntry ret;
+    ret.line = 0;
 
-    const char* symname;
+    const char* symname = nullptr;
+    const char* symloc = nullptr;
     auto vptr = (void*)ptr;
-    auto sym = backtrace_symbols( &vptr, 1 );
-    if( !sym )
+    char** sym = nullptr;
+
+    Dl_info dlinfo;
+    if( dladdr( vptr, &dlinfo ) )
     {
-        symname = "[unknown]";
+        symloc = dlinfo.dli_fname;
+        symname = dlinfo.dli_sname;
     }
-    else
+
+    if( !symname )
     {
-        symname = *sym;
+        sym = backtrace_symbols( &vptr, 1 );
+        if( !sym )
+        {
+            symname = "[unknown]";
+        }
+        else
+        {
+            symname = *sym;
+        }
+    }
+    if( !symloc )
+    {
+        symloc = "[unknown]";
     }
 
     const auto namelen = strlen( symname );
     auto name = (char*)tracy_malloc( namelen + 1 );
     memcpy( name, symname, namelen );
     name[namelen] = '\0';
-
     ret.name = name;
 
-    auto unknown = (char*)tracy_malloc( 10 );
-    memcpy( unknown, "[unknown]", 9 );
-    unknown[9] = '\0';
-
-    ret.file = unknown;
-    ret.line = 0;
+    const auto loclen = strlen( symloc );
+    auto loc = (char*)tracy_malloc( loclen + 1 );
+    memcpy( loc, symloc, loclen );
+    loc[loclen] = '\0';
+    ret.file = loc;
 
     if( sym ) free( sym );
 

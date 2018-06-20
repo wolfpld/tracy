@@ -8,11 +8,14 @@
 
 void* operator new( std::size_t count )
 {
-    return malloc( count );
+    auto ptr = malloc( count );
+    TracyAllocS( ptr, count, 10 );
+    return ptr;
 }
 
 void operator delete( void* ptr ) noexcept
 {
+    TracyFreeS( ptr, 10 );
     free( ptr );
 }
 

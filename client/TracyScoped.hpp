@@ -48,7 +48,7 @@ public:
 #else
         uint32_t cpu;
         MemWrite( &item->zoneEnd.time, Profiler::GetTime( cpu ) );
-        MemWrite( &item->zoneBegin.cpu, cpu );
+        MemWrite( &item->zoneEnd.cpu, cpu );
 #endif
         MemWrite( &item->zoneEnd.thread, m_thread );
         tail.store( magic + 1, std::memory_order_release );

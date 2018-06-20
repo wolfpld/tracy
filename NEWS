@@ -73,6 +73,8 @@ v0.3.2 (xxxx-xx-xx)
 - Timeline will now display "OpenGL context" or "Vulkan context" instead of
   "GPU context".
 - Fixed regression causing invalid display of GPU context appearance time.
+- Fixed regression causing invalid reporting of an active CPU in zone end
+  events, if MSVC rdtscp optimization was not enabled.
 
 
 v0.2 (2018-04-05)

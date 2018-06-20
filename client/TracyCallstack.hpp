@@ -10,7 +10,11 @@ extern "C" __declspec(dllimport) unsigned short __stdcall RtlCaptureStackBackTra
 extern "C" __declspec(dllimport) unsigned short __stdcall RtlCaptureStackBackTrace( unsigned long, unsigned long, void**, unsigned long* );
 #    endif
 #  endif
+#elif defined _GNU_SOURCE
+#  define TRACY_HAS_CALLSTACK
+#  include <execinfo.h>
 #endif
+
 
 #ifdef TRACY_HAS_CALLSTACK
 
@@ -31,10 +35,11 @@ struct CallstackEntry
     uint32_t line;
 };
 
+CallstackEntry DecodeCallstackPtr( uint64_t ptr );
+
 #if defined _WIN32 || defined __CYGWIN__
 
 void InitCallstack();
-CallstackEntry DecodeCallstackPtr( uint64_t ptr );
 
 static tracy_force_inline void* Callstack( int depth )
 {
@@ -42,6 +47,21 @@ static tracy_force_inline void* Callstack( int depth )
 
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
     const auto num = RtlCaptureStackBackTrace( 0, depth, (void**)( trace+1 ), nullptr );
+    *trace = num;
+
+    return trace;
+}
+
+#elif defined _GNU_SOURCE
+
+static tracy_force_inline void InitCallstack() {}
+
+static tracy_force_inline void* Callstack( int depth )
+{
+    assert( depth >= 1 );
+
+    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
+    const auto num = backtrace( (void**)(trace+1), depth );
     *trace = num;
 
     return trace;

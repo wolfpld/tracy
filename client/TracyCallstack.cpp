@@ -10,6 +10,8 @@
 namespace tracy
 {
 
+#if defined _WIN32 || defined __CYGWIN__
+
 void InitCallstack()
 {
     SymInitialize( GetCurrentProcess(), nullptr, true );
@@ -63,6 +65,44 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 
     return ret;
 }
+
+#elif defined _GNU_SOURCE
+
+CallstackEntry DecodeCallstackPtr( uint64_t ptr )
+{
+    CallstackEntry ret;
+
+    const char* symname;
+    auto vptr = (void*)ptr;
+    auto sym = backtrace_symbols( &vptr, 1 );
+    if( !sym )
+    {
+        symname = "[unknown]";
+    }
+    else
+    {
+        symname = *sym;
+        free( sym );
+    }
+
+    const auto namelen = strlen( symname );
+    auto name = (char*)tracy_malloc( namelen + 1 );
+    memcpy( name, symname, namelen );
+    name[namelen] = '\0';
+
+    ret.name = name;
+
+    auto unknown = (char*)tracy_malloc( 10 );
+    memcpy( unknown, "[unknown]", 9 );
+    unknown[9] = '\0';
+
+    ret.file = unknown;
+    ret.line = 0;
+
+    return ret;
+}
+
+#endif
 
 }
 

@@ -38,7 +38,7 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr );
 
 static tracy_force_inline void* Callstack( int depth )
 {
-    assert( depth >= 1 && depth <= 63 );
+    assert( depth >= 1 && depth < 63 );
 
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
     const auto num = RtlCaptureStackBackTrace( 0, depth, (void**)( trace+1 ), nullptr );

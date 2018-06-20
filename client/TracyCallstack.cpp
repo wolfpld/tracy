@@ -7,6 +7,7 @@
 #  include <dbghelp.h>
 #elif defined _GNU_SOURCE
 #  include <dlfcn.h>
+#  include <cxxabi.h>
 #endif
 
 namespace tracy
@@ -75,6 +76,7 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     CallstackEntry ret;
     ret.line = 0;
 
+    char* demangled = nullptr;
     const char* symname = nullptr;
     const char* symloc = nullptr;
     auto vptr = (void*)ptr;
@@ -85,6 +87,17 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     {
         symloc = dlinfo.dli_fname;
         symname = dlinfo.dli_sname;
+
+        if( symname && symname[0] == '_' )
+        {
+            size_t len = 0;
+            int status;
+            demangled = abi::__cxa_demangle( symname, nullptr, &len, &status );
+            if( status == 0 )
+            {
+                symname = demangled;
+            }
+        }
     }
 
     if( !symname )
@@ -117,6 +130,7 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     ret.file = loc;
 
     if( sym ) free( sym );
+    if( demangled ) free( demangled );
 
     return ret;
 }

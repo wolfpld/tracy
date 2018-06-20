@@ -3,42 +3,8 @@
 #ifdef TRACY_HAS_CALLSTACK
 
 #if defined _WIN32 || defined __CYGWIN__
-#  ifndef MAXLONG
-enum { SYMOPT_LOAD_LINES = 0x00000010 };
-typedef struct _SYMBOL_INFO
-{
-    unsigned long SizeOfStruct;
-    unsigned long TypeIndex;
-    unsigned long long Reserved[2];
-    unsigned long Index;
-    unsigned long Size;
-    unsigned long long ModBase;
-    unsigned long Flags;
-    unsigned long long Value;
-    unsigned long long Address;
-    unsigned long Register;
-    unsigned long Scope;
-    unsigned long Tag;
-    unsigned long NameLen;
-    unsigned long MaxNameLen;
-    char Name[1];
-} SYMBOL_INFO;
-typedef struct _IMAGEHLP_LINE64
-{
-    unsigned long SizeOfStruct;
-    void* Key;
-    unsigned LineNumber;
-    char* FileName;
-    unsigned long long Address;
-} IMAGEHLP_LINE64;
-extern "C" __declspec(dllimport) void* __stdcall GetCurrentProcess();
-extern "C" __declspec(dllimport) int __stdcall SymInitialize( void*, const char*, int );
-extern "C" __declspec(dllimport) unsigned long __stdcall SymSetOptions( unsigned long );
-extern "C" __declspec(dllimport) int __stdcall SymFromAddr( void*, unsigned long long, unsigned long long*, SYMBOL_INFO* );
-extern "C" __declspec(dllimport) int __stdcall SymGetLineFromAddr64( void*, unsigned long long, unsigned long*, IMAGEHLP_LINE64* );
-#  else
-#    include <dbghelp.h>
-#  endif
+#  include <windows.h>
+#  include <dbghelp.h>
 #endif
 
 namespace tracy
@@ -75,7 +41,7 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 
     const char* filename;
     IMAGEHLP_LINE64 line;
-    unsigned long displacement = 0;
+    DWORD displacement = 0;
     line.SizeOfStruct = sizeof( IMAGEHLP_LINE64 );
     if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
     {

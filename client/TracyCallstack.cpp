@@ -81,12 +81,14 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     const char* symloc = nullptr;
     auto vptr = (void*)ptr;
     char** sym = nullptr;
+    ptrdiff_t symoff = 0;
 
     Dl_info dlinfo;
     if( dladdr( vptr, &dlinfo ) )
     {
         symloc = dlinfo.dli_fname;
         symname = dlinfo.dli_sname;
+        symoff = (char*)ptr - (char*)dlinfo.dli_saddr;
 
         if( symname && symname[0] == '_' )
         {
@@ -117,11 +119,26 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
         symloc = "[unknown]";
     }
 
-    const auto namelen = strlen( symname );
-    auto name = (char*)tracy_malloc( namelen + 1 );
-    memcpy( name, symname, namelen );
-    name[namelen] = '\0';
-    ret.name = name;
+    if( symoff == 0 )
+    {
+        const auto namelen = strlen( symname );
+        auto name = (char*)tracy_malloc( namelen + 1 );
+        memcpy( name, symname, namelen );
+        name[namelen] = '\0';
+        ret.name = name;
+    }
+    else
+    {
+        char buf[32];
+        sprintf( buf, " + %td", symoff );
+        const auto offlen = strlen( buf );
+        const auto namelen = strlen( symname );
+        auto name = (char*)tracy_malloc( namelen + offlen + 1 );
+        memcpy( name, symname, namelen );
+        memcpy( name + namelen, buf, offlen );
+        name[namelen + offlen] = '\0';
+        ret.name = name;
+    }
 
     const auto loclen = strlen( symloc );
     auto loc = (char*)tracy_malloc( loclen + 1 );

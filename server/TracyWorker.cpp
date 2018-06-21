@@ -1576,6 +1576,9 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::CallstackMemory:
         ProcessCallstackMemory( ev.callstackMemory );
         break;
+    case QueueType::Callstack:
+        ProcessCallstack( ev.callstack );
+        break;
     case QueueType::CallstackFrame:
         ProcessCallstackFrame( ev.callstackFrame );
         break;
@@ -2142,6 +2145,28 @@ void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
     else
     {
         mem.csFree = it->second;
+    }
+
+    m_pendingCallstacks.erase( it );
+}
+
+void Worker::ProcessCallstack( const QueueCallstack& ev )
+{
+    auto it = m_pendingCallstacks.find( ev.ptr );
+    assert( it != m_pendingCallstacks.end() );
+
+    auto nit = m_nextCallstack.find( ev.thread );
+    assert( nit != m_nextCallstack.end() );
+    auto& next = nit->second;
+
+    switch( next.type )
+    {
+    case NextCallstackType::Zone:
+        next.zone->callstack = it->second;
+        break;
+    default:
+        assert( false );
+        break;
     }
 
     m_pendingCallstacks.erase( it );

@@ -140,7 +140,6 @@ You also need to periodically collect the GPU events using the `TracyVkCollect( 
 ## Good practices
 
 - Remember to set thread names for proper identification of threads. You may use the functions exposed in the `tracy/common/TracySystem.hpp` header to do so.
-- Enable the MSVC String Pooling option (`/GF`) or the gcc counterpart, `-fmerge-constants`. This will reduce number of queries the server needs to perform to the client. Note that these options are enabled in optimized builds by default.
 
 ## Practical considerations
 

@@ -1597,6 +1597,7 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
+    zone->callstack = 0;
 
     m_data.lastTime = std::max( m_data.lastTime, zone->start );
 
@@ -1631,6 +1632,7 @@ void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     zone->srcloc = it->second;
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
+    zone->callstack = 0;
 
     m_data.lastTime = std::max( m_data.lastTime, zone->start );
 

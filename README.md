@@ -139,7 +139,7 @@ You also need to periodically collect the GPU events using the `TracyVkCollect( 
 
 ## Good practices
 
-- Remember to set thread names for proper identification of threads. You may use the functions exposed in the `tracy/common/TracySystem.hpp` header to do so. Note that the max thread name length in pthreads is limited to 15 characters. Proper thread naming support is available in MSVC only if you are using Windows SDK 10.0.15063 or newer.
+- Remember to set thread names for proper identification of threads. You may use the functions exposed in the `tracy/common/TracySystem.hpp` header to do so.
 - Enable the MSVC String Pooling option (`/GF`) or the gcc counterpart, `-fmerge-constants`. This will reduce number of queries the server needs to perform to the client. Note that these options are enabled in optimized builds by default.
 
 ## Practical considerations

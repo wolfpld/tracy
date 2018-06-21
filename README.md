@@ -57,7 +57,7 @@ The easiest way to get going is to build the standalone server, available in the
 
 If you prefer to inspect the data only after a trace has been performed, you may use the command line utility in the `capture` directory. It will save a data dump that may be later opened in the graphical viewer application.
 
-Alternatively, you may want to embed the server in your application, the same which is running the client part of tracy. Doing so requires that you also include the `server` and `imgui` directories. Include the `tracy/server/TracyView.hpp` header file, create an instance of the `tracy::View` class and call its `Draw()` method every frame. Unfortunately, there's also the hard part - you need to integrate the imgui library into the innards of your program. How to do so is outside the scope of this document.
+Alternatively, you may want to embed the server in your application, the same which is running the client part of tracy.
 
 #### Marking zones
 

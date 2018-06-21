@@ -2778,6 +2778,14 @@ void View::DrawZoneInfoWindow()
     {
         m_findZone.ShowZone( ev.srcloc, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
     }
+    if( ev.callstack != 0 )
+    {
+        ImGui::SameLine();
+        if( ImGui::Button( "Callstack" ) )
+        {
+            m_callstackInfoWindow = ev.callstack;
+        }
+    }
     if( !m_zoneInfoStack.empty() )
     {
         ImGui::SameLine();

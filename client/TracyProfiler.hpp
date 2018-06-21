@@ -238,6 +238,21 @@ public:
         s_profiler.m_serialLock.unlock();
     }
 
+    static tracy_force_inline void SendCallstack( int depth, uint64_t thread )
+    {
+#ifdef TRACY_HAS_CALLSTACK
+        auto ptr = Callstack( depth );
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::Callstack );
+        MemWrite( &item->callstack.ptr, ptr );
+        MemWrite( &item->callstack.thread, thread );
+        tail.store( magic + 1, std::memory_order_release );
+#endif
+    }
+
     static bool ShouldExit();
 
 private:

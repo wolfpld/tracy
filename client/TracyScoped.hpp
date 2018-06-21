@@ -36,6 +36,29 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    tracy_force_inline ScopedZone( const SourceLocation* srcloc, int depth )
+    {
+        const auto thread = GetThreadHandle();
+        m_thread = thread;
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::ZoneBeginCallstack );
+#ifdef TRACY_RDTSCP_OPT
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
+#else
+        uint32_t cpu;
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
+        MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+        MemWrite( &item->zoneBegin.thread, thread );
+        MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
+        tail.store( magic + 1, std::memory_order_release );
+
+        s_profiler.SendCallstack( depth, thread );
+    }
+
     tracy_force_inline ~ScopedZone()
     {
         Magic magic;

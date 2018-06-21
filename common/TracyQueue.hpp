@@ -12,8 +12,10 @@ enum class QueueType : uint8_t
     Message,
     ZoneBeginAllocSrcLoc,
     CallstackMemory,
+    Callstack,
     Terminate,
     ZoneBegin,
+    ZoneBeginCallstack,
     ZoneEnd,
     FrameMarkMsg,
     SourceLocation,
@@ -216,6 +218,12 @@ struct QueueCallstackMemory
     uint64_t ptr;
 };
 
+struct QueueCallstack
+{
+    uint64_t ptr;
+    uint64_t thread;
+};
+
 struct QueueCallstackFrame
 {
     uint64_t ptr;
@@ -259,6 +267,7 @@ struct QueueItem
         QueueMemAlloc memAlloc;
         QueueMemFree memFree;
         QueueCallstackMemory callstackMemory;
+        QueueCallstack callstack;
         QueueCallstackFrame callstackFrame;
     };
 };
@@ -272,9 +281,11 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstack ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),

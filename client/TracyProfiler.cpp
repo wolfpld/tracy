@@ -389,6 +389,11 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     SendSourceLocationPayload( ptr );
                     tracy_free( (void*)ptr );
                     break;
+                case QueueType::Callstack:
+                    ptr = MemRead<uint64_t>( &item->callstack.ptr );
+                    SendCallstackPayload( ptr );
+                    tracy_free( (void*)ptr );
+                    break;
                 default:
                     assert( false );
                     break;

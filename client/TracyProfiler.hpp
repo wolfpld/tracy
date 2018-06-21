@@ -220,6 +220,7 @@ public:
     {
         const auto thread = GetThreadHandle();
 
+        rpmalloc_thread_initialize();
         s_profiler.m_serialLock.lock();
         SendMemAlloc( QueueType::MemAllocCallstack, thread, ptr, size );
         SendCallstackMemory( depth );
@@ -230,6 +231,7 @@ public:
     {
         const auto thread = GetThreadHandle();
 
+        rpmalloc_thread_initialize();
         s_profiler.m_serialLock.lock();
         SendMemFree( QueueType::MemFreeCallstack, thread, ptr );
         SendCallstackMemory( depth );

@@ -145,8 +145,8 @@ You also need to periodically collect the GPU events using the `TracyVkCollect( 
 
 Tracy's time measurement precision is not infinite. It's only as good as the system-provided timers are.
 
-- On the embedded ARM-based systems you can expect to have 1 µs time resolution. Some hardware is able to provide tens to hundreds nanoseconds resolution.
 - On x86 the time resolution depends on the hardware implementation of the RDTSCP instruction and typically is a couple of nanoseconds. This may vary from one micro-architecture to another and requires a fairly modern (Sandy Bridge) processor for reliable results.
+- On ARM-based systems tracy will try to use timer register (~40 ns resolution). If it fails, tracy falls back to system provided timer, which can range in resolution from 250 ns to 1 us.
 
 While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which tracy tries to calculate and display on the timeline view, as a red zone. Note that this is an *approximation* of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.
 

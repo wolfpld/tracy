@@ -4827,13 +4827,13 @@ void View::DrawCallstackWindow()
 }
 
 template<class T>
-void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress )
+void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress, const char* id )
 {
     const auto& style = ImGui::GetStyle();
     const auto dist = std::distance( ptr, end ) + 1;
     const auto ty = ImGui::GetTextLineHeight() + style.ItemSpacing.y;
 
-    ImGui::BeginChild( "##memScroll", ImVec2( 0, std::max( ty * std::min<int64_t>( dist, 5 ), std::min( ty * dist, ImGui::GetContentRegionAvail().y ) ) ) );
+    ImGui::BeginChild( id ? id : "##memScroll", ImVec2( 0, std::max( ty * std::min<int64_t>( dist, 5 ), std::min( ty * dist, ImGui::GetContentRegionAvail().y ) ) ) );
     ImGui::Columns( 8 );
     ImGui::Text( "Address" );
     ImGui::NextColumn();
@@ -5179,7 +5179,7 @@ void View::DrawMemory()
                         ImGui::Text( "0x%" PRIx64 "+%" PRIu64, v->ptr, m_memInfo.ptrFind - v->ptr );
                     }
                     return v;
-                } );
+                }, "##allocations" );
             }
         }
         ImGui::TreePop();
@@ -5220,7 +5220,7 @@ void View::DrawMemory()
         ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
             ImGui::Text( "0x%" PRIx64, (*v)->ptr );
             return *v;
-        } );
+        }, "##activeMem" );
         ImGui::TreePop();
     }
 

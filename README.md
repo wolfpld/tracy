@@ -1,6 +1,6 @@
 # Tracy Profiler
 
-Tracy is a real time, nanosecond resolution frame profiler that can be used for remote or embedded telemetry of your application. It can profile both CPU (C++, Lua) and GPU (OpenGL, Vulkan). It also can display locks held by threads and their interactions with each other.
+Tracy is a real time, nanosecond resolution frame profiler that can be used for remote or embedded telemetry of your application. It can profile CPU (C++, Lua), GPU (OpenGL, Vulkan) and memory. It also can display locks held by threads and their interactions with each other.
 
 ![](doc/profiler.png)
 
@@ -85,7 +85,7 @@ Similarly, you can use `TracySharedLockable`, `TracySharedLockableN` and `Shared
 
 #### Plotting data
 
-Tracy is able to capture and draw value changes over time. You may use it to analyse memory usage, draw call count, etc. To report data, use the `TracyPlot( name, value )` macro.
+Tracy is able to capture and draw value changes over time. You may use it to analyse draw call count, number of performed queries, etc. To report data, use the `TracyPlot( name, value )` macro.
 
 ![](doc/plot.png)
 
@@ -94,6 +94,18 @@ Tracy is able to capture and draw value changes over time. You may use it to ana
 Fast navigation in large data set and correlation of zones with what was happening in application may be difficult. To ease these issues tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the `TracyMessage( text, size )` macro (tracy will allocate memory for message storage). Alternatively, use `TracyMessageL( text )` for string literal messages. Messages are displayed on a chronological list and in the zone view.
 
 ![](doc/messages.png)
+
+#### Memory profiling
+
+Tracy can monitor memory usage of your application. Knowledge about each performed memory allocation enables the following:
+
+- Memory usage graph (like in massif, but fully interactable).
+- List of active allocations at program exit (leak list).
+- Visualization of memory map.
+- Ability to rewind view of active allocations and memory map to any point of program execution.
+- Information about memory statistics of each zone.
+
+To mark memory events, use the `TracyAlloc( ptr, size )` and `TracyFree( ptr )` macros. Typically you would do that in overloads of `operator new` and `operator delete`.
 
 #### Lua support
 

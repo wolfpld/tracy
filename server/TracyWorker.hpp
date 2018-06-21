@@ -119,6 +119,20 @@ class Worker
         float compRatio;
     };
 
+    enum class NextCallstackType
+    {
+        Zone
+    };
+
+    struct NextCallstack
+    {
+        NextCallstackType type;
+        union
+        {
+            ZoneEvent* zone;
+        };
+    };
+
 public:
     Worker( const char* addr );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All );
@@ -197,6 +211,7 @@ private:
     tracy_force_inline void DispatchProcess( const QueueItem& ev, char*& ptr );
     tracy_force_inline void Process( const QueueItem& ev );
     tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBeginCallstack( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
@@ -223,6 +238,8 @@ private:
     tracy_force_inline void ProcessMemFreeCallstack( const QueueMemFree& ev );
     tracy_force_inline void ProcessCallstackMemory( const QueueCallstackMemory& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
+
+    tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );
@@ -306,6 +323,7 @@ private:
     Vector<uint64_t> m_sourceLocationQueue;
     flat_hash_map<uint64_t, uint32_t, nohash<uint64_t>> m_sourceLocationShrink;
     flat_hash_map<uint64_t, ThreadData*, nohash<uint64_t>> m_threadMap;
+    flat_hash_map<uint64_t, NextCallstack, nohash<uint64_t>> m_nextCallstack;
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;

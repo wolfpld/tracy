@@ -1495,6 +1495,9 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::ZoneBegin:
         ProcessZoneBegin( ev.zoneBegin );
         break;
+    case QueueType::ZoneBeginCallstack:
+        ProcessZoneBeginCallstack( ev.zoneBegin );
+        break;
     case QueueType::ZoneBeginAllocSrcLoc:
         ProcessZoneBeginAllocSrcLoc( ev.zoneBegin );
         break;
@@ -1585,10 +1588,8 @@ void Worker::Process( const QueueItem& ev )
     }
 }
 
-void Worker::ProcessZoneBegin( const QueueZoneBegin& ev )
+void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 {
-    auto zone = m_slab.AllocInit<ZoneEvent>();
-
     CheckSourceLocation( ev.srcloc );
 
     zone->start = TscTime( ev.time );
@@ -1600,6 +1601,22 @@ void Worker::ProcessZoneBegin( const QueueZoneBegin& ev )
     m_data.lastTime = std::max( m_data.lastTime, zone->start );
 
     NewZone( zone, ev.thread );
+}
+
+void Worker::ProcessZoneBegin( const QueueZoneBegin& ev )
+{
+    auto zone = m_slab.AllocInit<ZoneEvent>();
+    ProcessZoneBeginImpl( zone, ev );
+}
+
+void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
+{
+    auto zone = m_slab.AllocInit<ZoneEvent>();
+    ProcessZoneBeginImpl( zone, ev );
+
+    auto& next = m_nextCallstack[ev.thread];
+    next.type = NextCallstackType::Zone;
+    next.zone = zone;
 }
 
 void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )

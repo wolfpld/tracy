@@ -121,7 +121,8 @@ class Worker
 
     enum class NextCallstackType
     {
-        Zone
+        Zone,
+        Gpu
     };
 
     struct NextCallstack
@@ -130,6 +131,7 @@ class Worker
         union
         {
             ZoneEvent* zone;
+            GpuEvent* gpu;
         };
     };
 
@@ -229,6 +231,7 @@ private:
     tracy_force_inline void ProcessMessageLiteral( const QueueMessage& ev );
     tracy_force_inline void ProcessGpuNewContext( const QueueGpuNewContext& ev );
     tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev );
+    tracy_force_inline void ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev );
     tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
     tracy_force_inline void ProcessGpuResync( const QueueGpuResync& ev );
@@ -241,6 +244,7 @@ private:
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );

@@ -1559,6 +1559,9 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::GpuZoneBegin:
         ProcessGpuZoneBegin( ev.gpuZoneBegin );
         break;
+    case QueueType::GpuZoneBeginCallstack:
+        ProcessGpuZoneBeginCallstack( ev.gpuZoneBegin );
+        break;
     case QueueType::GpuZoneEnd:
         ProcessGpuZoneEnd( ev.gpuZoneEnd );
         break;
@@ -1947,7 +1950,7 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     m_gpuCtxMap.emplace( ev.context, gpu );
 }
 
-void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
+void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev )
 {
     auto it = m_gpuCtxMap.find( ev.context );
     assert( it != m_gpuCtxMap.end() );
@@ -1955,13 +1958,12 @@ void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
 
     CheckSourceLocation( ev.srcloc );
 
-    auto zone = m_slab.AllocInit<GpuEvent>();
-
     zone->cpuStart = TscTime( ev.cpuTime );
     zone->cpuEnd = -1;
     zone->gpuStart = std::numeric_limits<int64_t>::max();
     zone->gpuEnd = -1;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
+    zone->callstack = 0;
     zone->thread = CompressThread( ev.thread );
 
     m_data.lastTime = std::max( m_data.lastTime, zone->cpuStart );
@@ -1976,6 +1978,22 @@ void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
 
     ctx->stack.push_back( zone );
     ctx->queue.push_back( zone );
+}
+
+void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
+{
+    auto zone = m_slab.AllocInit<GpuEvent>();
+    ProcessGpuZoneBeginImpl( zone, ev );
+}
+
+void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev )
+{
+    auto zone = m_slab.AllocInit<GpuEvent>();
+    ProcessGpuZoneBeginImpl( zone, ev );
+
+    auto& next = m_nextCallstack[ev.thread];
+    next.type = NextCallstackType::Gpu;
+    next.gpu = zone;
 }
 
 void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
@@ -2170,6 +2188,9 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
     {
     case NextCallstackType::Zone:
         next.zone->callstack = it->second;
+        break;
+    case NextCallstackType::Gpu:
+        next.gpu->callstack = it->second;
         break;
     default:
         assert( false );
@@ -2452,7 +2473,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size )
         auto zone = m_slab.AllocInit<GpuEvent>();
         vec.push_back_no_space_check( zone );
 
-        f.Read( zone, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) );
+        f.Read( zone, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) + sizeof( GpuEvent::callstack ) );
         uint64_t thread;
         f.Read( thread );
         zone->thread = CompressThread( thread );
@@ -2472,6 +2493,7 @@ void Worker::ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
 
         f.Read( zone, 36 );
         zone->thread = 0;
+        zone->callstack = 0;
         ReadTimelinePre032( f, zone->child );
     }
 }
@@ -2668,7 +2690,7 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec )
 
     for( auto& v : vec )
     {
-        f.Write( v, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) );
+        f.Write( v, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) + sizeof( GpuEvent::callstack ) );
         uint64_t thread = DecompressThread( v->thread );
         f.Write( &thread, sizeof( thread ) );
         WriteTimeline( f, v->child );

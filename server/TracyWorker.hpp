@@ -282,10 +282,14 @@ private:
     uint16_t CompressThreadNew( uint64_t thread );
 
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread );
+    tracy_force_inline void ReadTimelinePre032( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread );
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
     tracy_force_inline void ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec );
 
+    tracy_force_inline void ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread );
+
     void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size );
+    void ReadTimelinePre032( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size );
     void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
     void ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
 

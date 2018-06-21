@@ -453,7 +453,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( tid );
         td->id = tid;
         f.Read( td->count );
-        ReadTimeline( f, td->timeline, CompressThread( tid ) );
+        if( fileVer <= FileVersion( 0, 3, 1 ) )
+        {
+            ReadTimelinePre032( f, td->timeline, CompressThread( tid ) );
+        }
+        else
+        {
+            ReadTimeline( f, td->timeline, CompressThread( tid ) );
+        }
         uint64_t msz;
         f.Read( msz );
         if( eventMask & EventType::Messages )
@@ -2340,6 +2347,16 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
     }
 }
 
+void Worker::ReadTimelinePre032( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread )
+{
+    uint64_t sz;
+    f.Read( sz );
+    if( sz != 0 )
+    {
+        ReadTimelinePre032( f, vec, thread, sz );
+    }
+}
+
 void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
 {
     uint64_t sz;
@@ -2360,6 +2377,34 @@ void Worker::ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec )
     }
 }
 
+void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
+{
+#ifndef TRACY_NO_STATISTICS
+    auto it = m_data.sourceLocationZones.find( zone->srcloc );
+    assert( it != m_data.sourceLocationZones.end() );
+    auto& ztd = it->second.zones.push_next();
+    ztd.zone = zone;
+    ztd.thread = thread;
+
+    if( zone->end >= 0 )
+    {
+        auto timeSpan = zone->end - zone->start;
+        if( timeSpan > 0 )
+        {
+            it->second.min = std::min( it->second.min, timeSpan );
+            it->second.max = std::max( it->second.max, timeSpan );
+            it->second.total += timeSpan;
+            for( auto& v : zone->child )
+            {
+                const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
+                timeSpan -= childSpan;
+            }
+            it->second.selfTotal += timeSpan;
+        }
+    }
+#endif
+}
+
 void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size )
 {
     assert( size != 0 );
@@ -2374,31 +2419,26 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
 
         f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
         ReadTimeline( f, zone->child, thread );
+        ReadTimelineUpdateStatistics( zone, thread );
+    }
+}
 
-#ifndef TRACY_NO_STATISTICS
-        auto it = m_data.sourceLocationZones.find( zone->srcloc );
-        assert( it != m_data.sourceLocationZones.end() );
-        auto& ztd = it->second.zones.push_next();
-        ztd.zone = zone;
-        ztd.thread = thread;
+void Worker::ReadTimelinePre032( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size )
+{
+    assert( size != 0 );
+    vec.reserve_non_zero( size );
+    m_data.zonesCnt += size;
 
-        if( zone->end >= 0 )
-        {
-            auto timeSpan = zone->end - zone->start;
-            if( timeSpan > 0 )
-            {
-                it->second.min = std::min( it->second.min, timeSpan );
-                it->second.max = std::max( it->second.max, timeSpan );
-                it->second.total += timeSpan;
-                for( auto& v : zone->child )
-                {
-                    const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
-                    timeSpan -= childSpan;
-                }
-                it->second.selfTotal += timeSpan;
-            }
-        }
-#endif
+    for( uint64_t i=0; i<size; i++ )
+    {
+        auto zone = m_slab.Alloc<ZoneEvent>();
+        vec.push_back_no_space_check( zone );
+        new( &zone->child ) decltype( zone->child );
+
+        f.Read( zone, 26 );
+        zone->callstack = 0;
+        ReadTimelinePre032( f, zone->child, thread );
+        ReadTimelineUpdateStatistics( zone, thread );
     }
 }
 

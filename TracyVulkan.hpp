@@ -173,6 +173,7 @@ private:
 
 extern VkCtxWrapper s_vkCtx;
 
+// TODO: not thread safe!
 class VkCtxScope
 {
 public:

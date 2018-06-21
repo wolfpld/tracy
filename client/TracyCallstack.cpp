@@ -140,10 +140,14 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
         ret.name = name;
     }
 
+    char buf[32];
+    sprintf( buf, " [%p]", (void*)ptr );
+    const auto addrlen = strlen( buf );
     const auto loclen = strlen( symloc );
-    auto loc = (char*)tracy_malloc( loclen + 1 );
+    auto loc = (char*)tracy_malloc( loclen + addrlen + 1 );
     memcpy( loc, symloc, loclen );
-    loc[loclen] = '\0';
+    memcpy( loc + loclen, buf, addrlen );
+    loc[loclen + addrlen] = '\0';
     ret.file = loc;
 
     if( sym ) free( sym );

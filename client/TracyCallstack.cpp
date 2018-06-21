@@ -69,6 +69,85 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
     return ret;
 }
 
+#elif defined __ANDROID__
+
+CallstackEntry DecodeCallstackPtr( uint64_t ptr )
+{
+    CallstackEntry ret;
+    ret.line = 0;
+
+    char* demangled = nullptr;
+    const char* symname = nullptr;
+    const char* symloc = nullptr;
+    auto vptr = (void*)ptr;
+    char** sym = nullptr;
+    ptrdiff_t symoff = 0;
+
+    Dl_info dlinfo;
+    if( dladdr( vptr, &dlinfo ) )
+    {
+        symloc = dlinfo.dli_fname;
+        symname = dlinfo.dli_sname;
+        symoff = (char*)ptr - (char*)dlinfo.dli_saddr;
+
+        if( symname && symname[0] == '_' )
+        {
+            size_t len = 0;
+            int status;
+            demangled = abi::__cxa_demangle( symname, nullptr, &len, &status );
+            if( status == 0 )
+            {
+                symname = demangled;
+            }
+        }
+    }
+
+    if( !symname )
+    {
+        symname = "[unknown]";
+    }
+    if( !symloc )
+    {
+        symloc = "[unknown]";
+    }
+
+    if( symoff == 0 )
+    {
+        const auto namelen = strlen( symname );
+        auto name = (char*)tracy_malloc( namelen + 1 );
+        memcpy( name, symname, namelen );
+        name[namelen] = '\0';
+        ret.name = name;
+    }
+    else
+    {
+        char buf[32];
+        sprintf( buf, " + %td", symoff );
+        const auto offlen = strlen( buf );
+        const auto namelen = strlen( symname );
+        auto name = (char*)tracy_malloc( namelen + offlen + 1 );
+        memcpy( name, symname, namelen );
+        memcpy( name + namelen, buf, offlen );
+        name[namelen + offlen] = '\0';
+        ret.name = name;
+    }
+
+    char buf[32];
+    sprintf( buf, " [%p]", (void*)ptr );
+    const auto addrlen = strlen( buf );
+    const auto loclen = strlen( symloc );
+    auto loc = (char*)tracy_malloc( loclen + addrlen + 1 );
+    memcpy( loc, symloc, loclen );
+    memcpy( loc + loclen, buf, addrlen );
+    loc[loclen + addrlen] = '\0';
+    ret.file = loc;
+
+    if( sym ) free( sym );
+    if( demangled ) free( demangled );
+
+    return ret;
+}
+
 #elif defined _GNU_SOURCE
 
 CallstackEntry DecodeCallstackPtr( uint64_t ptr )

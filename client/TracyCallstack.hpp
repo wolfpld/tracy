@@ -10,6 +10,9 @@ extern "C" __declspec(dllimport) unsigned short __stdcall RtlCaptureStackBackTra
 extern "C" __declspec(dllimport) unsigned short __stdcall RtlCaptureStackBackTrace( unsigned long, unsigned long, void**, unsigned long* );
 #    endif
 #  endif
+#elif defined __ANDROID__
+#  define TRACY_HAS_CALLSTACK
+#  include <unwind.h>
 #elif defined _GNU_SOURCE
 #  define TRACY_HAS_CALLSTACK
 #  include <execinfo.h>
@@ -48,6 +51,41 @@ static tracy_force_inline void* Callstack( int depth )
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
     const auto num = RtlCaptureStackBackTrace( 0, depth, (void**)( trace+1 ), nullptr );
     *trace = num;
+
+    return trace;
+}
+
+#elif defined __ANDROID__
+
+static tracy_force_inline void InitCallstack() {}
+
+struct BacktraceState
+{
+    void** current;
+    void** end;
+};
+
+static _Unwind_Reason_Code tracy_unwind_callback( struct _Unwind_Context* ctx, void* arg )
+{
+    auto state = (BacktraceState*)arg;
+    uintptr_t pc = _Unwind_GetIP( ctx );
+    if( pc )
+    {
+        if( state->current == state->end ) return _URC_END_OF_STACK;
+        *state->current++ = (void*)pc;
+    }
+    return _URC_NO_REASON;
+}
+
+static tracy_force_inline void* Callstack( int depth )
+{
+    assert( depth >= 1 && depth < 63 );
+
+    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
+    BacktraceState state = { (void**)(trace+1), (void**)(trace+1+depth) };
+    _Unwind_Backtrace( tracy_unwind_callback, &state );
+
+    *trace = (uintptr_t*)state.current - trace + 1;
 
     return trace;
 }

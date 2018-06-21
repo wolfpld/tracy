@@ -31,6 +31,7 @@ enum class QueueType : uint8_t
     MessageLiteral,
     GpuNewContext,
     GpuZoneBegin,
+    GpuZoneBeginCallstack,
     GpuZoneEnd,
     GpuTime,
     GpuResync,
@@ -301,6 +302,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
     sizeof( QueueHeader ) + sizeof( QueueGpuResync ),

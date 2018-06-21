@@ -8,6 +8,8 @@
 #define TracyVkZone(x,y)
 #define TracyVkZoneC(x,y,z)
 #define TracyVkCollect(x)
+#define TracyVkZoneS(x,y,z)
+#define TracyVkZoneCS(x,y,z,w)
 
 #else
 
@@ -15,12 +17,21 @@
 #include <vulkan/vulkan.h>
 #include "Tracy.hpp"
 #include "client/TracyProfiler.hpp"
+#include "client/TracyCallstack.hpp"
 
 #define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::s_vkCtx.ptr = (tracy::VkCtx*)tracy::tracy_malloc( sizeof( tracy::VkCtx ) ); new(tracy::s_vkCtx.ptr) tracy::VkCtx( physdev, device, queue, cmdbuf );
 #define TracyVkDestroy() tracy::s_vkCtx.ptr->~VkCtx(); tracy::tracy_free( tracy::s_vkCtx.ptr ); tracy::s_vkCtx.ptr = nullptr;
 #define TracyVkZone( cmdbuf, name ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, cmdbuf );
 #define TracyVkZoneC( cmdbuf, name, color ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, cmdbuf );
 #define TracyVkCollect( cmdbuf ) tracy::s_vkCtx.ptr->Collect( cmdbuf );
+
+#ifdef TRACY_HAS_CALLSTACK
+#  define TracyVkZoneS( cmdbuf, name, depth ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, cmdbuf, depth );
+#  define TracyVkZoneCS( cmdbuf, name, color, depth ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, cmdbuf, depth );
+#else
+#  define TracyVkZoneS( cmdbuf, name, depth ) TracyVkZone( cmdbuf, name )
+#  define TracyVkZoneCS( cmdbuf, name, color, depth ) TracyVkZoneC( cmdbuf, name, color )
+#endif
 
 namespace tracy
 {
@@ -193,6 +204,28 @@ public:
         MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
+    }
+
+    tracy_force_inline VkCtxScope( const SourceLocation* srcloc, VkCommandBuffer cmdbuf, int depth )
+        : m_cmdbuf( cmdbuf )
+    {
+        const auto thread = GetThreadHandle();
+
+        auto ctx = s_vkCtx.ptr;
+        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, ctx->NextQueryId() );
+
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstack );
+        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
+        MemWrite( &item->gpuZoneBegin.thread, thread );
+        MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
+        tail.store( magic + 1, std::memory_order_release );
+
+        s_profiler.SendCallstack( depth, thread );
     }
 
     tracy_force_inline ~VkCtxScope()

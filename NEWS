@@ -75,6 +75,10 @@ v0.3.2 (xxxx-xx-xx)
 - Fixed regression causing invalid display of GPU context appearance time.
 - Fixed regression causing invalid reporting of an active CPU in zone end
   events, if MSVC rdtscp optimization was not enabled.
+- Ability to collect true call stacks.
+  - Supported on Windows, Linux, Android.
+  - The following events can collect call stacks:
+    - Memory alloc/free.
 
 
 v0.2 (2018-04-05)

@@ -79,6 +79,7 @@ v0.3.2 (xxxx-xx-xx)
   - Supported on Windows, Linux, Android.
   - The following events can collect call stacks:
     - Memory alloc/free.
+    - Zone begin.
 
 
 v0.2 (2018-04-05)

@@ -3060,6 +3060,14 @@ void View::DrawGpuInfoWindow()
             ShowZoneInfo( *parent, m_gpuInfoWindowThread );
         }
     }
+    if( ev.callstack != 0 )
+    {
+        ImGui::SameLine();
+        if( ImGui::Button( "Callstack" ) )
+        {
+            m_callstackInfoWindow = ev.callstack;
+        }
+    }
     if( !m_gpuInfoStack.empty() )
     {
         ImGui::SameLine();

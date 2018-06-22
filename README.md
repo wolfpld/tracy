@@ -137,6 +137,10 @@ To mark a GPU zone use the `TracyVkZone( cmdbuf, name )` macro, where `name` is 
 
 You also need to periodically collect the GPU events using the `TracyVkCollect( cmdbuf )` macro. The provided command buffer must be in the recording state and outside of a render pass instance.
 
+#### Collecting call stacks
+
+Tracy can capture true calls stacks on selected platforms (Windows, Linux, Android). It can be performed by using macros with the `S` postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to do capture. Currently you can use the following macros: `ZoneScopedS`, `ZoneScopedNS`, `ZoneScopedCS`, `ZoneScopedNCS`, `TracyAllocS`, `TracyFreeS`, `TracyGpuZoneS`, `TracyGpuZoneCS`, `TracyVkZoneS`, `TracyVkZoneCS`.
+
 ## Good practices
 
 - Remember to set thread names for proper identification of threads. You may use the functions exposed in the `tracy/common/TracySystem.hpp` header to do so.

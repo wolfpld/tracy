@@ -130,6 +130,11 @@ private:
         const auto id = m_head;
         m_head = ( m_head + 1 ) % QueryCount;
         assert( m_head != m_tail );
+        return id;
+    }
+
+    tracy_force_inline unsigned int TranslateOpenGlQueryId( unsigned int id )
+    {
         return m_query[id];
     }
 
@@ -153,7 +158,7 @@ public:
     tracy_force_inline GpuCtxScope( const SourceLocation* srcloc )
     {
         const auto queryId = s_gpuCtx.ptr->NextQueryId();
-        glQueryCounter( queryId, GL_TIMESTAMP );
+        glQueryCounter( s_gpuCtx.ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
         Magic magic;
         auto& token = s_token.ptr;
@@ -171,7 +176,7 @@ public:
     tracy_force_inline GpuCtxScope( const SourceLocation* srcloc, int depth )
     {
         const auto queryId = s_gpuCtx.ptr->NextQueryId();
-        glQueryCounter( queryId, GL_TIMESTAMP );
+        glQueryCounter( s_gpuCtx.ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
         const auto thread = GetThreadHandle();
 
@@ -193,7 +198,7 @@ public:
     tracy_force_inline ~GpuCtxScope()
     {
         const auto queryId = s_gpuCtx.ptr->NextQueryId();
-        glQueryCounter( queryId, GL_TIMESTAMP );
+        glQueryCounter( s_gpuCtx.ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
         Magic magic;
         auto& token = s_token.ptr;

@@ -3363,6 +3363,14 @@ void View::DrawMessages()
     ImGui::Begin( "Messages", &m_showMessages );
     ImGui::Columns( 3 );
     ImGui::Text( "Time" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Click on message to center timeline on it." );
+        ImGui::EndTooltip();
+    }
     ImGui::NextColumn();
     ImGui::Text( "Thread" );
     ImGui::NextColumn();

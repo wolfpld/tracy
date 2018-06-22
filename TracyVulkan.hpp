@@ -146,8 +146,6 @@ public:
 
         for( unsigned int idx=0; idx<cnt; idx++ )
         {
-            if( res[idx] == 0 ) break;
-
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, res[idx] );

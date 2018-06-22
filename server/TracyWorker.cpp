@@ -193,6 +193,8 @@ Worker::Worker( const char* addr )
     m_data.threadExpand.push_back( 0 );
     m_data.callstackPayload.push_back( nullptr );
 
+    memset( m_gpuCtxMap, 0, sizeof( m_gpuCtxMap ) );
+
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = true;
 #endif
@@ -1928,7 +1930,7 @@ void Worker::ProcessMessageLiteral( const QueueMessage& ev )
 
 void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
 {
-    assert( m_gpuCtxMap.find( ev.context ) == m_gpuCtxMap.end() );
+    assert( !m_gpuCtxMap[ev.context] );
 
     int64_t gpuTime;
     if( ev.period == 1.f )
@@ -1947,14 +1949,13 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     gpu->period = ev.period;
     gpu->count = 0;
     m_data.gpuData.push_back( gpu );
-    m_gpuCtxMap.emplace( ev.context, gpu );
+    m_gpuCtxMap[ev.context] = gpu;
 }
 
 void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev )
 {
-    auto it = m_gpuCtxMap.find( ev.context );
-    assert( it != m_gpuCtxMap.end() );
-    auto ctx = it->second;
+    auto ctx = m_gpuCtxMap[ev.context];
+    assert( ctx );
 
     CheckSourceLocation( ev.srcloc );
 
@@ -2009,9 +2010,8 @@ void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev )
 
 void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
 {
-    auto it = m_gpuCtxMap.find( ev.context );
-    assert( it != m_gpuCtxMap.end() );
-    auto ctx = it->second;
+    auto ctx = m_gpuCtxMap[ev.context];
+    assert( ctx );
 
     assert( !ctx->stack.empty() );
     auto zone = ctx->stack.back_and_pop();
@@ -2023,9 +2023,8 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
 
 void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 {
-    auto it = m_gpuCtxMap.find( ev.context );
-    assert( it != m_gpuCtxMap.end() );
-    auto ctx = it->second;
+    auto ctx = m_gpuCtxMap[ev.context];
+    assert( ctx );
 
     int64_t gpuTime;
     if( ctx->period == 1.f )
@@ -2066,9 +2065,8 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 
 void Worker::ProcessGpuResync( const QueueGpuResync& ev )
 {
-    auto it = m_gpuCtxMap.find( ev.context );
-    assert( it != m_gpuCtxMap.end() );
-    auto ctx = it->second;
+    auto ctx = m_gpuCtxMap[ev.context];
+    assert( ctx );
 
     int64_t gpuTime;
     if( ctx->period == 1.f )

@@ -9,6 +9,8 @@
 #define TracyGpuZone(x)
 #define TracyGpuZoneC(x,y)
 #define TracyGpuCollect
+#define TracyGpuZoneS(x,y)
+#define TracyGpuZoneCS(x,y,z)
 
 #else
 
@@ -17,6 +19,7 @@
 
 #include "Tracy.hpp"
 #include "client/TracyProfiler.hpp"
+#include "client/TracyCallstack.hpp"
 #include "common/TracyAlign.hpp"
 #include "common/TracyAlloc.hpp"
 
@@ -24,6 +27,14 @@
 #define TracyGpuZone( name ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location );
 #define TracyGpuZoneC( name, color ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location );
 #define TracyGpuCollect tracy::s_gpuCtx.ptr->Collect();
+
+#ifdef TRACY_HAS_CALLSTACK
+#  define TracyGpuZoneS( name, depth ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, depth );
+#  define TracyGpuZoneCS( name, color, depth ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, depth );
+#else
+#  define TracyGpuZoneS( name, depth ) TracyGpuZone( name )
+#  define TracyGpuZoneCS( name, color, depth ) TracyGpuZoneC( name, color )
+#endif
 
 namespace tracy
 {
@@ -162,6 +173,26 @@ public:
         memset( &item->gpuZoneBegin.thread, 0, sizeof( item->gpuZoneBegin.thread ) );
         MemWrite( &item->gpuZoneBegin.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
+    }
+
+    tracy_force_inline GpuCtxScope( const SourceLocation* srcloc, int depth )
+    {
+        glQueryCounter( s_gpuCtx.ptr->NextQueryId(), GL_TIMESTAMP );
+
+        const auto thread = GetThreadHandle();
+
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstack );
+        MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
+        MemWrite( &item->gpuZoneBegin.thread, thread );
+        MemWrite( &item->gpuZoneBegin.context, s_gpuCtx.ptr->GetId() );
+        tail.store( magic + 1, std::memory_order_release );
+
+        s_profiler.SendCallstack( depth, thread );
     }
 
     tracy_force_inline ~GpuCtxScope()

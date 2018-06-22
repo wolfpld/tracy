@@ -1964,7 +1964,18 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     zone->gpuEnd = -1;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
     zone->callstack = 0;
-    zone->thread = CompressThread( ev.thread );
+
+    if( ctx->thread == 0 )
+    {
+        // Vulkan context is not bound to any single thread.
+        zone->thread = CompressThread( ev.thread );
+    }
+    else
+    {
+        // OpenGL doesn't need per-zone thread id. It still can be sent,
+        // because it may be needed for callstack collection purposes.
+        zone->thread = 0;
+    }
 
     m_data.lastTime = std::max( m_data.lastTime, zone->cpuStart );
 

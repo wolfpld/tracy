@@ -1570,9 +1570,6 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::GpuTime:
         ProcessGpuTime( ev.gpuTime );
         break;
-    case QueueType::GpuResync:
-        ProcessGpuResync( ev.gpuResync );
-        break;
     case QueueType::MemAlloc:
         ProcessMemAlloc( ev.memAlloc );
         break;
@@ -2059,42 +2056,6 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
         {
             ctx->timeDiff = resync.timeDiff;
             ctx->resync.erase( ctx->resync.begin() );
-        }
-    }
-}
-
-void Worker::ProcessGpuResync( const QueueGpuResync& ev )
-{
-    auto ctx = m_gpuCtxMap[ev.context];
-    assert( ctx );
-
-    int64_t gpuTime;
-    if( ctx->period == 1.f )
-    {
-        gpuTime = ev.gpuTime;
-    }
-    else
-    {
-        gpuTime = int64_t( double( ctx->period ) * ev.gpuTime );      // precision loss
-    }
-
-    const auto timeDiff = TscTime( ev.cpuTime ) - gpuTime;
-
-    if( ctx->queue.empty() )
-    {
-        assert( ctx->resync.empty() );
-        ctx->timeDiff = timeDiff;
-    }
-    else
-    {
-        if( ctx->resync.empty() )
-        {
-            ctx->resync.push_back( { timeDiff, uint16_t( ctx->queue.size() ) } );
-        }
-        else
-        {
-            const auto last = ctx->resync.back().events;
-            ctx->resync.push_back( { timeDiff, uint16_t( ctx->queue.size() - last ) } );
         }
     }
 }

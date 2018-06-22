@@ -34,7 +34,6 @@ enum class QueueType : uint8_t
     GpuZoneBeginCallstack,
     GpuZoneEnd,
     GpuTime,
-    GpuResync,
     MemAlloc,
     MemFree,
     MemAllocCallstack,
@@ -195,13 +194,6 @@ struct QueueGpuTime
     uint8_t context;
 };
 
-struct QueueGpuResync
-{
-    int64_t cpuTime;
-    int64_t gpuTime;
-    uint8_t context;
-};
-
 struct QueueMemAlloc
 {
     int64_t time;
@@ -267,7 +259,6 @@ struct QueueItem
         QueueGpuZoneBegin gpuZoneBegin;
         QueueGpuZoneEnd gpuZoneEnd;
         QueueGpuTime gpuTime;
-        QueueGpuResync gpuResync;
         QueueMemAlloc memAlloc;
         QueueMemFree memFree;
         QueueCallstackMemory callstackMemory;
@@ -308,7 +299,6 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
-    sizeof( QueueHeader ) + sizeof( QueueGpuResync ),
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // callstack

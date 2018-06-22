@@ -2781,9 +2781,20 @@ void View::DrawZoneInfoWindow()
     if( ev.callstack != 0 )
     {
         ImGui::SameLine();
+        bool hilite = m_callstackInfoWindow == ev.callstack;
+        if( hilite )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
+            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
+            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+        }
         if( ImGui::Button( "Callstack" ) )
         {
             m_callstackInfoWindow = ev.callstack;
+        }
+        if( hilite )
+        {
+            ImGui::PopStyleColor( 3 );
         }
     }
     if( !m_zoneInfoStack.empty() )
@@ -3063,9 +3074,20 @@ void View::DrawGpuInfoWindow()
     if( ev.callstack != 0 )
     {
         ImGui::SameLine();
+        bool hilite = m_callstackInfoWindow == ev.callstack;
+        if( hilite )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
+            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
+            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+        }
         if( ImGui::Button( "Callstack" ) )
         {
             m_callstackInfoWindow = ev.callstack;
+        }
+        if( hilite )
+        {
+            ImGui::PopStyleColor( 3 );
         }
     }
     if( !m_gpuInfoStack.empty() )

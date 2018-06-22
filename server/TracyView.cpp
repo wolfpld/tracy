@@ -5189,7 +5189,8 @@ void View::DrawMemory()
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Don't show allocations beyond the middle of timeline display." );
+        ImGui::Text( "Don't show allocations beyond the middle of timeline" );
+        ImGui::Text( "display (it is indicated by purple line)." );
         ImGui::EndTooltip();
     }
 

@@ -3375,8 +3375,7 @@ void View::DrawMessages()
         ImGui::PushID( v );
         if( ImGui::Selectable( TimeToString( v->time - m_worker.GetFrameBegin( 0 ) ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns ) )
         {
-            const auto hr = std::max<uint64_t>( 1, ( m_zvEnd - m_zvStart ) / 2 );
-            ZoomToRange( v->time - hr, v->time + hr );
+            CenterAtTime( v->time );
         }
         ImGui::PopID();
         ImGui::NextColumn();
@@ -5575,6 +5574,12 @@ void View::ZoomToNextFrame()
     const auto fbegin = m_worker.GetFrameBegin( frame );
     const auto fend = m_worker.GetFrameEnd( frame );
     ZoomToRange( fbegin, fend );
+}
+
+void View::CenterAtTime( int64_t t )
+{
+    const auto hr = std::max<uint64_t>( 1, ( m_zvEnd - m_zvStart ) / 2 );
+    ZoomToRange( t - hr, t + hr );
 }
 
 void View::ShowZoneInfo( const ZoneEvent& ev )

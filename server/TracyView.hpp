@@ -105,6 +105,7 @@ private:
     void ZoomToRange( int64_t start, int64_t end );
     void ZoomToPrevFrame();
     void ZoomToNextFrame();
+    void CenterAtTime( int64_t t );
 
     void ShowZoneInfo( const ZoneEvent& ev );
     void ShowZoneInfo( const GpuEvent& ev, uint64_t thread );

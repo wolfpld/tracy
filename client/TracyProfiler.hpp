@@ -218,24 +218,36 @@ public:
 
     static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth )
     {
+#ifdef TRACY_HAS_CALLSTACK
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
+        auto callstack = Callstack( depth );
+
         s_profiler.m_serialLock.lock();
         SendMemAlloc( QueueType::MemAllocCallstack, thread, ptr, size );
-        SendCallstackMemory( depth );
+        SendCallstackMemory( callstack );
         s_profiler.m_serialLock.unlock();
+#else
+        MemAlloc( ptr, size );
+#endif
     }
 
     static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth )
     {
+#ifdef TRACY_HAS_CALLSTACK
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
+        auto callstack = Callstack( depth );
+
         s_profiler.m_serialLock.lock();
         SendMemFree( QueueType::MemFreeCallstack, thread, ptr );
-        SendCallstackMemory( depth );
+        SendCallstackMemory( callstack );
         s_profiler.m_serialLock.unlock();
+#else
+        MemFree( ptr );
+#endif
     }
 
     static tracy_force_inline void SendCallstack( int depth, uint64_t thread )
@@ -279,10 +291,9 @@ private:
     void CalibrateTimer();
     void CalibrateDelay();
 
-    static tracy_force_inline void SendCallstackMemory( int depth )
+    static tracy_force_inline void SendCallstackMemory( void* ptr )
     {
 #ifdef TRACY_HAS_CALLSTACK
-        auto ptr = Callstack( depth );
         auto item = s_profiler.m_serialQueue.push_next();
         MemWrite( &item->hdr.type, QueueType::CallstackMemory );
         MemWrite( &item->callstackMemory.ptr, (uint64_t)ptr );

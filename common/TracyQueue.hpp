@@ -168,7 +168,7 @@ struct QueueGpuNewContext
     int64_t gpuTime;
     uint64_t thread;
     float period;
-    uint16_t context;
+    uint8_t context;
     uint8_t accuracyBits;
 };
 
@@ -177,26 +177,26 @@ struct QueueGpuZoneBegin
     int64_t cpuTime;
     uint64_t srcloc;
     uint64_t thread;
-    uint16_t context;
+    uint8_t context;
 };
 
 struct QueueGpuZoneEnd
 {
     int64_t cpuTime;
-    uint16_t context;
+    uint8_t context;
 };
 
 struct QueueGpuTime
 {
     int64_t gpuTime;
-    uint16_t context;
+    uint8_t context;
 };
 
 struct QueueGpuResync
 {
     int64_t cpuTime;
     int64_t gpuTime;
-    uint16_t context;
+    uint8_t context;
 };
 
 struct QueueMemAlloc

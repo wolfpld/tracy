@@ -322,7 +322,7 @@ private:
     char* m_buffer;
     int m_bufferOffset;
 
-    flat_hash_map<uint16_t, GpuCtxData*, nohash<uint16_t>> m_gpuCtxMap;
+    flat_hash_map<uint8_t, GpuCtxData*, nohash<uint8_t>> m_gpuCtxMap;
     flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
     flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_pendingPlots;
     flat_hash_map<uint64_t, uint32_t> m_pendingCallstacks;

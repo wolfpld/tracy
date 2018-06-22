@@ -13,6 +13,7 @@
 
 #else
 
+#include <assert.h>
 #include <stdlib.h>
 #include <vulkan/vulkan.h>
 #include "Tracy.hpp"
@@ -36,7 +37,7 @@
 namespace tracy
 {
 
-extern std::atomic<uint16_t> s_gpuCtxCounter;
+extern std::atomic<uint8_t> s_gpuCtxCounter;
 
 class VkCtx
 {
@@ -53,6 +54,8 @@ public:
         , m_tail( 0 )
         , m_oldCnt( 0 )
     {
+        assert( m_context != 255 );
+
         VkPhysicalDeviceProperties prop;
         vkGetPhysicalDeviceProperties( physdev, &prop );
         const float period = prop.limits.timestampPeriod;
@@ -167,7 +170,7 @@ private:
         return id;
     }
 
-    tracy_force_inline uint16_t GetId() const
+    tracy_force_inline uint8_t GetId() const
     {
         return m_context;
     }
@@ -175,7 +178,7 @@ private:
     VkDevice m_device;
     VkQueue m_queue;
     VkQueryPool m_query;
-    uint16_t m_context;
+    uint8_t m_context;
 
     unsigned int m_head;
     unsigned int m_tail;

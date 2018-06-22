@@ -15,6 +15,7 @@
 #else
 
 #include <atomic>
+#include <assert.h>
 #include <stdlib.h>
 
 #include "Tracy.hpp"
@@ -39,7 +40,7 @@
 namespace tracy
 {
 
-extern std::atomic<uint16_t> s_gpuCtxCounter;
+extern std::atomic<uint8_t> s_gpuCtxCounter;
 
 class GpuCtx
 {
@@ -53,6 +54,8 @@ public:
         , m_head( 0 )
         , m_tail( 0 )
     {
+        assert( m_context != 255 );
+
         glGenQueries( QueryCount, m_query );
 
         int64_t tgpu;
@@ -142,13 +145,13 @@ private:
         return m_query[id];
     }
 
-    tracy_force_inline uint16_t GetId() const
+    tracy_force_inline uint8_t GetId() const
     {
         return m_context;
     }
 
     unsigned int m_query[QueryCount];
-    uint16_t m_context;
+    uint8_t m_context;
 
     unsigned int m_head;
     unsigned int m_tail;

@@ -4826,8 +4826,24 @@ void View::DrawCallstackWindow()
     ImGui::Text( "Frame" );
     ImGui::NextColumn();
     ImGui::Text( "Function" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Click on entry to copy it to clipboard." );
+        ImGui::EndTooltip();
+    }
     ImGui::NextColumn();
     ImGui::Text( "Location" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Click on entry to copy it to clipboard." );
+        ImGui::EndTooltip();
+    }
     ImGui::NextColumn();
 
     int fidx = 0;
@@ -4840,22 +4856,38 @@ void View::DrawCallstackWindow()
         auto frame = m_worker.GetCallstackFrame( entry );
         if( !frame )
         {
-            ImGui::Text( "0x%" PRIX64, entry );
+            char buf[32];
+            sprintf( buf, "%p", (void*)entry );
+            ImGui::Text( "%s", buf );
+            if( ImGui::IsItemClicked() )
+            {
+                ImGui::SetClipboardText( buf );
+            }
             ImGui::NextColumn();
             ImGui::NextColumn();
         }
         else
         {
-            ImGui::TextWrapped( "%s", m_worker.GetString( frame->name ) );
+            auto txt = m_worker.GetString( frame->name );
+            ImGui::TextWrapped( "%s", txt );
+            if( ImGui::IsItemClicked() )
+            {
+                ImGui::SetClipboardText( txt );
+            }
             ImGui::NextColumn();
             ImGui::PushTextWrapPos( 0.0f );
+            txt = m_worker.GetString( frame->file );
             if( frame->line == 0 )
             {
-                ImGui::TextDisabled( "%s", m_worker.GetString( frame->file ) );
+                ImGui::TextDisabled( "%s", txt );
             }
             else
             {
-                ImGui::TextDisabled( "%s:%i", m_worker.GetString( frame->file ), frame->line );
+                ImGui::TextDisabled( "%s:%i", txt, frame->line );
+            }
+            if( ImGui::IsItemClicked() )
+            {
+                ImGui::SetClipboardText( txt );
             }
             ImGui::PopTextWrapPos();
             ImGui::NextColumn();

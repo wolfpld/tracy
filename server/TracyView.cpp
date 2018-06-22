@@ -4885,6 +4885,14 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
     ImGui::Text( "Size" );
     ImGui::NextColumn();
     ImGui::Text( "Appeared at" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Click on entry to center timeline at the memory allocation time." );
+        ImGui::EndTooltip();
+    }
     ImGui::NextColumn();
     ImGui::Text( "Duration" );
     ImGui::SameLine();
@@ -4893,9 +4901,9 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
     {
         ImGui::BeginTooltip();
         ImGui::Text( "Active allocations are displayed using green color." );
+        ImGui::Text( "Click on entry to center timeline at the memory release time." );
         ImGui::EndTooltip();
     }
-
     ImGui::NextColumn();
     ImGui::Text( "Thread" );
     ImGui::SameLine();
@@ -4930,7 +4938,12 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         ImGui::NextColumn();
         ImGui::Text( "%s", RealToString( v->size, true ) );
         ImGui::NextColumn();
-        ImGui::Text( "%s", TimeToString( v->timeAlloc - m_worker.GetFrameBegin( 0 ) ) );
+        ImGui::PushID( idx++ );
+        if( ImGui::Selectable( TimeToString( v->timeAlloc - m_worker.GetFrameBegin( 0 ) ) ) )
+        {
+            CenterAtTime( v->timeAlloc );
+        }
+        ImGui::PopID();
         ImGui::NextColumn();
         if( v->timeFree < 0 )
         {
@@ -4940,7 +4953,12 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         }
         else
         {
-            ImGui::Text( "%s", TimeToString( v->timeFree - v->timeAlloc ) );
+            ImGui::PushID( idx++ );
+            if( ImGui::Selectable( TimeToString( v->timeFree - v->timeAlloc ) ) )
+            {
+                CenterAtTime( v->timeFree );
+            }
+            ImGui::PopID();
             ImGui::NextColumn();
             if( v->threadAlloc == v->threadFree )
             {

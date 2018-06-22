@@ -164,7 +164,8 @@ class GpuCtxScope
 public:
     tracy_force_inline GpuCtxScope( const SourceLocation* srcloc )
     {
-        glQueryCounter( s_gpuCtx.ptr->NextQueryId(), GL_TIMESTAMP );
+        const auto queryId = s_gpuCtx.ptr->NextQueryId();
+        glQueryCounter( queryId, GL_TIMESTAMP );
 
         Magic magic;
         auto& token = s_token.ptr;
@@ -174,13 +175,15 @@ public:
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         memset( &item->gpuZoneBegin.thread, 0, sizeof( item->gpuZoneBegin.thread ) );
+        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
     }
 
     tracy_force_inline GpuCtxScope( const SourceLocation* srcloc, int depth )
     {
-        glQueryCounter( s_gpuCtx.ptr->NextQueryId(), GL_TIMESTAMP );
+        const auto queryId = s_gpuCtx.ptr->NextQueryId();
+        glQueryCounter( queryId, GL_TIMESTAMP );
 
         const auto thread = GetThreadHandle();
 
@@ -192,6 +195,7 @@ public:
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         MemWrite( &item->gpuZoneBegin.thread, thread );
+        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
 
@@ -200,7 +204,8 @@ public:
 
     tracy_force_inline ~GpuCtxScope()
     {
-        glQueryCounter( s_gpuCtx.ptr->NextQueryId(), GL_TIMESTAMP );
+        const auto queryId = s_gpuCtx.ptr->NextQueryId();
+        glQueryCounter( queryId, GL_TIMESTAMP );
 
         Magic magic;
         auto& token = s_token.ptr;
@@ -208,6 +213,7 @@ public:
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneEnd );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneEnd.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
     }

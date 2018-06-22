@@ -195,7 +195,8 @@ public:
         : m_cmdbuf( cmdbuf )
     {
         auto ctx = s_vkCtx.ptr;
-        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, ctx->NextQueryId() );
+        const auto queryId = ctx->NextQueryId();
+        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
         Magic magic;
         auto& token = s_token.ptr;
@@ -205,6 +206,7 @@ public:
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
+        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -215,7 +217,8 @@ public:
         const auto thread = GetThreadHandle();
 
         auto ctx = s_vkCtx.ptr;
-        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, ctx->NextQueryId() );
+        const auto queryId = ctx->NextQueryId();
+        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
         Magic magic;
         auto& token = s_token.ptr;
@@ -225,6 +228,7 @@ public:
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         MemWrite( &item->gpuZoneBegin.thread, thread );
+        MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
 
@@ -234,7 +238,8 @@ public:
     tracy_force_inline ~VkCtxScope()
     {
         auto ctx = s_vkCtx.ptr;
-        vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, ctx->NextQueryId() );
+        const auto queryId = ctx->NextQueryId();
+        vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
         Magic magic;
         auto& token = s_token.ptr;
@@ -242,6 +247,7 @@ public:
         auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneEnd );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
+        MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneEnd.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
     }

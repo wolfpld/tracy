@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <mutex>
+#include <string.h>
 
 #if __has_include(<execution>)
 #  include <execution>
@@ -1940,6 +1941,7 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     }
 
     auto gpu = m_slab.AllocInit<GpuCtxData>();
+    memset( gpu->query, 0, sizeof( gpu->query ) );
     gpu->timeDiff = TscTime( ev.cpuTime ) - gpuTime;
     gpu->thread = ev.thread;
     gpu->accuracyBits = ev.accuracyBits;
@@ -1986,7 +1988,9 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     timeline->push_back( zone );
 
     ctx->stack.push_back( zone );
-    ctx->queue.push_back( zone );
+
+    assert( !ctx->query[ev.queryId] );
+    ctx->query[ev.queryId] = zone;
 }
 
 void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
@@ -2012,7 +2016,9 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
 
     assert( !ctx->stack.empty() );
     auto zone = ctx->stack.back_and_pop();
-    ctx->queue.push_back( zone );
+
+    assert( !ctx->query[ev.queryId] );
+    ctx->query[ev.queryId] = zone;
 
     zone->cpuEnd = TscTime( ev.cpuTime );
     m_data.lastTime = std::max( m_data.lastTime, zone->cpuEnd );
@@ -2033,7 +2039,10 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
         gpuTime = int64_t( double( ctx->period ) * ev.gpuTime );      // precision loss
     }
 
-    auto zone = ctx->queue.front();
+    auto zone = ctx->query[ev.queryId];
+    assert( zone );
+    ctx->query[ev.queryId] = nullptr;
+
     if( zone->gpuStart == std::numeric_limits<int64_t>::max() )
     {
         zone->gpuStart = ctx->timeDiff + gpuTime;
@@ -2044,9 +2053,13 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     {
         zone->gpuEnd = ctx->timeDiff + gpuTime;
         m_data.lastTime = std::max( m_data.lastTime, zone->gpuEnd );
+
+        if( zone->gpuEnd < zone->gpuStart )
+        {
+            std::swap( zone->gpuEnd, zone->gpuStart );
+        }
     }
 
-    ctx->queue.erase( ctx->queue.begin() );
     if( !ctx->resync.empty() )
     {
         auto& resync = ctx->resync.front();

@@ -202,10 +202,10 @@ struct GpuCtxData
     uint64_t count;
     Vector<GpuEvent*> timeline;
     Vector<GpuEvent*> stack;
-    Vector<GpuEvent*> queue;
     Vector<GpuCtxResync> resync;
     uint8_t accuracyBits;
     float period;
+    GpuEvent* query[64*1024];
 };
 
 struct LockMap

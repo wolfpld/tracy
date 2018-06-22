@@ -27,10 +27,10 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 
     const auto proc = GetCurrentProcess();
 
-    char buf[sizeof( SYMBOL_INFO ) + 255];
+    char buf[sizeof( SYMBOL_INFO ) + 1024];
     auto si = (SYMBOL_INFO*)buf;
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
-    si->MaxNameLen = 255;
+    si->MaxNameLen = 1024;
 
     if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
     {

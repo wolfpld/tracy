@@ -149,6 +149,7 @@ public:
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, res[idx] );
+            MemWrite( &item->gpuTime.queryId, uint16_t( m_tail + idx ) );
             MemWrite( &item->gpuTime.context, m_context );
             tail.store( magic + 1, std::memory_order_release );
         }
@@ -185,7 +186,6 @@ private:
 
 extern VkCtxWrapper s_vkCtx;
 
-// TODO: not thread safe!
 class VkCtxScope
 {
 public:

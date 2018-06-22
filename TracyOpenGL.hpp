@@ -117,6 +117,7 @@ public:
             auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, (int64_t)time );
+            MemWrite( &item->gpuTime.queryId, (uint16_t)m_tail );
             MemWrite( &item->gpuTime.context, m_context );
             tail.store( magic + 1, std::memory_order_release );
             m_tail = ( m_tail + 1 ) % QueryCount;

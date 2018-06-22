@@ -191,6 +191,7 @@ struct QueueGpuZoneEnd
 struct QueueGpuTime
 {
     int64_t gpuTime;
+    uint16_t queryId;
     uint8_t context;
 };
 

@@ -499,9 +499,9 @@ void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 
     NeedDataSize( QueueDataSize[(int)type] + sizeof( l16 ) + l16 );
 
-    AppendData( &item, QueueDataSize[(int)type] );
-    AppendData( &l16, sizeof( l16 ) );
-    AppendData( ptr, l16 );
+    AppendDataUnsafe( &item, QueueDataSize[(int)type] );
+    AppendDataUnsafe( &l16, sizeof( l16 ) );
+    AppendDataUnsafe( ptr, l16 );
 }
 
 void Profiler::SendSourceLocation( uint64_t ptr )
@@ -534,9 +534,9 @@ void Profiler::SendSourceLocationPayload( uint64_t _ptr )
 
     NeedDataSize( QueueDataSize[(int)QueueType::SourceLocationPayload] + sizeof( l16 ) + l16 );
 
-    AppendData( &item, QueueDataSize[(int)QueueType::SourceLocationPayload] );
-    AppendData( &l16, sizeof( l16 ) );
-    AppendData( ptr + 4, l16 );
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::SourceLocationPayload] );
+    AppendDataUnsafe( &l16, sizeof( l16 ) );
+    AppendDataUnsafe( ptr + 4, l16 );
 }
 
 void Profiler::SendCallstackPayload( uint64_t _ptr )
@@ -553,19 +553,19 @@ void Profiler::SendCallstackPayload( uint64_t _ptr )
 
     NeedDataSize( QueueDataSize[(int)QueueType::CallstackPayload] + sizeof( l16 ) + l16 );
 
-    AppendData( &item, QueueDataSize[(int)QueueType::CallstackPayload] );
-    AppendData( &l16, sizeof( l16 ) );
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::CallstackPayload] );
+    AppendDataUnsafe( &l16, sizeof( l16 ) );
 
     if( sizeof( uintptr_t ) == sizeof( uint64_t ) )
     {
-        AppendData( ptr, sizeof( uint64_t ) * sz );
+        AppendDataUnsafe( ptr, sizeof( uint64_t ) * sz );
     }
     else
     {
         for( uintptr_t i=0; i<sz; i++ )
         {
             const auto val = uint64_t( *ptr++ );
-            AppendData( &val, sizeof( uint64_t ) );
+            AppendDataUnsafe( &val, sizeof( uint64_t ) );
         }
     }
 }
@@ -585,7 +585,6 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
     MemWrite( &item.callstackFrame.file, (uint64_t)frame.file );
     MemWrite( &item.callstackFrame.line, frame.line );
 
-    NeedDataSize( QueueDataSize[(int)QueueType::CallstackFrame] );
     AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrame] );
 
     tracy_free( (void*)frame.name );

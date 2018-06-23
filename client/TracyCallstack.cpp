@@ -15,8 +15,11 @@ namespace tracy
 
 #if defined _WIN32 || defined __CYGWIN__
 
+extern "C" t_RtlWalkFrameChain RtlWalkFrameChain = 0;
+
 void InitCallstack()
 {
+    RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "RtlWalkFrameChain" );
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
 }

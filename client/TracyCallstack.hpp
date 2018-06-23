@@ -3,13 +3,11 @@
 
 #if defined _WIN32 || defined __CYGWIN__
 #  define TRACY_HAS_CALLSTACK
-#  ifndef MAXLONG
-#    ifdef __CYGWIN__
-extern "C" __declspec(dllimport) unsigned short __stdcall RtlCaptureStackBackTrace( unsigned int, unsigned int, void**, unsigned int* );
-#    else
-extern "C" __declspec(dllimport) unsigned short __stdcall RtlCaptureStackBackTrace( unsigned long, unsigned long, void**, unsigned long* );
-#    endif
-#  endif
+extern "C"
+{
+    typedef unsigned long (__stdcall *t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
+    extern t_RtlWalkFrameChain RtlWalkFrameChain;
+}
 #elif defined __ANDROID__
 #  define TRACY_HAS_CALLSTACK
 #  include <unwind.h>
@@ -49,7 +47,7 @@ static tracy_force_inline void* Callstack( int depth )
     assert( depth >= 1 && depth < 63 );
 
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
-    const auto num = RtlCaptureStackBackTrace( 0, depth, (void**)( trace+1 ), nullptr );
+    const auto num = RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );
     *trace = num;
 
     return trace;

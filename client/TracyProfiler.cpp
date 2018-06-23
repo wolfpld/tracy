@@ -557,10 +557,17 @@ void Profiler::SendCallstackPayload( uint64_t _ptr )
     AppendData( &item, QueueDataSize[(int)QueueType::CallstackPayload] );
     AppendData( &l16, sizeof( l16 ) );
 
-    for( uintptr_t i=0; i<sz; i++ )
+    if( sizeof( uintptr_t ) == sizeof( uint64_t ) )
     {
-        const auto val = uint64_t( *ptr++ );
-        AppendData( &val, sizeof( uint64_t ) );
+        AppendData( ptr, sizeof( uint64_t ) * sz );
+    }
+    else
+    {
+        for( uintptr_t i=0; i<sz; i++ )
+        {
+            const auto val = uint64_t( *ptr++ );
+            AppendData( &val, sizeof( uint64_t ) );
+        }
     }
 }
 

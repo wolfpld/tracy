@@ -279,6 +279,12 @@ private:
     bool CommitData();
     bool NeedDataSize( size_t len );
 
+    tracy_force_inline void AppendDataUnsafe( const void* data, size_t len )
+    {
+        memcpy( m_buffer + m_bufferOffset, data, len );
+        m_bufferOffset += int( len );
+    }
+
     bool SendData( const char* data, size_t len );
     void SendString( uint64_t ptr, const char* str, QueueType type );
     void SendSourceLocation( uint64_t ptr );

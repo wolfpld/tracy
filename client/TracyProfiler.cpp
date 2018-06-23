@@ -456,8 +456,7 @@ bool Profiler::AppendData( const void* data, size_t len )
 {
     auto ret = true;
     ret = NeedDataSize( len );
-    memcpy( m_buffer + m_bufferOffset, data, len );
-    m_bufferOffset += int( len );
+    AppendDataUnsafe( data, len );
     return ret;
 }
 

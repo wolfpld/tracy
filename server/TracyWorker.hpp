@@ -273,7 +273,7 @@ private:
     void AddThreadString( uint64_t id, char* str, size_t sz );
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
 
-    void AddCallstackPayload( uint64_t ptr, char* data, size_t sz );
+    tracy_force_inline void AddCallstackPayload( uint64_t ptr, char* data, size_t sz );
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void HandlePlotName( uint64_t name, char* str, size_t sz );

@@ -20,10 +20,10 @@ public:
         : m_size( size )
         , m_ptr( data )
     {
-        T hash = 0;
+        T hash = 5381;
         for( uint8_t i=0; i<size; i++ )
         {
-            hash += data[i];
+            hash = ( ( hash << 5 ) + hash ) ^ data[i];
         }
         m_hash = uint32_t( hash );
     }

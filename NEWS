@@ -81,6 +81,7 @@ v0.3.2 (xxxx-xx-xx)
     - Memory alloc/free.
     - Zone begin.
     - GPU zone begin.
+  - Zone stack trace now also displays frames from a real call trace.
 
 
 v0.2 (2018-04-05)

@@ -18,9 +18,14 @@ class VarArray
 public:
     VarArray( uint8_t size, const T* data )
         : m_size( size )
-        , m_hash( charutil::hash( (const char*)data, size * sizeof( T ) ) )
         , m_ptr( data )
     {
+        T hash = 0;
+        for( uint8_t i=0; i<size; i++ )
+        {
+            hash += data[i];
+        }
+        m_hash = uint32_t( hash );
     }
 
     VarArray( const VarArray& ) = delete;

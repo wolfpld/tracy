@@ -195,6 +195,20 @@ void SharedWrite2()
     }
 }
 
+void CaptureCallstack()
+{
+    ZoneScopedS( 10 );
+}
+
+void CallstackTime()
+{
+    for(;;)
+    {
+        std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
+        CaptureCallstack();
+    }
+}
+
 int main()
 {
     auto t1 = std::thread( TestFunction );
@@ -215,6 +229,7 @@ int main()
     auto t16 = std::thread( SharedRead2 );
     auto t17 = std::thread( SharedWrite1 );
     auto t18 = std::thread( SharedWrite2 );
+    auto t19 = std::thread( CallstackTime );
 
     tracy::SetThreadName( t1, "First thread" );
     tracy::SetThreadName( t2, "Second thread" );
@@ -234,6 +249,7 @@ int main()
     tracy::SetThreadName( t16, "Shared read 3" );
     tracy::SetThreadName( t17, "Shared write 1" );
     tracy::SetThreadName( t18, "Shared write 2" );
+    tracy::SetThreadName( t19, "Callstack time" );
 
     for(;;)
     {

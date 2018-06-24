@@ -2751,18 +2751,97 @@ void View::DrawInfoWindow()
 }
 
 template<typename T>
-void DrawZoneTrace( const std::vector<T>& trace, std::function<void(T)> showZone )
+void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, std::function<void(T)> showZone )
 {
-    if( trace.empty() ) return;
-
     bool expand = ImGui::TreeNode( "Zone trace" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( trace.size(), true ) );
     if( !expand ) return;
 
-    for( auto& v : trace )
+    if( !trace.empty() )
     {
-        showZone( v );
+        T prev = zone;
+        const auto sz = trace.size();
+        for( size_t i=0; i<sz; i++ )
+        {
+            auto curr = trace[i];
+            if( prev->callstack == 0 || curr->callstack == 0 )
+            {
+                ImGui::TextDisabled( "[unknown frames]" );
+            }
+            else if( prev->callstack != curr->callstack )
+            {
+                auto& prevCs = worker.GetCallstack( prev->callstack );
+                auto& currCs = worker.GetCallstack( curr->callstack );
+
+                const auto psz = prevCs.size();
+                uint8_t idx;
+                for( idx=0; idx<psz; idx++ )
+                {
+                    auto pf = prevCs[idx];
+                    bool found = false;
+                    for( auto& cf : currCs )
+                    {
+                        if( cf == pf )
+                        {
+                            auto frame = worker.GetCallstackFrame( prevCs[idx-1] );
+                            auto pname = worker.GetString( frame->name );
+                            auto cname = worker.GetString( worker.GetSourceLocation( curr->srcloc ).function );
+                            if( pname == cname ) idx--;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if( found ) break;
+                }
+                for( uint8_t j=1; j<idx; j++ )
+                {
+                    auto frame = worker.GetCallstackFrame( prevCs[j] );
+                    ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+                    if( frame->line == 0 )
+                    {
+                        ImGui::TextDisabled( "%s", worker.GetString( frame->file ) );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "%s:%i", worker.GetString( frame->file ), frame->line );
+                    }
+                }
+            }
+
+            showZone( curr );
+            prev = curr;
+        }
+    }
+
+    auto last = trace.empty() ? zone : trace.back();
+    if( last->callstack == 0 )
+    {
+        ImGui::TextDisabled( "[unknown frames]" );
+    }
+    else
+    {
+        auto& cs = worker.GetCallstack( last->callstack );
+        const auto csz = cs.size();
+        for( uint8_t i=1; i<csz; i++ )
+        {
+            auto frame = worker.GetCallstackFrame( cs[i] );
+            ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            if( frame->line == 0 )
+            {
+                ImGui::TextDisabled( "%s", worker.GetString( frame->file ) );
+            }
+            else
+            {
+                ImGui::TextDisabled( "%s:%i", worker.GetString( frame->file ), frame->line );
+            }
+        }
     }
 
     ImGui::TreePop();
@@ -2963,7 +3042,7 @@ void View::DrawZoneInfoWindow()
          parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const ZoneEvent*>( zoneTrace, [&idx, this] ( const ZoneEvent* v ) {
+    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, [&idx, this] ( const ZoneEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
         ImGui::PushID( idx++ );
@@ -3142,7 +3221,7 @@ void View::DrawGpuInfoWindow()
         parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const GpuEvent*>( zoneTrace, [&idx, this] ( const GpuEvent* v ) {
+    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, [&idx, this] ( const GpuEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
         ImGui::PushID( idx++ );

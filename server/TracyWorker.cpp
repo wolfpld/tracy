@@ -555,6 +555,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     if( fileVer == 0 && f.IsEOF() ) return;
 
     f.Read( sz );
+    bool reconstructMemAllocPlot = false;
     if( eventMask & EventType::Memory )
     {
         m_data.memory.data.reserve_and_use( sz );
@@ -601,7 +602,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
         if( sz != 0 )
         {
-            m_threadMemory = std::thread( [this] { ReconstructMemAllocPlot(); } );
+            reconstructMemAllocPlot = true;
         }
     }
     else
@@ -631,7 +632,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Skip( sizeof( MemData::high ) + sizeof( MemData::low ) + sizeof( MemData::usage ) );
     }
 
-    if( fileVer <= FileVersion( 0, 3, 1 ) ) return;
+    if( fileVer <= FileVersion( 0, 3, 1 ) ) goto finishLoading;
 
     f.Read( sz );
     m_data.callstackPayload.reserve( sz );
@@ -663,6 +664,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( frame, sizeof( CallstackFrame ) );
 
         m_data.callstackFrameMap.emplace( ptr, frame );
+    }
+
+finishLoading:
+    if( reconstructMemAllocPlot )
+    {
+        m_threadMemory = std::thread( [this] { ReconstructMemAllocPlot(); } );
     }
 }
 

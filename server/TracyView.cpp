@@ -2750,6 +2750,24 @@ void View::DrawInfoWindow()
     }
 }
 
+template<typename T>
+void DrawZoneTrace( const std::vector<T>& trace, std::function<void(T)> showZone )
+{
+    if( trace.empty() ) return;
+
+    bool expand = ImGui::TreeNode( "Zone trace" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%s)", RealToString( trace.size(), true ) );
+    if( !expand ) return;
+
+    for( auto& v : trace )
+    {
+        showZone( v );
+    }
+
+    ImGui::TreePop();
+}
+
 void View::DrawZoneInfoWindow()
 {
     auto& ev = *m_zoneInfoWindow;
@@ -2944,41 +2962,30 @@ void View::DrawZoneInfoWindow()
          zoneTrace.emplace_back( parent );
          parent = GetZoneParent( *parent );
     }
-    if( !zoneTrace.empty() )
-    {
-        bool expand = ImGui::TreeNode( "Zone trace" );
+    int idx = 0;
+    DrawZoneTrace<const ZoneEvent*>( zoneTrace, [&idx, this] ( const ZoneEvent* v ) {
+        const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
+        const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+        ImGui::PushID( idx++ );
+        auto sel = ImGui::Selectable( txt, false );
+        auto hover = ImGui::IsItemHovered();
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( zoneTrace.size(), true ) );
-        if( expand )
+        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->start ), m_worker.GetString( srcloc.file ), srcloc.line );
+        ImGui::PopID();
+        if( sel )
         {
-            int idx = 0;
-            for( auto& v : zoneTrace )
-            {
-                const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
-                const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
-                ImGui::PushID( idx++ );
-                auto sel = ImGui::Selectable( txt, false );
-                auto hover = ImGui::IsItemHovered();
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->start ), m_worker.GetString( srcloc.file ), srcloc.line );
-                ImGui::PopID();
-                if( sel )
-                {
-                    ShowZoneInfo( *v );
-                }
-                if( hover )
-                {
-                    m_zoneHighlight = v;
-                    if( ImGui::IsMouseClicked( 2 ) )
-                    {
-                        ZoomToZone( *v );
-                    }
-                    ZoneTooltip( *v );
-                }
-            }
-            ImGui::TreePop();
+            ShowZoneInfo( *v );
         }
-    }
+        if( hover )
+        {
+            m_zoneHighlight = v;
+            if( ImGui::IsMouseClicked( 2 ) )
+            {
+                ZoomToZone( *v );
+            }
+            ZoneTooltip( *v );
+        }
+    } );
 
     if( !ev.child.empty() )
     {
@@ -3134,41 +3141,30 @@ void View::DrawGpuInfoWindow()
         zoneTrace.emplace_back( parent );
         parent = GetZoneParent( *parent );
     }
-    if( !zoneTrace.empty() )
-    {
-        bool expand = ImGui::TreeNode( "Zone trace" );
+    int idx = 0;
+    DrawZoneTrace<const GpuEvent*>( zoneTrace, [&idx, this] ( const GpuEvent* v ) {
+        const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
+        const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+        ImGui::PushID( idx++ );
+        auto sel = ImGui::Selectable( txt, false );
+        auto hover = ImGui::IsItemHovered();
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( zoneTrace.size(), true ) );
-        if( expand )
+        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->gpuStart ), m_worker.GetString( srcloc.file ), srcloc.line );
+        ImGui::PopID();
+        if( sel )
         {
-            int idx = 0;
-            for( auto& v : zoneTrace )
-            {
-                const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
-                const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
-                ImGui::PushID( idx++ );
-                auto sel = ImGui::Selectable( txt, false );
-                auto hover = ImGui::IsItemHovered();
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->gpuStart ), m_worker.GetString( srcloc.file ), srcloc.line );
-                ImGui::PopID();
-                if( sel )
-                {
-                    ShowZoneInfo( *v, m_gpuInfoWindowThread );
-                }
-                if( hover )
-                {
-                    m_gpuHighlight = v;
-                    if( ImGui::IsMouseClicked( 2 ) )
-                    {
-                        ZoomToZone( *v );
-                    }
-                    ZoneTooltip( *v );
-                }
-            }
-            ImGui::TreePop();
+            ShowZoneInfo( *v, m_gpuInfoWindowThread );
         }
-    }
+        if( hover )
+        {
+            m_gpuHighlight = v;
+            if( ImGui::IsMouseClicked( 2 ) )
+            {
+                ZoomToZone( *v );
+            }
+            ZoneTooltip( *v );
+        }
+    } );
 
     if( !ev.child.empty() )
     {

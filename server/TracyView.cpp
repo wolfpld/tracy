@@ -2774,8 +2774,8 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, s
                 auto& prevCs = worker.GetCallstack( prev->callstack );
                 auto& currCs = worker.GetCallstack( curr->callstack );
 
-                const auto psz = prevCs.size();
-                uint8_t idx;
+                const auto psz = int8_t( prevCs.size() );
+                int8_t idx;
                 for( idx=0; idx<psz; idx++ )
                 {
                     auto pf = prevCs[idx];
@@ -2784,17 +2784,14 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, s
                     {
                         if( cf == pf )
                         {
-                            auto frame = worker.GetCallstackFrame( prevCs[idx-1] );
-                            auto pname = worker.GetString( frame->name );
-                            auto cname = worker.GetString( worker.GetSourceLocation( curr->srcloc ).function );
-                            if( pname == cname ) idx--;
+                            idx--;
                             found = true;
                             break;
                         }
                     }
                     if( found ) break;
                 }
-                for( uint8_t j=1; j<idx; j++ )
+                for( int8_t j=1; j<idx; j++ )
                 {
                     auto frame = worker.GetCallstackFrame( prevCs[j] );
                     ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );

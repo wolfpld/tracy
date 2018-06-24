@@ -745,7 +745,7 @@ std::pair <int, int> Worker::GetFrameRange( int64_t from, int64_t to )
     return std::make_pair( zbegin, zend );
 }
 
-const CallstackFrame* Worker::GetCallstackFrame( uint64_t ptr )
+const CallstackFrame* Worker::GetCallstackFrame( uint64_t ptr ) const
 {
     auto it = m_data.callstackFrameMap.find( ptr );
     if( it == m_data.callstackFrameMap.end() )

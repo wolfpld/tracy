@@ -19,7 +19,11 @@ extern "C" t_RtlWalkFrameChain RtlWalkFrameChain = 0;
 
 void InitCallstack()
 {
+#ifdef UNICODE
+    RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "RtlWalkFrameChain" );
+#else
     RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "RtlWalkFrameChain" );
+#endif
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
 }

@@ -51,6 +51,8 @@ In the default configuration tracy is disabled. To enable it, add a `TRACY_ENABL
 
 If you want to profile a short-lived application, add a `TRACY_NO_EXIT` define. In this configuration tracy will not exit until an incoming connection is made, even if the application has already finished.
 
+On Unix make sure you are linking your application with libpthread and libdl.
+
 #### Running the server
 
 The easiest way to get going is to build the standalone server, available in the `standalone` directory. You can connect to localhost or remote clients and view the collected data right away.

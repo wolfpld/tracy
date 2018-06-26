@@ -82,6 +82,8 @@ v0.3.2 (xxxx-xx-xx)
     - Zone begin.
     - GPU zone begin.
   - Zone stack trace now also displays frames from a real call trace.
+  - On Linux call stack frame name resolution requires a call to dladdr,
+    which in turn requires linking with libdl.
 
 
 v0.2 (2018-04-05)

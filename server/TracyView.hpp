@@ -131,6 +131,7 @@ private:
 
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
     flat_hash_map<const void*, bool, nohash<const void*>> m_showFull;
+    flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;
 
     tracy_force_inline bool& Visible( const void* ptr )
     {
@@ -148,6 +149,16 @@ private:
         if( it == m_showFull.end() )
         {
             it = m_showFull.emplace( ptr, true ).first;
+        }
+        return it->second;
+    }
+
+    tracy_force_inline int& GpuDrift( const void* ptr )
+    {
+        auto it = m_gpuDrift.find( ptr );
+        if( it == m_gpuDrift.end() )
+        {
+            it = m_gpuDrift.emplace( ptr, 0 ).first;
         }
         return it->second;
     }

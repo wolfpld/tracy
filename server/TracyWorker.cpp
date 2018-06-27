@@ -2066,18 +2066,6 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
             std::swap( zone->gpuEnd, zone->gpuStart );
         }
     }
-
-    if( !ctx->resync.empty() )
-    {
-        auto& resync = ctx->resync.front();
-        assert( resync.events > 0 );
-        resync.events--;
-        if( resync.events == 0 )
-        {
-            ctx->timeDiff = resync.timeDiff;
-            ctx->resync.erase( ctx->resync.begin() );
-        }
-    }
 }
 
 void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )

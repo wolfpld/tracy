@@ -84,6 +84,13 @@ v0.3.2 (xxxx-xx-xx)
   - Zone stack trace now also displays frames from a real call trace.
   - On Linux call stack frame name resolution requires a call to dladdr,
     which in turn requires linking with libdl.
+- Allow manual entry of GPU time drift value.
+- Unix build system no longer shares object files between different build
+  units.
+  - Fixes inability to build debug and release versions of a single utility
+    without "make clean".
+  - Fixes incompatibility between "standalone" and "capture" utilities due
+    to different set of used feature flags.
 
 
 v0.2 (2018-04-05)

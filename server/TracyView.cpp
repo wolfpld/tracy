@@ -3838,7 +3838,7 @@ void View::DrawFindZone()
                             ImGui::Text( "Zone group time: none" );
                         }
 
-                        enum { Height = 200 };
+                        const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();
 
                         ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
@@ -4604,7 +4604,7 @@ void View::DrawCompare()
                     ImGui::SameLine();
                     ImGui::Text( "Overlap" );
 
-                    enum { Height = 200 };
+                    const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                     const auto wpos = ImGui::GetCursorScreenPos();
 
                     ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );

@@ -7,6 +7,10 @@
 #include "../nfd/nfd.h"
 #include <sys/stat.h>
 
+#ifdef _WIN32
+#  include <windows.h>
+#endif
+
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyView.hpp"
@@ -45,6 +49,11 @@ int main( int argc, char** argv )
     glfwSwapInterval(1); // Enable vsync
     gl3wInit();
 
+    float dpiScale = 1.f;
+#ifdef _WIN32
+    dpiScale = GetDpiForSystem() / 96.f;
+#endif
+
     // Setup ImGui binding
     ImGui::CreateContext();
     ImGui_ImplGlfwGL3_Init(window, true);
@@ -65,7 +74,7 @@ int main( int argc, char** argv )
         if( stat( font, &st ) == 0 )
         {
             ImGuiIO& io = ImGui::GetIO();
-            io.Fonts->AddFontFromFileTTF( font, 15.0f );
+            io.Fonts->AddFontFromFileTTF( font, 15.0f * dpiScale );
         }
     }
 

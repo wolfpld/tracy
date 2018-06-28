@@ -62,6 +62,9 @@
       <AdditionalDependencies>ws2_32.lib;opengl32.lib;..\..\libs\glfw\lib-vc2015\glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Manifest>
+      <EnableDpiAwareness>true</EnableDpiAwareness>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -85,6 +88,9 @@
       <AdditionalDependencies>ws2_32.lib;opengl32.lib;..\..\libs\glfw\lib-vc2015\glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Manifest>
+      <EnableDpiAwareness>true</EnableDpiAwareness>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\common\TracySocket.cpp" />

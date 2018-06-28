@@ -91,6 +91,7 @@ v0.3.2 (xxxx-xx-xx)
     without "make clean".
   - Fixes incompatibility between "standalone" and "capture" utilities due
     to different set of used feature flags.
+- On Windows "standalone" utility now adapts to system DPI setting.
 
 
 v0.2 (2018-04-05)

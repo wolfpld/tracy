@@ -2432,10 +2432,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     return cnt;
 }
 
-enum { PlotHeight = 100 };
-
 int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax )
 {
+    const auto PlotHeight = 100 * ImGui::GetTextLineHeight() / 15.f;
+
     enum { MaxPoints = 512 };
     float tmpvec[MaxPoints*2];
 
@@ -2539,7 +2539,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 {
                     const auto x = ( it->time - m_zvStart ) * pxns;
                     const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-                    DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type );
+                    DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type, PlotHeight );
                 }
 
                 auto prevx = it;
@@ -2562,7 +2562,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     const auto rsz = std::distance( it, range );
                     if( rsz == 1 )
                     {
-                        DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it, prevy->val, false, v->type );
+                        DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it, prevy->val, false, v->type, PlotHeight );
                         prevx = it;
                         prevy = it;
                         ++it;
@@ -2600,11 +2600,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                             assert( vrange > vit );
                             if( std::distance( vit, vrange ) == 1 )
                             {
-                                DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, false );
+                                DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, false, PlotHeight );
                             }
                             else
                             {
-                                DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, true );
+                                DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, true, PlotHeight );
                             }
                             vit = vrange;
                         }
@@ -2639,7 +2639,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
     return offset;
 }
 
-void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged )
+void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged, float PlotHeight )
 {
     auto draw = ImGui::GetWindowDrawList();
     if( merged )
@@ -2663,7 +2663,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     }
 }
 
-void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type )
+void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type, float PlotHeight )
 {
     auto draw = ImGui::GetWindowDrawList();
     if( merged )

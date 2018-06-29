@@ -861,7 +861,11 @@ const char* Worker::GetZoneName( const ZoneEvent& ev ) const
 
 const char* Worker::GetZoneName( const ZoneEvent& ev, const SourceLocation& srcloc ) const
 {
-    if( srcloc.name.active )
+    if( ev.name.active )
+    {
+        return GetString( ev.name );
+    }
+    else if( srcloc.name.active )
     {
         return GetString( srcloc.name );
     }

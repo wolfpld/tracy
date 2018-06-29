@@ -92,6 +92,7 @@ v0.3.3 (xxxx-xx-xx)
   - Fixes incompatibility between "standalone" and "capture" utilities due
     to different set of used feature flags.
 - On Windows "standalone" utility now adapts to system DPI setting.
+- Optional per-call zone naming.
 
 
 v0.2 (2018-04-05)

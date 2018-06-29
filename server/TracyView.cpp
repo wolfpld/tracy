@@ -4839,11 +4839,21 @@ void View::DrawCompare()
                         }
 
                         ImGui::BeginTooltip();
-                        ImGui::Text( "Time range: %s - %s", TimeToString( t0 ), TimeToString( t1 ) );
-                        ImGui::Text( "Count: %g / %g", floor( bins[bin].v0 ), floor( bins[bin].v1 ) );
-                        ImGui::Text( "Time spent in bin: %s / %s", TimeToString( binTime[bin].v0 ), TimeToString( binTime[bin].v1 ) );
-                        ImGui::Text( "Time spent in the left bins: %s / %s", TimeToString( tBefore[0] ), TimeToString( tBefore[1] ) );
-                        ImGui::Text( "Time spent in the right bins: %s / %s", TimeToString( tAfter[0] ), TimeToString( tAfter[1] ) );
+                        ImGui::TextDisabled( "Time range:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
+                        ImGui::TextDisabled( "Count:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%g / %g", floor( bins[bin].v0 ), floor( bins[bin].v1 ) );
+                        ImGui::TextDisabled( "Time spent in bin:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%s / %s", TimeToString( binTime[bin].v0 ), TimeToString( binTime[bin].v1 ) );
+                        ImGui::TextDisabled( "Time spent in the left bins:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%s / %s", TimeToString( tBefore[0] ), TimeToString( tBefore[1] ) );
+                        ImGui::TextDisabled( "Time spent in the right bins:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%s / %s", TimeToString( tAfter[0] ), TimeToString( tAfter[1] ) );
                         ImGui::TextDisabled( "(Data is displayed as: [this trace] / [external trace])" );
                         ImGui::EndTooltip();
                     }

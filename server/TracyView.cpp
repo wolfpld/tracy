@@ -2483,18 +2483,18 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 ImGui::BeginTooltip();
                 ImGui::Text( "Plot \"%s\"", txt );
                 ImGui::Separator();
-                ImGui::Text( "Data points: %s", RealToString( v->data.size(), true ) );
-                ImGui::Text( "Data range: %s", RealToString( v->max - v->min, true ) );
-                ImGui::Text( "Min value: %s", RealToString( v->min, true ) );
-                ImGui::Text( "Max value: %s", RealToString( v->max, true ) );
-                ImGui::Text( "Time range: %s", TimeToString( tr ) );
-                ImGui::Text( "Data/second: %s", RealToString( double( v->data.size() ) / tr * 1000000000ll, true ) );
+                TextFocused( "Data points:", RealToString( v->data.size(), true ) );
+                TextFocused( "Data range:", RealToString( v->max - v->min, true ) );
+                TextFocused( "Min value:", RealToString( v->min, true ) );
+                TextFocused( "Max value:", RealToString( v->max, true ) );
+                TextFocused( "Time range:", TimeToString( tr ) );
+                TextFocused( "Data/second:", RealToString( double( v->data.size() ) / tr * 1000000000ll, true ) );
 
                 const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back().time - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
                 const auto tr10 = v->data.back().time - it->time;
                 if( tr10 != 0 )
                 {
-                    ImGui::Text( "D/s (10s): %s", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ll, true ) );
+                    TextFocused( "D/s (10s):", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ll, true ) );
                 }
 
                 ImGui::EndTooltip();
@@ -2656,10 +2656,10 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Value: %s", RealToString( val, true ) );
+        TextFocused( "Value:", RealToString( val, true ) );
         if( hasPrev )
         {
-            ImGui::Text( "Change: %s", RealToString( val - prev, true ) );
+            TextFocused( "Change:", RealToString( val - prev, true ) );
         }
         ImGui::EndTooltip();
     }
@@ -2680,11 +2680,11 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Value: %s", RealToString( item->val, true ) );
+        TextFocused( "Value:", RealToString( item->val, true ) );
         if( hasPrev )
         {
             const auto change = item->val - prev;
-            ImGui::Text( "Change: %s", RealToString( change, true ) );
+            TextFocused( "Change:", RealToString( change, true ) );
 
             if( type == PlotType::Memory )
             {
@@ -2710,8 +2710,10 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                 if( ev )
                 {
                     ImGui::Separator();
-                    ImGui::Text( "Address: 0x%" PRIx64, ev->ptr );
-                    ImGui::Text( "Appeared at %s", TimeToString( ev->timeAlloc - m_worker.GetFrameBegin( 0 ) ) );
+                    ImGui::TextDisabled( "Address:" );
+                    ImGui::SameLine();
+                    ImGui::Text( "0x%" PRIx64, ev->ptr );
+                    TextFocused( "Appeared at", TimeToString( ev->timeAlloc - m_worker.GetFrameBegin( 0 ) ) );
                     if( change > 0 )
                     {
                         ImGui::SameLine();
@@ -2723,21 +2725,21 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     }
                     else
                     {
-                        ImGui::Text( "Freed at %s", TimeToString( ev->timeFree - m_worker.GetFrameBegin( 0 ) ) );
+                        TextFocused( "Freed at", TimeToString( ev->timeFree - m_worker.GetFrameBegin( 0 ) ) );
                         if( change < 0 )
                         {
                             ImGui::SameLine();
                             ImGui::TextDisabled( "(this event)" );
                         }
-                        ImGui::Text( "Duration: %s", TimeToString( ev->timeFree - ev->timeAlloc ) );
+                        TextFocused( "Duration:", TimeToString( ev->timeFree - ev->timeAlloc ) );
                     }
                     if( change > 0 )
                     {
-                        ImGui::Text( "Thread: %s", m_worker.GetThreadString( m_worker.DecompressThread( ev->threadAlloc ) ) );
+                        TextFocused( "Thread:", m_worker.GetThreadString( m_worker.DecompressThread( ev->threadAlloc ) ) );
                     }
                     else
                     {
-                        ImGui::Text( "Thread: %s", m_worker.GetThreadString( m_worker.DecompressThread( ev->threadFree ) ) );
+                        TextFocused( "Thread:", m_worker.GetThreadString( m_worker.DecompressThread( ev->threadFree ) ) );
                     }
 
                     if( ImGui::IsMouseClicked( 0 ) )

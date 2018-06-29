@@ -181,6 +181,13 @@ tracy_force_inline float log10fast( float x )
     return log2fast( x ) * 0.301029995663981195213738894724493026768189881462108541310f;    // 1/log2(10)
 }
 
+static void TextFocused( const char* label, const char* value )
+{
+    ImGui::TextDisabled( "%s", label );
+    ImGui::SameLine();
+    ImGui::Text( "%s", value );
+}
+
 enum { MinVisSize = 3 };
 
 static View* s_instance = nullptr;
@@ -2907,15 +2914,17 @@ void View::DrawZoneInfoWindow()
     const auto tid = GetZoneThread( ev );
     if( ev.name.active )
     {
-        ImGui::Text( "Zone name: %s", m_worker.GetString( ev.name ) );
+        TextFocused( "Zone name:", m_worker.GetString( ev.name ) );
     }
     if( srcloc.name.active )
     {
-        ImGui::Text( "Zone name: %s", m_worker.GetString( srcloc.name ) );
+        TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
     }
-    ImGui::Text( "Function: %s", m_worker.GetString( srcloc.function ) );
-    ImGui::Text( "Location: %s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-    ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
+    TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+    ImGui::TextDisabled( "Location:" );
+    ImGui::SameLine();
+    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(id)" );
     if( ImGui::IsItemHovered() )
@@ -2926,7 +2935,7 @@ void View::DrawZoneInfoWindow()
     }
     if( ev.text.active )
     {
-        ImGui::Text( "User text: %s", m_worker.GetString( ev.text ) );
+        TextFocused( "User text:", m_worker.GetString( ev.text ) );
         dmul++;
     }
 
@@ -2934,9 +2943,9 @@ void View::DrawZoneInfoWindow()
 
     const auto end = m_worker.GetZoneEnd( ev );
     const auto ztime = end - ev.start;
-    ImGui::Text( "Time from start of program: %s", TimeToString( ev.start - m_worker.GetFrameBegin( 0 ) ) );
-    ImGui::Text( "Execution time: %s", TimeToString( ztime ) );
-    ImGui::Text( "Without profiling: %s", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
+    TextFocused( "Time from start of program:", TimeToString( ev.start - m_worker.GetFrameBegin( 0 ) ) );
+    TextFocused( "Execution time:", TimeToString( ztime ) );
+    TextFocused( "Without profiling:", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
 
     auto& mem = m_worker.GetMemData();
     if( mem.plot )
@@ -2992,11 +3001,25 @@ void View::DrawZoneInfoWindow()
             }
             else
             {
-                ImGui::Text( "%s memory events.", RealToString( nAlloc + nFree, true ) );
-                ImGui::Text( "%s allocs, %s frees.", RealToString( nAlloc, true ), RealToString( nFree, true ) );
-                ImGui::Text( "Memory allocated: %s bytes", RealToString( cAlloc, true ) );
-                ImGui::Text( "Memory freed: %s bytes", RealToString( cFree, true ) );
-                ImGui::Text( "Overall change: %s bytes", RealToString( cAlloc - cFree, true ) );
+                ImGui::Text( "%s", RealToString( nAlloc + nFree, true ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "memory events." );
+                ImGui::Text( "%s", RealToString( nAlloc, true ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "allocs," );
+                ImGui::SameLine();
+                ImGui::Text( "%s", RealToString( nFree, true ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "frees." );
+                TextFocused( "Memory allocated:", RealToString( cAlloc, true ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "bytes." );
+                TextFocused( "Memory freed:", RealToString( cFree, true ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "bytes." );
+                TextFocused( "Overall change:", RealToString( cAlloc - cFree, true ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "bytes." );
 
                 if( ImGui::TreeNode( "Allocations list" ) )
                 {
@@ -3191,10 +3214,12 @@ void View::DrawGpuInfoWindow()
 
     const auto tid = GetZoneThread( ev );
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
-    ImGui::Text( "Zone name: %s", m_worker.GetString( srcloc.name ) );
-    ImGui::Text( "Function: %s", m_worker.GetString( srcloc.function ) );
-    ImGui::Text( "Location: %s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-    ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
+    TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
+    TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+    ImGui::TextDisabled( "Location:" );
+    ImGui::SameLine();
+    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(id)" );
     if( ImGui::IsItemHovered() )
@@ -3208,19 +3233,19 @@ void View::DrawGpuInfoWindow()
 
     const auto end = m_worker.GetZoneEnd( ev );
     const auto ztime = end - ev.gpuStart;
-    ImGui::Text( "Time from start of program: %s", TimeToString( ev.gpuStart - m_worker.GetFrameBegin( 0 ) ) );
-    ImGui::Text( "GPU execution time: %s", TimeToString( ztime ) );
-    ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );
+    TextFocused( "Time from start of program:", TimeToString( ev.gpuStart - m_worker.GetFrameBegin( 0 ) ) );
+    TextFocused( "GPU execution time:", TimeToString( ztime ) );
+    TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
     {
-        ImGui::Text( "Delay to execution: %s", TimeToString( ev.gpuStart - ev.cpuStart ) );
+        TextFocused( "Delay to execution:", TimeToString( ev.gpuStart - ev.cpuStart ) );
     }
     else
     {
         const auto begin = ctx->timeline.front()->gpuStart;
         const auto drift = GpuDrift( ctx );
-        ImGui::Text( "Delay to execution: %s", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.cpuStart ) );
+        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.cpuStart ) );
     }
 
     ImGui::Separator();

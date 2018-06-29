@@ -5822,8 +5822,6 @@ void View::ShowZoneInfo( const GpuEvent& ev, uint64_t thread )
 
 void View::ZoneTooltip( const ZoneEvent& ev )
 {
-    int dmul = ev.text.active ? 2 : 1;
-
     const auto tid = GetZoneThread( ev );
     auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     const auto end = m_worker.GetZoneEnd( ev );
@@ -5845,7 +5843,6 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
     ImGui::Separator();
     ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
-    ImGui::Text( "Without profiling: %s", TimeToString( end - ev.start - m_worker.GetDelay() * dmul ) );
     if( ev.cpu_start >= 0 )
     {
         if( ev.end < 0 || ev.cpu_start == ev.cpu_end )

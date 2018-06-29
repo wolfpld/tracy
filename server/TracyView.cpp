@@ -5838,20 +5838,22 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::Text( "%s", m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-    ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
+    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
     ImGui::Separator();
-    ImGui::Text( "Execution time: %s", TimeToString( end - ev.start ) );
+    TextFocused( "Execution time:", TimeToString( end - ev.start ) );
     if( ev.cpu_start >= 0 )
     {
+        ImGui::TextDisabled( "CPU:" );
+        ImGui::SameLine();
         if( ev.end < 0 || ev.cpu_start == ev.cpu_end )
         {
-            ImGui::Text( "CPU: %i", ev.cpu_start );
+            ImGui::Text( "%i", ev.cpu_start );
         }
         else
         {
-            ImGui::Text( "CPU: %i -> %i", ev.cpu_start, ev.cpu_end );
+            ImGui::Text( "%i -> %i", ev.cpu_start, ev.cpu_end );
         }
     }
     if( ev.text.active )
@@ -5873,22 +5875,22 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::Text( "%s", m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-    ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
+    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
     ImGui::Separator();
-    ImGui::Text( "GPU execution time: %s", TimeToString( end - ev.gpuStart ) );
-    ImGui::Text( "CPU command setup time: %s", TimeToString( ev.cpuEnd - ev.cpuStart ) );
+    TextFocused( "GPU execution time:", TimeToString( end - ev.gpuStart ) );
+    TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
     {
-        ImGui::Text( "Delay to execution: %s", TimeToString( ev.gpuStart - ev.cpuStart ) );
+        TextFocused( "Delay to execution:", TimeToString( ev.gpuStart - ev.cpuStart ) );
     }
     else
     {
         const auto begin = ctx->timeline.front()->gpuStart;
         const auto drift = GpuDrift( ctx );
-        ImGui::Text( "Delay to execution: %s", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.cpuStart ) );
+        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.cpuStart ) );
     }
 
     ImGui::EndTooltip();

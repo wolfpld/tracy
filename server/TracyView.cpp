@@ -2087,7 +2087,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     if( condensed > 1 )
                     {
                         ImGui::BeginTooltip();
-                        ImGui::Text( "Multiple lock events (%s)", RealToString( condensed, true ) );
+                        TextFocused( "Multiple lock events:", RealToString( condensed, true ) );
                         ImGui::EndTooltip();
                     }
                     else
@@ -2133,7 +2133,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         ImGui::Text( "Lock #%" PRIu32 ": %s", v.first, m_worker.GetString( srcloc.function ) );
                         ImGui::Separator();
                         ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-                        ImGui::Text( "Time: %s", TimeToString( t1 - t0 ) );
+                        TextFocused( "Time:", TimeToString( t1 - t0 ) );
                         ImGui::Separator();
 
                         uint32_t markloc = 0;
@@ -2398,10 +2398,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     switch( v.second.type )
                     {
                     case LockType::Lockable:
-                        ImGui::Text( "Type: lockable" );
+                        TextFocused( "Type:", "lockable" );
                         break;
                     case LockType::SharedLockable:
-                        ImGui::Text( "Type: shared lockable" );
+                        TextFocused( "Type:", "shared lockable" );
                         break;
                     default:
                         assert( false );
@@ -2416,7 +2416,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
                     ImGui::Unindent( ty );
                     ImGui::Separator();
-                    ImGui::Text( "Lock events: %s", RealToString( v.second.timeline.size(), true ) );
+                    TextFocused( "Lock events:", RealToString( v.second.timeline.size(), true ) );
                     ImGui::EndTooltip();
                 }
                 cnt++;

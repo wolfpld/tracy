@@ -1244,7 +1244,6 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     while( it < zitend )
     {
         auto& ev = **it;
-        auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
         const auto color = GetZoneColor( ev );
         const auto end = m_worker.GetZoneEnd( ev );
         const auto zsz = std::max( ( end - ev.start ) * pxns, pxns * 0.5 );
@@ -1306,16 +1305,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         }
         else
         {
-            const char* zoneName;
-            if( srcloc.name.active )
-            {
-                zoneName = m_worker.GetString( srcloc.name );
-            }
-            else
-            {
-                zoneName = m_worker.GetString( srcloc.function );
-            }
-
+            const char* zoneName = m_worker.GetZoneName( ev );
             int dmul = ev.text.active ? 2 : 1;
 
             bool migration = false;
@@ -1514,7 +1504,6 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     while( it < zitend )
     {
         auto& ev = **it;
-        auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
         const auto color = GetZoneColor( ev );
         auto end = m_worker.GetZoneEnd( ev );
         if( end == std::numeric_limits<int64_t>::max() ) break;
@@ -1589,7 +1578,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 if( d > maxdepth ) maxdepth = d;
             }
 
-            const char* zoneName = m_worker.GetString( srcloc.name );
+            const char* zoneName = m_worker.GetZoneName( ev );
             auto tsz = ImGui::CalcTextSize( zoneName );
 
             const auto pr0 = ( start - m_zvStart ) * pxns;
@@ -3054,7 +3043,7 @@ void View::DrawZoneInfoWindow()
     int idx = 0;
     DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, [&idx, this] ( const ZoneEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
-        const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+        const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
         auto sel = ImGui::Selectable( txt, false );
         auto hover = ImGui::IsItemHovered();
@@ -3108,8 +3097,7 @@ void View::DrawZoneInfoWindow()
             for( size_t i=0; i<ev.child.size(); i++ )
             {
                 auto& cev = *ev.child[cti[i]];
-                const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
-                const auto txt = csl.name.active ? m_worker.GetString( csl.name ) : m_worker.GetString( csl.function );
+                const auto txt = m_worker.GetZoneName( cev );
                 bool b = false;
                 ImGui::PushID( (int)i );
                 if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
@@ -3243,7 +3231,7 @@ void View::DrawGpuInfoWindow()
     int idx = 0;
     DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, [&idx, this] ( const GpuEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
-        const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+        const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
         auto sel = ImGui::Selectable( txt, false );
         auto hover = ImGui::IsItemHovered();
@@ -3297,10 +3285,9 @@ void View::DrawGpuInfoWindow()
             for( size_t i=0; i<ev.child.size(); i++ )
             {
                 auto& cev = *ev.child[cti[i]];
-                const auto& csl = m_worker.GetSourceLocation( cev.srcloc );
                 bool b = false;
                 ImGui::PushID( (int)i );
-                if( ImGui::Selectable( m_worker.GetString( csl.name ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                if( ImGui::Selectable( m_worker.GetZoneName( cev ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
                     ShowZoneInfo( cev, m_gpuInfoWindowThread );
                 }
@@ -5787,36 +5774,16 @@ void View::ZoneTooltip( const ZoneEvent& ev )
 
     const auto tid = GetZoneThread( ev );
     auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
-
-    const auto filename = m_worker.GetString( srcloc.file );
-    const auto line = srcloc.line;
-
-    const char* func;
-    const char* zoneName;
-    if( srcloc.name.active )
-    {
-        zoneName = m_worker.GetString( srcloc.name );
-        func = m_worker.GetString( srcloc.function );
-    }
-    else
-    {
-        func = zoneName = m_worker.GetString( srcloc.function );
-    }
-
     const auto end = m_worker.GetZoneEnd( ev );
 
     ImGui::BeginTooltip();
     if( srcloc.name.active )
     {
-        ImGui::Text( "%s", zoneName );
-        ImGui::Text( "%s", func );
+        ImGui::Text( "%s", m_worker.GetString( srcloc.name ) );
     }
-    else
-    {
-        ImGui::Text( "%s", func );
-    }
+    ImGui::Text( "%s", m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
-    ImGui::Text( "%s:%i", filename, line );
+    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
@@ -5846,19 +5813,13 @@ void View::ZoneTooltip( const GpuEvent& ev )
 {
     const auto tid = GetZoneThread( ev );
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
-
-    const auto name = m_worker.GetString( srcloc.name );
-    const auto filename = m_worker.GetString( srcloc.file );
-    const auto line = srcloc.line;
-    const auto func = m_worker.GetString( srcloc.function );
-
     const auto end = m_worker.GetZoneEnd( ev );
 
     ImGui::BeginTooltip();
-    ImGui::Text( "%s", name );
-    ImGui::Text( "%s", func );
+    ImGui::Text( "%s", m_worker.GetString( srcloc.name ) );
+    ImGui::Text( "%s", m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
-    ImGui::Text( "%s:%i", filename, line );
+    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     ImGui::Text( "Thread: %s", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );

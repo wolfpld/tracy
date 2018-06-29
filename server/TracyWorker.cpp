@@ -853,6 +853,36 @@ const SourceLocation& Worker::GetSourceLocation( int32_t srcloc ) const
     }
 }
 
+const char* Worker::GetZoneName( const ZoneEvent& ev ) const
+{
+    auto& srcloc = GetSourceLocation( ev.srcloc );
+    return GetZoneName( ev, srcloc );
+}
+
+const char* Worker::GetZoneName( const ZoneEvent& ev, const SourceLocation& srcloc ) const
+{
+    if( srcloc.name.active )
+    {
+        return GetString( srcloc.name );
+    }
+    else
+    {
+        return GetString( srcloc.function );
+    }
+}
+
+const char* Worker::GetZoneName( const GpuEvent& ev ) const
+{
+    auto& srcloc = GetSourceLocation( ev.srcloc );
+    return GetZoneName( ev, srcloc );
+}
+
+const char* Worker::GetZoneName( const GpuEvent& ev, const SourceLocation& srcloc ) const
+{
+    assert( srcloc.name.active );
+    return GetString( srcloc.name );
+}
+
 std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) const
 {
     std::vector<int32_t> match;

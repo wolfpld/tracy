@@ -2957,7 +2957,12 @@ void View::DrawZoneInfoWindow()
     const auto ztime = end - ev.start;
     TextFocused( "Time from start of program:", TimeToString( ev.start - m_worker.GetFrameBegin( 0 ) ) );
     TextFocused( "Execution time:", TimeToString( ztime ) );
-    TextFocused( "Without profiling:", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        TextFocused( "Without profiling:", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
+        ImGui::EndTooltip();
+    }
 
     auto& mem = m_worker.GetMemData();
     if( mem.plot )

@@ -221,7 +221,7 @@ static inline int LuaZoneEnd( lua_State* L )
 #else
     uint32_t cpu;
     MemWrite( &item->zoneEnd.time, Profiler::GetTime( cpu ) );
-    MemWrite( &item->zoneBegin.cpu, cpu );
+    MemWrite( &item->zoneEnd.cpu, cpu );
 #endif
     MemWrite( &item->zoneEnd.thread, GetThreadHandle() );
     tail.store( magic + 1, std::memory_order_release );

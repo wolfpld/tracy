@@ -375,6 +375,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                 switch( (QueueType)idx )
                 {
                 case QueueType::ZoneText:
+                case QueueType::ZoneName:
                     ptr = MemRead<uint64_t>( &item->zoneText.text );
                     SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                     tracy_free( (void*)ptr );

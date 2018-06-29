@@ -27,6 +27,8 @@ static inline void LuaRegister( lua_State* L )
     lua_pushcfunction( L, detail::noop );
     lua_setfield( L, -2, "ZoneText" );
     lua_pushcfunction( L, detail::noop );
+    lua_setfield( L, -2, "ZoneName" );
+    lua_pushcfunction( L, detail::noop );
     lua_setfield( L, -2, "Message" );
     lua_setglobal( L, "tracy" );
 }
@@ -62,6 +64,12 @@ static inline void LuaRemove( char* script )
                     script += 17;
                 }
                 else if( strncmp( script + 10, "Text(", 5 ) == 0 )
+                {
+                    auto end = FindEnd( script + 15 );
+                    memset( script, ' ', end - script );
+                    script = end;
+                }
+                else if( strncmp( script + 10, "Name(", 5 ) == 0 )
                 {
                     auto end = FindEnd( script + 15 );
                     memset( script, ' ', end - script );
@@ -247,6 +255,25 @@ static inline int LuaZoneText( lua_State* L )
     return 0;
 }
 
+static inline int LuaZoneName( lua_State* L )
+{
+    auto txt = lua_tostring( L, 1 );
+    const auto size = strlen( txt );
+
+    Magic magic;
+    auto& token = s_token.ptr;
+    auto ptr = (char*)tracy_malloc( size+1 );
+    memcpy( ptr, txt, size );
+    ptr[size] = '\0';
+    auto& tail = token->get_tail_index();
+    auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+    MemWrite( &item->hdr.type, QueueType::ZoneName );
+    MemWrite( &item->zoneText.thread, GetThreadHandle() );
+    MemWrite( &item->zoneText.text, (uint64_t)ptr );
+    tail.store( magic + 1, std::memory_order_release );
+    return 0;
+}
+
 static inline int LuaMessage( lua_State* L )
 {
     auto txt = lua_tostring( L, 1 );
@@ -280,6 +307,8 @@ static inline void LuaRegister( lua_State* L )
     lua_setfield( L, -2, "ZoneEnd" );
     lua_pushcfunction( L, detail::LuaZoneText );
     lua_setfield( L, -2, "ZoneText" );
+    lua_pushcfunction( L, detail::LuaZoneName );
+    lua_setfield( L, -2, "ZoneName" );
     lua_pushcfunction( L, detail::LuaMessage );
     lua_setfield( L, -2, "Message" );
     lua_setglobal( L, "tracy" );

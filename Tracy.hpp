@@ -12,7 +12,7 @@
 #define ZoneScopedNC(x,y)
 
 #define ZoneText(x,y)
-#define ZoneName(x)
+#define ZoneName(x,y)
 
 #define FrameMark
 
@@ -46,6 +46,7 @@
 #define ZoneScopedNC( name, color ) static const tracy::SourceLocation __tracy_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
 
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size );
+#define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
 
 #define FrameMark tracy::Profiler::FrameMark();
 

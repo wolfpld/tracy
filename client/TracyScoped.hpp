@@ -92,6 +92,21 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    tracy_force_inline void Name( const char* txt, size_t size )
+    {
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto ptr = (char*)tracy_malloc( size+1 );
+        memcpy( ptr, txt, size );
+        ptr[size] = '\0';
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::ZoneName );
+        MemWrite( &item->zoneText.thread, m_thread );
+        MemWrite( &item->zoneText.text, (uint64_t)ptr );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
 private:
     uint64_t m_thread;
 };

@@ -9,6 +9,7 @@ namespace tracy
 enum class QueueType : uint8_t
 {
     ZoneText,
+    ZoneName,
     Message,
     ZoneBeginAllocSrcLoc,
     CallstackMemory,
@@ -273,6 +274,7 @@ enum { QueueItemSize = sizeof( QueueItem ) };
 
 static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneText ),        // zone name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ),

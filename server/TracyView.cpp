@@ -2905,6 +2905,10 @@ void View::DrawZoneInfoWindow()
     ImGui::Separator();
 
     const auto tid = GetZoneThread( ev );
+    if( ev.name.active )
+    {
+        ImGui::Text( "Zone name: %s", m_worker.GetString( ev.name ) );
+    }
     if( srcloc.name.active )
     {
         ImGui::Text( "Zone name: %s", m_worker.GetString( srcloc.name ) );

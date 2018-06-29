@@ -1010,25 +1010,27 @@ void View::DrawZones()
                     ImGui::Separator();
                     if( !isVulkan )
                     {
-                        ImGui::Text( "Thread: %s", m_worker.GetThreadString( v->thread ) );
+                        TextFocused( "Thread:", m_worker.GetThreadString( v->thread ) );
                     }
                     if( !v->timeline.empty() )
                     {
                         const auto t = v->timeline.front()->gpuStart;
                         if( t != std::numeric_limits<int64_t>::max() )
                         {
-                            ImGui::Text( "Appeared at %s", TimeToString( t - m_worker.GetFrameBegin( 0 ) ) );
+                            TextFocused( "Appeared at", TimeToString( t - m_worker.GetFrameBegin( 0 ) ) );
                         }
                     }
-                    ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
-                    ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
+                    TextFocused( "Zone count:", RealToString( v->count, true ) );
+                    TextFocused( "Top-level zones:", RealToString( v->timeline.size(), true ) );
                     if( isVulkan )
                     {
-                        ImGui::Text( "Timestamp accuracy: %s", TimeToString( v->period ) );
+                        TextFocused( "Timestamp accuracy:", TimeToString( v->period ) );
                     }
                     else
                     {
-                        ImGui::Text( "Query accuracy bits: %i", v->accuracyBits );
+                        ImGui::TextDisabled( "Query accuracy bits:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%i", v->accuracyBits );
                     }
                     ImGui::EndTooltip();
                 }
@@ -1126,9 +1128,9 @@ void View::DrawZones()
                 if( !v->timeline.empty() )
                 {
                     ImGui::Separator();
-                    ImGui::Text( "Appeared at %s", TimeToString( v->timeline.front()->start - m_worker.GetFrameBegin( 0 ) ) );
-                    ImGui::Text( "Zone count: %s", RealToString( v->count, true ) );
-                    ImGui::Text( "Top-level zones: %s", RealToString( v->timeline.size(), true ) );
+                    TextFocused( "Appeared at", TimeToString( v->timeline.front()->start - m_worker.GetFrameBegin( 0 ) ) );
+                    TextFocused( "Zone count:", RealToString( v->count, true ) );
+                    TextFocused( "Top-level zones:", RealToString( v->timeline.size(), true ) );
                 }
                 ImGui::EndTooltip();
             }

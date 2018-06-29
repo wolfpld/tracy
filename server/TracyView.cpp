@@ -4460,7 +4460,9 @@ void View::DrawCompare()
                 ImGui::EndTooltip();
             }
 
-            ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
+            ImGui::TextDisabled( "Time range:" );
+            ImGui::SameLine();
+            ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
             const auto dt = double( tmax - tmin );
             const auto cumulateTime = m_compare.cumulateTime;
@@ -4619,9 +4621,9 @@ void View::DrawCompare()
                         }
                     }
 
-                    ImGui::Text( "Total time (this): %s", TimeToString( zoneData0.total * adj0 ) );
-                    ImGui::Text( "Total time (external): %s", TimeToString( zoneData1.total * adj1 ) );
-                    ImGui::Text( "Max counts: %s", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
+                    TextFocused( "Total time (this):", TimeToString( zoneData0.total * adj0 ) );
+                    TextFocused( "Total time (external):", TimeToString( zoneData1.total * adj1 ) );
+                    TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
 
                     ImGui::ColorButton( "c1", ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                     ImGui::SameLine();

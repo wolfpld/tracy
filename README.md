@@ -71,6 +71,8 @@ To record a zone's execution time add the `ZoneScoped` macro at the beginning of
 
 Use the `ZoneText( const char* text, size_t size )` macro to add a custom text string that will be displayed along the zone information (for example, name of the file you are opening). Note that every time `ZoneText` is invoked, a memory allocation is performed to store an internal copy of the data. The provided string is not used by tracy after ZoneText returns.
 
+If you want to set zone name on a per-call basis, you may do so using the `ZoneName( text, size )` macro.
+
 #### Marking locks
 
 Tracy can collect and display lock interactions in threads.
@@ -111,7 +113,7 @@ To mark memory events, use the `TracyAlloc( ptr, size )` and `TracyFree( ptr )` 
 
 #### Lua support
 
-To profile Lua code using tracy, include the `tracy/TracyLua.hpp` header file in your Lua wrapper and execute `tracy::LuaRegister( lua_State* )` function to add instrumentation support. In your Lua code, add `tracy.ZoneBegin()` and `tracy.ZoneEnd()` calls to mark execution zones. Double check if you have included all return paths! Use `tracy.ZoneBeginN( name )` to set zone name. Use `tracy.ZoneText( text )` to set zone text. Use `tracy.Message( text )` to send messages.
+To profile Lua code using tracy, include the `tracy/TracyLua.hpp` header file in your Lua wrapper and execute `tracy::LuaRegister( lua_State* )` function to add instrumentation support. In your Lua code, add `tracy.ZoneBegin()` and `tracy.ZoneEnd()` calls to mark execution zones. Double check if you have included all return paths! Use `tracy.ZoneBeginN( name )` to set zone name. Use `tracy.ZoneText( text )` to set zone text. Use `tracy.Message( text )` to send messages. Use `tracy.ZoneName( text )` to set zone name on a per-call basis.
 
 Even if tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the `tracy::LuaRemove( char* script )` function, which will replace instrumentation calls with whitespace. This function does nothing if profiler is enabled.
 

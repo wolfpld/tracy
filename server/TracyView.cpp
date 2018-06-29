@@ -4181,11 +4181,21 @@ void View::DrawFindZone()
 
             if( expand )
             {
-                ImGui::Columns( 2, hdrString );
+                ImGui::Columns( 3, hdrString );
                 ImGui::Separator();
                 ImGui::Text( "Time from start" );
                 ImGui::NextColumn();
                 ImGui::Text( "Execution time" );
+                ImGui::NextColumn();
+                ImGui::Text( "Name" );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(?)" );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Only displayed if custom zone name is set." );
+                    ImGui::EndTooltip();
+                }
                 ImGui::NextColumn();
                 ImGui::Separator();
 
@@ -4195,8 +4205,6 @@ void View::DrawFindZone()
                     const auto timespan = end - ev->start;
 
                     ImGui::PushID( ev );
-
-                    auto& srcloc = m_worker.GetSourceLocation( ev->srcloc );
                     if( ImGui::Selectable( TimeToString( ev->start - m_worker.GetFrameBegin( 0 ) ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
                     {
                         ShowZoneInfo( *ev );
@@ -4213,6 +4221,11 @@ void View::DrawFindZone()
 
                     ImGui::NextColumn();
                     ImGui::Text( "%s", TimeToString( timespan ) );
+                    ImGui::NextColumn();
+                    if( ev->name.active )
+                    {
+                        ImGui::Text( "%s", m_worker.GetString( ev->name ) );
+                    }
                     ImGui::NextColumn();
 
                     ImGui::PopID();

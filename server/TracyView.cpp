@@ -5781,6 +5781,10 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     const auto end = m_worker.GetZoneEnd( ev );
 
     ImGui::BeginTooltip();
+    if( ev.name.active )
+    {
+        ImGui::Text( "%s", m_worker.GetString( ev.name ) );
+    }
     if( srcloc.name.active )
     {
         ImGui::Text( "%s", m_worker.GetString( srcloc.name ) );

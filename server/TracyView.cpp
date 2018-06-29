@@ -855,7 +855,7 @@ bool View::DrawZoneFrames()
             ImGui::BeginTooltip();
             ImGui::Text( "%s", GetFrameText( i, ftime ) );
             ImGui::Separator();
-            ImGui::Text( "Time from start of program: %s", TimeToString( m_worker.GetFrameBegin( i ) - m_worker.GetFrameBegin( 0 ) ) );
+            TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( i ) - m_worker.GetFrameBegin( 0 ) ) );
             ImGui::EndTooltip();
 
             if( ImGui::IsMouseClicked( 2 ) )

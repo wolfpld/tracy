@@ -2733,14 +2733,18 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                         }
                         TextFocused( "Duration:", TimeToString( ev->timeFree - ev->timeAlloc ) );
                     }
+                    uint64_t tid;
                     if( change > 0 )
                     {
-                        TextFocused( "Thread:", m_worker.GetThreadString( m_worker.DecompressThread( ev->threadAlloc ) ) );
+                        tid = m_worker.DecompressThread( ev->threadAlloc );
                     }
                     else
                     {
-                        TextFocused( "Thread:", m_worker.GetThreadString( m_worker.DecompressThread( ev->threadFree ) ) );
+                        tid = m_worker.DecompressThread( ev->threadFree );
                     }
+                    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
 
                     if( ImGui::IsMouseClicked( 0 ) )
                     {

@@ -604,9 +604,11 @@ void View::DrawFrames()
                         f = std::max( f, m_worker.GetFrameTime( sel + j ) );
                     }
 
-                    ImGui::Text( "Frames: %i - %i (%i)", sel, sel + g - 1, g );
+                    ImGui::TextDisabled( "Frames:" );
+                    ImGui::SameLine();
+                    ImGui::Text( "%i - %i (%i)", sel, sel + g - 1, g );
                     ImGui::Separator();
-                    ImGui::Text( "Max frame time: %s", TimeToString( f ) );
+                    TextFocused( "Max frame time:", TimeToString( f ) );
                 }
                 else
                 {
@@ -614,16 +616,18 @@ void View::DrawFrames()
                     {
                         ImGui::Text( "Tracy initialization" );
                         ImGui::Separator();
-                        ImGui::Text( "Time: %s", TimeToString( m_worker.GetFrameTime( sel ) ) );
+                        TextFocused( "Time:", TimeToString( m_worker.GetFrameTime( sel ) ) );
                     }
                     else
                     {
-                        ImGui::Text( "Frame: %i", sel );
+                        ImGui::TextDisabled( "Frame:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%i", sel );
                         ImGui::Separator();
-                        ImGui::Text( "Frame time: %s", TimeToString( m_worker.GetFrameTime( sel ) ) );
+                        TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( sel ) ) );
                     }
                 }
-                ImGui::Text( "Time from start of program: %s", TimeToString( m_worker.GetFrameBegin( sel ) - m_worker.GetFrameBegin( 0 ) ) );
+                TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( sel ) - m_worker.GetFrameBegin( 0 ) ) );
                 ImGui::EndTooltip();
 
                 if( ImGui::IsMouseClicked( 0 ) )

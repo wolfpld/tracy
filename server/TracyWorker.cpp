@@ -31,7 +31,7 @@ static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
     return ( h5 << 16 ) | ( h6 << 8 ) | h7;
 }
 
-static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 2 };
+static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 3 };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( FileHeader[FileHeaderMagic], FileHeader[FileHeaderMagic+1], FileHeader[FileHeaderMagic+2] );
 
@@ -456,9 +456,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( tid );
         td->id = tid;
         f.Read( td->count );
-        if( fileVer <= FileVersion( 0, 3, 1 ) )
+        if( fileVer <= FileVersion( 0, 3, 2 ) )
         {
-            ReadTimelinePre032( f, td->timeline, CompressThread( tid ) );
+            ReadTimelinePre033( f, td->timeline, CompressThread( tid ), fileVer );
         }
         else
         {
@@ -1560,6 +1560,9 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::ZoneText:
         ProcessZoneText( ev.zoneText );
         break;
+    case QueueType::ZoneName:
+        ProcessZoneName( ev.zoneText );
+        break;
     case QueueType::LockAnnounce:
         ProcessLockAnnounce( ev.lockAnnounce );
         break;
@@ -1749,6 +1752,21 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
     zone->text = StringIdx( it->second.idx );
+    m_pendingCustomStrings.erase( it );
+}
+
+void Worker::ProcessZoneName( const QueueZoneText& ev )
+{
+    auto tit = m_threadMap.find( ev.thread );
+    assert( tit != m_threadMap.end() );
+
+    auto td = tit->second;
+    auto& stack = td->stack;
+    assert( !stack.empty() );
+    auto zone = stack.back();
+    auto it = m_pendingCustomStrings.find( ev.text );
+    assert( it != m_pendingCustomStrings.end() );
+    zone->name = StringIdx( it->second.idx );
     m_pendingCustomStrings.erase( it );
 }
 
@@ -2376,13 +2394,13 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
     }
 }
 
-void Worker::ReadTimelinePre032( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread )
+void Worker::ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, int fileVer )
 {
     uint64_t sz;
     f.Read( sz );
     if( sz != 0 )
     {
-        ReadTimelinePre032( f, vec, thread, sz );
+        ReadTimelinePre033( f, vec, thread, sz, fileVer );
     }
 }
 
@@ -2452,7 +2470,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
     }
 }
 
-void Worker::ReadTimelinePre032( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size )
+void Worker::ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer )
 {
     assert( size != 0 );
     vec.reserve_non_zero( size );
@@ -2464,9 +2482,19 @@ void Worker::ReadTimelinePre032( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         vec.push_back_no_space_check( zone );
         new( &zone->child ) decltype( zone->child );
 
-        f.Read( zone, 26 );
-        zone->callstack = 0;
-        ReadTimelinePre032( f, zone->child, thread );
+        if( fileVer <= FileVersion( 0, 3, 1 ) )
+        {
+            f.Read( zone, 26 );
+            zone->callstack = 0;
+            zone->name.__data = 0;
+        }
+        else
+        {
+            assert( fileVer <= FileVersion( 0, 3, 2 ) );
+            f.Read( zone, 30 );
+            zone->name.__data = 0;
+        }
+        ReadTimelinePre033( f, zone->child, thread, fileVer );
         ReadTimelineUpdateStatistics( zone, thread );
     }
 }

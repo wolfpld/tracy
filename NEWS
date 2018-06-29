@@ -7,7 +7,7 @@ Note: Release numbers are nothing more than numbers. There are some
 a mistake.
 
 
-v0.3.2 (xxxx-xx-xx)
+v0.3.3 (xxxx-xx-xx)
 -------------------
 
 - Breaking change: the format of trace files has changed.

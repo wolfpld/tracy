@@ -81,6 +81,7 @@ struct ZoneEvent
     int8_t cpu_end;
     StringIdx text;
     uint32_t callstack;
+    StringIdx name;
 
     // This must be last. All above is read/saved as-is.
     Vector<ZoneEvent*> child;

@@ -223,6 +223,7 @@ private:
     tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
     tracy_force_inline void ProcessZoneText( const QueueZoneText& ev );
+    tracy_force_inline void ProcessZoneName( const QueueZoneText& ev );
     tracy_force_inline void ProcessLockAnnounce( const QueueLockAnnounce& ev );
     tracy_force_inline void ProcessLockWait( const QueueLockWait& ev );
     tracy_force_inline void ProcessLockObtain( const QueueLockObtain& ev );
@@ -290,14 +291,14 @@ private:
     uint16_t CompressThreadNew( uint64_t thread );
 
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread );
-    tracy_force_inline void ReadTimelinePre032( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread );
+    tracy_force_inline void ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, int fileVer );
     tracy_force_inline void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec );
     tracy_force_inline void ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec );
 
     tracy_force_inline void ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread );
 
     void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size );
-    void ReadTimelinePre032( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size );
+    void ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer );
     void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
     void ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
 

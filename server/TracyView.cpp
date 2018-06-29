@@ -3600,7 +3600,9 @@ void View::DrawFindZone()
                     ImGui::EndTooltip();
                 }
 
-                ImGui::Text( "Time range: %s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
+                ImGui::TextDisabled( "Time range:" );
+                ImGui::SameLine();
+                ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
                 const auto dt = double( tmax - tmin );
                 const auto selThread = m_findZone.selThread;
@@ -3813,21 +3815,23 @@ void View::DrawFindZone()
                             }
                         }
 
-                        ImGui::Text( "Total time: %s", TimeToString( timeTotal ) );
+                        TextFocused( "Total time:", TimeToString( timeTotal ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-                        ImGui::Text( "Max counts: %s", cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
+                        TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
 
+                        ImGui::TextDisabled( "Selection range:" );
+                        ImGui::SameLine();
                         if( m_findZone.highlight.active )
                         {
                             const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
                             const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-                            ImGui::Text( "Selection range: %s - %s (%s)", TimeToString( s ), TimeToString( e ), TimeToString( e - s ) );
+                            ImGui::Text( "%s - %s (%s)", TimeToString( s ), TimeToString( e ), TimeToString( e - s ) );
                         }
                         else
                         {
-                            ImGui::Text( "Selection range: none" );
+                            ImGui::Text( "none" );
                         }
                         ImGui::SameLine();
                         ImGui::TextDisabled( "(?)" );
@@ -3839,19 +3843,19 @@ void View::DrawFindZone()
                         }
                         if( m_findZone.highlight.active )
                         {
-                            ImGui::Text( "Selection time: %s", TimeToString( selectionTime ) );
+                            TextFocused( "Selection time:", TimeToString( selectionTime ) );
                         }
                         else
                         {
-                            ImGui::Text( "Selection time: none" );
+                            TextFocused( "Selection time:", "none" );
                         }
                         if( selThread != m_findZone.Unselected )
                         {
-                            ImGui::Text( "Zone group time: %s", TimeToString( selBinTime ) );
+                            TextFocused( "Zone group time:", TimeToString( selBinTime ) );
                         }
                         else
                         {
-                            ImGui::Text( "Zone group time: none" );
+                            TextFocused( "Zone group time:", "none" );
                         }
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
@@ -4028,11 +4032,15 @@ void View::DrawFindZone()
                             }
 
                             ImGui::BeginTooltip();
-                            ImGui::Text( "Time range: %s - %s", TimeToString( t0 ), TimeToString( t1 ) );
-                            ImGui::Text( "Count: %" PRIu64, bins[bin] );
-                            ImGui::Text( "Time spent in bin: %s", TimeToString( binTime[bin] ) );
-                            ImGui::Text( "Time spent in the left bins: %s", TimeToString( tBefore ) );
-                            ImGui::Text( "Time spent in the right bins: %s", TimeToString( tAfter ) );
+                            ImGui::TextDisabled( "Time range:" );
+                            ImGui::SameLine();
+                            ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
+                            ImGui::TextDisabled( "Count:" );
+                            ImGui::SameLine();
+                            ImGui::Text( "%" PRIu64, bins[bin] );
+                            TextFocused( "Time spent in bin:", TimeToString( binTime[bin] ) );
+                            TextFocused( "Time spent in the left bins:", TimeToString( tBefore ) );
+                            TextFocused( "Time spent in the right bins:", TimeToString( tAfter ) );
                             ImGui::EndTooltip();
 
                             if( ImGui::IsMouseClicked( 1 ) )

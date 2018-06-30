@@ -69,17 +69,19 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
     }
 #  endif
 #elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__
-    const auto sz = strlen( name );
-    if( sz <= 15 )
     {
-        pthread_setname_np( handle, name );
-    }
-    else
-    {
-        char buf[16];
-        memcpy( buf, name, 15 );
-        buf[15] = '\0';
-        pthread_setname_np( handle, buf );
+        const auto sz = strlen( name );
+        if( sz <= 15 )
+        {
+            pthread_setname_np( handle, name );
+        }
+        else
+        {
+            char buf[16];
+            memcpy( buf, name, 15 );
+            buf[15] = '\0';
+            pthread_setname_np( handle, buf );
+        }
     }
 #endif
 #ifdef TRACY_COLLECT_THREAD_NAMES

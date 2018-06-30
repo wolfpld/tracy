@@ -1,6 +1,8 @@
 #ifndef __TRACYALLOC_HPP__
 #define __TRACYALLOC_HPP__
 
+#include <cstdlib>
+
 #ifdef TRACY_ENABLE
 #  include "../client/tracy_rpmalloc.hpp"
 #endif

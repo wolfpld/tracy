@@ -775,10 +775,10 @@ void Profiler::CalibrateDelay()
     auto mindiff = std::numeric_limits<int64_t>::max();
     for( int i=0; i<Iterations * 10; i++ )
     {
-        const auto t0_inner = GetTime();
-        const auto t1_inner = GetTime();
-        const auto dt_inner = t1_inner - t0_inner;
-        if( dt_inner > 0 && dt_inner < mindiff ) mindiff = dt_inner;
+        const auto t0i = GetTime();
+        const auto t1i = GetTime();
+        const auto dti = t1i - t0i;
+        if( dti > 0 && dti < mindiff ) mindiff = dti;
     }
 
     m_resolution = mindiff;

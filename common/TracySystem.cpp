@@ -69,26 +69,28 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
     }
 #  endif
 #elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__
-    const auto sz = strlen( name );
-    if( sz <= 15 )
     {
-        pthread_setname_np( handle, name );
-    }
-    else
-    {
-        char buf[16];
-        memcpy( buf, name, 15 );
-        buf[15] = '\0';
-        pthread_setname_np( handle, buf );
+        const auto sz = strlen( name );
+        if( sz <= 15 )
+        {
+            pthread_setname_np( handle, name );
+        }
+        else
+        {
+            char buf[16];
+            memcpy( buf, name, 15 );
+            buf[15] = '\0';
+            pthread_setname_np( handle, buf );
+        }
     }
 #endif
 #ifdef TRACY_COLLECT_THREAD_NAMES
     {
         rpmalloc_thread_initialize();
-        const auto sz_inner = strlen( name );
-        char* buf = (char*)tracy_malloc( sz_inner+1 );
-        memcpy( buf, name, sz_inner );
-        buf[sz_inner+1] = '\0';
+        const auto sz = strlen( name );
+        char* buf = (char*)tracy_malloc( sz+1 );
+        memcpy( buf, name, sz );
+        buf[sz+1] = '\0';
         auto data = (ThreadNameData*)tracy_malloc( sizeof( ThreadNameData ) );
 #  ifdef _WIN32
         data->id = GetThreadId( static_cast<HANDLE>( handle ) );

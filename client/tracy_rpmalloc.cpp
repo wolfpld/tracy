@@ -719,7 +719,8 @@ _memory_unmap_deferred(heap_t* heap, size_t wanted_count) {
 	do {
 		//Verify that we own the master span, otherwise re-defer to owner
 		void* next = span->next_span;
-		if (!found_span && SPAN_COUNT(span->flags) == wanted_count) {
+		size_t span_count = SPAN_COUNT(span->flags);
+		if (!found_span && span_count == wanted_count) {
 			assert(!SPAN_HAS_FLAG(span->flags, SPAN_FLAG_MASTER) || !SPAN_HAS_FLAG(span->flags, SPAN_FLAG_SUBSPAN));
 			found_span = span;
 		}
@@ -1522,9 +1523,7 @@ rpmalloc_initialize_config(const rpmalloc_config_t* config) {
 	if (config)
 		memcpy(&_memory_config, config, sizeof(rpmalloc_config_t));
 
-	int default_mapper = 0;
 	if (!_memory_config.memory_map || !_memory_config.memory_unmap) {
-		default_mapper = 1;
 		_memory_config.memory_map = _memory_map_os;
 		_memory_config.memory_unmap = _memory_unmap_os;
 	}

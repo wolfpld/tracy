@@ -85,10 +85,10 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
 #ifdef TRACY_COLLECT_THREAD_NAMES
     {
         rpmalloc_thread_initialize();
-        const auto sz = strlen( name );
-        char* buf = (char*)tracy_malloc( sz+1 );
-        memcpy( buf, name, sz );
-        buf[sz+1] = '\0';
+        const auto sz_inner = strlen( name );
+        char* buf = (char*)tracy_malloc( sz_inner+1 );
+        memcpy( buf, name, sz_inner );
+        buf[sz_inner+1] = '\0';
         auto data = (ThreadNameData*)tracy_malloc( sizeof( ThreadNameData ) );
 #  ifdef _WIN32
         data->id = GetThreadId( static_cast<HANDLE>( handle ) );

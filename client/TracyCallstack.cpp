@@ -1,4 +1,5 @@
 #include "TracyCallstack.hpp"
+#include <cstdio>
 
 #ifdef TRACY_HAS_CALLSTACK
 

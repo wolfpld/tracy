@@ -580,7 +580,7 @@ _memory_set_span_remainder_as_reserved(heap_t* heap, span_t* span, size_t use_co
 	assert(!SPAN_HAS_FLAG(span->flags, SPAN_FLAG_MASTER) || !SPAN_HAS_FLAG(span->flags, SPAN_FLAG_SUBSPAN));
 	assert((current_count > 1) && (current_count < 127));
 	assert(!heap->spans_reserved);
-	assert(SPAN_COUNT(span->flags) == current_count);
+	assert((size_t)SPAN_COUNT(span->flags) == current_count);
 	assert(current_count > use_count);
 
 	heap->span_reserve = (span_t*)pointer_offset(span, use_count * _memory_span_size);
@@ -607,7 +607,7 @@ _memory_set_span_remainder_as_reserved(heap_t* heap, span_t* span, size_t use_co
 		span_t* master = (span_t*)pointer_offset(span, -(int)distance * (int)_memory_span_size);
 		heap->span_reserve_master = master;
 		assert(SPAN_HAS_FLAG(master->flags, SPAN_FLAG_MASTER));
-		assert(SPAN_REMAINS(master->flags) >= current_count);
+		assert((size_t)SPAN_REMAINS(master->flags) >= current_count);
 		span->flags = SPAN_MAKE_FLAGS(SPAN_FLAG_SUBSPAN, distance, use_count);
 	}
 	assert((SPAN_COUNT(span->flags) + heap->spans_reserved) == current_count);
@@ -938,7 +938,7 @@ _memory_global_cache_insert(heap_t* heap, span_t* span) {
 static span_t*
 _memory_global_cache_extract(size_t span_count) {
 	span_t* span = _memory_cache_extract(&_memory_span_cache[span_count - 1]);
-	assert(!span || (SPAN_COUNT(span->flags) == span_count));
+	assert(!span || ((size_t)SPAN_COUNT(span->flags) == span_count));
 	return span;
 }
 
@@ -1000,8 +1000,8 @@ _memory_heap_cache_extract(heap_t* heap, size_t span_count) {
 
 		//Split the span and store as reserved if no previously reserved spans, or in thread cache otherwise
 		span_t* subspan = _memory_span_split(heap, span, span_count);
-		assert((SPAN_COUNT(span->flags) + SPAN_COUNT(subspan->flags)) == got_count);
-		assert(SPAN_COUNT(span->flags) == span_count);
+		assert((size_t)(SPAN_COUNT(span->flags) + SPAN_COUNT(subspan->flags)) == got_count);
+		assert((size_t)SPAN_COUNT(span->flags) == span_count);
 		if (!heap->spans_reserved) {
 			heap->spans_reserved = got_count - span_count;
 			heap->span_reserve = subspan;
@@ -1158,7 +1158,7 @@ _memory_allocate_large_from_heap(heap_t* heap, size_t size) {
 	}
 
 	//Mark span as owned by this heap and set base data
-	assert(SPAN_COUNT(span->flags) == span_count);
+	assert((size_t)SPAN_COUNT(span->flags) == span_count);
 	span->size_class = (uint16_t)(SIZE_CLASS_COUNT + idx);
 	atomic_store32(&span->heap_id, heap->id);
 	atomic_thread_fence_release();
@@ -1281,7 +1281,7 @@ _memory_deallocate_large_to_heap(heap_t* heap, span_t* span) {
 	//Decrease counter
 	size_t idx = (size_t)span->size_class - SIZE_CLASS_COUNT;
 	size_t span_count = idx + 1;
-	assert(SPAN_COUNT(span->flags) == span_count);
+	assert((size_t)SPAN_COUNT(span->flags) == span_count);
 	assert(span->size_class >= SIZE_CLASS_COUNT);
 	assert(idx < LARGE_CLASS_COUNT);
 #if ENABLE_THREAD_CACHE
@@ -1720,7 +1720,7 @@ rpmalloc_thread_finalize(void) {
 #if ENABLE_GLOBAL_CACHE
 		const size_t span_count = iclass + 1;
 		while (span) {
-			assert(SPAN_COUNT(span->flags) == span_count);
+			assert((size_t)SPAN_COUNT(span->flags) == span_count);
 			span_t* next = _memory_span_list_split(span, !iclass ? MIN_SPAN_CACHE_RELEASE : (MIN_LARGE_SPAN_CACHE_RELEASE / span_count));
 			_memory_global_cache_insert(0, span);
 			span = next;

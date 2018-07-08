@@ -6,6 +6,11 @@ Note: Release numbers are nothing more than numbers. There are some
 "missing" versions due to trace file changes during development. This is not
 a mistake.
 
+v0.4 (xxxx-xx-xx)
+-----------------
+
+- Added trace update utility, which will convert files saved in previous
+  versions of tracy to be up-to-date.
 
 v0.3.3 (2018-07-03)
 -------------------

@@ -73,7 +73,7 @@ class Worker
 
     struct DataBlock
     {
-        DataBlock() : zonesCnt( 0 ), lastTime( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
+        DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
 
         NonRecursiveBenaphore lock;
         Vector<int64_t> frames;
@@ -84,6 +84,7 @@ class Worker
         MemData memory;
         uint64_t zonesCnt;
         int64_t lastTime;
+        uint64_t frameOffset;
 
         flat_hash_map<uint64_t, const char*, nohash<uint64_t>> strings;
         Vector<const char*> stringData;
@@ -149,6 +150,7 @@ public:
     size_t GetFrameCount() const { return m_data.frames.size(); }
     int64_t GetLastTime() const { return m_data.lastTime; }
     uint64_t GetZoneCount() const { return m_data.zonesCnt; }
+    uint64_t GetFrameOffset() const { return m_data.frameOffset; }
 
     int64_t GetFrameTime( size_t idx ) const;
     int64_t GetFrameBegin( size_t idx ) const;

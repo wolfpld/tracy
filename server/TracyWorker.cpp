@@ -995,6 +995,7 @@ void Worker::Exec()
             {
                 OnDemandPayloadMessage onDemand;
                 if( !m_sock.Read( &onDemand, sizeof( onDemand ), &tv, ShouldExit ) ) goto close;
+                m_data.frameOffset = onDemand.frames;
             }
         }
 

@@ -28,6 +28,8 @@ enum ServerQuery : uint8_t
 
 enum { WelcomeMessageProgramNameSize = 64 };
 
+#pragma pack( 1 )
+
 struct WelcomeMessage
 {
     double timerMul;
@@ -41,6 +43,8 @@ struct WelcomeMessage
 };
 
 enum { WelcomeMessageSize = sizeof( WelcomeMessage ) };
+
+#pragma pack()
 
 }
 

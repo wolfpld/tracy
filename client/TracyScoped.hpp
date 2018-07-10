@@ -17,7 +17,10 @@ class ScopedZone
 public:
     tracy_force_inline ScopedZone( const SourceLocation* srcloc )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        m_active = s_profiler.IsConnected();
+        if( !m_active ) return;
+#endif
         const auto thread = GetThreadHandle();
         m_thread = thread;
         Magic magic;
@@ -35,12 +38,14 @@ public:
         MemWrite( &item->zoneBegin.thread, thread );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     tracy_force_inline ScopedZone( const SourceLocation* srcloc, int depth )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        m_active = s_profiler.IsConnected();
+        if( !m_active ) return;
+#endif
         const auto thread = GetThreadHandle();
         m_thread = thread;
         Magic magic;
@@ -60,12 +65,13 @@ public:
         tail.store( magic + 1, std::memory_order_release );
 
         s_profiler.SendCallstack( depth, thread );
-#endif
     }
 
     tracy_force_inline ~ScopedZone()
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -80,12 +86,13 @@ public:
 #endif
         MemWrite( &item->zoneEnd.thread, m_thread );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     tracy_force_inline void Text( const char* txt, size_t size )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto ptr = (char*)tracy_malloc( size+1 );
@@ -97,12 +104,13 @@ public:
         MemWrite( &item->zoneText.thread, m_thread );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     tracy_force_inline void Name( const char* txt, size_t size )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto ptr = (char*)tracy_malloc( size+1 );
@@ -114,11 +122,14 @@ public:
         MemWrite( &item->zoneText.thread, m_thread );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
 private:
     uint64_t m_thread;
+
+#ifdef TRACY_ON_DEMAND
+    bool m_active;
+#endif
 };
 
 }

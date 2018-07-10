@@ -184,7 +184,9 @@ public:
 
     static tracy_force_inline void Message( const char* txt, size_t size )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto ptr = (char*)tracy_malloc( size+1 );
@@ -197,12 +199,13 @@ public:
         MemWrite( &item->message.thread, GetThreadHandle() );
         MemWrite( &item->message.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     static tracy_force_inline void Message( const char* txt )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -212,7 +215,6 @@ public:
         MemWrite( &item->message.thread, GetThreadHandle() );
         MemWrite( &item->message.text, (uint64_t)txt );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )

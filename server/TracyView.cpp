@@ -617,17 +617,32 @@ void View::DrawFrames()
                 }
                 else
                 {
+                    const auto offset = m_worker.GetFrameOffset();
                     if( sel == 0 )
                     {
                         ImGui::Text( "Tracy initialization" );
                         ImGui::Separator();
                         TextFocused( "Time:", TimeToString( m_worker.GetFrameTime( sel ) ) );
                     }
-                    else
+                    else if( offset == 0 )
                     {
                         ImGui::TextDisabled( "Frame:" );
                         ImGui::SameLine();
                         ImGui::Text( "%i", sel );
+                        ImGui::Separator();
+                        TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( sel ) ) );
+                    }
+                    else if( sel == 1 )
+                    {
+                        ImGui::Text( "Missed frames" );
+                        ImGui::Separator();
+                        TextFocused( "Time:", TimeToString( m_worker.GetFrameTime( 1 ) ) );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "Frame:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%i", sel + offset - 1 );
                         ImGui::Separator();
                         TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( sel ) ) );
                     }
@@ -764,16 +779,24 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     }
 }
 
-static const char* GetFrameText( int i, uint64_t ftime )
+static const char* GetFrameText( int i, uint64_t ftime, uint64_t offset )
 {
     static char buf[128];
     if( i == 0 )
     {
         sprintf( buf, "Tracy init (%s)", TimeToString( ftime ) );
     }
-    else
+    else if( offset == 0 )
     {
         sprintf( buf, "Frame %i (%s)", i, TimeToString( ftime ) );
+    }
+    else if( i == 1 )
+    {
+        sprintf( buf, "Missed frames (%s)", TimeToString( ftime ) );
+    }
+    else
+    {
+        sprintf( buf, "Frame %i (%s)", i + offset - 1, TimeToString( ftime ) );
     }
     return buf;
 }
@@ -858,7 +881,7 @@ bool View::DrawZoneFrames()
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, fy ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, fy + ty ) ) )
         {
             ImGui::BeginTooltip();
-            ImGui::Text( "%s", GetFrameText( i, ftime ) );
+            ImGui::Text( "%s", GetFrameText( i, ftime, m_worker.GetFrameOffset() ) );
             ImGui::Separator();
             TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( i ) - m_worker.GetFrameBegin( 0 ) ) );
             ImGui::EndTooltip();
@@ -878,7 +901,7 @@ bool View::DrawZoneFrames()
 
         if( fsz >= 5 )
         {
-            auto buf = GetFrameText( i, ftime );
+            auto buf = GetFrameText( i, ftime, m_worker.GetFrameOffset() );
             auto tx = ImGui::CalcTextSize( buf ).x;
             uint32_t color = i == 0 ? 0xFF4444FF : 0xFFFFFFFF;
 

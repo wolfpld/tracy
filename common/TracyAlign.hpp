@@ -9,7 +9,7 @@ namespace tracy
 {
 
 template<typename T>
-tracy_force_inline T MemRead( void* ptr )
+tracy_force_inline T MemRead( const void* ptr )
 {
     T val;
     memcpy( &val, ptr, sizeof( T ) );

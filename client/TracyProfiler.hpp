@@ -287,6 +287,13 @@ public:
 
     static bool ShouldExit();
 
+#ifdef TRACY_ON_DEMAND
+    tracy_force_inline bool IsConnected()
+    {
+        return m_isConnected.load( std::memory_order_relaxed );
+    }
+#endif
+
 private:
     enum DequeueStatus { Success, ConnectionLost, QueueEmpty };
 
@@ -377,6 +384,10 @@ private:
 
     FastVector<QueueItem> m_serialQueue, m_serialDequeue;
     NonRecursiveBenaphore m_serialLock;
+
+#ifdef TRACY_ON_DEMAND
+    std::atomic<bool> m_isConnected;
+#endif
 };
 
 };

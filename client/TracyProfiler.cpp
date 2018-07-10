@@ -198,6 +198,9 @@ Profiler::Profiler()
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
     , m_serialQueue( 1024*1024 )
     , m_serialDequeue( 1024*1024 )
+#ifdef TRACY_ON_DEMAND
+    , m_isConnected( false )
+#endif
 {
     assert( !s_instance );
     s_instance = this;
@@ -290,6 +293,10 @@ void Profiler::Worker()
             if( m_sock ) break;
         }
 
+#ifdef TRACY_ON_DEMAND
+        m_isConnected.store( true, std::memory_order_relaxed );
+#endif
+
         m_sock->Send( &welcome, sizeof( welcome ) );
         LZ4_resetStream( m_stream );
 
@@ -335,6 +342,10 @@ void Profiler::Worker()
             }
         }
         if( ShouldExit() ) break;
+
+#ifdef TRACY_ON_DEMAND
+        m_isConnected.store( false, std::memory_order_relaxed );
+#endif
     }
 
     for(;;)

@@ -294,6 +294,7 @@ void Profiler::Worker()
         }
 
 #ifdef TRACY_ON_DEMAND
+        ClearQueues( token );
         m_isConnected.store( true, std::memory_order_relaxed );
 #endif
 
@@ -396,6 +397,17 @@ void Profiler::Worker()
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
     }
+}
+
+void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
+{
+    // TODO analyse dropped items and free associated memory
+
+    while( s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize ) > 0 ) {}
+
+    std::lock_guard<NonRecursiveBenaphore> lock( m_serialLock );
+    m_serialDequeue.clear();
+    m_serialQueue.clear();
 }
 
 Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )

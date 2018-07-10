@@ -300,6 +300,7 @@ private:
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();
 
+    void ClearQueues( moodycamel::ConsumerToken& token );
     DequeueStatus Dequeue( moodycamel::ConsumerToken& token );
     DequeueStatus DequeueSerial();
     bool AppendData( const void* data, size_t len );

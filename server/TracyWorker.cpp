@@ -1639,6 +1639,8 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::Terminate:
         m_terminate = true;
         break;
+    case QueueType::KeepAlive:
+        break;
     default:
         assert( false );
         break;

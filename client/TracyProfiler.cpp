@@ -286,6 +286,7 @@ void Profiler::Worker()
         m_sock->Send( &welcome, sizeof( welcome ) );
         LZ4_resetStream( m_stream );
 
+        int keepAlive = 0;
         for(;;)
         {
             const auto status = Dequeue( token );
@@ -297,8 +298,28 @@ void Profiler::Worker()
             else if( status == QueueEmpty && serialStatus == QueueEmpty )
             {
                 if( ShouldExit() ) break;
-                if( m_bufferOffset != m_bufferStart ) CommitData();
-                std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+                if( m_bufferOffset != m_bufferStart )
+                {
+                    if( !CommitData() ) break;
+                }
+                if( keepAlive == 500 )
+                {
+                    QueueItem ka;
+                    ka.hdr.type = QueueType::KeepAlive;
+                    AppendData( &ka, QueueDataSize[ka.hdr.idx] );
+                    if( !CommitData() ) break;
+
+                    keepAlive = 0;
+                }
+                else
+                {
+                    keepAlive++;
+                    std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+                }
+            }
+            else
+            {
+                keepAlive = 0;
             }
 
             while( m_sock->HasData() )

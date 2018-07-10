@@ -11,6 +11,8 @@ v0.4 (xxxx-xx-xx)
 
 - Added trace update utility, which will convert files saved in previous
   versions of tracy to be up-to-date.
+- Fix regression causing varying size of profiler window for different
+  captures.
 
 v0.3.3 (2018-07-03)
 -------------------

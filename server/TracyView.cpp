@@ -333,7 +333,9 @@ bool View::DrawImpl()
 {
     if( !m_worker.HasData() )
     {
-        ImGui::Begin( m_worker.GetAddr().c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+        char tmp[2048];
+        sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
+        ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
         ImGui::Text( "Waiting for connection..." );
         ImGui::End();
         return true;
@@ -359,7 +361,9 @@ bool View::DrawImpl()
     }
 
     std::lock_guard lock( m_worker.GetDataLock() );
-    ImGui::Begin( m_worker.GetCaptureName().c_str(), keepOpenPtr, ImVec2( 1550, 800 ), -1, ImGuiWindowFlags_NoScrollbar );
+    char tmp[2048];
+    sprintf( tmp, "%s###Profiler", m_worker.GetCaptureName().c_str() );
+    ImGui::Begin( tmp, keepOpenPtr, ImVec2( 1550, 800 ), -1, ImGuiWindowFlags_NoScrollbar );
     if( !m_worker.IsDataStatic() )
     {
         if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;

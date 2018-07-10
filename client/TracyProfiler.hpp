@@ -118,7 +118,9 @@ public:
 
     static tracy_force_inline void FrameMark()
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -126,7 +128,6 @@ public:
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     static tracy_force_inline void PlotData( const char* name, int64_t val )

@@ -31,7 +31,7 @@ static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
     return ( h5 << 16 ) | ( h6 << 8 ) | h7;
 }
 
-static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 3 };
+static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 200 };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( FileHeader[FileHeaderMagic], FileHeader[FileHeaderMagic+1], FileHeader[FileHeaderMagic+2] );
 
@@ -238,6 +238,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( m_resolution );
     f.Read( m_timerMul );
     f.Read( m_data.lastTime );
+
+    if( fileVer >= FileVersion( 0, 3, 200 ) )
+    {
+        f.Read( m_data.frameOffset );
+    }
 
     uint64_t sz;
     {
@@ -2555,6 +2560,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &m_resolution, sizeof( m_resolution ) );
     f.Write( &m_timerMul, sizeof( m_timerMul ) );
     f.Write( &m_data.lastTime, sizeof( m_data.lastTime ) );
+    f.Write( &m_data.frameOffset, sizeof( m_data.frameOffset ) );
 
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );

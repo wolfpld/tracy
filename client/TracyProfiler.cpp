@@ -299,8 +299,15 @@ void Profiler::Worker()
         m_isConnected.store( true, std::memory_order_relaxed );
 #endif
 
-        m_sock->Send( &welcome, sizeof( welcome ) );
         LZ4_resetStream( m_stream );
+        m_sock->Send( &welcome, sizeof( welcome ) );
+
+#ifdef TRACY_ON_DEMAND
+        OnDemandPayloadMessage onDemand;
+        onDemand.frames = m_frameCount.load( std::memory_order_relaxed );
+
+        m_sock->Send( &onDemand, sizeof( onDemand ) );
+#endif
 
         int keepAlive = 0;
         for(;;)

@@ -44,6 +44,14 @@ struct WelcomeMessage
 
 enum { WelcomeMessageSize = sizeof( WelcomeMessage ) };
 
+
+struct OnDemandPayloadMessage
+{
+    uint64_t frames;
+};
+
+enum { OnDemandPayloadMessageSize = sizeof( OnDemandPayloadMessage ) };
+
 #pragma pack()
 
 }

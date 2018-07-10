@@ -990,6 +990,12 @@ void Worker::Exec()
             char tmp[1024];
             sprintf( tmp, "%s @ %s", welcome.programName, dtmp );
             m_captureName = tmp;
+
+            if( welcome.onDemand != 0 )
+            {
+                OnDemandPayloadMessage onDemand;
+                if( !m_sock.Read( &onDemand, sizeof( onDemand ), &tv, ShouldExit ) ) goto close;
+            }
         }
 
         m_hasData.store( true, std::memory_order_release );

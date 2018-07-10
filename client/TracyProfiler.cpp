@@ -407,14 +407,55 @@ void Profiler::Worker()
     }
 }
 
+static void FreeAssociatedMemory( const QueueItem& item )
+{
+    if( item.hdr.idx >= (int)QueueType::Terminate ) return;
+
+    uint64_t ptr;
+    switch( item.hdr.type )
+    {
+    case QueueType::ZoneText:
+    case QueueType::ZoneName:
+        ptr = MemRead<uint64_t>( &item.zoneText.text );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::Message:
+        ptr = MemRead<uint64_t>( &item.message.text );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::ZoneBeginAllocSrcLoc:
+        ptr = MemRead<uint64_t>( &item.zoneBegin.srcloc );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::CallstackMemory:
+        ptr = MemRead<uint64_t>( &item.callstackMemory.ptr );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::Callstack:
+        ptr = MemRead<uint64_t>( &item.callstack.ptr );
+        tracy_free( (void*)ptr );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+}
+
 void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 {
-    // TODO analyse dropped items and free associated memory
-
-    while( s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize ) > 0 ) {}
+    for(;;)
+    {
+        const auto sz = s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize );
+        if( sz == 0 ) break;
+        for( size_t i=0; i<sz; i++ ) FreeAssociatedMemory( m_itemBuf[i] );
+    }
 
     std::lock_guard<NonRecursiveBenaphore> lock( m_serialLock );
+
+    for( auto& v : m_serialDequeue ) FreeAssociatedMemory( v );
     m_serialDequeue.clear();
+
+    for( auto& v : m_serialQueue ) FreeAssociatedMemory( v );
     m_serialQueue.clear();
 }
 

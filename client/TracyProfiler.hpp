@@ -133,7 +133,9 @@ public:
 
     static tracy_force_inline void PlotData( const char* name, int64_t val )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -144,12 +146,13 @@ public:
         MemWrite( &item->plotData.type, PlotDataType::Int );
         MemWrite( &item->plotData.data.i, val );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     static tracy_force_inline void PlotData( const char* name, float val )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -160,12 +163,13 @@ public:
         MemWrite( &item->plotData.type, PlotDataType::Float );
         MemWrite( &item->plotData.data.f, val );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     static tracy_force_inline void PlotData( const char* name, double val )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -176,7 +180,6 @@ public:
         MemWrite( &item->plotData.type, PlotDataType::Double );
         MemWrite( &item->plotData.data.d, val );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     static tracy_force_inline void Message( const char* txt, size_t size )

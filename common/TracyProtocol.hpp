@@ -36,6 +36,7 @@ struct WelcomeMessage
     uint64_t delay;
     uint64_t resolution;
     uint64_t epoch;
+    uint8_t onDemand;
     char programName[WelcomeMessageProgramNameSize];
 };
 

@@ -257,6 +257,12 @@ void Profiler::Worker()
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
+#ifdef TRACY_ON_DEMAND
+    uint8_t onDemand = 1;
+#else
+    uint8_t onDemand = 0;
+#endif
+
     WelcomeMessage welcome;
     MemWrite( &welcome.timerMul, m_timerMul );
     MemWrite( &welcome.initBegin, s_initTime.val );
@@ -264,6 +270,7 @@ void Profiler::Worker()
     MemWrite( &welcome.delay, m_delay );
     MemWrite( &welcome.resolution, m_resolution );
     MemWrite( &welcome.epoch, m_epoch );
+    MemWrite( &welcome.onDemand, onDemand );
     memcpy( welcome.programName, procname, pnsz );
     memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
 

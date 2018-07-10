@@ -200,6 +200,7 @@ Profiler::Profiler()
     , m_serialDequeue( 1024*1024 )
 #ifdef TRACY_ON_DEMAND
     , m_isConnected( false )
+    , m_frameCount( 0 )
 #endif
 {
     assert( !s_instance );

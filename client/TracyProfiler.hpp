@@ -119,6 +119,7 @@ public:
     static tracy_force_inline void FrameMark()
     {
 #ifdef TRACY_ON_DEMAND
+        s_profiler.m_frameCount.fetch_add( 1, std::memory_order_relaxed );
         if( !s_profiler.IsConnected() ) return;
 #endif
         Magic magic;
@@ -389,6 +390,7 @@ private:
 
 #ifdef TRACY_ON_DEMAND
     std::atomic<bool> m_isConnected;
+    std::atomic<uint64_t> m_frameCount;
 #endif
 };
 

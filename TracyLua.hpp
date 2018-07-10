@@ -121,6 +121,7 @@ namespace detail
 
 static inline int LuaZoneBegin( lua_State* L )
 {
+#ifndef TRACY_ON_DEMAND
     const uint32_t color = Color::DeepSkyBlue3;
 
     lua_Debug dbg;
@@ -163,11 +164,13 @@ static inline int LuaZoneBegin( lua_State* L )
     MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
     MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
+#endif
     return 0;
 }
 
 static inline int LuaZoneBeginN( lua_State* L )
 {
+#ifndef TRACY_ON_DEMAND
     const uint32_t color = Color::DeepSkyBlue3;
 
     lua_Debug dbg;
@@ -214,11 +217,13 @@ static inline int LuaZoneBeginN( lua_State* L )
     MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
     MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
+#endif
     return 0;
 }
 
 static inline int LuaZoneEnd( lua_State* L )
 {
+#ifndef TRACY_ON_DEMAND
     Magic magic;
     auto& token = s_token.ptr;
     auto& tail = token->get_tail_index();
@@ -233,11 +238,13 @@ static inline int LuaZoneEnd( lua_State* L )
 #endif
     MemWrite( &item->zoneEnd.thread, GetThreadHandle() );
     tail.store( magic + 1, std::memory_order_release );
+#endif
     return 0;
 }
 
 static inline int LuaZoneText( lua_State* L )
 {
+#ifndef TRACY_ON_DEMAND
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
 
@@ -252,11 +259,13 @@ static inline int LuaZoneText( lua_State* L )
     MemWrite( &item->zoneText.thread, GetThreadHandle() );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
+#endif
     return 0;
 }
 
 static inline int LuaZoneName( lua_State* L )
 {
+#ifndef TRACY_ON_DEMAND
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
 
@@ -271,11 +280,13 @@ static inline int LuaZoneName( lua_State* L )
     MemWrite( &item->zoneText.thread, GetThreadHandle() );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
+#endif
     return 0;
 }
 
 static inline int LuaMessage( lua_State* L )
 {
+#ifndef TRACY_ON_DEMAND
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
 
@@ -291,6 +302,7 @@ static inline int LuaMessage( lua_State* L )
     MemWrite( &item->message.thread, GetThreadHandle() );
     MemWrite( &item->message.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
+#endif
     return 0;
 }
 

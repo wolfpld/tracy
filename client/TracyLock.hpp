@@ -22,6 +22,7 @@ public:
     {
         assert( m_id != std::numeric_limits<uint32_t>::max() );
 
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -31,6 +32,7 @@ public:
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
         MemWrite( &item->lockAnnounce.type, LockType::Lockable );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     Lockable( const Lockable& ) = delete;
@@ -38,6 +40,7 @@ public:
 
     tracy_force_inline void lock()
     {
+#ifndef TRACY_ON_DEMAND
         const auto thread = GetThreadHandle();
         {
             Magic magic;
@@ -51,9 +54,11 @@ public:
             MemWrite( &item->lockWait.type, LockType::Lockable );
             tail.store( magic + 1, std::memory_order_release );
         }
+#endif
 
         m_lockable.lock();
 
+#ifndef TRACY_ON_DEMAND
         {
             Magic magic;
             auto& token = s_token.ptr;
@@ -65,12 +70,14 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
+#endif
     }
 
     tracy_force_inline void unlock()
     {
         m_lockable.unlock();
 
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -80,11 +87,13 @@ public:
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     tracy_force_inline bool try_lock()
     {
         const auto ret = m_lockable.try_lock();
+#ifndef TRACY_ON_DEMAND
         if( ret )
         {
             Magic magic;
@@ -97,11 +106,13 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
+#endif
         return ret;
     }
 
     tracy_force_inline void Mark( const SourceLocation* srcloc ) const
     {
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -111,6 +122,7 @@ public:
         MemWrite( &item->lockMark.thread, GetThreadHandle() );
         MemWrite( &item->lockMark.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
 private:
@@ -128,6 +140,7 @@ public:
     {
         assert( m_id != std::numeric_limits<uint32_t>::max() );
 
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -137,6 +150,7 @@ public:
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
         MemWrite( &item->lockAnnounce.type, LockType::SharedLockable );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     SharedLockable( const SharedLockable& ) = delete;
@@ -144,6 +158,7 @@ public:
 
     tracy_force_inline void lock()
     {
+#ifndef TRACY_ON_DEMAND
         const auto thread = GetThreadHandle();
         {
             Magic magic;
@@ -157,9 +172,11 @@ public:
             MemWrite( &item->lockWait.type, LockType::SharedLockable );
             tail.store( magic + 1, std::memory_order_release );
         }
+#endif
 
         m_lockable.lock();
 
+#ifndef TRACY_ON_DEMAND
         {
             Magic magic;
             auto& token = s_token.ptr;
@@ -171,12 +188,14 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
+#endif
     }
 
     tracy_force_inline void unlock()
     {
         m_lockable.unlock();
 
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -186,11 +205,13 @@ public:
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     tracy_force_inline bool try_lock()
     {
         const auto ret = m_lockable.try_lock();
+#ifndef TRACY_ON_DEMAND
         if( ret )
         {
             Magic magic;
@@ -203,11 +224,13 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
+#endif
         return ret;
     }
 
     tracy_force_inline void lock_shared()
     {
+#ifndef TRACY_ON_DEMAND
         const auto thread = GetThreadHandle();
         {
             Magic magic;
@@ -221,9 +244,11 @@ public:
             MemWrite( &item->lockWait.type, LockType::SharedLockable );
             tail.store( magic + 1, std::memory_order_release );
         }
+#endif
 
         m_lockable.lock_shared();
 
+#ifndef TRACY_ON_DEMAND
         {
             Magic magic;
             auto& token = s_token.ptr;
@@ -235,12 +260,14 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
+#endif
     }
 
     tracy_force_inline void unlock_shared()
     {
         m_lockable.unlock_shared();
 
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -250,11 +277,13 @@ public:
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     tracy_force_inline bool try_lock_shared()
     {
         const auto ret = m_lockable.try_lock_shared();
+#ifndef TRACY_ON_DEMAND
         if( ret )
         {
             Magic magic;
@@ -267,11 +296,13 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
+#endif
         return ret;
     }
 
     tracy_force_inline void Mark( const SourceLocation* srcloc ) const
     {
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -281,6 +312,7 @@ public:
         MemWrite( &item->lockMark.thread, GetThreadHandle() );
         MemWrite( &item->lockMark.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
 private:

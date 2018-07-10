@@ -97,6 +97,7 @@ public:
         vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
         vkQueueWaitIdle( queue );
 
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -109,6 +110,7 @@ public:
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, uint8_t( 0 ) );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     ~VkCtx()
@@ -118,6 +120,7 @@ public:
 
     void Collect( VkCommandBuffer cmdbuf )
     {
+#ifndef TRACY_ON_DEMAND
         ZoneScopedC( Color::Red4 );
 
         if( m_tail == m_head ) return;
@@ -158,6 +161,7 @@ public:
 
         m_tail += cnt;
         if( m_tail == QueryCount ) m_tail = 0;
+#endif
     }
 
 private:
@@ -192,6 +196,7 @@ public:
     tracy_force_inline VkCtxScope( const SourceLocation* srcloc, VkCommandBuffer cmdbuf )
         : m_cmdbuf( cmdbuf )
     {
+#ifndef TRACY_ON_DEMAND
         auto ctx = s_vkCtx.ptr;
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
@@ -207,11 +212,13 @@ public:
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     tracy_force_inline VkCtxScope( const SourceLocation* srcloc, VkCommandBuffer cmdbuf, int depth )
         : m_cmdbuf( cmdbuf )
     {
+#ifndef TRACY_ON_DEMAND
         const auto thread = GetThreadHandle();
 
         auto ctx = s_vkCtx.ptr;
@@ -231,10 +238,12 @@ public:
         tail.store( magic + 1, std::memory_order_release );
 
         s_profiler.SendCallstack( depth, thread );
+#endif
     }
 
     tracy_force_inline ~VkCtxScope()
     {
+#ifndef TRACY_ON_DEMAND
         auto ctx = s_vkCtx.ptr;
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
@@ -248,6 +257,7 @@ public:
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneEnd.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
 private:

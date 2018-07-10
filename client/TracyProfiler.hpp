@@ -118,6 +118,7 @@ public:
 
     static tracy_force_inline void FrameMark()
     {
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -125,10 +126,12 @@ public:
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     static tracy_force_inline void PlotData( const char* name, int64_t val )
     {
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -139,10 +142,12 @@ public:
         MemWrite( &item->plotData.type, PlotDataType::Int );
         MemWrite( &item->plotData.data.i, val );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     static tracy_force_inline void PlotData( const char* name, float val )
     {
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -153,10 +158,12 @@ public:
         MemWrite( &item->plotData.type, PlotDataType::Float );
         MemWrite( &item->plotData.data.f, val );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     static tracy_force_inline void PlotData( const char* name, double val )
     {
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -167,10 +174,12 @@ public:
         MemWrite( &item->plotData.type, PlotDataType::Double );
         MemWrite( &item->plotData.data.d, val );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     static tracy_force_inline void Message( const char* txt, size_t size )
     {
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto ptr = (char*)tracy_malloc( size+1 );
@@ -183,10 +192,12 @@ public:
         MemWrite( &item->message.thread, GetThreadHandle() );
         MemWrite( &item->message.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     static tracy_force_inline void Message( const char* txt )
     {
+#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -196,29 +207,35 @@ public:
         MemWrite( &item->message.thread, GetThreadHandle() );
         MemWrite( &item->message.text, (uint64_t)txt );
         tail.store( magic + 1, std::memory_order_release );
+#endif
     }
 
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
     {
+#ifndef TRACY_ON_DEMAND
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
         SendMemAlloc( QueueType::MemAlloc, thread, ptr, size );
         s_profiler.m_serialLock.unlock();
+#endif
     }
 
     static tracy_force_inline void MemFree( const void* ptr )
     {
+#ifndef TRACY_ON_DEMAND
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
         SendMemFree( QueueType::MemFree, thread, ptr );
         s_profiler.m_serialLock.unlock();
+#endif
     }
 
     static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth )
     {
 #ifdef TRACY_HAS_CALLSTACK
+#  ifndef TRACY_ON_DEMAND
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
@@ -228,6 +245,7 @@ public:
         SendMemAlloc( QueueType::MemAllocCallstack, thread, ptr, size );
         SendCallstackMemory( callstack );
         s_profiler.m_serialLock.unlock();
+#  endif
 #else
         MemAlloc( ptr, size );
 #endif
@@ -236,6 +254,7 @@ public:
     static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth )
     {
 #ifdef TRACY_HAS_CALLSTACK
+#  ifndef TRACY_ON_DEMAND
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
@@ -245,6 +264,7 @@ public:
         SendMemFree( QueueType::MemFreeCallstack, thread, ptr );
         SendCallstackMemory( callstack );
         s_profiler.m_serialLock.unlock();
+#  endif
 #else
         MemFree( ptr );
 #endif

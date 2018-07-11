@@ -97,7 +97,6 @@ public:
         vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
         vkQueueWaitIdle( queue );
 
-#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -109,8 +108,12 @@ public:
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, uint8_t( 0 ) );
-        tail.store( magic + 1, std::memory_order_release );
+
+#ifdef TRACY_ON_DEMAND
+        s_profiler.DeferItem( *item );
 #endif
+
+        tail.store( magic + 1, std::memory_order_release );
     }
 
     ~VkCtx()

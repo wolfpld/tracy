@@ -65,7 +65,6 @@ public:
         GLint bits;
         glGetQueryiv( GL_TIMESTAMP, GL_QUERY_COUNTER_BITS, &bits );
 
-#ifndef TRACY_ON_DEMAND
         const float period = 1.f;
         Magic magic;
         auto& token = s_token.ptr;
@@ -78,8 +77,12 @@ public:
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, (uint8_t)bits );
-        tail.store( magic + 1, std::memory_order_release );
+
+#ifdef TRACY_ON_DEMAND
+        s_profiler.DeferItem( *item );
 #endif
+
+        tail.store( magic + 1, std::memory_order_release );
     }
 
     void Collect()

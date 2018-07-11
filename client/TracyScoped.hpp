@@ -16,9 +16,11 @@ class ScopedZone
 {
 public:
     tracy_force_inline ScopedZone( const SourceLocation* srcloc )
+#ifdef TRACY_ON_DEMAND
+        : m_active( s_profiler.IsConnected() )
+#endif
     {
 #ifdef TRACY_ON_DEMAND
-        m_active = s_profiler.IsConnected();
         if( !m_active ) return;
 #endif
         const auto thread = GetThreadHandle();
@@ -41,9 +43,11 @@ public:
     }
 
     tracy_force_inline ScopedZone( const SourceLocation* srcloc, int depth )
+#ifdef TRACY_ON_DEMAND
+        : m_active( s_profiler.IsConnected() )
+#endif
     {
 #ifdef TRACY_ON_DEMAND
-        m_active = s_profiler.IsConnected();
         if( !m_active ) return;
 #endif
         const auto thread = GetThreadHandle();
@@ -128,7 +132,7 @@ private:
     uint64_t m_thread;
 
 #ifdef TRACY_ON_DEMAND
-    bool m_active;
+    const bool m_active;
 #endif
 };
 

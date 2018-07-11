@@ -2172,12 +2172,17 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     MemAllocChanged( time );
 }
 
-void Worker::ProcessMemFree( const QueueMemFree& ev )
+bool Worker::ProcessMemFree( const QueueMemFree& ev )
 {
     const auto time = TscTime( ev.time );
 
     auto it = m_data.memory.active.find( ev.ptr );
-    assert( it != m_data.memory.active.end() );
+    if( it == m_data.memory.active.end() )
+    {
+        assert( m_onDemand );
+        return false;
+    }
+
     m_data.memory.frees.push_back( it->second );
     auto& mem = m_data.memory.data[it->second];
     mem.timeFree = time;
@@ -2186,6 +2191,7 @@ void Worker::ProcessMemFree( const QueueMemFree& ev )
     m_data.memory.active.erase( it );
 
     MemAllocChanged( time );
+    return true;
 }
 
 void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
@@ -2197,9 +2203,15 @@ void Worker::ProcessMemAllocCallstack( const QueueMemAlloc& ev )
 
 void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
 {
-    ProcessMemFree( ev );
-    m_lastMemActionCallstack = m_data.memory.frees.back();
-    m_lastMemActionWasAlloc = false;
+    if( ProcessMemFree( ev ) )
+    {
+        m_lastMemActionCallstack = m_data.memory.frees.back();
+        m_lastMemActionWasAlloc = false;
+    }
+    else
+    {
+        m_lastMemActionCallstack = std::numeric_limits<uint64_t>::max();
+    }
 }
 
 void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
@@ -2207,14 +2219,17 @@ void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
     auto it = m_pendingCallstacks.find( ev.ptr );
     assert( it != m_pendingCallstacks.end() );
 
-    auto& mem = m_data.memory.data[m_lastMemActionCallstack];
-    if( m_lastMemActionWasAlloc )
+    if( m_lastMemActionCallstack != std::numeric_limits<uint64_t>::max() )
     {
-        mem.csAlloc = it->second;
-    }
-    else
-    {
-        mem.csFree = it->second;
+        auto& mem = m_data.memory.data[m_lastMemActionCallstack];
+        if( m_lastMemActionWasAlloc )
+        {
+            mem.csAlloc = it->second;
+        }
+        else
+        {
+            mem.csFree = it->second;
+        }
     }
 
     m_pendingCallstacks.erase( it );

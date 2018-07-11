@@ -987,6 +987,7 @@ void Worker::Exec()
             m_data.lastTime = m_data.frames.back();
             m_delay = TscTime( welcome.delay );
             m_resolution = TscTime( welcome.resolution );
+            m_onDemand = welcome.onDemand;
 
             char dtmp[64];
             time_t date = welcome.epoch;

@@ -328,6 +328,7 @@ private:
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;
+    bool m_onDemand;
 
     GpuCtxData* m_gpuCtxMap[256];
     flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;

@@ -219,30 +219,34 @@ public:
 
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
         SendMemAlloc( QueueType::MemAlloc, thread, ptr, size );
         s_profiler.m_serialLock.unlock();
-#endif
     }
 
     static tracy_force_inline void MemFree( const void* ptr )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
         const auto thread = GetThreadHandle();
 
         s_profiler.m_serialLock.lock();
         SendMemFree( QueueType::MemFree, thread, ptr );
         s_profiler.m_serialLock.unlock();
-#endif
     }
 
     static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth )
     {
 #ifdef TRACY_HAS_CALLSTACK
-#  ifndef TRACY_ON_DEMAND
+#  ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#  endif
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
@@ -252,7 +256,6 @@ public:
         SendMemAlloc( QueueType::MemAllocCallstack, thread, ptr, size );
         SendCallstackMemory( callstack );
         s_profiler.m_serialLock.unlock();
-#  endif
 #else
         MemAlloc( ptr, size );
 #endif
@@ -261,7 +264,9 @@ public:
     static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth )
     {
 #ifdef TRACY_HAS_CALLSTACK
-#  ifndef TRACY_ON_DEMAND
+#  ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#  endif
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
@@ -271,7 +276,6 @@ public:
         SendMemFree( QueueType::MemFreeCallstack, thread, ptr );
         SendCallstackMemory( callstack );
         s_profiler.m_serialLock.unlock();
-#  endif
 #else
         MemFree( ptr );
 #endif

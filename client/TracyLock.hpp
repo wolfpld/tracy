@@ -19,6 +19,10 @@ class Lockable
 public:
     tracy_force_inline Lockable( const SourceLocation* srcloc )
         : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
+#ifdef TRACY_ON_DEMAND
+        , m_lockCount( 0 )
+        , m_active( false )
+#endif
     {
         assert( m_id != std::numeric_limits<uint32_t>::max() );
 
@@ -43,7 +47,22 @@ public:
 
     tracy_force_inline void lock()
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        bool queue = false;
+        const auto locks = m_lockCount.fetch_add( 1, std::memory_order_relaxed );
+        const auto active = m_active.load( std::memory_order_relaxed );
+        if( locks == 0 || active )
+        {
+            const bool connected = s_profiler.IsConnected();
+            if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
+            if( connected ) queue = true;
+        }
+        if( !queue )
+        {
+            m_lockable.lock();
+            return;
+        }
+#endif
         const auto thread = GetThreadHandle();
         {
             Magic magic;
@@ -57,11 +76,9 @@ public:
             MemWrite( &item->lockWait.type, LockType::Lockable );
             tail.store( magic + 1, std::memory_order_release );
         }
-#endif
 
         m_lockable.lock();
 
-#ifndef TRACY_ON_DEMAND
         {
             Magic magic;
             auto& token = s_token.ptr;
@@ -73,14 +90,22 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
-#endif
     }
 
     tracy_force_inline void unlock()
     {
         m_lockable.unlock();
 
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
+        if( !m_active.load( std::memory_order_relaxed ) ) return;
+        if( !s_profiler.IsConnected() )
+        {
+            m_active.store( false, std::memory_order_relaxed );
+            return;
+        }
+#endif
+
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -90,13 +115,27 @@ public:
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     tracy_force_inline bool try_lock()
     {
         const auto ret = m_lockable.try_lock();
-#ifndef TRACY_ON_DEMAND
+
+#ifdef TRACY_ON_DEMAND
+        if( !ret ) return ret;
+
+        bool queue = false;
+        const auto locks = m_lockCount.fetch_add( 1, std::memory_order_relaxed );
+        const auto active = m_active.load( std::memory_order_relaxed );
+        if( locks == 0 || active )
+        {
+            const bool connected = s_profiler.IsConnected();
+            if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
+            if( connected ) queue = true;
+        }
+        if( !queue ) return;
+#endif
+
         if( ret )
         {
             Magic magic;
@@ -109,13 +148,23 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
-#endif
+
         return ret;
     }
 
-    tracy_force_inline void Mark( const SourceLocation* srcloc ) const
+    tracy_force_inline void Mark( const SourceLocation* srcloc )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        const auto active = m_active.load( std::memory_order_relaxed );
+        if( !active ) return;
+        const auto connected = s_profiler.IsConnected();
+        if( !connected )
+        {
+            if( active ) m_active.store( false, std::memory_order_relaxed );
+            return;
+        }
+#endif
+
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -125,12 +174,16 @@ public:
         MemWrite( &item->lockMark.thread, GetThreadHandle() );
         MemWrite( &item->lockMark.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
 private:
     T m_lockable;
     uint32_t m_id;
+
+#ifdef TRACY_ON_DEMAND
+    std::atomic<uint32_t> m_lockCount;
+    std::atomic<bool> m_active;
+#endif
 };
 
 
@@ -140,6 +193,10 @@ class SharedLockable
 public:
     tracy_force_inline SharedLockable( const SourceLocation* srcloc )
         : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
+#ifdef TRACY_ON_DEMAND
+        , m_lockCount( 0 )
+        , m_active( false )
+#endif
     {
         assert( m_id != std::numeric_limits<uint32_t>::max() );
 
@@ -164,7 +221,22 @@ public:
 
     tracy_force_inline void lock()
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        bool queue = false;
+        const auto locks = m_lockCount.fetch_add( 1, std::memory_order_relaxed );
+        const auto active = m_active.load( std::memory_order_relaxed );
+        if( locks == 0 || active )
+        {
+            const bool connected = s_profiler.IsConnected();
+            if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
+            if( connected ) queue = true;
+        }
+        if( !queue )
+        {
+            m_lockable.lock();
+            return;
+        }
+#endif
         const auto thread = GetThreadHandle();
         {
             Magic magic;
@@ -178,11 +250,9 @@ public:
             MemWrite( &item->lockWait.type, LockType::SharedLockable );
             tail.store( magic + 1, std::memory_order_release );
         }
-#endif
 
         m_lockable.lock();
 
-#ifndef TRACY_ON_DEMAND
         {
             Magic magic;
             auto& token = s_token.ptr;
@@ -194,14 +264,22 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
-#endif
     }
 
     tracy_force_inline void unlock()
     {
         m_lockable.unlock();
 
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
+        if( !m_active.load( std::memory_order_relaxed ) ) return;
+        if( !s_profiler.IsConnected() )
+        {
+            m_active.store( false, std::memory_order_relaxed );
+            return;
+        }
+#endif
+
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -211,13 +289,27 @@ public:
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     tracy_force_inline bool try_lock()
     {
         const auto ret = m_lockable.try_lock();
-#ifndef TRACY_ON_DEMAND
+
+#ifdef TRACY_ON_DEMAND
+        if( !ret ) return ret;
+
+        bool queue = false;
+        const auto locks = m_lockCount.fetch_add( 1, std::memory_order_relaxed );
+        const auto active = m_active.load( std::memory_order_relaxed );
+        if( locks == 0 || active )
+        {
+            const bool connected = s_profiler.IsConnected();
+            if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
+            if( connected ) queue = true;
+        }
+        if( !queue ) return ret;
+#endif
+
         if( ret )
         {
             Magic magic;
@@ -230,13 +322,28 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
-#endif
+
         return ret;
     }
 
     tracy_force_inline void lock_shared()
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        bool queue = false;
+        const auto locks = m_lockCount.fetch_add( 1, std::memory_order_relaxed );
+        const auto active = m_active.load( std::memory_order_relaxed );
+        if( locks == 0 || active )
+        {
+            const bool connected = s_profiler.IsConnected();
+            if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
+            if( connected ) queue = true;
+        }
+        if( !queue )
+        {
+            m_lockable.lock();
+            return;
+        }
+#endif
         const auto thread = GetThreadHandle();
         {
             Magic magic;
@@ -250,11 +357,9 @@ public:
             MemWrite( &item->lockWait.type, LockType::SharedLockable );
             tail.store( magic + 1, std::memory_order_release );
         }
-#endif
 
         m_lockable.lock_shared();
 
-#ifndef TRACY_ON_DEMAND
         {
             Magic magic;
             auto& token = s_token.ptr;
@@ -266,14 +371,22 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
-#endif
     }
 
     tracy_force_inline void unlock_shared()
     {
         m_lockable.unlock_shared();
 
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
+        if( !m_active.load( std::memory_order_relaxed ) ) return;
+        if( !s_profiler.IsConnected() )
+        {
+            m_active.store( false, std::memory_order_relaxed );
+            return;
+        }
+#endif
+
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -283,13 +396,27 @@ public:
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     tracy_force_inline bool try_lock_shared()
     {
         const auto ret = m_lockable.try_lock_shared();
-#ifndef TRACY_ON_DEMAND
+
+#ifdef TRACY_ON_DEMAND
+        if( !ret ) return ret;
+
+        bool queue = false;
+        const auto locks = m_lockCount.fetch_add( 1, std::memory_order_relaxed );
+        const auto active = m_active.load( std::memory_order_relaxed );
+        if( locks == 0 || active )
+        {
+            const bool connected = s_profiler.IsConnected();
+            if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
+            if( connected ) queue = true;
+        }
+        if( !queue ) return ret;
+#endif
+
         if( ret )
         {
             Magic magic;
@@ -302,13 +429,23 @@ public:
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
             tail.store( magic + 1, std::memory_order_release );
         }
-#endif
+
         return ret;
     }
 
-    tracy_force_inline void Mark( const SourceLocation* srcloc ) const
+    tracy_force_inline void Mark( const SourceLocation* srcloc )
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        const auto active = m_active.load( std::memory_order_relaxed );
+        if( !active ) return;
+        const auto connected = s_profiler.IsConnected();
+        if( !connected )
+        {
+            if( active ) m_active.store( false, std::memory_order_relaxed );
+            return;
+        }
+#endif
+
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -318,12 +455,16 @@ public:
         MemWrite( &item->lockMark.thread, GetThreadHandle() );
         MemWrite( &item->lockMark.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
 private:
     T m_lockable;
     uint32_t m_id;
+
+#ifdef TRACY_ON_DEMAND
+    std::atomic<uint32_t> m_lockCount;
+    std::atomic<bool> m_active;
+#endif
 };
 
 

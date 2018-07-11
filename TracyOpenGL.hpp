@@ -87,10 +87,17 @@ public:
 
     void Collect()
     {
-#ifndef TRACY_ON_DEMAND
         ZoneScopedC( Color::Red4 );
 
         if( m_tail == m_head ) return;
+
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() )
+        {
+            m_head = m_tail = 0;
+            return;
+        }
+#endif
 
         auto start = m_tail;
         auto end = m_head + QueryCount;
@@ -130,7 +137,6 @@ public:
             tail.store( magic + 1, std::memory_order_release );
             m_tail = ( m_tail + 1 ) % QueryCount;
         }
-#endif
     }
 
 private:
@@ -165,8 +171,13 @@ class GpuCtxScope
 {
 public:
     tracy_force_inline GpuCtxScope( const SourceLocation* srcloc )
+#ifdef TRACY_ON_DEMAND
+        : m_active( s_profiler.IsConnected() )
+#endif
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         const auto queryId = s_gpuCtx.ptr->NextQueryId();
         glQueryCounter( s_gpuCtx.ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
@@ -181,12 +192,16 @@ public:
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     tracy_force_inline GpuCtxScope( const SourceLocation* srcloc, int depth )
+#ifdef TRACY_ON_DEMAND
+        : m_active( s_profiler.IsConnected() )
+#endif
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         const auto queryId = s_gpuCtx.ptr->NextQueryId();
         glQueryCounter( s_gpuCtx.ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
@@ -205,12 +220,13 @@ public:
         tail.store( magic + 1, std::memory_order_release );
 
         s_profiler.SendCallstack( depth, thread );
-#endif
     }
 
     tracy_force_inline ~GpuCtxScope()
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         const auto queryId = s_gpuCtx.ptr->NextQueryId();
         glQueryCounter( s_gpuCtx.ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
@@ -223,8 +239,12 @@ public:
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneEnd.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
+
+private:
+#ifdef TRACY_ON_DEMAND
+    const bool m_active;
+#endif
 };
 
 }

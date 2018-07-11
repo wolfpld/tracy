@@ -201,6 +201,7 @@ Profiler::Profiler()
 #ifdef TRACY_ON_DEMAND
     , m_isConnected( false )
     , m_frameCount( 0 )
+    , m_deferredQueue( 64*1024 )
 #endif
 {
     assert( !s_instance );

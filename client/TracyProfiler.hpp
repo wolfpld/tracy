@@ -396,6 +396,9 @@ private:
 #ifdef TRACY_ON_DEMAND
     std::atomic<bool> m_isConnected;
     std::atomic<uint64_t> m_frameCount;
+
+    NonRecursiveBenaphore m_deferredLock;
+    FastVector<QueueItem> m_deferredQueue;
 #endif
 };
 

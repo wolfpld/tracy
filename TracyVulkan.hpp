@@ -123,10 +123,18 @@ public:
 
     void Collect( VkCommandBuffer cmdbuf )
     {
-#ifndef TRACY_ON_DEMAND
         ZoneScopedC( Color::Red4 );
 
         if( m_tail == m_head ) return;
+
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() )
+        {
+            vkCmdResetQueryPool( cmdbuf, m_query, 0, QueryCount );
+            m_head = m_tail = 0;
+            return;
+        }
+#endif
 
         unsigned int cnt;
         if( m_oldCnt != 0 )
@@ -164,7 +172,6 @@ public:
 
         m_tail += cnt;
         if( m_tail == QueryCount ) m_tail = 0;
-#endif
     }
 
 private:
@@ -198,8 +205,13 @@ class VkCtxScope
 public:
     tracy_force_inline VkCtxScope( const SourceLocation* srcloc, VkCommandBuffer cmdbuf )
         : m_cmdbuf( cmdbuf )
+#ifdef TRACY_ON_DEMAND
+        , m_active( s_profiler.IsConnected() )
+#endif
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         auto ctx = s_vkCtx.ptr;
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
@@ -215,13 +227,17 @@ public:
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
     tracy_force_inline VkCtxScope( const SourceLocation* srcloc, VkCommandBuffer cmdbuf, int depth )
         : m_cmdbuf( cmdbuf )
+#ifdef TRACY_ON_DEMAND
+        , m_active( s_profiler.IsConnected() )
+#endif
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         const auto thread = GetThreadHandle();
 
         auto ctx = s_vkCtx.ptr;
@@ -241,12 +257,13 @@ public:
         tail.store( magic + 1, std::memory_order_release );
 
         s_profiler.SendCallstack( depth, thread );
-#endif
     }
 
     tracy_force_inline ~VkCtxScope()
     {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+        if( !m_active ) return;
+#endif
         auto ctx = s_vkCtx.ptr;
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
@@ -260,11 +277,14 @@ public:
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneEnd.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
-#endif
     }
 
 private:
     VkCommandBuffer m_cmdbuf;
+
+#ifdef TRACY_ON_DEMAND
+    const bool m_active;
+#endif
 };
 
 }

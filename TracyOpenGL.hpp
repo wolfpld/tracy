@@ -90,6 +90,8 @@ public:
 #ifndef TRACY_ON_DEMAND
         ZoneScopedC( Color::Red4 );
 
+        if( m_tail == m_head ) return;
+
         auto start = m_tail;
         auto end = m_head + QueryCount;
         auto cnt = ( end - start ) % QueryCount;

@@ -22,7 +22,6 @@ public:
     {
         assert( m_id != std::numeric_limits<uint32_t>::max() );
 
-#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -31,8 +30,12 @@ public:
         MemWrite( &item->lockAnnounce.id, m_id );
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
         MemWrite( &item->lockAnnounce.type, LockType::Lockable );
-        tail.store( magic + 1, std::memory_order_release );
+
+#ifdef TRACY_ON_DEMAND
+        s_profiler.DeferItem( *item );
 #endif
+
+        tail.store( magic + 1, std::memory_order_release );
     }
 
     Lockable( const Lockable& ) = delete;
@@ -140,7 +143,6 @@ public:
     {
         assert( m_id != std::numeric_limits<uint32_t>::max() );
 
-#ifndef TRACY_ON_DEMAND
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -149,8 +151,12 @@ public:
         MemWrite( &item->lockAnnounce.id, m_id );
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
         MemWrite( &item->lockAnnounce.type, LockType::SharedLockable );
-        tail.store( magic + 1, std::memory_order_release );
+
+#ifdef TRACY_ON_DEMAND
+        s_profiler.DeferItem( *item );
 #endif
+
+        tail.store( magic + 1, std::memory_order_release );
     }
 
     SharedLockable( const SharedLockable& ) = delete;

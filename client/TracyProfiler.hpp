@@ -299,6 +299,14 @@ public:
     {
         return m_isConnected.load( std::memory_order_relaxed );
     }
+
+    tracy_force_inline void DeferItem( const QueueItem& item )
+    {
+        m_deferredLock.lock();
+        auto dst = m_deferredQueue.push_next();
+        memcpy( dst, &item, sizeof( item ) );
+        m_deferredLock.unlock();
+    }
 #endif
 
 private:

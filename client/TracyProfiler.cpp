@@ -308,6 +308,14 @@ void Profiler::Worker()
         onDemand.frames = m_frameCount.load( std::memory_order_relaxed );
 
         m_sock->Send( &onDemand, sizeof( onDemand ) );
+
+        m_deferredLock.lock();
+        for( auto& item : m_deferredQueue )
+        {
+            const auto idx = MemRead<uint8_t>( &item.hdr.idx );
+            AppendData( &item, QueueDataSize[idx] );
+        }
+        m_deferredLock.unlock();
 #endif
 
         int keepAlive = 0;

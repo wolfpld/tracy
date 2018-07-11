@@ -340,7 +340,7 @@ public:
         }
         if( !queue )
         {
-            m_lockable.lock();
+            m_lockable.lock_shared();
             return;
         }
 #endif

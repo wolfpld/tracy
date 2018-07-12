@@ -53,6 +53,8 @@ In the default configuration tracy is disabled. To enable it, add a `TRACY_ENABL
 
 If you want to profile a short-lived application, add a `TRACY_NO_EXIT` define. In this configuration tracy will not exit until an incoming connection is made, even if the application has already finished.
 
+If you don't want to perform a complete application life-time capture, you may define a `TRACY_ON_DEMAND` macro, which will enable profiling only when there's an incoming connection from the server.
+
 On Unix make sure you are linking your application with libpthread and libdl.
 
 #### Running the server

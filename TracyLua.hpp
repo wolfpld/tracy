@@ -108,6 +108,8 @@ static inline void LuaRemove( char* script )
 
 #else
 
+#include <assert.h>
+
 #include "common/TracyColor.hpp"
 #include "common/TracyAlign.hpp"
 #include "common/TracySystem.hpp"
@@ -116,12 +118,21 @@ static inline void LuaRemove( char* script )
 namespace tracy
 {
 
+extern thread_local uint32_t s_luaZoneCounter;
+extern thread_local bool s_luaZoneActive;
+
 namespace detail
 {
 
 static inline int LuaZoneBegin( lua_State* L )
 {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+    const auto zoneCnt = s_luaZoneCounter++;
+    if( zoneCnt != 0 && !s_luaZoneActive ) return 0;
+    s_luaZoneActive = s_profiler.IsConnected();
+    if( !s_luaZoneActive ) return 0;
+#endif
+
     const uint32_t color = Color::DeepSkyBlue3;
 
     lua_Debug dbg;
@@ -164,13 +175,18 @@ static inline int LuaZoneBegin( lua_State* L )
     MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
     MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
-#endif
     return 0;
 }
 
 static inline int LuaZoneBeginN( lua_State* L )
 {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+    const auto zoneCnt = s_luaZoneCounter++;
+    if( zoneCnt != 0 && !s_luaZoneActive ) return 0;
+    s_luaZoneActive = s_profiler.IsConnected();
+    if( !s_luaZoneActive ) return 0;
+#endif
+
     const uint32_t color = Color::DeepSkyBlue3;
 
     lua_Debug dbg;
@@ -217,13 +233,22 @@ static inline int LuaZoneBeginN( lua_State* L )
     MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
     MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
-#endif
     return 0;
 }
 
 static inline int LuaZoneEnd( lua_State* L )
 {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+    assert( s_luaZoneCounter != 0 );
+    s_luaZoneCounter--;
+    if( !s_luaZoneActive ) return 0;
+    if( !s_profiler.IsConnected() )
+    {
+        s_luaZoneActive = false;
+        return 0;
+    }
+#endif
+
     Magic magic;
     auto& token = s_token.ptr;
     auto& tail = token->get_tail_index();
@@ -238,13 +263,20 @@ static inline int LuaZoneEnd( lua_State* L )
 #endif
     MemWrite( &item->zoneEnd.thread, GetThreadHandle() );
     tail.store( magic + 1, std::memory_order_release );
-#endif
     return 0;
 }
 
 static inline int LuaZoneText( lua_State* L )
 {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+    if( !s_luaZoneActive ) return 0;
+    if( !s_profiler.IsConnected() )
+    {
+        s_luaZoneActive = false;
+        return 0;
+    }
+#endif
+
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
 
@@ -259,13 +291,20 @@ static inline int LuaZoneText( lua_State* L )
     MemWrite( &item->zoneText.thread, GetThreadHandle() );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
-#endif
     return 0;
 }
 
 static inline int LuaZoneName( lua_State* L )
 {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+    if( !s_luaZoneActive ) return 0;
+    if( !s_profiler.IsConnected() )
+    {
+        s_luaZoneActive = false;
+        return 0;
+    }
+#endif
+
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
 
@@ -280,13 +319,15 @@ static inline int LuaZoneName( lua_State* L )
     MemWrite( &item->zoneText.thread, GetThreadHandle() );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
-#endif
     return 0;
 }
 
 static inline int LuaMessage( lua_State* L )
 {
-#ifndef TRACY_ON_DEMAND
+#ifdef TRACY_ON_DEMAND
+    if( !s_profiler.IsConnected() ) return 0;
+#endif
+
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
 
@@ -302,7 +343,6 @@ static inline int LuaMessage( lua_State* L )
     MemWrite( &item->message.thread, GetThreadHandle() );
     MemWrite( &item->message.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
-#endif
     return 0;
 }
 

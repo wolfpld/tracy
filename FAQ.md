@@ -22,7 +22,7 @@ Tracy can perform network transfer of 15 million zones per second. Should the cl
 
 ### Can I connect to my application at any time and start profiling at this moment?
 
-No, all events are registered from the beginning of program execution and are waiting in a queue.
+By default no, all events are registered from the beginning of program execution and are waiting in a queue. There's a separate on-demand mode, enabled by using a `TRACY_ON_DEMAND` macro.
 
 ### Am I seeing correctly that the profiler allocates one gigabyte of memory per second?
 

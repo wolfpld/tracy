@@ -3496,6 +3496,22 @@ void View::DrawOptions()
         ImGui::TextDisabled( "(%zu)", m_worker.GetPlots().size() );
         if( expand )
         {
+            if( ImGui::SmallButton( "Select all" ) )
+            {
+                for( const auto& p : m_worker.GetPlots() )
+                {
+                    Visible( p ) = true;
+                }
+            }
+            ImGui::SameLine();
+            if( ImGui::SmallButton( "Unselect all" ) )
+            {
+                for( const auto& p : m_worker.GetPlots() )
+                {
+                    Visible( p ) = false;
+                }
+            }
+
             for( const auto& p : m_worker.GetPlots() )
             {
                 ImGui::Checkbox( GetPlotName( p ), &Visible( p ) );

@@ -3510,6 +3510,22 @@ void View::DrawOptions()
     ImGui::TextDisabled( "(%zu)", m_worker.GetThreadData().size() );
     if( expand )
     {
+        if( ImGui::SmallButton( "Select all" ) )
+        {
+            for( const auto& t : m_worker.GetThreadData() )
+            {
+                Visible( t ) = true;
+            }
+        }
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Unselect all" ) )
+        {
+            for( const auto& t : m_worker.GetThreadData() )
+            {
+                Visible( t ) = false;
+            }
+        }
+
         int idx = 0;
         for( const auto& t : m_worker.GetThreadData() )
         {

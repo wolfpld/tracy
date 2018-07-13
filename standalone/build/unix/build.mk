@@ -1,8 +1,8 @@
 CFLAGS += 
 CXXFLAGS := $(CFLAGS) -std=c++17
 DEFINES +=
-INCLUDES := $(shell pkg-config --cflags glfw3 gtk+-2.0) -I../../../imgui -I../../libs/gl3w
-LIBS := $(shell pkg-config --libs glfw3 gtk+-2.0) -lpthread -ldl -lGL
+INCLUDES := $(shell pkg-config --cflags glfw3) -I../../../imgui -I../../libs/gl3w
+LIBS := $(shell pkg-config --libs glfw3) -lpthread -ldl
 PROJECT := Tracy
 IMAGE := $(PROJECT)-$(BUILD)
 
@@ -12,13 +12,25 @@ BASE := $(shell egrep 'ClCompile.*cpp"' ../win32/$(PROJECT).vcxproj | sed -e 's/
 BASE2 := $(shell egrep 'ClCompile.*c"' ../win32/$(PROJECT).vcxproj | sed -e 's/.*\"\(.*\)\".*/\1/' | sed -e 's@\\@/@g')
 
 SRC := $(filter-out $(FILTER),$(BASE))
-SRC2 := $(filter-out $(FILTER),$(BASE2)) ../../../nfd/nfd_gtk.c
+SRC2 := $(filter-out $(FILTER),$(BASE2))
+SRC3 :=
+
+UNAME := $(shell uname -s)
+ifeq ($(UNAME),Darwin)
+	SRC3 += ../../../nfd/nfd_cocoa.m
+	LIBS +=  -framework CoreFoundation -framework AppKit
+else
+	SRC2 += ../../../nfd/nfd_gtk.c
+	INCLUDES += $(shell pkg-config --cflags gtk+-2.0)
+	LIBS += $(shell pkg-config --libs gtk+-2.0) -lGL
+endif
 
 OBJDIRBASE := obj/$(BUILD)
 OBJDIR := $(OBJDIRBASE)/o/o/o
 
 OBJ := $(addprefix $(OBJDIR)/,$(SRC:%.cpp=%.o))
 OBJ2 := $(addprefix $(OBJDIR)/,$(SRC2:%.c=%.o))
+OBJ3 := $(addprefix $(OBJDIR)/,$(SRC3:%.m=%.o))
 
 all: $(IMAGE)
 
@@ -42,11 +54,21 @@ $(OBJDIR)/%.d : %.c
 	sed 's,.*\.o[ :]*,$(OBJDIR)/$(<:.c=.o) $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-$(IMAGE): $(OBJ) $(OBJ2)
-	$(CXX) $(CXXFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(LIBS) -o $@
+$(OBJDIR)/%.o: %.m
+	$(CC) -c $(INCLUDES) $(CFLAGS) $(DEFINES) $< -o $@
+
+$(OBJDIR)/%.d : %.m
+	@echo Resolving dependencies of $<
+	@mkdir -p $(@D)
+	@$(CC) -MM $(INCLUDES) $(CFLAGS) $(DEFINES) $< > $@.$$$$; \
+	sed 's,.*\.o[ :]*,$(OBJDIR)/$(<:.m=.o) $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+$(IMAGE): $(OBJ) $(OBJ2) $(OBJ3)
+	$(CXX) $(CXXFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(OBJ3) $(LIBS) -o $@
 
 ifneq "$(MAKECMDGOALS)" "clean"
--include $(addprefix $(OBJDIR)/,$(SRC:.cpp=.d)) $(addprefix $(OBJDIR)/,$(SRC2:.c=.d))
+-include $(addprefix $(OBJDIR)/,$(SRC:.cpp=.d)) $(addprefix $(OBJDIR)/,$(SRC2:.c=.d)) $(addprefix $(OBJDIR)/,$(SRC3:.m=.d))
 endif
 
 clean:

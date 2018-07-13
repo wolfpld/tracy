@@ -35,10 +35,15 @@ namespace tracy
 //---------------------------------------------------------
 // Semaphore (Windows)
 //---------------------------------------------------------
-
 #ifndef MAXLONG
 enum { MAXLONG = 0x7fffffff };
+#endif
+
+#ifndef INFINITE
 enum { INFINITE = 0xFFFFFFFF };
+#endif
+
+#ifndef _WINDOWS_
 typedef void* HANDLE;
 
 extern "C" __declspec(dllimport) HANDLE __stdcall CreateSemaphoreA( void*, long, long, const char* );

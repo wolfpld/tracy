@@ -8,7 +8,9 @@
 #endif
 
 #ifdef _WIN32
+#ifndef _WINDOWS_
 extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
+#endif
 #else
 #  include <pthread.h>
 #endif

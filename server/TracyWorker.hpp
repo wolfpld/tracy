@@ -9,9 +9,9 @@
 #include <thread>
 #include <vector>
 
-#include "../common/tracy_benaphore.h"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
+#include "../common/TracyMutex.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracySocket.hpp"
 #include "tracy_flat_hash_map.hpp"
@@ -75,7 +75,7 @@ class Worker
     {
         DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
 
-        NonRecursiveBenaphore lock;
+        TracyMutex lock;
         Vector<int64_t> frames;
         Vector<GpuCtxData*> gpuData;
         Vector<MessageData*> messages;
@@ -115,7 +115,7 @@ class Worker
     {
         MbpsBlock() : mbps( 64 ), compRatio( 1.0 ) {}
 
-        NonRecursiveBenaphore lock;
+        TracyMutex lock;
         std::vector<float> mbps;
         float compRatio;
     };
@@ -146,7 +146,7 @@ public:
     int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }
 
-    NonRecursiveBenaphore& GetDataLock() { return m_data.lock; }
+    TracyMutex& GetDataLock() { return m_data.lock; }
     size_t GetFrameCount() const { return m_data.frames.size(); }
     int64_t GetLastTime() const { return m_data.lastTime; }
     uint64_t GetZoneCount() const { return m_data.zonesCnt; }
@@ -202,7 +202,7 @@ public:
     }
     tracy_force_inline uint64_t DecompressThread( uint16_t thread ) const { assert( thread < m_data.threadExpand.size() ); return m_data.threadExpand[thread]; }
 
-    NonRecursiveBenaphore& GetMbpsDataLock() { return m_mbpsData.lock; }
+    TracyMutex& GetMbpsDataLock() { return m_mbpsData.lock; }
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }
     float GetCompRatio() const { return m_mbpsData.compRatio; }
 

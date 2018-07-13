@@ -179,6 +179,9 @@
     <ClInclude Include="..\..\..\server\TracyVarArray.hpp">
       <Filter>server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyMutex.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

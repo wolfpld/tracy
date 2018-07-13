@@ -10,10 +10,10 @@
 #include "TracyCallstack.hpp"
 #include "TracyFastVector.hpp"
 #include "../common/tracy_lz4.hpp"
-#include "../common/tracy_benaphore.h"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyMutex.hpp"
 #include "../common/TracySystem.hpp"
 
 #if defined _MSC_VER || defined __CYGWIN__
@@ -412,13 +412,13 @@ private:
     char* m_lz4Buf;
 
     FastVector<QueueItem> m_serialQueue, m_serialDequeue;
-    NonRecursiveBenaphore m_serialLock;
+    TracyMutex m_serialLock;
 
 #ifdef TRACY_ON_DEMAND
     std::atomic<bool> m_isConnected;
     std::atomic<uint64_t> m_frameCount;
 
-    NonRecursiveBenaphore m_deferredLock;
+    TracyMutex m_deferredLock;
     FastVector<QueueItem> m_deferredQueue;
 #endif
 };

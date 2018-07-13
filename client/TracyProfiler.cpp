@@ -472,7 +472,7 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
         for( size_t i=0; i<sz; i++ ) FreeAssociatedMemory( m_itemBuf[i] );
     }
 
-    std::lock_guard<NonRecursiveBenaphore> lock( m_serialLock );
+    std::lock_guard<TracyMutex> lock( m_serialLock );
 
     for( auto& v : m_serialDequeue ) FreeAssociatedMemory( v );
     m_serialDequeue.clear();
@@ -536,7 +536,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
     {
-        std::lock_guard<NonRecursiveBenaphore> lock( m_serialLock );
+        std::lock_guard<TracyMutex> lock( m_serialLock );
         m_serialQueue.swap( m_serialDequeue );
     }
 

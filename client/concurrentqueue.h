@@ -3553,6 +3553,7 @@ private:
 	template<typename U>
 	static inline void destroy_array(U* p, size_t count)
 	{
+		((void)count);
 		if (p != nullptr) {
 			assert(count > 0);
 			(Traits::free)(p);

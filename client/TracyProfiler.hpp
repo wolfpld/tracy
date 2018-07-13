@@ -401,6 +401,7 @@ private:
     uint64_t m_epoch;
     std::atomic<bool> m_shutdown;
     Socket* m_sock;
+    bool m_noExit;
 
     LZ4_stream_t* m_stream;
     char* m_buffer;

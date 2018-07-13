@@ -194,6 +194,7 @@ Profiler::Profiler()
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
     , m_sock( nullptr )
+    , m_noExit( false )
     , m_stream( LZ4_createStream() )
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
@@ -219,6 +220,14 @@ Profiler::Profiler()
 
     CalibrateTimer();
     CalibrateDelay();
+
+#ifndef TRACY_NO_EXIT
+    const char* noExitEnv = getenv( "TRACY_NO_EXIT" );
+    if( noExitEnv && noExitEnv[0] == '1' )
+    {
+        m_noExit = true;
+    }
+#endif
 
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
@@ -293,7 +302,7 @@ void Profiler::Worker()
         for(;;)
         {
 #ifndef TRACY_NO_EXIT
-            if( ShouldExit() ) return;
+            if( !m_noExit && ShouldExit() ) return;
 #endif
             m_sock = listen.Accept();
             if( m_sock ) break;

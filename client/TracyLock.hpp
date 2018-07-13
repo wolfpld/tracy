@@ -29,7 +29,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::LockAnnounce );
         MemWrite( &item->lockAnnounce.id, m_id );
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
@@ -68,7 +68,7 @@ public:
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockWait );
             MemWrite( &item->lockWait.id, m_id );
             MemWrite( &item->lockWait.thread, thread );
@@ -83,7 +83,7 @@ public:
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, thread );
@@ -109,7 +109,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::LockRelease );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
@@ -141,7 +141,7 @@ public:
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, GetThreadHandle() );
@@ -168,7 +168,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::LockMark );
         MemWrite( &item->lockMark.id, m_id );
         MemWrite( &item->lockMark.thread, GetThreadHandle() );
@@ -203,7 +203,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::LockAnnounce );
         MemWrite( &item->lockAnnounce.id, m_id );
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
@@ -242,7 +242,7 @@ public:
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockWait );
             MemWrite( &item->lockWait.id, m_id );
             MemWrite( &item->lockWait.thread, thread );
@@ -257,7 +257,7 @@ public:
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, thread );
@@ -283,7 +283,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::LockRelease );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
@@ -315,7 +315,7 @@ public:
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, GetThreadHandle() );
@@ -349,7 +349,7 @@ public:
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockSharedWait );
             MemWrite( &item->lockWait.id, m_id );
             MemWrite( &item->lockWait.thread, thread );
@@ -364,7 +364,7 @@ public:
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockSharedObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, thread );
@@ -390,7 +390,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::LockSharedRelease );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.thread, GetThreadHandle() );
@@ -422,7 +422,7 @@ public:
             Magic magic;
             auto& token = s_token.ptr;
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::LockSharedObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, GetThreadHandle() );
@@ -449,7 +449,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::LockMark );
         MemWrite( &item->lockMark.id, m_id );
         MemWrite( &item->lockMark.thread, GetThreadHandle() );

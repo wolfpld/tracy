@@ -45,7 +45,7 @@ struct SourceLocation
 
 struct ProducerWrapper
 {
-    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
+    tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
 };
 
 extern thread_local ProducerWrapper s_token;
@@ -62,7 +62,7 @@ struct VkCtxWrapper
     VkCtx* ptr;
 };
 
-using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
+using Magic = tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
 #if __ARM_ARCH >= 6
 extern int64_t (*GetTimeImpl)();
@@ -125,7 +125,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         tail.store( magic + 1, std::memory_order_release );
@@ -139,7 +139,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -156,7 +156,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -173,7 +173,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -193,7 +193,7 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::Message );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.thread, GetThreadHandle() );
@@ -209,7 +209,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteral );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.thread, GetThreadHandle() );
@@ -288,7 +288,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::Callstack );
         MemWrite( &item->callstack.ptr, ptr );
         MemWrite( &item->callstack.thread, thread );
@@ -319,8 +319,8 @@ private:
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();
 
-    void ClearQueues( moodycamel::ConsumerToken& token );
-    DequeueStatus Dequeue( moodycamel::ConsumerToken& token );
+    void ClearQueues( tracy::moodycamel::ConsumerToken& token );
+    DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
     DequeueStatus DequeueSerial();
     bool AppendData( const void* data, size_t len );
     bool CommitData();

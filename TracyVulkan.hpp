@@ -100,7 +100,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
@@ -160,7 +160,7 @@ public:
 
         for( unsigned int idx=0; idx<cnt; idx++ )
         {
-            auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, res[idx] );
             MemWrite( &item->gpuTime.queryId, uint16_t( m_tail + idx ) );
@@ -219,7 +219,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
@@ -247,7 +247,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstack );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
@@ -271,7 +271,7 @@ public:
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneEnd );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );

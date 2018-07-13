@@ -180,8 +180,7 @@ std::atomic<ThreadNameData*> init_order(104) s_threadNameData( nullptr );
 #endif
 
 #ifdef TRACY_ON_DEMAND
-thread_local uint32_t init_order(104) s_luaZoneCounter( 0 );
-thread_local bool init_order(104) s_luaZoneActive( false );
+thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 #endif
 
 Profiler init_order(105) s_profiler;

@@ -62,6 +62,14 @@ struct VkCtxWrapper
     VkCtx* ptr;
 };
 
+#ifdef TRACY_ON_DEMAND
+struct LuaZoneState
+{
+    uint32_t counter;
+    bool active;
+};
+#endif
+
 using Magic = tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
 #if __ARM_ARCH >= 6

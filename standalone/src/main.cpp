@@ -51,7 +51,13 @@ int main( int argc, char** argv )
 
     float dpiScale = 1.f;
 #ifdef _WIN32
-    dpiScale = GetDpiForSystem() / 96.f;
+    typedef UINT(*GDFS)(void);
+    GDFS getDpiForSystem = nullptr;
+    HMODULE dll = GetModuleHandleW(L"user32.dll");
+    if (dll != INVALID_HANDLE_VALUE)
+        getDpiForSystem = (GDFS)GetProcAddress(dll, "GetDpiForSystem");
+    if (getDpiForSystem)
+        dpiScale = getDpiForSystem() / 96.f;
 #endif
 
     // Setup ImGui binding

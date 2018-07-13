@@ -22,6 +22,12 @@
 #include <atomic>
 #include <cassert>
 
+#if defined(__MACH__)
+    #include <mach/mach.h>
+#elif defined(__unix__)
+    #include <semaphore.h>
+#endif
+
 namespace tracy
 {
 
@@ -79,8 +85,6 @@ public:
 // Can't use POSIX semaphores due to http://lists.apple.com/archives/darwin-kernel/2009/Apr/msg00010.html
 //---------------------------------------------------------
 
-#include <mach/mach.h>
-
 class Semaphore
 {
 private:
@@ -125,8 +129,6 @@ public:
 //---------------------------------------------------------
 // Semaphore (POSIX, Linux)
 //---------------------------------------------------------
-
-#include <semaphore.h>
 
 class Semaphore
 {

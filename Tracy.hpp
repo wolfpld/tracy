@@ -48,7 +48,7 @@
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size );
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
 
-#define FrameMark tracy::Profiler::FrameMark();
+#define FrameMark tracy::Profiler::SendFrameMark();
 
 #define TracyLockable( type, varname ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { nullptr, #type " " #varname, __FILE__, __LINE__, 0 }; return &srcloc; }() };
 #define TracyLockableN( type, varname, desc ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocation* { static const tracy::SourceLocation srcloc { nullptr, desc, __FILE__, __LINE__, 0 }; return &srcloc; }() };

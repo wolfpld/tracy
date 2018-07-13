@@ -116,7 +116,7 @@ public:
 #endif
     }
 
-    static tracy_force_inline void FrameMark()
+    static tracy_force_inline void SendFrameMark()
     {
 #ifdef TRACY_ON_DEMAND
         s_profiler.m_frameCount.fetch_add( 1, std::memory_order_relaxed );

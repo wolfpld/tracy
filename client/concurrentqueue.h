@@ -73,6 +73,9 @@
 #include <array>
 #include <thread>		// partly for __WINPTHREADS_VERSION if on MinGW-w64 w/ POSIX threading
 
+namespace tracy
+{
+
 // Platform-specific definitions of a numeric thread ID type and an invalid value
 namespace moodycamel { namespace details {
 	template<typename thread_id_t> struct thread_id_converter {
@@ -692,8 +695,8 @@ class ConcurrentQueue
 public:
     struct ExplicitProducer;
 
-	typedef ::moodycamel::ProducerToken producer_token_t;
-	typedef ::moodycamel::ConsumerToken consumer_token_t;
+	typedef moodycamel::ProducerToken producer_token_t;
+	typedef moodycamel::ConsumerToken consumer_token_t;
 	
 	typedef typename Traits::index_t index_t;
 	typedef typename Traits::size_t size_t;
@@ -3670,6 +3673,8 @@ inline void swap(typename ConcurrentQueue<T, Traits>::ImplicitProducerKVP& a, ty
 }
 
 }
+
+} /* namespace tracy */
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop

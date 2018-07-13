@@ -133,7 +133,7 @@ public:
             if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
             if( connected ) queue = true;
         }
-        if( !queue ) return;
+        if( !queue ) return ret;
 #endif
 
         if( ret )

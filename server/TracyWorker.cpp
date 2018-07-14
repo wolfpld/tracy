@@ -968,6 +968,7 @@ void Worker::Exec()
         return m_shutdown.load( std::memory_order_relaxed );
     };
 
+    auto lz4buf = std::make_unique<char[]>( LZ4Size );
     for(;;)
     {
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
@@ -1017,13 +1018,12 @@ void Worker::Exec()
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
 
             auto buf = m_buffer + m_bufferOffset;
-            char lz4buf[LZ4Size];
             lz4sz_t lz4sz;
             if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
-            if( !m_sock.Read( lz4buf, lz4sz, &tv, ShouldExit ) ) goto close;
+            if( !m_sock.Read( lz4buf.get(), lz4sz, &tv, ShouldExit ) ) goto close;
             bytes += sizeof( lz4sz ) + lz4sz;
 
-            auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf, buf, lz4sz, TargetFrameSize );
+            auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf.get(), buf, lz4sz, TargetFrameSize );
             assert( sz >= 0 );
             decBytes += sz;
 

@@ -12,10 +12,10 @@ extern "C"
 #  define TRACY_HAS_CALLSTACK 2
 #  include <unwind.h>
 #elif defined __linux
-#  if defined _GNU_SOURCE && defined __has_include && __has_include(<execinfo.h>)
+#  if defined _GNU_SOURCE && defined __GLIBC__
 #    define TRACY_HAS_CALLSTACK 3
 #    include <execinfo.h>
-#  elif defined __has_include && __has_include(<unwind.h>)
+#  else
 #    define TRACY_HAS_CALLSTACK 2
 #    include <unwind.h>
 #  endif

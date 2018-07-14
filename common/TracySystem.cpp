@@ -148,17 +148,17 @@ const char* GetThreadName( uint64_t id )
 #  elif defined __linux__
     int cs, fd;
     char path[32];
-    int tid = (int)syscall( SYS_gettid );
-    snprintf( path, sizeof(path), "/proc/self/task/%d/comm", tid );
+    int tid = (int) syscall( SYS_gettid );
+    snprintf( path, sizeof( path ), "/proc/self/task/%d/comm", tid );
     sprintf( buf, "%" PRIu64, id );
     pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, &cs );
-    if ((fd = open(path, O_RDONLY)) > 0) {
+    if ( ( fd = open( path, O_RDONLY ) ) > 0) {
         int len = read( fd, buf, 255 );
-        if (len > 0)
+        if ( len > 0 )
             buf[len] = 0;
-        close(fd);
+        close( fd );
     }
-    pthread_setcancelstate(cs, 0);
+    pthread_setcancelstate( cs, 0 );
     return buf;
 #  endif
 #endif

@@ -117,7 +117,18 @@ int main( int argc, char** argv )
 
         if( !view )
         {
-            ImGui::Begin( "Connect to...", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+            ImGui::Begin( "Tracy server", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+            if( ImGui::SmallButton( "Homepage" ) )
+            {
+                OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );
+            }
+            ImGui::SameLine();
+            if( ImGui::SmallButton( "Tutorial" ) )
+            {
+                OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
+            }
+            ImGui::Separator();
+            ImGui::Text( "Connect to client" );
             ImGui::InputText( "Address", addr, 1024 );
             if( ImGui::Button( "Connect" ) && *addr )
             {

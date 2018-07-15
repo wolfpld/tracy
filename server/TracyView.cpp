@@ -1340,8 +1340,8 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                     }
                 }
             }
-            char tmp[32];
-            sprintf( tmp, "%i", num );
+            char tmp[64];
+            sprintf( tmp, "%s", RealToString( num, true ) );
             const auto tsz = ImGui::CalcTextSize( tmp );
             if( tsz.x < px1 - px0 )
             {
@@ -1607,8 +1607,8 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                     m_gpuEnd = ev.cpuEnd;
                 }
             }
-            char tmp[32];
-            sprintf( tmp, "%i", num );
+            char tmp[64];
+            sprintf( tmp, "%s", RealToString( num, true ) );
             const auto tsz = ImGui::CalcTextSize( tmp );
             if( tsz.x < px1 - px0 )
             {

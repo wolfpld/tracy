@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <assert.h>
 #include <new>
 #include <stdio.h>
@@ -47,6 +48,9 @@ static __wsinit InitWinSock()
 
 Socket::Socket()
     : m_sock( -1 )
+    , m_buf( (char*)tracy_malloc( BufSize ) )
+    , m_bufPtr( nullptr )
+    , m_bufLeft( 0 )
 {
 #ifdef _MSC_VER
     InitWinSock();
@@ -55,11 +59,15 @@ Socket::Socket()
 
 Socket::Socket( int sock )
     : m_sock( sock )
+    , m_buf( (char*)tracy_malloc( BufSize ) )
+    , m_bufPtr( nullptr )
+    , m_bufLeft( 0 )
 {
 }
 
 Socket::~Socket()
 {
+    tracy_free( m_buf );
     if( m_sock != -1 )
     {
         Close();
@@ -130,6 +138,36 @@ int Socket::Send( const void* _buf, int len )
     return int( buf - start );
 }
 
+int Socket::RecvBuffered( void* buf, int len, const timeval* tv )
+{
+    if( len <= m_bufLeft )
+    {
+        memcpy( buf, m_bufPtr, len );
+        m_bufPtr += len;
+        m_bufLeft -= len;
+        return len;
+    }
+
+    if( m_bufLeft > 0 )
+    {
+        memcpy( buf, m_bufPtr, m_bufLeft );
+        const auto ret = m_bufLeft;
+        m_bufLeft = 0;
+        return ret;
+    }
+
+    if( len >= BufSize ) return Recv( buf, len, tv );
+
+    m_bufLeft = Recv( m_buf, BufSize, tv );
+    if( m_bufLeft <= 0 ) return m_bufLeft;
+
+    const auto sz = std::min( len, m_bufLeft );
+    memcpy( buf, m_buf, sz );
+    m_bufPtr = m_buf + sz;
+    m_bufLeft -= sz;
+    return sz;
+}
+
 int Socket::Recv( void* _buf, int len, const timeval* tv )
 {
     auto buf = (char*)_buf;
@@ -161,7 +199,7 @@ bool Socket::Read( void* _buf, int len, const timeval* tv, std::function<bool()>
     while( len > 0 )
     {
         if( exitCb() ) return false;
-        const auto sz = Recv( buf, len, tv );
+        const auto sz = RecvBuffered( buf, len, tv );
         switch( sz )
         {
         case 0:

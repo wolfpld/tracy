@@ -10,6 +10,8 @@ namespace tracy
 
 class Socket
 {
+    enum { BufSize = 128 * 1024 };
+
 public:
     Socket();
     Socket( int sock );
@@ -19,7 +21,6 @@ public:
     void Close();
 
     int Send( const void* buf, int len );
-    int Recv( void* buf, int len, const timeval* tv );
 
     bool Read( void* buf, int len, const timeval* tv, std::function<bool()> exitCb );
     bool HasData();
@@ -30,7 +31,14 @@ public:
     Socket& operator=( Socket&& ) = delete;
 
 private:
+    int RecvBuffered( void* buf, int len, const timeval* tv );
+    int Recv( void* buf, int len, const timeval* tv );
+
     int m_sock;
+
+    char* m_buf;
+    char* m_bufPtr;
+    int m_bufLeft;
 };
 
 class ListenSocket

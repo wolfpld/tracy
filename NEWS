@@ -22,6 +22,11 @@ v0.4 (xxxx-xx-xx)
     example, locks need to be fully released, zone stacks need to be
     flushed. This is an automatic process.
   - All tracing macros are able to work in the on-demand mode.
+- Improved compatibility with various system setups.
+- Aside from using TRACY_NO_EXIT define you can also set the same-named
+  environmental variable to 1 to get the same effect.
+- Added ability to show/hide all threads and plots.
+- Performance improvements.
 
 v0.3.3 (2018-07-03)
 -------------------

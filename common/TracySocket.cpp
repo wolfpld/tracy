@@ -233,8 +233,7 @@ bool Socket::HasData()
     FD_ZERO( &fds );
     FD_SET( m_sock, &fds );
 
-    select( m_sock+1, &fds, nullptr, nullptr, &tv );
-    return FD_ISSET( m_sock, &fds );
+    return select( m_sock+1, &fds, nullptr, nullptr, &tv ) > 0;
 }
 
 

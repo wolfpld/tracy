@@ -1,6 +1,7 @@
 #include <imgui.h>
 #include "imgui_impl_glfw_gl3.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <memory>
@@ -9,6 +10,7 @@
 
 #ifdef _WIN32
 #  include <windows.h>
+#  include <shellapi.h>
 #endif
 
 #include "../../server/TracyBadVersion.hpp"
@@ -18,6 +20,17 @@
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error %d: %s\n", error, description);
+}
+
+void OpenWebpage( const char* url )
+{
+#ifdef _WIN32
+    ShellExecuteA( nullptr, nullptr, url, nullptr, nullptr, 0 );
+#else
+    char buf[1024];
+    sprintf( buf, "xdg-open %s", url );
+    system( buf );
+#endif
 }
 
 int main( int argc, char** argv )

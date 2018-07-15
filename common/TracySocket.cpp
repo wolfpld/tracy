@@ -224,6 +224,8 @@ bool Socket::Read( void* _buf, int len, const timeval* tv, std::function<bool()>
 
 bool Socket::HasData()
 {
+    if( m_bufLeft > 0 ) return true;
+
     struct timeval tv;
     memset( &tv, 0, sizeof( tv ) );
 

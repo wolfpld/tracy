@@ -888,8 +888,14 @@ const char* Worker::GetZoneName( const GpuEvent& ev ) const
 
 const char* Worker::GetZoneName( const GpuEvent& ev, const SourceLocation& srcloc ) const
 {
-    assert( srcloc.name.active );
-    return GetString( srcloc.name );
+    if( srcloc.name.active )
+    {
+        return GetString( srcloc.name );
+    }
+    else
+    {
+        return GetString( srcloc.function );
+    }
 }
 
 std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) const

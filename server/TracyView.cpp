@@ -211,6 +211,7 @@ View::View( const char* addr )
     , m_lockHighlight { -1 }
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
+    , m_memoryAllocInfoWindow( std::numeric_limits<uint64_t>::max() )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -246,6 +247,7 @@ View::View( FileRead& f )
     , m_zoneInfoWindow( nullptr )
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
+    , m_memoryAllocInfoWindow( std::numeric_limits<uint64_t>::max() )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -410,6 +412,7 @@ bool View::DrawImpl()
     if( m_memInfo.show ) DrawMemory();
     if( m_compare.show ) DrawCompare();
     if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
+    if( m_memoryAllocInfoWindow != std::numeric_limits<uint64_t>::max() ) DrawMemoryAllocWindow();
 
     if( m_zoomAnim.active )
     {
@@ -2781,9 +2784,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
 
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
-                        m_memInfo.show = true;
-                        sprintf( m_memInfo.pattern, "0x%" PRIx64, ev->ptr );
-                        m_memInfo.ptrFind = ev->ptr;
+                        m_memoryAllocInfoWindow = std::distance( mem.data.begin(), ev );
                     }
                 }
             }
@@ -5131,6 +5132,114 @@ void View::DrawCallstackWindow()
     {
         m_callstackInfoWindow = 0;
     }
+}
+
+void View::DrawMemoryAllocWindow()
+{
+    bool close;
+    ImGui::Begin( "Memory allocation", &close );
+
+    const auto& mem = m_worker.GetMemData();
+    const auto& ev = mem.data[m_memoryAllocInfoWindow];
+    const auto tidAlloc = m_worker.DecompressThread( ev.threadAlloc );
+    const auto tidFree = m_worker.DecompressThread( ev.threadFree );
+    int idx = 0;
+
+    char buf[64];
+    sprintf( buf, "0x%" PRIx64, ev.ptr );
+    TextFocused( "Address:", buf );
+    TextFocused( "Size:", RealToString( ev.size, true ) );
+    ImGui::Separator();
+    TextFocused( "Appeared at", TimeToString( ev.timeAlloc - m_worker.GetFrameBegin( 0 ) ) );
+    if( ImGui::IsItemClicked() ) CenterAtTime( ev.timeAlloc );
+    ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
+    TextFocused( "Thread:", m_worker.GetThreadString( tidAlloc ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(0x%" PRIX64 ")", tidAlloc );
+    if( ev.csAlloc != 0 )
+    {
+        ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
+        SmallCallstackButton( "Callstack", ev.csAlloc, idx );
+    }
+    if( ev.timeFree < 0 )
+    {
+        ImGui::TextDisabled( "Allocation still active" );
+    }
+    else
+    {
+        TextFocused( "Freed at", TimeToString( ev.timeFree - m_worker.GetFrameBegin( 0 ) ) );
+        if( ImGui::IsItemClicked() ) CenterAtTime( ev.timeFree );
+        ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
+        TextFocused( "Thread:", m_worker.GetThreadString( tidFree ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(0x%" PRIX64 ")", tidFree );
+        if( ev.csFree != 0 )
+        {
+            ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
+            SmallCallstackButton( "Callstack", ev.csFree, idx );
+        }
+        TextFocused( "Duration:", TimeToString( ev.timeFree - ev.timeAlloc ) );
+    }
+
+    ImGui::Separator();
+
+    auto zoneAlloc = FindZoneAtTime( tidAlloc, ev.timeAlloc );
+    if( zoneAlloc )
+    {
+        const auto& srcloc = m_worker.GetSourceLocation( zoneAlloc->srcloc );
+        const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+        ImGui::PushID( idx++ );
+        TextFocused( "Zone alloc:", txt );
+        auto hover = ImGui::IsItemHovered();
+        ImGui::PopID();
+        if( ImGui::IsItemClicked() )
+        {
+            ShowZoneInfo( *zoneAlloc );
+        }
+        if( hover )
+        {
+            m_zoneHighlight = zoneAlloc;
+            if( ImGui::IsMouseClicked( 2 ) )
+            {
+                ZoomToZone( *zoneAlloc );
+            }
+            ZoneTooltip( *zoneAlloc );
+        }
+    }
+
+    if( ev.timeFree >= 0 )
+    {
+        auto zoneFree = FindZoneAtTime( tidFree, ev.timeFree );
+        if( zoneFree )
+        {
+            const auto& srcloc = m_worker.GetSourceLocation( zoneFree->srcloc );
+            const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
+            TextFocused( "Zone free:", txt );
+            auto hover = ImGui::IsItemHovered();
+            if( ImGui::IsItemClicked() )
+            {
+                ShowZoneInfo( *zoneFree );
+            }
+            if( hover )
+            {
+                m_zoneHighlight = zoneFree;
+                if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( *zoneFree );
+                }
+                ZoneTooltip( *zoneFree );
+            }
+        }
+
+        if( zoneAlloc == zoneFree )
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(same zone)" );
+        }
+    }
+
+    ImGui::End();
+    if( !close ) m_memoryAllocInfoWindow = std::numeric_limits<uint64_t>::max();
 }
 
 template<class T>

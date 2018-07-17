@@ -82,6 +82,7 @@ private:
     void DrawMemory();
     void DrawCompare();
     void DrawCallstackWindow();
+    void DrawMemoryAllocWindow();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress, const char* id = nullptr );
@@ -188,6 +189,7 @@ private:
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;
     uint32_t m_callstackInfoWindow;
+    uint64_t m_memoryAllocInfoWindow;
 
     Region m_highlight;
 

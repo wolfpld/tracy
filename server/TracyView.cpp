@@ -5252,6 +5252,14 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
     ImGui::BeginChild( id ? id : "##memScroll", ImVec2( 0, std::max( ty * std::min<int64_t>( dist, 5 ), std::min( ty * dist, ImGui::GetContentRegionAvail().y ) ) ) );
     ImGui::Columns( 8 );
     ImGui::Text( "Address" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(?)" );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Click on address to display memory allocation info window." );
+        ImGui::EndTooltip();
+    }
     ImGui::NextColumn();
     ImGui::Text( "Size" );
     ImGui::NextColumn();
@@ -5302,10 +5310,17 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
     ImGui::Text( "Callstack" );
     ImGui::NextColumn();
     ImGui::Separator();
+
+    const auto& mem = m_worker.GetMemData();
+
     int idx = 0;
     while( ptr != end )
     {
         auto v = DrawAddress( ptr );
+        if( ImGui::IsItemClicked() )
+        {
+            m_memoryAllocInfoWindow = std::distance( mem.data.begin(), v );
+        }
         ImGui::NextColumn();
         ImGui::Text( "%s", RealToString( v->size, true ) );
         ImGui::NextColumn();

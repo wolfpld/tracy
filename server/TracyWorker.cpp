@@ -8,7 +8,7 @@
 #include <mutex>
 #include <string.h>
 
-#if __has_include(<execution>) && ( !defined _MSC_VER || _MSC_VER >= 1914 )
+#if ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
 #  include <execution>
 #else
 #  include "tracy_pdqsort.h"

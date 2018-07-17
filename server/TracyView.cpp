@@ -4035,7 +4035,7 @@ void View::DrawFindZone()
                         {
                             const auto pxns = numBins / dt;
                             const auto nspx = 1.0 / pxns;
-                            const auto scale = std::max( 0.0f, round( log10fast( nspx ) + 2 ) );
+                            const auto scale = std::max<float>( 0.0f, round( log10fast( nspx ) + 2 ) );
                             const auto step = pow( 10, scale );
 
                             const auto dx = step * pxns;
@@ -4838,7 +4838,7 @@ void View::DrawCompare()
                     {
                         const auto pxns = numBins / dt;
                         const auto nspx = 1.0 / pxns;
-                        const auto scale = std::max( 0.0f, round( log10fast( nspx ) + 2 ) );
+                        const auto scale = std::max<float>( 0.0f, round( log10fast( nspx ) + 2 ) );
                         const auto step = pow( 10, scale );
 
                         const auto dx = step * pxns;

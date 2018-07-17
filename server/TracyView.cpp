@@ -5150,8 +5150,8 @@ void View::DrawCallstackWindow()
 
 void View::DrawMemoryAllocWindow()
 {
-    bool close;
-    ImGui::Begin( "Memory allocation", &close );
+    bool show = true;
+    ImGui::Begin( "Memory allocation", &show );
 
     const auto& mem = m_worker.GetMemData();
     const auto& ev = mem.data[m_memoryAllocInfoWindow];
@@ -5253,7 +5253,7 @@ void View::DrawMemoryAllocWindow()
     }
 
     ImGui::End();
-    if( !close ) m_memoryAllocInfoWindow = std::numeric_limits<uint64_t>::max();
+    if( !show ) m_memoryAllocInfoWindow = std::numeric_limits<uint64_t>::max();
 }
 
 template<class T>

@@ -5316,10 +5316,21 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
     while( ptr != end )
     {
         auto v = *ptr;
-        DrawAddress( ptr );
-        if( ImGui::IsItemClicked() )
+        const auto arrIdx = std::distance( mem.data.begin(), v );
+
+        if( m_memoryAllocInfoWindow == arrIdx )
         {
-            m_memoryAllocInfoWindow = std::distance( mem.data.begin(), v );
+            ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.f, 0.f, 1.f ) );
+            DrawAddress( ptr );
+            ImGui::PopStyleColor();
+        }
+        else
+        {
+            DrawAddress( ptr );
+            if( ImGui::IsItemClicked() )
+            {
+                m_memoryAllocInfoWindow = arrIdx;
+            }
         }
         ImGui::NextColumn();
         ImGui::Text( "%s", RealToString( v->size, true ) );

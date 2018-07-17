@@ -27,6 +27,9 @@ v0.4 (xxxx-xx-xx)
   environmental variable to 1 to get the same effect.
 - Added ability to show/hide all threads and plots.
 - Performance improvements.
+- Added memory allocation info window.
+- Selecting memory allocation on a plot will draw time range of the
+  allocation.
 
 v0.3.3 (2018-07-03)
 -------------------

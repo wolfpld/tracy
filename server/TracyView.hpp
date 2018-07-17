@@ -128,6 +128,8 @@ private:
     std::pair<int8_t*, size_t> GetMemoryPages() const;
     const char* GetPlotName( const PlotData* plot ) const;
 
+    void SmallCallstackButton( const char* name, uint32_t callstack, int& idx );
+
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
     flat_hash_map<const void*, bool, nohash<const void*>> m_showFull;
     flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;

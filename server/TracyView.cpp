@@ -5311,27 +5311,7 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         }
         else
         {
-            bool hilite = m_callstackInfoWindow == v->csAlloc;
-            if( hilite )
-            {
-                ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
-            }
-            ImGui::PushID( idx++ );
-            if( ImGui::SmallButton( "alloc" ) )
-            {
-                m_callstackInfoWindow = v->csAlloc;
-            }
-            ImGui::PopID();
-            if( hilite )
-            {
-                ImGui::PopStyleColor( 3 );
-            }
-            if( ImGui::IsItemHovered() )
-            {
-                CallstackTooltip( v->csAlloc );
-            }
+            SmallCallstackButton( "alloc", v->csAlloc, idx );
         }
         ImGui::SameLine();
         ImGui::Spacing();
@@ -5342,27 +5322,7 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
         }
         else
         {
-            bool hilite = m_callstackInfoWindow == v->csFree;
-            if( hilite )
-            {
-                ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
-            }
-            ImGui::PushID( idx++ );
-            if( ImGui::SmallButton( "free" ) )
-            {
-                m_callstackInfoWindow = v->csFree;
-            }
-            ImGui::PopID();
-            if( hilite )
-            {
-                ImGui::PopStyleColor( 3 );
-            }
-            if( ImGui::IsItemHovered() )
-            {
-                CallstackTooltip( v->csFree );
-            }
+            SmallCallstackButton( "free", v->csFree, idx );
         }
         ImGui::NextColumn();
         ptr++;
@@ -6202,5 +6162,31 @@ void View::FindZonesCompare()
     }
 }
 #endif
+
+void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx )
+{
+    bool hilite = m_callstackInfoWindow == callstack;
+    if( hilite )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
+        ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
+        ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+    }
+    ImGui::PushID( idx++ );
+    if( ImGui::SmallButton( name ) )
+    {
+        m_callstackInfoWindow = callstack;
+    }
+    ImGui::PopID();
+    if( hilite )
+    {
+        ImGui::PopStyleColor( 3 );
+    }
+    if( ImGui::IsItemHovered() )
+    {
+        CallstackTooltip( callstack );
+    }
+
+}
 
 }

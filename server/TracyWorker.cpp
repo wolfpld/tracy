@@ -9,10 +9,17 @@
 #include <string.h>
 
 #if ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
-#  include <execution>
+#  if __has_include(<execution>)
+#    include <execution>
+#  else
+#    define MY_LIBCPP_SUCKS
+#  endif
 #else
-#  include "tracy_pdqsort.h"
 #  define MY_LIBCPP_SUCKS
+#endif
+
+#if MY_LIBCPP_SUCKS
+#  include "tracy_pdqsort.h"
 #endif
 
 #include "../common/TracyProtocol.hpp"

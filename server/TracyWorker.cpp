@@ -18,7 +18,7 @@
 #  define MY_LIBCPP_SUCKS
 #endif
 
-#if MY_LIBCPP_SUCKS
+#ifdef MY_LIBCPP_SUCKS
 #  include "tracy_pdqsort.h"
 #endif
 

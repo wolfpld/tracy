@@ -85,7 +85,7 @@ private:
     void DrawMemoryAllocWindow();
 
     template<class T>
-    void ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress, const char* id = nullptr );
+    void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();

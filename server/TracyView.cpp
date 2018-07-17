@@ -3101,7 +3101,6 @@ void View::DrawZoneInfoWindow()
 
                     ListMemData<decltype( v.begin() )>( v.begin(), v.end(), []( auto& v ) {
                         ImGui::Text( "0x%" PRIx64, (*v)->ptr );
-                        return *v;
                     } );
                     ImGui::TreePop();
                 }
@@ -5243,7 +5242,7 @@ void View::DrawMemoryAllocWindow()
 }
 
 template<class T>
-void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAddress, const char* id )
+void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id )
 {
     const auto& style = ImGui::GetStyle();
     const auto dist = std::distance( ptr, end ) + 1;
@@ -5316,7 +5315,8 @@ void View::ListMemData( T ptr, T end, std::function<const MemEvent*(T&)> DrawAdd
     int idx = 0;
     while( ptr != end )
     {
-        auto v = DrawAddress( ptr );
+        auto v = *ptr;
+        DrawAddress( ptr );
         if( ImGui::IsItemClicked() )
         {
             m_memoryAllocInfoWindow = std::distance( mem.data.begin(), v );
@@ -5588,7 +5588,6 @@ void View::DrawMemory()
                     {
                         ImGui::Text( "0x%" PRIx64 "+%" PRIu64, v->ptr, m_memInfo.ptrFind - v->ptr );
                     }
-                    return v;
                 }, "##allocations" );
             }
         }
@@ -5629,7 +5628,6 @@ void View::DrawMemory()
 
         ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
             ImGui::Text( "0x%" PRIx64, (*v)->ptr );
-            return *v;
         }, "##activeMem" );
         ImGui::TreePop();
     }

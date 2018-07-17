@@ -2545,6 +2545,21 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             if( yPos + PlotHeight >= yMin && yPos <= yMax )
             {
                 const auto& vec = v->data;
+
+                if( m_memoryAllocInfoWindow != std::numeric_limits<uint64_t>::max() && v->type == PlotType::Memory )
+                {
+                    const auto& mem = m_worker.GetMemData();
+                    const auto& ev = mem.data[m_memoryAllocInfoWindow];
+
+                    const auto tStart = ev.timeAlloc;
+                    const auto tEnd = ev.timeFree < 0 ? m_worker.GetLastTime() : ev.timeFree;
+
+                    const auto px0 = ( tStart - m_zvStart ) * pxns;
+                    const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_zvStart ) * pxns );
+                    draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x2288DD88 );
+                    draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x4488DD88 );
+                }
+
                 auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_worker.GetDelay(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
                 auto end = std::lower_bound( it, vec.end(), m_zvEnd + m_worker.GetResolution(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
 

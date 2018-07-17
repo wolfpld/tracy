@@ -5230,7 +5230,7 @@ void View::DrawMemoryAllocWindow()
             }
         }
 
-        if( zoneAlloc == zoneFree )
+        if( zoneAlloc != 0 && zoneAlloc == zoneFree )
         {
             ImGui::SameLine();
             ImGui::TextDisabled( "(same zone)" );

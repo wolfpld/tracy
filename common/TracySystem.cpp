@@ -37,7 +37,7 @@ void SetThreadName( std::thread& thread, const char* name )
 void SetThreadName( std::thread::native_handle_type handle, const char* name )
 {
 #ifdef _WIN32
-#  if defined NTDDI_VERSION && NTDDI_VERSION >= NTDDI_WIN10_RS2
+#  if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2
     wchar_t buf[256];
     mbstowcs( buf, name, 256 );
     SetThreadDescription( static_cast<HANDLE>( handle ), buf );
@@ -121,7 +121,7 @@ const char* GetThreadName( uint64_t id )
     }
 #else
 #  ifdef _WIN32
-#    if defined NTDDI_VERSION && NTDDI_VERSION >= NTDDI_WIN10_RS2
+#    if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2
     auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)id );
     if( hnd != 0 )
     {

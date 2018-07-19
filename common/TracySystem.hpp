@@ -2,7 +2,7 @@
 #define __TRACYSYSTEM_HPP__
 
 #ifdef TRACY_ENABLE
-#  if defined __ANDROID__ || defined __CYGWIN__ || defined __APPLE__ || defined _GNU_SOURCE || ( defined _WIN32 && ( !defined NTDDI_VERSION || NTDDI_VERSION < NTDDI_WIN10_RS2 ) )
+#  if defined __ANDROID__ || defined __CYGWIN__ || defined __APPLE__ || defined _GNU_SOURCE || ( defined _WIN32 && ( !defined NTDDI_WIN10_RS2 || NTDDI_VERSION < NTDDI_WIN10_RS2 ) )
 #    define TRACY_COLLECT_THREAD_NAMES
 #  endif
 #endif

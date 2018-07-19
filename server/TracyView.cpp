@@ -5378,6 +5378,11 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
                 m_memoryAllocInfoWindow = arrIdx;
             }
         }
+        if( ImGui::IsItemHovered() )
+        {
+            m_memoryAllocHover = arrIdx;
+            m_memoryAllocHoverWait = 2;
+        }
         ImGui::NextColumn();
         ImGui::Text( "%s", RealToString( v->size, true ) );
         ImGui::NextColumn();

@@ -1,5 +1,7 @@
 # Tracy Profiler
 
+[![Build status](https://ci.appveyor.com/api/projects/status/968a88arq06gm3el/branch/master?svg=true)](https://ci.appveyor.com/project/wolfpld/tracy/branch/master)
+
 Tracy is a real time, nanosecond resolution frame profiler that can be used for remote or embedded telemetry of your application. It can profile CPU (C++, Lua), GPU (OpenGL, Vulkan) and memory. It also can display locks held by threads and their interactions with each other.
 
 ![](doc/profiler.png)

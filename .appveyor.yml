@@ -1,0 +1,11 @@
+version: '{build}'
+platform:
+  - x64
+image:
+  - Visual Studio 2017
+build_script:
+  - cd "%APPVEYOR_BUILD_FOLDER%"
+  - msbuild .\update\build\win32\update.vcxproj
+  - msbuild .\standalone\build\win32\Tracy.vcxproj
+  - msbuild .\capture\build\win32\capture.vcxproj
+test: off

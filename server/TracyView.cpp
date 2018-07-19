@@ -211,7 +211,9 @@ View::View( const char* addr )
     , m_lockHighlight { -1 }
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
-    , m_memoryAllocInfoWindow( std::numeric_limits<uint64_t>::max() )
+    , m_memoryAllocInfoWindow( -1 )
+    , m_memoryAllocHover( -1 )
+    , m_memoryAllocHoverWait( 0 )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -247,7 +249,9 @@ View::View( FileRead& f )
     , m_zoneInfoWindow( nullptr )
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
-    , m_memoryAllocInfoWindow( std::numeric_limits<uint64_t>::max() )
+    , m_memoryAllocInfoWindow( -1 )
+    , m_memoryAllocHover( -1 )
+    , m_memoryAllocHoverWait( 0 )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -412,7 +416,7 @@ bool View::DrawImpl()
     if( m_memInfo.show ) DrawMemory();
     if( m_compare.show ) DrawCompare();
     if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
-    if( m_memoryAllocInfoWindow != std::numeric_limits<uint64_t>::max() ) DrawMemoryAllocWindow();
+    if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
 
     if( m_zoomAnim.active )
     {
@@ -2546,18 +2550,43 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             {
                 const auto& vec = v->data;
 
-                if( m_memoryAllocInfoWindow != std::numeric_limits<uint64_t>::max() && v->type == PlotType::Memory )
+                if( v->type == PlotType::Memory )
                 {
                     const auto& mem = m_worker.GetMemData();
-                    const auto& ev = mem.data[m_memoryAllocInfoWindow];
 
-                    const auto tStart = ev.timeAlloc;
-                    const auto tEnd = ev.timeFree < 0 ? m_worker.GetLastTime() : ev.timeFree;
+                    if( m_memoryAllocInfoWindow >= 0 )
+                    {
+                        const auto& ev = mem.data[m_memoryAllocInfoWindow];
 
-                    const auto px0 = ( tStart - m_zvStart ) * pxns;
-                    const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_zvStart ) * pxns );
-                    draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x2288DD88 );
-                    draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x4488DD88 );
+                        const auto tStart = ev.timeAlloc;
+                        const auto tEnd = ev.timeFree < 0 ? m_worker.GetLastTime() : ev.timeFree;
+
+                        const auto px0 = ( tStart - m_zvStart ) * pxns;
+                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_zvStart ) * pxns );
+                        draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x2288DD88 );
+                        draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x4488DD88 );
+                    }
+                    if( m_memoryAllocHover >= 0 && m_memoryAllocHover != m_memoryAllocInfoWindow )
+                    {
+                        const auto& ev = mem.data[m_memoryAllocHover];
+
+                        const auto tStart = ev.timeAlloc;
+                        const auto tEnd = ev.timeFree < 0 ? m_worker.GetLastTime() : ev.timeFree;
+
+                        const auto px0 = ( tStart - m_zvStart ) * pxns;
+                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_zvStart ) * pxns );
+                        draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x228888DD );
+                        draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x448888DD );
+
+                        if( m_memoryAllocHoverWait > 0 )
+                        {
+                            m_memoryAllocHoverWait--;
+                        }
+                        else
+                        {
+                            m_memoryAllocHover = -1;
+                        }
+                    }
                 }
 
                 auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_worker.GetDelay(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
@@ -2797,9 +2826,11 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
 
+                    m_memoryAllocHover = std::distance( mem.data.begin(), ev );
+                    m_memoryAllocHoverWait = 2;
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
-                        m_memoryAllocInfoWindow = std::distance( mem.data.begin(), ev );
+                        m_memoryAllocInfoWindow = m_memoryAllocHover;
                     }
                 }
             }
@@ -5253,7 +5284,7 @@ void View::DrawMemoryAllocWindow()
     }
 
     ImGui::End();
-    if( !show ) m_memoryAllocInfoWindow = std::numeric_limits<uint64_t>::max();
+    if( !show ) m_memoryAllocInfoWindow = -1;
 }
 
 template<class T>

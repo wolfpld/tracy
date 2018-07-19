@@ -189,7 +189,9 @@ private:
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;
     uint32_t m_callstackInfoWindow;
-    uint64_t m_memoryAllocInfoWindow;
+    int64_t m_memoryAllocInfoWindow;
+    int64_t m_memoryAllocHover;
+    int m_memoryAllocHoverWait;
 
     Region m_highlight;
 

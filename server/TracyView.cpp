@@ -4238,13 +4238,27 @@ void View::DrawFindZone()
             ImGui::EndTooltip();
         }
 
-        if( ImGui::Combo( "Group by", (int*)( &m_findZone.groupBy ), "Thread\0User text\0Callstacks\0\0" ) )
+        bool groupChanged = false;
+        ImGui::Text( "Group by:" );
+        ImGui::SameLine();
+        groupChanged |= ImGui::RadioButton( "Thread", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Thread );
+        ImGui::SameLine();
+        groupChanged |= ImGui::RadioButton( "User text", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::UserText );
+        ImGui::SameLine();
+        groupChanged |= ImGui::RadioButton( "Callstacks", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Callstack );
+        if( groupChanged )
         {
             m_findZone.selGroup = m_findZone.Unselected;
             m_findZone.ResetGroups();
         }
 
-        ImGui::Combo( "Sort by", (int*)( &m_findZone.sortBy ), "Order\0Count\0Time\0\0" );
+        ImGui::Text( "Sort by:" );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Order", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Order );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Count", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Count );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Time", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Time );
 
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();

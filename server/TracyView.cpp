@@ -3774,8 +3774,6 @@ void View::DrawFindZone()
                         memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
                         memset( selBin.get(), 0, sizeof( int64_t ) * numBins );
 
-                        int64_t selBinTime = 0;
-
                         int64_t selectionTime = 0;
                         if( m_findZone.highlight.active )
                         {
@@ -3799,7 +3797,6 @@ void View::DrawFindZone()
                                             if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                                selBinTime += timeSpan;
                                             }
                                             if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                         }
@@ -3819,7 +3816,6 @@ void View::DrawFindZone()
                                             if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                                selBinTime += timeSpan;
                                             }
                                             if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                         }
@@ -3880,7 +3876,6 @@ void View::DrawFindZone()
                                             if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                                selBinTime += timeSpan;
                                             }
                                         }
                                     }
@@ -3899,7 +3894,6 @@ void View::DrawFindZone()
                                             if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                                selBinTime += timeSpan;
                                             }
                                         }
                                     }
@@ -3993,7 +3987,7 @@ void View::DrawFindZone()
                         }
                         if( selGroup != m_findZone.Unselected )
                         {
-                            TextFocused( "Zone group time:", TimeToString( selBinTime ) );
+                            TextFocused( "Zone group time:", TimeToString( m_findZone.groups[selGroup].time ) );
                         }
                         else
                         {

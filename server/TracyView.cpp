@@ -4373,7 +4373,7 @@ void View::DrawFindZone()
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s) %s", RealToString( v->second.zones.size(), true ), TimeToString( v->second.time ) );
-            if( groupBy == FindZone::GroupBy::Callstack )
+            if( groupBy == FindZone::GroupBy::Callstack && v->first != 0 )
             {
                 ImGui::SameLine();
                 SmallCallstackButton( "callstack", v->first, idx );

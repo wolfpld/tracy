@@ -4349,7 +4349,7 @@ void View::DrawFindZone()
                 hdrString = v->first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v->first ) );
                 break;
             case FindZone::GroupBy::Callstack:
-                if( v->first == std::numeric_limits<uint64_t>::max() )
+                if( v->first == 0 )
                 {
                     hdrString = "No callstack";
                 }

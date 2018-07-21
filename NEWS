@@ -30,6 +30,10 @@ v0.4 (xxxx-xx-xx)
 - Added memory allocation info window.
 - Selecting memory allocation on a plot will draw time range of the
   allocation.
+- Find zone menu improvements:
+  - Zones can be now also grouped by call stacks.
+  - Zone groups can be now also sorted by time spend in each zone.
+  - Zone groups list now displays group times.
 
 v0.3.3 (2018-07-03)
 -------------------

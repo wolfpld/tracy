@@ -3710,7 +3710,7 @@ void View::DrawFindZone()
 
             if( m_findZone.selMatch != prev )
             {
-                m_findZone.ResetThreads();
+                m_findZone.ResetGroups();
             }
         }
 
@@ -3747,7 +3747,7 @@ void View::DrawFindZone()
                 ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
                 const auto dt = double( tmax - tmin );
-                const auto selThread = m_findZone.selThread;
+                const auto selGroup = m_findZone.selGroup;
                 const auto groupBy = m_findZone.groupBy;
                 const auto cumulateTime = m_findZone.cumulateTime;
 
@@ -3782,7 +3782,7 @@ void View::DrawFindZone()
                             const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
                             const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
 
-                            if( selThread != m_findZone.Unselected )
+                            if( selGroup != m_findZone.Unselected )
                             {
                                 if( m_findZone.logTime )
                                 {
@@ -3796,7 +3796,7 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( selThread == GetSelectionTarget( ev, groupBy ) )
+                                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                                 selBinTime += timeSpan;
@@ -3816,7 +3816,7 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( selThread == GetSelectionTarget( ev, groupBy ) )
+                                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                                 selBinTime += timeSpan;
@@ -3863,7 +3863,7 @@ void View::DrawFindZone()
                         }
                         else
                         {
-                            if( selThread != m_findZone.Unselected )
+                            if( selGroup != m_findZone.Unselected )
                             {
                                 if( m_findZone.logTime )
                                 {
@@ -3877,7 +3877,7 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( selThread == GetSelectionTarget( ev, groupBy ) )
+                                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                                 selBinTime += timeSpan;
@@ -3896,7 +3896,7 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( selThread == GetSelectionTarget( ev, groupBy ) )
+                                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                                 selBinTime += timeSpan;
@@ -3991,7 +3991,7 @@ void View::DrawFindZone()
                         {
                             TextFocused( "Selection time:", "none" );
                         }
-                        if( selThread != m_findZone.Unselected )
+                        if( selGroup != m_findZone.Unselected )
                         {
                             TextFocused( "Zone group time:", TimeToString( selBinTime ) );
                         }
@@ -4188,7 +4188,7 @@ void View::DrawFindZone()
                             if( ImGui::IsMouseClicked( 1 ) )
                             {
                                 m_findZone.highlight.active = false;
-                                m_findZone.ResetThreads();
+                                m_findZone.ResetGroups();
                             }
                             else if( ImGui::IsMouseClicked( 0 ) )
                             {
@@ -4199,7 +4199,7 @@ void View::DrawFindZone()
                             else if( ImGui::IsMouseDragging( 0, 0 ) )
                             {
                                 m_findZone.highlight.end = t1 > m_findZone.highlight.start ? t1 : t0;
-                                m_findZone.ResetThreads();
+                                m_findZone.ResetGroups();
                             }
                         }
 
@@ -4261,8 +4261,8 @@ void View::DrawFindZone()
 
         if( ImGui::Combo( "Group by", (int*)( &m_findZone.groupBy ), "Thread\0User text\0Callstacks\0\0" ) )
         {
-            m_findZone.selThread = m_findZone.Unselected;
-            m_findZone.ResetThreads();
+            m_findZone.selGroup = m_findZone.Unselected;
+            m_findZone.ResetGroups();
         }
 
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
@@ -4298,13 +4298,13 @@ void View::DrawFindZone()
             switch( groupBy )
             {
             case FindZone::GroupBy::Thread:
-                m_findZone.threads[ev.thread].push_back( ev.zone );
+                m_findZone.groups[ev.thread].push_back( ev.zone );
                 break;
             case FindZone::GroupBy::UserText:
-                m_findZone.threads[ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max()].push_back( ev.zone );
+                m_findZone.groups[ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max()].push_back( ev.zone );
                 break;
             case FindZone::GroupBy::Callstack:
-                m_findZone.threads[ev.zone->callstack].push_back( ev.zone );
+                m_findZone.groups[ev.zone->callstack].push_back( ev.zone );
                 break;
             default:
                 assert( false );
@@ -4313,21 +4313,21 @@ void View::DrawFindZone()
         }
         m_findZone.processed = processed;
 
-        Vector<decltype( m_findZone.threads )::iterator> threads;
-        threads.reserve_and_use( m_findZone.threads.size() );
+        Vector<decltype( m_findZone.groups )::iterator> groups;
+        groups.reserve_and_use( m_findZone.groups.size() );
         int idx = 0;
-        for( auto it = m_findZone.threads.begin(); it != m_findZone.threads.end(); ++it )
+        for( auto it = m_findZone.groups.begin(); it != m_findZone.groups.end(); ++it )
         {
-            threads[idx++] = it;
+            groups[idx++] = it;
         }
         if( m_findZone.sortByCounts )
         {
-            pdqsort_branchless( threads.begin(), threads.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.size() > rhs->second.size(); } );
+            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.size() > rhs->second.size(); } );
         }
 
         ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
         idx = 0;
-        for( auto& v : threads )
+        for( auto& v : groups )
         {
             const char* hdrString;
             switch( groupBy )
@@ -4355,10 +4355,10 @@ void View::DrawFindZone()
                 break;
             }
             ImGui::PushID( v->first );
-            const bool expand = ImGui::TreeNodeEx( hdrString, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ( v->first == m_findZone.selThread ? ImGuiTreeNodeFlags_Selected : 0 ) );
+            const bool expand = ImGui::TreeNodeEx( hdrString, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ( v->first == m_findZone.selGroup ? ImGuiTreeNodeFlags_Selected : 0 ) );
             if( ImGui::IsItemClicked() )
             {
-                m_findZone.selThread = v->first;
+                m_findZone.selGroup = v->first;
             }
             ImGui::PopID();
             ImGui::SameLine();
@@ -4428,7 +4428,7 @@ void View::DrawFindZone()
         ImGui::EndChild();
         if( ImGui::IsItemHovered() && ImGui::IsMouseClicked( 1 ) )
         {
-            m_findZone.selThread = m_findZone.Unselected;
+            m_findZone.selGroup = m_findZone.Unselected;
         }
     }
 #endif

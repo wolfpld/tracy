@@ -223,10 +223,10 @@ private:
 
         bool show = false;
         std::vector<int32_t> match;
-        std::map<uint64_t, Vector<ZoneEvent*>> threads;
+        std::map<uint64_t, Vector<ZoneEvent*>> groups;
         size_t processed;
         int selMatch = 0;
-        uint64_t selThread = Unselected;
+        uint64_t selGroup = Unselected;
         char pattern[1024] = {};
         bool logVal = false;
         bool logTime = true;
@@ -239,16 +239,16 @@ private:
 
         void Reset()
         {
-            ResetThreads();
+            ResetGroups();
             match.clear();
             selMatch = 0;
-            selThread = Unselected;
+            selGroup = Unselected;
             highlight.active = false;
         }
 
-        void ResetThreads()
+        void ResetGroups()
         {
-            threads.clear();
+            groups.clear();
             processed = 0;
         }
 

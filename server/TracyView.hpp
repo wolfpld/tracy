@@ -217,8 +217,9 @@ private:
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;
 
-    struct {
+    struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
+        enum class GroupBy : int { Thread, UserText, Callstack };
 
         bool show = false;
         std::vector<int32_t> match;
@@ -230,7 +231,7 @@ private:
         bool logVal = false;
         bool logTime = true;
         bool cumulateTime = false;
-        bool showThreads = true;
+        GroupBy groupBy = GroupBy::Thread;
         bool sortByCounts = false;
         Region highlight;
         int64_t numBins = -1;
@@ -259,6 +260,8 @@ private:
             strcpy( pattern, name );
         }
     } m_findZone;
+
+    tracy_force_inline uint64_t GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const;
 
     struct CompVal
     {

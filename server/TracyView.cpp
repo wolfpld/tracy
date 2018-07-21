@@ -3641,6 +3641,23 @@ void View::DrawMessages()
     ImGui::End();
 }
 
+uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const
+{
+    uint64_t target;
+    switch( groupBy )
+    {
+    case FindZone::GroupBy::Thread:
+        return ev.thread;
+    case FindZone::GroupBy::UserText:
+        return ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max();
+    case FindZone::GroupBy::Callstack:
+        return ev.zone->callstack;
+    default:
+        assert( false );
+        return 0;
+    }
+}
+
 void View::DrawFindZone()
 {
     ImGui::Begin( "Find Zone", &m_findZone.show );
@@ -3734,7 +3751,7 @@ void View::DrawFindZone()
 
                 const auto dt = double( tmax - tmin );
                 const auto selThread = m_findZone.selThread;
-                const auto showThreads = m_findZone.showThreads;
+                const auto groupBy = m_findZone.groupBy;
                 const auto cumulateTime = m_findZone.cumulateTime;
 
                 if( dt > 0 )
@@ -3782,7 +3799,7 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
+                                            if( selThread == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                                 selBinTime += timeSpan;
@@ -3802,7 +3819,7 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
+                                            if( selThread == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                                 selBinTime += timeSpan;
@@ -3863,7 +3880,7 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
+                                            if( selThread == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                                 selBinTime += timeSpan;
@@ -3882,7 +3899,7 @@ void View::DrawFindZone()
                                             const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
                                             bins[bin]++;
                                             binTime[bin] += timeSpan;
-                                            if( selThread == ( showThreads ? ev.thread : ( ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max() ) ) )
+                                            if( selThread == GetSelectionTarget( ev, groupBy ) )
                                             {
                                                 if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                                 selBinTime += timeSpan;
@@ -4222,25 +4239,6 @@ void View::DrawFindZone()
         ImGui::Separator();
         ImGui::Text( "Found zones:" );
         ImGui::SameLine();
-        if( m_findZone.showThreads )
-        {
-            if( ImGui::SmallButton( "Group by user text" ) )
-            {
-                m_findZone.showThreads = false;
-                m_findZone.selThread = m_findZone.Unselected;
-                m_findZone.ResetThreads();
-            }
-        }
-        else
-        {
-            if( ImGui::SmallButton( "Group by threads" ) )
-            {
-                m_findZone.showThreads = true;
-                m_findZone.selThread = m_findZone.Unselected;
-                m_findZone.ResetThreads();
-            }
-        }
-        ImGui::SameLine();
         if( m_findZone.sortByCounts )
         {
             if( ImGui::SmallButton( "Sort by order" ) )
@@ -4264,12 +4262,18 @@ void View::DrawFindZone()
             ImGui::EndTooltip();
         }
 
+        if( ImGui::Combo( "Group by", (int*)( &m_findZone.groupBy ), "Thread\0User text\0Callstacks\0\0" ) )
+        {
+            m_findZone.selThread = m_findZone.Unselected;
+            m_findZone.ResetThreads();
+        }
+
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();
         auto processed = m_findZone.processed;
         const auto hmin = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
         const auto hmax = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
-        const auto showThreads = m_findZone.showThreads;
+        const auto groupBy = m_findZone.groupBy;
         const auto highlightActive = m_findZone.highlight.active;
         while( processed < sz )
         {
@@ -4294,14 +4298,20 @@ void View::DrawFindZone()
             }
 
             processed++;
-            if( showThreads )
+            switch( m_findZone.groupBy )
             {
+            case FindZone::GroupBy::Thread:
                 m_findZone.threads[ev.thread].push_back( ev.zone );
-            }
-            else
-            {
-                const uint64_t id = ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max();
-                m_findZone.threads[id].push_back( ev.zone );
+                break;
+            case FindZone::GroupBy::UserText:
+                m_findZone.threads[ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max()].push_back( ev.zone );
+                break;
+            case FindZone::GroupBy::Callstack:
+                m_findZone.threads[ev.zone->callstack].push_back( ev.zone );
+                break;
+            default:
+                assert( false );
+                break;
             }
         }
         m_findZone.processed = processed;
@@ -4319,16 +4329,33 @@ void View::DrawFindZone()
         }
 
         ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
+        idx = 0;
         for( auto& v : threads )
         {
             const char* hdrString;
-            if( showThreads )
+            switch( m_findZone.groupBy )
             {
+            case FindZone::GroupBy::Thread:
                 hdrString = m_worker.GetThreadString( m_worker.DecompressThread( v->first ) );
-            }
-            else
-            {
+                break;
+            case FindZone::GroupBy::UserText:
                 hdrString = v->first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v->first ) );
+                break;
+            case FindZone::GroupBy::Callstack:
+                if( v->first == std::numeric_limits<uint64_t>::max() )
+                {
+                    hdrString = "No callstack";
+                }
+                else
+                {
+                    auto& callstack = m_worker.GetCallstack( v->first );
+                    hdrString = m_worker.GetString( m_worker.GetCallstackFrame( *callstack.begin() )->name );
+                }
+                break;
+            default:
+                hdrString = nullptr;
+                assert( false );
+                break;
             }
             ImGui::PushID( v->first );
             const bool expand = ImGui::TreeNodeEx( hdrString, ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ( v->first == m_findZone.selThread ? ImGuiTreeNodeFlags_Selected : 0 ) );
@@ -4339,6 +4366,11 @@ void View::DrawFindZone()
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->second.size(), true ) );
+            if( m_findZone.groupBy == FindZone::GroupBy::Callstack )
+            {
+                ImGui::SameLine();
+                SmallCallstackButton( "callstack", v->first, idx );
+            }
 
             if( expand )
             {

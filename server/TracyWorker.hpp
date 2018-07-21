@@ -47,6 +47,7 @@ struct UnsupportedVersion : public std::exception
 
 class Worker
 {
+public:
 #pragma pack( 1 )
     struct ZoneThreadData
     {
@@ -55,6 +56,7 @@ class Worker
     };
 #pragma pack()
 
+private:
     struct SourceLocationZones
     {
         SourceLocationZones()

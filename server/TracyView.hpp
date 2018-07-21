@@ -221,9 +221,15 @@ private:
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
         enum class GroupBy : int { Thread, UserText, Callstack };
 
+        struct Group
+        {
+            Vector<ZoneEvent*> zones;
+            int64_t time = 0;
+        };
+
         bool show = false;
         std::vector<int32_t> match;
-        std::map<uint64_t, Vector<ZoneEvent*>> groups;
+        std::map<uint64_t, Group> groups;
         size_t processed;
         int selMatch = 0;
         uint64_t selGroup = Unselected;

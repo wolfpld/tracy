@@ -4295,21 +4295,25 @@ void View::DrawFindZone()
             }
 
             processed++;
+            FindZone::Group* group;
             switch( groupBy )
             {
             case FindZone::GroupBy::Thread:
-                m_findZone.groups[ev.thread].push_back( ev.zone );
+                group = &m_findZone.groups[ev.thread];
                 break;
             case FindZone::GroupBy::UserText:
-                m_findZone.groups[ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max()].push_back( ev.zone );
+                group = &m_findZone.groups[ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max()];
                 break;
             case FindZone::GroupBy::Callstack:
-                m_findZone.groups[ev.zone->callstack].push_back( ev.zone );
+                group = &m_findZone.groups[ev.zone->callstack];
                 break;
             default:
+                group = nullptr;
                 assert( false );
                 break;
             }
+            group->time += timespan;
+            group->zones.push_back( ev.zone );
         }
         m_findZone.processed = processed;
 
@@ -4322,7 +4326,7 @@ void View::DrawFindZone()
         }
         if( m_findZone.sortByCounts )
         {
-            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.size() > rhs->second.size(); } );
+            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.zones.size() > rhs->second.zones.size(); } );
         }
 
         ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );
@@ -4362,7 +4366,7 @@ void View::DrawFindZone()
             }
             ImGui::PopID();
             ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->second.size(), true ) );
+            ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s) %s", RealToString( v->second.zones.size(), true ), TimeToString( v->second.time ) );
             if( groupBy == FindZone::GroupBy::Callstack )
             {
                 ImGui::SameLine();
@@ -4389,7 +4393,7 @@ void View::DrawFindZone()
                 ImGui::NextColumn();
                 ImGui::Separator();
 
-                for( auto& ev : v->second )
+                for( auto& ev : v->second.zones )
                 {
                     const auto end = m_worker.GetZoneEndDirect( *ev );
                     const auto timespan = end - ev->start;

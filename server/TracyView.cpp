@@ -1250,7 +1250,6 @@ void View::DrawZones()
     if( m_memInfo.show && m_memInfo.restrictTime )
     {
         const auto zvMid = ( m_zvEnd - m_zvStart ) / 2;
-        auto& io = ImGui::GetIO();
         draw->AddLine( ImVec2( wpos.x + zvMid * pxns, linepos.y ), ImVec2( wpos.x + zvMid * pxns, linepos.y + lineh ), 0x88FF44FF );
     }
 }
@@ -3449,7 +3448,6 @@ void View::DrawGpuInfoWindow()
 
 void View::DrawOptions()
 {
-    const auto tw = ImGui::GetFontSize();
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
 
     const auto& gpuData = m_worker.GetGpuData();
@@ -3643,7 +3641,6 @@ void View::DrawMessages()
 
 uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const
 {
-    uint64_t target;
     switch( groupBy )
     {
     case FindZone::GroupBy::Thread:
@@ -4298,7 +4295,7 @@ void View::DrawFindZone()
             }
 
             processed++;
-            switch( m_findZone.groupBy )
+            switch( groupBy )
             {
             case FindZone::GroupBy::Thread:
                 m_findZone.threads[ev.thread].push_back( ev.zone );
@@ -4333,7 +4330,7 @@ void View::DrawFindZone()
         for( auto& v : threads )
         {
             const char* hdrString;
-            switch( m_findZone.groupBy )
+            switch( groupBy )
             {
             case FindZone::GroupBy::Thread:
                 hdrString = m_worker.GetThreadString( m_worker.DecompressThread( v->first ) );
@@ -4366,7 +4363,7 @@ void View::DrawFindZone()
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s)", RealToString( v->second.size(), true ) );
-            if( m_findZone.groupBy == FindZone::GroupBy::Callstack )
+            if( groupBy == FindZone::GroupBy::Callstack )
             {
                 ImGui::SameLine();
                 SmallCallstackButton( "callstack", v->first, idx );

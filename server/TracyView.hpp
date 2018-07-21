@@ -220,6 +220,7 @@ private:
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
         enum class GroupBy : int { Thread, UserText, Callstack };
+        enum class SortBy : int { Order, Count, Time };
 
         struct Group
         {
@@ -238,7 +239,7 @@ private:
         bool logTime = true;
         bool cumulateTime = false;
         GroupBy groupBy = GroupBy::Thread;
-        bool sortByCounts = false;
+        SortBy sortBy = SortBy::Order;
         Region highlight;
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins, binTime, selBin;

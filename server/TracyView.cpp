@@ -4230,21 +4230,6 @@ void View::DrawFindZone()
         ImGui::Separator();
         ImGui::Text( "Found zones:" );
         ImGui::SameLine();
-        if( m_findZone.sortByCounts )
-        {
-            if( ImGui::SmallButton( "Sort by order" ) )
-            {
-                m_findZone.sortByCounts = false;
-            }
-        }
-        else
-        {
-            if( ImGui::SmallButton( "Sort by counts" ) )
-            {
-                m_findZone.sortByCounts = true;
-            }
-        }
-        ImGui::SameLine();
         ImGui::TextDisabled( "(?)" );
         if( ImGui::IsItemHovered() )
         {
@@ -4258,6 +4243,8 @@ void View::DrawFindZone()
             m_findZone.selGroup = m_findZone.Unselected;
             m_findZone.ResetGroups();
         }
+
+        ImGui::Combo( "Sort by", (int*)( &m_findZone.sortBy ), "Order\0Count\0Time\0\0" );
 
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();
@@ -4318,9 +4305,20 @@ void View::DrawFindZone()
         {
             groups[idx++] = it;
         }
-        if( m_findZone.sortByCounts )
+
+        switch( m_findZone.sortBy )
         {
+        case FindZone::SortBy::Order:
+            break;
+        case FindZone::SortBy::Count:
             pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.zones.size() > rhs->second.zones.size(); } );
+            break;
+        case FindZone::SortBy::Time:
+            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
+            break;
+        default:
+            assert( false );
+            break;
         }
 
         ImGui::BeginChild( "##zonesScroll", ImVec2( ImGui::GetWindowContentRegionWidth(), std::max( 200.f, ImGui::GetContentRegionAvail().y ) ) );

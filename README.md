@@ -53,7 +53,7 @@ Copy files from `tracy/client` and `tracy/common` to your project. Add `tracy/Tr
 
 In the default configuration tracy is disabled. To enable it, add a `TRACY_ENABLE` define.
 
-If you want to profile a short-lived application, add a `TRACY_NO_EXIT` define. In this configuration tracy will not exit until an incoming connection is made, even if the application has already finished.
+If you want to profile a short-lived application, add a `TRACY_NO_EXIT` define. In this configuration tracy will not exit until an incoming connection is made, even if the application has already finished. This can also be achieved by setting the same-named environment variable to `1`.
 
 If you don't want to perform a complete application life-time capture, you may define a `TRACY_ON_DEMAND` macro, which will enable profiling only when there's an incoming connection from the server.
 

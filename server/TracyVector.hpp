@@ -34,6 +34,15 @@ public:
         src.m_ptr = nullptr;
     }
 
+    Vector( const T& value )
+        : m_ptr( new T[1] )
+        , m_size( 1 )
+        , m_capacity( 0 )
+    {
+        memUsage.fetch_add( sizeof( T ), std::memory_order_relaxed );
+        m_ptr[0] = value;
+    }
+
     ~Vector()
     {
         memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );

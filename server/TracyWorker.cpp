@@ -2613,7 +2613,14 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size )
         f.Read( zone, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) + sizeof( GpuEvent::callstack ) );
         uint64_t thread;
         f.Read( thread );
-        zone->thread = CompressThread( thread );
+        if( thread == 0 )
+        {
+            zone->thread = 0;
+        }
+        else
+        {
+            zone->thread = CompressThread( thread );
+        }
         ReadTimeline( f, zone );
     }
 }

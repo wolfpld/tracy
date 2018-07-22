@@ -84,7 +84,7 @@ struct ZoneEvent
     StringIdx name;
 
     // This must be last. All above is read/saved as-is.
-    Vector<ZoneEvent*> child;
+    int32_t child;
 };
 
 enum { ZoneEventSize = sizeof( ZoneEvent ) };

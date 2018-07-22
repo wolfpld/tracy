@@ -468,13 +468,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( tid );
         td->id = tid;
         f.Read( td->count );
+        uint64_t tsz;
+        f.Read( tsz );
         if( fileVer <= FileVersion( 0, 3, 2 ) )
         {
-            ReadTimelinePre033( f, td->timeline, CompressThread( tid ), fileVer );
+            ReadTimelinePre033( f, td->timeline, CompressThread( tid ), tsz, fileVer );
         }
         else
         {
-            ReadTimeline( f, td->timeline, CompressThread( tid ) );
+            ReadTimeline( f, td->timeline, CompressThread( tid ), tsz );
         }
         uint64_t msz;
         f.Read( msz );
@@ -708,7 +710,6 @@ Worker::~Worker()
 
     for( auto& v : m_data.threads )
     {
-        ZoneCleanup( v->timeline );
         v->messages.~Vector();
     }
     for( auto& v : m_data.gpuData )
@@ -783,8 +784,8 @@ int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
     for(;;)
     {
         if( ptr->end >= 0 ) return ptr->end;
-        if( ptr->child.empty() ) return ptr->start;
-        ptr = ptr->child.back();
+        if( ptr->child < 0 ) return ptr->start;
+        ptr = GetZoneChildren( ptr->child ).back();
     }
 }
 
@@ -1267,7 +1268,16 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     }
     else
     {
-        td->stack.back()->child.push_back( zone );
+        auto back = td->stack.back();
+        if( back->child < 0 )
+        {
+            back->child = int32_t( m_data.m_zoneChildren.size() );
+            m_data.m_zoneChildren.push_back( Vector<ZoneEvent*>( zone ) );
+        }
+        else
+        {
+            m_data.m_zoneChildren[back->child].push_back( zone );
+        }
         td->stack.push_back_non_empty( zone );
     }
 }
@@ -1683,6 +1693,7 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->callstack = 0;
+    zone->child = -1;
 
     m_data.lastTime = std::max( m_data.lastTime, zone->start );
 
@@ -1718,6 +1729,7 @@ void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
     zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->callstack = 0;
+    zone->child = -1;
 
     m_data.lastTime = std::max( m_data.lastTime, zone->start );
 
@@ -1752,10 +1764,13 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         it->second.min = std::min( it->second.min, timeSpan );
         it->second.max = std::max( it->second.max, timeSpan );
         it->second.total += timeSpan;
-        for( auto& v : zone->child )
+        if( zone->child >= 0 )
         {
-            const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
-            timeSpan -= childSpan;
+            for( auto& v : GetZoneChildren( zone->child ) )
+            {
+                const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
+                timeSpan -= childSpan;
+            }
         }
         it->second.selfTotal += timeSpan;
     }
@@ -2431,23 +2446,42 @@ void Worker::ReconstructMemAllocPlot()
     m_data.memory.plot = plot;
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread )
+void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread )
 {
     uint64_t sz;
     f.Read( sz );
-    if( sz != 0 )
+    if( sz == 0 )
     {
-        ReadTimeline( f, vec, thread, sz );
+        zone->child = -1;
+    }
+    else
+    {
+        zone->child = m_data.m_zoneChildren.size();
+        // Put placeholder to have proper size of zone children in nested calls
+        m_data.m_zoneChildren.push_back( Vector<ZoneEvent*>() );
+        // Real data buffer. Can't use placeholder, as the vector can be reallocated
+        // and the buffer address will change, but the reference won't.
+        Vector<ZoneEvent*> tmp;
+        ReadTimeline( f, tmp, thread, sz );
+        m_data.m_zoneChildren[zone->child] = std::move( tmp );
     }
 }
 
-void Worker::ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, int fileVer )
+void Worker::ReadTimelinePre033( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer )
 {
     uint64_t sz;
     f.Read( sz );
-    if( sz != 0 )
+    if( sz == 0 )
     {
-        ReadTimelinePre033( f, vec, thread, sz, fileVer );
+        zone->child = -1;
+    }
+    else
+    {
+        zone->child = m_data.m_zoneChildren.size();
+        m_data.m_zoneChildren.push_back( Vector<ZoneEvent*>() );
+        Vector<ZoneEvent*> tmp;
+        ReadTimelinePre033( f, tmp, thread, sz, fileVer );
+        m_data.m_zoneChildren[zone->child] = std::move( tmp );
     }
 }
 
@@ -2488,10 +2522,13 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
             it->second.min = std::min( it->second.min, timeSpan );
             it->second.max = std::max( it->second.max, timeSpan );
             it->second.total += timeSpan;
-            for( auto& v : zone->child )
+            if( zone->child >= 0 )
             {
-                const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
-                timeSpan -= childSpan;
+                for( auto& v : GetZoneChildren( zone->child ) )
+                {
+                    const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
+                    timeSpan -= childSpan;
+                }
             }
             it->second.selfTotal += timeSpan;
         }
@@ -2509,10 +2546,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
     {
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec.push_back_no_space_check( zone );
-        new( &zone->child ) decltype( zone->child );
-
         f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
-        ReadTimeline( f, zone->child, thread );
+        ReadTimeline( f, zone, thread );
         ReadTimelineUpdateStatistics( zone, thread );
     }
 }
@@ -2527,7 +2562,6 @@ void Worker::ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
     {
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec.push_back_no_space_check( zone );
-        new( &zone->child ) decltype( zone->child );
 
         if( fileVer <= FileVersion( 0, 3, 1 ) )
         {
@@ -2541,7 +2575,7 @@ void Worker::ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
             f.Read( zone, 30 );
             zone->name.__data = 0;
         }
-        ReadTimelinePre033( f, zone->child, thread, fileVer );
+        ReadTimelinePre033( f, zone, thread, fileVer );
         ReadTimelineUpdateStatistics( zone, thread );
     }
 }
@@ -2763,7 +2797,15 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec )
     for( auto& v : vec )
     {
         f.Write( v, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
-        WriteTimeline( f, v->child );
+        if( v->child < 0 )
+        {
+            sz = 0;
+            f.Write( &sz, sizeof( sz ) );
+        }
+        else
+        {
+            WriteTimeline( f, GetZoneChildren( v->child ) );
+        }
     }
 }
 

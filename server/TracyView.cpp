@@ -1370,9 +1370,9 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 m_lastCpu = ev.cpu_start;
             }
 
-            if( !ev.child.empty() )
+            if( ev.child >= 0 )
             {
-                const auto d = DispatchZoneLevel( ev.child, hover, pxns, wpos, _offset, depth, yMin, yMax );
+                const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, wpos, _offset, depth, yMin, yMax );
                 if( d > maxdepth ) maxdepth = d;
             }
 
@@ -1491,9 +1491,9 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         {
             m_lastCpu = ev.cpu_start;
 
-            if( !ev.child.empty() )
+            if( ev.child >= 0 )
             {
-                const auto d = DispatchZoneLevel( ev.child, hover, pxns, wpos, _offset, depth, yMin, yMax );
+                const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, wpos, _offset, depth, yMin, yMax );
                 if( d > maxdepth ) maxdepth = d;
             }
 
@@ -3187,26 +3187,27 @@ void View::DrawZoneInfoWindow()
         }
     } );
 
-    if( !ev.child.empty() )
+    if( ev.child >= 0 )
     {
+        const auto& children = m_worker.GetZoneChildren( ev.child );
         bool expand = ImGui::TreeNode( "Child zones" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( ev.child.size(), true ) );
+        ImGui::TextDisabled( "(%s)", RealToString( children.size(), true ) );
         if( expand )
         {
-            auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
-            auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
+            auto ctt = std::make_unique<uint64_t[]>( children.size() );
+            auto cti = std::make_unique<uint32_t[]>( children.size() );
             uint64_t ctime = 0;
-            for( size_t i=0; i<ev.child.size(); i++ )
+            for( size_t i=0; i<children.size(); i++ )
             {
-                const auto cend = m_worker.GetZoneEnd( *ev.child[i] );
-                const auto ct = cend - ev.child[i]->start;
+                const auto cend = m_worker.GetZoneEnd( *children[i] );
+                const auto ct = cend - children[i]->start;
                 ctime += ct;
                 ctt[i] = ct;
                 cti[i] = uint32_t( i );
             }
 
-            pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+            pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
             const auto ty = ImGui::GetTextLineHeight();
             ImGui::Columns( 2 );
@@ -3216,9 +3217,9 @@ void View::DrawZoneInfoWindow()
             sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
             ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
-            for( size_t i=0; i<ev.child.size(); i++ )
+            for( size_t i=0; i<children.size(); i++ )
             {
-                auto& cev = *ev.child[cti[i]];
+                auto& cev = *children[cti[i]];
                 const auto txt = m_worker.GetZoneName( cev );
                 bool b = false;
                 ImGui::PushID( (int)i );
@@ -6207,9 +6208,9 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
             if( it != timeline->begin() ) --it;
             if( zone.end >= 0 && (*it)->start > zone.end ) break;
             if( *it == &zone ) return parent;
-            if( (*it)->child.empty() ) break;
+            if( (*it)->child < 0 ) break;
             parent = *it;
-            timeline = &parent->child;
+            timeline = &m_worker.GetZoneChildren( parent->child );
         }
     }
     return nullptr;
@@ -6248,8 +6249,8 @@ uint64_t View::GetZoneThread( const ZoneEvent& zone ) const
             if( it != timeline->begin() ) --it;
             if( zone.end >= 0 && (*it)->start > zone.end ) break;
             if( *it == &zone ) return thread->id;
-            if( (*it)->child.empty() ) break;
-            timeline = &(*it)->child;
+            if( (*it)->child < 0 ) break;
+            timeline = &m_worker.GetZoneChildren( (*it)->child );
         }
     }
     return 0;
@@ -6323,8 +6324,8 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
         if( it != timeline->begin() ) --it;
         if( (*it)->start > time || ( (*it)->end >= 0 && (*it)->end < time ) ) return ret;
         ret = *it;
-        if( (*it)->child.empty() ) return ret;
-        timeline = &(*it)->child;
+        if( (*it)->child < 0 ) return ret;
+        timeline = &m_worker.GetZoneChildren( (*it)->child );
     }
 }
 

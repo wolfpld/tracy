@@ -526,12 +526,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         if( fileVer <= FileVersion( 0, 3, 1 ) )
         {
             ctx->period = 1.f;
-            ReadTimelinePre032( f, ctx->timeline );
+            uint64_t tsz;
+            f.Read( tsz );
+            ReadTimelinePre032( f, ctx->timeline, tsz );
         }
         else
         {
             f.Read( ctx->period );
-            ReadTimeline( f, ctx->timeline );
+            uint64_t tsz;
+            f.Read( tsz );
+            ReadTimeline( f, ctx->timeline, tsz );
         }
         m_data.gpuData.push_back_no_space_check( ctx );
     }
@@ -687,16 +691,6 @@ finishLoading:
     }
 }
 
-template<class T>
-static inline void ZoneCleanup( Vector<T>& vec )
-{
-    for( auto& v : vec )
-    {
-        ZoneCleanup( v->child );
-    }
-    vec.~Vector<T>();
-}
-
 Worker::~Worker()
 {
     Shutdown();
@@ -711,10 +705,6 @@ Worker::~Worker()
     for( auto& v : m_data.threads )
     {
         v->messages.~Vector();
-    }
-    for( auto& v : m_data.gpuData )
-    {
-        ZoneCleanup( v->timeline );
     }
     for( auto& v : m_data.plots )
     {
@@ -795,8 +785,8 @@ int64_t Worker::GetZoneEnd( const GpuEvent& ev )
     for(;;)
     {
         if( ptr->gpuEnd >= 0 ) return ptr->gpuEnd;
-        if( ptr->child.empty() ) return ptr->gpuStart;
-        ptr = ptr->child.back();
+        if( ptr->child < 0 ) return ptr->gpuStart;
+        ptr = GetGpuChildren( ptr->child ).back();
     }
 }
 
@@ -2084,7 +2074,13 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     auto timeline = &ctx->timeline;
     if( !ctx->stack.empty() )
     {
-        timeline = &ctx->stack.back()->child;
+        auto back = ctx->stack.back();
+        if( back->child < 0 )
+        {
+            back->child = int32_t( m_data.m_gpuChildren.size() );
+            m_data.m_gpuChildren.push_back( Vector<GpuEvent*>() );
+        }
+        timeline = &m_data.m_gpuChildren[back->child];
     }
 
     timeline->push_back( zone );
@@ -2485,23 +2481,39 @@ void Worker::ReadTimelinePre033( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     }
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec )
+void Worker::ReadTimeline( FileRead& f, GpuEvent* zone )
 {
     uint64_t sz;
     f.Read( sz );
-    if( sz != 0 )
+    if( sz == 0 )
     {
-        ReadTimeline( f, vec, sz );
+        zone->child = -1;
+    }
+    else
+    {
+        zone->child = m_data.m_gpuChildren.size();
+        m_data.m_gpuChildren.push_back( Vector<GpuEvent*>() );
+        Vector<GpuEvent*> tmp;
+        ReadTimeline( f, tmp, sz );
+        m_data.m_gpuChildren[zone->child] = std::move( tmp );
     }
 }
 
-void Worker::ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec )
+void Worker::ReadTimelinePre032( FileRead& f, GpuEvent* zone )
 {
     uint64_t sz;
     f.Read( sz );
-    if( sz != 0 )
+    if( sz == 0 )
     {
-        ReadTimelinePre032( f, vec, sz );
+        zone->child = -1;
+    }
+    else
+    {
+        zone->child = m_data.m_gpuChildren.size();
+        m_data.m_gpuChildren.push_back( Vector<GpuEvent*>() );
+        Vector<GpuEvent*> tmp;
+        ReadTimelinePre032( f, tmp, sz );
+        m_data.m_gpuChildren[zone->child] = std::move( tmp );
     }
 }
 
@@ -2594,7 +2606,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size )
         uint64_t thread;
         f.Read( thread );
         zone->thread = CompressThread( thread );
-        ReadTimeline( f, zone->child );
+        ReadTimeline( f, zone );
     }
 }
 
@@ -2611,7 +2623,7 @@ void Worker::ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
         f.Read( zone, 36 );
         zone->thread = 0;
         zone->callstack = 0;
-        ReadTimelinePre032( f, zone->child );
+        ReadTimelinePre032( f, zone );
     }
 }
 
@@ -2819,7 +2831,15 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec )
         f.Write( v, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) + sizeof( GpuEvent::callstack ) );
         uint64_t thread = DecompressThread( v->thread );
         f.Write( &thread, sizeof( thread ) );
-        WriteTimeline( f, v->child );
+        if( v->child < 0 )
+        {
+            sz = 0;
+            f.Write( &sz, sizeof( sz ) );
+        }
+        else
+        {
+            WriteTimeline( f, GetGpuChildren( v->child ) );
+        }
     }
 }
 

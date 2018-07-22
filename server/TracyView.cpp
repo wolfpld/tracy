@@ -1624,9 +1624,9 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         }
         else
         {
-            if( !ev.child.empty() )
+            if( ev.child >= 0 )
             {
-                const auto d = DispatchGpuZoneLevel( ev.child, hover, pxns, wpos, _offset, depth, thread, yMin, yMax, begin, drift );
+                const auto d = DispatchGpuZoneLevel( m_worker.GetGpuChildren( ev.child ), hover, pxns, wpos, _offset, depth, thread, yMin, yMax, begin, drift );
                 if( d > maxdepth ) maxdepth = d;
             }
 
@@ -1740,9 +1740,9 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         }
         else
         {
-            if( !ev.child.empty() )
+            if( ev.child >= 0 )
             {
-                const auto d = DispatchGpuZoneLevel( ev.child, hover, pxns, wpos, _offset, depth, thread, yMin, yMax, begin, drift );
+                const auto d = DispatchGpuZoneLevel( m_worker.GetGpuChildren( ev.child ), hover, pxns, wpos, _offset, depth, thread, yMin, yMax, begin, drift );
                 if( d > maxdepth ) maxdepth = d;
             }
             ++it;
@@ -3378,26 +3378,27 @@ void View::DrawGpuInfoWindow()
         }
     } );
 
-    if( !ev.child.empty() )
+    if( ev.child >= 0 )
     {
+        const auto& children = m_worker.GetGpuChildren( ev.child );
         bool expand = ImGui::TreeNode( "Child zones" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( ev.child.size(), true ) );
+        ImGui::TextDisabled( "(%s)", RealToString( children.size(), true ) );
         if( expand )
         {
-            auto ctt = std::make_unique<uint64_t[]>( ev.child.size() );
-            auto cti = std::make_unique<uint32_t[]>( ev.child.size() );
+            auto ctt = std::make_unique<uint64_t[]>( children.size() );
+            auto cti = std::make_unique<uint32_t[]>( children.size() );
             uint64_t ctime = 0;
-            for( size_t i=0; i<ev.child.size(); i++ )
+            for( size_t i=0; i<children.size(); i++ )
             {
-                const auto cend = m_worker.GetZoneEnd( *ev.child[i] );
-                const auto ct = cend - ev.child[i]->gpuStart;
+                const auto cend = m_worker.GetZoneEnd( *children[i] );
+                const auto ct = cend - children[i]->gpuStart;
                 ctime += ct;
                 ctt[i] = ct;
                 cti[i] = uint32_t( i );
             }
 
-            pdqsort_branchless( cti.get(), cti.get() + ev.child.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+            pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
             const auto ty = ImGui::GetTextLineHeight();
             ImGui::Columns( 2 );
@@ -3407,9 +3408,9 @@ void View::DrawGpuInfoWindow()
             sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
             ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
-            for( size_t i=0; i<ev.child.size(); i++ )
+            for( size_t i=0; i<children.size(); i++ )
             {
-                auto& cev = *ev.child[cti[i]];
+                auto& cev = *children[cti[i]];
                 bool b = false;
                 ImGui::PushID( (int)i );
                 if( ImGui::Selectable( m_worker.GetZoneName( cev ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
@@ -6229,9 +6230,9 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
             if( it != timeline->begin() ) --it;
             if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
             if( *it == &zone ) return parent;
-            if( (*it)->child.empty() ) break;
+            if( (*it)->child < 0 ) break;
             parent = *it;
-            timeline = &parent->child;
+            timeline = &m_worker.GetGpuChildren( parent->child );
         }
     }
     return nullptr;
@@ -6270,8 +6271,8 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
                 if( it != timeline->begin() ) --it;
                 if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
                 if( *it == &zone ) return ctx->thread;
-                if( (*it)->child.empty() ) break;
-                timeline = &(*it)->child;
+                if( (*it)->child < 0 ) break;
+                timeline = &m_worker.GetGpuChildren( (*it)->child );
             }
         }
         return 0;
@@ -6294,8 +6295,8 @@ const GpuCtxData* View::GetZoneCtx( const GpuEvent& zone ) const
             if( it != timeline->begin() ) --it;
             if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
             if( *it == &zone ) return ctx;
-            if( (*it)->child.empty() ) break;
-            timeline = &(*it)->child;
+            if( (*it)->child < 0 ) break;
+            timeline = &m_worker.GetGpuChildren( (*it)->child );
         }
     }
     return nullptr;

@@ -470,13 +470,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( td->count );
         uint64_t tsz;
         f.Read( tsz );
-        if( fileVer <= FileVersion( 0, 3, 2 ) )
+        if( tsz != 0 )
         {
-            ReadTimelinePre033( f, td->timeline, CompressThread( tid ), tsz, fileVer );
-        }
-        else
-        {
-            ReadTimeline( f, td->timeline, CompressThread( tid ), tsz );
+            if( fileVer <= FileVersion( 0, 3, 2 ) )
+            {
+                ReadTimelinePre033( f, td->timeline, CompressThread( tid ), tsz, fileVer );
+            }
+            else
+            {
+                ReadTimeline( f, td->timeline, CompressThread( tid ), tsz );
+            }
         }
         uint64_t msz;
         f.Read( msz );
@@ -528,14 +531,20 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             ctx->period = 1.f;
             uint64_t tsz;
             f.Read( tsz );
-            ReadTimelinePre032( f, ctx->timeline, tsz );
+            if( tsz != 0 )
+            {
+                ReadTimelinePre032( f, ctx->timeline, tsz );
+            }
         }
         else
         {
             f.Read( ctx->period );
             uint64_t tsz;
             f.Read( tsz );
-            ReadTimeline( f, ctx->timeline, tsz );
+            if( tsz != 0 )
+            {
+                ReadTimeline( f, ctx->timeline, tsz );
+            }
         }
         m_data.gpuData.push_back_no_space_check( ctx );
     }

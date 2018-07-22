@@ -2056,6 +2056,7 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     zone->gpuEnd = -1;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
     zone->callstack = 0;
+    zone->child = -1;
 
     if( ctx->thread == 0 )
     {

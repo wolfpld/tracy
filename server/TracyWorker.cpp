@@ -704,7 +704,14 @@ Worker::~Worker()
 
     for( auto& v : m_data.threads )
     {
+        v->timeline.~Vector();
+        v->stack.~Vector();
         v->messages.~Vector();
+    }
+    for( auto& v : m_data.gpuData )
+    {
+        v->timeline.~Vector();
+        v->stack.~Vector();
     }
     for( auto& v : m_data.plots )
     {

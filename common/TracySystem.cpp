@@ -6,6 +6,13 @@
 #  include <unistd.h>
 #endif
 
+#ifdef __linux__
+#   ifndef __ANDROID__
+#       include <syscall.h>
+#   endif
+#   include <fcntl.h>
+#endif
+
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -135,11 +142,30 @@ const char* GetThreadName( uint64_t id )
         }
     }
 #    endif
-#  elif defined _GNU_SOURCE && !defined __ANDROID__ && !defined __EMSCRIPTEN__
+#  elif defined __GLIBC__ && !defined __ANDROID__ && !defined __EMSCRIPTEN__
     if( pthread_getname_np( (pthread_t)id, buf, 256 ) == 0 )
     {
         return buf;
     }
+#  elif defined __linux__
+    int cs, fd;
+    char path[32];
+#   ifdef __ANDROID__
+    int tid = gettid();
+#   else
+    int tid = (int) syscall( SYS_gettid );
+#   endif
+    snprintf( path, sizeof( path ), "/proc/self/task/%d/comm", tid );
+    sprintf( buf, "%" PRIu64, id );
+    pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, &cs );
+    if ( ( fd = open( path, O_RDONLY ) ) > 0) {
+        int len = read( fd, buf, 255 );
+        if ( len > 0 )
+            buf[len] = 0;
+        close( fd );
+    }
+    pthread_setcancelstate( cs, 0 );
+    return buf;
 #  endif
 #endif
     sprintf( buf, "%" PRIu64, id );

@@ -7,8 +7,10 @@
 #endif
 
 #ifdef __linux__
-#include <syscall.h>
-#include <fcntl.h>
+#   ifndef __ANDROID__
+#       include <syscall.h>
+#   endif
+#   include <fcntl.h>
 #endif
 
 #include <inttypes.h>
@@ -148,7 +150,11 @@ const char* GetThreadName( uint64_t id )
 #  elif defined __linux__
     int cs, fd;
     char path[32];
+#   ifdef __ANDROID__
+    int tid = gettid();
+#   else
     int tid = (int) syscall( SYS_gettid );
+#   endif
     snprintf( path, sizeof( path ), "/proc/self/task/%d/comm", tid );
     sprintf( buf, "%" PRIu64, id );
     pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, &cs );

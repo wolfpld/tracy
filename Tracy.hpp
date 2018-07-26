@@ -31,6 +31,12 @@
 
 #define TracyAlloc(x,y)
 #define TracyFree(x)
+
+#define ZoneScopedS(x)
+#define ZoneScopedNS(x,y)
+#define ZoneScopedCS(x,y)
+#define ZoneScopedNCS(x,y,z)
+
 #define TracyAllocS(x,y,z)
 #define TracyFreeS(x,y)
 

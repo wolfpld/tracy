@@ -40,10 +40,10 @@
 #include "client/TracyProfiler.hpp"
 #include "client/TracyScoped.hpp"
 
-#define ZoneScoped static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
-#define ZoneScopedN( name ) static const tracy::SourceLocation __tracy_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
-#define ZoneScopedC( color ) static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
-#define ZoneScopedNC( name, color ) static const tracy::SourceLocation __tracy_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location );
+#define ZoneScoped static const tracy::SourceLocation __tracy_source_location##__LINE__ { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__ );
+#define ZoneScopedN( name ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__ );
+#define ZoneScopedC( color ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__ );
+#define ZoneScopedNC( name, color ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__ );
 
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size );
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
@@ -67,10 +67,10 @@
 #define TracyFree( ptr ) tracy::Profiler::MemFree( ptr );
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define ZoneScopedS( depth ) static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location, depth );
-#  define ZoneScopedNS( name, depth ) static const tracy::SourceLocation __tracy_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location, depth );
-#  define ZoneScopedCS( color, depth ) __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location, depth );
-#  define ZoneScopedNCS( name, color, depth ) static const tracy::SourceLocation __tracy_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location, depth );
+#  define ZoneScopedS( depth ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__, depth );
+#  define ZoneScopedNS( name, depth ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__, depth );
+#  define ZoneScopedCS( color, depth ) __tracy_source_location##__LINE__ { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__, depth );
+#  define ZoneScopedNCS( name, color, depth ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__, depth );
 
 #  define TracyAllocS( ptr, size, depth ) tracy::Profiler::MemAllocCallstack( ptr, size, depth );
 #  define TracyFreeS( ptr, depth ) tracy::Profiler::MemFreeCallstack( ptr, depth );

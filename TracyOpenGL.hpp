@@ -25,13 +25,13 @@
 #include "common/TracyAlloc.hpp"
 
 #define TracyGpuContext tracy::s_gpuCtx.ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::s_gpuCtx.ptr) tracy::GpuCtx;
-#define TracyGpuZone( name ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location );
-#define TracyGpuZoneC( name, color ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location );
+#define TracyGpuZone( name ) static const tracy::SourceLocation __tracy_gpu_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location##__LINE__ );
+#define TracyGpuZoneC( name, color ) static const tracy::SourceLocation __tracy_gpu_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location##__LINE__ );
 #define TracyGpuCollect tracy::s_gpuCtx.ptr->Collect();
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyGpuZoneS( name, depth ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, depth );
-#  define TracyGpuZoneCS( name, color, depth ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, depth );
+#  define TracyGpuZoneS( name, depth ) static const tracy::SourceLocation __tracy_gpu_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location##__LINE__, depth );
+#  define TracyGpuZoneCS( name, color, depth ) static const tracy::SourceLocation __tracy_gpu_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location##__LINE__, depth );
 #else
 #  define TracyGpuZoneS( name, depth ) TracyGpuZone( name )
 #  define TracyGpuZoneCS( name, color, depth ) TracyGpuZoneC( name, color )

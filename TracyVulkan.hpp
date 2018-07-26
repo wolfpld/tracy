@@ -22,13 +22,13 @@
 
 #define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::s_vkCtx.ptr = (tracy::VkCtx*)tracy::tracy_malloc( sizeof( tracy::VkCtx ) ); new(tracy::s_vkCtx.ptr) tracy::VkCtx( physdev, device, queue, cmdbuf );
 #define TracyVkDestroy() tracy::s_vkCtx.ptr->~VkCtx(); tracy::tracy_free( tracy::s_vkCtx.ptr ); tracy::s_vkCtx.ptr = nullptr;
-#define TracyVkZone( cmdbuf, name ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, cmdbuf );
-#define TracyVkZoneC( cmdbuf, name, color ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, cmdbuf );
+#define TracyVkZone( cmdbuf, name ) static const tracy::SourceLocation __tracy_gpu_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location##__LINE__, cmdbuf );
+#define TracyVkZoneC( cmdbuf, name, color ) static const tracy::SourceLocation __tracy_gpu_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location##__LINE__, cmdbuf );
 #define TracyVkCollect( cmdbuf ) tracy::s_vkCtx.ptr->Collect( cmdbuf );
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyVkZoneS( cmdbuf, name, depth ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, cmdbuf, depth );
-#  define TracyVkZoneCS( cmdbuf, name, color, depth ) static const tracy::SourceLocation __tracy_gpu_source_location { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location, cmdbuf, depth );
+#  define TracyVkZoneS( cmdbuf, name, depth ) static const tracy::SourceLocation __tracy_gpu_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location##__LINE__, cmdbuf, depth );
+#  define TracyVkZoneCS( cmdbuf, name, color, depth ) static const tracy::SourceLocation __tracy_gpu_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::VkCtxScope ___tracy_gpu_zone( &__tracy_gpu_source_location##__LINE__, cmdbuf, depth );
 #else
 #  define TracyVkZoneS( cmdbuf, name, depth ) TracyVkZone( cmdbuf, name )
 #  define TracyVkZoneCS( cmdbuf, name, color, depth ) TracyVkZoneC( cmdbuf, name, color )

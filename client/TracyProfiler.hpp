@@ -29,6 +29,9 @@
 #  endif
 #endif
 
+#define TracyConcat(x,y) TracyConcatIndirect(x,y)
+#define TracyConcatIndirect(x,y) x##y
+
 namespace tracy
 {
 

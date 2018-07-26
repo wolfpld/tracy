@@ -34,6 +34,8 @@ v0.4 (xxxx-xx-xx)
   - Zones can be now also grouped by call stacks.
   - Zone groups can be now also sorted by time spend in each zone.
   - Zone groups list now displays group times.
+- Added named versions of tracing macros that allow specifying scoped
+  variable name.
 
 v0.3.3 (2018-07-03)
 -------------------

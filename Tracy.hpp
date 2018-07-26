@@ -69,7 +69,7 @@
 #ifdef TRACY_HAS_CALLSTACK
 #  define ZoneScopedS( depth ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__, depth );
 #  define ZoneScopedNS( name, depth ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__, depth );
-#  define ZoneScopedCS( color, depth ) __tracy_source_location##__LINE__ { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__, depth );
+#  define ZoneScopedCS( varname, color, depth ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__, depth );
 #  define ZoneScopedNCS( name, color, depth ) static const tracy::SourceLocation __tracy_source_location##__LINE__ { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::ScopedZone ___tracy_scoped_zone( &__tracy_source_location##__LINE__, depth );
 
 #  define TracyAllocS( ptr, size, depth ) tracy::Profiler::MemAllocCallstack( ptr, size, depth );

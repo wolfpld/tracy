@@ -37,7 +37,7 @@ namespace tracy
 
 class Socket;
 
-struct SourceLocation
+struct SourceLocationData
 {
     const char* name;
     const char* function;

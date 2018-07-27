@@ -17,7 +17,7 @@ template<class T>
 class Lockable
 {
 public:
-    tracy_force_inline Lockable( const SourceLocation* srcloc )
+    tracy_force_inline Lockable( const SourceLocationData* srcloc )
         : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
 #ifdef TRACY_ON_DEMAND
         , m_lockCount( 0 )
@@ -152,7 +152,7 @@ public:
         return ret;
     }
 
-    tracy_force_inline void Mark( const SourceLocation* srcloc )
+    tracy_force_inline void Mark( const SourceLocationData* srcloc )
     {
 #ifdef TRACY_ON_DEMAND
         const auto active = m_active.load( std::memory_order_relaxed );
@@ -191,7 +191,7 @@ template<class T>
 class SharedLockable
 {
 public:
-    tracy_force_inline SharedLockable( const SourceLocation* srcloc )
+    tracy_force_inline SharedLockable( const SourceLocationData* srcloc )
         : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
 #ifdef TRACY_ON_DEMAND
         , m_lockCount( 0 )
@@ -433,7 +433,7 @@ public:
         return ret;
     }
 
-    tracy_force_inline void Mark( const SourceLocation* srcloc )
+    tracy_force_inline void Mark( const SourceLocationData* srcloc )
     {
 #ifdef TRACY_ON_DEMAND
         const auto active = m_active.load( std::memory_order_relaxed );

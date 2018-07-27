@@ -15,7 +15,7 @@ namespace tracy
 class ScopedZone
 {
 public:
-    tracy_force_inline ScopedZone( const SourceLocation* srcloc )
+    tracy_force_inline ScopedZone( const SourceLocationData* srcloc )
 #ifdef TRACY_ON_DEMAND
         : m_active( s_profiler.IsConnected() )
 #endif
@@ -42,7 +42,7 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
-    tracy_force_inline ScopedZone( const SourceLocation* srcloc, int depth )
+    tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth )
 #ifdef TRACY_ON_DEMAND
         : m_active( s_profiler.IsConnected() )
 #endif

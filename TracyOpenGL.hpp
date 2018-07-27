@@ -30,15 +30,15 @@
 #include "common/TracyAlloc.hpp"
 
 #define TracyGpuContext tracy::s_gpuCtx.ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::s_gpuCtx.ptr) tracy::GpuCtx;
-#define TracyGpuNamedZone( varname, name ) static const tracy::SourceLocation TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__) );
-#define TracyGpuNamedZoneC( varname, name, color ) static const tracy::SourceLocation TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__) );
+#define TracyGpuNamedZone( varname, name ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__) );
+#define TracyGpuNamedZoneC( varname, name, color ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__) );
 #define TracyGpuZone( name ) TracyGpuNamedZone( ___tracy_gpu_zone, name )
 #define TracyGpuZoneC( name, color ) TracyGpuNamedZoneC( ___tracy_gpu_zone, name, color )
 #define TracyGpuCollect tracy::s_gpuCtx.ptr->Collect();
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyGpuNamedZoneS( varname, name, depth ) static const tracy::SourceLocation TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
-#  define TracyGpuNamedZoneCS( varname, name, color, depth ) static const tracy::SourceLocation TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
+#  define TracyGpuNamedZoneS( varname, name, depth ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
+#  define TracyGpuNamedZoneCS( varname, name, color, depth ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
 #  define TracyGpuZoneS( name, depth ) TracyGpuNamedZoneS( ___tracy_gpu_zone, name, depth )
 #  define TracyGpuZoneCS( name, color, depth ) TracyGpuNamedZoneCS( ___tracy_gpu_zone, name, color, depth )
 #else
@@ -181,7 +181,7 @@ extern thread_local GpuCtxWrapper s_gpuCtx;
 class GpuCtxScope
 {
 public:
-    tracy_force_inline GpuCtxScope( const SourceLocation* srcloc )
+    tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc )
 #ifdef TRACY_ON_DEMAND
         : m_active( s_profiler.IsConnected() )
 #endif
@@ -205,7 +205,7 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
-    tracy_force_inline GpuCtxScope( const SourceLocation* srcloc, int depth )
+    tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc, int depth )
 #ifdef TRACY_ON_DEMAND
         : m_active( s_profiler.IsConnected() )
 #endif

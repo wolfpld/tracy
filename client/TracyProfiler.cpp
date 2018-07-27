@@ -629,7 +629,7 @@ void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 
 void Profiler::SendSourceLocation( uint64_t ptr )
 {
-    auto srcloc = (const SourceLocation*)ptr;
+    auto srcloc = (const SourceLocationData*)ptr;
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SourceLocation );
     MemWrite( &item.srcloc.name, (uint64_t)srcloc->name );
@@ -797,7 +797,7 @@ void Profiler::CalibrateTimer()
 class FakeZone
 {
 public:
-    FakeZone( const SourceLocation* srcloc ) : m_id( (uint64_t)srcloc ) {}
+    FakeZone( const SourceLocationData* srcloc ) : m_id( (uint64_t)srcloc ) {}
     ~FakeZone() {}
 
 private:
@@ -814,7 +814,7 @@ void Profiler::CalibrateDelay()
     moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = s_queue.get_explicit_producer( ptoken_detail );
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+        static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
@@ -850,13 +850,13 @@ void Profiler::CalibrateDelay()
     const auto f0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+        static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         FakeZone ___tracy_scoped_zone( &__tracy_source_location );
     }
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocation __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
+        static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();

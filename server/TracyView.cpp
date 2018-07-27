@@ -51,7 +51,11 @@ static const char* TimeToString( int64_t ns )
     }
     else if( ns < 1000ll * 1000 )
     {
+#ifdef TRACY_EXTENDED_FONT
+        sprintf( buf, "%s%.2f \xce\xbcs", sign, ns / 1000. );
+#else
         sprintf( buf, "%s%.2f us", sign, ns / 1000. );
+#endif
     }
     else if( ns < 1000ll * 1000 * 1000 )
     {
@@ -98,7 +102,11 @@ static const char* TimeToStringInteger( int64_t ns )
     }
     else if( ns < 1000ll * 1000 )
     {
+#ifdef TRACY_EXTENDED_FONT
+        sprintf( buf, "%s%.0f \xce\xbcs", sign, ns / 1000. );
+#else
         sprintf( buf, "%s%.0f us", sign, ns / 1000. );
+#endif
     }
     else if( ns < 1000ll * 1000 * 1000 )
     {

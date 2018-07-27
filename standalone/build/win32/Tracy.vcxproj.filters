@@ -182,6 +182,9 @@
     <ClInclude Include="..\..\..\common\TracyMutex.hpp">
       <Filter>common</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Arimo.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

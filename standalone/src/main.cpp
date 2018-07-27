@@ -17,6 +17,8 @@
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyView.hpp"
 
+#include "Arimo.hpp"
+
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error %d: %s\n", error, description);
@@ -77,25 +79,14 @@ int main( int argc, char** argv )
     ImGui::CreateContext();
     ImGui_ImplGlfwGL3_Init(window, true);
 
-    // Load Fonts
-    // (there is a default font, this is only if you want to change it. see extra_fonts/README.txt for more details)
-    //ImGuiIO& io = ImGui::GetIO();
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../../extra_fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../extra_fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyClean.ttf", 13.0f);
-    //io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyTiny.ttf", 10.0f);
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+    static const ImWchar ranges[] = {
+        0x0020, 0x00FF, // Basic Latin + Latin Supplement
+        0x03BC, 0x03BC, // micro
+        0,
+    };
 
-    {
-        const char* font = "c:\\Windows\\Fonts\\arial.ttf";
-        struct stat st;
-        if( stat( font, &st ) == 0 )
-        {
-            ImGuiIO& io = ImGui::GetIO();
-            io.Fonts->AddFontFromFileTTF( font, 15.0f * dpiScale );
-        }
-    }
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, ranges );
 
     ImGui::StyleColorsDark();
     auto& style = ImGui::GetStyle();

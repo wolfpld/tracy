@@ -1,6 +1,6 @@
 CFLAGS += 
 CXXFLAGS := $(CFLAGS) -std=c++17
-DEFINES += -DTRACY_FILESELECTOR
+DEFINES += -DTRACY_FILESELECTOR -DTRACY_EXTENDED_FONT
 INCLUDES := $(shell pkg-config --cflags glfw3) -I../../../imgui -I../../libs/gl3w
 LIBS := $(shell pkg-config --libs glfw3) -lpthread -ldl
 PROJECT := Tracy

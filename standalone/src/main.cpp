@@ -181,7 +181,7 @@ int main( int argc, char** argv )
         {
             ImGui::OpenPopup( "Loading trace..." );
         }
-        if( ImGui::BeginPopupModal( "Loading trace..." ) )
+        if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
         {
             auto currProgress = progress.progress.load( std::memory_order_relaxed );
             if( totalProgress == 0 )

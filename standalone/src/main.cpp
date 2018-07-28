@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <imgui.h>
 #include "imgui_impl_glfw_gl3.h"
 #include <stdio.h>
@@ -189,6 +190,7 @@ int main( int argc, char** argv )
                 ImGui::CloseCurrentPopup();
                 totalProgress = currProgress;
             }
+            ImGui::Text( "Total progress: %" PRIu64 "/%" PRIu64, currProgress, totalProgress );
             ImGui::ProgressBar( float( currProgress ) / totalProgress, ImVec2( 200 * dpiScale, 0 ) );
             ImGui::EndPopup();
         }

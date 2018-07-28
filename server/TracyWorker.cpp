@@ -183,6 +183,8 @@ static inline void UpdateLockCount( LockMap& lockmap, size_t pos )
 }
 
 
+LoadProgress Worker::s_loadProgress;
+
 Worker::Worker( const char* addr )
     : m_addr( addr )
     , m_connected( false )
@@ -242,6 +244,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         memcpy( &m_delay, hdr, sizeof( m_delay ) );
     }
 
+    if( fileVer <= FileVersion( 0, 3, 1 ) )
+    {
+        s_loadProgress.total.store( 13, std::memory_order_relaxed );
+    }
+    else
+    {
+        s_loadProgress.total.store( 15, std::memory_order_relaxed );
+    }
+
+    s_loadProgress.progress.store( 0, std::memory_order_relaxed );
     f.Read( m_resolution );
     f.Read( m_timerMul );
     f.Read( m_data.lastTime );
@@ -260,10 +272,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_captureName = std::string( tmp, tmp+sz );
     }
 
+    s_loadProgress.progress.store( 1, std::memory_order_relaxed );
     f.Read( sz );
     m_data.frames.reserve_and_use( sz );
     f.Read( m_data.frames.data(), sizeof( uint64_t ) * sz );
 
+    s_loadProgress.progress.store( 2, std::memory_order_relaxed );
     flat_hash_map<uint64_t, const char*, nohash<uint64_t>> pointerMap;
 
     f.Read( sz );
@@ -278,6 +292,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         pointerMap.emplace( ptr, dst );
     }
 
+    s_loadProgress.progress.store( 3, std::memory_order_relaxed );
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
@@ -286,6 +301,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.strings.emplace( id, pointerMap.find( ptr )->second );
     }
 
+    s_loadProgress.progress.store( 4, std::memory_order_relaxed );
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
@@ -294,6 +310,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.threadNames.emplace( id, pointerMap.find( ptr )->second );
     }
 
+    s_loadProgress.progress.store( 5, std::memory_order_relaxed );
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
@@ -304,11 +321,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.sourceLocation.emplace( ptr, srcloc );
     }
 
+    s_loadProgress.progress.store( 6, std::memory_order_relaxed );
     f.Read( sz );
     m_data.sourceLocationExpand.reserve_and_use( sz );
     f.Read( m_data.sourceLocationExpand.data(), sizeof( uint64_t ) * sz );
     const auto sle = sz;
 
+    s_loadProgress.progress.store( 7, std::memory_order_relaxed );
     f.Read( sz );
     m_data.sourceLocationPayload.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -332,6 +351,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 #endif
 
+    s_loadProgress.progress.store( 8, std::memory_order_relaxed );
     f.Read( sz );
     if( eventMask & EventType::Locks )
     {
@@ -430,6 +450,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
+    s_loadProgress.progress.store( 9, std::memory_order_relaxed );
     flat_hash_map<uint64_t, MessageData*, nohash<uint64_t>> msgMap;
     f.Read( sz );
     if( eventMask & EventType::Messages )
@@ -459,6 +480,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
+    s_loadProgress.progress.store( 10, std::memory_order_relaxed );
     f.Read( sz );
     m_data.threads.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -518,6 +540,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     } );
 #endif
 
+    s_loadProgress.progress.store( 11, std::memory_order_relaxed );
     f.Read( sz );
     m_data.gpuData.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -549,6 +572,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.gpuData.push_back_no_space_check( ctx );
     }
 
+    s_loadProgress.progress.store( 12, std::memory_order_relaxed );
     f.Read( sz );
     if( eventMask & EventType::Plots )
     {
@@ -579,8 +603,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
     // Support pre-0.3 traces
-    if( fileVer == 0 && f.IsEOF() ) return;
+    if( fileVer == 0 && f.IsEOF() )
+    {
+        s_loadProgress.total.store( 0, std::memory_order_relaxed );
+        return;
+    }
 
+    s_loadProgress.progress.store( 13, std::memory_order_relaxed );
     f.Read( sz );
     bool reconstructMemAllocPlot = false;
     if( eventMask & EventType::Memory )
@@ -661,6 +690,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
     if( fileVer <= FileVersion( 0, 3, 1 ) ) goto finishLoading;
 
+    s_loadProgress.progress.store( 14, std::memory_order_relaxed );
     f.Read( sz );
     m_data.callstackPayload.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -680,6 +710,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.callstackPayload.push_back_no_space_check( arr );
     }
 
+    s_loadProgress.progress.store( 15, std::memory_order_relaxed );
     f.Read( sz );
     m_data.callstackFrameMap.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -698,6 +729,8 @@ finishLoading:
     {
         m_threadMemory = std::thread( [this] { ReconstructMemAllocPlot(); } );
     }
+
+    s_loadProgress.total.store( 0, std::memory_order_relaxed );
 }
 
 Worker::~Worker()

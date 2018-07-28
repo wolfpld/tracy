@@ -45,6 +45,12 @@ struct UnsupportedVersion : public std::exception
     int version;
 };
 
+struct LoadProgress
+{
+    std::atomic<uint64_t> total = 0;
+    std::atomic<uint64_t> progress = 0;
+};
+
 class Worker
 {
 public:
@@ -221,6 +227,8 @@ public:
 
     void Write( FileWrite& f );
 
+    static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
+
 private:
     void Exec();
     void ServerQuery( uint8_t type, uint64_t data );
@@ -362,6 +370,8 @@ private:
 
     DataBlock m_data;
     MbpsBlock m_mbpsData;
+
+    static LoadProgress s_loadProgress;
 };
 
 }

@@ -480,10 +480,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     s_loadProgress.progress.store( 3, std::memory_order_relaxed );
     f.Read( sz );
     m_data.threads.reserve( sz );
-    s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
     for( uint64_t i=0; i<sz; i++ )
     {
-        s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
         auto td = m_slab.AllocInit<ThreadData>();
         uint64_t tid;
         f.Read( tid );
@@ -491,6 +489,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( td->count );
         uint64_t tsz;
         f.Read( tsz );
+        s_loadProgress.subTotal.store( td->count, std::memory_order_relaxed );
         if( tsz != 0 )
         {
             if( fileVer <= FileVersion( 0, 3, 2 ) )
@@ -542,14 +541,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     s_loadProgress.progress.store( 4, std::memory_order_relaxed );
     f.Read( sz );
     m_data.gpuData.reserve( sz );
-    s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
     for( uint64_t i=0; i<sz; i++ )
     {
-        s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
         auto ctx = m_slab.AllocInit<GpuCtxData>();
         f.Read( ctx->thread );
         f.Read( ctx->accuracyBits );
         f.Read( ctx->count );
+        s_loadProgress.subTotal.store( ctx->count, std::memory_order_relaxed );
         if( fileVer <= FileVersion( 0, 3, 1 ) )
         {
             ctx->period = 1.f;
@@ -2610,6 +2608,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
 
     for( uint64_t i=0; i<size; i++ )
     {
+        s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec.push_back_no_space_check( zone );
         f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
@@ -2626,6 +2625,7 @@ void Worker::ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
 
     for( uint64_t i=0; i<size; i++ )
     {
+        s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec.push_back_no_space_check( zone );
 
@@ -2653,6 +2653,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size )
 
     for( uint64_t i=0; i<size; i++ )
     {
+        s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         auto zone = m_slab.AllocInit<GpuEvent>();
         vec.push_back_no_space_check( zone );
 
@@ -2678,6 +2679,7 @@ void Worker::ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
 
     for( uint64_t i=0; i<size; i++ )
     {
+        s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         auto zone = m_slab.AllocInit<GpuEvent>();
         vec.push_back_no_space_check( zone );
 

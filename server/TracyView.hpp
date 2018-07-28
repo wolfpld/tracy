@@ -183,6 +183,8 @@ private:
 
     const ZoneEvent* m_zoneInfoWindow;
     const ZoneEvent* m_zoneHighlight;
+    uint64_t m_zoneSrcLocHighlight;
+    bool m_zoneSrcLocHighlightActive;
     LockHighlight m_lockHighlight;
     const MessageData* m_msgHighlight;
     const GpuEvent* m_gpuInfoWindow;

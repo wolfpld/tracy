@@ -216,6 +216,8 @@ View::View( const char* addr )
     , m_zvHeight( 0 )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
+    , m_zoneSrcLocHighlight( 0 )
+    , m_zoneSrcLocHighlightActive( false )
     , m_lockHighlight { -1 }
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
@@ -255,6 +257,8 @@ View::View( FileRead& f )
     , m_zvHeight( 0 )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
+    , m_zoneSrcLocHighlight( 0 )
+    , m_zoneSrcLocHighlightActive( false )
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
     , m_memoryAllocInfoWindow( -1 )
@@ -967,6 +971,14 @@ bool View::DrawZoneFrames()
 void View::DrawZones()
 {
     m_msgHighlight = nullptr;
+    if( m_zoneSrcLocHighlightActive )
+    {
+        m_zoneSrcLocHighlightActive = false;
+    }
+    else
+    {
+        m_zoneSrcLocHighlight = 0;
+    }
 
     if( m_zvStart == m_zvEnd ) return;
     assert( m_zvStart < m_zvEnd );
@@ -1354,6 +1366,9 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                     {
                         ShowZoneInfo( ev );
                     }
+
+                    m_zoneSrcLocHighlight = ev.srcloc;
+                    m_zoneSrcLocHighlightActive = true;
                 }
             }
             char tmp[64];
@@ -1457,6 +1472,9 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 {
                     ShowZoneInfo( ev );
                 }
+
+                m_zoneSrcLocHighlight = ev.srcloc;
+                m_zoneSrcLocHighlightActive = true;
             }
 
             ++it;
@@ -5943,6 +5961,10 @@ uint32_t View::GetZoneHighlight( const ZoneEvent& ev, bool migration )
     else if( m_zoneHighlight == &ev )
     {
         return 0xFF4444FF;
+    }
+    else if( m_zoneSrcLocHighlight == ev.srcloc )
+    {
+        return 0xFFEEEEEE;
     }
     else if( migration )
     {

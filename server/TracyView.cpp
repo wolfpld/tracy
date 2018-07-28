@@ -283,6 +283,8 @@ View::~View()
 {
     m_worker.Shutdown();
 
+    if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
+
     assert( s_instance != nullptr );
     s_instance = nullptr;
 }
@@ -4469,7 +4471,7 @@ void View::DrawCompare()
     if( !m_compare.second )
     {
         ImGui::TextWrapped( "Please load a second trace to compare results." );
-        if( ImGui::Button( "Open second trace" ) )
+        if( ImGui::Button( "Open second trace" ) && !m_compare.loadThread.joinable() )
         {
             nfdchar_t* fn;
             auto res = NFD_OpenDialog( "tracy", nullptr, &fn );
@@ -4477,15 +4479,20 @@ void View::DrawCompare()
             {
                 try
                 {
-                    auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
+                    auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
                     if( f )
                     {
-                        m_compare.second = std::make_unique<Worker>( *f, EventType::None );
+                        m_compare.loadThread = std::thread( [this, f] {
+                            try
+                            {
+                                m_compare.second = std::make_unique<Worker>( *f, EventType::None );
+                            }
+                            catch( const tracy::UnsupportedVersion& e )
+                            {
+                                m_compare.badVer = e.version;
+                            }
+                        } );
                     }
-                }
-                catch( const tracy::UnsupportedVersion& e )
-                {
-                    m_compare.badVer = e.version;
                 }
                 catch( const tracy::NotTracyDump& e )
                 {
@@ -4497,6 +4504,8 @@ void View::DrawCompare()
         ImGui::End();
         return;
     }
+
+    if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
 
     if( !m_worker.AreSourceLocationZonesReady() || !m_compare.second->AreSourceLocationZonesReady() )
     {

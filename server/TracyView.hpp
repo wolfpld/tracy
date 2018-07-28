@@ -279,6 +279,7 @@ private:
     struct {
         bool show = false;
         std::unique_ptr<Worker> second;
+        std::thread loadThread;
         int badVer = 0;
         char pattern[1024] = {};
         std::vector<int32_t> match[2];

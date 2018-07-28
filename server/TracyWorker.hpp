@@ -49,6 +49,8 @@ struct LoadProgress
 {
     std::atomic<uint64_t> total = 0;
     std::atomic<uint64_t> progress = 0;
+    std::atomic<uint64_t> subTotal = 0;
+    std::atomic<uint64_t> subProgress = 0;
 };
 
 class Worker

@@ -253,6 +253,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         s_loadProgress.total.store( 8, std::memory_order_relaxed );
     }
 
+    s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( 0, std::memory_order_relaxed );
     f.Read( m_resolution );
     f.Read( m_timerMul );

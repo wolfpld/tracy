@@ -193,16 +193,15 @@ int main( int argc, char** argv )
             ImGui::Text( "Total progress: %" PRIu64 "/%" PRIu64, currProgress, totalProgress );
             ImGui::ProgressBar( float( currProgress ) / totalProgress, ImVec2( 200 * dpiScale, 0 ) );
 
+            ImGui::Text( "Sub progress..." );
             auto subTotal = progress.subTotal.load( std::memory_order_relaxed );
             auto subProgress = progress.subProgress.load( std::memory_order_relaxed );
             if( subTotal == 0 )
             {
-                ImGui::Text( "Sub progress..." );
                 ImGui::ProgressBar( 1.f, ImVec2( 200 * dpiScale, 0 ) );
             }
             else
             {
-                ImGui::Text( "Sub progress: %" PRIu64 "/%" PRIu64, subProgress, subTotal );
                 ImGui::ProgressBar( float( subProgress ) / subTotal, ImVec2( 200 * dpiScale, 0 ) );
             }
             ImGui::EndPopup();

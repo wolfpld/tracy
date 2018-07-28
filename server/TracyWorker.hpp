@@ -47,10 +47,12 @@ struct UnsupportedVersion : public std::exception
 
 struct LoadProgress
 {
-    std::atomic<uint64_t> total = 0;
-    std::atomic<uint64_t> progress = 0;
-    std::atomic<uint64_t> subTotal = 0;
-    std::atomic<uint64_t> subProgress = 0;
+    LoadProgress() : total( 0 ), progress( 0 ), subTotal( 0 ), subProgress( 0 ) {}
+
+    std::atomic<uint64_t> total;
+    std::atomic<uint64_t> progress;
+    std::atomic<uint64_t> subTotal;
+    std::atomic<uint64_t> subProgress;
 };
 
 class Worker

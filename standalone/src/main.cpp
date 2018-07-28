@@ -101,6 +101,8 @@ int main( int argc, char** argv )
 
     char addr[1024] = { "127.0.0.1" };
 
+    std::thread loadThread;
+
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
@@ -122,12 +124,12 @@ int main( int argc, char** argv )
             ImGui::Separator();
             ImGui::Text( "Connect to client" );
             ImGui::InputText( "Address", addr, 1024 );
-            if( ImGui::Button( "Connect" ) && *addr )
+            if( ImGui::Button( "Connect" ) && *addr && !loadThread.joinable() )
             {
                 view = std::make_unique<tracy::View>( addr );
             }
             ImGui::Separator();
-            if( ImGui::Button( "Open saved trace" ) )
+            if( ImGui::Button( "Open saved trace" ) && !loadThread.joinable() )
             {
                 nfdchar_t* fn;
                 auto res = NFD_OpenDialog( "tracy", nullptr, &fn );
@@ -135,15 +137,20 @@ int main( int argc, char** argv )
                 {
                     try
                     {
-                        auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
+                        auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
                         if( f )
                         {
-                            view = std::make_unique<tracy::View>( *f );
+                            loadThread = std::thread( [&view, f, &badVer] {
+                                try
+                                {
+                                    view = std::make_unique<tracy::View>( *f );
+                                }
+                                catch( const tracy::UnsupportedVersion& e )
+                                {
+                                    badVer = e.version;
+                                }
+                            } );
                         }
-                    }
-                    catch( const tracy::UnsupportedVersion& e )
-                    {
-                        badVer = e.version;
                     }
                     catch( const tracy::NotTracyDump& e )
                     {
@@ -152,12 +159,17 @@ int main( int argc, char** argv )
                 }
             }
 
-            tracy::BadVersion( badVer );
+            if( badVer != 0 )
+            {
+                if( loadThread.joinable() ) { loadThread.join(); }
+                tracy::BadVersion( badVer );
+            }
 
             ImGui::End();
         }
         else
         {
+            if( loadThread.joinable() ) loadThread.join();
             if( !view->Draw() )
             {
                 view.reset();

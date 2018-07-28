@@ -16,6 +16,7 @@
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyView.hpp"
+#include "../../server/TracyWorker.hpp"
 
 #include "Arimo.hpp"
 
@@ -161,6 +162,23 @@ int main( int argc, char** argv )
             {
                 view.reset();
             }
+        }
+        auto& progress = tracy::Worker::GetLoadProgress();
+        auto totalProgress = progress.total.load( std::memory_order_relaxed );
+        if( totalProgress != 0 )
+        {
+            ImGui::OpenPopup( "Loading trace..." );
+        }
+        if( ImGui::BeginPopupModal( "Loading trace..." ) )
+        {
+            auto currProgress = progress.progress.load( std::memory_order_relaxed );
+            if( totalProgress == 0 )
+            {
+                ImGui::CloseCurrentPopup();
+                totalProgress = currProgress;
+            }
+            ImGui::ProgressBar( float( currProgress ) / totalProgress, ImVec2( 200 * dpiScale, 0 ) );
+            ImGui::EndPopup();
         }
 
         // Rendering

@@ -232,6 +232,7 @@ public:
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
 
     void Write( FileWrite& f );
+    int GetTraceVersion() const { return m_traceVersion; }
 
     static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
 
@@ -376,6 +377,8 @@ private:
 
     DataBlock m_data;
     MbpsBlock m_mbpsData;
+
+    int m_traceVersion;
 
     static LoadProgress s_loadProgress;
 };

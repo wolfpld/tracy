@@ -44,6 +44,9 @@ v0.4 (xxxx-xx-xx)
 - Progress popup is now displayed when a trace file is loading.
 - Zones that share source location with a zone that is hovered over are now
   highlighted.
+- Added ability to zoom-in to a selection range made using middle mouse
+  button.
+  - Holding the ctrl key will switch to zoom-out mode.
 
 v0.3.3 (2018-07-03)
 -------------------

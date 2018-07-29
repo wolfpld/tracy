@@ -6075,6 +6075,11 @@ void View::ZoomToZone( const GpuEvent& ev )
 
 void View::ZoomToRange( int64_t start, int64_t end )
 {
+    if( start == end )
+    {
+        end = start + 1;
+    }
+
     m_pause = true;
     m_highlightZoom.active = false;
     m_zoomAnim.active = true;

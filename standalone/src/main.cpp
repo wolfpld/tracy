@@ -252,6 +252,11 @@ int main( int argc, char** argv )
         ImGui::Render();
         ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
+
+        if( !glfwGetWindowAttrib( window, GLFW_FOCUSED ) )
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+        }
     }
 
     // Cleanup

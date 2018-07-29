@@ -774,9 +774,9 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     }
     else if( m_highlightZoom.active )
     {
-        m_highlightZoom.active = false;
         const auto s = std::min( m_highlightZoom.start, m_highlightZoom.end );
         const auto e = std::max( m_highlightZoom.start, m_highlightZoom.end );
+        // ZoomToRange disables m_highlightZoom.active
         ZoomToRange( s, e );
     }
 
@@ -6076,6 +6076,7 @@ void View::ZoomToZone( const GpuEvent& ev )
 void View::ZoomToRange( int64_t start, int64_t end )
 {
     m_pause = true;
+    m_highlightZoom.active = false;
     m_zoomAnim.active = true;
     m_zoomAnim.start0 = m_zvStart;
     m_zoomAnim.start1 = start;

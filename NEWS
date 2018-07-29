@@ -47,6 +47,8 @@ v0.4 (xxxx-xx-xx)
 - Added ability to zoom-in to a selection range made using middle mouse
   button.
   - Holding the ctrl key will switch to zoom-out mode.
+- The "standalone" utility will use less resources when its window is
+  out-of-focus or minimized.
 
 v0.3.3 (2018-07-03)
 -------------------

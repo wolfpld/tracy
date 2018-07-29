@@ -309,6 +309,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.threadNames.emplace( id, pointerMap.find( ptr )->second );
     }
 
+    if( fileVer >= FileVersion( 0, 3, 201 ) )
+    {
+        f.Read( sz );
+        m_data.threadExpand.reserve( sz );
+    }
+
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
@@ -2791,6 +2797,9 @@ void Worker::Write( FileWrite& f )
         uint64_t ptr = (uint64_t)v.second;
         f.Write( &ptr, sizeof( ptr ) );
     }
+
+    sz = m_data.threadExpand.size();
+    f.Write( &sz, sizeof( sz ) );
 
     sz = m_data.sourceLocation.size();
     f.Write( &sz, sizeof( sz ) );

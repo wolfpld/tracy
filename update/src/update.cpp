@@ -8,6 +8,7 @@
 
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyFileWrite.hpp"
+#include "../../server/TracyVersion.hpp"
 #include "../../server/TracyWorker.hpp"
 
 void Usage()
@@ -49,6 +50,9 @@ int main( int argc, char** argv )
             exit( 1 );
         }
         worker.Write( *w );
+
+        const auto inVer = worker.GetTraceVersion();
+        printf( "%s (%i.%i.%i) -> %s (%i.%i.%i)\n", input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
     }
     catch( const tracy::UnsupportedVersion& e )
     {

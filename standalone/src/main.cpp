@@ -18,6 +18,8 @@
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyView.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "../../server/TracyVersion.hpp"
+
 
 #include "Arimo.hpp"
 
@@ -51,6 +53,9 @@ int main( int argc, char** argv )
         }
     }
 
+    char title[128];
+    sprintf( title, "Tracy server %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -61,7 +66,7 @@ int main( int argc, char** argv )
 #if __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-    GLFWwindow* window = glfwCreateWindow(1650, 960, "Tracy server", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1650, 960, title, NULL, NULL);
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
     gl3wInit();
@@ -113,6 +118,8 @@ int main( int argc, char** argv )
         if( !view )
         {
             ImGui::Begin( "Tracy server", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+            ImGui::Text( "Tracy %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+            ImGui::SameLine();
             if( ImGui::SmallButton( "Homepage" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );

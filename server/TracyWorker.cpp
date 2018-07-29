@@ -280,6 +280,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     flat_hash_map<uint64_t, const char*, nohash<uint64_t>> pointerMap;
 
     f.Read( sz );
+    m_data.stringData.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
     {
         uint64_t ptr, ssz;

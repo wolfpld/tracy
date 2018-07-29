@@ -337,13 +337,54 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = false;
     m_data.sourceLocationZones.reserve( sle + sz );
-    for( uint64_t i=1; i<sle; i++ )
+
+    if( fileVer >= FileVersion( 0, 3, 201 ) )
     {
-        m_data.sourceLocationZones.emplace( int32_t( i ), SourceLocationZones() );
+        f.Read( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            int32_t id;
+            uint64_t cnt;
+            f.Read( id );
+            f.Read( cnt );
+            auto status = m_data.sourceLocationZones.emplace( id, SourceLocationZones() );
+            assert( status.second );
+            status.first->second.zones.reserve( cnt );
+        }
     }
-    for( uint64_t i=0; i<sz; i++ )
+    else
     {
-        m_data.sourceLocationZones.emplace( -int32_t( i + 1 ), SourceLocationZones() );
+        for( uint64_t i=1; i<sle; i++ )
+        {
+            m_data.sourceLocationZones.emplace( int32_t( i ), SourceLocationZones() );
+        }
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            m_data.sourceLocationZones.emplace( -int32_t( i + 1 ), SourceLocationZones() );
+        }
+    }
+#else
+    if( fileVer >= FileVersion( 0, 3, 201 ) )
+    {
+        f.Read( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            int32_t id;
+            f.Read( id );
+            f.Skip( sizeof( uint64_t ) );
+            m_data.sourceLocationZonesCnt.emplace( id, 0 );
+        }
+    }
+    else
+    {
+        for( uint64_t i=1; i<sle; i++ )
+        {
+            m_data.sourceLocationZonesCnt.emplace( int32_t( i ), 0 );
+        }
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            m_data.sourceLocationZonesCnt.emplace( -int32_t( i + 1 ), 0 );
+        }
     }
 #endif
 
@@ -2772,6 +2813,28 @@ void Worker::Write( FileWrite& f )
     {
         f.Write( v, sizeof( *v ) );
     }
+
+#ifndef TRACY_NO_STATISTICS
+    sz = m_data.sourceLocationZones.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.sourceLocationZones )
+    {
+        int32_t id = v.first;
+        uint64_t cnt = v.second.zones.size();
+        f.Write( &id, sizeof( id ) );
+        f.Write( &cnt, sizeof( cnt ) );
+    }
+#else
+    sz = m_data.sourceLocationZonesCnt.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.sourceLocationZonesCnt )
+    {
+        int32_t id = v.first;
+        uint64_t cnt = v.second;
+        f.Write( &id, sizeof( id ) );
+        f.Write( &cnt, sizeof( cnt ) );
+    }
+#endif
 
     sz = m_data.lockMap.size();
     f.Write( &sz, sizeof( sz ) );

@@ -197,10 +197,39 @@ int main( int argc, char** argv )
                 ImGui::CloseCurrentPopup();
                 totalProgress = currProgress;
             }
-            ImGui::Text( "Total progress: %" PRIu64 "/%" PRIu64, currProgress, totalProgress );
+            switch( currProgress )
+            {
+            case tracy::LoadProgress::Initialization:
+                ImGui::Text( "Initialization..." );
+                break;
+            case tracy::LoadProgress::Locks:
+                ImGui::Text( "Locks..." );
+                break;
+            case tracy::LoadProgress::Messages:
+                ImGui::Text( "Messages..." );
+                break;
+            case tracy::LoadProgress::Zones:
+                ImGui::Text( "CPU zones..." );
+                break;
+            case tracy::LoadProgress::GpuZones:
+                ImGui::Text( "GPU zones..." );
+                break;
+            case tracy::LoadProgress::Plots:
+                ImGui::Text( "Plots..." );
+                break;
+            case tracy::LoadProgress::Memory:
+                ImGui::Text( "Memory..." );
+                break;
+            case tracy::LoadProgress::CallStacks:
+                ImGui::Text( "Call stacks..." );
+                break;
+            default:
+                assert( false );
+                break;
+            }
             ImGui::ProgressBar( float( currProgress ) / totalProgress, ImVec2( 200 * dpiScale, 0 ) );
 
-            ImGui::Text( "Sub progress..." );
+            ImGui::Text( "Progress..." );
             auto subTotal = progress.subTotal.load( std::memory_order_relaxed );
             auto subProgress = progress.subProgress.load( std::memory_order_relaxed );
             if( subTotal == 0 )

@@ -257,7 +257,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
-    s_loadProgress.progress.store( 0, std::memory_order_relaxed );
+    s_loadProgress.progress.store( LoadProgress::Initialization, std::memory_order_relaxed );
     f.Read( m_resolution );
     f.Read( m_timerMul );
     f.Read( m_data.lastTime );
@@ -396,7 +396,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 #endif
 
-    s_loadProgress.progress.store( 1, std::memory_order_relaxed );
+    s_loadProgress.progress.store( LoadProgress::Locks, std::memory_order_relaxed );
     f.Read( sz );
     if( eventMask & EventType::Locks )
     {
@@ -498,7 +498,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
-    s_loadProgress.progress.store( 2, std::memory_order_relaxed );
+    s_loadProgress.progress.store( LoadProgress::Messages, std::memory_order_relaxed );
     flat_hash_map<uint64_t, MessageData*, nohash<uint64_t>> msgMap;
     f.Read( sz );
     if( eventMask & EventType::Messages )
@@ -528,7 +528,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
-    s_loadProgress.progress.store( 3, std::memory_order_relaxed );
+    s_loadProgress.progress.store( LoadProgress::Zones, std::memory_order_relaxed );
     f.Read( sz );
     m_data.threads.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -589,7 +589,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     } );
 #endif
 
-    s_loadProgress.progress.store( 4, std::memory_order_relaxed );
+    s_loadProgress.progress.store( LoadProgress::GpuZones, std::memory_order_relaxed );
     f.Read( sz );
     m_data.gpuData.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -622,7 +622,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.gpuData.push_back_no_space_check( ctx );
     }
 
-    s_loadProgress.progress.store( 5, std::memory_order_relaxed );
+    s_loadProgress.progress.store( LoadProgress::Plots, std::memory_order_relaxed );
     f.Read( sz );
     if( eventMask & EventType::Plots )
     {
@@ -660,7 +660,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
-    s_loadProgress.progress.store( 6, std::memory_order_relaxed );
+    s_loadProgress.progress.store( LoadProgress::Memory, std::memory_order_relaxed );
     f.Read( sz );
     bool reconstructMemAllocPlot = false;
     if( eventMask & EventType::Memory )
@@ -755,7 +755,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     if( fileVer <= FileVersion( 0, 3, 1 ) ) goto finishLoading;
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
-    s_loadProgress.progress.store( 7, std::memory_order_relaxed );
+    s_loadProgress.progress.store( LoadProgress::CallStacks, std::memory_order_relaxed );
     f.Read( sz );
     m_data.callstackPayload.reserve( sz );
     for( uint64_t i=0; i<sz; i++ )

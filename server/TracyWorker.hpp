@@ -47,6 +47,18 @@ struct UnsupportedVersion : public std::exception
 
 struct LoadProgress
 {
+    enum Stage
+    {
+        Initialization,
+        Locks,
+        Messages,
+        Zones,
+        GpuZones,
+        Plots,
+        Memory,
+        CallStacks
+    };
+
     LoadProgress() : total( 0 ), progress( 0 ), subTotal( 0 ), subProgress( 0 ) {}
 
     std::atomic<uint64_t> total;

@@ -26,6 +26,7 @@
 #include "../common/TracySystem.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
+#include "TracyVersion.hpp"
 #include "TracyWorker.hpp"
 
 #include "tracy_flat_hash_map.hpp"
@@ -38,9 +39,9 @@ static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
     return ( h5 << 16 ) | ( h6 << 8 ) | h7;
 }
 
-static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', 0, 3, 200 };
+static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', Version::Major, Version::Minor, Version::Patch };
 enum { FileHeaderMagic = 5 };
-static const int CurrentVersion = FileVersion( FileHeader[FileHeaderMagic], FileHeader[FileHeaderMagic+1], FileHeader[FileHeaderMagic+2] );
+static const int CurrentVersion = FileVersion( Version::Major, Version::Minor, Version::Patch );
 
 
 static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )

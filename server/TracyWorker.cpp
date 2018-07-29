@@ -664,6 +664,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     if( eventMask & EventType::Memory )
     {
         m_data.memory.data.reserve_and_use( sz );
+        if( fileVer >= FileVersion( 0, 3, 201 ) )
+        {
+            uint64_t activeSz, freesSz;
+            f.Read2( activeSz, freesSz );
+            m_data.memory.active.reserve( activeSz );
+            m_data.memory.frees.reserve( freesSz );
+        }
         auto mem = m_data.memory.data.data();
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
         for( uint64_t i=0; i<sz; i++ )
@@ -714,6 +721,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
     else
     {
+        if( fileVer >= FileVersion( 0, 3, 201 ) )
+        {
+            f.Skip( 2 * sizeof( uint64_t ) );
+        }
         if( fileVer <= FileVersion( 0, 3, 1 ) )
         {
             f.Skip( sz * (
@@ -2918,6 +2929,10 @@ void Worker::Write( FileWrite& f )
     }
 
     sz = m_data.memory.data.size();
+    f.Write( &sz, sizeof( sz ) );
+    sz = m_data.memory.active.size();
+    f.Write( &sz, sizeof( sz ) );
+    sz = m_data.memory.frees.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& mem : m_data.memory.data )
     {

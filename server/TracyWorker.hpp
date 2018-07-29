@@ -110,6 +110,8 @@ private:
 #ifndef TRACY_NO_STATISTICS
         flat_hash_map<int32_t, SourceLocationZones, nohash<int32_t>> sourceLocationZones;
         bool sourceLocationZonesReady;
+#else
+        flat_hash_map<int32_t, uint64_t> sourceLocationZonesCnt;
 #endif
 
         flat_hash_map<VarArray<uint64_t>*, uint32_t, VarArrayHasherPOT<uint64_t>, VarArrayComparator<uint64_t>> callstackMap;

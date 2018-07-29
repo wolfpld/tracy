@@ -1230,6 +1230,8 @@ uint32_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
     m_data.sourceLocationExpand.push_back( srcloc );
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZones.emplace( sz, SourceLocationZones() );
+#else
+    m_data.sourceLocationZonesCnt.emplace( sz, 0 );
 #endif
     m_sourceLocationShrink.emplace( srcloc, sz );
     return sz;
@@ -1299,6 +1301,10 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     auto it = m_data.sourceLocationZones.find( zone->srcloc );
     assert( it != m_data.sourceLocationZones.end() );
     it->second.zones.push_back( ZoneThreadData { zone, CompressThread( thread ) } );
+#else
+    auto it = m_data.sourceLocationZonesCnt.find( zone->srcloc );
+    assert( it != m_data.sourceLocationZonesCnt.end() );
+    it->second++;
 #endif
 
     auto td = NoticeThread( thread );
@@ -1435,6 +1441,8 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
         m_data.sourceLocationPayload.push_back( slptr );
 #ifndef TRACY_NO_STATISTICS
         m_data.sourceLocationZones.emplace( -int32_t( idx + 1 ), SourceLocationZones() );
+#else
+        m_data.sourceLocationZonesCnt.emplace( -int32_t( idx + 1 ), 0 );
 #endif
     }
     else
@@ -2598,6 +2606,10 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
             it->second.selfTotal += timeSpan;
         }
     }
+#else
+    auto it = m_data.sourceLocationZonesCnt.find( zone->srcloc );
+    assert( it != m_data.sourceLocationZonesCnt.end() );
+    it->second++;
 #endif
 }
 

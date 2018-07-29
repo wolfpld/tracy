@@ -763,6 +763,23 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
         m_highlight.active = false;
     }
 
+    if( ImGui::IsMouseClicked( 2 ) )
+    {
+        m_highlightZoom.active = true;
+        m_highlightZoom.start = m_highlightZoom.end = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+    }
+    else if( ImGui::IsMouseDragging( 2, 0 ) )
+    {
+        m_highlightZoom.end = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+    }
+    else if( m_highlightZoom.active )
+    {
+        m_highlightZoom.active = false;
+        const auto s = std::min( m_highlightZoom.start, m_highlightZoom.end );
+        const auto e = std::max( m_highlightZoom.start, m_highlightZoom.end );
+        ZoomToRange( s, e );
+    }
+
     if( ImGui::IsMouseDragging( 1, 0 ) )
     {
         m_pause = true;
@@ -1267,6 +1284,14 @@ void View::DrawZones()
     {
         auto& io = ImGui::GetIO();
         draw->AddLine( ImVec2( io.MousePos.x, linepos.y ), ImVec2( io.MousePos.x, linepos.y + lineh ), 0x33FFFFFF );
+    }
+
+    if( m_highlightZoom.active && m_highlightZoom.start != m_highlightZoom.end )
+    {
+        const auto s = std::min( m_highlightZoom.start, m_highlightZoom.end );
+        const auto e = std::max( m_highlightZoom.start, m_highlightZoom.end );
+        draw->AddRectFilled( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x1688DD88 );
+        draw->AddRect( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x2C88DD88 );
     }
 
     if( m_memInfo.show && m_memInfo.restrictTime )

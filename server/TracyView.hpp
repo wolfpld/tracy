@@ -196,6 +196,7 @@ private:
     int m_memoryAllocHoverWait;
 
     Region m_highlight;
+    Region m_highlightZoom;
 
     uint64_t m_gpuThread;
     int64_t m_gpuStart;

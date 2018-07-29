@@ -113,6 +113,13 @@ int main( int argc, char** argv )
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
+
+        if( glfwGetWindowAttrib( window, GLFW_ICONIFIED ) )
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
+            continue;
+        }
+
         ImGui_ImplGlfwGL3_NewFrame();
 
         if( !view )

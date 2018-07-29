@@ -417,7 +417,7 @@ bool View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
     ImGui::SameLine();
-    ImGui::Text( "Frames: %" PRIu64, m_worker.GetFrameCount() );
+    ImGui::Text( "Frames: %s", RealToString( m_worker.GetFrameCount(), true ) );
     ImGui::SameLine();
     if( ImGui::SmallButton( ">" ) ) ZoomToNextFrame();
     ImGui::SameLine();
@@ -645,7 +645,7 @@ void View::DrawFrames()
 
                     ImGui::TextDisabled( "Frames:" );
                     ImGui::SameLine();
-                    ImGui::Text( "%i - %i (%i)", sel, sel + g - 1, g );
+                    ImGui::Text( "%s - %s (%s)", RealToString( sel, true ), RealToString( sel + g - 1, true ), RealToString( g, true ) );
                     ImGui::Separator();
                     TextFocused( "Max frame time:", TimeToString( f ) );
                 }
@@ -662,7 +662,7 @@ void View::DrawFrames()
                     {
                         ImGui::TextDisabled( "Frame:" );
                         ImGui::SameLine();
-                        ImGui::Text( "%i", sel );
+                        ImGui::Text( "%s", RealToString( sel, true ) );
                         ImGui::Separator();
                         TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( sel ) ) );
                     }
@@ -676,7 +676,7 @@ void View::DrawFrames()
                     {
                         ImGui::TextDisabled( "Frame:" );
                         ImGui::SameLine();
-                        ImGui::Text( "%i", sel + offset - 1 );
+                        ImGui::Text( "%s", RealToString( sel + offset - 1, true ) );
                         ImGui::Separator();
                         TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( sel ) ) );
                     }
@@ -853,7 +853,7 @@ static const char* GetFrameText( int i, uint64_t ftime, uint64_t offset )
     }
     else if( offset == 0 )
     {
-        sprintf( buf, "Frame %i (%s)", i, TimeToString( ftime ) );
+        sprintf( buf, "Frame %s (%s)", RealToString( i, true ), TimeToString( ftime ) );
     }
     else if( i == 1 )
     {
@@ -861,7 +861,7 @@ static const char* GetFrameText( int i, uint64_t ftime, uint64_t offset )
     }
     else
     {
-        sprintf( buf, "Frame %i (%s)", i + offset - 1, TimeToString( ftime ) );
+        sprintf( buf, "Frame %s (%s)", RealToString( i + offset - 1, true ), TimeToString( ftime ) );
     }
     return buf;
 }

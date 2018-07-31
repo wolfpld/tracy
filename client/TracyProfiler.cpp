@@ -176,7 +176,7 @@ VkCtxWrapper init_order(104) s_vkCtx { nullptr };
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
 struct ThreadNameData;
-std::atomic<ThreadNameData*> init_order(104) s_threadNameDataInstance( nullptr );
+static std::atomic<ThreadNameData*> init_order(104) s_threadNameDataInstance( nullptr );
 std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
 #endif
 
@@ -184,7 +184,7 @@ std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
 thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 #endif
 
-Profiler init_order(105) s_profilerInstance;
+static Profiler init_order(105) s_profilerInstance;
 Profiler& s_profiler = s_profilerInstance;
 
 #ifdef _MSC_VER

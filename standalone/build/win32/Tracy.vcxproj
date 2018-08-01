@@ -100,10 +100,7 @@
     <ClCompile Include="..\..\..\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\..\..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\..\..\nfd\nfd_common.c" />
-    <ClCompile Include="..\..\..\nfd\nfd_win.cpp">
-      <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ConformanceMode>
-      <ConformanceMode Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ConformanceMode>
-    </ClCompile>
+    <ClCompile Include="..\..\..\nfd\nfd_win.cpp" />
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp" />
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
     <ClCompile Include="..\..\..\server\TracyView.cpp" />

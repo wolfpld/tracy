@@ -176,14 +176,63 @@ VkCtxWrapper init_order(104) s_vkCtx { nullptr };
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
 struct ThreadNameData;
-std::atomic<ThreadNameData*> init_order(104) s_threadNameData( nullptr );
+static std::atomic<ThreadNameData*> init_order(104) s_threadNameDataInstance( nullptr );
+std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
 #endif
 
 #ifdef TRACY_ON_DEMAND
 thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 #endif
 
-Profiler init_order(105) s_profiler;
+static Profiler init_order(105) s_profilerInstance;
+Profiler& s_profiler = s_profilerInstance;
+
+#ifdef _MSC_VER
+#  define DLL_EXPORT __declspec(dllexport)
+#else
+#  define DLL_EXPORT __attribute__((visibility("default")))
+#endif
+
+// DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
+
+DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* get_token()
+{
+    return s_token.ptr;
+}
+
+DLL_EXPORT void*(*get_rpmalloc())(size_t size)
+{
+    return rpmalloc;
+}
+
+DLL_EXPORT void(*get_rpfree())(void* ptr)
+{
+    return rpfree;
+}
+
+#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
+DLL_EXPORT int64_t(*get_GetTimeImpl())()
+{
+    return GetTimeImpl;
+}
+#endif
+
+DLL_EXPORT Profiler& get_profiler()
+{
+    return s_profiler;
+}
+
+#ifdef TRACY_COLLECT_THREAD_NAMES
+DLL_EXPORT std::atomic<ThreadNameData*>& get_threadNameData()
+{
+    return s_threadNameData;
+}
+
+DLL_EXPORT void(*get_rpmalloc_thread_initialize())()
+{
+    return rpmalloc_thread_initialize;
+}
+#endif
 
 
 enum { BulkSize = TargetFrameSize / QueueItemSize };

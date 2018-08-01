@@ -80,7 +80,7 @@ extern int64_t (*GetTimeImpl)();
 #endif
 
 class Profiler;
-extern Profiler s_profiler;
+extern Profiler& s_profiler;
 
 class Profiler
 {

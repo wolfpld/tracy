@@ -59,6 +59,14 @@ If you don't want to perform a complete application life-time capture, you may d
 
 On Unix make sure you are linking your application with libpthread and libdl.
 
+#### Initial client setup for multi-DLL projects
+
+In projects that consist of multiple DLLs / shared objects things are a bit different. Compiling TracyClient.cpp into every DLL is no option because this would result in several instances of the Tracy objects lying around in the process. We rather need to pass the instances of them to the different DLLs to be reused there.
+
+For that you need a main DLL to which your executable and the other DLLs link. If that doesn't exist you have to create one explicitly for Tracy. Link the executable and all DLLs which you want to profile to this DLL.
+
+Add `tracy/TracyClient.cpp` to the source files list of the main DLL and `tracy/TracyClientDLL.cpp` to the source files lists of the executable and the other DLLs.
+
 #### Running the server
 
 The easiest way to get going is to build the standalone server, available in the `standalone` directory. You can connect to localhost or remote clients and view the collected data right away.

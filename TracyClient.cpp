@@ -4,7 +4,9 @@
 //
 // For fast integration, compile and
 // link with this source file (and none
-// other).
+// other) in your executable (or in the
+// main DLL / shared object on multi-DLL
+// projects).
 //
 
 // Define TRACY_ENABLE to enable profiler.

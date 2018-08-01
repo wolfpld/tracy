@@ -33,7 +33,7 @@ struct ThreadNameData
     const char* name;
     ThreadNameData* next;
 };
-extern std::atomic<ThreadNameData*> s_threadNameData;
+extern std::atomic<ThreadNameData*>& s_threadNameData;
 #endif
 
 void SetThreadName( std::thread& thread, const char* name )

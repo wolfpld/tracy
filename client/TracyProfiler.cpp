@@ -124,6 +124,7 @@ static int64_t SetupHwTimer()
 
 static const char* GetProcessName()
 {
+    const char* processName = "unknown";
 #if defined _MSC_VER
     static char buf[_MAX_PATH];
     GetModuleFileNameA( nullptr, buf, _MAX_PATH );
@@ -131,17 +132,16 @@ static const char* GetProcessName()
     while( *ptr != '\0' ) ptr++;
     while( ptr > buf && *ptr != '\\' && *ptr != '/' ) ptr--;
     if( ptr > buf ) ptr++;
-    return ptr;
+    processName = ptr;
 #elif defined __ANDROID__
 #  if __ANDROID_API__ >= 21
     auto buf = getprogname();
-    if( buf ) return buf;
+    if( buf ) processName = buf;
 #  endif
 #elif defined _GNU_SOURCE || defined __CYGWIN__
-    return program_invocation_short_name;
-#else
-    return "unknown";
+    processName = program_invocation_short_name;
 #endif
+    return processName;
 }
 
 enum { QueuePrealloc = 256 * 1024 };

@@ -26,6 +26,12 @@ namespace tracy
 {
 
 #ifdef _MSC_VER
+typedef SOCKET socket_t;
+#else
+typedef int socket_t;
+#endif
+
+#ifdef _MSC_VER
 struct __wsinit
 {
     __wsinit()
@@ -174,7 +180,7 @@ int Socket::Recv( void* _buf, int len, const timeval* tv )
 
     fd_set fds;
     FD_ZERO( &fds );
-    FD_SET( static_cast<unsigned int>(m_sock), &fds );
+    FD_SET( static_cast<socket_t>(m_sock), &fds );
 
 #ifndef _WIN32
     timeval _tv = *tv;
@@ -231,7 +237,7 @@ bool Socket::HasData()
 
     fd_set fds;
     FD_ZERO( &fds );
-    FD_SET( static_cast<unsigned int>(m_sock), &fds );
+    FD_SET( static_cast<socket_t>(m_sock), &fds );
 
     return select( m_sock+1, &fds, nullptr, nullptr, &tv ) > 0;
 }
@@ -287,7 +293,7 @@ Socket* ListenSocket::Accept()
 
     fd_set fds;
     FD_ZERO( &fds );
-    FD_SET( static_cast<unsigned int>(m_sock), &fds );
+    FD_SET( static_cast<socket_t>(m_sock), &fds );
 
     select( m_sock+1, &fds, nullptr, nullptr, &tv );
     if( FD_ISSET( m_sock, &fds ) )

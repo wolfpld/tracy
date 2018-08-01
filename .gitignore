@@ -12,3 +12,9 @@ imgui.ini
 test/tracy_test
 test/tracy_test.exe
 */build/unix/*-*
+manual/tracy.aux
+manual/tracy.log
+manual/tracy.out
+manual/tracy.pdf
+manual/tracy.synctex.gz
+manual/tracy.toc

@@ -231,6 +231,21 @@ namespace moodycamel { namespace details {
 #endif
 } }
 
+namespace
+{
+    // to avoid MSVC warning 4127: conditional expression is constant
+    template <bool>
+    struct compile_time_condition
+    {
+        static const bool value = false;
+    };
+    template <>
+    struct compile_time_condition<true>
+    {
+        static const bool value = true;
+    };
+}
+
 #ifdef MOODYCAMEL_QUEUE_INTERNAL_DEBUG
 #include "internal/concurrentqueue_internal_debug.h"
 #endif
@@ -797,7 +812,7 @@ public:
 		}
 		
 		// Destroy implicit producer hash tables
-		if (INITIAL_IMPLICIT_PRODUCER_HASH_SIZE != 0) {
+		if (compile_time_condition<INITIAL_IMPLICIT_PRODUCER_HASH_SIZE != 0>::value) {
 			auto hash = implicitProducerHash.load(std::memory_order_relaxed);
 			while (hash != nullptr) {
 				auto prev = hash->prev;
@@ -1504,7 +1519,7 @@ private:
 		template<InnerQueueContext context>
 		inline bool is_empty() const
 		{
-			if (context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) {
+			if (compile_time_condition<context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD>::value) {
 				// Check flags
 				for (size_t i = 0; i < BLOCK_SIZE; ++i) {
 					if (!emptyFlags[i].load(std::memory_order_relaxed)) {
@@ -1550,7 +1565,7 @@ private:
 		template<InnerQueueContext context>
 		inline bool set_many_empty(index_t i, size_t count)
 		{
-			if (context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) {
+			if (compile_time_condition<context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD>::value) {
 				// Set flags
 				std::atomic_thread_fence(std::memory_order_release);
 				i = BLOCK_SIZE - 1 - static_cast<size_t>(i & static_cast<index_t>(BLOCK_SIZE - 1)) - count + 1;
@@ -1586,7 +1601,7 @@ private:
 		template<InnerQueueContext context>
 		inline void reset_empty()
 		{
-			if (context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) {
+			if (compile_time_condition<context == explicit_context && BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD>::value) {
 				// Reset flags
 				for (size_t i = 0; i != BLOCK_SIZE; ++i) {
 					emptyFlags[i].store(false, std::memory_order_relaxed);
@@ -3298,7 +3313,7 @@ private:
 	
 	inline void populate_initial_implicit_producer_hash()
 	{
-		if (INITIAL_IMPLICIT_PRODUCER_HASH_SIZE == 0) return;
+		if (compile_time_condition<INITIAL_IMPLICIT_PRODUCER_HASH_SIZE == 0>::value) return;
 		
 		implicitProducerHashCount.store(0, std::memory_order_relaxed);
 		auto hash = &initialImplicitProducerHash;
@@ -3640,7 +3655,7 @@ ConsumerToken::ConsumerToken(ConcurrentQueue<T, Traits>& queue)
 	: itemsConsumedFromCurrent(0), currentProducer(nullptr), desiredProducer(nullptr)
 {
 	initialOffset = queue.nextExplicitConsumerId.fetch_add(1, std::memory_order_release);
-	lastKnownGlobalOffset = -1;
+	lastKnownGlobalOffset = static_cast<std::uint32_t>(-1);
 }
 
 template<typename T, typename Traits>
@@ -3648,7 +3663,7 @@ ConsumerToken::ConsumerToken(BlockingConcurrentQueue<T, Traits>& queue)
 	: itemsConsumedFromCurrent(0), currentProducer(nullptr), desiredProducer(nullptr)
 {
 	initialOffset = reinterpret_cast<ConcurrentQueue<T, Traits>*>(&queue)->nextExplicitConsumerId.fetch_add(1, std::memory_order_release);
-	lastKnownGlobalOffset = -1;
+	lastKnownGlobalOffset = static_cast<std::uint32_t>(-1);
 }
 
 template<typename T, typename Traits>

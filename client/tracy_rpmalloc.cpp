@@ -85,6 +85,8 @@
 
 /// Platform and arch specifics
 #ifdef _MSC_VER
+#  pragma warning( push )
+#  pragma warning( disable : 4324 )
 #  define ALIGNED_STRUCT(name, alignment) __declspec(align(alignment)) struct name
 #  define FORCEINLINE __forceinline
 #  define atomic_thread_fence_acquire() //_ReadWriteBarrier()
@@ -1769,13 +1771,13 @@ _memory_map_os(size_t size, size_t* offset) {
 	//Ok to MEM_COMMIT - according to MSDN, "actual physical pages are not allocated unless/until the virtual addresses are actually accessed"
 	void* ptr = VirtualAlloc(0, size + padding, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 	if (!ptr) {
-		assert("Failed to map virtual memory block" == 0);
+		assert("Failed to map virtual memory block" && 0);
 		return 0;
 	}
 #else
 	void* ptr = mmap(0, size + padding, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_UNINITIALIZED, -1, 0);
 	if ((ptr == MAP_FAILED) || !ptr) {
-		assert("Failed to map virtual memory block" == 0);
+		assert("Failed to map virtual memory block" && 0);
 		return 0;
 	}
 #endif
@@ -1813,12 +1815,12 @@ _memory_unmap_os(void* address, size_t size, size_t offset, int release) {
 #if PLATFORM_WINDOWS
 	if (!VirtualFree(address, release ? 0 : size, release ? MEM_RELEASE : MEM_DECOMMIT)) {
 		DWORD err = GetLastError();
-		assert("Failed to unmap virtual memory block" == 0);
+		assert("Failed to unmap virtual memory block" && err && 0);
 	}
 #else
 	MEMORY_UNUSED(release);
 	if (munmap(address, size)) {
-		assert("Failed to unmap virtual memory block" == 0);
+		assert("Failed to unmap virtual memory block" && 0);
 	}
 #endif
 }
@@ -1854,7 +1856,7 @@ _memory_guard_validate(void* p) {
 			if (_memory_config.memory_overwrite)
 				_memory_config.memory_overwrite(p);
 			else
-				assert("Memory overwrite before block start" == 0);
+				assert("Memory overwrite before block start" && 0);
 			return;
 		}
 		deadzone[i] = 0;
@@ -1866,7 +1868,7 @@ _memory_guard_validate(void* p) {
 			if (_memory_config.memory_overwrite)
 				_memory_config.memory_overwrite(p);
 			else
-				assert("Memory overwrite after block end" == 0);
+				assert("Memory overwrite after block end" && 0);
 			return;
 		}
 		deadzone[i] = 0;
@@ -2085,5 +2087,9 @@ rpmalloc_global_statistics(rpmalloc_global_statistics_t* stats) {
 }
 
 }
+
+#ifdef _MSC_VER
+#  pragma warning( pop )
+#endif
 
 #endif

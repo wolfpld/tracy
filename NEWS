@@ -49,6 +49,7 @@ v0.4 (xxxx-xx-xx)
   - Holding the ctrl key will switch to zoom-out mode.
 - The "standalone" utility will use less resources when its window is
   out-of-focus or minimized.
+- Added support for cross-DLL profiling.
 
 v0.3.3 (2018-07-03)
 -------------------

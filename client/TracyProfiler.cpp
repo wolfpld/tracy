@@ -85,7 +85,7 @@ static int SetupHwTimerFailed()
     return sigsetjmp( SigIllEnv, 1 );
 }
 
-static void SetupHwTimerSigIllHandler( int signum )
+static void SetupHwTimerSigIllHandler( int /*signum*/ )
 {
     siglongjmp( SigIllEnv, 1 );
 }
@@ -139,8 +139,9 @@ static const char* GetProcessName()
 #  endif
 #elif defined _GNU_SOURCE || defined __CYGWIN__
     return program_invocation_short_name;
-#endif
+#else
     return "unknown";
+#endif
 }
 
 enum { QueuePrealloc = 256 * 1024 };
@@ -728,7 +729,7 @@ void Profiler::SendCallstackPayload( uint64_t _ptr )
     AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::CallstackPayload] );
     AppendDataUnsafe( &l16, sizeof( l16 ) );
 
-    if( sizeof( uintptr_t ) == sizeof( uint64_t ) )
+    if( compile_time_condition<sizeof( uintptr_t ) == sizeof( uint64_t )>::value )
     {
         AppendDataUnsafe( ptr, sizeof( uint64_t ) * sz );
     }

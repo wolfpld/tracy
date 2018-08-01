@@ -701,7 +701,7 @@ LZ4_FORCE_INLINE int LZ4_compress_generic(
         cctx->dictSize += (U32)inputSize;
     }
     cctx->currentOffset += (U32)inputSize;
-    cctx->tableType = tableType;
+    cctx->tableType = (U16)tableType;
 
     if (inputSize<LZ4_minLength) goto _last_literals;        /* Input too small, no compression (all literals) */
 

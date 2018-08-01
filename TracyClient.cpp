@@ -11,10 +11,6 @@
 
 // Define TRACY_ENABLE to enable profiler.
 
-#if ( defined _MSC_VER || defined __CYGWIN__ ) && !defined WIN32_LEAN_AND_MEAN
-#  define WIN32_LEAN_AND_MEAN
-#endif
-
 #include "common/TracySystem.cpp"
 
 #ifdef TRACY_ENABLE

@@ -373,7 +373,7 @@ private:
         MemWrite( &item->memAlloc.time, GetTime() );
         MemWrite( &item->memAlloc.thread, thread );
         MemWrite( &item->memAlloc.ptr, (uint64_t)ptr );
-        if( sizeof( size ) == 4 )
+        if( compile_time_condition<sizeof( size ) == 4>::value )
         {
             memcpy( &item->memAlloc.size, &size, 4 );
             memset( &item->memAlloc.size + 4, 0, 2 );

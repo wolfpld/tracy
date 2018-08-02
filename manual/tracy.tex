@@ -111,6 +111,26 @@ In the Tracy terminology, the profiled application is the \emph{client} and the 
 
 \section{First steps}
 
+Tracy requires compiler support for C++11, Thread Local Storage and a way to workaround static initialization order fiasco. There are no other requirements. The following platforms are confirmed to be working (this is not a complete list):
+
+\begin{itemize}
+\item Windows (x86, x64)
+\item Linux (x86, x64, ARM, ARM64)
+\item Android (ARM, x86)
+\item FreeBSD (x64)
+\item Cygwin (x64)
+\item WSL (x64)
+\item OSX (x64)
+\end{itemize}
+
+The following compilers are supported:
+
+\begin{itemize}
+\item MSVC
+\item gcc
+\item clang
+\end{itemize}
+
 \subsection{Initial client setup}
 
 The recommended way to integrate Tracy into an application is to create a git submodule in the repository (assuming that git is used for version control). This way it is very easy to update Tracy to newly released versions.

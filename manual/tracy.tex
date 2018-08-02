@@ -8,6 +8,7 @@
 \linespread{1.05} % Line spacing - Palatino needs more space between lines
 \usepackage{microtype}
 \usepackage{siunitx}
+\usepackage[tikz]{bclogo}
 
 \usepackage[hyphens]{url}
 \usepackage{hyperref} % For hyperlinks in the PDF
@@ -24,6 +25,26 @@
 \fancyhead[R]{The user manual}
 \fancyfoot[RO]{\thepage} % Custom footer text
 
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\lstset{language=C++}
+\lstset{
+         basicstyle=\footnotesize\ttfamily,
+         tabsize=4,
+         extendedchars=true,
+         breaklines=true,
+         stringstyle=\ttfamily,
+         showspaces=false,
+         xleftmargin=17pt,
+         framexleftmargin=17pt,
+         framexrightmargin=5pt,
+         framexbottommargin=4pt,
+         showstringspaces=false
+}
+
+\usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
+
 \begin{document}
 
 \begin{titlepage}
@@ -32,7 +53,10 @@
 
 \vspace{50pt} {\Huge\fontfamily{lmtt}\selectfont The user manual}
 \vfill
-\large\textbf{Bartosz Taudul}
+\large\textbf{Bartosz Taudul} \href{mailto:wolf.pld@gmail.com}{<wolf.pld@gmail.com>}
+
+\vspace{10pt}
+\today
 \vfill
 \url{https://bitbucket.org/wolfpld/tracy}
 \end{titlepage}
@@ -55,11 +79,12 @@ Now let's take a close look at the marketing blurb.
 
 \subsection{Real-time}
 
-This claim can be described in the following two ways:
+This claim can be described in the following ways:
 
 \begin{enumerate}
 \item The profiled application is not slowed down by profiling. The act of recording a profiling event has virtually zero cost -- it only takes \textasciitilde 8~\si{\nano\second}. Even on low-power mobile devices there's no perceptible impact on execution speed.
 \item The profiler itself works in real-time, without the need to process collected data in a complex way. Actually, it is quite inefficient in the way it works, as the data it presents is calculated anew each frame. And yet it can run at 60 frames per second.
+\item The profiler has full functionality when the profiled application is running and the data is captured. You may interact with your application and then immediately switch to the profiler, when a performance drop occurs.
 \end{enumerate}
 
 \subsection{Nanosecond resolution}
@@ -72,7 +97,7 @@ One microsecond ($\frac{1}{1000}$ of a millisecond) in our comparison equals to 
 
 And finally, one nanosecond ($\frac{1}{1000}$ of a microsecond) would be one nanometer. The modern microprocessor transistor gate, the width of DNA helix, or the thickness of a cell membrane are in the range of 5~\si{\nano\metre}. In one~\si{\nano\second} the light can travel only 30~\si{\centi\meter}.
 
-Tracy can achieve single-digit nanosecond measurement resolution, due to usage of hardware timing mechanisms on the x86 and ARM architectures\footnote{In both 32 and 64~bit variants.}. Other profilers may rely on the timers provided by operating system, which do have significantly reduced resolution (about 300~\si{\nano\second} -- 1~\si{\micro\second}). This is enough to hide the subtle impact of cache access optimization, etc.
+Tracy can achieve single-digit nanosecond measurement resolution, due to usage of hardware timing mechanisms on the x86 and ARM architectures\footnote{In both 32 and 64~bit variants. In some cases a proper kernel-level configuration is required in order to be able to use the hardware timers.}. Other profilers may rely on the timers provided by operating system, which do have significantly reduced resolution (about 300~\si{\nano\second} -- 1~\si{\micro\second}). This is enough to hide the subtle impact of cache access optimization, etc.
 
 \subsection{Frame profiler}
 
@@ -90,13 +115,13 @@ In the Tracy terminology, the profiled application is the \emph{client} and the 
 
 The recommended way to integrate Tracy into an application is to create a git submodule in the repository (assuming that git is used for version control). This way it is very easy to update Tracy to newly released versions.
 
-If that's not an option, copy files from the \texttt{tracy/client} and \texttt{tracy/common} directories, along with the source files in Tracy's root directory to your project. Next, add the \texttt{tracy/TracyClient.cpp} source file to the IDE project and/or makefile. That's all. Tracy is now integrated into the application.
+If that's not an option, copy all files from the \texttt{tracy/client} and \texttt{tracy/common} directories, along with the source files in Tracy's root directory to your project. Next, add the \texttt{tracy/TracyClient.cpp} source file to the IDE project and/or makefile. That's all. Tracy is now integrated into the application.
 
-In the default configuration Tracy is disabled. This way you don't have to worry that the production builds will perform profiling data collection. You will probably want to create a separate build configuration, with the \texttt{TRACY\_ENABLE} define, which enables profiling.
+In the default configuration Tracy is disabled. This way you don't have to worry that the production builds will perform collection of the profiling data. You will probably want to create a separate build configuration, with the \texttt{TRACY\_ENABLE} define, which enables profiling.
 
-In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), add the \texttt{TRACY\_NO\_EXIT} define to the build configuration. With this option Tracy will not exit until an incoming connection is made, even if the application has already finished executing. This mode of operation can also be achieved by setting the \texttt{TRACY\_NO\_EXIT} environment variable to $1$.
+In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), add the \texttt{TRACY\_NO\_EXIT} define to the build configuration. With this option enabled, Tracy will not exit until an incoming connection is made, even if the application has already finished executing. This mode of operation can also be turned on by setting the \texttt{TRACY\_NO\_EXIT} environment variable to $1$.
 
-By default Tracy will begin profiling even before the program enters the \texttt{main} function. If you don't want to perform a complete application life-time capture, you may define the \texttt{TRACY\_ON\_DEMAND} macro, which will enable profiling only when there's an established connection with the server.
+By default Tracy will begin profiling even before the program enters the \texttt{main} function. If you don't want to perform a full capture of application life-time, you may define the \texttt{TRACY\_ON\_DEMAND} macro, which will enable profiling only when there's an established connection with the server.
 
 Finally, on Unix make sure that the application is linked with libraries \texttt{libpthread} and \texttt{libdl}.
 
@@ -116,6 +141,20 @@ If you prefer to inspect the data only after a trace has been performed, you may
 
 Alternatively, you may want to embed the server in your application, the same which is running the client part of Tracy.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+You must use the same version of the Tracy profiler on both client and server! Network protocol mismatch will most likely lead to crashes. Tracy \emph{will not warn} about this!
+\end{bclogo}
+
+\subsection{Naming threads}
+
+Remember to set thread names for proper identification of threads. You may use the functions exposed in the \texttt{tracy/common/TracySystem.hpp} header to do so.
+
+Be aware that even if you already have thread naming functionality implemented, some platforms do not have adequate system-level capabilities (or none at all), in which case Tracy uses its own internal thread name storage.
+
 \section{Client markup}
 
 With the aforementioned steps you will be able to connect to the profiled program, but there won't be any data collection performed. In order to begin profiling, Tracy requires that you manually instrument the application\footnote{Automatic tracing of every entered function is not feasible due to the amount of data that would generate.}. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
@@ -128,29 +167,62 @@ Note that this step is optional, as some applications do not use the concept of 
 
 \subsection{Marking zones}
 
-To record a zone's execution time add the \texttt{ZoneScoped} macro at the beginning of the scope you want to measure. This will automatically record function name, source file name and location. Optionally you may use the \texttt{ZoneScopedC(0xRRGGBB)} macro to set a custom color for the zone. Note that the color value will be constant in the recording (don't try to parametrize it). You may also set a custom name for the zone, using the \texttt{ZoneScopedN(name)} macro, where name is a string literal. Color and name may be combined by using the \texttt{ZoneScopedNC(name, color)} macro.
+To record a zone's\footnote{A \texttt{zone} represents the life-time of a special on-stack profiler variable. Typically it would exist for the duration of a whole scope of the profiled function, but you also can measure time spent in scopes of a for-loop, or an if-branch.} execution time add the \texttt{ZoneScoped} macro at the beginning of the scope you want to measure. This will automatically record function name, source file name and location. Optionally you may use the \texttt{ZoneScopedC(0xRRGGBB)} macro to set a custom color for the zone. Note that the color value will be constant in the recording (don't try to parametrize it). You may also set a custom name for the zone, using the \texttt{ZoneScopedN(name)} macro, where name is a string literal. Color and name may be combined by using the \texttt{ZoneScopedNC(name, color)} macro.
 
 Use the \texttt{ZoneText(const char* text, size\_t size)} macro to add a custom text string that will be displayed along the zone information (for example, name of the file you are opening). Note that every time \texttt{ZoneText} is invoked, a memory allocation is performed to store an internal copy of the data. The provided string is not used by Tracy after \texttt{ZoneText} returns.
 
 If you want to set zone name on a per-call basis, you may do so using the \texttt{ZoneName(text, size)} macro.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Color palette}
+You may use named colors predefined in \texttt{common/TracyColor.hpp} (included by \texttt{Tracy.hpp}). Visual reference: \url{https://en.wikipedia.org/wiki/X11_color_names}.
+\end{bclogo}
+
+\subsubsection{Multiple zones in one scope}
+\label{multizone}
+
+Using the \texttt{ZoneScoped} family of macros creates a stack variable named \texttt{\_\_\_tracy\_scoped\_zone}. If you want to measure more than one zone in the same scope, you will need to use the \texttt{ZoneNamed} macros, which require providing a name for the created variable. For example, instead of \texttt{ZoneScopedN("Zone name")}, you would use \texttt{ZoneNamedN(variableName, "Zone name")}.
+
+The \texttt{ZoneText} and \texttt{ZoneName} macros work only for the zones created using the \texttt{ZoneScoped} macros. For the \texttt{ZoneNamed} macros, you will need to invoke the methods \texttt{Text} or \texttt{Name} of the variable you have created.
+
 \subsection{Marking locks}
 
-Tracy can collect and display lock interactions in threads. To mark a lock (mutex) for event reporting, use the \texttt{TracyLockable(type, varname)} macro. Note that the lock must implement the Lockable concept (i.e. there's no support for timed mutices). For a concrete example, you would replace the line \texttt{std::mutex m\_lock} with \texttt{TracyLockable(std::mutex, m\_lock)}. You may use \texttt{TracyLockableN(type, varname, description)} to provide a custom lock name.
+Modern programs must use multi-threading to achieve full performance capability of the CPU. Correct execution requires claiming exclusive access to data shared between threads. When many threads want to enter the critical section at once, the application's multi-threaded performance advantage is nullified. To answer this problem, Tracy can collect and display lock interactions in threads. 
 
-The standard \texttt{std::lock\_guard} and \texttt{std::unique\_lock} wrappers should use the \texttt{LockableBase(type)} macro for their template parameter (unless you're using C++17, with improved template argument deduction). For example, \texttt{std::lock\_guard<LockableBase(std::mutex)> lock(m\_lock)}.
+To mark a lock (mutex) for event reporting, use the \texttt{TracyLockable(type, varname)} macro. Note that the lock must implement the Mutex requirement\footnote{\url{https://en.cppreference.com/w/cpp/named_req/Mutex}} (i.e. there's no support for timed mutices). For a concrete example, you would replace the line
+
+\begin{lstlisting}
+std::mutex m_lock;
+\end{lstlisting}
+
+with
+
+\begin{lstlisting}
+TracyLockable(std::mutex, m_lock);
+\end{lstlisting}
+
+Alternatively, you may use \texttt{TracyLockableN(type, varname, description)} to provide a custom lock name.
+
+The standard \texttt{std::lock\_guard} and \texttt{std::unique\_lock} wrappers should use the \texttt{LockableBase(type)} macro for their template parameter (unless you're using C++17, with improved template argument deduction). For example:
+
+\begin{lstlisting}
+std::lock_guard<LockableBase(std::mutex)> lock(m_lock);
+\end{lstlisting}
 
 To mark the location of lock being held, use the \texttt{LockMark(varname)} macro, after you have obtained the lock. Note that the \texttt{varname} must be a lock variable (a reference is also valid). This step is optional.
 
-Similarly, you can use \texttt{TracySharedLockable}, \texttt{TracySharedLockableN} and \texttt{SharedLockableBase} to mark locks implementing the SharedMutex concept. Note that while there's no support for timed mutices in Tracy, both \texttt{std::shared\_mutex} and \texttt{std::shared\_timed\_mutex} may be used.
+Similarly, you can use \texttt{TracySharedLockable}, \texttt{TracySharedLockableN} and \texttt{SharedLockableBase} to mark locks implementing the SharedMutex requirement\footnote{\url{https://en.cppreference.com/w/cpp/named_req/SharedMutex}}. Note that while there's no support for timed mutices in Tracy, both \texttt{std::shared\_mutex} and \texttt{std::shared\_timed\_mutex} may be used\footnote{Since \texttt{std::shared\_mutex} was added in C++17, using \texttt{std::shared\_timed\_mutex} is the only way to have shared mutex functionality in C++14.}.
 
 \subsection{Plotting data}
 
-Tracy is able to capture and draw value changes over time. You may use it to analyze draw call count, number of performed queries, etc. To report data, use the \texttt{TracyPlot(name, value)} macro.
+Tracy is able to capture and draw numeric value changes over time. You may use it to analyze draw call counts, number of performed queries, etc. To report data, use the \texttt{TracyPlot(name, value)} macro.
 
 \subsection{Message log}
 
-Fast navigation in large data set and correlation of zones with what was happening in application may be difficult. To ease these issues Tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the \texttt{TracyMessage(text, size)} macro (Tracy will allocate memory for message storage). Alternatively, use \texttt{TracyMessageL(text)} for string literal messages. Messages are displayed on a chronological list and in the zone view.
+Fast navigation in large data sets and correlation of zones with what was happening in application may be difficult. To ease these issues Tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the \texttt{TracyMessage(text, size)} macro (Tracy will allocate memory for message storage). Alternatively, use \texttt{TracyMessageL(text)} for string literal messages. Messages are displayed on a chronological list and in the zone view.
 
 \subsection{Memory profiling}
 
@@ -164,17 +236,29 @@ Tracy can monitor memory usage of your application. Knowledge about each perform
 \item Information about memory statistics of each zone.
 \end{itemize}
 
-To mark memory events, use the \texttt{TracyAlloc(ptr, size)} and \texttt{TracyFree(ptr)} macros. Typically you would do that in overloads of operator new and operator delete.
+To mark memory events, use the \texttt{TracyAlloc(ptr, size)} and \texttt{TracyFree(ptr)} macros. Typically you would do that in overloads of \texttt{operator new} and \texttt{operator delete}.
 
 \subsection{Lua support}
 
-To profile Lua code using Tracy, include the \texttt{tracy/TracyLua.hpp} header file in your Lua wrapper and execute \texttt{tracy::LuaRegister(lua\_State*)} function to add instrumentation support. In your Lua code, add \texttt{tracy.ZoneBegin()} and \texttt{tracy.ZoneEnd()} calls to mark execution zones. \emph{Double check if you have included all return paths!} Use \texttt{tracy.ZoneBeginN(name)} to set zone name. Use \texttt{tracy.ZoneText(text)} to set zone text. Use \texttt{tracy.Message(text)} to send messages. Use \texttt{tracy.ZoneName(text)} to set zone name on a per-call basis.
+To profile Lua code using Tracy, include the \texttt{tracy/TracyLua.hpp} header file in your Lua wrapper and execute \texttt{tracy::LuaRegister(lua\_State*)} function to add instrumentation support.
+
+In the Lua code, add \texttt{tracy.ZoneBegin()} and \texttt{tracy.ZoneEnd()} calls to mark execution zones. You need to call the \texttt{ZoneEnd} method, because there is no automatic destruction of variables in Lua and we don't know when the garbage collection will be performed. \emph{Double check if you have included all return paths!}
+
+Use \texttt{tracy.ZoneBeginN(name)} if you want to set a custom zone name\footnote{While technically this name doesn't need to be constant, like in the \texttt{ZoneScopedN} macro, it should be, as it is used to group the zones together. This grouping is then used to display various statistics in the profiler. You may still set the per-call name using the \texttt{tracy.ZoneName} method.}.
+
+Use \texttt{tracy.ZoneText(text)} to set zone text.
+
+Use \texttt{tracy.Message(text)} to send messages.
+
+Use \texttt{tracy.ZoneName(text)} to set zone name on a per-call basis.
 
 Even if Tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the \texttt{tracy::LuaRemove(char* script)} function, which will replace instrumentation calls with white-space. This function does nothing if profiler is enabled.
 
 \subsection{GPU profiling}
 
 Tracy provides bindings for profiling OpenGL and Vulkan execution time on GPU.
+
+Note that the CPU and GPU timers may be not synchronized. You can correct the resulting desynchronization in the profiler's options.
 
 \subsubsection{OpenGL}
 
@@ -184,7 +268,18 @@ To mark a GPU zone use the \texttt{TracyGpuZone(name)} macro, where name is a st
 
 You also need to periodically collect the GPU events using the \texttt{TracyGpuCollect} macro. A good place to do it is after swap buffers function call.
 
-GPU profiling is not supported on OSX, iOS\footnote{Because Apple is unable to implement standards properly.}. Android devices do work, if GPU drivers are not broken. Disjoint events are not currently handled, so some readings may be a bit spotty. Nvidia drivers are unable to provide consistent timing results when two OpenGL contexts are used simultaneously.
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveats}
+\begin{itemize}
+\item GPU profiling is not supported on OSX, iOS\footnote{Because Apple is unable to implement standards properly.}.
+\item Android devices do work, if GPU drivers are not broken. Disjoint events are not currently handled, so some readings may be a bit spotty.
+\item Nvidia drivers are unable to provide consistent timing results when two OpenGL contexts are used simultaneously.
+\item Calling the \texttt{TracyGpuCollect} macro is a fairly slow operation.
+\end{itemize}
+\end{bclogo}
 
 \subsubsection{Vulkan}
 
@@ -194,15 +289,42 @@ The physical device, logical device, queue and command buffer must relate with e
 
 To mark a GPU zone use the \texttt{TracyVkZone(cmdbuf, name)} macro, where name is a string literal name of the zone. Alternatively you may use \texttt{TracyVkZoneC(cmdbuf, name, color)} to specify zone color. The provided command buffer must be in the recording state.
 
-You also need to periodically collect the GPU events using the \texttt{TracyVkCollect(cmdbuf)} macro. The provided command buffer must be in the recording state and outside of a render pass instance.
+You also need to periodically collect the GPU events using the \texttt{TracyVkCollect(cmdbuf)} macro\footnote{It is considerably faster than the OpenGL's \texttt{TracyGpuCollect}.}. The provided command buffer must be in the recording state and outside of a render pass instance.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveats}
+Vulkan support is very bare at the moment. Multi-threaded submitting commands to command buffers is not supported right now.
+\end{bclogo}
+
+\subsubsection{Multiple zones in one scope}
+
+Putting more than one GPU zone macro in a single scope features the same issue as with the \texttt{ZoneScoped} macros, described in section~\ref{multizone} (but this time the variable name is \texttt{\_\_\_tracy\_gpu\_zone}).
+
+To solve this problem, in case of OpenGL use the \texttt{TracyGpuNamedZone} macro in place of \texttt{TracyGpuZone} (or the color variant). The same applies to Vulkan -- replace \texttt{TracyVkZone} with \texttt{TracyVkNamedZone}.
+
+Remember that you need to provide your own name for the created stack variable as the first parameter to the macros.
 
 \subsection{Collecting call stacks}
 
-Tracy can capture true calls stacks on selected platforms (Windows, Linux, Android). It can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to do capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}.
+Tracy can capture true calls stacks on selected platforms (Windows, Linux, Android). It can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to do capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named variants.
 
-\section{Good practices}
+Be aware that call stack collection is a relatively slow operation. Table~\ref{CallstackTimes} shows how long it took to perform a single capture of varying depth on multiple architectures.
 
-Remember to set thread names for proper identification of threads. You may use the functions exposed in the \texttt{tracy/common/TracySystem.hpp} header to do so.
+\begin{table}[h]
+\centering
+\begin{tabular}[h]{c|c|c}
+Depth & x86 & x64 \\ \hline
+1 & 37 \si{\nano\second} & 97 \si{\nano\second} \\
+5 & 51 \si{\nano\second} & 312 \si{\nano\second} \\
+10 & 71 \si{\nano\second} & 468 \si{\nano\second} \\
+20 & 84 \si{\nano\second} & 517 \si{\nano\second}
+\end{tabular}
+\caption{Call stack capture times.}
+\label{CallstackTimes}
+\end{table}
 
 \section{Practical considerations}
 
@@ -210,14 +332,12 @@ Tracy's time measurement precision is not infinite. It's only as good as the sys
 
 \begin{itemize}
 \item On x86 the time resolution depends on the hardware implementation of the \texttt{rdtscp} instruction and typically is a couple of nanoseconds. This may vary from one micro-architecture to another and requires a fairly modern (Sandy Bridge) processor for reliable results.
-\item On ARM-based systems Tracy will try to use timer register (~40 \si{\nano\second} resolution). If it fails, Tracy falls back to system provided timer, which can range in resolution from 250 \si{\nano\second} to 1 \si{\micro\second}.
+\item On ARM-based systems Tracy will try to use the timer register (\textasciitilde 40 \si{\nano\second} resolution). If it fails, Tracy falls back to system provided timer, which can range in resolution from 250 \si{\nano\second} to 1 \si{\micro\second}.
 \end{itemize}
 
 While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which Tracy tries to calculate and display on the time-line view, as a red zone. Note that this is an approximation of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.
 
 Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.
-
-You may use named colors predefined in \texttt{common/TracyColor.hpp} (included by \texttt{Tracy.hpp}). Visual reference: \url{https://en.wikipedia.org/wiki/X11_color_names}.
 
 Tracy server will perform statistical data collection on the fly, if the macro \texttt{TRACY\_NO\_STATISTICS} is not defined. This allows extended analysis of the trace (for example, you can perform a live search for matching zones) at a small CPU processing cost and a considerable memory usage increase (at least 10 bytes per zone).
 

@@ -1815,7 +1815,7 @@ _memory_unmap_os(void* address, size_t size, size_t offset, int release) {
 #if PLATFORM_WINDOWS
 	if (!VirtualFree(address, release ? 0 : size, release ? MEM_RELEASE : MEM_DECOMMIT)) {
 		DWORD err = GetLastError();
-        (void)err;
+		(void)err;
 		assert("Failed to unmap virtual memory block" && 0);
 	}
 #else

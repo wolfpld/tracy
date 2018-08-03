@@ -127,6 +127,11 @@ int main( int argc, char** argv )
             ImGui::Begin( "Tracy server", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
             ImGui::Text( "Tracy %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
             ImGui::SameLine();
+            if( ImGui::SmallButton( "User manual" ) )
+            {
+                OpenWebpage( "https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf" );
+            }
+            ImGui::SameLine();
             if( ImGui::SmallButton( "Homepage" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );

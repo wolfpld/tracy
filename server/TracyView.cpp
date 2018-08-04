@@ -722,7 +722,7 @@ void View::DrawFrames()
                     {
                         ImGui::TextDisabled( "%s:", m_worker.GetString( m_frames->name ) );
                         ImGui::SameLine();
-                        ImGui::Text( "%s", RealToString( sel, true ) );
+                        ImGui::Text( "%s", RealToString( sel + 1, true ) );
                         ImGui::Separator();
                         TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( *m_frames, sel ) ) );
                     }
@@ -914,7 +914,7 @@ const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint
     }
     else
     {
-        sprintf( buf, "%s %s (%s)", m_worker.GetString( fd.name ), RealToString( i, true ), TimeToString( ftime ) );
+        sprintf( buf, "%s %s (%s)", m_worker.GetString( fd.name ), RealToString( i + 1, true ), TimeToString( ftime ) );
     }
     return buf;
 }

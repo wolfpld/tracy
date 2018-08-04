@@ -828,23 +828,30 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     }
     else if( m_highlightZoom.active )
     {
-        const auto s = std::min( m_highlightZoom.start, m_highlightZoom.end );
-        const auto e = std::max( m_highlightZoom.start, m_highlightZoom.end );
-
-        // ZoomToRange disables m_highlightZoom.active
-        if( io.KeyCtrl )
+        if( m_highlightZoom.start != m_highlightZoom.end )
         {
-            const auto tsOld = m_zvEnd - m_zvStart;
-            const auto tsNew = e - s;
-            const auto mul = double( tsOld ) / tsNew;
-            const auto left = s - m_zvStart;
-            const auto right = m_zvEnd - e;
+            const auto s = std::min( m_highlightZoom.start, m_highlightZoom.end );
+            const auto e = std::max( m_highlightZoom.start, m_highlightZoom.end );
 
-            ZoomToRange( m_zvStart - left * mul, m_zvEnd + right * mul );
+            // ZoomToRange disables m_highlightZoom.active
+            if( io.KeyCtrl )
+            {
+                const auto tsOld = m_zvEnd - m_zvStart;
+                const auto tsNew = e - s;
+                const auto mul = double( tsOld ) / tsNew;
+                const auto left = s - m_zvStart;
+                const auto right = m_zvEnd - e;
+
+                ZoomToRange( m_zvStart - left * mul, m_zvEnd + right * mul );
+            }
+            else
+            {
+                ZoomToRange( s, e );
+            }
         }
         else
         {
-            ZoomToRange( s, e );
+            m_highlightZoom.active = false;
         }
     }
 

@@ -58,6 +58,7 @@ v0.4 (xxxx-xx-xx)
   - Only one frame set can be active at once. The selected one is used for
     the frame navigation graph, frame navigation buttons and drawing frame
     separators.
+- Frames too small to be displayed will be replaced with a zig-zag pattern.
 
 v0.3.3 (2018-07-03)
 -------------------

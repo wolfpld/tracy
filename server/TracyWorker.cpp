@@ -889,8 +889,9 @@ int64_t Worker::GetFrameEnd( const FrameData& fd, size_t idx ) const
 
 std::pair <int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, int64_t to )
 {
-    const auto zitbegin = std::lower_bound( fd.frames.begin(), fd.frames.end(), from );
-    if( zitbegin == fd.frames.end() ) return std::make_pair( -1, -1 );
+    auto zitbegin = std::lower_bound( fd.frames.begin(), fd.frames.end(), from );
+    if( zitbegin == fd.frames.end() ) zitbegin--;
+
     const auto zitend = std::lower_bound( zitbegin, fd.frames.end(), to );
 
     int zbegin = std::distance( fd.frames.begin(), zitbegin );

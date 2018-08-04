@@ -6303,7 +6303,6 @@ void View::ZoomToNextFrame()
     else
     {
         frame = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).first;
-        if( frame == -1 ) return;
     }
     frame++;
     if( frame >= m_worker.GetFrameCount( *m_frames ) ) return;

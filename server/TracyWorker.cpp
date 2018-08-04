@@ -864,7 +864,8 @@ int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
     }
     else
     {
-        return m_data.lastTime == 0 ? 0 : m_data.lastTime - fd.frames.back();
+        assert( m_data.lastTime != 0 );
+        return m_data.lastTime - fd.frames.back();
     }
 }
 

@@ -1634,7 +1634,6 @@ void Worker::HandlePlotName( uint64_t name, char* str, size_t sz )
         {
             InsertPlot( plot, v.time, v.val );
         }
-        // TODO what happens with the source data here?
     }
 
     m_pendingPlots.erase( pit );

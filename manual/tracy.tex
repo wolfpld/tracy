@@ -346,6 +346,19 @@ Depth & x86 & x64 \\ \hline
 \label{CallstackTimes}
 \end{table}
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Debugging symbols}
+To have proper call stack information, the profiled application must be compiled with debugging symbols enabled. You can achieve that in the following way:
+
+\begin{itemize}
+\item On MSVC open the project properties and go to \emph{Linker\textrightarrow Debugging\textrightarrow Generate Debug Info}, where the \emph{Generate Debug Information} option should be selected.
+\item On gcc or clang, link the executable with an additional option \texttt{-rdynamic} (or \texttt{-{}-export-dynamic}, if you are passing parameters directly to the linker).
+\end{itemize}
+\end{bclogo}
+
 \section{Practical considerations}
 
 Tracy's time measurement precision is not infinite. It's only as good as the system-provided timers are.

@@ -53,6 +53,11 @@ v0.4 (xxxx-xx-xx)
 - Items in options menu (locks, threads, etc.) are now described with number
   of events.
 - Created an extensive user manual for the profiler.
+- Added ability to capture multiple frame sets.
+  - Viewer will display multiple frame ranges at once.
+  - Only one frame set can be active at once. The selected one is used for
+    the frame navigation graph, frame navigation buttons and drawing frame
+    separators.
 
 v0.3.3 (2018-07-03)
 -------------------

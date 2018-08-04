@@ -63,7 +63,8 @@ private:
     bool DrawImpl();
     void DrawConnection();
     void DrawFrames();
-    bool DrawZoneFrames();
+    bool DrawZoneFramesHeader();
+    bool DrawZoneFrames( const FrameData& frames );
     void DrawZones();
     int DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
     int DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );

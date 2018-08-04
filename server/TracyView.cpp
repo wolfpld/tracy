@@ -872,17 +872,14 @@ static const char* GetFrameText( int i, uint64_t ftime, uint64_t offset )
     return buf;
 }
 
-bool View::DrawZoneFrames()
+bool View::DrawZoneFramesHeader()
 {
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
-    const auto h = ImGui::GetFontSize();
-    const auto wh = ImGui::GetContentRegionAvail().y;
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetFontSize();
-    const auto fy = round( h * 1.5 );
 
-    ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, h * 2.5 ) );
+    ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty * 1.5 ) );
     bool hover = ImGui::IsItemHovered();
 
     auto timespan = m_zvEnd - m_zvStart;
@@ -939,22 +936,41 @@ bool View::DrawZoneFrames()
         }
     }
 
-    const std::pair <int, int> zrange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
+    return hover;
+}
+
+bool View::DrawZoneFrames( const FrameData& frames )
+{
+    const auto wpos = ImGui::GetCursorScreenPos();
+    const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
+    const auto wh = ImGui::GetContentRegionAvail().y;
+    auto draw = ImGui::GetWindowDrawList();
+    const auto ty = ImGui::GetFontSize();
+
+    ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty ) );
+    bool hover = ImGui::IsItemHovered();
+
+    auto timespan = m_zvEnd - m_zvStart;
+    auto pxns = w / double( timespan );
+
+    if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
+
+    const std::pair <int, int> zrange = m_worker.GetFrameRange( frames, m_zvStart, m_zvEnd );
     if( zrange.first < 0 ) return hover;
 
     for( int i = zrange.first; i < zrange.second; i++ )
     {
-        const auto ftime = m_worker.GetFrameTime( *m_frames, i );
-        const auto fbegin = m_worker.GetFrameBegin( *m_frames, i );
-        const auto fend = m_worker.GetFrameEnd( *m_frames, i );
+        const auto ftime = m_worker.GetFrameTime( frames, i );
+        const auto fbegin = m_worker.GetFrameBegin( frames, i );
+        const auto fend = m_worker.GetFrameEnd( frames, i );
         const auto fsz = pxns * ftime;
 
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, fy ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, fy + ty ) ) )
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, ty ) ) )
         {
             ImGui::BeginTooltip();
             ImGui::Text( "%s", GetFrameText( i, ftime, m_worker.GetFrameOffset() ) );
             ImGui::Separator();
-            TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( *m_frames, i ) - m_worker.GetTimeBegin() ) );
+            TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( frames, i ) - m_worker.GetTimeBegin() ) );
             ImGui::EndTooltip();
 
             if( ImGui::IsMouseClicked( 2 ) )
@@ -984,27 +1000,27 @@ bool View::DrawZoneFrames()
 
             if( fbegin >= m_zvStart )
             {
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, fy + 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, fy + ty - 1 ), color );
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, ty - 1 ), color );
             }
             if( fend <= m_zvEnd )
             {
-                draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, fy + 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, fy + ty - 1 ), color );
+                draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, ty - 1 ), color );
             }
             if( fsz - 5 > tx )
             {
                 const auto part = ( fsz - 5 - tx ) / 2;
-                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), fy + round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fbegin - m_zvStart ) * pxns + part ), fy + round( ty / 2 ) ), color );
-                draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, fy ), color, buf );
-                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 + part + tx ), fy + round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), fy + round( ty / 2 ) ), color );
+                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fbegin - m_zvStart ) * pxns + part ), round( ty / 2 ) ), color );
+                draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), color, buf );
+                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 + part + tx ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
             }
             else
             {
-                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), fy + round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), fy + round( ty / 2 ) ), color );
+                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
             }
         }
     }
 
-    const auto fend = m_worker.GetFrameEnd( *m_frames, zrange.second-1 );
+    const auto fend = m_worker.GetFrameEnd( frames, zrange.second-1 );
     if( fend == m_zvEnd )
     {
         draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
@@ -1038,7 +1054,12 @@ void View::DrawZones()
     const auto linepos = ImGui::GetCursorScreenPos();
     const auto lineh = ImGui::GetContentRegionAvail().y;
 
-    auto drawMouseLine = DrawZoneFrames();
+    bool drawMouseLine = DrawZoneFramesHeader();
+    auto& frames = m_worker.GetFrames();
+    for( auto fd : frames )
+    {
+        drawMouseLine |= DrawZoneFrames( *fd );
+    }
 
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 

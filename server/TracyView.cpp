@@ -857,6 +857,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
 
     if( ImGui::IsMouseDragging( 1, 0 ) )
     {
+        m_zoomAnim.active = false;
         m_pause = true;
         const auto delta = ImGui::GetMouseDragDelta( 1, 0 );
         const auto dpx = int64_t( delta.x * nspx );
@@ -877,6 +878,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     const auto wheel = io.MouseWheel;
     if( wheel != 0 )
     {
+        m_zoomAnim.active = false;
         m_pause = true;
         const double mouse = io.MousePos.x - wpos.x;
         const auto p = mouse / w;

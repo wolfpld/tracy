@@ -627,8 +627,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     if( eventMask & EventType::Plots )
     {
         m_data.plots.reserve( sz );
+        s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
         for( uint64_t i=0; i<sz; i++ )
         {
+            s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
             auto pd = m_slab.AllocInit<PlotData>();
             pd->type = PlotType::User;
             f.Read( pd->name );

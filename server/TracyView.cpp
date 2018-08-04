@@ -1028,7 +1028,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
         if( fsz <= 4 ) continue;
 
-        if( fbegin >= m_zvStart )
+        if( fbegin >= m_zvStart && m_frames == &frames )
         {
             draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
         }

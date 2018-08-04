@@ -139,6 +139,7 @@ public:
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
+        MemWrite( &item->frameMark.name, uint64_t( 0 ) );
         tail.store( magic + 1, std::memory_order_release );
     }
 

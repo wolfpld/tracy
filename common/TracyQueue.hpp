@@ -75,6 +75,7 @@ struct QueueStringTransfer
 struct QueueFrameMark
 {
     int64_t time;
+    uint64_t name;      // ptr
 };
 
 struct QueueSourceLocation

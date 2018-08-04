@@ -143,6 +143,21 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    static tracy_force_inline void SendFrameMark( const char* name )
+    {
+#ifdef TRACY_ON_DEMAND
+        if( !s_profiler.IsConnected() ) return;
+#endif
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
+        MemWrite( &item->frameMark.time, GetTime() );
+        MemWrite( &item->frameMark.name, uint64_t( name ) );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     static tracy_force_inline void PlotData( const char* name, int64_t val )
     {
 #ifdef TRACY_ON_DEMAND

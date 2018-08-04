@@ -439,7 +439,18 @@ bool View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
     ImGui::SameLine();
-    ImGui::Text( "%s: %s", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ), RealToString( m_worker.GetFrameCount( *m_frames ), true ) );
+    {
+        const auto vis = Visible( m_frames );
+        if( !vis )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+        }
+        ImGui::Text( "%s: %s", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ), RealToString( m_worker.GetFrameCount( *m_frames ), true ) );
+        if( !vis )
+        {
+            ImGui::PopStyleColor();
+        }
+    }
     ImGui::SameLine();
     if( ImGui::SmallButton( ">" ) ) ZoomToNextFrame();
     ImGui::SameLine();

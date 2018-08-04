@@ -19,18 +19,19 @@ public:
     tracy_force_inline bool IsPending() const { return !m_pending.empty(); }
 
     // Merge( destination, postponed )
-    tracy_force_inline bool StringDiscovered( uint64_t name, const StringLocation& sl, std::function<void(T,T)> Merge )
+    template<typename U>
+    tracy_force_inline void StringDiscovered( uint64_t name, const StringLocation& sl, U& stringMap, std::function<void(T,T)> Merge )
     {
         auto pit = m_pending.find( name );
         assert( pit != m_pending.end() );
 
         auto it = m_rev.find( sl.ptr );
-        bool add = it == m_rev.end();
-        if( add )
+        if( it == m_rev.end() )
         {
             m_map.emplace( name, pit->second );
             m_rev.emplace( sl.ptr, pit->second );
             m_data.push_back( pit->second );
+            stringMap.emplace( name, sl.ptr );
         }
         else
         {
@@ -40,8 +41,6 @@ public:
         }
 
         m_pending.erase( pit );
-
-        return add;
     }
 
     tracy_force_inline T Retrieve( uint64_t name, std::function<T(uint64_t)> Create, std::function<void(uint64_t)> Query )

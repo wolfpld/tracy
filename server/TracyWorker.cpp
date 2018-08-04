@@ -1613,16 +1613,12 @@ void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
 void Worker::HandlePlotName( uint64_t name, char* str, size_t sz )
 {
     const auto sl = StoreString( str, sz );
-    bool addString = m_data.plots.StringDiscovered( name, sl, [this] ( PlotData* dst, PlotData* src ) {
+    m_data.plots.StringDiscovered( name, sl, m_data.strings, [this] ( PlotData* dst, PlotData* src ) {
         for( auto& v : src->data )
         {
             InsertPlot( dst, v.time, v.val );
         }
     } );
-    if( addString )
-    {
-        m_data.strings.emplace( name, sl.ptr );
-    }
 }
 
 void Worker::HandlePostponedPlots()

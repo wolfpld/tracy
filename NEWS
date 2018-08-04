@@ -50,6 +50,8 @@ v0.4 (xxxx-xx-xx)
 - The "standalone" utility will use less resources when its window is
   out-of-focus or minimized.
 - Added support for cross-DLL profiling.
+- Items in options menu (locks, threads, etc.) are now described with number
+  of events.
 
 v0.3.3 (2018-07-03)
 -------------------

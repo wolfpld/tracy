@@ -276,9 +276,34 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_captureName = std::string( tmp, tmp+sz );
     }
 
-    f.Read( sz );
-    m_data.frames.reserve_and_use( sz );
-    f.Read( m_data.frames.data(), sizeof( uint64_t ) * sz );
+    if( fileVer >= FileVersion( 0, 3, 202 ) )
+    {
+        f.Read( sz );
+        m_data.frames.Data().reserve_and_use( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            auto ptr = m_slab.AllocInit<FrameData>();
+            f.Read( &ptr->name, sizeof( ptr->name ) );
+            uint64_t fsz;
+            f.Read( &fsz, sizeof( fsz ) );
+            ptr->frames.reserve_and_use( fsz );
+            f.Read( ptr->frames.data(), sizeof( int64_t ) * fsz );
+            m_data.frames.Data()[i] = ptr;
+        }
+
+        m_data.framesBase = m_data.frames.Data()[0];
+        assert( m_data.framesBase->name == 0 );
+    }
+    else
+    {
+        auto ptr = m_slab.AllocInit<FrameData>();
+        ptr->name = 0;
+        f.Read( sz );
+        ptr->frames.reserve_and_use( sz );
+        f.Read( ptr->frames.data(), sizeof( uint64_t ) * sz );
+        m_data.frames.Data().push_back( ptr );
+        m_data.framesBase = ptr;
+    }
 
     flat_hash_map<uint64_t, const char*, nohash<uint64_t>> pointerMap;
 
@@ -825,31 +850,35 @@ Worker::~Worker()
     {
         v->~PlotData();
     }
+    for( auto& v : m_data.frames.Data() )
+    {
+        v->~FrameData();
+    }
 }
 
-int64_t Worker::GetFrameTime( size_t idx ) const
+int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
 {
-    if( idx < m_data.frames.size() - 1 )
+    if( idx < fd.frames.size() - 1 )
     {
-        return m_data.frames[idx+1] - m_data.frames[idx];
+        return fd.frames[idx+1] - fd.frames[idx];
     }
     else
     {
-        return m_data.lastTime == 0 ? 0 : m_data.lastTime - m_data.frames.back();
+        return m_data.lastTime == 0 ? 0 : m_data.lastTime - fd.frames.back();
     }
 }
 
-int64_t Worker::GetFrameBegin( size_t idx ) const
+int64_t Worker::GetFrameBegin( const FrameData& fd, size_t idx ) const
 {
-    assert( idx < m_data.frames.size() );
-    return m_data.frames[idx];
+    assert( idx < fd.frames.size() );
+    return fd.frames[idx];
 }
 
-int64_t Worker::GetFrameEnd( size_t idx ) const
+int64_t Worker::GetFrameEnd( const FrameData& fd, size_t idx ) const
 {
-    if( idx < m_data.frames.size() - 1 )
+    if( idx < fd.frames.size() - 1 )
     {
-        return m_data.frames[idx+1];
+        return fd.frames[idx+1];
     }
     else
     {
@@ -857,15 +886,15 @@ int64_t Worker::GetFrameEnd( size_t idx ) const
     }
 }
 
-std::pair <int, int> Worker::GetFrameRange( int64_t from, int64_t to )
+std::pair <int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, int64_t to )
 {
-    const auto zitbegin = std::lower_bound( m_data.frames.begin(), m_data.frames.end(), from );
-    if( zitbegin == m_data.frames.end() ) return std::make_pair( -1, -1 );
-    const auto zitend = std::lower_bound( zitbegin, m_data.frames.end(), to );
+    const auto zitbegin = std::lower_bound( fd.frames.begin(), fd.frames.end(), from );
+    if( zitbegin == fd.frames.end() ) return std::make_pair( -1, -1 );
+    const auto zitend = std::lower_bound( zitbegin, fd.frames.end(), to );
 
-    int zbegin = std::distance( m_data.frames.begin(), zitbegin );
+    int zbegin = std::distance( fd.frames.begin(), zitbegin );
     if( zbegin > 0 && *zitbegin != from) --zbegin;
-    const int zend = std::distance( m_data.frames.begin(), zitend );
+    const int zend = std::distance( fd.frames.begin(), zitend );
 
     return std::make_pair( zbegin, zend );
 }
@@ -1098,13 +1127,24 @@ void Worker::Exec()
         uint64_t bytes = 0;
         uint64_t decBytes = 0;
 
+        m_data.framesBase = m_data.frames.Retrieve( 0, [this] ( uint64_t name ) {
+            auto fd = m_slab.AllocInit<FrameData>();
+            fd->name = name;
+            return fd;
+        }, [this] ( uint64_t name ) {
+            assert( name == 0 );
+            char tmp[6] = "Frame";
+            HandleFrameName( name, tmp, 5 );
+        } );
+
         {
             WelcomeMessage welcome;
             if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
             m_timerMul = welcome.timerMul;
-            m_data.frames.push_back( TscTime( welcome.initBegin ) );
-            m_data.frames.push_back( TscTime( welcome.initEnd ) );
-            m_data.lastTime = m_data.frames.back();
+            const auto initEnd = TscTime( welcome.initEnd );
+            m_data.framesBase->frames.push_back( TscTime( welcome.initBegin ) );
+            m_data.framesBase->frames.push_back( initEnd );
+            m_data.lastTime = initEnd;
             m_delay = TscTime( welcome.delay );
             m_resolution = TscTime( welcome.resolution );
             m_onDemand = welcome.onDemand;
@@ -1873,11 +1913,17 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 
 void Worker::ProcessFrameMark( const QueueFrameMark& ev )
 {
-    assert( !m_data.frames.empty() );
-    const auto lastframe = m_data.frames.back();
+    auto fd = m_data.frames.Retrieve( ev.name, [this] ( uint64_t name ) {
+        auto fd = m_slab.AllocInit<FrameData>();
+        fd->name = name;
+        return fd;
+    }, [this] ( uint64_t name ) {
+        ServerQuery( ServerQueryFrameName, name );
+    } );
+
     const auto time = TscTime( ev.time );
-    assert( lastframe < time );
-    m_data.frames.push_back_non_empty( time );
+    assert( fd->frames.empty() || fd->frames.back() < time );
+    fd->frames.push_back( time );
     m_data.lastTime = std::max( m_data.lastTime, time );
 }
 
@@ -2429,7 +2475,7 @@ void Worker::CreateMemAllocPlot()
     m_data.memory.plot = m_slab.AllocInit<PlotData>();
     m_data.memory.plot->name = 0;
     m_data.memory.plot->type = PlotType::Memory;
-    m_data.memory.plot->data.push_back( { GetFrameBegin( 0 ), 0. } );
+    m_data.memory.plot->data.push_back( { GetFrameBegin( *m_data.framesBase, 0 ), 0. } );
     m_data.plots.Data().push_back( m_data.memory.plot );
 }
 
@@ -2463,7 +2509,7 @@ void Worker::ReconstructMemAllocPlot()
     double usage = 0;
 
     auto ptr = plot->data.data();
-    ptr->time = GetFrameBegin( 0 );
+    ptr->time = GetFrameBegin( *m_data.framesBase, 0 );
     ptr->val = 0;
     ptr++;
 
@@ -2747,9 +2793,15 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_captureName.c_str(), sz );
 
-    sz = m_data.frames.size();
+    sz = m_data.frames.Data().size();
     f.Write( &sz, sizeof( sz ) );
-    f.Write( m_data.frames.data(), sizeof( uint64_t ) * sz );
+    for( auto& fd : m_data.frames.Data() )
+    {
+        f.Write( &fd->name, sizeof( fd->name ) );
+        sz = fd->frames.size();
+        f.Write( &sz, sizeof( sz ) );
+        f.Write( fd->frames.data(), sizeof( int64_t ) * sz );
+    }
 
     sz = m_data.stringData.size();
     f.Write( &sz, sizeof( sz ) );

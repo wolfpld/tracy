@@ -101,7 +101,8 @@ private:
         DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
 
         TracyMutex lock;
-        Vector<int64_t> frames;
+        StringDiscovery<FrameData*> frames;
+        FrameData* framesBase;
         Vector<GpuCtxData*> gpuData;
         Vector<MessageData*> messages;
         StringDiscovery<PlotData*> plots;
@@ -177,15 +178,16 @@ public:
     int64_t GetResolution() const { return m_resolution; }
 
     TracyMutex& GetDataLock() { return m_data.lock; }
-    size_t GetFrameCount() const { return m_data.frames.size(); }
+    size_t GetFrameCount( const FrameData& fd ) const { return fd.frames.size(); }
     int64_t GetLastTime() const { return m_data.lastTime; }
     uint64_t GetZoneCount() const { return m_data.zonesCnt; }
     uint64_t GetFrameOffset() const { return m_data.frameOffset; }
+    const FrameData* GetFramesBase() const { return m_data.framesBase; }
 
-    int64_t GetFrameTime( size_t idx ) const;
-    int64_t GetFrameBegin( size_t idx ) const;
-    int64_t GetFrameEnd( size_t idx ) const;
-    std::pair <int, int> GetFrameRange( int64_t from, int64_t to );
+    int64_t GetFrameTime( const FrameData& fd, size_t idx ) const;
+    int64_t GetFrameBegin( const FrameData& fd, size_t idx ) const;
+    int64_t GetFrameEnd( const FrameData& fd, size_t idx ) const;
+    std::pair <int, int> GetFrameRange( const FrameData& fd, int64_t from, int64_t to );
 
     const std::map<uint32_t, LockMap>& GetLockMap() const { return m_data.lockMap; }
     const Vector<MessageData*>& GetMessages() const { return m_data.messages; }

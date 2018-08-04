@@ -194,6 +194,7 @@ private:
     int64_t m_memoryAllocInfoWindow;
     int64_t m_memoryAllocHover;
     int m_memoryAllocHoverWait;
+    const FrameData* m_frames;
 
     Region m_highlight;
     Region m_highlightZoom;

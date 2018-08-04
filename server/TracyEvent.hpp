@@ -255,6 +255,12 @@ struct MemData
     PlotData* plot = nullptr;
 };
 
+struct FrameData
+{
+    uint64_t name;
+    Vector<int64_t> frames;
+};
+
 struct StringLocation
 {
     const char* ptr;

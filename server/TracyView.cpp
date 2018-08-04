@@ -419,9 +419,27 @@ bool View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Compare" ) ) m_compare.show = true;
     ImGui::SameLine();
+    if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
+    {
+        auto& frames = m_worker.GetFrames();
+        for( auto& fd : frames )
+        {
+            bool isSelected = m_frames == fd;
+            if( ImGui::Selectable( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), isSelected ) )
+            {
+                m_frames = fd;
+            }
+            if( isSelected )
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+    ImGui::SameLine();
     if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
     ImGui::SameLine();
-    ImGui::Text( "Frames: %s", RealToString( m_worker.GetFrameCount( *m_frames ), true ) );
+    ImGui::Text( "%s: %s", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ), RealToString( m_worker.GetFrameCount( *m_frames ), true ) );
     ImGui::SameLine();
     if( ImGui::SmallButton( ">" ) ) ZoomToNextFrame();
     ImGui::SameLine();
@@ -3745,7 +3763,7 @@ void View::DrawOptions()
         for( const auto& fd : m_worker.GetFrames() )
         {
             ImGui::PushID( idx++ );
-            ImGui::Checkbox( fd->name == 0 ? "Base frame set" : m_worker.GetString( fd->name ), &Visible( fd ) );
+            ImGui::Checkbox( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), &Visible( fd ) );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "%s frames", RealToString( fd->frames.size(), true ) );

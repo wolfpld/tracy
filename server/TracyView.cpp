@@ -1065,7 +1065,10 @@ void View::DrawZones()
     auto& frames = m_worker.GetFrames();
     for( auto fd : frames )
     {
-        drawMouseLine |= DrawZoneFrames( *fd );
+        if( Visible( fd ) )
+        {
+            drawMouseLine |= DrawZoneFrames( *fd );
+        }
     }
 
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
@@ -3683,7 +3686,7 @@ void View::DrawOptions()
     }
 
     ImGui::Separator();
-    const auto expand = ImGui::TreeNode( "Visible threads:" );
+    auto expand = ImGui::TreeNode( "Visible threads:" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", m_worker.GetThreadData().size() );
     if( expand )
@@ -3712,6 +3715,40 @@ void View::DrawOptions()
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
+        }
+        ImGui::TreePop();
+    }
+
+    ImGui::Separator();
+    expand = ImGui::TreeNode( "Visible frame sets:" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%zu)", m_worker.GetFrames().size() );
+    if( expand )
+    {
+        if( ImGui::SmallButton( "Select all" ) )
+        {
+            for( const auto& fd : m_worker.GetFrames() )
+            {
+                Visible( fd ) = true;
+            }
+        }
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Unselect all" ) )
+        {
+            for( const auto& fd : m_worker.GetFrames() )
+            {
+                Visible( fd ) = false;
+            }
+        }
+
+        int idx = 0;
+        for( const auto& fd : m_worker.GetFrames() )
+        {
+            ImGui::PushID( idx++ );
+            ImGui::Checkbox( fd->name == 0 ? "Base frame set" : m_worker.GetString( fd->name ), &Visible( fd ) );
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::TextDisabled( "%s frames", RealToString( fd->frames.size(), true ) );
         }
         ImGui::TreePop();
     }

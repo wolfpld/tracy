@@ -626,7 +626,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( sz );
     if( eventMask & EventType::Plots )
     {
-        m_data.plots.reserve( sz );
+        m_data.plots.Data().reserve( sz );
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
         for( uint64_t i=0; i<sz; i++ )
         {
@@ -640,7 +640,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( psz );
             pd->data.reserve_and_use( psz );
             f.Read( pd->data.data(), psz * sizeof( PlotItem ) );
-            m_data.plots.push_back_no_space_check( pd );
+            m_data.plots.Data().push_back_no_space_check( pd );
         }
     }
     else
@@ -821,7 +821,7 @@ Worker::~Worker()
         v->timeline.~Vector();
         v->stack.~Vector();
     }
-    for( auto& v : m_data.plots )
+    for( auto& v : m_data.plots.Data() )
     {
         v->~PlotData();
     }
@@ -1180,7 +1180,7 @@ void Worker::Exec()
             if( m_terminate )
             {
                 if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
-                    !m_pendingCustomStrings.empty() || !m_pendingPlots.empty() || !m_pendingCallstacks.empty() )
+                    !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || !m_pendingCallstacks.empty() )
                 {
                     continue;
                 }
@@ -1612,36 +1612,22 @@ void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
 
 void Worker::HandlePlotName( uint64_t name, char* str, size_t sz )
 {
-    auto pit = m_pendingPlots.find( name );
-    assert( pit != m_pendingPlots.end() );
-
     const auto sl = StoreString( str, sz );
-
-    auto it = m_plotRev.find( sl.ptr );
-    if( it == m_plotRev.end() )
+    bool addString = m_data.plots.StringDiscovered( name, sl, [this] ( PlotData* dst, PlotData* src ) {
+        for( auto& v : src->data )
+        {
+            InsertPlot( dst, v.time, v.val );
+        }
+    } );
+    if( addString )
     {
-        m_plotMap.emplace( name, pit->second );
-        m_plotRev.emplace( sl.ptr, pit->second );
-        m_data.plots.push_back( pit->second );
         m_data.strings.emplace( name, sl.ptr );
     }
-    else
-    {
-        auto plot = it->second;
-        m_plotMap.emplace( name, plot );
-        const auto& pp = pit->second->data;
-        for( auto& v : pp )
-        {
-            InsertPlot( plot, v.time, v.val );
-        }
-    }
-
-    m_pendingPlots.erase( pit );
 }
 
 void Worker::HandlePostponedPlots()
 {
-    for( auto& plot : m_data.plots )
+    for( auto& plot : m_data.plots.Data() )
     {
         auto& src = plot->postpone;
         if( src.empty() ) continue;
@@ -2074,28 +2060,14 @@ void Worker::ProcessLockMark( const QueueLockMark& ev )
 
 void Worker::ProcessPlotData( const QueuePlotData& ev )
 {
-    PlotData* plot;
-    auto it = m_plotMap.find( ev.name );
-    if( it == m_plotMap.end() )
-    {
-        auto pit = m_pendingPlots.find( ev.name );
-        if( pit == m_pendingPlots.end() )
-        {
-            plot = m_slab.AllocInit<PlotData>();
-            plot->name = ev.name;
-            plot->type = PlotType::User;
-            m_pendingPlots.emplace( ev.name, plot );
-            ServerQuery( ServerQueryPlotName, ev.name );
-        }
-        else
-        {
-            plot = pit->second;
-        }
-    }
-    else
-    {
-        plot = it->second;
-    }
+    PlotData* plot = m_data.plots.Retrieve( ev.name, [this] ( uint64_t name ) {
+        auto plot = m_slab.AllocInit<PlotData>();
+        plot->name = name;
+        plot->type = PlotType::User;
+        return plot;
+    }, [this]( uint64_t name ) {
+        ServerQuery( ServerQueryPlotName, name );
+    } );
 
     const auto time = TscTime( ev.time );
     m_data.lastTime = std::max( m_data.lastTime, time );
@@ -2462,7 +2434,7 @@ void Worker::CreateMemAllocPlot()
     m_data.memory.plot->name = 0;
     m_data.memory.plot->type = PlotType::Memory;
     m_data.memory.plot->data.push_back( { GetFrameBegin( 0 ), 0. } );
-    m_data.plots.push_back( m_data.memory.plot );
+    m_data.plots.Data().push_back( m_data.memory.plot );
 }
 
 void Worker::ReconstructMemAllocPlot()
@@ -2561,7 +2533,7 @@ void Worker::ReconstructMemAllocPlot()
     plot->max = max;
 
     std::lock_guard<TracyMutex> lock( m_data.lock );
-    m_data.plots.insert( m_data.plots.begin(), plot );
+    m_data.plots.Data().insert( m_data.plots.Data().begin(), plot );
     m_data.memory.plot = plot;
 }
 
@@ -2917,10 +2889,10 @@ void Worker::Write( FileWrite& f )
         WriteTimeline( f, ctx->timeline );
     }
 
-    sz = m_data.plots.size();
-    for( auto& plot : m_data.plots ) { if( plot->type != PlotType::User ) sz--; }
+    sz = m_data.plots.Data().size();
+    for( auto& plot : m_data.plots.Data() ) { if( plot->type != PlotType::User ) sz--; }
     f.Write( &sz, sizeof( sz ) );
-    for( auto& plot : m_data.plots )
+    for( auto& plot : m_data.plots.Data() )
     {
         if( plot->type != PlotType::User ) continue;
         f.Write( &plot->name, sizeof( plot->name ) );

@@ -17,6 +17,7 @@
 #include "tracy_flat_hash_map.hpp"
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
+#include "TracyStringDiscovery.hpp"
 #include "TracyVarArray.hpp"
 
 namespace tracy
@@ -103,7 +104,7 @@ private:
         Vector<int64_t> frames;
         Vector<GpuCtxData*> gpuData;
         Vector<MessageData*> messages;
-        Vector<PlotData*> plots;
+        StringDiscovery<PlotData*> plots;
         Vector<ThreadData*> threads;
         MemData memory;
         uint64_t zonesCnt;
@@ -189,7 +190,7 @@ public:
     const std::map<uint32_t, LockMap>& GetLockMap() const { return m_data.lockMap; }
     const Vector<MessageData*>& GetMessages() const { return m_data.messages; }
     const Vector<GpuCtxData*>& GetGpuData() const { return m_data.gpuData; }
-    const Vector<PlotData*>& GetPlots() const { return m_data.plots; }
+    const Vector<PlotData*>& GetPlots() const { return m_data.plots.Data(); }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
     const MemData& GetMemData() const { return m_data.memory; }
 
@@ -367,10 +368,7 @@ private:
 
     GpuCtxData* m_gpuCtxMap[256];
     flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
-    flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_pendingPlots;
     flat_hash_map<uint64_t, uint32_t> m_pendingCallstacks;
-    flat_hash_map<uint64_t, PlotData*, nohash<uint64_t>> m_plotMap;
-    flat_hash_map<const char*, PlotData*, charutil::HasherPOT, charutil::Comparator> m_plotRev;
     flat_hash_map<uint64_t, int32_t, nohash<uint64_t>> m_pendingSourceLocationPayload;
     Vector<uint64_t> m_sourceLocationQueue;
     flat_hash_map<uint64_t, uint32_t, nohash<uint64_t>> m_sourceLocationShrink;

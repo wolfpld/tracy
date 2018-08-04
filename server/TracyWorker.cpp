@@ -1283,6 +1283,9 @@ void Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
         case QueueType::CallstackPayload:
             AddCallstackPayload( ev.stringTransfer.ptr, ptr, sz );
             break;
+        case QueueType::FrameName:
+            HandleFrameName( ev.stringTransfer.ptr, ptr, sz );
+            break;
         default:
             assert( false );
             break;
@@ -1659,6 +1662,16 @@ void Worker::HandlePlotName( uint64_t name, char* str, size_t sz )
         {
             InsertPlot( dst, v.time, v.val );
         }
+    } );
+}
+
+void Worker::HandleFrameName( uint64_t name, char* str, size_t sz )
+{
+    const auto sl = StoreString( str, sz );
+    m_data.frames.StringDiscovered( name, sl, m_data.strings, [this] ( FrameData* dst, FrameData* src ) {
+        auto sz = dst->frames.size();
+        dst->frames.insert( dst->frames.end(), src->frames.begin(), src->frames.end() );
+        std::inplace_merge( dst->frames.begin(), dst->frames.begin() + sz, dst->frames.end() );
     } );
 }
 

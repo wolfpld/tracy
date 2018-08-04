@@ -660,7 +660,7 @@ bool Profiler::SendData( const char* data, size_t len )
 
 void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
-    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName );
+    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName || type == QueueType::FrameName );
 
     QueueItem item;
     MemWrite( &item.hdr.type, type );
@@ -805,6 +805,9 @@ bool Profiler::HandleServerQuery()
         return false;
     case ServerQueryCallstackFrame:
         SendCallstackFrame( ptr );
+        break;
+    case ServerQueryFrameName:
+        SendString( ptr, (const char*)ptr, QueueType::FrameName );
         break;
     default:
         assert( false );

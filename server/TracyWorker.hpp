@@ -324,6 +324,7 @@ private:
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void HandlePlotName( uint64_t name, char* str, size_t sz );
+    void HandleFrameName( uint64_t name, char* str, size_t sz );
 
     void HandlePostponedPlots();
 

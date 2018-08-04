@@ -986,6 +986,34 @@ bool View::DrawZoneFramesHeader()
     return hover;
 }
 
+static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color )
+{
+    int mode = 0;
+    while( start < end )
+    {
+        double step = std::min( end - start, mode == 0 ? h/2 : h );
+        switch( mode )
+        {
+        case 0:
+            draw->AddLine( wpos + ImVec2( start, 0 ), wpos + ImVec2( start + step, round( -step ) ), color );
+            mode = 1;
+            break;
+        case 1:
+            draw->AddLine( wpos + ImVec2( start, round( -h/2 ) ), wpos + ImVec2( start + step, round( step - h/2 ) ), color );
+            mode = 2;
+            break;
+        case 2:
+            draw->AddLine( wpos + ImVec2( start, round( h/2 ) ), wpos + ImVec2( start + step, round( h/2 - step ) ), color );
+            mode = 1;
+            break;
+        default:
+            assert( false );
+            break;
+        };
+        start += step;
+    }
+}
+
 bool View::DrawZoneFrames( const FrameData& frames )
 {
     const auto wpos = ImGui::GetCursorScreenPos();
@@ -1004,6 +1032,8 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
     const std::pair <int, int> zrange = m_worker.GetFrameRange( frames, m_zvStart, m_zvEnd );
     if( zrange.first < 0 ) return hover;
+
+    int64_t prev = -1;
 
     for( int i = zrange.first; i < zrange.second; i++ )
     {
@@ -1026,45 +1056,57 @@ bool View::DrawZoneFrames( const FrameData& frames )
             }
         }
 
-        if( fsz <= 4 ) continue;
+        if( fsz < 5 )
+        {
+            if( prev == -1 ) prev = fbegin;
+            continue;
+        }
+        if( prev != -1 )
+        {
+            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( fbegin - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+            prev = -1;
+        }
 
         if( fbegin >= m_zvStart && m_frames == &frames )
         {
             draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
         }
 
-        if( fsz >= 5 )
+        auto buf = GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() );
+        auto tx = ImGui::CalcTextSize( buf ).x;
+        uint32_t color = ( frames.name == 0 && i == 0 ) ? 0xFF4444FF : 0xFFFFFFFF;
+
+        if( fsz - 5 <= tx )
         {
-            auto buf = GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() );
-            auto tx = ImGui::CalcTextSize( buf ).x;
-            uint32_t color = ( frames.name == 0 && i == 0 ) ? 0xFF4444FF : 0xFFFFFFFF;
-
-            if( fsz - 5 <= tx )
-            {
-                buf = TimeToString( ftime );
-                tx = ImGui::CalcTextSize( buf ).x;
-            }
-
-            if( fbegin >= m_zvStart )
-            {
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, ty - 1 ), color );
-            }
-            if( fend <= m_zvEnd )
-            {
-                draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, ty - 1 ), color );
-            }
-            if( fsz - 5 > tx )
-            {
-                const auto part = ( fsz - 5 - tx ) / 2;
-                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fbegin - m_zvStart ) * pxns + part ), round( ty / 2 ) ), color );
-                draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), color, buf );
-                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 + part + tx ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
-            }
-            else
-            {
-                draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
-            }
+            buf = TimeToString( ftime );
+            tx = ImGui::CalcTextSize( buf ).x;
         }
+
+        if( fbegin >= m_zvStart )
+        {
+            draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, ty - 1 ), color );
+        }
+        if( fend <= m_zvEnd )
+        {
+            draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, ty - 1 ), color );
+        }
+        if( fsz - 5 > tx )
+        {
+            const auto part = ( fsz - 5 - tx ) / 2;
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fbegin - m_zvStart ) * pxns + part ), round( ty / 2 ) ), color );
+            draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), color, buf );
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 + part + tx ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
+        }
+        else
+        {
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
+        }
+    }
+
+    if( prev != -1 )
+    {
+        DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+        prev = -1;
     }
 
     const auto fend = m_worker.GetFrameEnd( frames, zrange.second-1 );

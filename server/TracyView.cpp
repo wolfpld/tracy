@@ -850,24 +850,31 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     }
 }
 
-static const char* GetFrameText( int i, uint64_t ftime, uint64_t offset )
+const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint64_t offset ) const
 {
-    static char buf[128];
-    if( i == 0 )
+    static char buf[1024];
+    if( fd.name == 0 )
     {
-        sprintf( buf, "Tracy init (%s)", TimeToString( ftime ) );
-    }
-    else if( offset == 0 )
-    {
-        sprintf( buf, "Frame %s (%s)", RealToString( i, true ), TimeToString( ftime ) );
-    }
-    else if( i == 1 )
-    {
-        sprintf( buf, "Missed frames (%s)", TimeToString( ftime ) );
+        if( i == 0 )
+        {
+            sprintf( buf, "Tracy init (%s)", TimeToString( ftime ) );
+        }
+        else if( offset == 0 )
+        {
+            sprintf( buf, "Frame %s (%s)", RealToString( i, true ), TimeToString( ftime ) );
+        }
+        else if( i == 1 )
+        {
+            sprintf( buf, "Missed frames (%s)", TimeToString( ftime ) );
+        }
+        else
+        {
+            sprintf( buf, "Frame %s (%s)", RealToString( i + offset - 1, true ), TimeToString( ftime ) );
+        }
     }
     else
     {
-        sprintf( buf, "Frame %s (%s)", RealToString( i + offset - 1, true ), TimeToString( ftime ) );
+        sprintf( buf, "%s %s (%s)", m_worker.GetString( fd.name ), RealToString( i, true ), TimeToString( ftime ) );
     }
     return buf;
 }
@@ -968,7 +975,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, ty ) ) )
         {
             ImGui::BeginTooltip();
-            ImGui::Text( "%s", GetFrameText( i, ftime, m_worker.GetFrameOffset() ) );
+            ImGui::Text( "%s", GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
             ImGui::Separator();
             TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( frames, i ) - m_worker.GetTimeBegin() ) );
             ImGui::EndTooltip();
@@ -988,9 +995,9 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
         if( fsz >= 5 )
         {
-            auto buf = GetFrameText( i, ftime, m_worker.GetFrameOffset() );
+            auto buf = GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() );
             auto tx = ImGui::CalcTextSize( buf ).x;
-            uint32_t color = i == 0 ? 0xFF4444FF : 0xFFFFFFFF;
+            uint32_t color = ( frames.name == 0 && i == 0 ) ? 0xFF4444FF : 0xFFFFFFFF;
 
             if( fsz - 5 <= tx )
             {

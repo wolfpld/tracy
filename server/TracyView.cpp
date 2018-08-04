@@ -3551,6 +3551,8 @@ void View::DrawOptions()
                     sprintf( buf, "OpenGL context %zu", i );
                 }
                 ImGui::Checkbox( buf, &Visible( gpuData[i] ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "%s top level zones", RealToString( gpuData[i]->timeline.size(), true ) );
                 ImGui::TreePush();
                 auto& drift = GpuDrift( gpuData[i] );
                 ImGui::InputInt( "Drift (ns/s)", &drift );
@@ -3605,6 +3607,8 @@ void View::DrawOptions()
                     char buf[1024];
                     sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
                     ImGui::Checkbox( buf, &Visible( &l.second ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "%s events", RealToString( l.second.timeline.size(), true ) );
                 }
             }
             ImGui::TreePop();
@@ -3639,6 +3643,8 @@ void View::DrawOptions()
             for( const auto& p : m_worker.GetPlots() )
             {
                 ImGui::Checkbox( GetPlotName( p ), &Visible( p ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "%s data points", RealToString( p->data.size(), true ) );
             }
             ImGui::TreePop();
         }
@@ -3672,6 +3678,8 @@ void View::DrawOptions()
             ImGui::PushID( idx++ );
             ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Visible( t ) );
             ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
         }
         ImGui::TreePop();
     }

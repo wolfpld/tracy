@@ -181,9 +181,19 @@ With the aforementioned steps you will be able to connect to the profiled progra
 
 \subsection{Marking frames}
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Do I need this?}
+This step is optional, as some applications do not use the concept of a frame.
+\end{bclogo}
+
 To slice the program's execution recording into frame-sized chunks, put the \texttt{FrameMark} macro after you have completed rendering the frame. Ideally that would be right after the swap buffers command.
 
-Note that this step is optional, as some applications do not use the concept of a frame.
+\subsubsection{Secondary frame sets}
+
+In some cases you may want to track more than one set of frames in your program. In such case, you may use the \texttt{FrameMarkNamed(name)} macro, which will create a new set of frames for each unique name you provide.
 
 \subsection{Marking zones}
 

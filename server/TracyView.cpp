@@ -468,7 +468,9 @@ void View::DrawConnection()
 
     {
         std::lock_guard<TracyMutex> lock( m_worker.GetMbpsDataLock() );
-        ImGui::Begin( m_worker.GetAddr().c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+        char tmp[2048];
+        sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
+        ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
         const auto& mbpsVector = m_worker.GetMbpsData();
         const auto mbps = mbpsVector.back();
         char buf[64];

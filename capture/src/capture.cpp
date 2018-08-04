@@ -163,7 +163,7 @@ int main( int argc, char** argv )
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
 
-    printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nSaving trace...", worker.GetFrameCount(), TimeToString( worker.GetLastTime() - worker.GetFrameBegin( 0 ) ), RealToString( worker.GetZoneCount(), true ) );
+    printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nSaving trace...", worker.GetFrameCount( *worker.GetFramesBase() ), TimeToString( worker.GetLastTime() - worker.GetTimeBegin() ), RealToString( worker.GetZoneCount(), true ) );
     fflush( stdout );
     auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );
     if( f )

@@ -3868,7 +3868,7 @@ void View::DrawOptions()
             ImGui::Checkbox( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), &Visible( fd ) );
             ImGui::PopID();
             ImGui::SameLine();
-            ImGui::TextDisabled( "%s frames", RealToString( fd->frames.size(), true ) );
+            ImGui::TextDisabled( "%s %sframes", RealToString( fd->frames.size(), true ), fd->continuous ? "" : "discontinuous " );
         }
         ImGui::TreePop();
     }

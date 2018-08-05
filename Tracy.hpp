@@ -21,6 +21,8 @@
 
 #define FrameMark
 #define FrameMarkNamed(x)
+#define FrameMarkStart(x)
+#define FrameMarkEnd(x)
 
 #define TracyLockable( type, varname ) type varname;
 #define TracyLockableN( type, varname, desc ) type varname;
@@ -71,7 +73,9 @@
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
 
 #define FrameMark tracy::Profiler::SendFrameMark();
-#define FrameMarkNamed( name ) tracy::Profiler::SendFrameMark( name );
+#define FrameMarkNamed( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsg );
+#define FrameMarkStart( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgStart );
+#define FrameMarkEnd( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgEnd );
 
 #define TracyLockable( type, varname ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocationData* { static const tracy::SourceLocationData srcloc { nullptr, #type " " #varname, __FILE__, __LINE__, 0 }; return &srcloc; }() };
 #define TracyLockableN( type, varname, desc ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocationData* { static const tracy::SourceLocationData srcloc { nullptr, desc, __FILE__, __LINE__, 0 }; return &srcloc; }() };

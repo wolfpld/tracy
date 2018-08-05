@@ -284,10 +284,22 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             auto ptr = m_slab.AllocInit<FrameData>();
             f.Read( &ptr->name, sizeof( ptr->name ) );
+            f.Read( &ptr->continuous, sizeof( ptr->continuous ) );
             uint64_t fsz;
             f.Read( &fsz, sizeof( fsz ) );
             ptr->frames.reserve_and_use( fsz );
-            f.Read( ptr->frames.data(), sizeof( int64_t ) * fsz );
+            if( ptr->continuous )
+            {
+                for( uint64_t i=0; i<fsz; i++ )
+                {
+                    f.Read( &ptr->frames[i].start, sizeof( int64_t ) );
+                    ptr->frames[i].end = -1;
+                }
+            }
+            else
+            {
+                f.Read( ptr->frames.data(), sizeof( FrameEvent ) * fsz );
+            }
             m_data.frames.Data()[i] = ptr;
         }
 
@@ -298,9 +310,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         auto ptr = m_slab.AllocInit<FrameData>();
         ptr->name = 0;
+        ptr->continuous = 1;
         f.Read( sz );
         ptr->frames.reserve_and_use( sz );
-        f.Read( ptr->frames.data(), sizeof( uint64_t ) * sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            f.Read( &ptr->frames[i].start, sizeof( int64_t ) );
+            ptr->frames[i].end = -1;
+        }
         m_data.frames.Data().push_back( ptr );
         m_data.framesBase = ptr;
     }
@@ -858,44 +875,72 @@ Worker::~Worker()
 
 int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
 {
-    if( idx < fd.frames.size() - 1 )
+    if( fd.continuous )
     {
-        return fd.frames[idx+1] - fd.frames[idx];
+        if( idx < fd.frames.size() - 1 )
+        {
+            return fd.frames[idx+1].start - fd.frames[idx].start;
+        }
+        else
+        {
+            assert( m_data.lastTime != 0 );
+            return m_data.lastTime - fd.frames.back().start;
+        }
     }
     else
     {
-        assert( m_data.lastTime != 0 );
-        return m_data.lastTime - fd.frames.back();
+        if( fd.frames[idx].end >= 0 )
+        {
+            return fd.frames[idx].end - fd.frames[idx].start;
+        }
+        else
+        {
+            return m_data.lastTime - fd.frames.back().start;
+        }
     }
 }
 
 int64_t Worker::GetFrameBegin( const FrameData& fd, size_t idx ) const
 {
     assert( idx < fd.frames.size() );
-    return fd.frames[idx];
+    return fd.frames[idx].start;
 }
 
 int64_t Worker::GetFrameEnd( const FrameData& fd, size_t idx ) const
 {
-    if( idx < fd.frames.size() - 1 )
+    if( fd.continuous )
     {
-        return fd.frames[idx+1];
+        if( idx < fd.frames.size() - 1 )
+        {
+            return fd.frames[idx+1].start;
+        }
+        else
+        {
+            return m_data.lastTime;
+        }
     }
     else
     {
-        return m_data.lastTime;
+        if( fd.frames[idx].end >= 0 )
+        {
+            return fd.frames[idx].end;
+        }
+        else
+        {
+            return m_data.lastTime;
+        }
     }
 }
 
 std::pair <int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, int64_t to )
 {
-    auto zitbegin = std::lower_bound( fd.frames.begin(), fd.frames.end(), from );
+    auto zitbegin = std::lower_bound( fd.frames.begin(), fd.frames.end(), from, [] ( const auto& lhs, const auto& rhs ) { return lhs.start < rhs; } );
     if( zitbegin == fd.frames.end() ) zitbegin--;
 
-    const auto zitend = std::lower_bound( zitbegin, fd.frames.end(), to );
+    const auto zitend = std::lower_bound( zitbegin, fd.frames.end(), to, [] ( const auto& lhs, const auto& rhs ) { return lhs.start < rhs; } );
 
     int zbegin = std::distance( fd.frames.begin(), zitbegin );
-    if( zbegin > 0 && *zitbegin != from) --zbegin;
+    if( zbegin > 0 && zitbegin->start != from ) --zbegin;
     const int zend = std::distance( fd.frames.begin(), zitend );
 
     return std::make_pair( zbegin, zend );
@@ -1132,6 +1177,7 @@ void Worker::Exec()
         m_data.framesBase = m_data.frames.Retrieve( 0, [this] ( uint64_t name ) {
             auto fd = m_slab.AllocInit<FrameData>();
             fd->name = name;
+            fd->continuous = 1;
             return fd;
         }, [this] ( uint64_t name ) {
             assert( name == 0 );
@@ -1144,8 +1190,8 @@ void Worker::Exec()
             if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
             m_timerMul = welcome.timerMul;
             const auto initEnd = TscTime( welcome.initEnd );
-            m_data.framesBase->frames.push_back( TscTime( welcome.initBegin ) );
-            m_data.framesBase->frames.push_back( initEnd );
+            m_data.framesBase->frames.push_back( FrameEvent{ TscTime( welcome.initBegin ), -1 } );
+            m_data.framesBase->frames.push_back( FrameEvent{ initEnd, -1 } );
             m_data.lastTime = initEnd;
             m_delay = TscTime( welcome.delay );
             m_resolution = TscTime( welcome.resolution );
@@ -1672,7 +1718,7 @@ void Worker::HandleFrameName( uint64_t name, char* str, size_t sz )
     m_data.frames.StringDiscovered( name, sl, m_data.strings, [this] ( FrameData* dst, FrameData* src ) {
         auto sz = dst->frames.size();
         dst->frames.insert( dst->frames.end(), src->frames.begin(), src->frames.end() );
-        std::inplace_merge( dst->frames.begin(), dst->frames.begin() + sz, dst->frames.end() );
+        std::inplace_merge( dst->frames.begin(), dst->frames.begin() + sz, dst->frames.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.start < rhs.start; } );
     } );
 }
 
@@ -1742,6 +1788,12 @@ void Worker::Process( const QueueItem& ev )
         break;
     case QueueType::FrameMarkMsg:
         ProcessFrameMark( ev.frameMark );
+        break;
+    case QueueType::FrameMarkMsgStart:
+        ProcessFrameMarkStart( ev.frameMark );
+        break;
+    case QueueType::FrameMarkMsgEnd:
+        ProcessFrameMarkEnd( ev.frameMark );
         break;
     case QueueType::SourceLocation:
         AddSourceLocation( ev.srcloc );
@@ -1931,14 +1983,57 @@ void Worker::ProcessFrameMark( const QueueFrameMark& ev )
     auto fd = m_data.frames.Retrieve( ev.name, [this] ( uint64_t name ) {
         auto fd = m_slab.AllocInit<FrameData>();
         fd->name = name;
+        fd->continuous = 1;
         return fd;
     }, [this] ( uint64_t name ) {
         ServerQuery( ServerQueryFrameName, name );
     } );
 
+    assert( fd->continuous == 1 );
     const auto time = TscTime( ev.time );
-    assert( fd->frames.empty() || fd->frames.back() < time );
-    fd->frames.push_back( time );
+    assert( fd->frames.empty() || fd->frames.back().start < time );
+    fd->frames.push_back( FrameEvent{ time, -1 } );
+    m_data.lastTime = std::max( m_data.lastTime, time );
+}
+
+void Worker::ProcessFrameMarkStart( const QueueFrameMark& ev )
+{
+    auto fd = m_data.frames.Retrieve( ev.name, [this] ( uint64_t name ) {
+        auto fd = m_slab.AllocInit<FrameData>();
+        fd->name = name;
+        fd->continuous = 0;
+        return fd;
+    }, [this] ( uint64_t name ) {
+        ServerQuery( ServerQueryFrameName, name );
+    } );
+
+    assert( fd->continuous == 0 );
+    const auto time = TscTime( ev.time );
+    assert( fd->frames.empty() || ( fd->frames.back().end < time && fd->frames.back().end != -1 ) );
+    fd->frames.push_back( FrameEvent{ time, -1 } );
+    m_data.lastTime = std::max( m_data.lastTime, time );
+}
+
+void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
+{
+    auto fd = m_data.frames.Retrieve( ev.name, [this] ( uint64_t name ) {
+        auto fd = m_slab.AllocInit<FrameData>();
+        fd->name = name;
+        fd->continuous = 0;
+        return fd;
+    }, [this] ( uint64_t name ) {
+        ServerQuery( ServerQueryFrameName, name );
+    } );
+
+    assert( fd->continuous == 0 );
+    const auto time = TscTime( ev.time );
+    if( fd->frames.empty() )
+    {
+        assert( m_onDemand );
+        return;
+    }
+    assert( fd->frames.back().end == -1 );
+    fd->frames.back().end = time;
     m_data.lastTime = std::max( m_data.lastTime, time );
 }
 
@@ -2813,9 +2908,20 @@ void Worker::Write( FileWrite& f )
     for( auto& fd : m_data.frames.Data() )
     {
         f.Write( &fd->name, sizeof( fd->name ) );
+        f.Write( &fd->continuous, sizeof( fd->continuous ) );
         sz = fd->frames.size();
         f.Write( &sz, sizeof( sz ) );
-        f.Write( fd->frames.data(), sizeof( int64_t ) * sz );
+        if( fd->continuous )
+        {
+            for( auto& fe : fd->frames )
+            {
+                f.Write( &fe.start, sizeof( fe.start ) );
+            }
+        }
+        else
+        {
+            f.Write( fd->frames.data(), sizeof( FrameEvent ) * sz );
+        }
     }
 
     sz = m_data.stringData.size();

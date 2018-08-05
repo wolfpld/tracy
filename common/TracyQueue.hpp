@@ -20,6 +20,8 @@ enum class QueueType : uint8_t
     ZoneBeginCallstack,
     ZoneEnd,
     FrameMarkMsg,
+    FrameMarkMsgStart,
+    FrameMarkMsgEnd,
     SourceLocation,
     LockAnnounce,
     LockWait,
@@ -288,7 +290,9 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
-    sizeof( QueueHeader ) + sizeof( QueueFrameMark ),
+    sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // continuous frames
+    sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // start
+    sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // end
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
     sizeof( QueueHeader ) + sizeof( QueueLockAnnounce ),
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),

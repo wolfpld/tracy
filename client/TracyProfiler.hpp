@@ -1,6 +1,7 @@
 #ifndef __TRACYPROFILER_HPP__
 #define __TRACYPROFILER_HPP__
 
+#include <assert.h>
 #include <atomic>
 #include <chrono>
 #include <stdint.h>
@@ -143,8 +144,9 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
-    static tracy_force_inline void SendFrameMark( const char* name )
+    static tracy_force_inline void SendFrameMark( const char* name, QueueType type )
     {
+        assert( type == QueueType::FrameMarkMsg || type == QueueType::FrameMarkMsgStart || type == QueueType::FrameMarkMsgEnd );
 #ifdef TRACY_ON_DEMAND
         if( !s_profiler.IsConnected() ) return;
 #endif
@@ -152,7 +154,7 @@ public:
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
-        MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
+        MemWrite( &item->hdr.type, type );
         MemWrite( &item->frameMark.time, GetTime() );
         MemWrite( &item->frameMark.name, uint64_t( name ) );
         tail.store( magic + 1, std::memory_order_release );

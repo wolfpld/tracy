@@ -255,10 +255,17 @@ struct MemData
     PlotData* plot = nullptr;
 };
 
+struct FrameEvent
+{
+    int64_t start;
+    int64_t end;
+};
+
 struct FrameData
 {
     uint64_t name;
-    Vector<int64_t> frames;
+    Vector<FrameEvent> frames;
+    uint8_t continuous;
 };
 
 struct StringLocation

@@ -210,6 +210,7 @@ static void TextFocused( const char* label, const char* value )
 }
 
 enum { MinVisSize = 3 };
+enum { MinFrameSize = 5 };
 
 static View* s_instance = nullptr;
 
@@ -1047,10 +1048,13 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
     if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
 
+    const auto nspx = 1.0 / pxns;
+
     const std::pair <int, int> zrange = m_worker.GetFrameRange( frames, m_zvStart, m_zvEnd );
     if( zrange.first < 0 ) return hover;
 
     int64_t prev = -1;
+    int64_t prevEnd = -1;
 
     for( int i = zrange.first; i < zrange.second; i++ )
     {
@@ -1073,26 +1077,39 @@ bool View::DrawZoneFrames( const FrameData& frames )
             }
         }
 
-        if( fsz < 5 )
+        if( fsz < MinFrameSize )
         {
-            if( !frames.continuous )
+            if( !frames.continuous && prev != -1 )
             {
-                const auto pxs = ( fbegin - m_zvStart ) * pxns;
-                const auto pxe = ( fend - m_zvStart ) * pxns;
-                if( pxe - pxs > 1 )
+                if( ( fbegin - prevEnd ) * pxns >= MinFrameSize )
                 {
-                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), pxs, pxe, ty / 4, 0xFF888888 );
+                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+                    prev = -1;
+                }
+                else
+                {
+                    prevEnd = std::max<int64_t>( fend, fbegin + MinFrameSize * nspx );
                 }
             }
-            else if( prev == -1 )
+            if( prev == -1 )
             {
                 prev = fbegin;
+                prevEnd = std::max<int64_t>( fend, fbegin + MinFrameSize * nspx );
             }
+
             continue;
         }
+
         if( prev != -1 )
         {
-            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( fbegin - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+            if( frames.continuous )
+            {
+                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( fbegin - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+            }
+            else
+            {
+                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+            }
             prev = -1;
         }
 

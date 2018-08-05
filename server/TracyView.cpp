@@ -1075,7 +1075,19 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
         if( fsz < 5 )
         {
-            if( prev == -1 ) prev = fbegin;
+            if( !frames.continuous )
+            {
+                const auto pxs = ( fbegin - m_zvStart ) * pxns;
+                const auto pxe = ( fend - m_zvStart ) * pxns;
+                if( pxe - pxs > 1 )
+                {
+                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), pxs, pxe, ty / 4, 0xFF888888 );
+                }
+            }
+            else if( prev == -1 )
+            {
+                prev = fbegin;
+            }
             continue;
         }
         if( prev != -1 )
@@ -1084,9 +1096,16 @@ bool View::DrawZoneFrames( const FrameData& frames )
             prev = -1;
         }
 
-        if( fbegin >= m_zvStart && m_frames == &frames )
+        if( m_frames == &frames )
         {
-            draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
+            if( fbegin >= m_zvStart )
+            {
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
+            }
+            if( !frames.continuous && fend <= m_zvEnd )
+            {
+                draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
+            }
         }
 
         auto buf = GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() );

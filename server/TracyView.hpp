@@ -189,6 +189,7 @@ private:
     bool m_zoneSrcLocHighlightActive;
     LockHighlight m_lockHighlight;
     const MessageData* m_msgHighlight;
+    bool m_msgHighlightActive;
     const GpuEvent* m_gpuInfoWindow;
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;

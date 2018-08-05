@@ -228,6 +228,8 @@ View::View( const char* addr )
     , m_zoneSrcLocHighlight( 0 )
     , m_zoneSrcLocHighlightActive( false )
     , m_lockHighlight { -1 }
+    , m_msgHighlight( nullptr )
+    , m_msgHighlightActive( false )
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
     , m_memoryAllocInfoWindow( -1 )
@@ -269,6 +271,8 @@ View::View( FileRead& f )
     , m_zoneInfoWindow( nullptr )
     , m_zoneSrcLocHighlight( 0 )
     , m_zoneSrcLocHighlightActive( false )
+    , m_msgHighlight( nullptr )
+    , m_msgHighlightActive( false )
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
     , m_memoryAllocInfoWindow( -1 )
@@ -1185,7 +1189,14 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
 void View::DrawZones()
 {
-    m_msgHighlight = nullptr;
+    if( m_msgHighlightActive )
+    {
+        m_msgHighlightActive = false;
+    }
+    else
+    {
+        m_msgHighlight = nullptr;
+    }
     if( m_zoneSrcLocHighlightActive )
     {
         m_zoneSrcLocHighlightActive = false;
@@ -1361,8 +1372,13 @@ void View::DrawZones()
                     if( dist > 1 )
                     {
                         draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
                     }
-                    draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
+                    else
+                    {
+                        const auto color = ( m_msgHighlight == *it ) ? 0xFF4444FF : 0xFFDDDDDD;
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), color );
+                    }
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
                     {
                         ImGui::BeginTooltip();
@@ -1379,6 +1395,7 @@ void View::DrawZones()
                         }
                         ImGui::EndTooltip();
                         m_msgHighlight = *it;
+                        m_msgHighlightActive = true;
                     }
                     it = next;
                 }
@@ -3930,6 +3947,11 @@ void View::DrawMessages()
         if( ImGui::Selectable( TimeToString( v->time - m_worker.GetTimeBegin() ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns ) )
         {
             CenterAtTime( v->time );
+        }
+        if( ImGui::IsItemHovered() )
+        {
+            m_msgHighlight = v;
+            m_msgHighlightActive = true;
         }
         ImGui::PopID();
         ImGui::NextColumn();

@@ -228,6 +228,7 @@ View::View( const char* addr )
     , m_zoneSrcLocHighlight( 0 )
     , m_lockHighlight { -1 }
     , m_msgHighlight( nullptr )
+    , m_msgToFocus( nullptr )
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
     , m_memoryAllocInfoWindow( -1 )
@@ -269,6 +270,7 @@ View::View( FileRead& f )
     , m_zoneInfoWindow( nullptr )
     , m_zoneSrcLocHighlight( 0 )
     , m_msgHighlight( nullptr )
+    , m_msgToFocus( nullptr )
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
     , m_memoryAllocInfoWindow( -1 )
@@ -1378,6 +1380,11 @@ void View::DrawZones()
                         ImGui::EndTooltip();
                         m_msgHighlight = *it;
 
+                        if( ImGui::IsMouseClicked( 0 ) )
+                        {
+                            m_showMessages = true;
+                            m_msgToFocus = *it;
+                        }
                         if( ImGui::IsMouseClicked( 2 ) )
                         {
                             CenterAtTime( (*it)->time );
@@ -3935,6 +3942,11 @@ void View::DrawMessages()
         if( ImGui::IsItemHovered() )
         {
             m_msgHighlight = v;
+        }
+        if( m_msgToFocus == v )
+        {
+            ImGui::SetScrollHere();
+            m_msgToFocus = nullptr;
         }
         ImGui::PopID();
         ImGui::NextColumn();

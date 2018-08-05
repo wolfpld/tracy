@@ -189,6 +189,7 @@ private:
     DecayValue<uint64_t> m_zoneSrcLocHighlight;
     LockHighlight m_lockHighlight;
     DecayValue<const MessageData*> m_msgHighlight;
+    const MessageData* m_msgToFocus;
     const GpuEvent* m_gpuInfoWindow;
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;

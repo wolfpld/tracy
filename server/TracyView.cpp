@@ -1377,6 +1377,11 @@ void View::DrawZones()
                         }
                         ImGui::EndTooltip();
                         m_msgHighlight = *it;
+
+                        if( ImGui::IsMouseClicked( 2 ) )
+                        {
+                            CenterAtTime( (*it)->time );
+                        }
                     }
                     it = next;
                 }

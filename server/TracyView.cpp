@@ -1055,6 +1055,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
     int64_t prev = -1;
     int64_t prevEnd = -1;
+    bool tooltipDisplayed = false;
 
     for( int i = zrange.first; i < zrange.second; i++ )
     {
@@ -1065,6 +1066,8 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, ty ) ) )
         {
+            tooltipDisplayed = true;
+
             ImGui::BeginTooltip();
             ImGui::Text( "%s", GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
             ImGui::Separator();
@@ -1166,6 +1169,15 @@ bool View::DrawZoneFrames( const FrameData& frames )
     if( fend == m_zvEnd )
     {
         draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
+    }
+
+    if( hover && !tooltipDisplayed )
+    {
+        ImGui::BeginTooltip();
+        ImGui::TextDisabled( "Frame set:" );
+        ImGui::SameLine();
+        ImGui::Text( "%s", frames.name == 0 ? "Frames" : m_worker.GetString( frames.name ) );
+        ImGui::EndTooltip();
     }
 
     return hover;

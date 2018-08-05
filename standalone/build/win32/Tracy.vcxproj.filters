@@ -191,6 +191,9 @@
     <ClInclude Include="..\..\..\server\TracyStringDiscovery.hpp">
       <Filter>server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyDecayValue.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

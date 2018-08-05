@@ -226,10 +226,8 @@ View::View( const char* addr )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
     , m_zoneSrcLocHighlight( 0 )
-    , m_zoneSrcLocHighlightActive( false )
     , m_lockHighlight { -1 }
     , m_msgHighlight( nullptr )
-    , m_msgHighlightActive( false )
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
     , m_memoryAllocInfoWindow( -1 )
@@ -270,9 +268,7 @@ View::View( FileRead& f )
     , m_zvScroll( 0 )
     , m_zoneInfoWindow( nullptr )
     , m_zoneSrcLocHighlight( 0 )
-    , m_zoneSrcLocHighlightActive( false )
     , m_msgHighlight( nullptr )
-    , m_msgHighlightActive( false )
     , m_gpuInfoWindow( nullptr )
     , m_callstackInfoWindow( 0 )
     , m_memoryAllocInfoWindow( -1 )
@@ -1189,22 +1185,8 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
 void View::DrawZones()
 {
-    if( m_msgHighlightActive )
-    {
-        m_msgHighlightActive = false;
-    }
-    else
-    {
-        m_msgHighlight = nullptr;
-    }
-    if( m_zoneSrcLocHighlightActive )
-    {
-        m_zoneSrcLocHighlightActive = false;
-    }
-    else
-    {
-        m_zoneSrcLocHighlight = 0;
-    }
+    m_msgHighlight.Decay( nullptr );
+    m_zoneSrcLocHighlight.Decay( 0 );
 
     if( m_zvStart == m_zvEnd ) return;
     assert( m_zvStart < m_zvEnd );
@@ -1395,7 +1377,6 @@ void View::DrawZones()
                         }
                         ImGui::EndTooltip();
                         m_msgHighlight = *it;
-                        m_msgHighlightActive = true;
                     }
                     it = next;
                 }
@@ -1617,7 +1598,6 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                     }
 
                     m_zoneSrcLocHighlight = ev.srcloc;
-                    m_zoneSrcLocHighlightActive = true;
                 }
             }
             char tmp[64];
@@ -1723,7 +1703,6 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 }
 
                 m_zoneSrcLocHighlight = ev.srcloc;
-                m_zoneSrcLocHighlightActive = true;
             }
 
             ++it;
@@ -3951,7 +3930,6 @@ void View::DrawMessages()
         if( ImGui::IsItemHovered() )
         {
             m_msgHighlight = v;
-            m_msgHighlightActive = true;
         }
         ImGui::PopID();
         ImGui::NextColumn();

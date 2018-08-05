@@ -8,6 +8,7 @@
 #include <thread>
 #include <vector>
 
+#include "TracyDecayValue.hpp"
 #include "TracyVector.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_flat_hash_map.hpp"
@@ -185,11 +186,9 @@ private:
 
     const ZoneEvent* m_zoneInfoWindow;
     const ZoneEvent* m_zoneHighlight;
-    uint64_t m_zoneSrcLocHighlight;
-    bool m_zoneSrcLocHighlightActive;
+    DecayValue<uint64_t> m_zoneSrcLocHighlight;
     LockHighlight m_lockHighlight;
-    const MessageData* m_msgHighlight;
-    bool m_msgHighlightActive;
+    DecayValue<const MessageData*> m_msgHighlight;
     const GpuEvent* m_gpuInfoWindow;
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;

@@ -6320,7 +6320,16 @@ void View::ZoomToPrevFrame()
 {
     if( m_zvStart >= m_worker.GetFrameBegin( *m_frames, 0 ) )
     {
-        auto frame = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).first;
+        int frame;
+        if( m_frames->continuous )
+        {
+            frame = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).first;
+        }
+        else
+        {
+            frame = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).second;
+        }
+
         if( frame > 0 )
         {
             frame--;

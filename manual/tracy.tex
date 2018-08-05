@@ -199,11 +199,28 @@ logo=\bclampe
 This step is optional, as some applications do not use the concept of a frame.
 \end{bclogo}
 
-To slice the program's execution recording into frame-sized chunks, put the \texttt{FrameMark} macro after you have completed rendering the frame. Ideally that would be right after the swap buffers command.
+To slice the program's execution recording into frame-sized chunks\footnote{Each frame starts immediately after the previous has ended.}, put the \texttt{FrameMark} macro after you have completed rendering the frame. Ideally that would be right after the swap buffers command.
 
 \subsubsection{Secondary frame sets}
 
-In some cases you may want to track more than one set of frames in your program. In such case, you may use the \texttt{FrameMarkNamed(name)} macro, which will create a new set of frames for each unique name you provide.
+In some cases you may want to track more than one set of frames in your program. To do so, you may use the \texttt{FrameMarkNamed(name)} macro, which will create a new set of frames for each unique name you provide.
+
+\subsubsection{Discontinuous frames}
+
+Some types of frames are discontinuous by nature. For example, a physics processing step in a game loop, or an audio callback running on a separate thread. These kinds of workloads are executed periodically, with a pause between each run. Tracy can also track these kind of frames.
+
+To mark the beginning of a discontinuous frame use the \texttt{FrameMarkStart(name)} macro. After the work is finished, use the \texttt{FrameMarkEnd(name)} macro.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+\begin{itemize}
+\item Frame types \emph{must not} be mixed. For each frame set, identified by an unique name, use either continuous or discontinuous frames only!
+\item You \emph{must} issue the \texttt{FrameMarkStart} and \texttt{FrameMarkEnd} macros in proper order. Be extra careful, especially if multi-threading is involved.
+\end{itemize}
+\end{bclogo}
 
 \subsection{Marking zones}
 

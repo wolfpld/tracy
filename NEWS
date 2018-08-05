@@ -61,6 +61,12 @@ v0.4 (xxxx-xx-xx)
   - Frames can now also be discontinuous.
 - Frames and zones too small to be displayed will be marked with a zig-zag
   pattern.
+- General improvements to message list and message markers.
+  - Hovering over message on a list will highlight its marker (previously it
+    only worked the other way).
+  - Left clicking on a message marker will focus the message list on the
+    selected message.
+  - Middle clicking on a message marker will center it on screen.
 
 v0.3.3 (2018-07-03)
 -------------------

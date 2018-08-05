@@ -641,6 +641,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( ctx->accuracyBits );
         f.Read( ctx->count );
         s_loadProgress.subTotal.store( ctx->count, std::memory_order_relaxed );
+        s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
         if( fileVer <= FileVersion( 0, 3, 1 ) )
         {
             ctx->period = 1.f;

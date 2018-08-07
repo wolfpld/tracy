@@ -9,6 +9,7 @@ a mistake.
 v0.4 (xxxx-xx-xx)
 -----------------
 
+- Renamed "standalone" utility to "profiler".
 - Added trace update utility, which will convert files saved in previous
   versions of tracy to be up-to-date.
 - Fix regression causing varying size of profiler window for different
@@ -37,9 +38,9 @@ v0.4 (xxxx-xx-xx)
 - Added named versions of tracing macros that allow specifying scoped
   variable name.
 - The main profiler window is now kept at the bottom of windows stack.
-- The "standalone" utility will now use a custom embedded font.
+- The "profiler" utility will now use a custom embedded font.
 - Microseconds are now displayed using correct symbol ('μ' instead of 'u').
-- Unix builds of the "standalone" utility will now ask for a file name when
+- Unix builds of the "profiler" utility will now ask for a file name when
   saving a trace.
 - Progress popup is now displayed when a trace file is loading.
 - Zones that share source location with a zone that is hovered over are now
@@ -47,7 +48,7 @@ v0.4 (xxxx-xx-xx)
 - Added ability to zoom-in to a selection range made using middle mouse
   button.
   - Holding the ctrl key will switch to zoom-out mode.
-- The "standalone" utility will use less resources when its window is
+- The "profiler" utility will use less resources when its window is
   out-of-focus or minimized.
 - Added support for cross-DLL profiling.
 - Items in options menu (locks, threads, etc.) are now described with number

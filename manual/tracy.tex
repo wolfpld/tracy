@@ -323,6 +323,8 @@ Use \texttt{tracy.Message(text)} to send messages.
 
 Use \texttt{tracy.ZoneName(text)} to set zone name on a per-call basis.
 
+Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.
+
 Even if Tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the \texttt{tracy::LuaRemove(char* script)} function, which will replace instrumentation calls with white-space. This function does nothing if profiler is enabled.
 
 \subsection{GPU profiling}
@@ -420,7 +422,5 @@ Tracy's time measurement precision is not infinite. It's only as good as the sys
 \end{itemize}
 
 While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which Tracy tries to calculate and display on the time-line view, as a red zone. Note that this is an approximation of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.
-
-Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.
 
 \end{document}

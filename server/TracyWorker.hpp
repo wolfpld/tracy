@@ -182,6 +182,8 @@ public:
     int64_t GetTimeBegin() const { return GetFrameBegin( *m_data.framesBase, 0 ); }
     int64_t GetLastTime() const { return m_data.lastTime; }
     uint64_t GetZoneCount() const { return m_data.zonesCnt; }
+    uint64_t GetLockCount() const;
+    uint64_t GetPlotCount() const;
     uint64_t GetFrameOffset() const { return m_data.frameOffset; }
     const FrameData* GetFramesBase() const { return m_data.framesBase; }
     const Vector<FrameData*>& GetFrames() const { return m_data.frames.Data(); }

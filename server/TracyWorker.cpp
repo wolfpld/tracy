@@ -874,6 +874,29 @@ Worker::~Worker()
     }
 }
 
+uint64_t Worker::GetLockCount() const
+{
+    uint64_t cnt = 0;
+    for( auto& l : m_data.lockMap )
+    {
+        cnt += l.second.timeline.size();
+    }
+    return cnt;
+}
+
+uint64_t Worker::GetPlotCount() const
+{
+    uint64_t cnt = 0;
+    for( auto& p : m_data.plots.Data() )
+    {
+        if( p->type != PlotType::Memory )
+        {
+            cnt += p->data.size();
+        }
+    }
+    return cnt;
+}
+
 int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
 {
     if( fd.continuous )

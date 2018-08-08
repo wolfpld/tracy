@@ -241,6 +241,7 @@ View::View( const char* addr )
     , m_showOptions( false )
     , m_showMessages( false )
     , m_showStatistics( false )
+    , m_showInfo( false )
     , m_drawGpuZones( true )
     , m_drawZones( true )
     , m_drawLocks( true )
@@ -283,6 +284,7 @@ View::View( FileRead& f )
     , m_showOptions( false )
     , m_showMessages( false )
     , m_showStatistics( false )
+    , m_showInfo( false )
     , m_drawGpuZones( true )
     , m_drawZones( true )
     , m_drawLocks( true )
@@ -422,6 +424,8 @@ bool View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Compare" ) ) m_compare.show = true;
     ImGui::SameLine();
+    if( ImGui::Button( "Info" ) ) m_showInfo = true;
+    ImGui::SameLine();
     if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
     ImGui::SameLine();
     {
@@ -475,6 +479,7 @@ bool View::DrawImpl()
     if( m_compare.show ) DrawCompare();
     if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
     if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
+    if( m_showInfo ) DrawInfo();
 
     if( m_zoomAnim.active )
     {
@@ -5653,6 +5658,22 @@ void View::DrawMemoryAllocWindow()
 
     ImGui::End();
     if( !show ) m_memoryAllocInfoWindow = -1;
+}
+
+void View::DrawInfo()
+{
+    ImGui::Begin( "Trace information", &m_showInfo );
+    TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
+    TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
+    ImGui::Separator();
+    TextFocused( "Zones:", RealToString( m_worker.GetZoneCount(), true ) );
+    TextFocused( "Lock events:", RealToString( m_worker.GetLockCount(), true ) );
+    TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount(), true ) );
+    TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size(), true ) );
+    ImGui::Separator();
+    TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
+    TextFocused( "Count:", RealToString( m_frames->frames.size(), true ) );
+    ImGui::End();
 }
 
 template<class T>

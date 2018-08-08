@@ -85,6 +85,7 @@ private:
     void DrawCompare();
     void DrawCallstackWindow();
     void DrawMemoryAllocWindow();
+    void DrawInfo();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
@@ -209,6 +210,7 @@ private:
     bool m_showOptions;
     bool m_showMessages;
     bool m_showStatistics;
+    bool m_showInfo;
     bool m_drawGpuZones;
     bool m_drawZones;
     bool m_drawLocks;

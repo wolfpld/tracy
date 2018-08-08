@@ -69,6 +69,7 @@ v0.4 (xxxx-xx-xx)
     selected message.
   - Middle clicking on a message marker will center it on screen.
 - Added trace information window.
+- Displayed memory sizes are now properly formatted.
 
 
 v0.3.3 (2018-07-03)

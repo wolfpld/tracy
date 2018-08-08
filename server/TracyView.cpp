@@ -5747,7 +5747,12 @@ void View::DrawMemoryAllocWindow()
 
 void View::DrawInfo()
 {
+    const auto& io = ImGui::GetIO();
+
     ImGui::Begin( "Trace information", &m_showInfo );
+    TextFocused( "Profiler memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
+    TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ), true ) );
+    ImGui::Separator();
     TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
     TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
     ImGui::Separator();

@@ -422,6 +422,23 @@ bool View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Compare" ) ) m_compare.show = true;
     ImGui::SameLine();
+    if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
+    ImGui::SameLine();
+    {
+        const auto vis = Visible( m_frames );
+        if( !vis )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+        }
+        ImGui::Text( "%s: %s", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ), RealToString( m_worker.GetFrameCount( *m_frames ), true ) );
+        if( !vis )
+        {
+            ImGui::PopStyleColor();
+        }
+    }
+    ImGui::SameLine();
+    if( ImGui::SmallButton( ">" ) ) ZoomToNextFrame();
+    ImGui::SameLine();
     if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
     {
         auto& frames = m_worker.GetFrames();
@@ -439,23 +456,6 @@ bool View::DrawImpl()
         }
         ImGui::EndCombo();
     }
-    ImGui::SameLine();
-    if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
-    ImGui::SameLine();
-    {
-        const auto vis = Visible( m_frames );
-        if( !vis )
-        {
-            ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
-        }
-        ImGui::Text( "%s: %s", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ), RealToString( m_worker.GetFrameCount( *m_frames ), true ) );
-        if( !vis )
-        {
-            ImGui::PopStyleColor();
-        }
-    }
-    ImGui::SameLine();
-    if( ImGui::SmallButton( ">" ) ) ZoomToNextFrame();
     ImGui::SameLine();
     ImGui::Text( "Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
     DrawFrames();

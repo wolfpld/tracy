@@ -163,8 +163,6 @@ The easiest way to get going is to build the data analyzer, available in the \te
 
 If you prefer to inspect the data only after a trace has been performed, you may use the command line utility in the \texttt{capture} directory. It will save a data dump that may be later opened in the graphical viewer application.
 
-Alternatively, you may want to embed the server in your application, the same which is running the client part of Tracy.
-
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
@@ -172,6 +170,18 @@ logo=\bcbombe
 ]{Important}
 You must use the same version of the Tracy profiler on both client and server! Network protocol mismatch will most likely lead to crashes. Tracy \emph{will not warn} about this!
 \end{bclogo}
+
+\subsubsection{Embedding the server in profiled application}
+
+While not officially supported, it is possible to embed the server in your application, the same which is running the client part of Tracy. This part is up to you to figure out.
+
+The following defines may be of interest:
+
+\begin{itemize}
+\item \texttt{TRACY\_FILESELECTOR} -- controls whether a system load/save dialog is compiled in. If it's left out, the saved traces will be named \texttt{trace.tracy}.
+\item \texttt{TRACY\_NO\_STATISTICS} -- Tracy will perform statistical data collection on the fly, if this macro is \emph{not} defined. This allows extended analysis of the trace (for example, you can perform a live search for matching zones) at a small CPU processing cost and a considerable memory usage increase (at least 10 bytes per zone).
+\item \texttt{TRACY\_EXTENDED\_FONT} -- add this define, if the font you are using has the micro (\si\micro) symbol. Otherwise 'u' is used instead.
+\end{itemize}
 
 \subsection{Naming threads}
 
@@ -412,7 +422,5 @@ Tracy's time measurement precision is not infinite. It's only as good as the sys
 While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which Tracy tries to calculate and display on the time-line view, as a red zone. Note that this is an approximation of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.
 
 Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.
-
-Tracy server will perform statistical data collection on the fly, if the macro \texttt{TRACY\_NO\_STATISTICS} is not defined. This allows extended analysis of the trace (for example, you can perform a live search for matching zones) at a small CPU processing cost and a considerable memory usage increase (at least 10 bytes per zone).
 
 \end{document}

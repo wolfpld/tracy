@@ -604,7 +604,7 @@ void View::DrawConnection()
         ImGui::Text( "Ratio %.1f%%  Real: %6.2f Mbps", m_worker.GetCompRatio() * 100.f, mbps / m_worker.GetCompRatio() );
     }
 
-    ImGui::Text( "Memory usage: %.2f MB", memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ) );
+    ImGui::Text( "Memory usage: %s", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
 
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
@@ -3046,13 +3046,13 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 char tmp[64];
                 if( yPos + ty >= yMin && yPos <= yMax )
                 {
-                    sprintf( tmp, "(y-range: %s)", RealToString( max - min, true ) );
+                    sprintf( tmp, "(y-range: %s)", v->type == PlotType::Memory ? MemSizeToString( max - min ) : RealToString( max - min, true ) );
                     draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0x8844DDDD, tmp );
                 }
-                sprintf( tmp, "%s", RealToString( max, true ) );
+                sprintf( tmp, "%s", v->type == PlotType::Memory ? MemSizeToString( max ) : RealToString( max, true ) );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
                 offset += PlotHeight - ty;
-                sprintf( tmp, "%s", RealToString( min, true ) );
+                sprintf( tmp, "%s", v->type == PlotType::Memory ? MemSizeToString( min ) : RealToString( min, true ) );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
 
                 draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
@@ -3108,11 +3108,27 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
     {
         ImGui::BeginTooltip();
-        TextFocused( "Value:", RealToString( item->val, true ) );
+        if( type == PlotType::Memory )
+        {
+            ImGui::TextDisabled( "Value:" );
+            ImGui::SameLine();
+            if( item->val < 10000ll )
+            {
+                ImGui::Text( "%s", MemSizeToString( item->val ) );
+            }
+            else
+            {
+                ImGui::Text( "%s (%s)", MemSizeToString( item->val ), RealToString( item->val, true ) );
+            }
+        }
+        else
+        {
+            TextFocused( "Value:", RealToString( item->val, true ) );
+        }
         if( hasPrev )
         {
             const auto change = item->val - prev;
-            TextFocused( "Change:", RealToString( change, true ) );
+            TextFocused( "Change:", type == PlotType::Memory ? MemSizeToString( change ) : RealToString( change, true ) );
 
             if( type == PlotType::Memory )
             {
@@ -3456,15 +3472,9 @@ void View::DrawZoneInfoWindow()
                 ImGui::Text( "%s", RealToString( nFree, true ) );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "frees." );
-                TextFocused( "Memory allocated:", RealToString( cAlloc, true ) );
-                ImGui::SameLine();
-                ImGui::TextDisabled( "bytes." );
-                TextFocused( "Memory freed:", RealToString( cFree, true ) );
-                ImGui::SameLine();
-                ImGui::TextDisabled( "bytes." );
-                TextFocused( "Overall change:", RealToString( cAlloc - cFree, true ) );
-                ImGui::SameLine();
-                ImGui::TextDisabled( "bytes." );
+                TextFocused( "Memory allocated:", MemSizeToString( cAlloc ) );
+                TextFocused( "Memory freed:", MemSizeToString( cFree ) );
+                TextFocused( "Overall change:", MemSizeToString( cAlloc - cFree ) );
 
                 if( ImGui::TreeNode( "Allocations list" ) )
                 {
@@ -5641,7 +5651,7 @@ void View::DrawMemoryAllocWindow()
     char buf[64];
     sprintf( buf, "0x%" PRIx64, ev.ptr );
     TextFocused( "Address:", buf );
-    TextFocused( "Size:", RealToString( ev.size, true ) );
+    TextFocused( "Size:", MemSizeToString( ev.size ) );
     ImGui::Separator();
     TextFocused( "Appeared at", TimeToString( ev.timeAlloc - m_worker.GetTimeBegin() ) );
     if( ImGui::IsItemClicked() ) CenterAtTime( ev.timeAlloc );
@@ -5848,7 +5858,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             m_memoryAllocHoverWait = 2;
         }
         ImGui::NextColumn();
-        ImGui::Text( "%s", RealToString( v->size, true ) );
+        ImGui::Text( "%s", MemSizeToString( v->size ) );
         ImGui::NextColumn();
         ImGui::PushID( idx++ );
         if( ImGui::Selectable( TimeToString( v->timeAlloc - m_worker.GetTimeBegin() ) ) )
@@ -6038,8 +6048,8 @@ void View::DrawMemory()
     ImGui::Text( "Total allocations: %-15s Active allocations: %-15s Memory usage: %-15s Memory span: %s",
         RealToString( mem.data.size(), true ),
         RealToString( mem.active.size(), true ),
-        RealToString( mem.usage, true ),
-        RealToString( mem.high - mem.low, true ) );
+        MemSizeToString( mem.usage ),
+        MemSizeToString( mem.high - mem.low ) );
 
     ImGui::InputText( "", m_memInfo.pattern, 1024 );
     ImGui::SameLine();
@@ -6150,7 +6160,7 @@ void View::DrawMemory()
 
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( items.size(), true ) );
-        ImGui::Text( "Memory usage: %s", RealToString( total, true ) );
+        ImGui::Text( "Memory usage: %s", MemSizeToString( total ) );
 
         ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
             ImGui::Text( "0x%" PRIx64, (*v)->ptr );
@@ -6161,7 +6171,7 @@ void View::DrawMemory()
     ImGui::Separator();
     if( ImGui::TreeNode( "Memory map" ) )
     {
-        ImGui::Text( "Single pixel: %s KB   Single line: %s KB", RealToString( ( 1 << ChunkBits ) / 1024, true ), RealToString( PageChunkSize / 1024, true ) );
+        ImGui::Text( "Single pixel: %s   Single line: %s", MemSizeToString( 1 << ChunkBits ), MemSizeToString( PageChunkSize ) );
 
         auto pages = GetMemoryPages();
 

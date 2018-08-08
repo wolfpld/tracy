@@ -414,7 +414,7 @@ bool View::DrawImpl()
     ImGui::SameLine();
     if( ImGui::Button( "Messages" ) ) m_showMessages = true;
     ImGui::SameLine();
-    if( ImGui::Button( "Find Zone" ) ) m_findZone.show = true;
+    if( ImGui::Button( "Find zone" ) ) m_findZone.show = true;
     ImGui::SameLine();
     if( ImGui::Button( "Statistics" ) ) m_showStatistics = true;
     ImGui::SameLine();
@@ -3979,7 +3979,7 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
 
 void View::DrawFindZone()
 {
-    ImGui::Begin( "Find Zone", &m_findZone.show );
+    ImGui::Begin( "Find zone", &m_findZone.show );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable zone search." );

@@ -174,6 +174,81 @@ static const char* RealToString( double val, bool separator )
     return buf;
 }
 
+static const char* MemSizeToString( int64_t val )
+{
+    enum { Pool = 8 };
+    static char bufpool[Pool][64];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    if( val < 10000ll )
+    {
+        sprintf( buf, "%" PRIi64 " bytes", val );
+        return buf;
+    }
+
+    enum class Unit
+    {
+        Kilobyte,
+        Megabyte,
+        Gigabyte,
+        Terabyte
+    };
+    Unit unit;
+
+    if( val < 10000ll * 1024 )
+    {
+        sprintf( buf, "%.2f", val / 1024. );
+        unit = Unit::Kilobyte;
+    }
+    else if( val < 10000ll * 1024 * 1024 )
+    {
+        sprintf( buf, "%.2f", val / ( 1024. * 1024 ) );
+        unit = Unit::Megabyte;
+    }
+    else if( val < 10000ll * 1024 * 1024 * 1024 )
+    {
+        sprintf( buf, "%.2f", val / ( 1024. * 1024 * 1024 ) );
+        unit = Unit::Gigabyte;
+    }
+    else
+    {
+        sprintf( buf, "%.2f", val / ( 1024. * 1024 * 1024 * 1024 ) );
+        unit = Unit::Terabyte;
+    }
+
+    auto ptr = buf;
+    while( *ptr ) ptr++;
+    ptr--;
+    while( ptr >= buf && *ptr == '0' ) ptr--;
+    if( *ptr != '.' ) ptr++;
+
+    *ptr++ = ' ';
+    switch( unit )
+    {
+    case Unit::Kilobyte:
+        *ptr++ = 'K';
+        break;
+    case Unit::Megabyte:
+        *ptr++ = 'M';
+        break;
+    case Unit::Gigabyte:
+        *ptr++ = 'G';
+        break;
+    case Unit::Terabyte:
+        *ptr++ = 'T';
+        break;
+    default:
+        assert( false );
+        break;
+    }
+    *ptr++ = 'B';
+    *ptr++ = '\0';
+
+    return buf;
+}
+
 tracy_force_inline float frexpf_fast( float f, int& power )
 {
     float ret;

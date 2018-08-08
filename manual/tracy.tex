@@ -139,11 +139,15 @@ If that's not an option, copy all files from the \texttt{tracy/client} and \text
 
 In the default configuration Tracy is disabled. This way you don't have to worry that the production builds will perform collection of the profiling data. You will probably want to create a separate build configuration, with the \texttt{TRACY\_ENABLE} define, which enables profiling.
 
+Finally, on Unix make sure that the application is linked with libraries \texttt{libpthread} and \texttt{libdl}.
+
+\subsubsection{Short-lived applications}
+
 In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), add the \texttt{TRACY\_NO\_EXIT} define to the build configuration. With this option enabled, Tracy will not exit until an incoming connection is made, even if the application has already finished executing. This mode of operation can also be turned on by setting the \texttt{TRACY\_NO\_EXIT} environment variable to $1$.
 
-By default Tracy will begin profiling even before the program enters the \texttt{main} function. If you don't want to perform a full capture of application life-time, you may define the \texttt{TRACY\_ON\_DEMAND} macro, which will enable profiling only when there's an established connection with the server.
+\subsubsection{On-demand profiling}
 
-Finally, on Unix make sure that the application is linked with libraries \texttt{libpthread} and \texttt{libdl}.
+By default Tracy will begin profiling even before the program enters the \texttt{main} function. If you don't want to perform a full capture of application life-time, you may define the \texttt{TRACY\_ON\_DEMAND} macro, which will enable profiling only when there's an established connection with the server.
 
 \subsubsection{Setup for multi-DLL projects}
 

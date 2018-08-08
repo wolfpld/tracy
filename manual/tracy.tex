@@ -195,6 +195,8 @@ Be aware that even if you already have thread naming functionality implemented, 
 
 With the aforementioned steps you will be able to connect to the profiled program, but there won't be any data collection performed. In order to begin profiling, Tracy requires that you manually instrument the application\footnote{Automatic tracing of every entered function is not feasible due to the amount of data that would generate.}. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
 
+The best way to start is to add markup to the main loop of the application, along with a few function that are called there. This will give you a rough outline of the function's time cost, which you may then further refine by instrumenting functions deeper in the call stack.
+
 \subsection{Handling text strings}
 
 When dealing with Tracy macros, you will encounter two ways of providing string data to the profiler. In both cases you should pass \texttt{const char*} pointers, but there are differences in expected life-time of the pointed data.

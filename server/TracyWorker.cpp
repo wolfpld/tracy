@@ -290,10 +290,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             ptr->frames.reserve_and_use( fsz );
             if( ptr->continuous )
             {
-                for( uint64_t i=0; i<fsz; i++ )
+                for( uint64_t j=0; j<fsz; j++ )
                 {
-                    f.Read( &ptr->frames[i].start, sizeof( int64_t ) );
-                    ptr->frames[i].end = -1;
+                    f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
+                    ptr->frames[j].end = -1;
                 }
             }
             else

@@ -5654,6 +5654,11 @@ void View::DrawMemoryAllocWindow()
     sprintf( buf, "0x%" PRIx64, ev.ptr );
     TextFocused( "Address:", buf );
     TextFocused( "Size:", MemSizeToString( ev.size ) );
+    if( ev.size >= 10000ll )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s bytes)", RealToString( ev.size, true ) );
+    }
     ImGui::Separator();
     TextFocused( "Appeared at", TimeToString( ev.timeAlloc - m_worker.GetTimeBegin() ) );
     if( ImGui::IsItemClicked() ) CenterAtTime( ev.timeAlloc );

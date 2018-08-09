@@ -182,7 +182,9 @@ static const char* MemSizeToString( int64_t val )
     char* buf = bufpool[bufsel];
     bufsel = ( bufsel + 1 ) % Pool;
 
-    if( val < 10000ll )
+    const auto aval = abs( val );
+
+    if( aval < 10000ll )
     {
         sprintf( buf, "%" PRIi64 " bytes", val );
         return buf;
@@ -197,17 +199,17 @@ static const char* MemSizeToString( int64_t val )
     };
     Unit unit;
 
-    if( val < 10000ll * 1024 )
+    if( aval < 10000ll * 1024 )
     {
         sprintf( buf, "%.2f", val / 1024. );
         unit = Unit::Kilobyte;
     }
-    else if( val < 10000ll * 1024 * 1024 )
+    else if( aval < 10000ll * 1024 * 1024 )
     {
         sprintf( buf, "%.2f", val / ( 1024. * 1024 ) );
         unit = Unit::Megabyte;
     }
-    else if( val < 10000ll * 1024 * 1024 * 1024 )
+    else if( aval < 10000ll * 1024 * 1024 * 1024 )
     {
         sprintf( buf, "%.2f", val / ( 1024. * 1024 * 1024 ) );
         unit = Unit::Gigabyte;

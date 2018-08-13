@@ -6,6 +6,17 @@
 #include "../Tracy.hpp"
 #include "../common/TracySystem.hpp"
 
+struct static_init_test_t
+{
+    static_init_test_t()
+    {
+        ZoneScoped;
+        new char[64*1024];
+    }
+};
+
+static const static_init_test_t static_init_test;
+
 void* operator new( std::size_t count )
 {
     auto ptr = malloc( count );

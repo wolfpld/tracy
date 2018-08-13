@@ -15,14 +15,14 @@ namespace tracy
 class ScopedZone
 {
 public:
-    tracy_force_inline ScopedZone( const SourceLocationData* srcloc )
+    tracy_force_inline ScopedZone( const SourceLocationData* srcloc, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
         : m_active( s_profiler.IsConnected() )
+#else
+        : m_active( is_active )
 #endif
     {
-#ifdef TRACY_ON_DEMAND
         if( !m_active ) return;
-#endif
         const auto thread = GetThreadHandle();
         m_thread = thread;
         Magic magic;
@@ -42,14 +42,14 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
-    tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth )
+    tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
         : m_active( s_profiler.IsConnected() )
+#else
+        : m_active( is_active )
 #endif
     {
-#ifdef TRACY_ON_DEMAND
         if( !m_active ) return;
-#endif
         const auto thread = GetThreadHandle();
         m_thread = thread;
         Magic magic;
@@ -73,9 +73,7 @@ public:
 
     tracy_force_inline ~ScopedZone()
     {
-#ifdef TRACY_ON_DEMAND
         if( !m_active ) return;
-#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto& tail = token->get_tail_index();
@@ -94,9 +92,7 @@ public:
 
     tracy_force_inline void Text( const char* txt, size_t size )
     {
-#ifdef TRACY_ON_DEMAND
         if( !m_active ) return;
-#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto ptr = (char*)tracy_malloc( size+1 );
@@ -112,9 +108,7 @@ public:
 
     tracy_force_inline void Name( const char* txt, size_t size )
     {
-#ifdef TRACY_ON_DEMAND
         if( !m_active ) return;
-#endif
         Magic magic;
         auto& token = s_token.ptr;
         auto ptr = (char*)tracy_malloc( size+1 );
@@ -130,10 +124,7 @@ public:
 
 private:
     uint64_t m_thread;
-
-#ifdef TRACY_ON_DEMAND
     const bool m_active;
-#endif
 };
 
 }

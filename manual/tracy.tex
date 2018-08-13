@@ -299,6 +299,10 @@ Tracy is able to capture and draw numeric value changes over time. You may use i
 
 Fast navigation in large data sets and correlation of zones with what was happening in application may be difficult. To ease these issues Tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the \texttt{TracyMessage(text, size)} macro. Alternatively, use \texttt{TracyMessageL(text)} for string literal messages.
 
+\subsection{Zone filtering}
+
+Zone logging can be disabled on a per zone basis, by making use of the \texttt{ZoneNamed} macros. Each of the macros takes an \texttt{active} argument, which will determine whether the zone should be logged.
+
 \subsection{Memory profiling}
 
 Tracy can monitor memory usage of your application. Knowledge about each performed memory allocation enables the following:

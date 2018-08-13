@@ -40,10 +40,10 @@
 #define TracyAlloc(x,y)
 #define TracyFree(x)
 
-#define ZoneNamedS(x,y)
-#define ZoneNamedNS(x,y,z)
-#define ZoneNamedCS(x,y,z)
-#define ZoneNamedNCS(x,y,z,w)
+#define ZoneNamedS(x,y,z)
+#define ZoneNamedNS(x,y,z,w)
+#define ZoneNamedCS(x,y,z,w)
+#define ZoneNamedNCS(x,y,z,w,a)
 
 #define ZoneScopedS(x)
 #define ZoneScopedNS(x,y)
@@ -68,11 +68,6 @@
 #define ZoneScopedN( name ) ZoneNamedN( ___tracy_scoped_zone, name, true )
 #define ZoneScopedC( color ) ZoneNamedC( ___tracy_scoped_zone, color, true )
 #define ZoneScopedNC( name, color ) ZoneNamedNC( ___tracy_scoped_zone, name, color, true )
-
-#define ZoneScopedA( active ) ZoneNamed( ___tracy_scoped_zone, active )
-#define ZoneScopedNA( name, active ) ZoneNamedN( ___tracy_scoped_zone, name, active )
-#define ZoneScopedCA( color, active ) ZoneNamedC( ___tracy_scoped_zone, color, active )
-#define ZoneScopedNCA( name, color, active ) ZoneNamedNC( ___tracy_scoped_zone, name, color, active )
 
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size );
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
@@ -109,11 +104,6 @@
 #  define ZoneScopedCS( color, depth ) ZoneNamedCS( ___tracy_scoped_zone, color, depth, true )
 #  define ZoneScopedNCS( name, color, depth ) ZoneNamedNCS( ___tracy_scoped_zone, name, color depth, true )
 
-#  define ZoneScopedSA( depth, active ) ZoneNamedS( ___tracy_scoped_zone, depth, active )
-#  define ZoneScopedNSA( name, depth, active ) ZoneNamedNS( ___tracy_scoped_zone, name, depth, active )
-#  define ZoneScopedCSA( color, depth, active ) ZoneNamedCS( ___tracy_scoped_zone, color, depth, active )
-#  define ZoneScopedNCSA( name, color, depth, active ) ZoneNamedNCS( ___tracy_scoped_zone, name, color depth, active )
-
 #  define TracyAllocS( ptr, size, depth ) tracy::Profiler::MemAllocCallstack( ptr, size, depth );
 #  define TracyFreeS( ptr, depth ) tracy::Profiler::MemFreeCallstack( ptr, depth );
 #else
@@ -122,15 +112,10 @@
 #  define ZoneNamedCS( varname, color, depth, active ) ZoneNamedC( varname, color, active )
 #  define ZoneNamedNCS( varname, name, color, depth, active ) ZoneNamedNC( varname, name, color, active )
 
-#  define ZoneScopedS( depth ) ZoneScoped( depth, true )
-#  define ZoneScopedNS( name, depth ) ZoneScopedN( name, true )
-#  define ZoneScopedCS( color, depth ) ZoneScopedC( color, true )
-#  define ZoneScopedNCS( name, color, depth ) ZoneScopedNC( name, color, true )
-
-#  define ZoneScopedSA( depth, active ) ZoneScoped( depth, active )
-#  define ZoneScopedNSA( name, depth, active ) ZoneScopedN( name, active )
-#  define ZoneScopedCSA( color, depth, active ) ZoneScopedC( color, active )
-#  define ZoneScopedNCSA( name, color, depth, active ) ZoneScopedNC( name, color, active )
+#  define ZoneScopedS( depth ) ZoneScoped
+#  define ZoneScopedNS( name, depth ) ZoneScopedN( name )
+#  define ZoneScopedCS( color, depth ) ZoneScopedC( color )
+#  define ZoneScopedNCS( name, color, depth ) ZoneScopedNC( name, color )
 
 #  define TracyAllocS( ptr, size, depth ) TracyAlloc( ptr, size )
 #  define TracyFreeS( ptr, depth ) TracyFree( ptr )

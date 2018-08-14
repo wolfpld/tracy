@@ -6356,6 +6356,16 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree ) const
             ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "count:" );
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s", RealToString( v.countInclusive, true ) );
+            ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "Average inclusive alloc size:" );
+            ImGui::SameLine();
+            if( v.countInclusive != 0 )
+            {
+                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s", MemSizeToString( v.allocInclusive / v.countInclusive ) );
+            }
+            else
+            {
+                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "-" );
+            }
 
             ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "Exclusive alloc size:" );
             ImGui::SameLine();
@@ -6364,6 +6374,16 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree ) const
             ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "count:" );
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s", RealToString( v.countExclusive, true ) );
+            ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "Average exclusive alloc size:" );
+            ImGui::SameLine();
+            if( v.countExclusive != 0 )
+            {
+                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s", MemSizeToString( v.allocExclusive / v.countExclusive ) );
+            }
+            else
+            {
+                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "-" );
+            }
 
             ImGui::EndTooltip();
         }

@@ -6006,6 +6006,47 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
     ImGui::EndChild();
 }
 
+static inline CallstackFrameTree* GetFrameTreeItem( std::vector<CallstackFrameTree>& tree, uint64_t idx )
+{
+    auto it = std::find_if( tree.begin(), tree.end(), [idx] ( const auto& v ) { return v.frame == idx; } );
+    if( it == tree.end() )
+    {
+        tree.emplace_back( CallstackFrameTree { idx } );
+        return &tree.back();
+    }
+    else
+    {
+        return &*it;
+    }
+}
+
+std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem ) const
+{
+    std::vector<CallstackFrameTree> root;
+    for( auto& ev : mem.data )
+    {
+        if( ev.csAlloc == 0 ) continue;
+        auto& cs = m_worker.GetCallstack( ev.csAlloc );
+
+        auto base = cs.back();
+        auto treePtr = GetFrameTreeItem( root, base );
+        treePtr->countInclusive++;
+        treePtr->allocInclusive += ev.size;
+
+        for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+        {
+            treePtr = GetFrameTreeItem( treePtr->children, cs[i] );
+            treePtr->countInclusive++;
+            treePtr->allocInclusive += ev.size;
+        }
+
+        treePtr->countExclusive++;
+        treePtr->allocExclusive += ev.size;
+    }
+    return root;
+}
+
+
 enum { ChunkBits = 10 };
 enum { PageBits = 10 };
 enum { PageSize = 1 << PageBits };
@@ -6265,7 +6306,91 @@ void View::DrawMemory()
         ImGui::TreePop();
     }
 
+    ImGui::Separator();
+    if( ImGui::TreeNode( "Call stack tree" ) )
+    {
+        ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
+
+        auto& mem = m_worker.GetMemData();
+        auto tree = GetCallstackFrameTree( mem );
+
+        DrawFrameTreeLevel( tree );
+
+        ImGui::TreePop();
+    }
+
     ImGui::End();
+}
+
+void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree ) const
+{
+    auto& io = ImGui::GetIO();
+
+    int idx = 0;
+    pdqsort_branchless( tree.begin(), tree.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.allocInclusive > rhs.allocInclusive; } );
+    for( auto& v : tree )
+    {
+        auto frame = m_worker.GetCallstackFrame( v.frame );
+        bool expand = false;
+        if( v.children.empty() )
+        {
+            ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
+            ImGui::Text( "%s", m_worker.GetString( frame->name ) );
+            ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
+        }
+        else
+        {
+            ImGui::PushID( idx++ );
+            expand = ImGui::TreeNode( m_worker.GetString( frame->name ) );
+            ImGui::PopID();
+        }
+
+        if( io.KeyCtrl && ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+
+            ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "Inclusive alloc size:" );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s", MemSizeToString( v.allocInclusive ) );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "count:" );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s", RealToString( v.countInclusive, true ) );
+
+            ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "Exclusive alloc size:" );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s", MemSizeToString( v.allocExclusive ) );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "count:" );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s", RealToString( v.countExclusive, true ) );
+
+            ImGui::EndTooltip();
+        }
+
+        if( v.allocExclusive != v.allocInclusive )
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled( "%s:%i", m_worker.GetString( frame->file ), frame->line );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "I:" );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s (%s)", MemSizeToString( v.allocInclusive ), RealToString( v.countInclusive, true ) );
+        }
+        if( v.allocExclusive != 0 )
+        {
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "E:" );
+            ImGui::SameLine();
+            ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s (%s)", MemSizeToString( v.allocExclusive ), RealToString( v.countExclusive, true ) );
+        }
+
+        if( expand )
+        {
+            DrawFrameTreeLevel( v.children );
+            ImGui::TreePop();
+        }
+    }
 }
 
 std::pair<int8_t*, size_t> View::GetMemoryPages() const

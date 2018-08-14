@@ -171,6 +171,16 @@ struct CallstackFrame
 
 enum { CallstackFrameSize = sizeof( CallstackFrame ) };
 
+struct CallstackFrameTree
+{
+    uint64_t frame;
+    uint64_t allocExclusive, allocInclusive;
+    uint32_t countExclusive, countInclusive;
+    std::vector<CallstackFrameTree> children;
+};
+
+enum { CallstackFrameTreeSize = sizeof( CallstackFrameTree ) };
+
 #pragma pack()
 
 

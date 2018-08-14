@@ -101,7 +101,7 @@ Tracy can achieve single-digit nanosecond measurement resolution, due to usage o
 
 \subsection{Frame profiler}
 
-Tracy is aimed at understanding the inner workings of a tight game (or interactive application) loop. That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game, preferably 60 times per second to achieve smooth animation.} as a basic work-unit. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.
+Tracy is aimed at understanding the inner workings of a tight game (or interactive application) loop. That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game (or any other program), preferably 60 times per second to achieve smooth animation.} as a basic work-unit. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.
 
 \subsection{Remote or embedded telemetry}
 

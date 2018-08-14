@@ -5767,6 +5767,9 @@ void View::DrawInfo()
     TextFocused( "Lock events:", RealToString( m_worker.GetLockCount(), true ) );
     TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount(), true ) );
     TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size(), true ) );
+    TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
+    TextFocused( "Callstacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
+    TextFocused( "Callstack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
     ImGui::Separator();
     TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
     TextFocused( "Count:", RealToString( m_frames->frames.size(), true ) );

@@ -70,6 +70,7 @@ v0.4 (xxxx-xx-xx)
   - Middle clicking on a message marker will center it on screen.
 - Added trace information window.
 - Displayed memory sizes are now properly formatted.
+- Added call stack tree for memory allocations.
 
 
 v0.3.3 (2018-07-03)

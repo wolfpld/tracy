@@ -259,9 +259,13 @@ You may use named colors predefined in \texttt{common/TracyColor.hpp} (included 
 \subsubsection{Multiple zones in one scope}
 \label{multizone}
 
-Using the \texttt{ZoneScoped} family of macros creates a stack variable named \texttt{\_\_\_tracy\_scoped\_zone}. If you want to measure more than one zone in the same scope, you will need to use the \texttt{ZoneNamed} macros, which require that you provide a name for the created variable. For example, instead of \texttt{ZoneScopedN("Zone name")}, you would use \texttt{ZoneNamedN(variableName, "Zone name")}.
+Using the \texttt{ZoneScoped} family of macros creates a stack variable named \texttt{\_\_\_tracy\_scoped\_zone}. If you want to measure more than one zone in the same scope, you will need to use the \texttt{ZoneNamed} macros, which require that you provide a name for the created variable. For example, instead of \texttt{ZoneScopedN("Zone name")}, you would use \texttt{ZoneNamedN(variableName, "Zone name", true)}.
 
 The \texttt{ZoneText} and \texttt{ZoneName} macros work only for the zones created using the \texttt{ZoneScoped} macros. For the \texttt{ZoneNamed} macros, you will need to invoke the methods \texttt{Text} or \texttt{Name} of the variable you have created.
+
+\subsubsection{Filtering zones}
+
+Zone logging can be disabled on a per zone basis, by making use of the \texttt{ZoneNamed} macros. Each of the macros takes an \texttt{active} argument, which will determine whether the zone should be logged.
 
 \subsection{Marking locks}
 
@@ -298,10 +302,6 @@ Tracy is able to capture and draw numeric value changes over time. You may use i
 \subsection{Message log}
 
 Fast navigation in large data sets and correlation of zones with what was happening in application may be difficult. To ease these issues Tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the \texttt{TracyMessage(text, size)} macro. Alternatively, use \texttt{TracyMessageL(text)} for string literal messages.
-
-\subsection{Zone filtering}
-
-Zone logging can be disabled on a per zone basis, by making use of the \texttt{ZoneNamed} macros. Each of the macros takes an \texttt{active} argument, which will determine whether the zone should be logged.
 
 \subsection{Memory profiling}
 

@@ -82,7 +82,7 @@ Now let's take a close look at the marketing blurb.
 This claim can be described in the following ways:
 
 \begin{enumerate}
-\item The profiled application is not slowed down by profiling. The act of recording a profiling event has virtually zero cost -- it only takes \textasciitilde 8~\si{\nano\second}. Even on low-power mobile devices there's no perceptible impact on execution speed.
+\item The profiled application is not slowed down by profiling\footnote{See section~\ref{perfimpact}.}. The act of recording a profiling event has virtually zero cost -- it only takes \textasciitilde 8~\si{\nano\second}. Even on low-power mobile devices there's no perceptible impact on execution speed.
 \item The profiler itself works in real-time, without the need to process collected data in a complex way. Actually, it is quite inefficient in the way it works, as the data it presents is calculated anew each frame. And yet it can run at 60 frames per second.
 \item The profiler has full functionality when the profiled application is running and the data is captured. You may interact with your application and then immediately switch to the profiler, when a performance drop occurs.
 \end{enumerate}
@@ -108,6 +108,26 @@ Tracy is aimed at understanding the inner workings of a tight game (or interacti
 Tracy uses the client-server model to enable a wide range of use-cases. For example, a game on a mobile phone may be profiled over the wireless connection, with the profiler running on a desktop computer. It is also possible to embed the visualization front-end in the profiled application, making the profiling self-contained.
 
 In the Tracy terminology, the profiled application is the \emph{client} and the profiler itself is the \emph{server}. It was named this way because the client is a thin layer that just collects events and sends them for processing and long-term storage on the server. The fact that the server needs to connect to the client to begin the profiling session may be a bit confusing at first.
+
+\subsection{Performance impact}
+\label{perfimpact}
+
+To check how much slowdown is introduced by using Tracy, let's profile an example application. For this purpose we will use etcpak\footnote{\url{https://bitbucket.org/wolfpld/etcpak}}. Let's use an $8192 \times 8192$ pixels test image as input data and instrument everything down to the $4 \times 4$ pixel block compression function (that's 4 million blocks to compress).
+
+The resulting timing information can be seen in table~\ref{PerformanceImpact}. As can be seen, the cost of a single-zone capture (consisting of the zone begin and zone end events) is \textasciitilde 15 \si{\nano\second}.
+
+\begin{table}[h]
+\centering
+\begin{tabular}[h]{c|c|c|c|c}
+Output & Zones & Clean run & Profiling run & Difference \\ \hline
+ETC1 & 4194568 & 0.94 \si{\second} & 1.003 \si{\second} & +0.063 \si{\second} \\
+ETC2 + mip-maps & 5592822 & 1.034 \si{\second} & 1.119 \si{\second} & +0.085 \si{\second}
+\end{tabular}
+\caption{Zone capture time cost.}
+\label{PerformanceImpact}
+\end{table}
+
+It should be noted that Tracy has a constant initialization cost, needed to perform timer calibration. This cost was subtracted from the profiling run times, as it is irrelevant to the single-zone capture time.
 
 \section{First steps}
 

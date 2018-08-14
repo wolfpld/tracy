@@ -140,7 +140,7 @@ Tracy requires compiler support for C++11, Thread Local Storage and a way to wor
 \item FreeBSD (x64)
 \item Cygwin (x64)
 \item WSL (x64)
-\item OSX (x64)
+\item OSX (x64)\footnote{In the Apple world everything has to be \emph{think different}. Support for Thread Local Storage is only available since Xcode 8 and not before iOS 9. There's no way to handle static initialization order fiasco, so you will have to make your own workarounds. Zone filtering described in section~\ref{filteringzones} may be of help.}
 \end{itemize}
 
 The following compilers are supported:
@@ -284,6 +284,7 @@ Using the \texttt{ZoneScoped} family of macros creates a stack variable named \t
 The \texttt{ZoneText} and \texttt{ZoneName} macros work only for the zones created using the \texttt{ZoneScoped} macros. For the \texttt{ZoneNamed} macros, you will need to invoke the methods \texttt{Text} or \texttt{Name} of the variable you have created.
 
 \subsubsection{Filtering zones}
+\label{filteringzones}
 
 Zone logging can be disabled on a per zone basis, by making use of the \texttt{ZoneNamed} macros. Each of the macros takes an \texttt{active} argument, which will determine whether the zone should be logged.
 

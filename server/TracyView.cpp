@@ -19,6 +19,8 @@
 #include "TracyPopcnt.hpp"
 #include "TracyView.hpp"
 
+#include "../imguicolortextedit/TextEditor.h"
+
 #ifdef TRACY_FILESELECTOR
 #  include "../nfd/nfd.h"
 #endif
@@ -333,6 +335,8 @@ View::View( const char* addr )
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.FrameRounding = 2.f;
+
+    InitTextEditor();
 }
 
 View::View( FileRead& f )
@@ -373,6 +377,8 @@ View::View( FileRead& f )
 {
     assert( s_instance == nullptr );
     s_instance = this;
+
+    InitTextEditor();
 }
 
 View::~View()
@@ -383,6 +389,13 @@ View::~View()
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
+}
+
+void View::InitTextEditor()
+{
+    m_textEditor = std::make_unique<TextEditor>();
+    m_textEditor->SetReadOnly( true );
+    m_textEditor->SetLanguageDefinition( TextEditor::LanguageDefinition::CPlusPlus() );
 }
 
 const char* View::ShortenNamespace( const char* name ) const

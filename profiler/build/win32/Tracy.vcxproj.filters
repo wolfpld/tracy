@@ -19,6 +19,9 @@
     <Filter Include="nfd">
       <UniqueIdentifier>{46eb6aa0-de1c-447a-a6dd-aee2a06f85ef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="imguicolortextedit">
+      <UniqueIdentifier>{96740ecd-86b9-452d-991c-8743dde61551}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp">
@@ -65,6 +68,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp">
       <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\imguicolortextedit\TextEditor.cpp">
+      <Filter>imguicolortextedit</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -196,6 +202,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyFilesystem.hpp">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\imguicolortextedit\TextEditor.h">
+      <Filter>imguicolortextedit</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

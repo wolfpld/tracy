@@ -4,6 +4,7 @@
 #include <atomic>
 #include <functional>
 #include <map>
+#include <memory>
 #include <string>
 #include <thread>
 #include <vector>
@@ -20,6 +21,7 @@ namespace tracy
 
 struct QueueItem;
 class FileRead;
+class TextEditor;
 
 class View
 {
@@ -54,6 +56,8 @@ private:
         Mid,
         Short
     };
+
+    void InitTextEditor();
 
     const char* ShortenNamespace( const char* name ) const;
 
@@ -228,6 +232,8 @@ private:
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;
+
+    std::unique_ptr<TextEditor> m_textEditor;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

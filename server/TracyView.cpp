@@ -3508,14 +3508,26 @@ void View::DrawZoneInfoWindow()
     }
     if( FileExists( m_worker.GetString( srcloc.file ) ) )
     {
+        const auto fileName = m_worker.GetString( srcloc.file );
         ImGui::SameLine();
+        bool hilite = m_textEditorFile == fileName;
+        if( hilite )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
+            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
+            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+        }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
 #else
         if( ImGui::Button( "Source" ) )
 #endif
         {
-            SetTextEditorFile( m_worker.GetString( srcloc.file ), srcloc.line );
+            SetTextEditorFile( fileName, srcloc.line );
+        }
+        if( hilite )
+        {
+            ImGui::PopStyleColor( 3 );
         }
     }
     if( !m_zoneInfoStack.empty() )
@@ -3837,14 +3849,26 @@ void View::DrawGpuInfoWindow()
     }
     if( FileExists( m_worker.GetString( srcloc.file ) ) )
     {
+        const auto fileName = m_worker.GetString( srcloc.file );
         ImGui::SameLine();
+        bool hilite = m_textEditorFile == fileName;
+        if( hilite )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
+            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
+            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+        }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
 #else
         if( ImGui::Button( "Source" ) )
 #endif
         {
-            SetTextEditorFile( m_worker.GetString( srcloc.file ), srcloc.line );
+            SetTextEditorFile( fileName, srcloc.line );
+        }
+        if( hilite )
+        {
+            ImGui::PopStyleColor( 3 );
         }
     }
     if( !m_gpuInfoStack.empty() )

@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 
+#include "TracyBuzzAnim.hpp"
 #include "TracyDecayValue.hpp"
 #include "TracyVector.hpp"
 #include "TracyWorker.hpp"
@@ -236,6 +237,7 @@ private:
 
     Namespace m_namespace;
     Animation m_zoomAnim;
+    BuzzAnim<int> m_callstackBuzzAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;

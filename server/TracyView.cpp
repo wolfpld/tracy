@@ -674,9 +674,9 @@ bool View::DrawImpl()
     if( m_showInfo ) DrawInfo();
     if( m_textEditorFile ) DrawTextEditor();
 
+    const auto& io = ImGui::GetIO();
     if( m_zoomAnim.active )
     {
-        const auto& io = ImGui::GetIO();
         m_zoomAnim.progress += io.DeltaTime * m_zoomAnim.lenMod;
         if( m_zoomAnim.progress >= 1.f )
         {
@@ -691,6 +691,8 @@ bool View::DrawImpl()
             m_zvEnd = int64_t( m_zoomAnim.end0 + ( m_zoomAnim.end1 - m_zoomAnim.end0 ) * v );
         }
     }
+
+    m_callstackBuzzAnim.Update( io.DeltaTime );
 
     return keepOpen;
 }
@@ -5749,6 +5751,13 @@ void View::DrawCallstackWindow()
             }
             ImGui::NextColumn();
             ImGui::PushTextWrapPos( 0.0f );
+            float indentVal = 0.f;
+            if( m_callstackBuzzAnim.Match( fidx ) )
+            {
+                const auto time = m_callstackBuzzAnim.Time();
+                indentVal = sin( time * 60.f ) * 10.f * time;
+                ImGui::Indent( indentVal );
+            }
             txt = m_worker.GetString( frame->file );
             if( frame->line == 0 )
             {
@@ -5768,6 +5777,14 @@ void View::DrawCallstackWindow()
                 {
                     SetTextEditorFile( txt, frame->line );
                 }
+                else
+                {
+                    m_callstackBuzzAnim.Enable( fidx, 0.5f );
+                }
+            }
+            if( indentVal != 0.f )
+            {
+                ImGui::Unindent( indentVal );
             }
             ImGui::PopTextWrapPos();
             ImGui::NextColumn();

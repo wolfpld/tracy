@@ -412,8 +412,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	mTextChanged = false;
 
 	ImGuiIO& io = ImGui::GetIO();
-	auto xadv = (io.Fonts->Fonts[0]->IndexAdvanceX['X']);
-	mCharAdvance = ImVec2(io.FontGlobalScale * xadv, io.FontGlobalScale * io.Fonts->Fonts[0]->FontSize + mLineSpacing);
+	auto font = ImGui::GetFont();
+	auto xadv = (font->IndexAdvanceX['X']);
+	mCharAdvance = ImVec2(io.FontGlobalScale * xadv, io.FontGlobalScale * font->FontSize + mLineSpacing);
 
 	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));

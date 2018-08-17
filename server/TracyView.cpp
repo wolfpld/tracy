@@ -5070,7 +5070,11 @@ void View::DrawCompare()
     if( !m_compare.second )
     {
         ImGui::TextWrapped( "Please load a second trace to compare results." );
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open second trace" ) && !m_compare.loadThread.joinable() )
+#else
         if( ImGui::Button( "Open second trace" ) && !m_compare.loadThread.joinable() )
+#endif
         {
             nfdchar_t* fn;
             auto res = NFD_OpenDialog( "tracy", nullptr, &fn );
@@ -5121,7 +5125,11 @@ void View::DrawCompare()
     ImGui::SameLine();
     ImGui::Text( "%s", m_compare.second->GetCaptureName().c_str() );
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::SmallButton( ICON_FA_TRASH_ALT " Unload" ) )
+#else
     if( ImGui::SmallButton( "Unload" ) )
+#endif
     {
         m_compare.Reset();
         m_compare.second.reset();
@@ -5132,10 +5140,18 @@ void View::DrawCompare()
     ImGui::InputText( "", m_compare.pattern, 1024 );
     ImGui::SameLine();
 
+#ifdef TRACY_EXTENDED_FONT
+    const bool findClicked = ImGui::Button( ICON_FA_SEARCH " Find" );
+#else
     const bool findClicked = ImGui::Button( "Find" );
+#endif
     ImGui::SameLine();
 
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_BAN " Clear" ) )
+#else
     if( ImGui::Button( "Clear" ) )
+#endif
     {
         m_compare.Reset();
     }

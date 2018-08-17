@@ -568,21 +568,53 @@ bool View::DrawImpl()
         ImGui::PopStyleColor( 3 );
     }
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( "\xef\x80\x93 Options" ) ) m_showOptions = true;
+#else
     if( ImGui::Button( "Options" ) ) m_showOptions = true;
+#endif
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( "\xef\x80\xab Messages" ) ) m_showMessages = true;
+#else
     if( ImGui::Button( "Messages" ) ) m_showMessages = true;
+#endif
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( "\xef\x80\x82 Find zone" ) ) m_findZone.show = true;
+#else
     if( ImGui::Button( "Find zone" ) ) m_findZone.show = true;
+#endif
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( "\xef\x85\xa1 Statistics" ) ) m_showStatistics = true;
+#else
     if( ImGui::Button( "Statistics" ) ) m_showStatistics = true;
+#endif
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( "\xef\x94\xb8 Memory" ) ) m_memInfo.show = true;
+#else
     if( ImGui::Button( "Memory" ) ) m_memInfo.show = true;
+#endif
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( "\xef\x89\x8e Compare" ) ) m_compare.show = true;
+#else
     if( ImGui::Button( "Compare" ) ) m_compare.show = true;
+#endif
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( "\xef\x95\xb7 Info" ) ) m_showInfo = true;
+#else
     if( ImGui::Button( "Info" ) ) m_showInfo = true;
+#endif
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::SmallButton( "\xef\x83\x99" ) ) ZoomToPrevFrame();
+#else
     if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
+#endif
     ImGui::SameLine();
     {
         const auto vis = Visible( m_frames );
@@ -597,7 +629,11 @@ bool View::DrawImpl()
         }
     }
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::SmallButton( "\xef\x83\x9a" ) ) ZoomToNextFrame();
+#else
     if( ImGui::SmallButton( ">" ) ) ZoomToNextFrame();
+#endif
     ImGui::SameLine();
     if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
     {

@@ -108,6 +108,14 @@ int main( int argc, char** argv )
         0xF1EB, 0xF1EB, // wifi
         0xF011, 0xF011, // power off
         0xF56F, 0xF56F, // file-import
+        0xF013, 0xF013, // cog
+        0xF02B, 0xF02B, // tag
+        0xF002, 0xF002, // search
+        0xF161, 0xF161, // sort-amount-up
+        0xF538, 0xF538, // memory
+        0xF24E, 0xF24E, // balancing scale
+        0xF577, 0xF577, // fingerprint
+        0xF0D9, 0xF0DA, // caret left, right
         0
     };
     ImFontConfig configMerge;

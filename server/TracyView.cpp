@@ -415,7 +415,7 @@ void View::SetTextEditorFile( const char* fileName, int line )
     fclose( f );
 
     m_textEditor->SetText( data );
-    m_textEditor->SetCursorPosition( TextEditor::Coordinates( line, 0 ) );
+    m_textEditor->SetCursorPosition( TextEditor::Coordinates( line-1, 0 ) );
 
     m_textEditorFile = fileName;
 }

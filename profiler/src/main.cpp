@@ -21,8 +21,8 @@
 #include "../../server/TracyWorker.hpp"
 #include "../../server/TracyVersion.hpp"
 
-
 #include "Arimo.hpp"
+#include "FontAwesomeSolid.hpp"
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -97,14 +97,21 @@ int main( int argc, char** argv )
     ImGui::CreateContext();
     ImGui_ImplGlfwGL3_Init(window, true);
 
-    static const ImWchar ranges[] = {
+    static const ImWchar rangesBasic[] = {
         0x0020, 0x00FF, // Basic Latin + Latin Supplement
         0x03BC, 0x03BC, // micro
         0,
     };
+    static const ImWchar rangesIcons[] = {
+        0xF071, 0xF071,
+        0
+    };
+    ImFontConfig configMerge;
+    configMerge.MergeMode = true;
 
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, ranges );
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, rangesBasic );
+    io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 15.0f * dpiScale, &configMerge, rangesIcons );
     auto fixedWidth = io.Fonts->AddFontDefault();
 
     ImGui::StyleColorsDark();

@@ -206,6 +206,9 @@
     <ClInclude Include="..\..\..\imguicolortextedit\TextEditor.h">
       <Filter>imguicolortextedit</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\FontAwesomeSolid.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

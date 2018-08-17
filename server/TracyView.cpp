@@ -525,8 +525,16 @@ bool View::DrawImpl()
     if( !m_worker.IsDataStatic() )
     {
         if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;
-        ImGui::SameLine();
     }
+    else
+    {
+        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f) );
+        ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f) );
+        ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f) );
+        if( ImGui::Button( "Close" ) ) keepOpen = false;
+        ImGui::PopStyleColor( 3 );
+    }
+    ImGui::SameLine();
     if( ImGui::Button( "Options" ) ) m_showOptions = true;
     ImGui::SameLine();
     if( ImGui::Button( "Messages" ) ) m_showMessages = true;

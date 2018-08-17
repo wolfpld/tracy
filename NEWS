@@ -77,8 +77,15 @@ v0.4 (xxxx-xx-xx)
     the profiler. It only checks if there is a file on your disk that
     matches the file name of the captured source location. Even if the file
     is displayed, it may be out of date.
+  - CPU and GPU zones will have "Source" button, if source file can be
+    opened.
+  - Source files for call stack traces can be opened by right-clicking on
+    the file name. Since in this case there is no button that can be hidden,
+    a small animation will be played to notify user if the source cannot be
+    opened.
 - The main profiler view will now occupy the whole window. Previous behavior
   is still available for embedded use cases.
+- Many button labels are now accompanied by icons.
 - Fonts should now be less blurry.
 
 

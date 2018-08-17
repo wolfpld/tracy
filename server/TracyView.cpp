@@ -405,16 +405,19 @@ void View::InitTextEditor()
 
 void View::SetTextEditorFile( const char* fileName, int line )
 {
-    FILE* f = fopen( fileName, "rb" );
-    fseek( f, 0, SEEK_END );
-    const auto sz = ftell( f );
-    fseek( f, 0, SEEK_SET );
-    std::string data;
-    data.resize( sz );
-    fread( data.data(), 1, sz, f );
-    fclose( f );
+    if( !m_textEditorFile || strcmp( m_textEditorFile, fileName ) != 0 )
+    {
+        FILE* f = fopen( fileName, "rb" );
+        fseek( f, 0, SEEK_END );
+        const auto sz = ftell( f );
+        fseek( f, 0, SEEK_SET );
+        std::string data;
+        data.resize( sz );
+        fread( data.data(), 1, sz, f );
+        fclose( f );
+        m_textEditor->SetText( data );
+    }
 
-    m_textEditor->SetText( data );
     m_textEditor->SetCursorPosition( TextEditor::Coordinates( line-1, 0 ) );
 
     m_textEditorFile = fileName;

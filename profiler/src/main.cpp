@@ -103,7 +103,9 @@ int main( int argc, char** argv )
         0,
     };
     static const ImWchar rangesIcons[] = {
-        0xF071, 0xF071,
+        0xF071, 0xF071, // danger
+        0xF07C, 0xF07C, // folder open
+        0xF1EB, 0xF1EB, // wifi
         0
     };
     ImFontConfig configMerge;
@@ -172,12 +174,12 @@ int main( int argc, char** argv )
             ImGui::Separator();
             ImGui::Text( "Connect to client" );
             ImGui::InputText( "Address", addr, 1024 );
-            if( ImGui::Button( "Connect" ) && *addr && !loadThread.joinable() )
+            if( ImGui::Button( "\xef\x87\xab Connect" ) && *addr && !loadThread.joinable() )
             {
                 view = std::make_unique<tracy::View>( addr, fixedWidth, SetWindowTitleCallback );
             }
             ImGui::Separator();
-            if( ImGui::Button( "Open saved trace" ) && !loadThread.joinable() )
+            if( ImGui::Button( "\xef\x81\xbc Open saved trace" ) && !loadThread.joinable() )
             {
                 nfdchar_t* fn;
                 auto res = NFD_OpenDialog( "tracy", nullptr, &fn );

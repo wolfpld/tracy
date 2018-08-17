@@ -521,7 +521,27 @@ bool View::DrawImpl()
     char tmp[2048];
     sprintf( tmp, "%s###Profiler", m_worker.GetCaptureName().c_str() );
     ImGui::SetNextWindowSize( ImVec2( 1550, 800 ), ImGuiCond_FirstUseEver );
+
+#ifdef TRACY_ROOT_WINDOW
+    auto& style = ImGui::GetStyle();
+    const auto wrPrev = style.WindowRounding;
+    const auto wbsPrev = style.WindowBorderSize;
+    const auto wpPrev = style.WindowPadding;
+    style.WindowRounding = 0.f;
+    style.WindowBorderSize = 0.f;
+    style.WindowPadding = ImVec2( 4.f, 4.f );
+
+    ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+    ImGui::SetNextWindowSize( ImVec2( m_rootWidth, m_rootHeight ) );
+    ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove );
+
+    style.WindowRounding = wrPrev;
+    style.WindowBorderSize = wbsPrev;
+    style.WindowPadding = wpPrev;
+#else
     ImGui::Begin( tmp, keepOpenPtr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus );
+#endif
+
     if( !m_worker.IsDataStatic() )
     {
         if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;

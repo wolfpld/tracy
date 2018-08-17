@@ -829,7 +829,7 @@ void TextEditor::SetReadOnly(bool aValue)
 
 void TextEditor::SetCursorPosition(const Coordinates & aPosition)
 {
-	if (mState.mCursorPosition != aPosition)
+	//if (mState.mCursorPosition != aPosition)
 	{
 		mState.mCursorPosition = aPosition;
 		EnsureCursorVisible();

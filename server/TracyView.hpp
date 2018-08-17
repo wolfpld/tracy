@@ -103,7 +103,7 @@ private:
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
 
     std::vector<CallstackFrameTree> GetCallstackFrameTree( const MemData& mem ) const;
-    void DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree ) const;
+    void DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx ) const;
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();

@@ -6500,7 +6500,8 @@ void View::DrawMemory()
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTree( mem );
 
-        DrawFrameTreeLevel( tree );
+        int idx = 0;
+        DrawFrameTreeLevel( tree, idx );
 
         ImGui::TreePop();
     }
@@ -6508,11 +6509,10 @@ void View::DrawMemory()
     ImGui::End();
 }
 
-void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree ) const
+void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx ) const
 {
     auto& io = ImGui::GetIO();
 
-    int idx = 0;
     pdqsort_branchless( tree.begin(), tree.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.allocInclusive > rhs.allocInclusive; } );
     for( auto& v : tree )
     {
@@ -6593,7 +6593,7 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree ) const
 
         if( expand )
         {
-            DrawFrameTreeLevel( v.children );
+            DrawFrameTreeLevel( v.children, idx );
             ImGui::TreePop();
         }
     }

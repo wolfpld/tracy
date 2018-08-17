@@ -103,7 +103,7 @@ private:
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
 
     std::vector<CallstackFrameTree> GetCallstackFrameTree( const MemData& mem ) const;
-    void DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx ) const;
+    void DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
@@ -238,6 +238,7 @@ private:
     Namespace m_namespace;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
+    BuzzAnim<int> m_callstackTreeBuzzAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;

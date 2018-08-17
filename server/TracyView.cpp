@@ -693,6 +693,7 @@ bool View::DrawImpl()
     }
 
     m_callstackBuzzAnim.Update( io.DeltaTime );
+    m_callstackTreeBuzzAnim.Update( io.DeltaTime );
 
     return keepOpen;
 }
@@ -6496,6 +6497,7 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Call stack tree" ) )
     {
         ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
+        ImGui::TextDisabled( "Right click on file name to open source file." );
 
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTree( mem );
@@ -6509,7 +6511,7 @@ void View::DrawMemory()
     ImGui::End();
 }
 
-void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx ) const
+void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
 {
     auto& io = ImGui::GetIO();
 
@@ -6574,10 +6576,32 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
             ImGui::EndTooltip();
         }
 
-        if( v.allocExclusive != v.allocInclusive )
+        float indentVal = 0.f;
+        if( m_callstackTreeBuzzAnim.Match( idx ) )
+        {
+            const auto time = m_callstackTreeBuzzAnim.Time();
+            indentVal = sin( time * 60.f ) * 10.f * time;
+            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+        }
+        else
         {
             ImGui::SameLine();
-            ImGui::TextDisabled( "%s:%i", m_worker.GetString( frame->file ), frame->line );
+        }
+        ImGui::TextDisabled( "%s:%i", m_worker.GetString( frame->file ), frame->line );
+        if( ImGui::IsItemClicked( 1 ) )
+        {
+            if( FileExists( m_worker.GetString( frame->file ) ) )
+            {
+                SetTextEditorFile( m_worker.GetString( frame->file ), frame->line );
+            }
+            else
+            {
+                m_callstackTreeBuzzAnim.Enable( idx, 0.5f );
+            }
+        }
+
+        if( v.allocExclusive != v.allocInclusive )
+        {
             ImGui::SameLine();
             ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "I:" );
             ImGui::SameLine();

@@ -703,7 +703,11 @@ void View::DrawConnection()
         }
     }
 
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( "\xef\x95\xaf Save trace" ) )
+#else
     if( ImGui::Button( "Save trace" ) )
+#endif
     {
 #ifdef TRACY_FILESELECTOR
         nfdchar_t* fn;

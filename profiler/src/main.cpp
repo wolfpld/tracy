@@ -107,6 +107,7 @@ int main( int argc, char** argv )
         0xF07C, 0xF07C, // folder open
         0xF1EB, 0xF1EB, // wifi
         0xF011, 0xF011, // power off
+        0xF56F, 0xF56F, // file-import
         0
     };
     ImFontConfig configMerge;

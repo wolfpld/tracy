@@ -28,7 +28,7 @@ static void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "Error %d: %s\n", error, description);
 }
 
-void OpenWebpage( const char* url )
+static void OpenWebpage( const char* url )
 {
 #ifdef _WIN32
     ShellExecuteA( nullptr, nullptr, url, nullptr, nullptr, 0 );

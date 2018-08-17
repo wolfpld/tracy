@@ -3450,12 +3450,20 @@ void View::DrawZoneInfoWindow()
     bool show = true;
     ImGui::Begin( "Zone info", &show );
 
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
+#else
     if( ImGui::Button( "Zoom to zone" ) )
+#endif
     {
         ZoomToZone( ev );
     }
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
+#else
     if( ImGui::Button( "Go to parent" ) )
+#endif
     {
         auto parent = GetZoneParent( ev );
         if( parent )
@@ -3464,7 +3472,11 @@ void View::DrawZoneInfoWindow()
         }
     }
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_CHART_BAR " Statistics" ) )
+#else
     if( ImGui::Button( "Statistics" ) )
+#endif
     {
         m_findZone.ShowZone( ev.srcloc, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
     }
@@ -3478,7 +3490,11 @@ void View::DrawZoneInfoWindow()
             ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
             ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
         }
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
+#else
         if( ImGui::Button( "Call stack" ) )
+#endif
         {
             m_callstackInfoWindow = ev.callstack;
         }
@@ -3490,7 +3506,11 @@ void View::DrawZoneInfoWindow()
     if( FileExists( m_worker.GetString( srcloc.file ) ) )
     {
         ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
+#else
         if( ImGui::Button( "Source" ) )
+#endif
         {
             SetTextEditorFile( m_worker.GetString( srcloc.file ), srcloc.line );
         }
@@ -3498,7 +3518,11 @@ void View::DrawZoneInfoWindow()
     if( !m_zoneInfoStack.empty() )
     {
         ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_ARROW_LEFT " Go back" ) )
+#else
         if( ImGui::Button( "Go back" ) )
+#endif
         {
             m_zoneInfoWindow = m_zoneInfoStack.back_and_pop();
         }
@@ -3764,12 +3788,20 @@ void View::DrawGpuInfoWindow()
     bool show = true;
     ImGui::Begin( "Zone info", &show );
 
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
+#else
     if( ImGui::Button( "Zoom to zone" ) )
+#endif
     {
         ZoomToZone( ev );
     }
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
+#else
     if( ImGui::Button( "Go to parent" ) )
+#endif
     {
         auto parent = GetZoneParent( ev );
         if( parent )
@@ -3787,7 +3819,11 @@ void View::DrawGpuInfoWindow()
             ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
             ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
         }
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
+#else
         if( ImGui::Button( "Call stack" ) )
+#endif
         {
             m_callstackInfoWindow = ev.callstack;
         }
@@ -3799,7 +3835,11 @@ void View::DrawGpuInfoWindow()
     if( FileExists( m_worker.GetString( srcloc.file ) ) )
     {
         ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
+#else
         if( ImGui::Button( "Source" ) )
+#endif
         {
             SetTextEditorFile( m_worker.GetString( srcloc.file ), srcloc.line );
         }
@@ -3807,7 +3847,11 @@ void View::DrawGpuInfoWindow()
     if( !m_gpuInfoStack.empty() )
     {
         ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_ARROW_LEFT " Go back" ) )
+#else
         if( ImGui::Button( "Go back" ) )
+#endif
         {
             m_gpuInfoWindow = m_gpuInfoStack.back_and_pop();
         }

@@ -4275,10 +4275,18 @@ void View::DrawFindZone()
     ImGui::InputText( "", m_findZone.pattern, 1024 );
     ImGui::SameLine();
 
+#ifdef TRACY_EXTENDED_FONT
+    const bool findClicked = ImGui::Button( ICON_FA_SEARCH " Find" );
+#else
     const bool findClicked = ImGui::Button( "Find" );
+#endif
     ImGui::SameLine();
 
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_BAN " Clear" ) )
+#else
     if( ImGui::Button( "Clear" ) )
+#endif
     {
         m_findZone.Reset();
     }

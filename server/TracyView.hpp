@@ -15,6 +15,7 @@
 #include "tracy_flat_hash_map.hpp"
 
 struct ImVec2;
+struct ImFont;
 
 namespace tracy
 {
@@ -42,9 +43,9 @@ class View
     };
 
 public:
-    View() : View( "127.0.0.1" ) {}
-    View( const char* addr );
-    View( FileRead& f );
+    View( ImFont* fixedWidth = nullptr ) : View( "127.0.0.1", fixedWidth ) {}
+    View( const char* addr, ImFont* fixedWidth = nullptr );
+    View( FileRead& f, ImFont* fixedWidth = nullptr );
     ~View();
 
     static bool Draw();
@@ -236,6 +237,7 @@ private:
 
     std::unique_ptr<TextEditor> m_textEditor;
     const char* m_textEditorFile;
+    ImFont* m_textEditorFont;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

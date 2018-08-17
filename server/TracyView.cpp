@@ -294,7 +294,7 @@ enum { MinFrameSize = 5 };
 
 static View* s_instance = nullptr;
 
-View::View( const char* addr )
+View::View( const char* addr, ImFont* fixedWidth )
     : m_worker( addr )
     , m_staticView( false )
     , m_frameScale( 0 )
@@ -330,6 +330,7 @@ View::View( const char* addr )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_namespace( Namespace::Full )
+    , m_textEditorFont( fixedWidth )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -340,7 +341,7 @@ View::View( const char* addr )
     InitTextEditor();
 }
 
-View::View( FileRead& f )
+View::View( FileRead& f, ImFont* fixedWidth )
     : m_worker( f )
     , m_staticView( true )
     , m_frameScale( 0 )
@@ -375,6 +376,7 @@ View::View( FileRead& f )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_namespace( Namespace::Full )
+    , m_textEditorFont( fixedWidth )
 {
     assert( s_instance == nullptr );
     s_instance = this;

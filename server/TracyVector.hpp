@@ -27,7 +27,7 @@ public:
     }
 
     Vector( const Vector& ) = delete;
-    Vector( Vector&& src )
+    Vector( Vector&& src ) noexcept
         : m_ptr( src.m_ptr )
         , m_size( src.m_size )
         , m_capacity( src.m_capacity )
@@ -60,7 +60,7 @@ public:
     }
 
     Vector& operator=( const Vector& ) = delete;
-    Vector& operator=( Vector&& src )
+    Vector& operator=( Vector&& src ) noexcept
     {
         delete[] m_ptr;
         m_ptr = src.m_ptr;

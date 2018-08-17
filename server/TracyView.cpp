@@ -341,9 +341,6 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     assert( s_instance == nullptr );
     s_instance = this;
 
-    ImGuiStyle& style = ImGui::GetStyle();
-    style.FrameRounding = 2.f;
-
     InitTextEditor();
 }
 

@@ -5714,6 +5714,7 @@ void View::DrawCallstackWindow()
     {
         ImGui::BeginTooltip();
         ImGui::Text( "Click on entry to copy it to clipboard." );
+        ImGui::Text( "Right click on entry to try to open source file." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
@@ -5760,6 +5761,13 @@ void View::DrawCallstackWindow()
             if( ImGui::IsItemClicked() )
             {
                 ImGui::SetClipboardText( txt );
+            }
+            if( ImGui::IsItemClicked( 1 ) )
+            {
+                if( FileExists( txt ) )
+                {
+                    SetTextEditorFile( txt, frame->line );
+                }
             }
             ImGui::PopTextWrapPos();
             ImGui::NextColumn();

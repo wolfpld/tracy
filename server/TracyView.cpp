@@ -294,7 +294,7 @@ enum { MinFrameSize = 5 };
 
 static View* s_instance = nullptr;
 
-View::View( const char* addr, ImFont* fixedWidth )
+View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     : m_worker( addr )
     , m_staticView( false )
     , m_frameScale( 0 )
@@ -331,6 +331,8 @@ View::View( const char* addr, ImFont* fixedWidth )
     , m_statSelf( false )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
+    , m_stcb( stcb )
+    , m_titleSet( false )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -341,7 +343,7 @@ View::View( const char* addr, ImFont* fixedWidth )
     InitTextEditor();
 }
 
-View::View( FileRead& f, ImFont* fixedWidth )
+View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     : m_worker( f )
     , m_staticView( true )
     , m_frameScale( 0 )
@@ -377,6 +379,8 @@ View::View( FileRead& f, ImFont* fixedWidth )
     , m_statSelf( false )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
+    , m_stcb( stcb )
+    , m_titleSet( false )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -517,12 +521,13 @@ bool View::DrawImpl()
         keepOpenPtr = &keepOpen;
     }
 
-    std::lock_guard<TracyMutex> lock( m_worker.GetDataLock() );
-    char tmp[2048];
-    sprintf( tmp, "%s###Profiler", m_worker.GetCaptureName().c_str() );
-    ImGui::SetNextWindowSize( ImVec2( 1550, 800 ), ImGuiCond_FirstUseEver );
-
 #ifdef TRACY_ROOT_WINDOW
+    if( !m_titleSet && m_stcb )
+    {
+        m_titleSet = true;
+        m_stcb( m_worker.GetCaptureName().c_str() );
+    }
+
     auto& style = ImGui::GetStyle();
     const auto wrPrev = style.WindowRounding;
     const auto wbsPrev = style.WindowBorderSize;
@@ -533,15 +538,19 @@ bool View::DrawImpl()
 
     ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
     ImGui::SetNextWindowSize( ImVec2( m_rootWidth, m_rootHeight ) );
-    ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove );
+    ImGui::Begin( "###Profiler", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove );
 
     style.WindowRounding = wrPrev;
     style.WindowBorderSize = wbsPrev;
     style.WindowPadding = wpPrev;
 #else
+    char tmp[2048];
+    sprintf( tmp, "%s###Profiler", m_worker.GetCaptureName().c_str() );
+    ImGui::SetNextWindowSize( ImVec2( 1550, 800 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( tmp, keepOpenPtr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus );
 #endif
 
+    std::lock_guard<TracyMutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
         if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;

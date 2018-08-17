@@ -43,9 +43,11 @@ class View
     };
 
 public:
-    View( ImFont* fixedWidth = nullptr ) : View( "127.0.0.1", fixedWidth ) {}
-    View( const char* addr, ImFont* fixedWidth = nullptr );
-    View( FileRead& f, ImFont* fixedWidth = nullptr );
+    using SetTitleCallback = void(*)( const char* );
+
+    View( ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", fixedWidth, stcb ) {}
+    View( const char* addr, ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr );
+    View( FileRead& f, ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr );
     ~View();
 
     static bool Draw();
@@ -243,6 +245,8 @@ private:
     ImFont* m_textEditorFont;
 
     float m_rootWidth, m_rootHeight;
+    SetTitleCallback m_stcb;
+    bool m_titleSet;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

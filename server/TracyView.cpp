@@ -6816,7 +6816,11 @@ const char* View::GetPlotName( const PlotData* plot ) const
     case PlotType::User:
         return m_worker.GetString( plot->name );
     case PlotType::Memory:
+#ifdef TRACY_EXTENDED_FONT
+        return ICON_FA_MEMORY " Memory usage";
+#else
         return "Memory usage";
+#endif
     default:
         assert( false );
         return nullptr;

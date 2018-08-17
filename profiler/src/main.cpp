@@ -240,6 +240,7 @@ int main( int argc, char** argv )
         }
         if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
         {
+            tracy::TextCentered( ICON_FA_HOURGLASS_HALF );
             auto currProgress = progress.progress.load( std::memory_order_relaxed );
             if( totalProgress == 0 )
             {

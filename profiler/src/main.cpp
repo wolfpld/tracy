@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <inttypes.h>
 #include <imgui.h>
 #include "imgui_impl_glfw_gl3.h"
@@ -39,6 +40,15 @@ static void OpenWebpage( const char* url )
 #endif
 }
 
+static GLFWwindow* s_glfwWindow = nullptr;
+static bool s_customTitle = false;
+static void SetWindowTitleCallback( const char* title )
+{
+    assert( s_glfwWindow );
+    glfwSetWindowTitle( s_glfwWindow, title );
+    s_customTitle = true;
+}
+
 int main( int argc, char** argv )
 {
     std::unique_ptr<tracy::View> view;
@@ -67,6 +77,7 @@ int main( int argc, char** argv )
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
     GLFWwindow* window = glfwCreateWindow(1650, 960, title, NULL, NULL);
+    s_glfwWindow = window;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
     gl3wInit();
@@ -128,6 +139,12 @@ int main( int argc, char** argv )
 
         if( !view )
         {
+            if( s_customTitle )
+            {
+                s_customTitle = false;
+                glfwSetWindowTitle( window, title );
+            }
+
             ImGui::Begin( "Tracy server", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
             ImGui::Text( "Tracy %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
             ImGui::SameLine();
@@ -150,7 +167,7 @@ int main( int argc, char** argv )
             ImGui::InputText( "Address", addr, 1024 );
             if( ImGui::Button( "Connect" ) && *addr && !loadThread.joinable() )
             {
-                view = std::make_unique<tracy::View>( addr, fixedWidth );
+                view = std::make_unique<tracy::View>( addr, fixedWidth, SetWindowTitleCallback );
             }
             ImGui::Separator();
             if( ImGui::Button( "Open saved trace" ) && !loadThread.joinable() )
@@ -167,7 +184,7 @@ int main( int argc, char** argv )
                             loadThread = std::thread( [&view, f, &badVer, fixedWidth] {
                                 try
                                 {
-                                    view = std::make_unique<tracy::View>( *f, fixedWidth );
+                                    view = std::make_unique<tracy::View>( *f, fixedWidth, SetWindowTitleCallback );
                                 }
                                 catch( const tracy::UnsupportedVersion& e )
                                 {

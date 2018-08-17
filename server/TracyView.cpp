@@ -5673,7 +5673,11 @@ void View::DrawStatistics()
         return;
     }
 
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_CLOCK " Show self times", &m_statSelf );
+#else
     ImGui::Checkbox( "Show self times", &m_statSelf );
+#endif
 
     auto& slz = m_worker.GetSourceLocationZones();
     Vector<decltype(slz.begin())> srcloc;

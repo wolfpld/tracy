@@ -72,6 +72,9 @@
     <ClCompile Include="..\..\..\imguicolortextedit\TextEditor.cpp">
       <Filter>imguicolortextedit</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\imgui_freetype.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -212,8 +215,14 @@
     <ClInclude Include="..\..\src\Cousine.hpp">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\imgui_freetype.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

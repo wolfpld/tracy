@@ -92,6 +92,7 @@ private:
     void DrawCallstackWindow();
     void DrawMemoryAllocWindow();
     void DrawInfo();
+    void DrawTextEditor();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );

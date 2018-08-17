@@ -595,6 +595,7 @@ bool View::DrawImpl()
     if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
     if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
     if( m_showInfo ) DrawInfo();
+    if( m_textEditorFile ) DrawTextEditor();
 
     if( m_zoomAnim.active )
     {
@@ -5828,6 +5829,19 @@ void View::DrawInfo()
     TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
     TextFocused( "Count:", RealToString( m_frames->frames.size(), true ) );
     ImGui::End();
+}
+
+void View::DrawTextEditor()
+{
+    bool show = true;
+    ImGui::Begin( "Source view", &show );
+    ImGui::TextColored( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "/!\\ The source file contents might not reflect the actual profiled code! /!\\" );
+    TextFocused( "File:", m_textEditorFile );
+    if( m_textEditorFont ) ImGui::PushFont( m_textEditorFont );
+    m_textEditor->Render( m_textEditorFile, ImVec2(), true );
+    if( m_textEditorFont ) ImGui::PopFont();
+    ImGui::End();
+    if( !show ) m_textEditorFile = nullptr;
 }
 
 template<class T>

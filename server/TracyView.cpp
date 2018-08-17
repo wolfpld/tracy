@@ -602,7 +602,7 @@ bool View::DrawImpl()
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_MICROCHIP " Memory" ) ) m_memInfo.show = true;
+    if( ImGui::Button( ICON_FA_MEMORY " Memory" ) ) m_memInfo.show = true;
 #else
     if( ImGui::Button( "Memory" ) ) m_memInfo.show = true;
 #endif
@@ -4008,7 +4008,11 @@ void View::DrawOptions()
     const auto& gpuData = m_worker.GetGpuData();
     if( !gpuData.empty() )
     {
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_EYE " Draw GPU zones", &m_drawGpuZones );
+#else
         ImGui::Checkbox( "Draw GPU zones", &m_drawGpuZones );
+#endif
         const auto expand = ImGui::TreeNode( "GPU zones" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", gpuData.size() );
@@ -4038,7 +4042,11 @@ void View::DrawOptions()
         }
     }
 
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_MICROCHIP " Draw CPU zones", &m_drawZones );
+#else
     ImGui::Checkbox( "Draw CPU zones", &m_drawZones );
+#endif
     int ns = (int)m_namespace;
     ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None\0" );
     m_namespace = (Namespace)ns;
@@ -4046,7 +4054,11 @@ void View::DrawOptions()
     if( !m_worker.GetLockMap().empty() )
     {
         ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_LOCK " Draw locks", &m_drawLocks );
+#else
         ImGui::Checkbox( "Draw locks", &m_drawLocks );
+#endif
         ImGui::SameLine();
         ImGui::Checkbox( "Only contended", &m_onlyContendedLocks );
         const auto expand = ImGui::TreeNode( "Locks" );
@@ -4094,7 +4106,11 @@ void View::DrawOptions()
     if( !m_worker.GetPlots().empty() )
     {
         ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_SIGNATURE " Draw plots", &m_drawPlots );
+#else
         ImGui::Checkbox( "Draw plots", &m_drawPlots );
+#endif
         const auto expand = ImGui::TreeNode( "Plots" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_worker.GetPlots().size() );
@@ -4127,7 +4143,11 @@ void View::DrawOptions()
     }
 
     ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+    auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
+#else
     auto expand = ImGui::TreeNode( "Visible threads:" );
+#endif
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", m_worker.GetThreadData().size() );
     if( expand )
@@ -4161,7 +4181,11 @@ void View::DrawOptions()
     }
 
     ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+    expand = ImGui::TreeNode( ICON_FA_IMAGES " Visible frame sets:" );
+#else
     expand = ImGui::TreeNode( "Visible frame sets:" );
+#endif
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", m_worker.GetFrames().size() );
     if( expand )

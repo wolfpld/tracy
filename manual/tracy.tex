@@ -9,7 +9,8 @@
 \usepackage{microtype}
 \usepackage{siunitx}
 \usepackage[tikz]{bclogo}
-
+\usepackage{appendix}
+\usepackage{verbatim}
 \usepackage[hyphens]{url}
 \usepackage{hyperref} % For hyperlinks in the PDF
 
@@ -444,5 +445,12 @@ To have proper call stack information, the profiled application must be compiled
 \section{Practical considerations}
 
 While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which Tracy tries to calculate and display on the time-line view, as a red zone. Note that this is an approximation of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.
+
+\appendix
+\appendixpage
+
+\section{License}
+
+\verbatiminput{../LICENSE.}
 
 \end{document}

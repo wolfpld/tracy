@@ -94,6 +94,7 @@ int main( int argc, char** argv )
 
     ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, ranges );
+    auto fixedWidth = io.Fonts->AddFontDefault();
 
     ImGui::StyleColorsDark();
     auto& style = ImGui::GetStyle();
@@ -146,7 +147,7 @@ int main( int argc, char** argv )
             ImGui::InputText( "Address", addr, 1024 );
             if( ImGui::Button( "Connect" ) && *addr && !loadThread.joinable() )
             {
-                view = std::make_unique<tracy::View>( addr );
+                view = std::make_unique<tracy::View>( addr, fixedWidth );
             }
             ImGui::Separator();
             if( ImGui::Button( "Open saved trace" ) && !loadThread.joinable() )
@@ -160,10 +161,10 @@ int main( int argc, char** argv )
                         auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
                         if( f )
                         {
-                            loadThread = std::thread( [&view, f, &badVer] {
+                            loadThread = std::thread( [&view, f, &badVer, fixedWidth] {
                                 try
                                 {
-                                    view = std::make_unique<tracy::View>( *f );
+                                    view = std::make_unique<tracy::View>( *f, fixedWidth );
                                 }
                                 catch( const tracy::UnsupportedVersion& e )
                                 {

@@ -135,6 +135,7 @@
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileHeader.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileRead.hpp" />
+    <ClInclude Include="..\..\..\server\TracyFilesystem.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileWrite.hpp" />
     <ClInclude Include="..\..\..\server\TracyImGui.hpp" />
     <ClInclude Include="..\..\..\server\TracyMemory.hpp" />

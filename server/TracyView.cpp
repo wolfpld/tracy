@@ -501,6 +501,9 @@ bool View::DrawImpl()
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
         ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_WIFI );
+#endif
         ImGui::Text( "Waiting for connection..." );
         ImGui::End();
         return true;

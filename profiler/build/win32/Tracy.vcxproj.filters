@@ -218,6 +218,9 @@
     <ClInclude Include="..\..\src\imgui_freetype.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyBuzzAnim.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

@@ -133,6 +133,7 @@
     <ClInclude Include="..\..\..\nfd\nfd.h" />
     <ClInclude Include="..\..\..\nfd\nfd_common.h" />
     <ClInclude Include="..\..\..\server\TracyBadVersion.hpp" />
+    <ClInclude Include="..\..\..\server\TracyBuzzAnim.hpp" />
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp" />
     <ClInclude Include="..\..\..\server\TracyDecayValue.hpp" />
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />

@@ -21,6 +21,7 @@
 #include "../../server/TracyView.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../server/TracyVersion.hpp"
+#include "../../server/IconsFontAwesome5.h"
 
 #include "imgui_freetype.h"
 #include "Arimo.hpp"
@@ -106,22 +107,7 @@ int main( int argc, char** argv )
         0,
     };
     static const ImWchar rangesIcons[] = {
-        0xF071, 0xF071, // danger
-        0xF07C, 0xF07C, // folder open
-        0xF1EB, 0xF1EB, // wifi
-        0xF011, 0xF011, // power off
-        0xF56F, 0xF56F, // file-import
-        0xF013, 0xF013, // cog
-        0xF02B, 0xF02B, // tag
-        0xF002, 0xF002, // search
-        0xF161, 0xF161, // sort-amount-up
-        0xF538, 0xF538, // memory
-        0xF24E, 0xF24E, // balancing scale
-        0xF577, 0xF577, // fingerprint
-        0xF0D9, 0xF0DA, // caret left, right
-        0xF02D, 0xF02D, // book
-        0xF57D, 0xF57D, // globe-americas
-        0xF03D, 0xF03D, // video
+        ICON_MIN_FA, ICON_MAX_FA,
         0
     };
     ImFontConfig configMerge;
@@ -177,29 +163,29 @@ int main( int argc, char** argv )
             char buf[128];
             sprintf( buf, "Tracy %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
             tracy::TextCentered( buf );
-            if( ImGui::Button( "\xef\x80\xad User manual" ) )
+            if( ImGui::Button( ICON_FA_BOOK " User manual" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf" );
             }
             ImGui::SameLine();
-            if( ImGui::Button( "\xef\x95\xbd Homepage" ) )
+            if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Homepage" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );
             }
             ImGui::SameLine();
-            if( ImGui::Button( "\xef\x80\xbd Tutorial" ) )
+            if( ImGui::Button( ICON_FA_VIDEO " Tutorial" ) )
             {
                 OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
             }
             ImGui::Separator();
             ImGui::Text( "Connect to client" );
             ImGui::InputText( "Address", addr, 1024 );
-            if( ImGui::Button( "\xef\x87\xab Connect" ) && *addr && !loadThread.joinable() )
+            if( ImGui::Button( ICON_FA_WIFI " Connect" ) && *addr && !loadThread.joinable() )
             {
                 view = std::make_unique<tracy::View>( addr, fixedWidth, SetWindowTitleCallback );
             }
             ImGui::Separator();
-            if( ImGui::Button( "\xef\x81\xbc Open saved trace" ) && !loadThread.joinable() )
+            if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
             {
                 nfdchar_t* fn;
                 auto res = NFD_OpenDialog( "tracy", nullptr, &fn );

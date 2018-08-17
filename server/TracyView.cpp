@@ -26,6 +26,10 @@
 #  include "../nfd/nfd.h"
 #endif
 
+#ifdef TRACY_EXTENDED_FONT
+#  include "IconsFontAwesome5.h"
+#endif
+
 #ifndef M_PI_2
 #define M_PI_2 1.57079632679489661923
 #endif
@@ -561,7 +565,7 @@ bool View::DrawImpl()
         ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f) );
         ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f) );
 #ifdef TRACY_EXTENDED_FONT
-        if( ImGui::Button( "\xef\x80\x91" ) ) keepOpen = false;
+        if( ImGui::Button( ICON_FA_POWER_OFF ) ) keepOpen = false;
 #else
         if( ImGui::Button( "Close" ) ) keepOpen = false;
 #endif
@@ -569,49 +573,49 @@ bool View::DrawImpl()
     }
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( "\xef\x80\x93 Options" ) ) m_showOptions = true;
+    if( ImGui::Button( ICON_FA_COG " Options" ) ) m_showOptions = true;
 #else
     if( ImGui::Button( "Options" ) ) m_showOptions = true;
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( "\xef\x80\xab Messages" ) ) m_showMessages = true;
+    if( ImGui::Button( ICON_FA_TAGS " Messages" ) ) m_showMessages = true;
 #else
     if( ImGui::Button( "Messages" ) ) m_showMessages = true;
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( "\xef\x80\x82 Find zone" ) ) m_findZone.show = true;
+    if( ImGui::Button( ICON_FA_SEARCH " Find zone" ) ) m_findZone.show = true;
 #else
     if( ImGui::Button( "Find zone" ) ) m_findZone.show = true;
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( "\xef\x85\xa1 Statistics" ) ) m_showStatistics = true;
+    if( ImGui::Button( ICON_FA_SORT_AMOUNT_UP " Statistics" ) ) m_showStatistics = true;
 #else
     if( ImGui::Button( "Statistics" ) ) m_showStatistics = true;
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( "\xef\x94\xb8 Memory" ) ) m_memInfo.show = true;
+    if( ImGui::Button( ICON_FA_MICROCHIP " Memory" ) ) m_memInfo.show = true;
 #else
     if( ImGui::Button( "Memory" ) ) m_memInfo.show = true;
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( "\xef\x89\x8e Compare" ) ) m_compare.show = true;
+    if( ImGui::Button( ICON_FA_BALANCE_SCALE " Compare" ) ) m_compare.show = true;
 #else
     if( ImGui::Button( "Compare" ) ) m_compare.show = true;
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( "\xef\x95\xb7 Info" ) ) m_showInfo = true;
+    if( ImGui::Button( ICON_FA_FINGERPRINT " Info" ) ) m_showInfo = true;
 #else
     if( ImGui::Button( "Info" ) ) m_showInfo = true;
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::SmallButton( "\xef\x83\x99" ) ) ZoomToPrevFrame();
+    if( ImGui::SmallButton( ICON_FA_CARET_LEFT ) ) ZoomToPrevFrame();
 #else
     if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
 #endif
@@ -630,7 +634,7 @@ bool View::DrawImpl()
     }
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::SmallButton( "\xef\x83\x9a" ) ) ZoomToNextFrame();
+    if( ImGui::SmallButton( ICON_FA_CARET_RIGHT ) ) ZoomToNextFrame();
 #else
     if( ImGui::SmallButton( ">" ) ) ZoomToNextFrame();
 #endif
@@ -743,7 +747,7 @@ void View::DrawConnection()
     }
 
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( "\xef\x95\xaf Save trace" ) )
+    if( ImGui::Button( ICON_FA_SAVE " Save trace" ) )
 #else
     if( ImGui::Button( "Save trace" ) )
 #endif
@@ -5943,7 +5947,7 @@ void View::DrawTextEditor()
     bool show = true;
     ImGui::Begin( "Source view", &show );
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "\xef\x81\xb1" );
+    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
 #else
     ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif
@@ -5951,7 +5955,7 @@ void View::DrawTextEditor()
     ImGui::TextColored( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "\xef\x81\xb1" );
+    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
 #else
     ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif

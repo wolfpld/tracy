@@ -486,8 +486,13 @@ bool View::Draw()
 }
 
 static const char* MainWindowButtons[] = {
+#ifdef TRACY_EXTENDED_FONT
+    ICON_FA_PLAY " Resume",
+    ICON_FA_PAUSE " Pause"
+#else
     "Resume",
     "Pause"
+#endif
 };
 
 enum { MainWindowButtonsCount = sizeof( MainWindowButtons ) / sizeof( *MainWindowButtons ) };

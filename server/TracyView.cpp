@@ -3469,7 +3469,7 @@ void View::DrawZoneInfoWindow()
             ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
             ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
         }
-        if( ImGui::Button( "Callstack" ) )
+        if( ImGui::Button( "Call stack" ) )
         {
             m_callstackInfoWindow = ev.callstack;
         }
@@ -3778,7 +3778,7 @@ void View::DrawGpuInfoWindow()
             ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
             ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
         }
-        if( ImGui::Button( "Callstack" ) )
+        if( ImGui::Button( "Call stack" ) )
         {
             m_callstackInfoWindow = ev.callstack;
         }
@@ -4795,7 +4795,7 @@ void View::DrawFindZone()
         ImGui::SameLine();
         groupChanged |= ImGui::RadioButton( "User text", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::UserText );
         ImGui::SameLine();
-        groupChanged |= ImGui::RadioButton( "Callstacks", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Callstack );
+        groupChanged |= ImGui::RadioButton( "Call stacks", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Callstack );
         if( groupChanged )
         {
             m_findZone.selGroup = m_findZone.Unselected;
@@ -5690,7 +5690,7 @@ void View::DrawStatistics()
 void View::DrawCallstackWindow()
 {
     bool show = true;
-    ImGui::Begin( "Callstack", &show );
+    ImGui::Begin( "Call stack", &show );
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
 
@@ -5805,7 +5805,7 @@ void View::DrawMemoryAllocWindow()
     if( ev.csAlloc != 0 )
     {
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-        SmallCallstackButton( "Callstack", ev.csAlloc, idx );
+        SmallCallstackButton( "Call stack", ev.csAlloc, idx );
     }
     if( ev.timeFree < 0 )
     {
@@ -5822,7 +5822,7 @@ void View::DrawMemoryAllocWindow()
         if( ev.csFree != 0 )
         {
             ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-            SmallCallstackButton( "Callstack", ev.csFree, idx );
+            SmallCallstackButton( "Call stack", ev.csFree, idx );
         }
         TextFocused( "Duration:", TimeToString( ev.timeFree - ev.timeAlloc ) );
     }
@@ -5904,8 +5904,8 @@ void View::DrawInfo()
     TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount(), true ) );
     TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size(), true ) );
     TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
-    TextFocused( "Callstacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
-    TextFocused( "Callstack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
+    TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
+    TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
     ImGui::Separator();
     TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
     TextFocused( "Count:", RealToString( m_frames->frames.size(), true ) );
@@ -6002,7 +6002,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
-    ImGui::Text( "Callstack" );
+    ImGui::Text( "Call stack" );
     ImGui::NextColumn();
     ImGui::Separator();
 

@@ -131,6 +131,7 @@ int main( int argc, char** argv )
     style.WindowBorderSize = 1.f * dpiScale;
     style.FrameBorderSize = 1.f * dpiScale;
     style.FrameRounding = 5.f * dpiScale;
+    style.ScrollbarSize *= dpiScale;
     style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 0.94f );
     style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
 

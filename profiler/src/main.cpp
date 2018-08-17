@@ -17,6 +17,7 @@
 
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
+#include "../../server/TracyImGui.hpp"
 #include "../../server/TracyView.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../server/TracyVersion.hpp"
@@ -118,6 +119,9 @@ int main( int argc, char** argv )
         0xF24E, 0xF24E, // balancing scale
         0xF577, 0xF577, // fingerprint
         0xF0D9, 0xF0DA, // caret left, right
+        0xF02D, 0xF02D, // book
+        0xF57D, 0xF57D, // globe-americas
+        0xF03D, 0xF03D, // video
         0
     };
     ImFontConfig configMerge;
@@ -170,19 +174,20 @@ int main( int argc, char** argv )
             }
 
             ImGui::Begin( "Tracy server", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
-            ImGui::Text( "Tracy %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
-            ImGui::SameLine();
-            if( ImGui::SmallButton( "User manual" ) )
+            char buf[128];
+            sprintf( buf, "Tracy %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+            tracy::TextCentered( buf );
+            if( ImGui::Button( "\xef\x80\xad User manual" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf" );
             }
             ImGui::SameLine();
-            if( ImGui::SmallButton( "Homepage" ) )
+            if( ImGui::Button( "\xef\x95\xbd Homepage" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );
             }
             ImGui::SameLine();
-            if( ImGui::SmallButton( "Tutorial" ) )
+            if( ImGui::Button( "\xef\x80\xbd Tutorial" ) )
             {
                 OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
             }

@@ -416,11 +416,11 @@ void View::SetTextEditorFile( const char* fileName, int line )
         fseek( f, 0, SEEK_END );
         const auto sz = ftell( f );
         fseek( f, 0, SEEK_SET );
-        std::string data;
-        data.resize( sz );
-        fread( data.data(), 1, sz, f );
+        auto data = new char[sz];
+        fread( data, 1, sz, f );
         fclose( f );
         m_textEditor->SetText( data );
+        delete[] data;
     }
 
     m_textEditor->SetCursorPosition( TextEditor::Coordinates( line-1, 0 ) );

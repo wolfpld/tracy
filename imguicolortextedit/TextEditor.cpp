@@ -746,21 +746,22 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	mWithinRender = false;
 }
 
-void TextEditor::SetText(const std::string & aText)
+void TextEditor::SetText(const char* aText)
 {
 	mLines.clear();
-	for (auto chr : aText)
+	while( *aText )
 	{
 		if (mLines.empty())
 			mLines.push_back(Line());
-		if (chr == '\n')
+		if (*aText == '\n')
 			mLines.push_back(Line());
 		else
 		{
-			mLines.back().push_back(Glyph(chr, PaletteIndex::Default));
+			mLines.back().push_back(Glyph(*aText, PaletteIndex::Default));
 		}
 
 		mTextChanged = true;
+        aText++;
 	}
 
 	mUndoBuffer.clear();

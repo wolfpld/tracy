@@ -6374,18 +6374,30 @@ void View::DrawMemory()
     ImGui::InputText( "", m_memInfo.pattern, 1024 );
     ImGui::SameLine();
 
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_SEARCH " Find" ) )
+#else
     if( ImGui::Button( "Find" ) )
+#endif
     {
         m_memInfo.ptrFind = strtoull( m_memInfo.pattern, nullptr, 0 );
     }
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_BAN " Clear" ) )
+#else
     if( ImGui::Button( "Clear" ) )
+#endif
     {
         m_memInfo.ptrFind = 0;
         m_memInfo.pattern[0] = '\0';
     }
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_HISTORY " Restrict time", &m_memInfo.restrictTime );
+#else
     ImGui::Checkbox( "Restrict time", &m_memInfo.restrictTime );
+#endif
     ImGui::SameLine();
     ImGui::TextDisabled( "(?)" );
     if( ImGui::IsItemHovered() )

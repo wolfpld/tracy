@@ -209,6 +209,9 @@
     <ClInclude Include="..\..\src\FontAwesomeSolid.hpp">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\Cousine.hpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

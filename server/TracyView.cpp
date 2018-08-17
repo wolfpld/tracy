@@ -5872,11 +5872,19 @@ void View::DrawTextEditor()
 {
     bool show = true;
     ImGui::Begin( "Source view", &show );
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "\xef\x81\xb1" );
+#else
     ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
+#endif
     ImGui::SameLine();
     ImGui::TextColored( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "\xef\x81\xb1" );
+#else
     ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
+#endif
     TextFocused( "File:", m_textEditorFile );
     if( m_textEditorFont ) ImGui::PushFont( m_textEditorFont );
     m_textEditor->Render( m_textEditorFile, ImVec2(), true );

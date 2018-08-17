@@ -50,6 +50,8 @@ public:
 
     static bool Draw();
 
+    void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
+
 private:
     enum class Namespace : uint8_t
     {
@@ -239,6 +241,8 @@ private:
     std::unique_ptr<TextEditor> m_textEditor;
     const char* m_textEditorFile;
     ImFont* m_textEditorFont;
+
+    float m_rootWidth, m_rootHeight;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

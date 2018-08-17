@@ -121,6 +121,9 @@ int main( int argc, char** argv )
             continue;
         }
 
+        int display_w, display_h;
+        glfwGetFramebufferSize(window, &display_w, &display_h);
+
         ImGui_ImplGlfwGL3_NewFrame();
 
         if( !view )
@@ -191,6 +194,7 @@ int main( int argc, char** argv )
         else
         {
             if( loadThread.joinable() ) loadThread.join();
+            view->NotifyRootWindowSize( display_w, display_h );
             if( !view->Draw() )
             {
                 view.reset();
@@ -257,8 +261,6 @@ int main( int argc, char** argv )
         }
 
         // Rendering
-        int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);

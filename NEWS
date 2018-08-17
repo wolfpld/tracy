@@ -79,6 +79,7 @@ v0.4 (xxxx-xx-xx)
     is displayed, it may be out of date.
 - The main profiler view will now occupy the whole window. Previous behavior
   is still available for embedded use cases.
+- Fonts should now be less blurry.
 
 
 v0.3.3 (2018-07-03)

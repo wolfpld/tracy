@@ -560,7 +560,11 @@ bool View::DrawImpl()
         ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f) );
         ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f) );
         ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f) );
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( "\xef\x80\x91" ) ) keepOpen = false;
+#else
         if( ImGui::Button( "Close" ) ) keepOpen = false;
+#endif
         ImGui::PopStyleColor( 3 );
     }
     ImGui::SameLine();

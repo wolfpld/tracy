@@ -58,6 +58,7 @@ private:
     };
 
     void InitTextEditor();
+    void SetTextEditorFile( const char* fileName, int line );
 
     const char* ShortenNamespace( const char* name ) const;
 
@@ -234,6 +235,7 @@ private:
     Vector<const GpuEvent*> m_gpuInfoStack;
 
     std::unique_ptr<TextEditor> m_textEditor;
+    const char* m_textEditorFile;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

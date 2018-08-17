@@ -15,6 +15,7 @@
 #include "TracyBadVersion.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
+#include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPopcnt.hpp"
 #include "TracyView.hpp"
@@ -396,6 +397,25 @@ void View::InitTextEditor()
     m_textEditor = std::make_unique<TextEditor>();
     m_textEditor->SetReadOnly( true );
     m_textEditor->SetLanguageDefinition( TextEditor::LanguageDefinition::CPlusPlus() );
+
+    m_textEditorFile = nullptr;
+}
+
+void View::SetTextEditorFile( const char* fileName, int line )
+{
+    FILE* f = fopen( fileName, "rb" );
+    fseek( f, 0, SEEK_END );
+    const auto sz = ftell( f );
+    fseek( f, 0, SEEK_SET );
+    std::string data;
+    data.resize( sz );
+    fread( data.data(), 1, sz, f );
+    fclose( f );
+
+    m_textEditor->SetText( data );
+    m_textEditor->SetCursorPosition( TextEditor::Coordinates( line, 0 ) );
+
+    m_textEditorFile = fileName;
 }
 
 const char* View::ShortenNamespace( const char* name ) const
@@ -3371,6 +3391,14 @@ void View::DrawZoneInfoWindow()
             ImGui::PopStyleColor( 3 );
         }
     }
+    if( FileExists( m_worker.GetString( srcloc.file ) ) )
+    {
+        ImGui::SameLine();
+        if( ImGui::Button( "Source" ) )
+        {
+            SetTextEditorFile( m_worker.GetString( srcloc.file ), srcloc.line );
+        }
+    }
     if( !m_zoneInfoStack.empty() )
     {
         ImGui::SameLine();
@@ -3635,6 +3663,7 @@ void View::DrawZoneInfoWindow()
 void View::DrawGpuInfoWindow()
 {
     auto& ev = *m_gpuInfoWindow;
+    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
 
     bool show = true;
     ImGui::Begin( "Zone info", &show );
@@ -3671,6 +3700,14 @@ void View::DrawGpuInfoWindow()
             ImGui::PopStyleColor( 3 );
         }
     }
+    if( FileExists( m_worker.GetString( srcloc.file ) ) )
+    {
+        ImGui::SameLine();
+        if( ImGui::Button( "Source" ) )
+        {
+            SetTextEditorFile( m_worker.GetString( srcloc.file ), srcloc.line );
+        }
+    }
     if( !m_gpuInfoStack.empty() )
     {
         ImGui::SameLine();
@@ -3683,7 +3720,6 @@ void View::DrawGpuInfoWindow()
     ImGui::Separator();
 
     const auto tid = GetZoneThread( ev );
-    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
     TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
     ImGui::TextDisabled( "Location:" );

@@ -8,7 +8,11 @@
 #include <unordered_map>
 #include <map>
 #include <regex>
-#include "imgui.h"
+
+#include "../imgui/imgui.h"
+
+namespace tracy
+{
 
 class TextEditor
 {
@@ -321,3 +325,4 @@ private:
 	Coordinates mInteractiveStart, mInteractiveEnd;
 };
 
+}

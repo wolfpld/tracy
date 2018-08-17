@@ -6,6 +6,9 @@
 
 #include "TextEditor.h"
 
+namespace tracy
+{
+
 static const int cTextStart = 7;
 
 // TODO
@@ -2123,4 +2126,6 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::Lua()
 		inited = true;
 	}
 	return langDef;
+}
+
 }

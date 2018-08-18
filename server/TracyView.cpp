@@ -6476,25 +6476,54 @@ static tracy_force_inline CallstackFrameTree* GetFrameTreeItem( std::vector<Call
 std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem ) const
 {
     std::vector<CallstackFrameTree> root;
+    flat_hash_map<uint32_t, std::vector<uint32_t>, nohash<uint32_t>> paths;
+
     for( auto& ev : mem.data )
     {
         if( ev.csAlloc == 0 ) continue;
-        auto& cs = m_worker.GetCallstack( ev.csAlloc );
-
-        auto base = cs.back();
-        auto treePtr = GetFrameTreeItem( root, base );
-        treePtr->countInclusive++;
-        treePtr->allocInclusive += ev.size;
-
-        for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+        auto it = paths.find( ev.csAlloc );
+        if( it != paths.end() )
         {
-            treePtr = GetFrameTreeItem( treePtr->children, cs[i] );
+            const auto& path = it->second;
+            auto treePtr = &root;
+            CallstackFrameTree* node = nullptr;
+            for( auto& v : path )
+            {
+                node = &(*treePtr)[v];
+                node->countInclusive++;
+                node->allocInclusive += ev.size;
+                treePtr = &node->children;
+            }
+            assert( treePtr->empty() );
+            node->countExclusive++;
+            node->allocExclusive += ev.size;
+        }
+        else
+        {
+            auto& cs = m_worker.GetCallstack( ev.csAlloc );
+            std::vector<uint32_t> path;
+            path.reserve( cs.size() );
+
+            auto base = cs.back();
+            auto treePtr = GetFrameTreeItem( root, base );
             treePtr->countInclusive++;
             treePtr->allocInclusive += ev.size;
-        }
+            path.emplace_back( uint32_t( treePtr - root.data() ) );
 
-        treePtr->countExclusive++;
-        treePtr->allocExclusive += ev.size;
+            for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+            {
+                auto newTreePtr = GetFrameTreeItem( treePtr->children, cs[i] );
+                newTreePtr->countInclusive++;
+                newTreePtr->allocInclusive += ev.size;
+                path.emplace_back( uint32_t( newTreePtr - treePtr->children.data() ) );
+                treePtr = newTreePtr;
+            }
+
+            treePtr->countExclusive++;
+            treePtr->allocExclusive += ev.size;
+
+            paths.emplace( ev.csAlloc, std::move( path ) );
+        }
     }
     return root;
 }

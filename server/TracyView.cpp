@@ -704,6 +704,7 @@ bool View::DrawImpl()
     m_callstackBuzzAnim.Update( io.DeltaTime );
     m_callstackTreeBuzzAnim.Update( io.DeltaTime );
     m_zoneinfoBuzzAnim.Update( io.DeltaTime );
+    m_findZoneBuzzAnim.Update( io.DeltaTime );
 
     return keepOpen;
 }
@@ -4487,8 +4488,29 @@ void View::DrawFindZone()
                 auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
                 ImGui::PushID( idx );
                 ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_findZone.selMatch, idx++ );
-                ImGui::SameLine();
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_worker.GetString( srcloc.file ), srcloc.line );
+                if( m_findZoneBuzzAnim.Match( idx ) )
+                {
+                    const auto time = m_findZoneBuzzAnim.Time();
+                    const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                    ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+                }
+                else
+                {
+                    ImGui::SameLine();
+                }
+                const auto fileName = m_worker.GetString( srcloc.file );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), fileName, srcloc.line );
+                if( ImGui::IsItemClicked( 1 ) )
+                {
+                    if( FileExists( fileName ) )
+                    {
+                        SetTextEditorFile( fileName, srcloc.line );
+                    }
+                    else
+                    {
+                        m_findZoneBuzzAnim.Enable( idx, 0.5f );
+                    }
+                }
                 ImGui::PopID();
             }
             ImGui::TreePop();

@@ -3461,15 +3461,15 @@ void View::DrawZoneInfoWindow()
     {
         ZoomToZone( ev );
     }
-    ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
-#else
-    if( ImGui::Button( "Go to parent" ) )
-#endif
+    auto parent = GetZoneParent( ev );
+    if( parent )
     {
-        auto parent = GetZoneParent( ev );
-        if( parent )
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
+#else
+        if( ImGui::Button( "Go to parent" ) )
+#endif
         {
             ShowZoneInfo( *parent );
         }
@@ -3693,7 +3693,6 @@ void View::DrawZoneInfoWindow()
     ImGui::Separator();
 
     std::vector<const ZoneEvent*> zoneTrace;
-    auto parent = GetZoneParent( ev );
     while( parent )
     {
          zoneTrace.emplace_back( parent );
@@ -3811,15 +3810,15 @@ void View::DrawGpuInfoWindow()
     {
         ZoomToZone( ev );
     }
-    ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
-#else
-    if( ImGui::Button( "Go to parent" ) )
-#endif
+    auto parent = GetZoneParent( ev );
+    if( parent )
     {
-        auto parent = GetZoneParent( ev );
-        if( parent )
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
+#else
+        if( ImGui::Button( "Go to parent" ) )
+#endif
         {
             ShowZoneInfo( *parent, m_gpuInfoWindowThread );
         }
@@ -3924,7 +3923,6 @@ void View::DrawGpuInfoWindow()
     ImGui::Separator();
 
     std::vector<const GpuEvent*> zoneTrace;
-    auto parent = GetZoneParent( ev );
     while( parent )
     {
         zoneTrace.emplace_back( parent );

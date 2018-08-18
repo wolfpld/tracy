@@ -87,6 +87,8 @@ v0.4 (xxxx-xx-xx)
   is still available for embedded use cases.
 - Many button labels are now accompanied by icons.
 - Fonts should now be less blurry.
+- "Go to parent" button in zone info window won't be displayed if there is
+  no parent to go to.
 
 
 v0.3.3 (2018-07-03)

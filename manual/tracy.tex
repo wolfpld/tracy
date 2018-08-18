@@ -168,6 +168,7 @@ Finally, on Unix make sure that the application is linked with libraries \texttt
 In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), add the \texttt{TRACY\_NO\_EXIT} define to the build configuration. With this option enabled, Tracy will not exit until an incoming connection is made, even if the application has already finished executing. This mode of operation can also be turned on by setting the \texttt{TRACY\_NO\_EXIT} environment variable to $1$.
 
 \subsubsection{On-demand profiling}
+\label{ondemand}
 
 By default Tracy will begin profiling even before the program enters the \texttt{main} function. If you don't want to perform a full capture of application life-time, you may define the \texttt{TRACY\_ON\_DEMAND} macro, which will enable profiling only when there's an established connection with the server.
 
@@ -195,6 +196,8 @@ logo=\bcbombe
 You must use the same version of the Tracy profiler on both client and server! Network protocol mismatch will most likely lead to crashes. Tracy \emph{will not warn} about this!
 \end{bclogo}
 
+See section~\ref{capturing} for more information.
+
 \subsubsection{Embedding the server in profiled application}
 
 While not officially supported, it is possible to embed the server in your application, the same which is running the client part of Tracy. This part is up to you to figure out.
@@ -215,6 +218,7 @@ Remember to set thread names for proper identification of threads. You may use t
 Be aware that even if you already have thread naming functionality implemented, some platforms do not have adequate system-level capabilities (or none at all), in which case Tracy uses its own internal thread name storage.
 
 \section{Client markup}
+\label{client}
 
 With the aforementioned steps you will be able to connect to the profiled program, but there won't be any data collection performed. In order to begin profiling, Tracy requires that you manually instrument the application\footnote{Automatic tracing of every entered function is not feasible due to the amount of data that would generate.}. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
 
@@ -443,6 +447,67 @@ To have proper call stack information, the profiled application must be compiled
 \item On gcc or clang, link the executable with an additional option \texttt{-rdynamic} (or \texttt{-{}-export-dynamic}, if you are passing parameters directly to the linker).
 \end{itemize}
 \end{bclogo}
+
+\section{Capturing the data}
+\label{capturing}
+
+After the client application has been instrumented, you will want to connect to it using a server.
+
+\subsection{Command line}
+
+You can capture a trace using a command line utility contained in the \texttt{capture} directory. To use it you will need to provide two parameters:
+
+\begin{itemize}
+\item \texttt{-a address} -- specifies the IP address (or a domain name) of the client application.
+\item \texttt{-o output.tracy} -- the file name of the resulting trace.
+\end{itemize}
+
+If there is no client running at the given address, the server will wait until a connection can be made. During the capture the following information will be displayed:
+
+\begin{verbatim}
+% ./capture -a 127.0.0.1 -o trace
+Connecting to 127.0.0.1...
+Queue delay: 9 ns
+Timer resolution: 6 ns
+   1.90 Mbps | Ratio:  40.8% | Real:    4.67 Mbps | Mem: 77.57 MB
+\end{verbatim}
+
+The \emph{queue delay} and \emph{timer resolution} parameters are calibration results of timers used by the client. The next line is a status bar, which presents: network connection speed, connection compression ratio, the resulting uncompressed data rate and total memory usage of the utility.
+
+\subsection{Interactive profiling}
+
+If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the \texttt{profiler} directory.
+
+After starting the application, you will be greeted with a welcome dialog, presenting a bunch of useful links (\faBook{}~\emph{User Manual}, \faGlobe{}~\emph{Homepage} and \faVideoCamera{}~\emph{Tutorial}), along with the client address entry field and the \faWifi{}~\emph{Connect} button. A saved trace can be loaded from disk using the \faFolderOpen{}~\emph{Open saved trace} button.
+
+Both connecting to a client and opening a saved trace will present you with the main profiler view, which you can use to analyze the data.
+
+If this is a real-time capture, you will also see the connection window, with the capture status similar to the one displayed by the command line utility. You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file.
+
+\subsection{Connection speed}
+
+Tracy will happily saturate a 1~Gbps network connection, as it can process up to 6~Gbps of uncompressed data. Note that at such data rates, the resulting capture will need to allocate about 1~GB of RAM per second.
+
+\subsection{Memory usage}
+
+The captured data is stored in RAM and only written to the disk, when the capture finishes. This can result in memory exhaustion when you are capturing massive amounts of profile data, or even in normal usage situations, when the capture is performed over a long stretch of time. The recommended usage pattern is to perform moderate instrumentation of the client code and limit capture time to the strict necessity.
+
+In some cases it may be useful to perform an \emph{on-demand} capture, as described in section~\ref{ondemand}. In such case you will be able to profile only the interesting case (e.g.\ behavior during loading of a level in a game), ignoring all the unneeded data.
+
+If you truly need to capture large traces, you have two options. Either buy more RAM, or use a large swap file on a fast disk drive\footnote{The operating system is able to manage memory paging much better than Tracy would be ever able to.}.
+
+\subsection{Trace versioning}
+
+Each new release of Tracy changes the internal format of trace files. While there is a backwards compatibility layer, allowing loading of traces created by previous versions of Tracy in new releases, it won't be there forever. You are thus advised to upgrade your traces using the utility contained in the \texttt{update} directory.
+
+To use it, you will need to provide the input file and the output file. The program will print a short summary when it finishes:
+
+\begin{verbatim}
+% ./update old.tracy new.tracy
+old.tracy (0.3.0) -> new.tracy (0.4.0)
+\end{verbatim}
+
+The new file contains the same data as the old one, but in the updated internal representation. Note that to perform an upgrade, whole trace needs to be loaded to memory.
 
 \section{Practical considerations}
 

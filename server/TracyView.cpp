@@ -6489,7 +6489,7 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem 
             CallstackFrameTree* node = nullptr;
             for( auto& v : path )
             {
-                node = &(*treePtr)[v];
+                node = treePtr->data() + v;
                 node->countInclusive++;
                 node->allocInclusive += ev.size;
                 treePtr = &node->children;

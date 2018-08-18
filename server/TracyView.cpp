@@ -6882,7 +6882,14 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
         else
         {
             ImGui::PushID( lidx++ );
-            expand = ImGui::TreeNode( m_worker.GetString( frame->name ) );
+            if( tree.size() == 1 )
+            {
+                expand = ImGui::TreeNodeEx( m_worker.GetString( frame->name ), ImGuiTreeNodeFlags_DefaultOpen );
+            }
+            else
+            {
+                expand = ImGui::TreeNode( m_worker.GetString( frame->name ) );
+            }
             ImGui::PopID();
         }
 

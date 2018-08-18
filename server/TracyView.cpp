@@ -4330,6 +4330,43 @@ void View::DrawOptions()
 void View::DrawMessages()
 {
     ImGui::Begin( "Messages", &m_showMessages );
+
+#ifdef TRACY_EXTENDED_FONT
+    auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
+#else
+    auto expand = ImGui::TreeNode( "Visible threads:" );
+#endif
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%zu)", m_worker.GetThreadData().size() );
+    if( expand )
+    {
+        if( ImGui::SmallButton( "Select all" ) )
+        {
+            for( const auto& t : m_worker.GetThreadData() )
+            {
+                VisibleMsgThread( t->id ) = true;
+            }
+        }
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Unselect all" ) )
+        {
+            for( const auto& t : m_worker.GetThreadData() )
+            {
+                VisibleMsgThread( t->id ) = false;
+            }
+        }
+
+        int idx = 0;
+        for( const auto& t : m_worker.GetThreadData() )
+        {
+            ImGui::PushID( idx++ );
+            ImGui::Checkbox( m_worker.GetThreadString( t->id ), &VisibleMsgThread( t->id ) );
+            ImGui::PopID();
+        }
+        ImGui::TreePop();
+    }
+
+    ImGui::Separator();
     ImGui::Columns( 3 );
     ImGui::Text( "Time" );
     ImGui::SameLine();
@@ -4349,28 +4386,31 @@ void View::DrawMessages()
 
     for( const auto& v : m_worker.GetMessages() )
     {
-        ImGui::PushID( v );
-        if( ImGui::Selectable( TimeToString( v->time - m_worker.GetTimeBegin() ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns ) )
+        if( VisibleMsgThread( v->thread ) )
         {
-            CenterAtTime( v->time );
+            ImGui::PushID( v );
+            if( ImGui::Selectable( TimeToString( v->time - m_worker.GetTimeBegin() ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns ) )
+            {
+                CenterAtTime( v->time );
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                m_msgHighlight = v;
+            }
+            if( m_msgToFocus == v )
+            {
+                ImGui::SetScrollHere();
+                m_msgToFocus = nullptr;
+            }
+            ImGui::PopID();
+            ImGui::NextColumn();
+            ImGui::Text( "%s", m_worker.GetThreadString( v->thread ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(0x%" PRIX64 ")", v->thread );
+            ImGui::NextColumn();
+            ImGui::TextWrapped( "%s", m_worker.GetString( v->ref ) );
+            ImGui::NextColumn();
         }
-        if( ImGui::IsItemHovered() )
-        {
-            m_msgHighlight = v;
-        }
-        if( m_msgToFocus == v )
-        {
-            ImGui::SetScrollHere();
-            m_msgToFocus = nullptr;
-        }
-        ImGui::PopID();
-        ImGui::NextColumn();
-        ImGui::Text( "%s", m_worker.GetThreadString( v->thread ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(0x%" PRIX64 ")", v->thread );
-        ImGui::NextColumn();
-        ImGui::TextWrapped( "%s", m_worker.GetString( v->ref ) );
-        ImGui::NextColumn();
     }
     ImGui::EndColumns();
     ImGui::End();

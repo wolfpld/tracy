@@ -151,6 +151,7 @@ private:
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx );
 
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
+    flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
     flat_hash_map<const void*, bool, nohash<const void*>> m_showFull;
     flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;
 
@@ -160,6 +161,16 @@ private:
         if( it == m_visible.end() )
         {
             it = m_visible.emplace( ptr, true ).first;
+        }
+        return it->second;
+    }
+
+    tracy_force_inline bool& VisibleMsgThread( uint64_t thread )
+    {
+        auto it = m_visibleMsgThread.find( thread );
+        if( it == m_visibleMsgThread.end() )
+        {
+            it = m_visibleMsgThread.emplace( thread, true ).first;
         }
         return it->second;
     }

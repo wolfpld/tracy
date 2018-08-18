@@ -5251,14 +5251,18 @@ void View::DrawCompare()
         return;
     }
 
+#ifdef TRACY_EXTENDED_FONT
     ImGui::TextColored( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
     ImGui::SameLine();
+#endif
     ImGui::TextDisabled( "This trace:" );
     ImGui::SameLine();
     ImGui::Text( "%s", m_worker.GetCaptureName().c_str() );
 
+#ifdef TRACY_EXTENDED_FONT
     ImGui::TextColored( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
     ImGui::SameLine();
+#endif
     ImGui::TextDisabled( "External trace:" );
     ImGui::SameLine();
     ImGui::Text( "%s", m_compare.second->GetCaptureName().c_str() );
@@ -5310,14 +5314,18 @@ void View::DrawCompare()
     {
         ImGui::Separator();
         ImGui::Columns( 2 );
+#ifdef TRACY_EXTENDED_FONT
         ImGui::TextColored( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
         ImGui::SameLine();
+#endif
         ImGui::Text( "This trace" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_compare.match[0].size() );
         ImGui::NextColumn();
+#ifdef TRACY_EXTENDED_FONT
         ImGui::TextColored( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
         ImGui::SameLine();
+#endif
         ImGui::Text( "External trace" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_compare.match[1].size() );
@@ -5564,32 +5572,44 @@ void View::DrawCompare()
                         }
                     }
 
+#ifdef TRACY_EXTENDED_FONT
                     ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
+#endif
                     TextFocused( "Total time (this):", TimeToString( zoneData0.total * adj0 ) );
+#ifdef TRACY_EXTENDED_FONT
                     ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
+#endif
                     TextFocused( "Total time (external):", TimeToString( zoneData1.total * adj1 ) );
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
 
+#ifdef TRACY_EXTENDED_FONT
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_ButtonHovered, ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_ButtonActive, ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ) );
                     ImGui::Button( ICON_FA_LEMON );
                     ImGui::PopStyleColor( 4 );
+#else
+                    ImGui::ColorButton( "c1", ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+#endif
                     ImGui::SameLine();
                     ImGui::Text( "This trace" );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
 
+#ifdef TRACY_EXTENDED_FONT
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_ButtonHovered, ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_ButtonActive, ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ) );
                     ImGui::Button( ICON_FA_GEM );
                     ImGui::PopStyleColor( 4 );
+#else
+                    ImGui::ColorButton( "c2", ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+#endif
                     ImGui::SameLine();
                     ImGui::Text( "External trace" );
                     ImGui::SameLine();
@@ -5801,12 +5821,16 @@ void View::DrawCompare()
                         ImGui::Text( "%s / %s", TimeToString( tAfter[0] ), TimeToString( tAfter[1] ) );
                         ImGui::TextDisabled( "(Data is displayed as:" );
                         ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
                         ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                         ImGui::SameLine();
+#endif
                         ImGui::TextDisabled( "[this trace] /" );
                         ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
                         ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
+#endif
                         ImGui::TextDisabled( "[external trace])" );
                         ImGui::EndTooltip();
                     }

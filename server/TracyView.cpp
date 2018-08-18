@@ -6654,9 +6654,11 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
 {
     auto& io = ImGui::GetIO();
 
+    int lidx = 0;
     pdqsort_branchless( tree.begin(), tree.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.allocInclusive > rhs.allocInclusive; } );
     for( auto& v : tree )
     {
+        idx++;
         auto frame = m_worker.GetCallstackFrame( v.frame );
         bool expand = false;
         if( v.children.empty() )
@@ -6667,7 +6669,7 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
         }
         else
         {
-            ImGui::PushID( idx++ );
+            ImGui::PushID( lidx++ );
             expand = ImGui::TreeNode( m_worker.GetString( frame->name ) );
             ImGui::PopID();
         }

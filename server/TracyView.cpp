@@ -6476,15 +6476,15 @@ static tracy_force_inline CallstackFrameTree* GetFrameTreeItem( std::vector<Call
 std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem ) const
 {
     std::vector<CallstackFrameTree> root;
-    flat_hash_map<uint32_t, std::vector<uint32_t>, nohash<uint32_t>> paths;
+    std::vector<Vector<uint32_t>> paths;
+    paths.resize( m_worker.GetCallstackPayloadCount() );
 
     for( auto& ev : mem.data )
     {
         if( ev.csAlloc == 0 ) continue;
-        auto it = paths.find( ev.csAlloc );
-        if( it != paths.end() )
+        auto& path = paths[ev.csAlloc];
+        if( !path.empty() )
         {
-            const auto& path = it->second;
             auto treePtr = &root;
             CallstackFrameTree* node = nullptr;
             for( auto& v : path )
@@ -6501,28 +6501,28 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem 
         else
         {
             auto& cs = m_worker.GetCallstack( ev.csAlloc );
-            std::vector<uint32_t> path;
+            Vector<uint32_t> path;
             path.reserve( cs.size() );
 
             auto base = cs.back();
             auto treePtr = GetFrameTreeItem( root, base );
             treePtr->countInclusive++;
             treePtr->allocInclusive += ev.size;
-            path.emplace_back( uint32_t( treePtr - root.data() ) );
+            path.push_back( uint32_t( treePtr - root.data() ) );
 
             for( int i = int( cs.size() ) - 2; i >= 0; i-- )
             {
                 auto newTreePtr = GetFrameTreeItem( treePtr->children, cs[i] );
                 newTreePtr->countInclusive++;
                 newTreePtr->allocInclusive += ev.size;
-                path.emplace_back( uint32_t( newTreePtr - treePtr->children.data() ) );
+                path.push_back( uint32_t( newTreePtr - treePtr->children.data() ) );
                 treePtr = newTreePtr;
             }
 
             treePtr->countExclusive++;
             treePtr->allocExclusive += ev.size;
 
-            paths.emplace( ev.csAlloc, std::move( path ) );
+            paths[ev.csAlloc] = std::move( path );
         }
     }
     return root;

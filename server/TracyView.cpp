@@ -6747,11 +6747,10 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
             ImGui::EndTooltip();
         }
 
-        float indentVal = 0.f;
         if( m_callstackTreeBuzzAnim.Match( idx ) )
         {
             const auto time = m_callstackTreeBuzzAnim.Time();
-            indentVal = sin( time * 60.f ) * 10.f * time;
+            const auto indentVal = sin( time * 60.f ) * 10.f * time;
             ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
         }
         else

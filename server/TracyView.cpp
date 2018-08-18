@@ -6479,9 +6479,13 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem 
     std::vector<Vector<uint32_t>> paths;
     paths.resize( m_worker.GetCallstackPayloadCount() );
 
+    const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
+
     for( auto& ev : mem.data )
     {
         if( ev.csAlloc == 0 ) continue;
+        if( m_memInfo.restrictTime && ev.timeAlloc >= zvMid ) continue;
+
         auto& path = paths[ev.csAlloc];
         if( !path.empty() )
         {

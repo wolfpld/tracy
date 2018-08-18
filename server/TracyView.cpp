@@ -6673,7 +6673,11 @@ void View::DrawMemory()
     const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
 
     ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::TreeNodeEx( ICON_FA_AT " Allocations", ImGuiTreeNodeFlags_DefaultOpen ) )
+#else
     if( ImGui::TreeNodeEx( "Allocations", ImGuiTreeNodeFlags_DefaultOpen ) )
+#endif
     {
         if( m_memInfo.ptrFind != 0 )
         {
@@ -6725,7 +6729,11 @@ void View::DrawMemory()
     }
 
     ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::TreeNode( ICON_FA_HEARTBEAT " Active allocations" ) )
+#else
     if( ImGui::TreeNode( "Active allocations" ) )
+#endif
     {
         uint64_t total = 0;
         std::vector<const MemEvent*> items;
@@ -6763,7 +6771,11 @@ void View::DrawMemory()
     }
 
     ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::TreeNode( ICON_FA_MAP " Memory map" ) )
+#else
     if( ImGui::TreeNode( "Memory map" ) )
+#endif
     {
         ImGui::Text( "Single pixel: %s   Single line: %s", MemSizeToString( 1 << ChunkBits ), MemSizeToString( PageChunkSize ) );
 
@@ -6845,7 +6857,11 @@ void View::DrawMemory()
     }
 
     ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Call stack tree" ) )
+#else
     if( ImGui::TreeNode( "Call stack tree" ) )
+#endif
     {
         ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
         ImGui::TextDisabled( "Right click on file name to open source file." );

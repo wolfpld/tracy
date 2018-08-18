@@ -5945,7 +5945,7 @@ void View::DrawStatistics()
         break;
     }
 
-    ImGui::Text( "Recorded source locations: %s", RealToString( srcloc.size(), true ) );
+    TextFocused( "Recorded source locations:", RealToString( srcloc.size(), true ) );
 
     ImGui::Columns( 5 );
     ImGui::Separator();

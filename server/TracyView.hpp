@@ -54,6 +54,7 @@ public:
     static bool Draw();
 
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
+    void SetTextEditorFile( const char* fileName, int line );
 
 private:
     enum class Namespace : uint8_t
@@ -64,7 +65,6 @@ private:
     };
 
     void InitTextEditor();
-    void SetTextEditorFile( const char* fileName, int line );
 
     const char* ShortenNamespace( const char* name ) const;
 
@@ -239,6 +239,7 @@ private:
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
     BuzzAnim<int> m_callstackTreeBuzzAnim;
+    BuzzAnim<const void*> m_zoneinfoBuzzAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;

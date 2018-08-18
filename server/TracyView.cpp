@@ -703,6 +703,7 @@ bool View::DrawImpl()
 
     m_callstackBuzzAnim.Update( io.DeltaTime );
     m_callstackTreeBuzzAnim.Update( io.DeltaTime );
+    m_zoneinfoBuzzAnim.Update( io.DeltaTime );
 
     return keepOpen;
 }
@@ -3350,7 +3351,7 @@ void View::DrawInfoWindow()
 }
 
 template<typename T>
-void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, std::function<void(T)> showZone )
+void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, BuzzAnim<const void*>& anim, View& view, std::function<void(T)> showZone )
 {
     bool expand = ImGui::TreeNode( "Zone trace" );
     ImGui::SameLine();
@@ -3396,14 +3397,35 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, s
                     ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
-                    ImGui::SameLine();
-                    if( frame->line == 0 )
+                    if( anim.Match( frame ) )
                     {
-                        ImGui::TextDisabled( "%s", worker.GetString( frame->file ) );
+                        const auto time = anim.Time();
+                        const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                        ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
                     }
                     else
                     {
-                        ImGui::TextDisabled( "%s:%i", worker.GetString( frame->file ), frame->line );
+                        ImGui::SameLine();
+                    }
+                    const auto fileName = worker.GetString( frame->file );
+                    if( frame->line == 0 )
+                    {
+                        ImGui::TextDisabled( "%s", fileName );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "%s:%i", fileName, frame->line );
+                    }
+                    if( ImGui::IsItemClicked( 1 ) )
+                    {
+                        if( frame->line != 0 && FileExists( fileName ) )
+                        {
+                            view.SetTextEditorFile( fileName, frame->line );
+                        }
+                        else
+                        {
+                            anim.Enable( frame, 0.5f );
+                        }
                     }
                 }
             }
@@ -3428,14 +3450,35 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, s
             ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
             ImGui::SameLine();
             ImGui::Spacing();
-            ImGui::SameLine();
-            if( frame->line == 0 )
+            if( anim.Match( frame ) )
             {
-                ImGui::TextDisabled( "%s", worker.GetString( frame->file ) );
+                const auto time = anim.Time();
+                const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
             }
             else
             {
-                ImGui::TextDisabled( "%s:%i", worker.GetString( frame->file ), frame->line );
+                ImGui::SameLine();
+            }
+            const auto fileName = worker.GetString( frame->file );
+            if( frame->line == 0 )
+            {
+                ImGui::TextDisabled( "%s", fileName );
+            }
+            else
+            {
+                ImGui::TextDisabled( "%s:%i", fileName, frame->line );
+            }
+            if( ImGui::IsItemClicked( 1 ) )
+            {
+                if( frame->line != 0 && FileExists( fileName ) )
+                {
+                    view.SetTextEditorFile( fileName, frame->line );
+                }
+                else
+                {
+                    anim.Enable( frame, 0.5f );
+                }
             }
         }
     }
@@ -3699,15 +3742,36 @@ void View::DrawZoneInfoWindow()
          parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, [&idx, this] ( const ZoneEvent* v ) {
+    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, [&idx, this] ( const ZoneEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
         auto sel = ImGui::Selectable( txt, false );
         auto hover = ImGui::IsItemHovered();
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->start ), m_worker.GetString( srcloc.file ), srcloc.line );
+        const auto fileName = m_worker.GetString( srcloc.file );
+        if( m_zoneinfoBuzzAnim.Match( v ) )
+        {
+            const auto time = m_zoneinfoBuzzAnim.Time();
+            const auto indentVal = sin( time * 60.f ) * 10.f * time;
+            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+        }
+        else
+        {
+            ImGui::SameLine();
+        }
+        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->start ), fileName, srcloc.line );
         ImGui::PopID();
+        if( ImGui::IsItemClicked( 1 ) )
+        {
+            if( FileExists( fileName ) )
+            {
+                SetTextEditorFile( fileName, srcloc.line );
+            }
+            else
+            {
+                m_zoneinfoBuzzAnim.Enable( v, 0.5f );
+            }
+        }
         if( sel )
         {
             ShowZoneInfo( *v );
@@ -3929,15 +3993,36 @@ void View::DrawGpuInfoWindow()
         parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, [&idx, this] ( const GpuEvent* v ) {
+    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, [&idx, this] ( const GpuEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
         auto sel = ImGui::Selectable( txt, false );
         auto hover = ImGui::IsItemHovered();
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->gpuStart ), m_worker.GetString( srcloc.file ), srcloc.line );
+        const auto fileName = m_worker.GetString( srcloc.file );
+        if( m_zoneinfoBuzzAnim.Match( v ) )
+        {
+            const auto time = m_zoneinfoBuzzAnim.Time();
+            const auto indentVal = sin( time * 60.f ) * 10.f * time;
+            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+        }
+        else
+        {
+            ImGui::SameLine();
+        }
+        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->gpuStart ), fileName, srcloc.line );
         ImGui::PopID();
+        if( ImGui::IsItemClicked( 1 ) )
+        {
+            if( FileExists( fileName ) )
+            {
+                SetTextEditorFile( fileName, srcloc.line );
+            }
+            else
+            {
+                m_zoneinfoBuzzAnim.Enable( v, 0.5f );
+            }
+        }
         if( sel )
         {
             ShowZoneInfo( *v, m_gpuInfoWindowThread );

@@ -428,8 +428,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 	if (ImGui::IsWindowFocused())
 	{
-		if (ImGui::IsWindowHovered())
-			ImGui::SetMouseCursor(ImGuiMouseCursor_TextInput);
 		//ImGui::CaptureKeyboardFromApp(true);
 
 		io.WantCaptureKeyboard = true;

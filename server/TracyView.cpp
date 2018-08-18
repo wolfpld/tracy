@@ -3550,9 +3550,9 @@ void View::DrawZoneInfoWindow()
             ImGui::PopStyleColor( 3 );
         }
     }
-    if( FileExists( m_worker.GetString( srcloc.file ) ) )
+    const auto fileName = m_worker.GetString( srcloc.file );
+    if( FileExists( fileName ) )
     {
-        const auto fileName = m_worker.GetString( srcloc.file );
         ImGui::SameLine();
         bool hilite = m_textEditorFile == fileName;
         if( hilite )
@@ -3911,9 +3911,9 @@ void View::DrawGpuInfoWindow()
             ImGui::PopStyleColor( 3 );
         }
     }
-    if( FileExists( m_worker.GetString( srcloc.file ) ) )
+    const auto fileName = m_worker.GetString( srcloc.file );
+    if( FileExists( fileName ) )
     {
-        const auto fileName = m_worker.GetString( srcloc.file );
         ImGui::SameLine();
         bool hilite = m_textEditorFile == fileName;
         if( hilite )
@@ -6984,12 +6984,13 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
         {
             ImGui::SameLine();
         }
-        ImGui::TextDisabled( "%s:%i", m_worker.GetString( frame->file ), frame->line );
+        const auto fileName = m_worker.GetString( frame->file );
+        ImGui::TextDisabled( "%s:%i", fileName, frame->line );
         if( ImGui::IsItemClicked( 1 ) )
         {
-            if( FileExists( m_worker.GetString( frame->file ) ) )
+            if( FileExists( fileName ) )
             {
-                SetTextEditorFile( m_worker.GetString( frame->file ), frame->line );
+                SetTextEditorFile( fileName, frame->line );
             }
             else
             {

@@ -89,6 +89,8 @@ v0.4 (xxxx-xx-xx)
 - Fonts should now be less blurry.
 - "Go to parent" button in zone info window won't be displayed if there is
   no parent to go to.
+- Compare menu now has colored markers to make it easier to distinguish
+  "this" and "external" traces.
 
 
 v0.3.3 (2018-07-03)

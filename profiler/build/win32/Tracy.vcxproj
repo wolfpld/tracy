@@ -114,6 +114,7 @@
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotSet</EnableEnhancedInstructionSet>
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotSet</EnableEnhancedInstructionSet>
     </ClCompile>
+    <ClCompile Include="..\..\src\winmainArchDiscovery.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\TracyAlign.hpp" />

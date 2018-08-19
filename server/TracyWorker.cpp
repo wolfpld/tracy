@@ -276,6 +276,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_captureName = std::string( tmp, tmp+sz );
     }
 
+    if( fileVer >= FileVersion( 0, 3, 203 ) )
+    {
+        f.Read( sz );
+        assert( sz < 1024 );
+        char tmp[1024];
+        f.Read( tmp, sz );
+        m_hostInfo = std::string( tmp, tmp+sz );
+    }
+
     if( fileVer >= FileVersion( 0, 3, 202 ) )
     {
         f.Read( sz );
@@ -2936,6 +2945,10 @@ void Worker::Write( FileWrite& f )
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_captureName.c_str(), sz );
+
+    sz = m_hostInfo.size();
+    f.Write( &sz, sizeof( sz ) );
+    f.Write( m_hostInfo.c_str(), sz );
 
     sz = m_data.frames.Data().size();
     f.Write( &sz, sizeof( sz ) );

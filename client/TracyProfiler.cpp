@@ -3,6 +3,7 @@
 #ifdef _MSC_VER
 #  include <winsock2.h>
 #  include <windows.h>
+#  include <tlhelp32.h>
 #else
 #  include <sys/time.h>
 #endif
@@ -301,6 +302,65 @@ static const char* GetHostInfo()
     return buf;
 }
 
+#ifdef _MSC_VER
+static DWORD s_profilerThreadId = 0;
+
+LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
+{
+    if( pExp->ExceptionRecord->ExceptionCode == 0xe24c4a02 ) return EXCEPTION_CONTINUE_SEARCH;      // LuaJIT
+    if( pExp->ExceptionRecord->ExceptionCode == 0xe06d7363 ) return EXCEPTION_CONTINUE_SEARCH;      // MSVC C++ exceptions
+    if( pExp->ExceptionRecord->ExceptionCode == 0x406d1388 ) return EXCEPTION_CONTINUE_SEARCH;      // MSVC thread naming magic
+
+    Profiler::Message( "!!!CRASH!!!" );
+
+    HANDLE h = CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
+    if( h == INVALID_HANDLE_VALUE ) return EXCEPTION_CONTINUE_SEARCH;
+
+    THREADENTRY32 te = { sizeof( te ) };
+    if( !Thread32First( h, &te ) )
+    {
+        CloseHandle( h );
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    const auto pid = GetCurrentProcessId();
+    const auto tid = GetCurrentThreadId();
+
+    do
+    {
+        if( te.th32OwnerProcessID == pid && te.th32ThreadID != tid && te.th32ThreadID != s_profilerThreadId )
+        {
+            HANDLE th = OpenThread( THREAD_SUSPEND_RESUME, FALSE, te.th32ThreadID );
+            if( th != INVALID_HANDLE_VALUE )
+            {
+                SuspendThread( th );
+                CloseHandle( th );
+            }
+        }
+    }
+    while( Thread32Next( h, &te ) );
+    CloseHandle( h );
+
+    {
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::Crash );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+    s_profiler.RequestShutdown();
+    while( !s_profiler.HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
+
+    TerminateProcess( GetCurrentProcess(), 1 );
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+#endif
+
+
 enum { QueuePrealloc = 256 * 1024 };
 
 // MSVC static initialization order solution. gcc/clang uses init_order() to avoid all this.
@@ -440,6 +500,11 @@ Profiler::Profiler()
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
     SetThreadName( s_thread->Handle(), "Tracy Profiler" );
+
+#ifdef _MSC_VER
+    s_profilerThreadId = GetThreadId( s_thread->Handle() );
+    AddVectoredExceptionHandler( 1, CrashFilter );
+#endif
 
 #ifdef TRACY_HAS_CALLSTACK
     InitCallstack();

@@ -7,6 +7,10 @@
 #  include <sys/time.h>
 #endif
 
+#ifdef __CYGWIN__
+#  include <windows.h>
+#endif
+
 #ifdef _GNU_SOURCE
 #  include <errno.h>
 #endif
@@ -39,6 +43,16 @@
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
 #  include <signal.h>
 #  include <setjmp.h>
+#endif
+
+#if defined _MSC_VER || defined __CYGWIN__
+#  include <lmcons.h>
+#else
+#  include <unistd.h>
+#  include <limits.h>
+#endif
+#if defined __APPLE__
+#  include "TargetConditionals.h"
 #endif
 
 namespace tracy
@@ -142,6 +156,116 @@ static const char* GetProcessName()
     processName = program_invocation_short_name;
 #endif
     return processName;
+}
+
+static const char* GetHostInfo()
+{
+    static char buf[1024];
+    auto ptr = buf;
+#if defined _MSC_VER
+    ptr += sprintf( ptr, "OS: Windows\n" );
+#elif defined __CYGWIN__
+    ptr += sprintf( ptr, "OS: Windows (Cygwin)\n" );
+#elif defined __linux__
+#  if defined __ANDROID__
+    ptr += sprintf( ptr, "OS: Linux (Android)\n" );
+#  else
+    ptr += sprintf( ptr, "OS: Linux\n" );
+#  endif
+#elif defined __APPLE__
+#  if defined TARGET_OS_IPHONE
+    ptr += sprintf( ptr, "OS: Darwin (iOS)\n" );
+#  elif defined TARGET_OS_MAC
+    ptr += sprintf( ptr, "OS: Darwin (OSX)\n" );
+#  else
+    ptr += sprintf( ptr, "OS: Darwin (unknown)\n" );
+#  endif
+#elif defined __DragonFly__
+    ptr += sprintf( ptr, "OS: BSD (DragonFly)\n" );
+#elif defined __FreeBSD__
+    ptr += sprintf( ptr, "OS: BSD (FreeBSD)\n" );
+#elif defined __NetBSD__
+    ptr += sprintf( ptr, "OS: BSD (NetBSD)\n" );
+#elif defined __OpenBSD__
+    ptr += sprintf( ptr, "OS: BSD (OpenBSD)\n" );
+#else
+    ptr += sprintf( ptr, "OS: unknown\n" );
+#endif
+
+#if defined _MSC_VER
+    ptr += sprintf( ptr, "Compiler: MSVC %i\n", _MSC_VER );
+#elif defined __clang__
+    ptr += sprintf( ptr, "Compiler: clang %i.%i.%i\n", __clang_major__, __clang_minor__, __clang_patchlevel__ );
+#elif defined __GNUC__
+    ptr += sprintf( ptr, "Compiler: gcc %i.%i\n", __GNUC__, __GNUC_MINOR__ );
+#else
+    ptr += sprintf( ptr, "Compiler: unknown\n" );
+#endif
+
+#if defined _MSC_VER || defined __CYGWIN__
+#  ifndef __CYGWIN__
+    InitWinSock();
+#  endif
+    char hostname[512];
+    gethostname( hostname, 512 );
+
+    DWORD userSz = UNLEN+1;
+    char user[UNLEN+1];
+    GetUserNameA( user, &userSz );
+
+    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
+#else
+    char hostname[HOST_NAME_MAX];
+    char user[LOGIN_NAME_MAX];
+
+    gethostname( hostname, HOST_NAME_MAX );
+    getlogin_r( user, LOGIN_NAME_MAX );
+
+    ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
+#endif
+
+#if defined __i386 || defined _M_IX86
+    ptr += sprintf( ptr, "Arch: x86\n" );
+#elif defined __x86_64__ || defined _M_X64
+    ptr += sprintf( ptr, "Arch: x64\n" );
+#elif defined __aarch64__
+    ptr += sprintf( ptr, "Arch: ARM64\n" );
+#elif defined __ARM_ARCH
+    ptr += sprintf( ptr, "Arch: ARM\n" );
+#else
+    ptr += sprintf( ptr, "Arch: unknown\n" );
+#endif
+
+#if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+    uint32_t regs[4];
+    char cpuModel[4*4*3];
+    auto modelPtr = cpuModel;
+    for( int i=0x80000002; i<0x80000005; ++i )
+    {
+#  if defined _MSC_VER || defined __CYGWIN__
+        __cpuidex( (int*)regs, i, 0 );
+#  else
+        int zero = 0;
+        asm volatile ( "cpuid" : "=a" (regs[0]), "=b" (regs[1]), "=c" (regs[2]), "=d" (regs[3]) : "a" (i), "c" (zero) );
+#  endif
+        memcpy( modelPtr, regs, sizeof( regs ) ); modelPtr += sizeof( regs );
+    }
+
+    ptr += sprintf( ptr, "CPU: %s\n", cpuModel );
+#else
+    ptr += sprintf( ptr, "CPU: unknown\n" );
+#endif
+
+#if defined _MSC_VER || defined __CYGWIN__
+    MEMORYSTATUSEX statex;
+    statex.dwLength = sizeof( statex );
+    GlobalMemoryStatusEx( &statex );
+    ptr += sprintf( ptr, "RAM: %i MB\n", statex.ullTotalPhys / 1024 / 1024 );
+#else
+    ptr += sprintf( ptr, "RAM: unknown\n" );
+#endif
+
+    return buf;
 }
 
 enum { QueuePrealloc = 256 * 1024 };
@@ -322,6 +446,8 @@ void Profiler::Worker()
 
     const auto procname = GetProcessName();
     const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );
+
+    const auto hostinfo = GetHostInfo();
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 

@@ -372,6 +372,7 @@ private:
     int64_t m_resolution;
     double m_timerMul;
     std::string m_captureName;
+    std::string m_hostInfo;
     bool m_terminate;
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;

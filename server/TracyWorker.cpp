@@ -1237,6 +1237,8 @@ void Worker::Exec()
             sprintf( tmp, "%s @ %s", welcome.programName, dtmp );
             m_captureName = tmp;
 
+            m_hostInfo = welcome.hostInfo;
+
             if( welcome.onDemand != 0 )
             {
                 OnDemandPayloadMessage onDemand;

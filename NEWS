@@ -93,6 +93,11 @@ v0.4 (xxxx-xx-xx)
   "this" and "external" traces.
 - Tracy will now collect host information, like CPU name, amount of system
   memory, etc.
+- Windows builds of the "profiler" utility will perform a check of supported
+  CPU instruction set and match it against the one required by the binary
+  (by default AVX2 is used). If the program cannot be executed on the
+  processor, a message dialog with workaround instructions will be
+  displayed.
 
 
 v0.3.3 (2018-07-03)

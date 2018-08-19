@@ -342,6 +342,9 @@ public:
     }
 #endif
 
+    void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
+    bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
+
 private:
     enum DequeueStatus { Success, ConnectionLost, QueueEmpty };
 
@@ -421,6 +424,7 @@ private:
     uint64_t m_mainThread;
     uint64_t m_epoch;
     std::atomic<bool> m_shutdown;
+    std::atomic<bool> m_shutdownFinished;
     Socket* m_sock;
     bool m_noExit;
 

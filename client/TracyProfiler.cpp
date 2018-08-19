@@ -400,6 +400,7 @@ Profiler::Profiler()
     , m_mainThread( GetThreadHandle() )
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
+    , m_shutdownFinished( false )
     , m_sock( nullptr )
     , m_noExit( false )
     , m_stream( LZ4_createStream() )
@@ -514,7 +515,11 @@ void Profiler::Worker()
         for(;;)
         {
 #ifndef TRACY_NO_EXIT
-            if( !m_noExit && ShouldExit() ) return;
+            if( !m_noExit && ShouldExit() )
+            {
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
+            }
 #endif
             m_sock = listen.Accept();
             if( m_sock ) break;
@@ -613,7 +618,11 @@ void Profiler::Worker()
 
     QueueItem terminate;
     MemWrite( &terminate.hdr.type, QueueType::Terminate );
-    if( !SendData( (const char*)&terminate, 1 ) ) return;
+    if( !SendData( (const char*)&terminate, 1 ) )
+    {
+        m_shutdownFinished.store( true, std::memory_order_relaxed );
+        return;
+    }
     for(;;)
     {
         if( m_sock->HasData() )
@@ -623,6 +632,7 @@ void Profiler::Worker()
                 if( !HandleServerQuery() )
                 {
                     if( m_bufferOffset != m_bufferStart ) CommitData();
+                    m_shutdownFinished.store( true, std::memory_order_relaxed );
                     return;
                 }
             }
@@ -630,7 +640,11 @@ void Profiler::Worker()
             while( DequeueSerial() == Success ) {}
             if( m_bufferOffset != m_bufferStart )
             {
-                if( !CommitData() ) return;
+                if( !CommitData() )
+                {
+                    m_shutdownFinished.store( true, std::memory_order_relaxed );
+                    return;
+                }
             }
         }
         else

@@ -110,7 +110,10 @@
     <ClCompile Include="..\..\src\imgui_freetype.cpp" />
     <ClCompile Include="..\..\src\imgui_impl_glfw_gl3.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
-    <ClCompile Include="..\..\src\winmain.cpp" />
+    <ClCompile Include="..\..\src\winmain.cpp">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotSet</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotSet</EnableEnhancedInstructionSet>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\TracyAlign.hpp" />

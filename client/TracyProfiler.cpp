@@ -266,7 +266,7 @@ static const char* GetHostInfo()
     uint32_t regs[4];
     char cpuModel[4*4*3];
     auto modelPtr = cpuModel;
-    for( int i=0x80000002; i<0x80000005; ++i )
+    for( uint32_t i=0x80000002; i<0x80000005; ++i )
     {
 #  if defined _MSC_VER || defined __CYGWIN__
         __cpuidex( (int*)regs, i, 0 );

@@ -45,10 +45,9 @@ struct __wsinit
     }
 };
 
-static __wsinit InitWinSock()
+void InitWinSock()
 {
     static __wsinit init;
-    return init;
 }
 #endif
 

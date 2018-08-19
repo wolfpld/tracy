@@ -8,6 +8,10 @@ struct timeval;
 namespace tracy
 {
 
+#ifdef _MSC_VER
+void InitWinSock();
+#endif
+
 class Socket
 {
     enum { BufSize = 128 * 1024 };

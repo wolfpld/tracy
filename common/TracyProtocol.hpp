@@ -28,6 +28,7 @@ enum ServerQuery : uint8_t
 };
 
 enum { WelcomeMessageProgramNameSize = 64 };
+enum { WelcomeMessageHostInfoSize = 1024 };
 
 #pragma pack( 1 )
 
@@ -41,6 +42,7 @@ struct WelcomeMessage
     uint64_t epoch;
     uint8_t onDemand;
     char programName[WelcomeMessageProgramNameSize];
+    char hostInfo[WelcomeMessageHostInfoSize];
 };
 
 enum { WelcomeMessageSize = sizeof( WelcomeMessage ) };

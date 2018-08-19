@@ -448,6 +448,7 @@ void Profiler::Worker()
     const auto pnsz = std::min<size_t>( strlen( procname ), WelcomeMessageProgramNameSize - 1 );
 
     const auto hostinfo = GetHostInfo();
+    const auto hisz = std::min<size_t>( strlen( hostinfo ), WelcomeMessageHostInfoSize - 1 );
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
@@ -467,6 +468,8 @@ void Profiler::Worker()
     MemWrite( &welcome.onDemand, onDemand );
     memcpy( welcome.programName, procname, pnsz );
     memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
+    memcpy( welcome.hostInfo, hostinfo, hisz );
+    memset( welcome.hostInfo + hisz, 0, WelcomeMessageHostInfoSize - hisz );
 
     moodycamel::ConsumerToken token( s_queue );
 

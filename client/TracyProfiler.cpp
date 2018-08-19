@@ -55,6 +55,9 @@ extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 #if defined __APPLE__
 #  include "TargetConditionals.h"
 #endif
+#if defined __linux__
+#  include <sys/sysinfo.h>
+#endif
 
 namespace tracy
 {
@@ -284,6 +287,10 @@ static const char* GetHostInfo()
     statex.dwLength = sizeof( statex );
     GlobalMemoryStatusEx( &statex );
     ptr += sprintf( ptr, "RAM: %i MB\n", statex.ullTotalPhys / 1024 / 1024 );
+#elif defined __linux__
+    struct sysinfo sysInfo;
+    sysinfo( &sysInfo );
+    ptr += sprintf( ptr, "RAM: %i MB\n", sysInfo.totalram / 1024 / 1024 );
 #else
     ptr += sprintf( ptr, "RAM: unknown\n" );
 #endif

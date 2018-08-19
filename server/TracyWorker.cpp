@@ -192,6 +192,7 @@ Worker::Worker( const char* addr )
     , m_hasData( false )
     , m_shutdown( false )
     , m_terminate( false )
+    , m_crashed( false )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
@@ -220,6 +221,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     , m_hasData( true )
     , m_shutdown( false )
     , m_terminate( false )
+    , m_crashed( false )
     , m_stream( nullptr )
     , m_buffer( nullptr )
 {
@@ -1315,16 +1317,19 @@ void Worker::Exec()
                 {
                     continue;
                 }
-                bool done = true;
-                for( auto& v : m_data.threads )
+                if( !m_crashed )
                 {
-                    if( !v->stack.empty() )
+                    bool done = true;
+                    for( auto& v : m_data.threads )
                     {
-                        done = false;
-                        break;
+                        if( !v->stack.empty() )
+                        {
+                            done = false;
+                            break;
+                        }
                     }
+                    if( !done ) continue;
                 }
-                if( !done ) continue;
                 ServerQuery( ServerQueryTerminate, 0 );
                 break;
             }
@@ -1920,6 +1925,9 @@ void Worker::Process( const QueueItem& ev )
         m_terminate = true;
         break;
     case QueueType::KeepAlive:
+        break;
+    case QueueType::Crash:
+        m_crashed = true;
         break;
     default:
         assert( false );

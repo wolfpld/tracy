@@ -375,6 +375,7 @@ private:
     std::string m_captureName;
     std::string m_hostInfo;
     bool m_terminate;
+    bool m_crashed;
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;

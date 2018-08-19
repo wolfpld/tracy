@@ -6263,6 +6263,8 @@ void View::DrawInfo()
     ImGui::Separator();
     TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
     TextFocused( "Count:", RealToString( m_frames->frames.size(), true ) );
+    ImGui::Separator();
+    TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );
     ImGui::End();
 }
 

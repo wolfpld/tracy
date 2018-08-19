@@ -174,6 +174,7 @@ public:
 
     const std::string& GetAddr() const { return m_addr; }
     const std::string& GetCaptureName() const { return m_captureName; }
+    const std::string& GetHostInfo() const { return m_hostInfo; }
     int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }
 

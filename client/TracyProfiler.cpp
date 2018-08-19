@@ -57,6 +57,7 @@ extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 #endif
 #if defined __linux__
 #  include <sys/sysinfo.h>
+#  include <sys/utsname.h>
 #endif
 
 namespace tracy
@@ -193,10 +194,12 @@ static const char* GetHostInfo()
 #  endif
     }
 #elif defined __linux__
+    struct utsname utsName;
+    uname( &utsName );
 #  if defined __ANDROID__
-    ptr += sprintf( ptr, "OS: Linux (Android)\n" );
+    ptr += sprintf( ptr, "OS: Linux %s (Android)\n", utsName.release );
 #  else
-    ptr += sprintf( ptr, "OS: Linux\n" );
+    ptr += sprintf( ptr, "OS: Linux %s\n", utsName.release );
 #  endif
 #elif defined __APPLE__
 #  if defined TARGET_OS_IPHONE

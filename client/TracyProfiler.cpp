@@ -47,6 +47,7 @@
 
 #if defined _MSC_VER || defined __CYGWIN__
 #  include <lmcons.h>
+extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 #else
 #  include <unistd.h>
 #  include <limits.h>
@@ -162,10 +163,32 @@ static const char* GetHostInfo()
 {
     static char buf[1024];
     auto ptr = buf;
-#if defined _MSC_VER
-    ptr += sprintf( ptr, "OS: Windows\n" );
-#elif defined __CYGWIN__
-    ptr += sprintf( ptr, "OS: Windows (Cygwin)\n" );
+#if defined _MSC_VER || defined __CYGWIN__
+#  ifdef UNICODE
+    t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "RtlGetVersion" );
+#  else
+    t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "RtlGetVersion" );
+#  endif
+
+    if( !RtlGetVersion )
+    {
+#  ifndef __CYGWIN__
+        ptr += sprintf( ptr, "OS: Windows\n" );
+#  else
+        ptr += sprintf( ptr, "OS: Windows (Cygwin)\n" );
+#  endif
+    }
+    else
+    {
+        RTL_OSVERSIONINFOW ver = { sizeof( RTL_OSVERSIONINFOW ) };
+        RtlGetVersion( &ver );
+
+#  ifndef __CYGWIN__
+        ptr += sprintf( ptr, "OS: Windows %i.%i.%i\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+#  else
+        ptr += sprintf( ptr, "OS: Windows %i.%i.%i (Cygwin)\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+#  endif
+    }
 #elif defined __linux__
 #  if defined __ANDROID__
     ptr += sprintf( ptr, "OS: Linux (Android)\n" );

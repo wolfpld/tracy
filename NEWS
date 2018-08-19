@@ -98,6 +98,8 @@ v0.4 (xxxx-xx-xx)
   (by default AVX2 is used). If the program cannot be executed on the
   processor, a message dialog with workaround instructions will be
   displayed.
+- Tracy can intercept crashes and finish sending data from a dying process.
+  - Currently this is only implemented on Windows.
 
 
 v0.3.3 (2018-07-03)

@@ -44,7 +44,7 @@ public:
         }
     }
 
-    bool tryLock()
+    bool try_lock()
     {
         if (m_contentionCount.load(std::memory_order_relaxed) != 0)
             return false;

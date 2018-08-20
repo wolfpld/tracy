@@ -429,6 +429,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 #ifdef __linux__
 static long s_profilerTid = 0;
 static char s_crashText[1024];
+static std::atomic<bool> s_alreadyCrashed( false );
 
 static void ThreadFreezer( int signal )
 {
@@ -463,6 +464,9 @@ static inline void HexPrint( char*& ptr, uint64_t val )
 
 static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
 {
+    bool expected = false;
+    if( !s_alreadyCrashed.compare_exchange_strong( expected, true ) ) ThreadFreezer( signal );
+
     auto msgPtr = s_crashText;
     switch( signal )
     {

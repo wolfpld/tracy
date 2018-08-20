@@ -1129,8 +1129,9 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
     {
-        std::lock_guard<TracyMutex> lock( m_serialLock );
+        while( !m_serialLock.try_lock() ) {}
         m_serialQueue.swap( m_serialDequeue );
+        m_serialLock.unlock();
     }
 
     const auto sz = m_serialDequeue.size();

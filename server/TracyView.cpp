@@ -1669,6 +1669,15 @@ void View::DrawZones()
 
                 ImGui::BeginTooltip();
                 ImGui::Text( "%s", m_worker.GetThreadString( v->id ) );
+                if( crash.thread == v->id )
+                {
+                    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                    ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+#else
+                    ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+#endif
+                }
                 if( !v->timeline.empty() )
                 {
                     ImGui::Separator();

@@ -304,12 +304,58 @@ static const char* GetHostInfo()
 
 #ifdef _MSC_VER
 static DWORD s_profilerThreadId = 0;
+static char s_crashText[1024];
 
 LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 {
-    if( pExp->ExceptionRecord->ExceptionCode == 0xe24c4a02 ) return EXCEPTION_CONTINUE_SEARCH;      // LuaJIT
-    if( pExp->ExceptionRecord->ExceptionCode == 0xe06d7363 ) return EXCEPTION_CONTINUE_SEARCH;      // MSVC C++ exceptions
-    if( pExp->ExceptionRecord->ExceptionCode == 0x406d1388 ) return EXCEPTION_CONTINUE_SEARCH;      // MSVC thread naming magic
+    const auto ec = pExp->ExceptionRecord->ExceptionCode;
+    auto msgPtr = s_crashText;
+    switch( ec )
+    {
+    case EXCEPTION_ACCESS_VIOLATION:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_ACCESS_VIOLATION (0x%x). ", ec );
+        switch( pExp->ExceptionRecord->ExceptionInformation[0] )
+        {
+        case 0:
+            msgPtr += sprintf( msgPtr, "Read violation at address 0x%p.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            break;
+        case 1:
+            msgPtr += sprintf( msgPtr, "Write violation at address 0x%p.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            break;
+        case 8:
+            msgPtr += sprintf( msgPtr, "DEP violation at address 0x%p.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            break;
+        default:
+            break;
+        }
+        break;
+    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_ARRAY_BOUNDS_EXCEEDED (0x%x). ", ec );
+        break;
+    case EXCEPTION_DATATYPE_MISALIGNMENT:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_DATATYPE_MISALIGNMENT (0x%x). ", ec );
+        break;
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_FLT_DIVIDE_BY_ZERO (0x%x). ", ec );
+        break;
+    case EXCEPTION_ILLEGAL_INSTRUCTION:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_ILLEGAL_INSTRUCTION (0x%x). ", ec );
+        break;
+    case EXCEPTION_IN_PAGE_ERROR:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_IN_PAGE_ERROR (0x%x). ", ec );
+        break;
+    case EXCEPTION_INT_DIVIDE_BY_ZERO:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_INT_DIVIDE_BY_ZERO (0x%x). ", ec );
+        break;
+    case EXCEPTION_PRIV_INSTRUCTION:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_PRIV_INSTRUCTION (0x%x). ", ec );
+        break;
+    case EXCEPTION_STACK_OVERFLOW:
+        msgPtr += sprintf( msgPtr, "Exception EXCEPTION_STACK_OVERFLOW (0x%x). ", ec );
+        break;
+    default:
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
 
     Profiler::Message( "!!!CRASH!!!" );
 

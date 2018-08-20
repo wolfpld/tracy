@@ -1611,6 +1611,36 @@ void View::DrawZones()
                     }
                     it = next;
                 }
+
+                if( crash.thread == v->id && crash.time >= m_zvStart && crash.time <= m_zvEnd )
+                {
+                    const auto px = ( crash.time - m_zvStart ) * pxns;
+
+                    draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF );
+                    draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF );
+
+#ifdef TRACY_EXTENDED_FONT
+                    const auto crashText = ICON_FA_SKULL " crash " ICON_FA_SKULL;
+#else
+                    const auto crashText = "crash";
+#endif
+
+                    auto ctw = ImGui::CalcTextSize( crashText ).x;
+                    draw->AddText( wpos + ImVec2( px - ctw * 0.5f, offset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
+
+                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
+                    {
+                        ImGui::BeginTooltip();
+                        TextFocused( "Time:", TimeToString( crash.time - m_worker.GetTimeBegin() ) );
+                        TextFocused( "Reason:", m_worker.GetString( crash.message ) );
+                        ImGui::EndTooltip();
+
+                        if( ImGui::IsMouseClicked( 0 ) )
+                        {
+                            m_showInfo = true;
+                        }
+                    }
+                }
             }
             else
             {

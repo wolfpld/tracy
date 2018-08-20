@@ -7630,7 +7630,6 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx 
     {
         CallstackTooltip( callstack );
     }
-
 }
 
 }

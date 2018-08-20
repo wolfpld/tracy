@@ -60,6 +60,17 @@ public:
         return m_write++;
     }
 
+    T* prepare_next()
+    {
+        if( m_write == m_end ) AllocMore();
+        return m_write;
+    }
+
+    void commit_next()
+    {
+        m_write++;
+    }
+
     void clear()
     {
         m_write = m_ptr;

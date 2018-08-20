@@ -381,9 +381,10 @@ private:
     static tracy_force_inline void SendCallstackMemory( void* ptr )
     {
 #ifdef TRACY_HAS_CALLSTACK
-        auto item = s_profiler.m_serialQueue.push_next();
+        auto item = s_profiler.m_serialQueue.prepare_next();
         MemWrite( &item->hdr.type, QueueType::CallstackMemory );
         MemWrite( &item->callstackMemory.ptr, (uint64_t)ptr );
+        s_profiler.m_serialQueue.commit_next();
 #endif
     }
 
@@ -391,7 +392,7 @@ private:
     {
         assert( type == QueueType::MemAlloc || type == QueueType::MemAllocCallstack );
 
-        auto item = s_profiler.m_serialQueue.push_next();
+        auto item = s_profiler.m_serialQueue.prepare_next();
         MemWrite( &item->hdr.type, type );
         MemWrite( &item->memAlloc.time, GetTime() );
         MemWrite( &item->memAlloc.thread, thread );
@@ -406,17 +407,19 @@ private:
             assert( sizeof( size ) == 8 );
             memcpy( &item->memAlloc.size, &size, 6 );
         }
+        s_profiler.m_serialQueue.commit_next();
     }
 
     static tracy_force_inline void SendMemFree( QueueType type, const uint64_t thread, const void* ptr )
     {
         assert( type == QueueType::MemFree || type == QueueType::MemFreeCallstack );
 
-        auto item = s_profiler.m_serialQueue.push_next();
+        auto item = s_profiler.m_serialQueue.prepare_next();
         MemWrite( &item->hdr.type, type );
         MemWrite( &item->memFree.time, GetTime() );
         MemWrite( &item->memFree.thread, thread );
         MemWrite( &item->memFree.ptr, (uint64_t)ptr );
+        s_profiler.m_serialQueue.commit_next();
     }
 
     double m_timerMul;

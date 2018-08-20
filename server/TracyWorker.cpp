@@ -287,6 +287,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_hostInfo = std::string( tmp, tmp+sz );
     }
 
+    if( fileVer >= FileVersion( 0, 3, 204 ) )
+    {
+        f.Read( &m_data.m_crashEvent, sizeof( m_data.m_crashEvent ) );
+    }
+
     if( fileVer >= FileVersion( 0, 3, 202 ) )
     {
         f.Read( sz );
@@ -2976,6 +2981,8 @@ void Worker::Write( FileWrite& f )
     sz = m_hostInfo.size();
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_hostInfo.c_str(), sz );
+
+    f.Write( &m_data.m_crashEvent, sizeof( m_data.m_crashEvent ) );
 
     sz = m_data.frames.Data().size();
     f.Write( &sz, sizeof( sz ) );

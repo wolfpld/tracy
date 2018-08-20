@@ -294,7 +294,7 @@ static const char* GetHostInfo()
 #elif defined __linux__
     struct sysinfo sysInfo;
     sysinfo( &sysInfo );
-    ptr += sprintf( ptr, "RAM: %i MB\n", sysInfo.totalram / 1024 / 1024 );
+    ptr += sprintf( ptr, "RAM: %lu MB\n", sysInfo.totalram / 1024 / 1024 );
 #else
     ptr += sprintf( ptr, "RAM: unknown\n" );
 #endif

@@ -210,6 +210,8 @@ public:
     const VarArray<uint64_t>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
     const CallstackFrame* GetCallstackFrame( uint64_t ptr ) const;
 
+    const CrashEvent& GetCrashEvent() const { return m_data.m_crashEvent; }
+
     // Some zones may have incomplete timing data (only start time is available, end hasn't arrived yet).
     // GetZoneEnd() will try to infer the end time by looking at child zones (parent zone can't end
     //     before its children have ended).

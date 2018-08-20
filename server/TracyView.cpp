@@ -6265,6 +6265,49 @@ void View::DrawInfo()
     TextFocused( "Count:", RealToString( m_frames->frames.size(), true ) );
     ImGui::Separator();
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );
+    auto& crash = m_worker.GetCrashEvent();
+    if( crash.thread != 0 )
+    {
+        ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Application has crashed. " ICON_FA_SKULL );
+#else
+        ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Application has crashed." );
+#endif
+        TextFocused( "Time of crash:", TimeToString( crash.time - m_worker.GetTimeBegin() ) );
+        TextFocused( "Thread:", m_worker.GetThreadString( crash.thread ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(0x%" PRIX64 ")", crash.thread );
+        ImGui::TextDisabled( "Reason:" );
+        ImGui::SameLine();
+        ImGui::TextWrapped( "%s", m_worker.GetString( crash.message ) );
+        if( crash.callstack != 0 )
+        {
+            bool hilite = m_callstackInfoWindow == crash.callstack;
+            if( hilite )
+            {
+                ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
+                ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
+                ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            }
+#ifdef TRACY_EXTENDED_FONT
+            if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
+#else
+            if( ImGui::Button( "Call stack" ) )
+#endif
+            {
+                m_callstackInfoWindow = crash.callstack;
+            }
+            if( hilite )
+            {
+                ImGui::PopStyleColor( 3 );
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                CallstackTooltip( crash.callstack );
+            }
+        }
+    }
     ImGui::End();
 }
 

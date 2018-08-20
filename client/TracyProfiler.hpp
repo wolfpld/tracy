@@ -325,6 +325,8 @@ public:
 #endif
     }
 
+    void SendCallstack( int depth, uint64_t thread, const char* skipBefore );
+
     static bool ShouldExit();
 
 #ifdef TRACY_ON_DEMAND

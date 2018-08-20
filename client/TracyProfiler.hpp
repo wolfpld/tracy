@@ -342,7 +342,7 @@ public:
     }
 #endif
 
-    void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
+    void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); m_shutdownManual.store( true, std::memory_order_relaxed ); }
     bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
 
 private:
@@ -424,6 +424,7 @@ private:
     uint64_t m_mainThread;
     uint64_t m_epoch;
     std::atomic<bool> m_shutdown;
+    std::atomic<bool> m_shutdownManual;
     std::atomic<bool> m_shutdownFinished;
     Socket* m_sock;
     bool m_noExit;

@@ -743,6 +743,7 @@ Profiler::Profiler()
     , m_mainThread( GetThreadHandle() )
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
+    , m_shutdownManual( false )
     , m_shutdownFinished( false )
     , m_sock( nullptr )
     , m_noExit( false )
@@ -1129,9 +1130,20 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
     {
-        while( !m_serialLock.try_lock() ) {}
+        bool lockHeld = true;
+        while( !m_serialLock.try_lock() )
+        {
+            if( m_shutdownManual.load( std::memory_order_relaxed ) )
+            {
+                lockHeld = false;
+                break;
+            }
+        }
         m_serialQueue.swap( m_serialDequeue );
-        m_serialLock.unlock();
+        if( lockHeld )
+        {
+            m_serialLock.unlock();
+        }
     }
 
     const auto sz = m_serialDequeue.size();

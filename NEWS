@@ -99,7 +99,7 @@ v0.4 (xxxx-xx-xx)
   processor, a message dialog with workaround instructions will be
   displayed.
 - Tracy can intercept crashes and finish sending data from a dying process.
-  - Currently this is only implemented on Windows.
+  - Currently this is only implemented on Windows and Linux.
 
 
 v0.3.3 (2018-07-03)

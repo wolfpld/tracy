@@ -16,6 +16,13 @@
 #  include <errno.h>
 #endif
 
+#ifdef __linux__
+#  include <signal.h>
+#  include <dirent.h>
+#  include <sys/types.h>
+#  include <sys/syscall.h>
+#endif
+
 #include <atomic>
 #include <assert.h>
 #include <chrono>
@@ -419,6 +426,223 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 }
 #endif
 
+#ifdef __linux__
+static long s_profilerTid = 0;
+static char s_crashText[1024];
+
+static void ThreadFreezer( int signal )
+{
+    for(;;) sleep( 1000 );
+}
+
+static inline void HexPrint( char*& ptr, uint64_t val )
+{
+    if( val == 0 )
+    {
+        *ptr++ = '0';
+        return;
+    }
+
+    static const char HexTable[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+    char buf[16];
+    auto bptr = buf;
+
+    do
+    {
+        *bptr++ = HexTable[val%16];
+        val /= 16;
+    }
+    while( val > 0 );
+
+    do
+    {
+        *ptr++ = *--bptr;
+    }
+    while( bptr != buf );
+}
+
+static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
+{
+    auto msgPtr = s_crashText;
+    switch( signal )
+    {
+    case SIGILL:
+        strcpy( msgPtr, "Illegal Instruction.\n" );
+        while( *msgPtr ) msgPtr++;
+        switch( info->si_code )
+        {
+        case ILL_ILLOPC:
+            strcpy( msgPtr, "Illegal opcode.\n" );
+            break;
+        case ILL_ILLOPN:
+            strcpy( msgPtr, "Illegal operand.\n" );
+            break;
+        case ILL_ILLADR:
+            strcpy( msgPtr, "Illegal addressing mode.\n" );
+            break;
+        case ILL_ILLTRP:
+            strcpy( msgPtr, "Illegal trap.\n" );
+            break;
+        case ILL_PRVOPC:
+            strcpy( msgPtr, "Privileged opcode.\n" );
+            break;
+        case ILL_PRVREG:
+            strcpy( msgPtr, "Privileged register.\n" );
+            break;
+        case ILL_COPROC:
+            strcpy( msgPtr, "Coprocessor error.\n" );
+            break;
+        case ILL_BADSTK:
+            strcpy( msgPtr, "Internal stack error.\n" );
+            break;
+        default:
+            break;
+        }
+        break;
+    case SIGFPE:
+        strcpy( msgPtr, "Floating-point exception.\n" );
+        while( *msgPtr ) msgPtr++;
+        switch( info->si_code )
+        {
+        case FPE_INTDIV:
+            strcpy( msgPtr, "Integer divide by zero.\n" );
+            break;
+        case FPE_INTOVF:
+            strcpy( msgPtr, "Integer overflow.\n" );
+            break;
+        case FPE_FLTDIV:
+            strcpy( msgPtr, "Floating-point divide by zero.\n" );
+            break;
+        case FPE_FLTOVF:
+            strcpy( msgPtr, "Floating-point overflow.\n" );
+            break;
+        case FPE_FLTUND:
+            strcpy( msgPtr, "Floating-point underflow.\n" );
+            break;
+        case FPE_FLTRES:
+            strcpy( msgPtr, "Floating-point inexact result.\n" );
+            break;
+        case FPE_FLTINV:
+            strcpy( msgPtr, "Floating-point invalid operation.\n" );
+            break;
+        case FPE_FLTSUB:
+            strcpy( msgPtr, "Subscript out of range.\n" );
+            break;
+        default:
+            break;
+        }
+        break;
+    case SIGSEGV:
+        strcpy( msgPtr, "Invalid memory reference.\n" );
+        while( *msgPtr ) msgPtr++;
+        switch( info->si_code )
+        {
+        case SEGV_MAPERR:
+            strcpy( msgPtr, "Address not mapped to object.\n" );
+            break;
+        case SEGV_ACCERR:
+            strcpy( msgPtr, "Invalid permissions for mapped object.\n" );
+            break;
+        case SEGV_BNDERR:
+            strcpy( msgPtr, "Failed address bound checks.\n" );
+            break;
+        case SEGV_PKUERR:
+            strcpy( msgPtr, "Access was denied by memory protection keys.\n" );
+            break;
+        default:
+            break;
+        }
+        break;
+    case SIGPIPE:
+        strcpy( msgPtr, "Broken pipe.\n" );
+        while( *msgPtr ) msgPtr++;
+        break;
+    case SIGBUS:
+        strcpy( msgPtr, "Bus error.\n" );
+        while( *msgPtr ) msgPtr++;
+        switch( info->si_code )
+        {
+        case BUS_ADRALN:
+            strcpy( msgPtr, "Invalid address alignment.\n" );
+            break;
+        case BUS_ADRERR:
+            strcpy( msgPtr, "Nonexistent physical address.\n" );
+            break;
+        case BUS_OBJERR:
+            strcpy( msgPtr, "Object-specific hardware error.\n" );
+            break;
+        case BUS_MCEERR_AR:
+            strcpy( msgPtr, "Hardware memory error consumed on a machine check; action required.\n" );
+            break;
+        case BUS_MCEERR_AO:
+            strcpy( msgPtr, "Hardware memory error detected in process but not consumed; action optional.\n" );
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        abort();
+    }
+    while( *msgPtr ) msgPtr++;
+
+    if( signal != SIGPIPE )
+    {
+        strcpy( msgPtr, "Fault address: 0x" );
+        while( *msgPtr ) msgPtr++;
+        HexPrint( msgPtr, uint64_t( info->si_addr ) );
+        *msgPtr++ = '\n';
+    }
+
+    {
+        const auto thread = GetThreadHandle();
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::CrashReport );
+        item->crashReport.time = Profiler::GetTime();
+        item->crashReport.thread = thread;
+        item->crashReport.text = (uint64_t)s_crashText;
+        tail.store( magic + 1, std::memory_order_release );
+
+        s_profiler.SendCallstack( 60, thread );
+    }
+
+    DIR* dp = opendir( "/proc/self/task" );
+    if( !dp ) abort();
+
+    const auto selfTid = syscall( SYS_gettid );
+
+    struct dirent* ep;
+    while( ( ep = readdir( dp ) ) != nullptr )
+    {
+        if( ep->d_name[0] == '.' ) continue;
+        int tid = atoi( ep->d_name );
+        if( tid != selfTid && tid != s_profilerTid )
+        {
+            syscall( SYS_tkill, tid, SIGPWR );
+        }
+    }
+    closedir( dp );
+
+    {
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::Crash );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
+    s_profiler.RequestShutdown();
+    while( !s_profiler.HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
+
+    abort();
+}
+#endif
+
 
 enum { QueuePrealloc = 256 * 1024 };
 
@@ -565,6 +789,21 @@ Profiler::Profiler()
     AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 
+#ifdef __linux__
+    struct sigaction threadFreezer = {};
+    threadFreezer.sa_handler = ThreadFreezer;
+    sigaction( SIGPWR, &threadFreezer, nullptr );
+
+    struct sigaction crashHandler = {};
+    crashHandler.sa_sigaction = CrashHandler;
+    crashHandler.sa_flags = SA_SIGINFO;
+    sigaction( SIGILL, &crashHandler, nullptr );
+    sigaction( SIGFPE, &crashHandler, nullptr );
+    sigaction( SIGSEGV, &crashHandler, nullptr );
+    sigaction( SIGPIPE, &crashHandler, nullptr );
+    sigaction( SIGBUS, &crashHandler, nullptr );
+#endif
+
 #ifdef TRACY_HAS_CALLSTACK
     InitCallstack();
 #endif
@@ -600,6 +839,10 @@ bool Profiler::ShouldExit()
 
 void Profiler::Worker()
 {
+#ifdef __linux__
+    s_profilerTid = syscall( SYS_gettid );
+#endif
+
     rpmalloc_thread_initialize();
 
     const auto procname = GetProcessName();

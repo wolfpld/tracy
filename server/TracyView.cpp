@@ -4263,6 +4263,8 @@ void View::DrawOptions()
     ImGui::TextDisabled( "(%zu)", m_worker.GetThreadData().size() );
     if( expand )
     {
+        auto& crash = m_worker.GetCrashEvent();
+
         if( ImGui::SmallButton( "Select all" ) )
         {
             for( const auto& t : m_worker.GetThreadData() )
@@ -4287,6 +4289,15 @@ void View::DrawOptions()
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
+            if( crash.thread == t->id )
+            {
+                ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+#else
+                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+#endif
+            }
         }
         ImGui::TreePop();
     }
@@ -4344,6 +4355,8 @@ void View::DrawMessages()
     ImGui::TextDisabled( "(%zu)", m_worker.GetThreadData().size() );
     if( expand )
     {
+        auto& crash = m_worker.GetCrashEvent();
+
         if( ImGui::SmallButton( "Select all" ) )
         {
             for( const auto& t : m_worker.GetThreadData() )
@@ -4366,6 +4379,15 @@ void View::DrawMessages()
             ImGui::PushID( idx++ );
             ImGui::Checkbox( m_worker.GetThreadString( t->id ), &VisibleMsgThread( t->id ) );
             ImGui::PopID();
+            if( crash.thread == t->id )
+            {
+                ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+#else
+                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+#endif
+            }
         }
         ImGui::TreePop();
     }

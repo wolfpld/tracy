@@ -1532,7 +1532,7 @@ void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore
     auto ptr = Callstack( depth );
     auto data = (uintptr_t*)ptr;
     const auto sz = *data++;
-    int i;
+    uintptr_t i;
     for( i=0; i<sz; i++ )
     {
         auto frame = DecodeCallstackPtr( uint64_t( data[i] ) );

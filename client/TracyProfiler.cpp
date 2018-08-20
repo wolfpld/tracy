@@ -376,7 +376,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
         item->crashReport.text = (uint64_t)s_crashText;
         tail.store( magic + 1, std::memory_order_release );
 
-        s_profiler.SendCallstack( 60, thread );
+        s_profiler.SendCallstack( 60, thread, "KiUserExceptionDispatcher" );
     }
 
     HANDLE h = CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );

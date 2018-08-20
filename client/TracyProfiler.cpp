@@ -610,7 +610,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
         item->crashReport.text = (uint64_t)s_crashText;
         tail.store( magic + 1, std::memory_order_release );
 
-        s_profiler.SendCallstack( 60, thread );
+        s_profiler.SendCallstack( 60, thread, "__kernel_rt_sigreturn" );
     }
 
     DIR* dp = opendir( "/proc/self/task" );

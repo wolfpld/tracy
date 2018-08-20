@@ -1929,6 +1929,9 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::Crash:
         m_crashed = true;
         break;
+    case QueueType::CrashReport:
+        ProcessCrashReport( ev.crashReport );
+        break;
     default:
         assert( false );
         break;
@@ -2574,6 +2577,9 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
     case NextCallstackType::Gpu:
         next.gpu->callstack = it->second;
         break;
+    case NextCallstackType::Crash:
+        m_data.m_crashEvent.callstack = it->second;
+        break;
     default:
         assert( false );
         break;
@@ -2608,6 +2614,19 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
 
     m_pendingCustomStrings.erase( nit );
     m_pendingCustomStrings.erase( m_pendingCustomStrings.find( ev.file ) );
+}
+
+void Worker::ProcessCrashReport( const QueueCrashReport& ev )
+{
+    CheckString( ev.text );
+
+    auto& next = m_nextCallstack[ev.thread];
+    next.type = NextCallstackType::Crash;
+
+    m_data.m_crashEvent.thread = ev.thread;
+    m_data.m_crashEvent.time = TscTime( ev.time );
+    m_data.m_crashEvent.message = ev.text;
+    m_data.m_crashEvent.callstack = 0;
 }
 
 void Worker::MemAllocChanged( int64_t time )

@@ -357,7 +357,20 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-    Profiler::Message( "!!!CRASH!!!" );
+    {
+        const auto thread = GetThreadHandle();
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::CrashReport );
+        item->crashReport.time = Profiler::GetTime();
+        item->crashReport.thread = thread;
+        item->crashReport.text = (uint64_t)s_crashText;
+        tail.store( magic + 1, std::memory_order_release );
+
+        s_profiler.SendCallstack( 60, thread );
+    }
 
     HANDLE h = CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
     if( h == INVALID_HANDLE_VALUE ) return EXCEPTION_CONTINUE_SEARCH;

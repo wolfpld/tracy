@@ -181,6 +181,17 @@ struct CallstackFrameTree
 
 enum { CallstackFrameTreeSize = sizeof( CallstackFrameTree ) };
 
+
+struct CrashEvent
+{
+    uint64_t thread = 0;
+    int64_t time = 0;
+    uint64_t message = 0;
+    uint32_t callstack = 0;
+};
+
+enum { CrashEventSize = sizeof( CrashEvent ) };
+
 #pragma pack()
 
 

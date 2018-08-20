@@ -17,6 +17,7 @@ enum class QueueType : uint8_t
     Terminate,
     KeepAlive,
     Crash,
+    CrashReport,
     ZoneBegin,
     ZoneBeginCallstack,
     ZoneEnd,
@@ -235,6 +236,13 @@ struct QueueCallstackFrame
     uint32_t line;
 };
 
+struct QueueCrashReport
+{
+    int64_t time;
+    uint64_t thread;
+    uint64_t text;      // ptr
+};
+
 struct QueueHeader
 {
     union
@@ -271,6 +279,7 @@ struct QueueItem
         QueueCallstackMemory callstackMemory;
         QueueCallstack callstack;
         QueueCallstackFrame callstackFrame;
+        QueueCrashReport crashReport;
     };
 };
 
@@ -289,6 +298,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
     sizeof( QueueHeader ),                                  // crash
+    sizeof( QueueHeader ) + sizeof( QueueCrashReport ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),

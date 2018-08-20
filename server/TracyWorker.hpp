@@ -140,6 +140,8 @@ private:
 
         std::vector<Vector<ZoneEvent*>> m_zoneChildren;
         std::vector<Vector<GpuEvent*>> m_gpuChildren;
+
+        CrashEvent m_crashEvent;
     };
 
     struct MbpsBlock
@@ -154,7 +156,8 @@ private:
     enum class NextCallstackType
     {
         Zone,
-        Gpu
+        Gpu,
+        Crash
     };
 
     struct NextCallstack
@@ -297,6 +300,7 @@ private:
     tracy_force_inline void ProcessCallstackMemory( const QueueCallstackMemory& ev );
     tracy_force_inline void ProcessCallstack( const QueueCallstack& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
+    tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev );

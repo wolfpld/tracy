@@ -47,6 +47,9 @@
 
 \usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
 
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes}
+
 \begin{document}
 
 \begin{titlepage}
@@ -107,7 +110,41 @@ Tracy is aimed at understanding the inner workings of a tight game (or interacti
 
 \subsection{Remote or embedded telemetry}
 
-Tracy uses the client-server model to enable a wide range of use-cases. For example, a game on a mobile phone may be profiled over the wireless connection, with the profiler running on a desktop computer. It is also possible to embed the visualization front-end in the profiled application, making the profiling self-contained\footnote{See section~\ref{embeddingserver} for guidelines.}.
+Tracy uses the client-server model to enable a wide range of use-cases (see figure~\ref{clientserver}). For example, a game on a mobile phone may be profiled over the wireless connection, with the profiler running on a desktop computer. Or you can run the client and server on the same computer, using a localhost connection. It is also possible to embed the visualization front-end in the profiled application, making the profiling self-contained\footnote{See section~\ref{embeddingserver} for guidelines.}.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+[inner sep=1.5mm, bend angle=30,
+ thread/.style={rectangle, draw},
+ module/.style={rectangle, draw, rounded corners=8pt},
+ collect/.style={{Stealth}-, shorten <=4pt, shorten >=4pt},
+ network/.style={cloud, draw, cloud ignores aspect, cloud puffs=11.6}]
+
+\node[thread] (t1) {\faRandom{} Thread 1};
+\node[thread] (t2) [below=of t1] {\faRandom{} Thread 2};
+\node[thread] (t3) [below=of t2] {\faRandom{} Thread 3};
+
+\node[module] (client) [right=of t2] {Tracy client}
+	edge [collect, bend right] (t1)
+	edge [collect] (t2)
+	edge [collect, bend left] (t3);
+
+\node[network] (network) [right=of client] {Network}
+	edge [collect] (client);
+
+\node[module] (server) [right=of network] {Tracy server}
+	edge [collect] (network);
+
+\begin{scope}[node distance=12pt, bend angle=25]
+\node[thread] (display) [above right=of server] {\faTelevision{} Display}
+	edge [collect, bend right] (server);
+\node[thread] (storage) [below right=of server] {\faDatabase{} Storage}
+	edge [collect, bend left] (server);
+\end{scope}
+\end{tikzpicture}
+\caption{Client-server model.}
+\label{clientserver}
+\end{figure}
 
 In the Tracy terminology, the profiled application is the \emph{client} and the profiler itself is the \emph{server}. It was named this way because the client is a thin layer that just collects events and sends them for processing and long-term storage on the server. The fact that the server needs to connect to the client to begin the profiling session may be a bit confusing at first.
 

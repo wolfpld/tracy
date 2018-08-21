@@ -333,6 +333,7 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_onlyContendedLocks( true )
     , m_statSort( 0 )
     , m_statSelf( false )
+    , m_showCallstackFrameAddress( false )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
@@ -378,6 +379,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_onlyContendedLocks( true )
     , m_statSort( 0 )
     , m_statSelf( false )
+    , m_showCallstackFrameAddress( false )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
@@ -6087,6 +6089,12 @@ void View::DrawCallstackWindow()
     bool show = true;
     ImGui::Begin( "Call stack", &show );
 
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_AT " Show frame addresses", &m_showCallstackFrameAddress );
+#else
+    ImGui::Checkbox( "Show frame addresses", &m_showCallstackFrameAddress );
+#endif
+
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
 
     ImGui::Columns( 3 );
@@ -6152,17 +6160,30 @@ void View::DrawCallstackWindow()
                 ImGui::Indent( indentVal );
             }
             txt = m_worker.GetString( frame->file );
-            if( frame->line == 0 )
+            if( m_showCallstackFrameAddress )
             {
-                ImGui::TextDisabled( "%s", txt );
+                ImGui::TextDisabled( "0x%" PRIx64, entry );
+                if( ImGui::IsItemClicked() )
+                {
+                    char tmp[32];
+                    sprintf( tmp, "0x%" PRIx64, entry );
+                    ImGui::SetClipboardText( tmp );
+                }
             }
             else
             {
-                ImGui::TextDisabled( "%s:%i", txt, frame->line );
-            }
-            if( ImGui::IsItemClicked() )
-            {
-                ImGui::SetClipboardText( txt );
+                if( frame->line == 0 )
+                {
+                    ImGui::TextDisabled( "%s", txt );
+                }
+                else
+                {
+                    ImGui::TextDisabled( "%s:%i", txt, frame->line );
+                }
+                if( ImGui::IsItemClicked() )
+                {
+                    ImGui::SetClipboardText( txt );
+                }
             }
             if( ImGui::IsItemClicked( 1 ) )
             {

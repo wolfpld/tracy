@@ -245,6 +245,7 @@ private:
 
     int m_statSort;
     bool m_statSelf;
+    bool m_showCallstackFrameAddress;
 
     Namespace m_namespace;
     Animation m_zoomAnim;

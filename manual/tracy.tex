@@ -263,6 +263,14 @@ Remember to set thread names for proper identification of threads. You should us
 
 Be aware that even if you already have thread naming functionality implemented, some platforms\footnote{Basically everything, but the recent Windows releases.} do not have adequate system-level capabilities (or none at all), in which case Tracy uses its own internal thread name storage.
 
+\subsection{Crash handling}
+
+On selected platforms\footnote{Windows, Linux.} Tracy will intercept application crashes\footnote{For example, invalid memory accesses ('segmentation faults', 'null pointer exceptions'), divisions by zero, etc.}. This serves two purposes. First, the client application will be able to send the remaining profiling data to the server. Second, the server will receive a crash report with information about the crash reason, call stack at the time of crash, etc.
+
+This is an automatic process and it doesn't require user interaction.
+
+Note that on MSVC the debugger has priority over the application in handling exceptions. If you want to finish the profiler data collection with the debugger hooked-up, select the \emph{continue} option in the debugger pop-up dialog.
+
 \section{Client markup}
 \label{client}
 

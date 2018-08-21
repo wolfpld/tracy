@@ -100,6 +100,8 @@ v0.4 (xxxx-xx-xx)
   displayed.
 - Tracy can intercept crashes and finish sending data from a dying process.
   - Currently this is only implemented on Windows and Linux.
+- Call stack window may now display addresses of the frames, instead of
+  source file locations.
 
 
 v0.3.3 (2018-07-03)

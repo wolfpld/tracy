@@ -246,7 +246,11 @@ You must use the same version of the Tracy profiler on both client and server! N
 \subsubsection{Embedding the server in profiled application}
 \label{embeddingserver}
 
-While not officially supported, it is possible to embed the server in your application, the same which is running the client part of Tracy. This part is up to you to figure out.
+While not officially supported, it is possible to embed the server in your application, the same one which is running the client part of Tracy. This is left up for you to figure out.
+
+Note that most libraries bundled with Tracy are modified in some way and contained in the \texttt{tracy} namespace. The one exception is Dear ImGui, which can be freely replaced.
+
+Be aware that while the Tracy client uses its own separate memory allocator, the server part of Tracy will use global memory allocation facilities, shared with the rest of your application. This will affect both the memory usage statistics and Tracy memory profiling.
 
 The following defines may be of interest:
 

@@ -297,7 +297,7 @@ static const char* GetHostInfo()
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof( statex );
     GlobalMemoryStatusEx( &statex );
-    ptr += sprintf( ptr, "RAM: %i MB\n", statex.ullTotalPhys / 1024 / 1024 );
+    ptr += sprintf( ptr, "RAM: %I64u MB\n", statex.ullTotalPhys / 1024 / 1024 );
 #elif defined __linux__
     struct sysinfo sysInfo;
     sysinfo( &sysInfo );
@@ -324,13 +324,13 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
         switch( pExp->ExceptionRecord->ExceptionInformation[0] )
         {
         case 0:
-            msgPtr += sprintf( msgPtr, "Read violation at address 0x%p.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += sprintf( msgPtr, "Read violation at address 0x%Iu.", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         case 1:
-            msgPtr += sprintf( msgPtr, "Write violation at address 0x%p.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += sprintf( msgPtr, "Write violation at address 0x%Iu.", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         case 8:
-            msgPtr += sprintf( msgPtr, "DEP violation at address 0x%p.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += sprintf( msgPtr, "DEP violation at address 0x%Iu.", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         default:
             break;

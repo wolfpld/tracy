@@ -153,7 +153,7 @@ static inline int LuaZoneBegin( lua_State* L )
     //  1b  null terminator
     //  ssz source file name
     //  1b  null terminator
-    const uint32_t sz = 4 + 4 + 4 + fsz + 1 + ssz + 1;
+    const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 );
     auto ptr = (char*)tracy_malloc( sz );
     memcpy( ptr, &sz, 4 );
     memcpy( ptr + 4, &color, 4 );
@@ -210,7 +210,7 @@ static inline int LuaZoneBeginN( lua_State* L )
     //  ssz source file name
     //  1b  null terminator
     //  nsz zone name
-    const uint32_t sz = 4 + 4 + 4 + fsz + 1 + ssz + 1 + nsz;
+    const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 + nsz );
     auto ptr = (char*)tracy_malloc( sz );
     memcpy( ptr, &sz, 4 );
     memcpy( ptr + 4, &color, 4 );

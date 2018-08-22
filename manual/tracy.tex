@@ -557,7 +557,7 @@ After starting the application, you will be greeted with a welcome dialog (figur
 \label{welcomedialog}
 \end{figure}
 
-Both connecting to a client and opening a saved trace will present you with the main profiler view, which you can use to analyze the data.
+Both connecting to a client and opening a saved trace will present you with the main profiler view, which you can use to analyze the data (see section~\ref{analyzingdata}).
 
 If this is a real-time capture, you will also see the connection window (figure~\ref{connectioninfo}), with the capture status similar to the one displayed by the command line utility. This dialog also displays the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
@@ -603,6 +603,40 @@ old.tracy (0.3.0) -> new.tracy (0.4.0)
 \end{verbatim}
 
 The new file contains the same data as the old one, but in the updated internal representation. Note that to perform an upgrade, whole trace needs to be loaded to memory.
+
+\section{Analyzing captured data}
+\label{analyzingdata}
+
+You have instrumented your application and you have captured a profiling trace. Now you want to look at the collected data. You can do this in the application contained in the \texttt{profiler} directory.
+
+The workflow is identical, whether you are viewing a previously saved trace, or if you're performing a live capture, as described in section~\ref{interactiveprofiling}.
+
+The main profiler window is split into three sections, as seen on figure~\ref{mainwindow}: the control menu, the frame time graph and the time line display.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw (0, 0) rectangle (15, -5.5);
+\draw[pattern=crosshatch dots] (0, 0) rectangle+(15, 0.3);
+\draw[rounded corners=5pt] (0.1, -0.1) rectangle+(0.5, -0.5) node [midway] {\faPowerOff};
+\draw[rounded corners=5pt] (0.7, -0.1) rectangle+(1.8, -0.5) node [midway] {\faCog{} Options};
+\draw[rounded corners=5pt] (2.6, -0.1) rectangle+(2.2, -0.5) node [midway] {\faTags{} Messages};
+\draw[rounded corners=5pt] (4.9, -0.1) rectangle+(2.1, -0.5) node [midway] {\faSearch{} Find zone};
+\draw[rounded corners=5pt] (7.1, -0.1) rectangle+(2, -0.5) node [midway] {\faSortAmountUp{} Statistics};
+\draw[rounded corners=5pt] (9.2, -0.1) rectangle+(2, -0.5) node [midway] {\faMemory{} Memory};
+\draw[rounded corners=5pt] (11.3, -0.1) rectangle+(2.1, -0.5) node [midway] {\faBalanceScale{} Compare};
+\draw[rounded corners=5pt] (13.5, -0.1) rectangle+(1.3, -0.5) node [midway] {\faFingerprint{} Info};
+\draw[rounded corners=5pt] (0.1, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretLeft};
+\draw (0.6, -0.7) node[anchor=north west] {Frames: 364};
+\draw[rounded corners=5pt] (2.8, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretRight};
+\draw[rounded corners=5pt] (3.3, -0.7) rectangle+(0.5, -0.5) node [midway] {\faCaretDown};
+\draw (3.9, -0.7) node[anchor=north west] {Time span: 6.06 s \hspace{5pt} View span: 52.7 ms \hspace{5pt} Zones: 456,092};
+
+\draw (0.1, -1.3) rectangle+(14.8, -1) node [midway] {Frame time graph};
+\draw (0.1, -2.4) rectangle+(14.8, -3) node [midway] {Time line};
+\end{tikzpicture}
+\caption{Main profiler window. Note that the top line of buttons has been split into two rows in this manual.}
+\label{mainwindow}
+\end{figure}
 
 \section{Practical considerations}
 

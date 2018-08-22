@@ -12,6 +12,8 @@
 #ifdef _MSC_VER
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
+#  pragma warning(disable:4244)
+#  pragma warning(disable:4267)
 #else
 #  include <sys/socket.h>
 #  include <netdb.h>

@@ -48,7 +48,7 @@
 \usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
 
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,shapes}
+\usetikzlibrary{arrows.meta,positioning,shapes,patterns}
 
 \begin{document}
 
@@ -538,11 +538,45 @@ The \emph{queue delay} and \emph{timer resolution} parameters are calibration re
 
 If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the \texttt{profiler} directory.
 
-After starting the application, you will be greeted with a welcome dialog, presenting a bunch of useful links (\faBook{}~\emph{User Manual}, \faGlobe{}~\emph{Homepage} and \faVideoCamera{}~\emph{Tutorial}), along with the client address entry field and the \faWifi{}~\emph{Connect} button. A saved trace can be loaded from disk using the \faFolderOpen{}~\emph{Open saved trace} button.
+After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faGlobe{}~\emph{Homepage} and \faVideoCamera{}~\emph{Tutorial}), along with the client address entry field and the \faWifi{}~\emph{Connect} button. A saved trace can be loaded from disk using the \faFolderOpen{}~\emph{Open saved trace} button.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw (0, 0) rectangle (5, -2.9);
+\draw[pattern=crosshatch dots] (0, 0) rectangle+(5, 0.3);
+\draw[rounded corners=5pt] (0.1, -0.1) rectangle+(1.47, -0.5) node [midway] {Manual};
+\draw[rounded corners=5pt] (1.77, -0.1) rectangle+(1.47, -0.5) node [midway] {Home};
+\draw[rounded corners=5pt] (3.37, -0.1) rectangle+(1.47, -0.5) node [midway] {Intro};
+
+\draw (0.1, -0.9) rectangle+(4.8, -0.5) node [midway] {Address entry};
+\draw[rounded corners=5pt] (0.1, -1.5) rectangle+(2, -0.5) node [midway] {\faWifi{}~Connect};
+\draw[rounded corners=5pt] (0.1, -2.3) rectangle+(3.5, -0.5) node [midway] {\faFolderOpen{}~Open saved trace};
+\end{tikzpicture}
+\caption{Welcome dialog.}
+\label{welcomedialog}
+\end{figure}
 
 Both connecting to a client and opening a saved trace will present you with the main profiler view, which you can use to analyze the data.
 
-If this is a real-time capture, you will also see the connection window, with the capture status similar to the one displayed by the command line utility. You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file.
+If this is a real-time capture, you will also see the connection window (figure~\ref{connectioninfo}), with the capture status similar to the one displayed by the command line utility. This dialog also displays the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
+
+You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw (0, 0) rectangle (5.5, -2.7);
+\draw[pattern=crosshatch dots] (0, 0) rectangle+(5.5, 0.3);
+\draw[pattern=north east lines] (0.35, -0.35) circle(0.2);
+\draw (0.7, -0.1) rectangle+(3, -0.5) node[midway] {Bandwidth graph};
+\draw (3.8, -0.1) node[anchor=north west] {1.9 Mbps};
+\draw (0.1, -0.6) node[anchor=north west] {Ratio 40.8\% \hspace{5pt} Real: 4.67 Mbps};
+\draw (0.1, -1.1) node[anchor=north west] {Memory usage: 77.57 MB};
+\draw (0.1, -1.6) node[anchor=north west] {FPS: 60 \hspace{5pt} Frame time: 16.7 ms};
+\draw[rounded corners=5pt] (0.1, -2.1) rectangle+(2.2, -0.5) node [midway] {\faSave{}~Save trace};
+\end{tikzpicture}
+\caption{Connection information window.}
+\label{connectioninfo}
+\end{figure}
 
 \subsection{Connection speed}
 

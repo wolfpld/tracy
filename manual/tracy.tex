@@ -407,6 +407,7 @@ Tracy is able to capture and draw numeric value changes over time. You may use i
 Fast navigation in large data sets and correlating zones with what was happening in application may be difficult. To ease these issues Tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the \texttt{TracyMessage(text, size)} macro. Alternatively, use \texttt{TracyMessageL(text)} for string literal messages.
 
 \subsection{Memory profiling}
+\label{memoryprofiling}
 
 Tracy can monitor memory usage of your application. Knowledge about each performed memory allocation enables the following:
 
@@ -787,7 +788,7 @@ Frames from each frame set are displayed directly underneath the time scale. Eac
 \draw (4.3, -0.25) -- +(1, 0);
 \draw (5.3, 0) -- +(0, -0.5);
 \draw[densely dotted] (5.35, 0) -- +(0, -1.5);
-\draw[decorate,decoration={zigzag}] (5.4, -0.25) -- +(1.25, 0);
+\draw[decorate,decoration=zigzag] (5.4, -0.25) -- +(1.25, 0);
 \draw[densely dotted] (6.7, 0) -- +(0, -1.5);
 \draw (6.75, 0) -- +(0, -0.5);
 \draw (6.75, -0.25) -- +(0.5, 0) node[anchor=west] {Frame 347 (5.24 \si{\milli\second})};
@@ -812,9 +813,106 @@ On figure~\ref{framesets} we can see the fully described frames~312 and 347. The
 
 You can also see that there are frame separators, projected down to the rest of the timeline view. Note that only the separators for the currently selected frame set are displayed. See section~\ref{controlmenu} for instructions about changing the frame set.
 
-\section{Practical considerations}
+\paragraph{Zones, locks and plots display}
 
-While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which Tracy tries to calculate and display on the time-line view, as a red zone. Note that this is an approximation of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.
+On this combined view you will find the zones with locks and their associated threads.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw(0, -0.15) -- (0.2, -0.15) -- (0.1, -0.35) -- (0, -0.15);
+\draw(0.25, 0) node[anchor=north west] {Main thread};
+\draw[densely dotted] (0, -0.5) -- +(15, 0);
+
+\draw(1.5, -0.5) rectangle+(5, -0.5) node[midway] {Update};
+\draw(2, -1) rectangle+(0.75, -0.5) node[midway] {6};
+\draw[densely dotted, decorate,decoration=zigzag] (2, -1.25) -- +(0.75, 0 );
+\draw(3, -1) rectangle+(3, -0.5) node[midway] {Physics};
+\draw(3.2, -1.5) rectangle+(0.5, -0.5);
+\draw(4.8, -1.5) rectangle+(0.3, -0.5);
+\draw(5.1, -1.5) rectangle+(0.4, -0.5);
+
+\draw(7.5, -0.5) rectangle+(6.5, -0.5) node[midway] {Render};
+
+\draw(0, -2.5) node[anchor=north west] {Physics lock};
+\draw[pattern=crosshatch dots] (3.1, -2.5) rectangle+(2.5, -0.5);
+
+\draw(0, -3.65) -- (0.2, -3.65) -- (0.1, -3.85) -- (0, -3.65);
+\draw(0.25, -3.5) node[anchor=north west] {Streaming thread};
+\draw[densely dotted] (0, -4) -- +(15, 0);
+
+\draw(0, -4) -- (6, -4) -- (6, -4.5) -- (0, -4.5);
+\draw(5.5, -4) -- (5.4, -3.85) -- (5.6, -3.85) -- (5.5, -4);
+\draw(0, -4) node[anchor=north west] {Streaming job};
+\draw(15, -4) -- (10, -4) -- (10, -4.5) -- (15, -4.5);
+\draw(15, -4) node[anchor=north east] {Streaming job};
+\draw(10.4, -4.5) rectangle+(3, -0.5) node[midway] {Load image};
+\end{tikzpicture}
+\caption{Zones and locks display.}
+\label{zoneslocks}
+\end{figure}
+
+In an example on figure~\ref{zoneslocks} you can see that there are two threads: \emph{Main thread} and \emph{Streaming thread}\footnote{By clicking on a thread name you can temporarily disable display of the zones in this thread.}. We can see that the \emph{Main thread} has two root level zones visible: \emph{Update} and \emph{Render}. The \emph{Update} zone is split into further sub-zones, some of which are too small to be displayed at the current zoom level. This is indicated by drawing a zig-zag pattern over the merged zones box, with the number of collapsed zones printed in place of zone name. We can also see that the \emph{Physics} zone acquires the \emph{Physics lock} mutex for the most of its run time.
+
+Meanwhile the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}), which in addition to being listed in the message log is being indicated by the triangle over the thread separator. When there are multiple messages in one place, the triangle outline changes to a filled triangle.
+
+At high zoom levels, the zones will be displayed with additional markers, as presented on figure~\ref{inaccuracy}. The red regions at the start and end of a zone indicate the cost associated with recording an event (\emph{Queue delay}). The error bars show the timer inaccuracy (\emph{Timer resolution}). Note that these markers are only \emph{approximations}, as there are many factors that can impact the true cost of capturing a zone, for example cache effects, or CPU frequency scaling, which is unaccounted for.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw(0, 0) rectangle+(5, 0.5) node [midway] {Zone};
+\draw[pattern=crosshatch dots] (0, 0) rectangle+(1, 0.5);
+\draw[pattern=crosshatch dots] (5, 0) rectangle+(1, 0.5);
+\draw(-0.5, 0.35) -- (-0.5, 0.15);
+\draw(0.5, 0.35) -- (0.5, 0.15);
+\draw(-0.5, 0.25) -- (0.5, 0.25);
+\draw(4.5, 0.35) -- (4.5, 0.15);
+\draw(5.5, 0.35) -- (5.5, 0.15);
+\draw(4.5, 0.25) -- (5.5, 0.25);
+\draw(0, -0.2) -- (0, -0.3) -- (5, -0.3) -- (5, -0.2);
+\draw(2.5, -0.3) node[anchor=north] {Zone extent};
+\end{tikzpicture}
+\caption{Approximation of timer inaccuracies and zone collection cost.}
+\label{inaccuracy}
+\end{figure}
+
+The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan context in place of a thread name.
+
+Locks are displayed in each thread that tries to acquire them. There are three color-coded kinds of lock event regions that may be displayed. Note that when the timeline view is zoomed out, the contention regions are always displayed over the uncontented ones.
+
+\begin{itemize}
+\item \emph{Green region\footnote{This region type is disabled by default and needs to be enabled in options.}} -- The lock is being held solely by one thread and no other thread tries to access it. In case of shared locks it is possible that multiple threads hold the read lock, but no thread requires a write lock.
+\item \emph{Yellow region} -- The lock is being owned by this thread and some other thread also wants to acquire the lock.
+\item \emph{Red region} -- The thread wants to acquire the lock, but is blocked by other thread, or threads in case of shared lock.
+\end{itemize}
+
+The plots (figure~\ref{plot}) are displayed below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot. The discrete data points are indicated with little rectangles. Multiple data points are indicated by a filled rectangle.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+[dot/.style={rectangle,draw,scale=0.5}];
+\draw(0, -0.15) -- (0.2, -0.15) -- (0.1, -0.35) -- (0, -0.15);
+\draw(0.25, 0) node[anchor=north west] {Queue size (y-range: 463)};
+\draw[densely dotted] (0, -0.5) -- +(15, 0);
+\draw(0, -0.5) node[anchor=north west] {731};
+\draw(0, -3) node[anchor=south west] {268};
+\draw[densely dotted] (0, -3) -- +(15, 0);
+
+\draw(0, -2) -- (1, -2.3) node[dot]{} -- (1.2, -3) node[dot]{} -- (6, -1.2) node[dot]{} -- (7, -0.5) node[dot]{} -- (9, -2) node[dot]{} -- (15, -2.5);
+\end{tikzpicture}
+\caption{Plot display.}
+\label{plot}
+\end{figure}
+
+The left hand side index area of the timeline view can be categorized in the following way:
+
+\begin{itemize}
+\item \emph{Light blue label} -- OpenGL/Vulkan context.
+\item \emph{White label} -- A CPU thread. Will be replaced by a bright red label in a thread that has crashed.
+\item \emph{Light red label} -- Indicates a lock.
+\item \emph{Yellow label} -- Plot.
+\end{itemize}
+
+Note that when memory profiling (section~\ref{memoryprofiling}) is enabled, Tracy will automatically generate a \emph{\faMemory{} Memory usage} plot, which has extended capabilities. Hovering over a data point (memory allocation event) will display duration of the allocation. Clicking \LMB{} on the data point will open the memory allocation information window, which will display the duration of the allocation as long as the window is open.
 
 \newpage
 \appendix

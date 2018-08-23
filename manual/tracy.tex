@@ -19,6 +19,15 @@
 \geometry{a4paper,textwidth=6.5in,hmarginratio=1:1,
   textheight=9in,vmarginratio=1:1,heightrounded}
 
+\usepackage{titlesec}
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
+\titleformat{\paragraph}
+{\normalfont\normalsize\bfseries}{\theparagraph}{1em}{}
+\titlespacing*{\paragraph}
+{0pt}{3.25ex plus 1ex minus .2ex}{1.5ex plus .2ex}
+
 \usepackage{fancyhdr} % Headers and footers
 \pagestyle{fancy} % All pages have headers and footers
 \fancyhead{} % Blank out the default header
@@ -311,6 +320,7 @@ This step is optional, as some applications do not use the concept of a frame.
 To slice the program's execution recording into frame-sized chunks\footnote{Each frame starts immediately after the previous has ended.}, put the \texttt{FrameMark} macro after you have completed rendering the frame. Ideally that would be right after the swap buffers command.
 
 \subsubsection{Secondary frame sets}
+\label{secondaryframeset}
 
 In some cases you may want to track more than one set of frames in your program. To do so, you may use the \texttt{FrameMarkNamed(name)} macro, which will create a new set of frames for each unique name you provide.
 
@@ -617,6 +627,8 @@ You have instrumented your application and you have captured a profiling trace. 
 
 The workflow is identical, whether you are viewing a previously saved trace, or if you're performing a live capture, as described in section~\ref{interactiveprofiling}.
 
+Note that loading a saved trace will display a progress window.
+
 \subsection{Main profiler window}
 
 The main profiler window is split into three sections, as seen on figure~\ref{mainwindow}: the control menu, the frame time graph and the timeline display.
@@ -647,6 +659,7 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 \end{figure}
 
 \subsubsection{Control menu}
+\label{controlmenu}
 
 The control menu (top row of buttons) provides access to various features of the profiler. The buttons perform the following actions:
 
@@ -724,7 +737,7 @@ The frames visible on the timeline are marked with a violet box drawn over them 
 
 Moving the \faMousePointer{} mouse cursor over the frames displayed on the graph will display tooltip with information about frame number, frame time, etc. Such tooltips are common for many UI elements in the profiler and won't be mentioned later in the manual.
 
-The timeline view may be focused on the frames, by clicking or dragging the \LMB{} left mouse button on the graph. The graph may be scrolled left and right by dragging the \RMB{} right mouse button over the graph. The view may be zoomed in and out by using the \Scroll{} mouse scroll. If the view is zoomed out, so that multiple frames are merged into one column, the highest frame time will be used to represent the given column.
+The timeline view may be focused on the frames, by clicking or dragging the \LMB{} left mouse button\footnote{Further in the manual only the mouse button icons will be used.} on the graph. The graph may be scrolled left and right by dragging the \RMB{} right mouse button over the graph. The view may be zoomed in and out by using the \Scroll{} mouse scroll. If the view is zoomed out, so that multiple frames are merged into one column, the highest frame time will be used to represent the given column.
 
 \subsubsection{Timeline view}
 
@@ -761,6 +774,43 @@ The time scale is a quick aid in determining the relation between screen space a
 \end{figure}
 
 The leftmost value on the scale represents the time at which the timeline starts. The rest of numbers label the notches on the scale, with some numbers omitted, if there's no space to display them.
+
+\paragraph{Frame sets}
+
+Frames from each frame set are displayed directly underneath the time scale. Each frame set occupies a separate row.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw[densely dotted] (-0.05, 0) -- +(0, -1.5);
+\draw (0, 0) -- +(0, -0.5);
+\draw (0, -0.25) -- +(1, 0) node[anchor=west] {Frame 312 (6.99 \si{\milli\second})};
+\draw (4.3, -0.25) -- +(1, 0);
+\draw (5.3, 0) -- +(0, -0.5);
+\draw[densely dotted] (5.35, 0) -- +(0, -1.5);
+\draw[decorate,decoration={zigzag}] (5.4, -0.25) -- +(1.25, 0);
+\draw[densely dotted] (6.7, 0) -- +(0, -1.5);
+\draw (6.75, 0) -- +(0, -0.5);
+\draw (6.75, -0.25) -- +(0.5, 0) node[anchor=west] {Frame 347 (5.24 \si{\milli\second})};
+\draw (10.5, -0.25) -- +(0.5, 0);
+\draw (11, 0) -- +(0, -0.5);
+\draw[densely dotted] (11.05, 0) -- +(0, -1.5);
+\draw (11.1, 0) -- +(0, -0.5);
+\draw (11.1, -0.25) -- +(0.5, 0) node[anchor=west] {1.63 \si{\milli\second}};
+\draw (13, -0.25) -- +(0.5, 0);
+\draw (13.5, 0) -- +(0, -0.5);
+\draw[densely dotted] (13.55, 0) -- +(0, -1.5);
+\draw (13.6, 0) -- +(0, -0.5);
+\draw (13.6, -0.25) -- +(0.5, 0);
+\draw (14.1, 0) -- +(0, -0.5);
+\draw[densely dotted] (14.15, 0) -- +(0, -1.5);
+\end{tikzpicture}
+\caption{Frames on the timeline.}
+\label{framesets}
+\end{figure}
+
+On figure~\ref{framesets} we can see the fully described frames~312 and 347. The description consists of the frame name, which is \emph{Frame} for the default frame set (section~\ref{markingframes}) or the name you used for the secondary name set (section~\ref{secondaryframeset}), the frame number and the frame time. The frame~348 is too small to be fully displayed, so only the frame time is shown. The frame~349 is even smaller, with no space for any text. Moreover, frames~313~to~346 are too small to be displayed individually, so they are replaced with a zig-zag pattern.
+
+You can also see that there are frame separators, projected down to the rest of the timeline view. Note that only the separators for the currently selected frame set are displayed. See section~\ref{controlmenu} for instructions about changing the frame set.
 
 \section{Practical considerations}
 

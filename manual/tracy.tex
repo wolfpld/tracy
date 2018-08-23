@@ -914,6 +914,16 @@ The left hand side index area of the timeline view can be categorized in the fol
 
 Note that when memory profiling (section~\ref{memoryprofiling}) is enabled, Tracy will automatically generate a \emph{\faMemory{} Memory usage} plot, which has extended capabilities. Hovering over a data point (memory allocation event) will display duration of the allocation. Clicking \LMB{} on the data point will open the memory allocation information window, which will display the duration of the allocation as long as the window is open.
 
+\subsubsection{Navigating the view}
+
+Hovering the \faMousePointer{} over the timeline view will display a vertical line that can be used to visually line-up events in multiple threads. Dragging the \LMB{} will display time measurement of the selected region.
+
+The timeline view may be scrolled both vertically and horizontally by dragging \RMB. Note that only the zones, locks and plots scroll vertically, while the time scale and frame sets always stay in place.
+
+You can zoom in and out the timeline view by using \Scroll. You can select a range to which you want to zoom by dragging the \MMB{} middle mouse button. Dragging the \MMB{} while the \emph{control} key is pressed will zoom-out.
+
+Hovering the \faMousePointer{} over a zone will highlight with a white outline all other zones that have the same source location. Clicking \LMB{} on a zone will open zone information window. Clicking \MMB{} on a zone, of a frame will zoom the view to the extent of the zone or the frame.
+
 \newpage
 \appendix
 \appendixpage

@@ -50,6 +50,11 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes,patterns}
 
+\newcommand{\LMB}{\includegraphics[height=.8\baselineskip]{icons/lmb}}
+\newcommand{\RMB}{\includegraphics[height=.8\baselineskip]{icons/rmb}}
+\newcommand{\MMB}{\includegraphics[height=.8\baselineskip]{icons/mmb}}
+\newcommand{\Scroll}{\includegraphics[height=.8\baselineskip]{icons/scroll}}
+
 \begin{document}
 
 \begin{titlepage}
@@ -663,7 +668,63 @@ The rest of the control menu displays useful data, such as the \emph{time span} 
 
 \subsubsection{Frame time graph}
 
+The graph of currently selected frame set (figure~\ref{frametime}) provides an outlook on the time spent in each frame, allowing you to see where the problematic frames are and to quickly navigate to them.
 
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw (0, 0) rectangle (10, 1);
+
+\draw[pattern=north east lines] (0.1, 0.1) rectangle+(0.2, 0.2);
+\draw[pattern=north east lines] (0.4, 0.1) rectangle+(0.2, 0.21);
+\draw[pattern=north east lines] (0.7, 0.1) rectangle+(0.2, 0.18);
+\draw[pattern=north east lines] (1, 0.1) rectangle+(0.2, 0.22);
+\draw[pattern=north east lines] (1.3, 0.1) rectangle+(0.2, 0.7);
+\draw[pattern=north east lines] (1.6, 0.1) rectangle+(0.2, 0.2);
+\draw[pattern=north east lines] (1.9, 0.1) rectangle+(0.2, 0.31);
+\draw[pattern=north east lines] (2.2, 0.1) rectangle+(0.2, 0.12);
+\draw[pattern=north east lines] (2.5, 0.1) rectangle+(0.2, 0.2);
+\draw[pattern=north east lines] (2.8, 0.1) rectangle+(0.2, 0.2);
+\draw[pattern=north east lines] (3.1, 0.1) rectangle+(0.2, 0.25);
+\draw[pattern=north east lines] (3.4, 0.1) rectangle+(0.2, 0.19);
+\draw[pattern=north east lines] (3.7, 0.1) rectangle+(0.2, 0.23);
+\draw[pattern=north east lines] (4, 0.1) rectangle+(0.2, 0.19);
+\draw[pattern=north east lines] (4.3, 0.1) rectangle+(0.2, 0.2);
+\draw[pattern=north east lines] (4.6, 0.1) rectangle+(0.2, 0.16);
+\draw[pattern=north east lines] (4.9, 0.1) rectangle+(0.2, 0.21);
+\draw[pattern=north east lines] (5.2, 0.1) rectangle+(0.2, 0.2);
+\draw[pattern=north east lines] (5.5, 0.1) rectangle+(0.2, 0.8);
+\draw[pattern=north east lines] (5.8, 0.1) rectangle+(0.2, 0.1);
+\draw[pattern=north east lines] (6.1, 0.1) rectangle+(0.2, 0.21);
+\draw[pattern=north east lines] (6.4, 0.1) rectangle+(0.2, 0.2);
+\draw[pattern=north east lines] (6.7, 0.1) rectangle+(0.2, 0.2);
+\draw[pattern=north east lines] (7, 0.1) rectangle+(0.2, 0.28);
+\draw[pattern=north east lines] (7.3, 0.1) rectangle+(0.2, 0.22);
+\draw[pattern=north east lines] (7.6, 0.1) rectangle+(0.2, 0.16);
+\draw[pattern=north east lines] (7.9, 0.1) rectangle+(0.2, 0.2);
+\draw[pattern=north east lines] (8.2, 0.1) rectangle+(0.2, 0.21);
+\draw[pattern=north east lines] (8.5, 0.1) rectangle+(0.2, 0.18);
+\draw[pattern=north east lines] (8.8, 0.1) rectangle+(0.2, 0.2);
+
+\draw[pattern=dots] (2.15, 0) rectangle+(1.2, 1);
+\end{tikzpicture}
+\caption{Frame time graph.}
+\label{frametime}
+\end{figure}
+
+Each bar displayed on the graph represents an unique frame in the current frame set\footnote{Unless the view is zoomed out and multiple frames are merged into one column.}. The progress of time is in the right direction. The height of the bar indicates the time spent in frame, complemented with the color information:
+
+\begin{itemize}
+\item If the bar is \emph{blue}, then the frame met the \emph{best} time of 143 FPS, or 6.99 \si{\milli\second}\footnote{The actual target is 144 FPS, but one frame leeway is allowed to account for timing inaccuracies.}.
+\item If the bar is \emph{green}, then the frame met the \emph{good} time of 59 FPS, or 16.94 \si{\milli\second}.
+\item If the bar is \emph{yellow}, then the frame met the \emph{bad} time of 29 FPS, or 34.48 \si{\milli\second}.
+\item If the bar is \emph{red}, then the frame didn't met any time limits.
+\end{itemize}
+
+The frames visible on the timeline are marked with a violet box drawn over them (presented as a dotted box on figure~\ref{frametime}).
+
+Moving the \faMousePointer{} mouse cursor over the frames displayed on the graph will display tooltip with information about frame number, frame time, etc. Such tooltips are common for many UI elements in the profiler and won't be mentioned later in the manual.
+
+The timeline view may be focused on the frames, by clicking or dragging the \LMB{} left mouse button on the graph. The graph may be scrolled left and right by dragging the \RMB{} right mouse button over the graph. The view may be zoomed in and out by using the \Scroll{} mouse scroll. If the view is zoomed out, so that multiple frames are merged into one column, the highest frame time will be used to represent the given column.
 
 \subsubsection{Timeline view}
 

@@ -387,6 +387,7 @@ Similarly, you can use \texttt{TracySharedLockable}, \texttt{TracySharedLockable
 Tracy is able to capture and draw numeric value changes over time. You may use it to analyze draw call counts, number of performed queries, etc. To report data, use the \texttt{TracyPlot(name, value)} macro.
 
 \subsection{Message log}
+\label{messagelog}
 
 Fast navigation in large data sets and correlating zones with what was happening in application may be difficult. To ease these issues Tracy provides a message log functionality. You can send messages (for example, your typical debug output) using the \texttt{TracyMessage(text, size)} macro. Alternatively, use \texttt{TracyMessageL(text)} for string literal messages.
 
@@ -611,7 +612,9 @@ You have instrumented your application and you have captured a profiling trace. 
 
 The workflow is identical, whether you are viewing a previously saved trace, or if you're performing a live capture, as described in section~\ref{interactiveprofiling}.
 
-The main profiler window is split into three sections, as seen on figure~\ref{mainwindow}: the control menu, the frame time graph and the time line display.
+\subsection{Main profiler window}
+
+The main profiler window is split into three sections, as seen on figure~\ref{mainwindow}: the control menu, the frame time graph and the timeline display.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -629,14 +632,40 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 \draw (0.6, -0.7) node[anchor=north west] {Frames: 364};
 \draw[rounded corners=5pt] (2.8, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretRight};
 \draw[rounded corners=5pt] (3.3, -0.7) rectangle+(0.5, -0.5) node [midway] {\faCaretDown};
-\draw (3.9, -0.7) node[anchor=north west] {Time span: 6.06 s \hspace{5pt} View span: 52.7 ms \hspace{5pt} Zones: 456,092};
+\draw (3.9, -0.7) node[anchor=north west] {Time span: 6.06 s \hspace{5pt} View span: 52.7 ms \hspace{5pt} Zones: 456,092 \hspace{5pt} \ldots};
 
 \draw (0.1, -1.3) rectangle+(14.8, -1) node [midway] {Frame time graph};
-\draw (0.1, -2.4) rectangle+(14.8, -3) node [midway] {Time line};
+\draw (0.1, -2.4) rectangle+(14.8, -3) node [midway] {Timeline view};
 \end{tikzpicture}
 \caption{Main profiler window. Note that the top line of buttons has been split into two rows in this manual.}
 \label{mainwindow}
 \end{figure}
+
+\subsubsection{Control menu}
+
+The control menu (top row of buttons) provides access to various features of the profiler. The buttons perform the following actions:
+
+\begin{itemize}
+\item \emph{\faPowerOff{} Close} -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by a pair of \emph{\faPause{} Pause} and \emph{\faPlay{} Resume} buttons.
+\item \emph{\faPause{} Pause} -- While a live capture is in progress, the profiler will display the last three fully captured frames, so that you can see the current behavior of the program. Use this button\footnote{Or perform any action on the timeline view.} to stop the automatic updates of the timeline view (the capture will be still progressing).
+\item \emph{\faPlay{} Resume} -- Use this button to resume following the most recent three frames in a live capture.
+\item \emph{\faTags{} Messages} -- Opens the message log window, which displays custom messages sent by the client, as described in section~\ref{messagelog}.
+\item \emph{\faSearch{} Find zone} -- This buttons opens the find zone window, which allows inspection of zone behavior statistics.
+\item \emph{\faSortAmountUp{} Statistics} -- Opens the statistics window, which displays zones sorted by their total time cost.
+\item \emph{\faMemory{} Memory} -- Various memory profiling options may be accessed here.
+\item \emph{\faBalanceScale{} Compare} -- Opens the trace compare window, which allows you to see the performance difference between two profiling runs.
+\item \emph{\faFingerprint{} Info} -- Show general information about the trace.
+\end{itemize}
+
+The frame information blocks consists of four elements: the current frame set name along with the number of captured frames, the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to a another frame set. For more information about marking frames, see section~\ref{markingframes}.
+
+The rest of the control menu displays useful data, such as the \emph{time span} of the capture, the timeline \emph{view span}, number of captured zones, etc.
+
+\subsubsection{Frame time graph}
+
+
+
+\subsubsection{Timeline view}
 
 \section{Practical considerations}
 

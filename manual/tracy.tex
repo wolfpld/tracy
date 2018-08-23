@@ -728,6 +728,40 @@ The timeline view may be focused on the frames, by clicking or dragging the \LMB
 
 \subsubsection{Timeline view}
 
+The timeline is the most important element of the profiler UI. All the captured data is displayed there, laid out on the horizontal axis, according to the flow of time. The view is split into three parts: the time scale, the frame sets and the combined zones, locks and plots display.
+
+\paragraph{Time scale}
+
+The time scale is a quick aid in determining the relation between screen space and the time it represents (figure~\ref{timescale}).
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\foreach \x in {0,1,2,...,10} {
+\draw (\x+0, 0) -- +(0, -0.4);
+\draw (\x+0.1, 0) -- +(0, -0.2);
+\draw (\x+0.2, 0) -- +(0, -0.2);
+\draw (\x+0.3, 0) -- +(0, -0.2);
+\draw (\x+0.4, 0) -- +(0, -0.2);
+\draw (\x+0.5, 0) -- +(0, -0.3);
+\draw (\x+0.6, 0) -- +(0, -0.2);
+\draw (\x+0.7, 0) -- +(0, -0.2);
+\draw (\x+0.8, 0) -- +(0, -0.2);
+\draw (\x+0.9, 0) -- +(0, -0.2); }
+\draw (11, 0) -- +(0, -0.4);
+
+\draw (-0.2, -0.4) node[anchor=north west] {+13.76 s};
+\draw (1.85, -0.4) node[anchor=north west] {20 \si{\micro\second}};
+\draw (3.85, -0.4) node[anchor=north west] {40 \si{\micro\second}};
+\draw (5.85, -0.4) node[anchor=north west] {60 \si{\micro\second}};
+\draw (7.85, -0.4) node[anchor=north west] {80 \si{\micro\second}};
+\draw (9.85, -0.4) node[anchor=north west] {100 \si{\micro\second}};
+\end{tikzpicture}
+\caption{Time scale.}
+\label{timescale}
+\end{figure}
+
+The leftmost value on the scale represents the time at which the timeline starts. The rest of numbers label the notches on the scale, with some numbers omitted, if there's no space to display them.
+
 \section{Practical considerations}
 
 While the data collection is very lightweight, it is not completely free. Each recorded zone event has a cost, which Tracy tries to calculate and display on the time-line view, as a red zone. Note that this is an approximation of the real cost, which ignores many important factors. For example, you can't determine the impact of cache effects. The CPU frequency may be reduced in some situations, which will increase the recorded time, but the displayed profiler cost will not compensate for that.

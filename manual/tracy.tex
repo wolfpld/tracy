@@ -342,12 +342,13 @@ logo=\bcbombe
 \end{bclogo}
 
 \subsection{Marking zones}
+\label{markingzones}
 
 To record a zone's\footnote{A \texttt{zone} represents the life-time of a special on-stack profiler variable. Typically it would exist for the duration of a whole scope of the profiled function, but you also can measure time spent in scopes of a for-loop, or an if-branch.} execution time add the \texttt{ZoneScoped} macro at the beginning of the scope you want to measure. This will automatically record function name, source file name and location. Optionally you may use the \texttt{ZoneScopedC(0xRRGGBB)} macro to set a custom color for the zone. Note that the color value will be constant in the recording (don't try to parametrize it). You may also set a custom name for the zone, using the \texttt{ZoneScopedN(name)} macro. Color and name may be combined by using the \texttt{ZoneScopedNC(name, color)} macro.
 
 Use the \texttt{ZoneText(text, size)} macro to add a custom text string that will be displayed along the zone information (for example, name of the file you are opening).
 
-If you want to set zone name on a per-call basis, you may do so using the \texttt{ZoneName(text, size)} macro. This name won't be used in the process of grouping the zones for statistical purposes.
+If you want to set zone name on a per-call basis, you may do so using the \texttt{ZoneName(text, size)} macro. This name won't be used in the process of grouping the zones for statistical purposes (sections~\ref{statistics} and~\ref{findzone}).
 
 \begin{bclogo}[
 noborder=true,
@@ -441,10 +442,11 @@ Lua instrumentation needs to perform additional work (including memory allocatio
 Even if Tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the \texttt{tracy::LuaRemove(char* script)} function, which will replace instrumentation calls with white-space. This function does nothing if profiler is enabled.
 
 \subsection{GPU profiling}
+\label{gpuprofiling}
 
 Tracy provides bindings for profiling OpenGL and Vulkan execution time on GPU.
 
-Note that the CPU and GPU timers may be not synchronized. You can correct the resulting desynchronization in the profiler's options.
+Note that the CPU and GPU timers may be not synchronized. You can correct the resulting desynchronization in the profiler's options (section~\ref{options}).
 
 \subsubsection{OpenGL}
 
@@ -494,6 +496,7 @@ To solve this problem, in case of OpenGL use the \texttt{TracyGpuNamedZone} macr
 Remember that you need to provide your own name for the created stack variable as the first parameter to the macros.
 
 \subsection{Collecting call stacks}
+\label{collectingcallstacks}
 
 Tracy can capture true calls stacks on selected platforms (Windows, Linux, Android). It can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named variants.
 
@@ -668,12 +671,12 @@ The control menu (top row of buttons) provides access to various features of the
 \item \emph{\faPowerOff{} Close} -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by a pair of \emph{\faPause{} Pause} and \emph{\faPlay{} Resume} buttons.
 \item \emph{\faPause{} Pause} -- While a live capture is in progress, the profiler will display the last three fully captured frames, so that you can see the current behavior of the program. Use this button\footnote{Or perform any action on the timeline view.} to stop the automatic updates of the timeline view (the capture will be still progressing).
 \item \emph{\faPlay{} Resume} -- Use this button to resume following the most recent three frames in a live capture.
-\item \emph{\faCog{} Options} -- Opens the settings menu.
-\item \emph{\faTags{} Messages} -- Opens the message log window, which displays custom messages sent by the client, as described in section~\ref{messagelog}.
-\item \emph{\faSearch{} Find zone} -- This buttons opens the find zone window, which allows inspection of zone behavior statistics.
-\item \emph{\faSortAmountUp{} Statistics} -- Opens the statistics window, which displays zones sorted by their total time cost.
+\item \emph{\faCog{} Options} -- Opens the settings menu (section~\ref{options}).
+\item \emph{\faTags{} Messages} -- Opens the message log window (section~\ref{messages}), which displays custom messages sent by the client, as described in section~\ref{messagelog}.
+\item \emph{\faSearch{} Find zone} -- This buttons opens the find zone window, which allows inspection of zone behavior statistics (section~\ref{findzone}).
+\item \emph{\faSortAmountUp{} Statistics} -- Opens the statistics window, which displays zones sorted by their total time cost (section~\ref{statistics}).
 \item \emph{\faMemory{} Memory} -- Various memory profiling options may be accessed here.
-\item \emph{\faBalanceScale{} Compare} -- Opens the trace compare window, which allows you to see the performance difference between two profiling runs.
+\item \emph{\faBalanceScale{} Compare} -- Opens the trace compare window, which allows you to see the performance difference between two profiling runs (section~\ref{compare}).
 \item \emph{\faFingerprint{} Info} -- Show general information about the trace.
 \end{itemize}
 
@@ -815,6 +818,7 @@ On figure~\ref{framesets} we can see the fully described frames~312 and 347. The
 You can also see that there are frame separators, projected down to the rest of the timeline view. Note that only the separators for the currently selected frame set are displayed. See section~\ref{controlmenu} for instructions about changing the frame set.
 
 \paragraph{Zones, locks and plots display}
+\label{zoneslocksplots}
 
 On this combined view you will find the zones with locks and their associated threads.
 
@@ -881,7 +885,7 @@ The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan context i
 Locks are displayed in each thread that tries to acquire them. There are three color-coded kinds of lock event regions that may be displayed. Note that when the timeline view is zoomed out, the contention regions are always displayed over the uncontented ones.
 
 \begin{itemize}
-\item \emph{Green region\footnote{This region type is disabled by default and needs to be enabled in options.}} -- The lock is being held solely by one thread and no other thread tries to access it. In case of shared locks it is possible that multiple threads hold the read lock, but no thread requires a write lock.
+\item \emph{Green region\footnote{This region type is disabled by default and needs to be enabled in options (section~\ref{options}).}} -- The lock is being held solely by one thread and no other thread tries to access it. In case of shared locks it is possible that multiple threads hold the read lock, but no thread requires a write lock.
 \item \emph{Yellow region} -- The lock is being owned by this thread and some other thread also wants to acquire the lock.
 \item \emph{Red region} -- The thread wants to acquire the lock, but is blocked by other thread, or threads in case of shared lock.
 \end{itemize}
@@ -924,6 +928,155 @@ The timeline view may be scrolled both vertically and horizontally by dragging t
 You can zoom in and out the timeline view by using the \Scroll{} mouse scroll. You can select a range to which you want to zoom-in by dragging the \MMB{} middle mouse button. Dragging the \MMB{} middle mouse button while the \emph{control} key is pressed will zoom-out.
 
 Hovering the \faMousePointer{} mouse pointer over a zone will highlight all other zones that have the same source location with a white outline. Clicking the \LMB{} left mouse button on a zone will open zone information window. Clicking the \MMB{} middle mouse button on a zone, of a frame will zoom the view to the extent of the zone or the frame.
+
+\subsection{Options menu}
+\label{options}
+
+In this window you can set various trace-related options. The timeline view might sometimes become overcrowded, in which case disabling display of some profiling events can increase readability.
+
+\begin{itemize}
+\item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets (see section~\ref{gpuprofiling} for more information).
+\item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed. The \emph{Namespaces} drop-down controls the display behavior of long zone names:
+\begin{itemize}
+\item \emph{Full} -- Zone names are always fully displayed (e.g.\ \texttt{std::sort}).
+\item \emph{Shortened} -- If there's no space for full zone name, the namespaces will be shortened to one letter (e.g.\ \texttt{s::sort}).
+\item \emph{None} -- If there's no space for full zone name, the namespaces will be omitted (e.g.\ \texttt{sort}).
+\end{itemize}
+\item \emph{\faLock{} Draw locks} -- Controls the display of locks. If the \emph{Only contended} option is selected, the non-blocking regions of locks won't be displayed (see section~\ref{zoneslocksplots}). The \emph{Locks} drop-down allows disabling display of locks on a per-lock basis.
+\item \emph{\faSignature{} Draw plots} -- Allows disabling display of plots. Individual plots can be disabled in the \emph{Plots} drop-down.
+\item \emph{\faRandom{} Visible threads} -- Here you can disable display of selected threads.
+\item \emph{\faImages{} Visible frame sets} -- Frame set display can be enabled or disabled here. Note that disabled frame sets are still available for selection in the frame set selection drop-down (section~\ref{controlmenu}), but are marked with a dimmed font.
+\end{itemize}
+
+Disabling display of some events is especially recommended when the profiler performance drops below acceptable levels for interactive usage.
+
+\subsection{Messages window}
+\label{messages}
+
+In this window you can see all the messages that were sent by the client application, as described in section~\ref{messagelog}. The window is split into three columns: \emph{time}, \emph{thread} and \emph{message}. Hovering the \faMousePointer{} mouse cursor over a message will highlight it on the timeline view. Clicking the \LMB{} left mouse button on a message will center the timeline view on the selected message.
+
+Message list can be filtered by the originating thread in the \emph{\faRandom{} Visible threads} drop-down.
+
+\subsection{Statistics window}
+\label{statistics}
+
+Looking at the timeline view gives you a very localized outlook on things. Sometimes you want to look at the general overview of the program's behavior, for example you want to know which function takes the most of application's execution time. The statistics window provides you exactly that information.
+
+Here you will find a multi-column display of captured zones, which contains: the zone \emph{name} and \emph{location}, \emph{total time} spent in the zone, the \emph{count} of zone executions and the \emph{mean time spent in the zone per call}. The view may be sorted according to the three displayed values.
+
+By default the displayed times are inclusive, that is, they contain execution times of zone's children. If you want to view just the time spent in zone, you can enable the exclusive mode by selecting the \emph{\faClock{} Show self times} option.
+
+Clicking the \LMB{} left mouse button on a zone will open the individual zone statistics view in the find zone window (section~\ref{findzone}).
+
+\subsection{Find zone window}
+\label{findzone}
+
+The individual behavior of zones may be influenced by many factors, like CPU cache effects, access times amortized by the disk cache, thread context switching, etc. Sometimes the execution time depends on the internal data structures and their response to different inputs. In other words, it is hard to determine the true performance characteristics by looking at any single zone.
+
+Tracy gives you the ability to display an execution time histogram of all occurrences of a zone. On this view you can see how the function behaves in general, ignoring the outliers. You can inspect how various data inputs influence the execution time and you can filter the data to eventually drill down to the individual zone calls, so that you can see the environment in which they were called.
+
+You start by entering a search query, which will be matched against known zone names (see section~\ref{markingzones} for information on the grouping of zone names). If the search found some results, you will be presented with a list of zones in the \emph{matched source locations} drop-down. The selected zone's graph is displayed on the \emph{histogram} drop-down.
+
+An example histogram is presented on figure~\ref{findzonehistogram}. Here you can see that the majority of zone calls (by count) are clustered in the 300~\si{\nano\second} group, closely followed by the 10~\si{\micro\second} cluster. There are some outliers at the 1~and~10~\si{\milli\second} marks, which can be ignored on most occasions, as these are single occurrences.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw(0, 0) rectangle+(10, 3);
+\foreach \x in {0,2,4,6,8} {
+\draw (\x+0, -0.1) -- +(0, -0.2);
+\draw (\x+0.6, -0.1) -- +(0, -0.1);
+\draw (\x+0.96, -0.1) -- +(0, -0.1);
+\draw (\x+1.2, -0.1) -- +(0, -0.1);
+\draw (\x+1.4, -0.1) -- +(0, -0.1);
+\draw (\x+1.56, -0.1) -- +(0, -0.1);
+\draw (\x+1.68, -0.1) -- +(0, -0.1);
+\draw (\x+1.8, -0.1) -- +(0, -0.1);
+\draw (\x+1.9, -0.1) -- +(0, -0.1); }
+\draw (10, -0.1) -- +(0, -0.2);
+
+\draw (-0.2, -0.3) node[anchor=north west] {100 \si{\nano\second}};
+\draw (1.8, -0.3) node[anchor=north west] {1 \si{\micro\second}};
+\draw (3.8, -0.3) node[anchor=north west] {10 \si{\micro\second}};
+\draw (5.8, -0.3) node[anchor=north west] {100 \si{\micro\second}};
+\draw (7.8, -0.3) node[anchor=north west] {1 \si{\milli\second}};
+\draw (9.8, -0.3) node[anchor=north west] {10 \si{\milli\second}};
+
+\draw[pattern=north east lines] (0,0) -- (0.5, 0.3) -- (1, 2.95) -- (1.4, 0.6) -- (2, 0.15) -- (3, 0.2) -- (3.7, 0.5) -- (4, 2.1) -- (4.3, 0.7) -- (5, 0.2) -- (6, 0);
+\draw[pattern=north east lines] (7.8,0) -- (8, 0.15) -- (8.2, 0);
+\draw[pattern=north east lines] (9.8,0) -- (9.9, 0.1) -- (10, 0);
+\end{tikzpicture}
+\caption{Zone execution time histogram.}
+\label{findzonehistogram}
+\end{figure}
+
+The histogram is accompanied by various data statistics about displayed data, for example the \emph{total time} of the displayed samples, or the \emph{maximum number of counts} in histogram bins. There are three options that control how the data is presented:
+
+\begin{itemize}
+\item \emph{Log values} -- Switches between linear and logarithmic scale on the y~axis of the graph, representing the call counts\footnote{Or time, if the \emph{cumulate time} option is enabled.}.
+\item \emph{Log time} -- Switches between linear and logarithmic scale on the x~axis of the graph, representing the time bins.
+\item \emph{Cumulate time} -- Changes how the histogram bin values are calculated. By default the vertical bars on the graph represent the \emph{call counts} of zones that fit in the given time bin. If this option is enabled, the bars represent the \emph{time spent} in the zones. For example, on graph presented on figure~\ref{findzonehistogram} the 10~\si{\micro\second} cluster is the dominating one, if we look at the time spent in zone, even if the 300~\si{\nano\second} cluster has greater number of call counts.
+\end{itemize}
+
+You can drag the \LMB{} left mouse button over the histogram to select a time range that you want to closely look at. This will display the data in the histogram info section and it will also filter zones displayed in the \emph{found zones} section. This is quite useful, if you want to actually look at the outliers, i.e.\ where did they originate from, what the program was doing at the moment, etc\footnote{More often than not you will find out, that the application was just starting, or an access to a cold file was required and there's not much you can do to optimize that particular case.}. You can reset the selection range by pressing the \RMB{} right mouse button on the histogram.
+
+The \emph{found zones} section displays the individual zones grouped according to the following criteria:
+
+\begin{itemize}
+\item \emph{Thread} -- In this mode you can see which threads were executing the zone.
+\item \emph{User text} -- Splits the zones according to the custom user text (see section~\ref{markingzones}).
+\item \emph{Call stacks} -- Zones are grouped by the originating call stack (see section~\ref{collectingcallstacks}).
+\end{itemize}
+
+Each group may be sorted according to the \emph{order} in which it appeared, the call \emph{count}, or the total \emph{time} spent in the group. Expanding the group view will display individual occurrences of the zone, sorted by application's time. Clicking the \LMB{} left mouse button on a zone will open the zone information window. Clicking the \MMB{} middle mouse button on a zone will zoom the timeline view to the zone's extent.
+
+Clicking the \LMB{} left mouse button on group name will highlight the group time data on the histogram (figure~\ref{findzonehistogramgroup}). This function provides a quick insight about the impact of the originating thread, or input data on the zone performance. Clicking the \RMB{} right mouse button on the group names area will reset the group selection.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw(0, 0) rectangle+(10, 3);
+\foreach \x in {0,2,4,6,8} {
+\draw (\x+0, -0.1) -- +(0, -0.2);
+\draw (\x+0.6, -0.1) -- +(0, -0.1);
+\draw (\x+0.96, -0.1) -- +(0, -0.1);
+\draw (\x+1.2, -0.1) -- +(0, -0.1);
+\draw (\x+1.4, -0.1) -- +(0, -0.1);
+\draw (\x+1.56, -0.1) -- +(0, -0.1);
+\draw (\x+1.68, -0.1) -- +(0, -0.1);
+\draw (\x+1.8, -0.1) -- +(0, -0.1);
+\draw (\x+1.9, -0.1) -- +(0, -0.1); }
+\draw (10, -0.1) -- +(0, -0.2);
+
+\draw (-0.2, -0.3) node[anchor=north west] {100 \si{\nano\second}};
+\draw (1.8, -0.3) node[anchor=north west] {1 \si{\micro\second}};
+\draw (3.8, -0.3) node[anchor=north west] {10 \si{\micro\second}};
+\draw (5.8, -0.3) node[anchor=north west] {100 \si{\micro\second}};
+\draw (7.8, -0.3) node[anchor=north west] {1 \si{\milli\second}};
+\draw (9.8, -0.3) node[anchor=north west] {10 \si{\milli\second}};
+
+\draw[pattern=north east lines] (0,0) -- (0.5, 0.3) -- (1, 2.95) -- (1.4, 0.6) -- (2, 0.15) -- (3, 0.2) -- (3.7, 0.5) -- (4, 2.1) -- (4.3, 0.7) -- (5, 0.2) -- (6, 0);
+\draw[pattern=north east lines] (7.8,0) -- (8, 0.15) -- (8.2, 0);
+\draw[pattern=north east lines] (9.8,0) -- (9.9, 0.1) -- (10, 0);
+
+\draw[pattern=north west lines] (3.2, 0) -- (3.75, 0.3) -- (3.95, 1.4) -- (4.2, 0);
+\end{tikzpicture}
+\caption{Zone execution time histogram with a group highlighted.}
+\label{findzonehistogramgroup}
+\end{figure}
+
+\subsection{Compare traces window}
+\label{compare}
+
+Comparing the performance impact of the optimization work is not an easy thing to do. Benchmarking is often inconclusive, if even possible, in case of interactive applications, where the benchmarked function might not have a visible impact on frame render time. Doing isolated micro-benchmarks loses the execution environment of the application, in which many different functions compete for limited system resources.
+
+Tracy solves this problem by providing a compare traces functionality, very similar to the find zone window, described in section~\ref{findzone}.
+
+You would begin your work by recording a reference trace that represents an usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Having the optimized trace open you select the \emph{\faFolderOpen{}~Open second trace} option in the compare traces window and load the reference trace.
+
+Now things start to get familiar. You search for a zone, similarly like in the find zone window, choose the one you want in the \emph{matched source locations} drop-down, and then you look at the histogram. This time there are two overlaid graphs, one representing the current trace, and the second one representing the external (reference) trace. You can easily see how the performance characteristics of the zone was affected by your modifications.
+
+Note that the traces are color and symbol coded. The current trace is marked by a yellow \faLemon{} symbol, and the external one is marked by a red \faGem{} symbol.
+
+It may be difficult, if not impossible, to perform identical runs of a program. This means that the number of collected zones may differ in both traces, which would influence the displayed results. To fix this problem enable the \emph{Normalize values} option, which will adjust the displayed results as-if both traces had the same number of recorded zones.
 
 \newpage
 \appendix

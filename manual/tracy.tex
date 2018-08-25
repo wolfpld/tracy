@@ -282,6 +282,7 @@ Remember to set thread names for proper identification of threads. You should us
 Be aware that even if you already have thread naming functionality implemented, some platforms\footnote{Basically everything, but the recent Windows releases.} do not have adequate system-level capabilities (or none at all), in which case Tracy uses its own internal thread name storage.
 
 \subsection{Crash handling}
+\label{crashhandling}
 
 On selected platforms\footnote{Windows, Linux.} Tracy will intercept application crashes\footnote{For example, invalid memory accesses ('segmentation faults', 'null pointer exceptions'), divisions by zero, etc.}. This serves two purposes. First, the client application will be able to send the remaining profiling data to the server. Second, the server will receive a crash report with information about the crash reason, call stack at the time of crash, etc.
 
@@ -677,7 +678,7 @@ The control menu (top row of buttons) provides access to various features of the
 \item \emph{\faSortAmountUp{} Statistics} -- Opens the statistics window, which displays zones sorted by their total time cost (section~\ref{statistics}).
 \item \emph{\faMemory{} Memory} -- Various memory profiling options may be accessed here (section~\ref{memorywindow}).
 \item \emph{\faBalanceScale{} Compare} -- Opens the trace compare window, which allows you to see the performance difference between two profiling runs (section~\ref{compare}).
-\item \emph{\faFingerprint{} Info} -- Show general information about the trace.
+\item \emph{\faFingerprint{} Info} -- Show general information about the trace (section~\ref{traceinfo}).
 \end{itemize}
 
 The frame information blocks consists of four elements: the current frame set name along with the number of captured frames, the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to a another frame set. For more information about marking frames, see section~\ref{markingframes}.
@@ -1116,6 +1117,15 @@ Some function names may be too long to be properly displayed, with the events co
 \subsubsection{Looking back at the memory history}
 
 By default the memory window displays the memory data at the current point of program execution. It is however possible to view the historical data by enabling the \emph{\faHistory{}~Restrict time} option. This will draw a vertical violet line on the timeline view, which will act as a terminator for memory events. The memory window will use only the events lying on the left side of the terminator line (in the past), ignoring everything that's on the right side.
+
+\subsection{Trace information window}
+\label{traceinfo}
+
+This window contains various bits of information about profiler and the current trace. For example, you can see the profiler memory usage, the number of captured zones, lock event, plot points, memory allocations, etc.
+
+In this window you can also view the information about the machine on which the profiled application was running. This includes the operating system, the used compiler, CPU name, amount of total available RAM, etc.
+
+Here you will also be able to see the tombstone generated during an application's crash (section~\ref{crashhandling}). It provides you with information about the thread that has crashed, the crash reason and the crash call stack.
 
 \newpage
 \appendix

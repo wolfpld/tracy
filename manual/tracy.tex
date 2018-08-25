@@ -1094,7 +1094,7 @@ The lists of captured memory allocations are displayed in a common multi-column 
 
 The allocation's timing data is contained in two columns: \emph{appeared at} and \emph{duration}. Clicking the \LMB{}~left mouse button on the first one will center the timeline view at the beginning of allocation, and likewise, clicking on the second one will center the timeline view at the end of allocation. Note that allocations that have not yet been freed will have their duration displayed in green color.
 
-The memory event location in the code is displayed in the last four columns. The \emph{thread} column contains the thread where the allocation was made and freed (if applicable), or an \emph{alloc / free} pair of threads, if it was allocated in one thread and freed in another. The \emph{zone alloc} contains the zone in which the allocation was performed\footnote{The actual allocation is typically a couple functions deeper in the call stack.}, or \texttt{-} if there was no active zone in the given thread at the time of allocation. Clicking on the zone name will open the zone information window (section~\ref{zoneinfo}). Similarly, the \emph{zone free} column displays the zone which freed the allocation, which may be colored yellow, if it is the same exact zone that did the allocation. Alternatively, if the zone has not yet been freed, a green \emph{active} text is displayed. The last column contains the \emph{alloc} and \emph{free} call stack buttons, or their placeholders, if no call stack is available (see section~\ref{collectingcallstacks} for more information). Clicking on either of the buttons will open the call stack window (section~\ref{callstackwindow}). Note that the call stack buttons that match the information window will be highlighted.
+The memory event location in the code is displayed in the last four columns. The \emph{thread} column contains the thread where the allocation was made and freed (if applicable), or an \emph{alloc / free} pair of threads, if it was allocated in one thread and freed in another. The \emph{zone alloc} contains the zone in which the allocation was performed\footnote{The actual allocation is typically a couple functions deeper in the call stack.}, or \texttt{-} if there was no active zone in the given thread at the time of allocation. Clicking the \LMB{}~left mouse button on the zone name will open the zone information window (section~\ref{zoneinfo}). Similarly, the \emph{zone free} column displays the zone which freed the allocation, which may be colored yellow, if it is the same exact zone that did the allocation. Alternatively, if the zone has not yet been freed, a green \emph{active} text is displayed. The last column contains the \emph{alloc} and \emph{free} call stack buttons, or their placeholders, if no call stack is available (see section~\ref{collectingcallstacks} for more information). Clicking on either of the buttons will open the call stack window (section~\ref{callstackwindow}). Note that the call stack buttons that match the information window will be highlighted.
 
 The memory window is split into the following sections:
 
@@ -1116,7 +1116,7 @@ This view may be helpful in assessing the general memory behavior of the applica
 
 The \emph{\faAlignJustify{} Call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
 
-Each tree node consists of three elements: the function name, the source file location and the memory allocation data. Clicking the \RMB{} right mouse button on the source file location will open the source file view window (if applicable). The memory allocation data is either yellow \emph{inclusive} events count (including all the children), or the cyan \emph{exclusive} events count. There are two values that are counted: total memory size and number of allocations.
+Each tree node consists of three elements: the function name, the source file location and the memory allocation data. Clicking the \RMB{} right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}). The memory allocation data is either yellow \emph{inclusive} events count (including all the children), or the cyan \emph{exclusive} events count. There are two values that are counted: total memory size and number of allocations.
 
 Some function names may be too long to be properly displayed, with the events count data at the end. In such cases, you may press the \emph{control} button, which will display events count tooltip.
 
@@ -1142,7 +1142,7 @@ The zone information window displays detailed information about a single zone. T
 \item Basic source location information: function name, source file location and the thread name.
 \item Timing information.
 \item Memory events list, both summarized and a list of individual allocation/free events (see section~\ref{memorywindow} for more information on the memory events list).
-\item Zone trace, taking into account the zone tree and call stack information (section~\ref{collectingcallstacks}), trying to reconstruct a combined zone + call stack trace\footnote{Reconstruction is only possible, if all zones have full call stack capture data available. In case where that's not available, an \emph{unknown frames} entry will be present.}. Captured zones are displayed as normal text, while functions that were not instrumented are dimmed. Hovering the \faMousePointer{}~mouse pointer over a zone will highlight it on the timeline view with a red outline. Clicking the \LMB{}~left mouse button on a zone will switch the zone info window to that zone. Clicking the \MMB{}~middle mouse button on a zone will zoom the timeline view to the zone's extent. Clicking the \RMB{}~right mouse button on a source file location will open the source file view window (if applicable).
+\item Zone trace, taking into account the zone tree and call stack information (section~\ref{collectingcallstacks}), trying to reconstruct a combined zone + call stack trace\footnote{Reconstruction is only possible, if all zones have full call stack capture data available. In case where that's not available, an \emph{unknown frames} entry will be present.}. Captured zones are displayed as normal text, while functions that were not instrumented are dimmed. Hovering the \faMousePointer{}~mouse pointer over a zone will highlight it on the timeline view with a red outline. Clicking the \LMB{}~left mouse button on a zone will switch the zone info window to that zone. Clicking the \MMB{}~middle mouse button on a zone will zoom the timeline view to the zone's extent. Clicking the \RMB{}~right mouse button on a source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 \item Child zones list, showing how the current zone's execution time was used. All the controls from the zone trace are also available here.
 \end{itemize}
 
@@ -1153,16 +1153,34 @@ The zone information window has the following controls available:
 \item \emph{\faArrowUp{} Go to parent} -- Switches the zone information window to display current zone's parent zone (if available).
 \item \emph{\faChartBar{} Statistics} -- Displays the zone general performance characteristics in the find zone window (section~\ref{findzone}).
 \item \emph{\faAlignJustify{} Call stack} -- Views the current zone's call stack in the call stack window (section~\ref{callstackwindow}). The button will be highlighted, if the call stack window shows the zone's call stack. Only available if zone had captured call stack data (section~\ref{collectingcallstacks}).
-\item \emph{\faFile*{} Source} -- Display source file view window with the zone source code (only available if applicable).
+\item \emph{\faFile*{} Source} -- Display source file view window with the zone source code (only available if applicable, see section~\ref{sourceview}).
 \item \emph{\faArrowLeft{} Go back} -- Returns to the previously viewed zone. The viewing history is lost when the zone information window is closed, or when the type of displayed zone changes (from CPU to GPU or vice versa).
 \end{itemize}
 
 \subsection{Call stack window}
 \label{callstackwindow}
 
-This window shows the frames contained in the selected call stack. Each frame is described by the function name and source file location. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable).
+This window shows the frames contained in the selected call stack. Each frame is described by the function name and source file location. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
 Sometimes it may be more useful to have just the function address, instead of the source file location\footnote{It can pinpoint the exact assembly instruction which caused the crash.}. This can be achieved by selecting the \emph{\faAt{}~Show frame addresses} option.
+
+\subsection{Source file view window}
+\label{sourceview}
+
+In this window you can view the source code of the profiled application, to take a quick glance at the context of the function behavior you are analyzing.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Source file view works on the local files you have on your disk. The traces themselves do not contain any source code! This has the following implications:
+
+\begin{itemize}
+\item The source files can only be viewed, if the source file location recorded in the trace matches the files you have on your disk.
+\item \textbf{The displayed source files might not reflect the code that was profiled!} It is up to you to verify that you don't have a modified version of the code, with regards to the trace.
+\end{itemize}
+\end{bclogo}
 
 \newpage
 \appendix

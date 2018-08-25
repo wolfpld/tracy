@@ -821,7 +821,7 @@ You can also see that there are frame separators, projected down to the rest of 
 \paragraph{Zones, locks and plots display}
 \label{zoneslocksplots}
 
-On this combined view you will find the zones with locks and their associated threads.
+On this combined view you will find the zones with locks and their associated threads. The plots are graphed right below.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -857,6 +857,17 @@ On this combined view you will find the zones with locks and their associated th
 \label{zoneslocks}
 \end{figure}
 
+The left hand side index area of the timeline view displays various labels (threads, locks), which can be categorized in the following way:
+
+\begin{itemize}
+\item \emph{Light blue label} -- OpenGL/Vulkan context.
+\item \emph{White label} -- A CPU thread. Will be replaced by a bright red label in a thread that has crashed.
+\item \emph{Light red label} -- Indicates a lock.
+\item \emph{Yellow label} -- Plot.
+\end{itemize}
+
+\subparagraph{Zones}
+
 In an example on figure~\ref{zoneslocks} you can see that there are two threads: \emph{Main thread} and \emph{Streaming thread}\footnote{By clicking on a thread name you can temporarily disable display of the zones in this thread.}. We can see that the \emph{Main thread} has two root level zones visible: \emph{Update} and \emph{Render}. The \emph{Update} zone is split into further sub-zones, some of which are too small to be displayed at the current zoom level. This is indicated by drawing a zig-zag pattern over the merged zones box, with the number of collapsed zones printed in place of zone name. We can also see that the \emph{Physics} zone acquires the \emph{Physics lock} mutex for the most of its run time.
 
 Meanwhile the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}), which in addition to being listed in the message log is being indicated by the triangle over the thread separator. When there are multiple messages in one place, the triangle outline changes to a filled triangle.
@@ -883,7 +894,9 @@ At high zoom levels, the zones will be displayed with additional markers, as pre
 
 The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan context in place of a thread name.
 
-Locks are displayed in each thread that tries to acquire them. There are three color-coded kinds of lock event regions that may be displayed. Note that when the timeline view is zoomed out, the contention regions are always displayed over the uncontented ones.
+\subparagraph{Locks}
+
+Mutual exclusion zones are displayed in each thread that tries to acquire them. There are three color-coded kinds of lock event regions that may be displayed. Note that when the timeline view is zoomed out, the contention regions are always displayed over the uncontented ones.
 
 \begin{itemize}
 \item \emph{Green region\footnote{This region type is disabled by default and needs to be enabled in options (section~\ref{options}).}} -- The lock is being held solely by one thread and no other thread tries to access it. In case of shared locks it is possible that multiple threads hold the read lock, but no thread requires a write lock.
@@ -891,7 +904,9 @@ Locks are displayed in each thread that tries to acquire them. There are three c
 \item \emph{Red region} -- The thread wants to acquire the lock, but is blocked by other thread, or threads in case of shared lock.
 \end{itemize}
 
-The plots (figure~\ref{plot}) are displayed below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot. The discrete data points are indicated with little rectangles. Multiple data points are indicated by a filled rectangle.
+\subparagraph{Plots}
+
+The numerical data values (figure~\ref{plot}) are plotted right below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot. The discrete data points are indicated with little rectangles. Multiple data points are indicated by a filled rectangle.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -908,15 +923,6 @@ The plots (figure~\ref{plot}) are displayed below the zones and locks. Note that
 \caption{Plot display.}
 \label{plot}
 \end{figure}
-
-The left hand side index area of the timeline view can be categorized in the following way:
-
-\begin{itemize}
-\item \emph{Light blue label} -- OpenGL/Vulkan context.
-\item \emph{White label} -- A CPU thread. Will be replaced by a bright red label in a thread that has crashed.
-\item \emph{Light red label} -- Indicates a lock.
-\item \emph{Yellow label} -- Plot.
-\end{itemize}
 
 Note that when memory profiling (section~\ref{memoryprofiling}) is enabled, Tracy will automatically generate a \emph{\faMemory{} Memory usage} plot, which has extended capabilities. Hovering over a data point (memory allocation event) will display duration of the allocation. Clicking the \LMB{} left mouse button on the data point will open the memory allocation information window, which will display the duration of the allocation as long as the window is open.
 

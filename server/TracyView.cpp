@@ -6856,8 +6856,6 @@ void View::DrawMemory()
             }
             else
             {
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( match.size(), true ) );
                 ListMemData<decltype( match.begin() )>( match.begin(), match.end(), [this]( auto& it ) {
                     auto& v = *it;
                     if( v->ptr == m_memInfo.ptrFind )

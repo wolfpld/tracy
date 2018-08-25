@@ -675,7 +675,7 @@ The control menu (top row of buttons) provides access to various features of the
 \item \emph{\faTags{} Messages} -- Opens the message log window (section~\ref{messages}), which displays custom messages sent by the client, as described in section~\ref{messagelog}.
 \item \emph{\faSearch{} Find zone} -- This buttons opens the find zone window, which allows inspection of zone behavior statistics (section~\ref{findzone}).
 \item \emph{\faSortAmountUp{} Statistics} -- Opens the statistics window, which displays zones sorted by their total time cost (section~\ref{statistics}).
-\item \emph{\faMemory{} Memory} -- Various memory profiling options may be accessed here.
+\item \emph{\faMemory{} Memory} -- Various memory profiling options may be accessed here (section~\ref{memorywindow}).
 \item \emph{\faBalanceScale{} Compare} -- Opens the trace compare window, which allows you to see the performance difference between two profiling runs (section~\ref{compare}).
 \item \emph{\faFingerprint{} Info} -- Show general information about the trace.
 \end{itemize}
@@ -1077,6 +1077,45 @@ Now things start to get familiar. You search for a zone, similarly like in the f
 Note that the traces are color and symbol coded. The current trace is marked by a yellow \faLemon{} symbol, and the external one is marked by a red \faGem{} symbol.
 
 It may be difficult, if not impossible, to perform identical runs of a program. This means that the number of collected zones may differ in both traces, which would influence the displayed results. To fix this problem enable the \emph{Normalize values} option, which will adjust the displayed results as-if both traces had the same number of recorded zones.
+
+\subsection{Memory window}
+\label{memorywindow}
+
+The data gathered by profiling memory usage (section~\ref{memoryprofiling}) can be viewed in the memory window. The top row contains statistics, such as \emph{total allocations} count, number of \emph{active allocations}, current \emph{memory usage} and process \emph{memory span}\footnote{Memory span describes the address space consumed by the program. It is calculated as a difference between the maximum and minimum observed in-use memory address.}.
+
+The lists of captured memory allocations are displayed in a common multi-column format thorough the profiler. The first column specifies the memory address of an allocation, or an address and an offset, if the address is not at the start of the allocation. Clicking the \LMB{} left mouse button on an address will open the memory allocation information window\footnote{While the allocation information window is opened, the address will be highlighted on the list.}. The next column contains the allocation size.
+
+The allocation's timing data is contained in two columns: \emph{appeared at} and \emph{duration}. Clicking the \LMB{}~left mouse button on the first one will center the timeline view at the beginning of allocation, and likewise, clicking on the second one will center the timeline view at the end of allocation. Note that allocations that have not yet been freed will have their duration displayed in green color.
+
+The memory event location in the code is displayed in the last four columns. The \emph{thread} column contains the thread where the allocation was made and freed (if applicable), or an \emph{alloc / free} pair of threads, if it was allocated in one thread and freed in another. The \emph{zone alloc} contains the zone in which the allocation was performed\footnote{The actual allocation is typically a couple functions deeper in the call stack.}, or \texttt{-} if there was no active zone in the given thread at the time of allocation. Clicking on the zone name will open the zone information window. Similarly, the \emph{zone free} column displays the zone which freed the allocation, which may be colored yellow, if it is the same exact zone that did the allocation. Alternatively, if the zone has not yet been freed, a green \emph{active} text is displayed. The last column contains the \emph{alloc} and \emph{free} call stack buttons, or their placeholders, if no call stack is available (see section~\ref{collectingcallstacks} for more information). Clicking on either of the buttons will open the call stack information window. Note that the call stack buttons that match the information window will be highlighted.
+
+The memory window is split into the following sections:
+
+\subsubsection{Allocations}
+
+The \emph{\faAt{} Allocations} pane allows you to search for the specified address usage during the whole life-time of the program. All recorded memory allocations that match the query will be displayed on a list.
+
+\subsubsection{Active allocations}
+
+The \emph{\faHeartbeat{} Active allocations} pane displays a list of currently active memory allocations and their total memory usage. Here you can see where exactly your program did allocate memory it is currently using. If the application has already exited, this becomes a list of leaked memory.
+
+\subsubsection{Memory map}
+
+On the \emph{\faMap{} Memory map} pane you can see the graphical representation of your program's address space. Active allocations are displayed as green lines, while the freed memory is marked as red lines. The brightness of the color indicates how much time has passed since the last memory event at the given location -- the most recent events are the most vibrant.
+
+This view may be helpful in assessing the general memory behavior of the application, or in debugging the problems resulting from address space fragmentation.
+
+\subsubsection{Call stack tree}
+
+The \emph{\faAlignJustify{} Call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pin-pointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
+
+Each tree node consists of three elements: the function name, the source file location and the memory allocation data. Clicking the \RMB{} right mouse button on the source file location will open the source file view window. The memory allocation data is either yellow \emph{inclusive} events count (including all the children), or the cyan \emph{exclusive} events count. There are two values that are counted: total memory size and number of allocations.
+
+Some function names may be too long to be properly displayed, with the events count data at the end. In such cases, you may press the \emph{control} button, which will display events count tooltip.
+
+\subsubsection{Looking back at the memory history}
+
+By default the memory window displays the memory data at the current point of program execution. It is however possible to view the historical data by enabling the \emph{\faHistory{}~Restrict time} option. This will draw a vertical violet line on the timeline view, which will act as a terminator for memory events. The memory window will use only the events lying on the left side of the terminator line (in the past), ignoring everything that's on the right side.
 
 \newpage
 \appendix

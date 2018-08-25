@@ -6779,28 +6779,6 @@ void View::DrawMemory()
         MemSizeToString( mem.usage ),
         MemSizeToString( mem.high - mem.low ) );
 
-    ImGui::InputText( "", m_memInfo.pattern, 1024 );
-    ImGui::SameLine();
-
-#ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SEARCH " Find" ) )
-#else
-    if( ImGui::Button( "Find" ) )
-#endif
-    {
-        m_memInfo.ptrFind = strtoull( m_memInfo.pattern, nullptr, 0 );
-    }
-    ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_BAN " Clear" ) )
-#else
-    if( ImGui::Button( "Clear" ) )
-#endif
-    {
-        m_memInfo.ptrFind = 0;
-        m_memInfo.pattern[0] = '\0';
-    }
-    ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
     ImGui::Checkbox( ICON_FA_HISTORY " Restrict time", &m_memInfo.restrictTime );
 #else
@@ -6820,11 +6798,33 @@ void View::DrawMemory()
 
     ImGui::Separator();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::TreeNodeEx( ICON_FA_AT " Allocations", ImGuiTreeNodeFlags_DefaultOpen ) )
+    if( ImGui::TreeNode( ICON_FA_AT " Allocations" ) )
 #else
-    if( ImGui::TreeNodeEx( "Allocations", ImGuiTreeNodeFlags_DefaultOpen ) )
+    if( ImGui::TreeNode( "Allocations" ) )
 #endif
     {
+        ImGui::InputText( "###address", m_memInfo.pattern, 1024 );
+        ImGui::SameLine();
+
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_SEARCH " Find" ) )
+#else
+        if( ImGui::Button( "Find" ) )
+#endif
+        {
+            m_memInfo.ptrFind = strtoull( m_memInfo.pattern, nullptr, 0 );
+        }
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_BAN " Clear" ) )
+#else
+        if( ImGui::Button( "Clear" ) )
+#endif
+        {
+            m_memInfo.ptrFind = 0;
+            m_memInfo.pattern[0] = '\0';
+        }
+
         if( m_memInfo.ptrFind != 0 )
         {
             std::vector<const MemEvent*> match;

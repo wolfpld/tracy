@@ -1094,7 +1094,7 @@ The lists of captured memory allocations are displayed in a common multi-column 
 
 The allocation's timing data is contained in two columns: \emph{appeared at} and \emph{duration}. Clicking the \LMB{}~left mouse button on the first one will center the timeline view at the beginning of allocation, and likewise, clicking on the second one will center the timeline view at the end of allocation. Note that allocations that have not yet been freed will have their duration displayed in green color.
 
-The memory event location in the code is displayed in the last four columns. The \emph{thread} column contains the thread where the allocation was made and freed (if applicable), or an \emph{alloc / free} pair of threads, if it was allocated in one thread and freed in another. The \emph{zone alloc} contains the zone in which the allocation was performed\footnote{The actual allocation is typically a couple functions deeper in the call stack.}, or \texttt{-} if there was no active zone in the given thread at the time of allocation. Clicking on the zone name will open the zone information window (section~\ref{zoneinfo}). Similarly, the \emph{zone free} column displays the zone which freed the allocation, which may be colored yellow, if it is the same exact zone that did the allocation. Alternatively, if the zone has not yet been freed, a green \emph{active} text is displayed. The last column contains the \emph{alloc} and \emph{free} call stack buttons, or their placeholders, if no call stack is available (see section~\ref{collectingcallstacks} for more information). Clicking on either of the buttons will open the call stack information window. Note that the call stack buttons that match the information window will be highlighted.
+The memory event location in the code is displayed in the last four columns. The \emph{thread} column contains the thread where the allocation was made and freed (if applicable), or an \emph{alloc / free} pair of threads, if it was allocated in one thread and freed in another. The \emph{zone alloc} contains the zone in which the allocation was performed\footnote{The actual allocation is typically a couple functions deeper in the call stack.}, or \texttt{-} if there was no active zone in the given thread at the time of allocation. Clicking on the zone name will open the zone information window (section~\ref{zoneinfo}). Similarly, the \emph{zone free} column displays the zone which freed the allocation, which may be colored yellow, if it is the same exact zone that did the allocation. Alternatively, if the zone has not yet been freed, a green \emph{active} text is displayed. The last column contains the \emph{alloc} and \emph{free} call stack buttons, or their placeholders, if no call stack is available (see section~\ref{collectingcallstacks} for more information). Clicking on either of the buttons will open the call stack window (section~\ref{callstackwindow}). Note that the call stack buttons that match the information window will be highlighted.
 
 The memory window is split into the following sections:
 
@@ -1114,7 +1114,7 @@ This view may be helpful in assessing the general memory behavior of the applica
 
 \subsubsection{Call stack tree}
 
-The \emph{\faAlignJustify{} Call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pin-pointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
+The \emph{\faAlignJustify{} Call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
 
 Each tree node consists of three elements: the function name, the source file location and the memory allocation data. Clicking the \RMB{} right mouse button on the source file location will open the source file view window (if applicable). The memory allocation data is either yellow \emph{inclusive} events count (including all the children), or the cyan \emph{exclusive} events count. There are two values that are counted: total memory size and number of allocations.
 
@@ -1131,7 +1131,7 @@ This window contains various bits of information about profiler and the current 
 
 In this window you can also view the information about the machine on which the profiled application was running. This includes the operating system, the used compiler, CPU name, amount of total available RAM, etc.
 
-Here you will also be able to see the tombstone generated during an application's crash (section~\ref{crashhandling}). It provides you with information about the thread that has crashed, the crash reason and the crash call stack.
+Here you will also be able to see the tombstone generated during an application's crash (section~\ref{crashhandling}). It provides you with information about the thread that has crashed, the crash reason and the crash call stack (section~\ref{callstackwindow}).
 
 \subsection{Zone information window}
 \label{zoneinfo}
@@ -1152,10 +1152,17 @@ The zone information window has the following controls available:
 \item \emph{\faMicroscope{} Zoom to zone} -- Zooms the timeline view to the zone's extent.
 \item \emph{\faArrowUp{} Go to parent} -- Switches the zone information window to display current zone's parent zone (if available).
 \item \emph{\faChartBar{} Statistics} -- Displays the zone general performance characteristics in the find zone window (section~\ref{findzone}).
-\item \emph{\faAlignJustify{} Call stack} -- Views the current zone's call stack in the call stack window. The button will be highlighted, if the call stack window shows the zone's call stack. Only available if zone had captured call stack data (section~\ref{collectingcallstacks}).
+\item \emph{\faAlignJustify{} Call stack} -- Views the current zone's call stack in the call stack window (section~\ref{callstackwindow}). The button will be highlighted, if the call stack window shows the zone's call stack. Only available if zone had captured call stack data (section~\ref{collectingcallstacks}).
 \item \emph{\faFile*{} Source} -- Display source file view window with the zone source code (only available if applicable).
 \item \emph{\faArrowLeft{} Go back} -- Returns to the previously viewed zone. The viewing history is lost when the zone information window is closed, or when the type of displayed zone changes (from CPU to GPU or vice versa).
 \end{itemize}
+
+\subsection{Call stack window}
+\label{callstackwindow}
+
+This window shows the frames contained in the selected call stack. Each frame is described by the function name and source file location. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable).
+
+Sometimes it may be more useful to have just the function address, instead of the source file location\footnote{It can pinpoint the exact assembly instruction which caused the crash.}. This can be achieved by selecting the \emph{\faAt{}~Show frame addresses} option.
 
 \newpage
 \appendix

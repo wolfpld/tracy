@@ -2,6 +2,7 @@
 #define __TRACYFILEWRITE_HPP__
 
 #include <algorithm>
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -16,10 +17,17 @@ namespace tracy
 class FileWrite
 {
 public:
-    static FileWrite* Open( const char* fn, bool hc = false )
+    enum class Compression
+    {
+        Fast,
+        Slow,
+        Extreme
+    };
+
+    static FileWrite* Open( const char* fn, Compression comp = Compression::Fast )
     {
         auto f = fopen( fn, "wb" );
-        return f ? new FileWrite( f, hc ) : nullptr;
+        return f ? new FileWrite( f, comp ) : nullptr;
     }
 
     ~FileWrite()
@@ -47,7 +55,7 @@ public:
     }
 
 private:
-    FileWrite( FILE* f, bool hc )
+    FileWrite( FILE* f, Compression comp )
         : m_stream( nullptr )
         , m_streamHC( nullptr )
         , m_file( f )
@@ -55,13 +63,21 @@ private:
         , m_second( m_bufData[1] )
         , m_offset( 0 )
     {
-        if( hc )
+        switch( comp )
         {
-            m_streamHC = LZ4_createStreamHC();
-        }
-        else
-        {
+        case Compression::Fast:
             m_stream = LZ4_createStream();
+            break;
+        case Compression::Slow:
+            m_streamHC = LZ4_createStreamHC();
+            break;
+        case Compression::Extreme:
+            m_streamHC = LZ4_createStreamHC();
+            LZ4_resetStreamHC( m_streamHC, LZ4HC_CLEVEL_OPT_MIN );
+            break;
+        default:
+            assert( false );
+            break;
         }
 
         fwrite( Lz4Header, 1, sizeof( Lz4Header ), m_file );

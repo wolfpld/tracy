@@ -52,7 +52,7 @@ int main( int argc, char** argv )
     {
         tracy::Worker worker( *f );
 
-        auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, hc ) );
+        auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, hc ? tracy::FileWrite::Compression::Slow : tracy::FileWrite::Compression::Fast ) );
         if( !w )
         {
             fprintf( stderr, "Cannot open output file!\n" );

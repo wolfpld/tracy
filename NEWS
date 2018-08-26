@@ -12,6 +12,9 @@ v0.4 (xxxx-xx-xx)
 - Renamed "standalone" utility to "profiler".
 - Added trace update utility, which will convert files saved in previous
   versions of tracy to be up-to-date.
+  - Optional high compression (--hc) mode is available that will increase
+    the compression level, at the cost of considerably longer compression
+    time.
 - Fix regression causing varying size of profiler window for different
   captures.
 - Added support for on-demand tracing.

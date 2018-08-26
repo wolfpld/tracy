@@ -625,6 +625,10 @@ old.tracy (0.3.0) -> new.tracy (0.4.0)
 
 The new file contains the same data as the old one, but in the updated internal representation. Note that to perform an upgrade, whole trace needs to be loaded to memory.
 
+\subsubsection{Archival mode}
+
+The update utility supports optional higher level of data compression, enabled by passing the \texttt{-{}-hc} parameter. It can reduce the trace size by \numrange{15}{20}\%, at a considerable time cost ($\sim17\times$~increase of compression time).
+
 \section{Analyzing captured data}
 \label{analyzingdata}
 

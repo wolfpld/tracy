@@ -81,6 +81,9 @@
     <ClCompile Include="..\..\src\winmainArchDiscovery.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -229,6 +232,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\IconsFontAwesome5.h">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp">
+      <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

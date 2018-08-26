@@ -30,6 +30,9 @@
     <ClCompile Include="..\..\src\update.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -90,6 +93,9 @@
       <Filter>common</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\common\tracy_sema.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp">
       <Filter>common</Filter>
     </ClInclude>
   </ItemGroup>

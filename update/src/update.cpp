@@ -13,7 +13,8 @@
 
 void Usage()
 {
-    printf( "Usage: update input.tracy output.tracy\n" );
+    printf( "Usage: update [--hc] input.tracy output.tracy\n\n" );
+    printf( "  --hc: enable LZ4HC compression\n" );
     exit( 1 );
 }
 
@@ -27,7 +28,15 @@ int main( int argc, char** argv )
     }
 #endif
 
-    if( argc != 3 ) Usage();
+    bool hc = false;
+
+    if( argc != 3 && argc != 4 ) Usage();
+    if( argc == 4 )
+    {
+        if( strcmp( argv[1], "--hc" ) != 0 ) Usage();
+        hc = true;
+        argv++;
+    }
 
     const char* input = argv[1];
     const char* output = argv[2];
@@ -43,7 +52,7 @@ int main( int argc, char** argv )
     {
         tracy::Worker worker( *f );
 
-        auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );
+        auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, hc ) );
         if( !w )
         {
             fprintf( stderr, "Cannot open output file!\n" );

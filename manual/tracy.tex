@@ -629,6 +629,8 @@ The new file contains the same data as the old one, but in the updated internal 
 
 The update utility supports optional higher level of data compression, enabled by passing the \texttt{-{}-hc} parameter. It can reduce the trace size by \numrange{15}{20}\%, at a considerable time cost ($\sim17\times$~increase of compression time).
 
+Note that trace files (even the ones created in high compression mode) are optimized for fast decompression. You still will be able to squeeze the data using normal compression methods. For example, 7-zip can compress traces to about 25\% of their uncompressed\footnote{Compressed internally.} size.
+
 \section{Analyzing captured data}
 \label{analyzingdata}
 

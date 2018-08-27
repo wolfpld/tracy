@@ -2468,6 +2468,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 {
     const auto time = TscTime( ev.time );
+    NoticeThread( ev.thread );
 
     assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
     assert( m_data.memory.data.empty() || m_data.memory.data.back().timeAlloc <= time );
@@ -2504,14 +2505,15 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 
 bool Worker::ProcessMemFree( const QueueMemFree& ev )
 {
-    const auto time = TscTime( ev.time );
-
     auto it = m_data.memory.active.find( ev.ptr );
     if( it == m_data.memory.active.end() )
     {
         assert( m_onDemand );
         return false;
     }
+
+    const auto time = TscTime( ev.time );
+    NoticeThread( ev.thread );
 
     m_data.memory.frees.push_back( it->second );
     auto& mem = m_data.memory.data[it->second];

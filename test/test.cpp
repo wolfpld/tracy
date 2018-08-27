@@ -220,6 +220,11 @@ void CallstackTime()
     }
 }
 
+void OnlyMemory()
+{
+    new int;
+}
+
 int main()
 {
     auto t1 = std::thread( TestFunction );
@@ -241,6 +246,7 @@ int main()
     auto t17 = std::thread( SharedWrite1 );
     auto t18 = std::thread( SharedWrite2 );
     auto t19 = std::thread( CallstackTime );
+    auto t20 = std::thread( OnlyMemory );
 
     tracy::SetThreadName( t1, "First thread" );
     tracy::SetThreadName( t2, "Second thread" );
@@ -261,6 +267,7 @@ int main()
     tracy::SetThreadName( t17, "Shared write 1" );
     tracy::SetThreadName( t18, "Shared write 2" );
     tracy::SetThreadName( t19, "Callstack time" );
+    tracy::SetThreadName( t20, "Only memory" );
 
     for(;;)
     {

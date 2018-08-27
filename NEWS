@@ -105,6 +105,7 @@ v0.4 (xxxx-xx-xx)
   - Currently this is only implemented on Windows, Linux and Android.
 - Call stack window may now display addresses of the frames, instead of
   source file locations.
+- Memory events will now properly register their thread.
 
 
 v0.3.3 (2018-07-03)

@@ -102,7 +102,7 @@ v0.4 (xxxx-xx-xx)
   processor, a message dialog with workaround instructions will be
   displayed.
 - Tracy can intercept crashes and finish sending data from a dying process.
-  - Currently this is only implemented on Windows and Linux.
+  - Currently this is only implemented on Windows, Linux and Android.
 - Call stack window may now display addresses of the frames, instead of
   source file locations.
 

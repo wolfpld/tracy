@@ -559,12 +559,16 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
         case SEGV_ACCERR:
             strcpy( msgPtr, "Invalid permissions for mapped object.\n" );
             break;
+#  ifdef SEGV_BNDERR
         case SEGV_BNDERR:
             strcpy( msgPtr, "Failed address bound checks.\n" );
             break;
+#  endif
+#  ifdef SEGV_PKUERR
         case SEGV_PKUERR:
             strcpy( msgPtr, "Access was denied by memory protection keys.\n" );
             break;
+#  endif
         default:
             break;
         }

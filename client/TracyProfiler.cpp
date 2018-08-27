@@ -256,7 +256,19 @@ static const char* GetHostInfo()
     char user[LOGIN_NAME_MAX];
 
     gethostname( hostname, HOST_NAME_MAX );
+#  if defined __ANDROID__
+    const auto login = getlogin();
+    if( login )
+    {
+        strcpy( user, login );
+    }
+    else
+    {
+        memcpy( user, "(?)", 4 );
+    }
+#  else
     getlogin_r( user, LOGIN_NAME_MAX );
+#  endif
 
     ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
 #endif

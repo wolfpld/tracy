@@ -177,6 +177,8 @@ public:
 
     const std::string& GetAddr() const { return m_addr; }
     const std::string& GetCaptureName() const { return m_captureName; }
+    const std::string& GetCaptureProgram() const { return m_captureProgram; }
+    uint64_t GetCaptureTime() const { return m_captureTime; }
     const std::string& GetHostInfo() const { return m_hostInfo; }
     int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }
@@ -379,6 +381,8 @@ private:
     int64_t m_resolution;
     double m_timerMul;
     std::string m_captureName;
+    std::string m_captureProgram;
+    uint64_t m_captureTime;
     std::string m_hostInfo;
     bool m_terminate;
     bool m_crashed;

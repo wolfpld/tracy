@@ -278,6 +278,38 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_captureName = std::string( tmp, tmp+sz );
     }
 
+    if( fileVer >= FileVersion( 0, 3, 205 ) )
+    {
+        f.Read( sz );
+        assert( sz < 1024 );
+        char tmp[1024];
+        f.Read( tmp, sz );
+        m_captureProgram = std::string( tmp, tmp+sz );
+
+        f.Read( m_captureTime );
+    }
+    else
+    {
+        const auto sz = m_captureName.size();
+        char tmp[1024];
+        memcpy( tmp, m_captureName.c_str(), sz );
+        tmp[sz] = '\0';
+        auto ptr = tmp + sz - 1;
+        while( *ptr != '@' )
+        {
+            if( *ptr == '#' ) *ptr = '\0';
+            ptr--;
+        }
+
+        m_captureProgram = std::string( tmp, ptr-1 );
+
+        tm epoch = {};
+        sscanf( ptr+1, "%d-%d-%d %d:%d:%d", &epoch.tm_year, &epoch.tm_mon, &epoch.tm_mday, &epoch.tm_hour, &epoch.tm_min, &epoch.tm_sec );
+        epoch.tm_year -= 1900;
+        epoch.tm_mon--;
+        m_captureTime = (uint64_t)mktime( &epoch );
+    }
+
     if( fileVer >= FileVersion( 0, 3, 203 ) )
     {
         f.Read( sz );
@@ -1244,6 +1276,8 @@ void Worker::Exec()
             m_delay = TscTime( welcome.delay );
             m_resolution = TscTime( welcome.resolution );
             m_onDemand = welcome.onDemand;
+            m_captureProgram = welcome.programName;
+            m_captureTime = welcome.epoch;
 
             char dtmp[64];
             time_t date = welcome.epoch;
@@ -2979,6 +3013,12 @@ void Worker::Write( FileWrite& f )
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_captureName.c_str(), sz );
+
+    sz = m_captureProgram.size();
+    f.Write( &sz, sizeof( sz ) );
+    f.Write( m_captureProgram.c_str(), sz );
+
+    f.Write( &m_captureTime, sizeof( m_captureTime ) );
 
     sz = m_hostInfo.size();
     f.Write( &sz, sizeof( sz ) );

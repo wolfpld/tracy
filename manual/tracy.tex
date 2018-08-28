@@ -472,7 +472,7 @@ logo=\bcattention
 
 \subsubsection{Vulkan}
 
-Similarly, for Vulkan support you should include the \texttt{tracy/TracyVulkan.hpp} header file and initialize the Vulkan instance using the \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} macro. Cleanup is performed using the \texttt{TracyVkDestroy()} macro. Currently you can't track more than one instance.
+Similarly, for Vulkan support you should include the \texttt{tracy/TracyVulkan.hpp} header file and initialize the Vulkan instance using the \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} macro. Cleanup is performed using the \texttt{TracyVkDestroy} macro. Currently you can't track more than one instance.
 
 The physical device, logical device, queue and command buffer must relate with each other. The queue must support graphics or compute operations. The command buffer must be in the initial state and be able to be reset. It will be rerecorded and submitted to the queue multiple times and it will be in the executable state on exit from the initialization function.
 

@@ -6329,11 +6329,19 @@ void View::DrawMemoryAllocWindow()
 
 void View::DrawInfo()
 {
+    char dtmp[64];
+    time_t date = m_worker.GetCaptureTime();
+    auto lt = localtime( &date );
+    strftime( dtmp, 64, "%F %T", lt );
+
     const auto& io = ImGui::GetIO();
 
     ImGui::Begin( "Trace information", &m_showInfo );
     TextFocused( "Profiler memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
     TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ), true ) );
+    ImGui::Separator();
+    TextFocused( "Captured program:", m_worker.GetCaptureProgram().c_str() );
+    TextFocused( "Capture time:", dtmp );
     ImGui::Separator();
     TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
     TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );

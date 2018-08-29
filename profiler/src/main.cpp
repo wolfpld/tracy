@@ -18,6 +18,7 @@
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyImGui.hpp"
+#include "../../server/TracyStorage.hpp"
 #include "../../server/TracyView.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../server/TracyVersion.hpp"
@@ -99,6 +100,9 @@ int main( int argc, char** argv )
 
     // Setup ImGui binding
     ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = tracy::GetSavePath( "imgui.ini" );
+
     ImGui_ImplGlfwGL3_Init(window, true);
 
     static const ImWchar rangesBasic[] = {
@@ -113,7 +117,6 @@ int main( int argc, char** argv )
     ImFontConfig configMerge;
     configMerge.MergeMode = true;
 
-    ImGuiIO& io = ImGui::GetIO();
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, rangesBasic );
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * dpiScale, &configMerge, rangesIcons );
     auto fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 15.0f * dpiScale );

@@ -1,7 +1,8 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <imgui.h>
-#include "imgui_impl_glfw_gl3.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/gl3w.h>
@@ -73,8 +74,7 @@ int main( int argc, char** argv )
 
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
-    if (!glfwInit())
-        return 1;
+    if( !glfwInit() ) return 1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -82,6 +82,7 @@ int main( int argc, char** argv )
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
     GLFWwindow* window = glfwCreateWindow(1650, 960, title, NULL, NULL);
+    if( !window ) return 1;
     s_glfwWindow = window;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
@@ -99,11 +100,13 @@ int main( int argc, char** argv )
 #endif
 
     // Setup ImGui binding
+    IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.IniFilename = tracy::GetSavePath( "imgui.ini" );
 
-    ImGui_ImplGlfwGL3_Init(window, true);
+    ImGui_ImplGlfw_InitForOpenGL( window, true );
+    ImGui_ImplOpenGL3_Init( "#version 150" );
 
     static const ImWchar rangesBasic[] = {
         0x0020, 0x00FF, // Basic Latin + Latin Supplement
@@ -152,7 +155,9 @@ int main( int argc, char** argv )
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
 
-        ImGui_ImplGlfwGL3_NewFrame();
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
 
         if( !view )
         {
@@ -297,11 +302,14 @@ int main( int argc, char** argv )
         }
 
         // Rendering
+        ImGui::Render();
+        glfwMakeContextCurrent(window);
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
-        ImGui::Render();
-        ImGui_ImplGlfwGL3_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        glfwMakeContextCurrent(window);
         glfwSwapBuffers(window);
 
         if( !glfwGetWindowAttrib( window, GLFW_FOCUSED ) )
@@ -311,8 +319,11 @@ int main( int argc, char** argv )
     }
 
     // Cleanup
-    ImGui_ImplGlfwGL3_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+    glfwDestroyWindow(window);
     glfwTerminate();
 
     return 0;

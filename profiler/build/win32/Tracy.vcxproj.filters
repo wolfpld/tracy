@@ -39,9 +39,6 @@
     <ClCompile Include="..\..\..\server\TracyWorker.cpp">
       <Filter>server</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\imgui_impl_glfw_gl3.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -87,6 +84,12 @@
     <ClCompile Include="..\..\..\server\TracyStorage.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\imgui_impl_glfw.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\imgui_impl_opengl3.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -115,9 +118,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyView.hpp">
       <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\imgui_impl_glfw_gl3.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\imgui\imconfig.h">
       <Filter>imgui</Filter>
@@ -241,6 +241,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyStorage.hpp">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\imgui_impl_glfw.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\imgui_impl_opengl3.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

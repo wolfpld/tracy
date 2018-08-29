@@ -84,6 +84,9 @@
     <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp">
       <Filter>common</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyStorage.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -235,6 +238,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp">
       <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyStorage.hpp">
+      <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

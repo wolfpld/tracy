@@ -6353,9 +6353,26 @@ void View::DrawInfo()
     TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
     TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
     TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
-    ImGui::Separator();
-    TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
-    TextFocused( "Count:", RealToString( m_frames->frames.size(), true ) );
+    {
+        const auto fsz = m_worker.GetFrameCount( *m_frames );
+        Vector<uint64_t> data;
+        data.reserve_exact( fsz );
+        auto ptr = data.data();
+        size_t total = 0;
+        for( size_t i=0; i<fsz; i++ )
+        {
+            const auto t = m_worker.GetFrameTime( *m_frames, i );
+            *ptr++ = t;
+            total += t;
+        }
+        pdqsort_branchless( data.begin(), data.end() );
+
+        ImGui::Separator();
+        TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
+        TextFocused( "Count:", RealToString( fsz, true ) );
+        TextFocused( "Average frame time:", TimeToString( float( total ) / fsz ) );
+        TextFocused( "Median frame time:", TimeToString( data[fsz/2] ) );
+    }
     ImGui::Separator();
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );
     auto& crash = m_worker.GetCrashEvent();

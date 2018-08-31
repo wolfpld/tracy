@@ -6355,30 +6355,35 @@ void View::DrawInfo()
     TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
     {
         const auto fsz = m_worker.GetFrameCount( *m_frames );
-        Vector<uint64_t> data;
-        data.reserve_exact( fsz );
-        auto ptr = data.data();
-        size_t total = 0;
-        for( size_t i=0; i<fsz; i++ )
+        if( m_frameSortData.frameSet != m_frames || m_frameSortData.frameNum != fsz )
         {
-            const auto t = m_worker.GetFrameTime( *m_frames, i );
-            *ptr++ = t;
-            total += t;
-        }
-        pdqsort_branchless( data.begin(), data.end() );
+            m_frameSortData.frameSet = m_frames;
+            m_frameSortData.frameNum = fsz;
 
-        const auto average = float( total ) / fsz;
-        const auto median = data[fsz/2];
+            m_frameSortData.data.reserve( fsz );
+            auto ptr = m_frameSortData.data.data();
+            size_t total = 0;
+            for( size_t i=0; i<fsz; i++ )
+            {
+                const auto t = m_worker.GetFrameTime( *m_frames, i );
+                *ptr++ = t;
+                total += t;
+            }
+            pdqsort_branchless( m_frameSortData.data.begin(), m_frameSortData.data.end() );
+
+            m_frameSortData.average = float( total ) / fsz;
+            m_frameSortData.median = m_frameSortData.data[fsz/2];
+        }
 
         ImGui::Separator();
         TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
         TextFocused( "Count:", RealToString( fsz, true ) );
-        TextFocused( "Average frame time:", TimeToString( average ) );
+        TextFocused( "Average frame time:", TimeToString( m_frameSortData.average ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / average ), true ) );
-        TextFocused( "Median frame time:", TimeToString( median ) );
+        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ), true ) );
+        TextFocused( "Median frame time:", TimeToString( m_frameSortData.median ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / median ), true ) );
+        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.median ), true ) );
     }
     ImGui::Separator();
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );

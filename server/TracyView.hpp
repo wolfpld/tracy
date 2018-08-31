@@ -355,6 +355,14 @@ private:
         uint64_t ptrFind = 0;
         bool restrictTime = false;
     } m_memInfo;
+
+    struct {
+        std::vector<uint64_t> data;
+        const FrameData* frameSet = nullptr;
+        size_t frameNum = 0;
+        float average = 0;
+        float median = 0;
+    } m_frameSortData;
 };
 
 }

@@ -6360,7 +6360,7 @@ void View::DrawInfo()
             m_frameSortData.frameSet = m_frames;
             m_frameSortData.frameNum = fsz;
 
-            m_frameSortData.data.reserve( fsz );
+            m_frameSortData.data.resize( fsz );
             auto ptr = m_frameSortData.data.data();
             size_t total = 0;
             for( size_t i=0; i<fsz; i++ )

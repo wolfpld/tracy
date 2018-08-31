@@ -6422,6 +6422,10 @@ void View::DrawInfo()
                 ImGui::SameLine();
                 ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
+                ImGui::TextDisabled( "FPS range:" );
+                ImGui::SameLine();
+                ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ), true ), RealToString( round( 1000000000.0 / tmax ), true ) );
+
                 const auto dt = double( tmax - tmin );
                 if( dt > 0 )
                 {
@@ -6661,6 +6665,8 @@ void View::DrawInfo()
                             ImGui::TextDisabled( "Time range:" );
                             ImGui::SameLine();
                             ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( round( 1000000000.0 / t0 ), true ), RealToString( round( 1000000000.0 / t1 ), true ) );
                             ImGui::TextDisabled( "Count:" );
                             ImGui::SameLine();
                             ImGui::Text( "%" PRIu64, bins[bin] );

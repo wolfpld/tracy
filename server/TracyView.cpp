@@ -6367,11 +6367,18 @@ void View::DrawInfo()
         }
         pdqsort_branchless( data.begin(), data.end() );
 
+        const auto average = float( total ) / fsz;
+        const auto median = data[fsz/2];
+
         ImGui::Separator();
         TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
         TextFocused( "Count:", RealToString( fsz, true ) );
-        TextFocused( "Average frame time:", TimeToString( float( total ) / fsz ) );
-        TextFocused( "Median frame time:", TimeToString( data[fsz/2] ) );
+        TextFocused( "Average frame time:", TimeToString( average ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / average ), true ) );
+        TextFocused( "Median frame time:", TimeToString( median ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / median ), true ) );
     }
     ImGui::Separator();
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );

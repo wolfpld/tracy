@@ -6362,7 +6362,7 @@ void View::DrawInfo()
 
             m_frameSortData.data.resize( fsz );
             auto ptr = m_frameSortData.data.data();
-            size_t total = 0;
+            int64_t total = 0;
             for( size_t i=0; i<fsz; i++ )
             {
                 const auto t = m_worker.GetFrameTime( *m_frames, i );

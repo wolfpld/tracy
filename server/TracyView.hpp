@@ -357,7 +357,7 @@ private:
     } m_memInfo;
 
     struct {
-        std::vector<uint64_t> data;
+        std::vector<int64_t> data;
         const FrameData* frameSet = nullptr;
         size_t frameNum = 0;
         float average = 0;

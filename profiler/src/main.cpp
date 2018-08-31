@@ -103,7 +103,9 @@ int main( int argc, char** argv )
     GLFWwindow* window = glfwCreateWindow( w, h, title, NULL, NULL);
     if( !window ) return 1;
     glfwSetWindowPos( window, x, y );
+#ifdef GLFW_MAXIMIZED
     if( maximize ) glfwMaximizeWindow( window );
+#endif
     s_glfwWindow = window;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
@@ -348,7 +350,11 @@ int main( int argc, char** argv )
     {
         glfwGetWindowPos( window, &x, &y );
         glfwGetWindowSize( window, &w, &h );
+#ifdef GLFW_MAXIMIZED
         uint32_t maximized = glfwGetWindowAttrib( window, GLFW_MAXIMIZED );
+#else
+        uint32_t maximized = 0;
+#endif
 
         uint32_t data[5] = { uint32_t( x ), uint32_t( y ), uint32_t( w ), uint32_t( h ), maximized };
         fwrite( data, 1, sizeof( data ), f );

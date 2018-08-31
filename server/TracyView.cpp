@@ -6474,6 +6474,16 @@ void View::DrawInfo()
 
                         TextFocused( "Max counts:", RealToString( maxVal, true ) );
 
+                        ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::SameLine();
+                        ImGui::Text( "Average time" );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::SameLine();
+                        ImGui::Text( "Median time" );
+
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();
 
@@ -6595,6 +6605,26 @@ void View::DrawInfo()
                                 tt += sstep;
                             }
                         }
+
+                        float ta, tm;
+                        if( m_frameSortData.logTime )
+                        {
+                            const auto ltmin = log10fast( tmin );
+                            const auto ltmax = log10fast( tmax );
+
+                            ta = ( log10fast( m_frameSortData.average ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                            tm = ( log10fast( m_frameSortData.median ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                        }
+                        else
+                        {
+                            ta = ( m_frameSortData.average - tmin ) / float( tmax - tmin ) * numBins;
+                            tm = ( m_frameSortData.median - tmin ) / float( tmax - tmin ) * numBins;
+                        }
+                        ta = round( ta );
+                        tm = round( tm );
+
+                        draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFF4444FF );
+                        draw->AddLine( ImVec2( wpos.x + tm, wpos.y ), ImVec2( wpos.x + tm, wpos.y+Height-2 ), 0xFFFF8844 );
 
                         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
                         {

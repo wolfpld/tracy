@@ -6381,9 +6381,21 @@ void View::DrawInfo()
         TextFocused( "Average frame time:", TimeToString( m_frameSortData.average ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ), true ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.average, true ) );
+            ImGui::EndTooltip();
+        }
         TextFocused( "Median frame time:", TimeToString( m_frameSortData.median ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.median ), true ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.median, true ) );
+            ImGui::EndTooltip();
+        }
     }
     ImGui::Separator();
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );

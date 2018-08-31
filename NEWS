@@ -106,6 +106,14 @@ v0.4 (xxxx-xx-xx)
 - Call stack window may now display addresses of the frames, instead of
   source file locations.
 - Memory events will now properly register their thread.
+- Profiler settings are now stored in a persistent location.
+  - On Windows settings are stored in %APPDATA%/tracy.
+  - On other platforms settings are stored in $XDG_CONFIG_HOME/tracy or
+    $HOME/.config/tracy, if the variable is not set.
+  - The main profiler window position, size and maximized state are saved
+    and restored.
+  - The size and position of internal windows now doesn't depend on the
+    runtime directory of the profiler executable.
 
 
 v0.3.3 (2018-07-03)

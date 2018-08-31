@@ -5,6 +5,7 @@
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <memory>
@@ -103,7 +104,8 @@ int main( int argc, char** argv )
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    io.IniFilename = tracy::GetSavePath( "imgui.ini" );
+    std::string iniFileName = tracy::GetSavePath( "imgui.ini" );
+    io.IniFilename = iniFileName.c_str();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
     ImGui_ImplGlfw_InitForOpenGL( window, true );

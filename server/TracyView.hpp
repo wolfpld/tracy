@@ -362,6 +362,7 @@ private:
         size_t frameNum = 0;
         float average = 0;
         float median = 0;
+        int64_t total = 0;
     } m_frameSortData;
 };
 

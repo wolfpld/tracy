@@ -6376,10 +6376,14 @@ void View::DrawInfo()
             m_frameSortData.total = total;
         }
 
+        const auto profileSpan = m_worker.GetLastTime() - m_worker.GetTimeBegin();
+
         ImGui::Separator();
         TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
         TextFocused( "Count:", RealToString( fsz, true ) );
         TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%% of profile time span)", m_frameSortData.total / float( profileSpan ) * 100.f );
         TextFocused( "Average frame time:", TimeToString( m_frameSortData.average ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ), true ) );

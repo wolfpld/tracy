@@ -73,6 +73,23 @@ int main( int argc, char** argv )
     char title[128];
     sprintf( title, "Tracy server %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
 
+    std::string winPosFile = tracy::GetSavePath( "window.position" );
+    int x = 200, y = 200, w = 1650, h = 960, maximize = 0;
+    {
+        FILE* f = fopen( winPosFile.c_str(), "rb" );
+        if( f )
+        {
+            uint32_t data[5];
+            fread( data, 1, sizeof( data ), f );
+            fclose( f );
+            x = data[0];
+            y = data[1];
+            w = data[2];
+            h = data[3];
+            maximize = data[4];
+        }
+    }
+
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if( !glfwInit() ) return 1;
@@ -82,8 +99,10 @@ int main( int argc, char** argv )
 #if __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-    GLFWwindow* window = glfwCreateWindow(1650, 960, title, NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow( w, h, title, NULL, NULL);
     if( !window ) return 1;
+    glfwSetWindowPos( window, x, y );
+    if( maximize ) glfwMaximizeWindow( window );
     s_glfwWindow = window;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
@@ -319,6 +338,18 @@ int main( int argc, char** argv )
         {
             std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
         }
+    }
+
+    FILE* f = fopen( winPosFile.c_str(), "wb" );
+    if( f )
+    {
+        glfwGetWindowPos( window, &x, &y );
+        glfwGetWindowSize( window, &w, &h );
+        uint32_t maximized = glfwGetWindowAttrib( window, GLFW_MAXIMIZED );
+
+        uint32_t data[5] = { uint32_t( x ), uint32_t( y ), uint32_t( w ), uint32_t( h ), maximized };
+        fwrite( data, 1, sizeof( data ), f );
+        fclose( f );
     }
 
     // Cleanup

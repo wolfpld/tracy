@@ -6398,6 +6398,246 @@ void View::DrawInfo()
             ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.median, true ) );
             ImGui::EndTooltip();
         }
+
+        if( ImGui::TreeNode( "Histogram" ) )
+        {
+            const auto ty = ImGui::GetFontSize();
+
+            auto& frames = m_frameSortData.data;
+            const auto tmin = frames.front();
+            const auto tmax = frames.back();
+            const auto timeTotal = m_frameSortData.total;
+
+            if( tmin != std::numeric_limits<int64_t>::max() )
+            {
+                ImGui::Checkbox( "Log values", &m_frameSortData.logVal );
+                ImGui::SameLine();
+                ImGui::Checkbox( "Log time", &m_frameSortData.logTime );
+
+                ImGui::TextDisabled( "Time range:" );
+                ImGui::SameLine();
+                ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
+
+                const auto dt = double( tmax - tmin );
+                if( dt > 0 )
+                {
+                    const auto w = ImGui::GetContentRegionAvail().x;
+
+                    const auto numBins = int64_t( w - 4 );
+                    if( numBins > 1 )
+                    {
+                        if( numBins != m_frameSortData.numBins )
+                        {
+                            m_frameSortData.numBins = numBins;
+                            m_frameSortData.bins = std::make_unique<int64_t[]>( numBins );
+                        }
+
+                        const auto& bins = m_frameSortData.bins;
+
+                        memset( bins.get(), 0, sizeof( int64_t ) * numBins );
+
+                        if( m_frameSortData.logTime )
+                        {
+                            const auto tMinLog = log10fast( tmin );
+                            const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
+                            for( auto& ft : frames )
+                            {
+                                if( ft != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( ft ) - tMinLog ) * idt ) );
+                                    bins[bin]++;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            const auto idt = numBins / dt;
+                            for( auto& ft : frames )
+                            {
+                                if( ft != 0 )
+                                {
+                                    const auto bin = std::min( numBins - 1, int64_t( ( ft - tmin ) * idt ) );
+                                    bins[bin]++;
+                                }
+                            }
+                        }
+
+                        int64_t maxVal = bins[0];
+                        for( int i=1; i<numBins; i++ )
+                        {
+                            maxVal = std::max( maxVal, bins[i] );
+                        }
+
+                        TextFocused( "Max counts:", RealToString( maxVal, true ) );
+
+                        const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
+                        const auto wpos = ImGui::GetCursorScreenPos();
+
+                        ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
+                        const bool hover = ImGui::IsItemHovered();
+
+                        auto draw = ImGui::GetWindowDrawList();
+                        draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
+                        draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
+
+                        if( m_frameSortData.logVal )
+                        {
+                            const auto hAdj = double( Height - 4 ) / log10fast( maxVal + 1 );
+                            for( int i=0; i<numBins; i++ )
+                            {
+                                const auto val = bins[i];
+                                if( val > 0 )
+                                {
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), 0xFF22DDDD );
+                                }
+                            }
+                        }
+                        else
+                        {
+                            const auto hAdj = double( Height - 4 ) / maxVal;
+                            for( int i=0; i<numBins; i++ )
+                            {
+                                const auto val = bins[i];
+                                if( val > 0 )
+                                {
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - val * hAdj ), 0xFF22DDDD );
+                                }
+                            }
+                        }
+
+                        const auto xoff = 2;
+                        const auto yoff = Height + 1;
+
+                        if( m_frameSortData.logTime )
+                        {
+                            const auto ltmin = log10fast( tmin );
+                            const auto ltmax = log10fast( tmax );
+                            const auto start = int( floor( ltmin ) );
+                            const auto end = int( ceil( ltmax ) );
+
+                            const auto range = ltmax - ltmin;
+                            const auto step = w / range;
+                            auto offset = start - ltmin;
+                            int tw = 0;
+                            int tx = 0;
+
+                            auto tt = int64_t( pow( 10, start ) );
+
+                            static const double logticks[] = { log10( 2 ), log10( 3 ), log10( 4 ), log10( 5 ), log10( 6 ), log10( 7 ), log10( 8 ), log10( 9 ) };
+
+                            for( int i=start; i<=end; i++ )
+                            {
+                                const auto x = ( i - start + offset ) * step;
+
+                                if( x >= 0 )
+                                {
+                                    draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF );
+                                    if( tw == 0 || x > tx + tw + ty * 1.1 )
+                                    {
+                                        tx = x;
+                                        auto txt = TimeToStringInteger( tt );
+                                        draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                        tw = ImGui::CalcTextSize( txt ).x;
+                                    }
+                                }
+
+                                for( int j=0; j<8; j++ )
+                                {
+                                    const auto xoff = x + logticks[j] * step;
+                                    if( xoff >= 0 )
+                                    {
+                                        draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + round( ty * 0.25 ) ), 0x66FFFFFF );
+                                    }
+                                }
+
+                                tt *= 10;
+                            }
+                        }
+                        else
+                        {
+                            const auto pxns = numBins / dt;
+                            const auto nspx = 1.0 / pxns;
+                            const auto scale = std::max<float>( 0.0f, round( log10fast( nspx ) + 2 ) );
+                            const auto step = pow( 10, scale );
+
+                            const auto dx = step * pxns;
+                            double x = 0;
+                            int tw = 0;
+                            int tx = 0;
+
+                            const auto sstep = step / 10.0;
+                            const auto sdx = dx / 10.0;
+
+                            static const double linelen[] = { 0.5, 0.25, 0.25, 0.25, 0.25, 0.375, 0.25, 0.25, 0.25, 0.25 };
+
+                            int64_t tt = int64_t( ceil( tmin / sstep ) * sstep );
+                            const auto diff = tmin / sstep - int64_t( tmin / sstep );
+                            const auto xo = ( diff == 0 ? 0 : ( ( 1 - diff ) * sstep * pxns ) ) + xoff;
+                            int iter = int( ceil( ( tmin - int64_t( tmin / step ) * step ) / sstep ) );
+
+                            while( x < numBins )
+                            {
+                                draw->AddLine( wpos + ImVec2( xo + x, yoff ), wpos + ImVec2( xo + x, yoff + round( ty * linelen[iter] ) ), 0x66FFFFFF );
+                                if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 1.1 ) )
+                                {
+                                    tx = x;
+                                    auto txt = TimeToStringInteger( tt );
+                                    draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                    tw = ImGui::CalcTextSize( txt ).x;
+                                }
+
+                                iter = ( iter + 1 ) % 10;
+                                x += sdx;
+                                tt += sstep;
+                            }
+                        }
+
+                        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
+                        {
+                            const auto ltmin = log10fast( tmin );
+                            const auto ltmax = log10fast( tmax );
+
+                            auto& io = ImGui::GetIO();
+                            draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
+
+                            const auto bin = double( io.MousePos.x - wpos.x - 2 );
+                            int64_t t0, t1;
+                            if( m_frameSortData.logTime )
+                            {
+                                t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
+
+                                // Hackfix for inability to select data in last bin.
+                                // A proper solution would be nice.
+                                if( bin+1 == numBins )
+                                {
+                                    t1 = tmax;
+                                }
+                                else
+                                {
+                                    t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
+                                }
+                            }
+                            else
+                            {
+                                t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
+                                t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
+                            }
+
+                            ImGui::BeginTooltip();
+                            ImGui::TextDisabled( "Time range:" );
+                            ImGui::SameLine();
+                            ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
+                            ImGui::TextDisabled( "Count:" );
+                            ImGui::SameLine();
+                            ImGui::Text( "%" PRIu64, bins[bin] );
+                            ImGui::EndTooltip();
+                        }
+                    }
+                }
+            }
+
+            ImGui::TreePop();
+        }
     }
     ImGui::Separator();
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );

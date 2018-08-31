@@ -363,6 +363,10 @@ private:
         float average = 0;
         float median = 0;
         int64_t total = 0;
+        bool logVal = false;
+        bool logTime = true;
+        int64_t numBins = -1;
+        std::unique_ptr<int64_t[]> bins;
     } m_frameSortData;
 };
 

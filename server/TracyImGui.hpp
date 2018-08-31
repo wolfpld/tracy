@@ -16,7 +16,7 @@ namespace tracy
     {
         const auto tw = ImGui::CalcTextSize( text ).x;
         ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - tw ) * 0.5f );
-        ImGui::Text( text );
+        ImGui::Text( "%s", text );
     }
 
 }

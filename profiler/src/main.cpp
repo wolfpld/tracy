@@ -93,6 +93,7 @@ int main( int argc, char** argv )
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
     if( !glfwInit() ) return 1;
+    glfwWindowHint(GLFW_VISIBLE, 0);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -162,6 +163,8 @@ int main( int argc, char** argv )
     char addr[1024] = { "127.0.0.1" };
 
     std::thread loadThread;
+
+    glfwShowWindow( window );
 
     // Main loop
     while (!glfwWindowShouldClose(window))

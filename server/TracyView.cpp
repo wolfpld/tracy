@@ -4676,160 +4676,45 @@ void View::DrawFindZone()
                         memset( selBin.get(), 0, sizeof( int64_t ) * numBins );
 
                         int64_t selectionTime = 0;
-                        if( m_findZone.highlight.active )
-                        {
-                            const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
-                            const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
+                        const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
+                        const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
 
-                            if( selGroup != m_findZone.Unselected )
+                        if( m_findZone.logTime )
+                        {
+                            const auto tMinLog = log10fast( tmin );
+                            const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
+                            for( auto& ev : zones )
                             {
-                                if( m_findZone.logTime )
+                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
                                 {
-                                    const auto tMinLog = log10fast( tmin );
-                                    const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
-                                    for( auto& ev : zones )
+                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
+                                    bins[bin]++;
+                                    binTime[bin] += timeSpan;
+                                    if( selGroup != m_findZone.Unselected && selGroup == GetSelectionTarget( ev, groupBy ) )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
-                                            {
-                                                if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                            }
-                                            if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
-                                        }
+                                        if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                     }
-                                }
-                                else
-                                {
-                                    const auto idt = numBins / dt;
-                                    for( auto& ev : zones )
-                                    {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
-                                            {
-                                                if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                            }
-                                            if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if( m_findZone.logTime )
-                                {
-                                    const auto tMinLog = log10fast( tmin );
-                                    const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
-                                    for( auto& ev : zones )
-                                    {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                            if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    const auto idt = numBins / dt;
-                                    for( auto& ev : zones )
-                                    {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                            if( timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
-                                        }
-                                    }
+                                    if( m_findZone.highlight.active && timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                 }
                             }
                         }
                         else
                         {
-                            if( selGroup != m_findZone.Unselected )
+                            const auto idt = numBins / dt;
+                            for( auto& ev : zones )
                             {
-                                if( m_findZone.logTime )
+                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
+                                if( timeSpan != 0 )
                                 {
-                                    const auto tMinLog = log10fast( tmin );
-                                    const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
-                                    for( auto& ev : zones )
+                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
+                                    bins[bin]++;
+                                    binTime[bin] += timeSpan;
+                                    if( selGroup != m_findZone.Unselected && selGroup == GetSelectionTarget( ev, groupBy ) )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
-                                            {
-                                                if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                            }
-                                        }
+                                        if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
                                     }
-                                }
-                                else
-                                {
-                                    const auto idt = numBins / dt;
-                                    for( auto& ev : zones )
-                                    {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
-                                            {
-                                                if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                if( m_findZone.logTime )
-                                {
-                                    const auto tMinLog = log10fast( tmin );
-                                    const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
-                                    for( auto& ev : zones )
-                                    {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    const auto idt = numBins / dt;
-                                    for( auto& ev : zones )
-                                    {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                            bins[bin]++;
-                                            binTime[bin] += timeSpan;
-                                        }
-                                    }
+                                    if( m_findZone.highlight.active && timeSpan >= s && timeSpan <= e ) selectionTime += timeSpan;
                                 }
                             }
                         }

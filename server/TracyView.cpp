@@ -6457,25 +6457,23 @@ void View::DrawInfo()
                         {
                             const auto tMinLog = log10fast( tmin );
                             const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
-                            for( auto& ft : frames )
+                            auto fit = frames.begin();
+                            while( fit != frames.end() && *fit == 0 ) fit++;
+                            while( fit != frames.end() )
                             {
-                                if( ft != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( ft ) - tMinLog ) * idt ) );
-                                    bins[bin]++;
-                                }
+                                const auto bin = std::min( numBins - 1, int64_t( ( log10fast( *fit++ ) - tMinLog ) * idt ) );
+                                bins[bin]++;
                             }
                         }
                         else
                         {
                             const auto idt = numBins / dt;
-                            for( auto& ft : frames )
+                            auto fit = frames.begin();
+                            while( fit != frames.end() && *fit == 0 ) fit++;
+                            while( fit != frames.end() )
                             {
-                                if( ft != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( ft - tmin ) * idt ) );
-                                    bins[bin]++;
-                                }
+                                const auto bin = std::min( numBins - 1, int64_t( ( *fit++ - tmin ) * idt ) );
+                                bins[bin]++;
                             }
                         }
 

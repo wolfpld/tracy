@@ -1083,9 +1083,38 @@ Comparing the performance impact of the optimization work is not an easy thing t
 
 Tracy solves this problem by providing a compare traces functionality, very similar to the find zone window, described in section~\ref{findzone}.
 
-You would begin your work by recording a reference trace that represents an usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Having the optimized trace open you select the \emph{\faFolderOpen{}~Open second trace} option in the compare traces window and load the reference trace.
+You would begin your work by recording a reference trace that represents the usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Having the optimized trace open you select the \emph{\faFolderOpen{}~Open second trace} option in the compare traces window and load the reference trace.
 
-Now things start to get familiar. You search for a zone, similarly like in the find zone window, choose the one you want in the \emph{matched source locations} drop-down, and then you look at the histogram. This time there are two overlaid graphs, one representing the current trace, and the second one representing the external (reference) trace. You can easily see how the performance characteristics of the zone was affected by your modifications.
+Now things start to get familiar. You search for a zone, similarly like in the find zone window, choose the one you want in the \emph{matched source locations} drop-down, and then you look at the histogram. This time there are two overlaid graphs, one representing the current trace, and the second one representing the external (reference) trace (figure~\ref{comparehistogram}). You can easily see how the performance characteristics of the zone were affected by your modifications.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw(0, 0) rectangle+(10, 3);
+\foreach \x in {0,2,4,6,8} {
+\draw (\x+0, -0.1) -- +(0, -0.2);
+\draw (\x+0.6, -0.1) -- +(0, -0.1);
+\draw (\x+0.96, -0.1) -- +(0, -0.1);
+\draw (\x+1.2, -0.1) -- +(0, -0.1);
+\draw (\x+1.4, -0.1) -- +(0, -0.1);
+\draw (\x+1.56, -0.1) -- +(0, -0.1);
+\draw (\x+1.68, -0.1) -- +(0, -0.1);
+\draw (\x+1.8, -0.1) -- +(0, -0.1);
+\draw (\x+1.9, -0.1) -- +(0, -0.1); }
+\draw (10, -0.1) -- +(0, -0.2);
+
+\draw (-0.2, -0.3) node[anchor=north west] {100 \si{\nano\second}};
+\draw (1.8, -0.3) node[anchor=north west] {1 \si{\micro\second}};
+\draw (3.8, -0.3) node[anchor=north west] {10 \si{\micro\second}};
+\draw (5.8, -0.3) node[anchor=north west] {100 \si{\micro\second}};
+\draw (7.8, -0.3) node[anchor=north west] {1 \si{\milli\second}};
+\draw (9.8, -0.3) node[anchor=north west] {10 \si{\milli\second}};
+
+\draw[pattern=north east lines] (0,0) -- (0.5, 0.3) -- (1, 2.95) -- (1.4, 1) -- (2, 0.5) -- (7, 0);
+\draw[pattern=north west lines] (0.5,0) -- (1, 0.4) -- (1.7, 2.8) -- (2.1, 1.1) -- (2.7, 0.6) -- (5, 0.2) -- (10, 0);
+\end{tikzpicture}
+\caption{Compare traces histogram.}
+\label{comparehistogram}
+\end{figure}
 
 Note that the traces are color and symbol coded. The current trace is marked by a yellow \faLemon{} symbol, and the external one is marked by a red \faGem{} symbol.
 

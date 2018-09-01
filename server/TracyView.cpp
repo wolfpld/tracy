@@ -6457,26 +6457,32 @@ void View::DrawInfo()
 
                         if( m_frameSortData.logTime )
                         {
-                            const auto tMinLog = log10fast( tmin );
-                            const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
+                            const auto tMinLog = log10( tmin );
+                            const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
                             auto fit = frames.begin();
                             while( fit != frames.end() && *fit == 0 ) fit++;
-                            while( fit != frames.end() )
+                            for( int64_t i=0; i<numBins; i++ )
                             {
-                                const auto bin = std::min( numBins - 1, int64_t( ( log10fast( *fit++ ) - tMinLog ) * idt ) );
-                                bins[bin]++;
+                                const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                auto nit = std::lower_bound( fit, frames.end(), nextBinVal );
+                                bins[i] = std::distance( fit, nit );
+                                fit = nit;
                             }
+                            bins[numBins-1] += std::distance( fit, frames.end() );
                         }
                         else
                         {
-                            const auto idt = numBins / dt;
+                            const auto zmax = tmax - tmin;
                             auto fit = frames.begin();
                             while( fit != frames.end() && *fit == 0 ) fit++;
-                            while( fit != frames.end() )
+                            for( int64_t i=0; i<numBins; i++ )
                             {
-                                const auto bin = std::min( numBins - 1, int64_t( ( *fit++ - tmin ) * idt ) );
-                                bins[bin]++;
+                                const auto nextBinVal = ( i+1 ) * zmax / numBins;
+                                auto nit = std::lower_bound( fit, frames.end(), nextBinVal );
+                                bins[i] = std::distance( fit, nit );
+                                fit = nit;
                             }
+                            bins[numBins-1] += std::distance( fit, frames.end() );
                         }
 
                         int64_t maxVal = bins[0];

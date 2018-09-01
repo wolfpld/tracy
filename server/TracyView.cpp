@@ -4599,6 +4599,28 @@ void View::DrawFindZone()
             const auto tmax = zoneData.max;
             const auto timeTotal = zoneData.total;
 
+            const auto zsz = zones.size();
+            if( m_findZone.sortedNum != zsz )
+            {
+                auto& vec = m_findZone.sorted;
+                vec.reserve( zsz );
+                size_t i;
+                for( i=m_findZone.sortedNum; i<zsz; i++ )
+                {
+                    auto& zone = *zones[i].zone;
+                    if( zone.end < 0 )
+                    {
+                        break;
+                    }
+                    const auto t = zone.end - zone.start;
+                    m_findZone.sorted.emplace_back( t );
+                }
+                auto mid = vec.begin() + m_findZone.sortedNum;
+                pdqsort_branchless( mid, vec.end() );
+                std::inplace_merge( vec.begin(), mid, vec.end() );
+                m_findZone.sortedNum = i;
+            }
+
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
                 ImGui::Checkbox( "Log values", &m_findZone.logVal );

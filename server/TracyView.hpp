@@ -291,6 +291,8 @@ private:
         Region highlight;
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins, binTime, selBin;
+        std::vector<int64_t> sorted;
+        size_t sortedNum;
 
         void Reset()
         {
@@ -299,6 +301,8 @@ private:
             selMatch = 0;
             selGroup = Unselected;
             highlight.active = false;
+            sorted.clear();
+            sortedNum = 0;
         }
 
         void ResetGroups()

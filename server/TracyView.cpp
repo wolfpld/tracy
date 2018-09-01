@@ -6354,7 +6354,7 @@ void View::DrawInfo()
     TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
     TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
 
-    const auto fsz = m_worker.GetFrameCount( *m_frames ) - 1;
+    const auto fsz = m_worker.GetFullFrameCount( *m_frames );
     if( fsz != 0 )
     {
         if( m_frameSortData.frameSet != m_frames || m_frameSortData.frameNum != fsz )

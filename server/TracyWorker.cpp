@@ -953,6 +953,36 @@ uint64_t Worker::GetPlotCount() const
     return cnt;
 }
 
+size_t Worker::GetFullFrameCount( const FrameData& fd ) const
+{
+    const auto sz = fd.frames.size();
+    assert( sz != 0 );
+
+    if( fd.continuous )
+    {
+        if( IsConnected() )
+        {
+            return sz - 1;
+        }
+        else
+        {
+            return sz;
+        }
+    }
+    else
+    {
+        const auto& last = fd.frames.back();
+        if( last.end >= 0 )
+        {
+            return sz;
+        }
+        else
+        {
+            return sz - 1;
+        }
+    }
+}
+
 int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
 {
     if( fd.continuous )

@@ -6389,6 +6389,8 @@ void View::DrawInfo()
 
         ImGui::Separator();
         TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", m_frames->continuous ? "continuous" : "discontinuous" );
         TextFocused( "Count:", RealToString( fsz, true ) );
         TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
         ImGui::SameLine();

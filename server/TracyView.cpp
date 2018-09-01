@@ -4604,6 +4604,7 @@ void View::DrawFindZone()
             {
                 auto& vec = m_findZone.sorted;
                 vec.reserve( zsz );
+                int64_t total = m_findZone.total;
                 size_t i;
                 for( i=m_findZone.sortedNum; i<zsz; i++ )
                 {
@@ -4614,10 +4615,15 @@ void View::DrawFindZone()
                     }
                     const auto t = zone.end - zone.start;
                     m_findZone.sorted.emplace_back( t );
+                    total += t;
                 }
                 auto mid = vec.begin() + m_findZone.sortedNum;
                 pdqsort_branchless( mid, vec.end() );
                 std::inplace_merge( vec.begin(), mid, vec.end() );
+
+                m_findZone.average = float( total ) / i;
+                m_findZone.median = vec[i/2];
+                m_findZone.total = total;
                 m_findZone.sortedNum = i;
             }
 
@@ -4851,6 +4857,11 @@ void View::DrawFindZone()
                         ImGui::Spacing();
                         ImGui::SameLine();
                         TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
+                        TextFocused( "Average time:", TimeToString( m_findZone.average ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        TextFocused( "Median time:", TimeToString( m_findZone.median ) );
 
                         ImGui::TextDisabled( "Selection range:" );
                         ImGui::SameLine();
@@ -4888,6 +4899,16 @@ void View::DrawFindZone()
                         {
                             TextFocused( "Zone group time:", "none" );
                         }
+
+                        ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::SameLine();
+                        ImGui::Text( "Average time" );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::SameLine();
+                        ImGui::Text( "Median time" );
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();
@@ -5017,6 +5038,33 @@ void View::DrawFindZone()
                                 x += sdx;
                                 tt += sstep;
                             }
+                        }
+
+                        float ta, tm;
+                        if( m_findZone.logTime )
+                        {
+                            const auto ltmin = log10fast( tmin );
+                            const auto ltmax = log10fast( tmax );
+
+                            ta = ( log10fast( m_findZone.average ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                            tm = ( log10fast( m_findZone.median ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                        }
+                        else
+                        {
+                            ta = ( m_findZone.average - tmin ) / float( tmax - tmin ) * numBins;
+                            tm = ( m_findZone.median - tmin ) / float( tmax - tmin ) * numBins;
+                        }
+                        ta = round( ta );
+                        tm = round( tm );
+
+                        if( ta == tm )
+                        {
+                            draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFFFF88FF );
+                        }
+                        else
+                        {
+                            draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFF4444FF );
+                            draw->AddLine( ImVec2( wpos.x + tm, wpos.y ), ImVec2( wpos.x + tm, wpos.y+Height-2 ), 0xFFFF8844 );
                         }
 
                         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )

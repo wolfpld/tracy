@@ -293,6 +293,9 @@ private:
         std::unique_ptr<int64_t[]> bins, binTime, selBin;
         std::vector<int64_t> sorted;
         size_t sortedNum;
+        float average;
+        float median;
+        int64_t total;
 
         void Reset()
         {
@@ -303,6 +306,9 @@ private:
             highlight.active = false;
             sorted.clear();
             sortedNum = 0;
+            average = 0;
+            median = 0;
+            total = 0;
         }
 
         void ResetGroups()

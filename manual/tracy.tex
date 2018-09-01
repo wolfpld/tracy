@@ -1022,7 +1022,7 @@ An example histogram is presented on figure~\ref{findzonehistogram}. Here you ca
 \label{findzonehistogram}
 \end{figure}
 
-The histogram is accompanied by various data statistics about displayed data, for example the \emph{total time} of the displayed samples, or the \emph{maximum number of counts} in histogram bins. There are three options that control how the data is presented:
+The histogram is accompanied by various data statistics about displayed data, for example the \emph{total time} of the displayed samples, or the \emph{maximum number of counts} in histogram bins. The average and median zone times are displayed on the histogram as a red (average) and blue (median) vertical bars. There are three options that control how the data is presented:
 
 \begin{itemize}
 \item \emph{Log values} -- Switches between linear and logarithmic scale on the y~axis of the graph, representing the call counts\footnote{Or time, if the \emph{cumulate time} option is enabled.}.
@@ -1133,9 +1133,9 @@ By default the memory window displays the memory data at the current point of pr
 \subsection{Trace information window}
 \label{traceinfo}
 
-This window contains various bits of information about profiler and the current trace. For example, you can see the profiler memory usage, the number of captured zones, lock event, plot points, memory allocations, etc.
+This window contains various bits of information about profiler and the current trace. For example, you can see the profiler memory usage, the number of captured zones, lock event, plot points, memory allocations, etc. There's also a section containing the selected frame set timing statistics and histogram\footnote{See section~\ref{findzone} for a description of the histogram. Note that there are subtle differences in the available functionality.}.
 
-In this window you can also view the information about the machine on which the profiled application was running. This includes the operating system, the used compiler, CPU name, amount of total available RAM, etc.
+In this window you can view the information about the machine on which the profiled application was running. This includes the operating system, the used compiler, CPU name, amount of total available RAM, etc.
 
 Here you will also be able to see the tombstone generated during an application's crash (section~\ref{crashhandling}). It provides you with information about the thread that has crashed, the crash reason and the crash call stack (section~\ref{callstackwindow}).
 

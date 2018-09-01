@@ -6357,25 +6357,32 @@ void View::DrawInfo()
     const auto fsz = m_worker.GetFullFrameCount( *m_frames );
     if( fsz != 0 )
     {
-        if( m_frameSortData.frameSet != m_frames || m_frameSortData.frameNum != fsz )
+        if( m_frameSortData.frameSet != m_frames )
         {
             m_frameSortData.frameSet = m_frames;
-            m_frameSortData.frameNum = fsz;
-
-            m_frameSortData.data.resize( fsz );
-            auto ptr = m_frameSortData.data.data();
-            int64_t total = 0;
-            for( size_t i=0; i<fsz; i++ )
+            m_frameSortData.frameNum = 0;
+            m_frameSortData.data.clear();
+            m_frameSortData.total = 0;
+        }
+        if( m_frameSortData.frameNum != fsz )
+        {
+            auto& vec = m_frameSortData.data;
+            vec.reserve( fsz );
+            int64_t total = m_frameSortData.total;
+            for( size_t i=m_frameSortData.frameNum; i<fsz; i++ )
             {
                 const auto t = m_worker.GetFrameTime( *m_frames, i );
-                *ptr++ = t;
+                vec.emplace_back( t );
                 total += t;
             }
-            pdqsort_branchless( m_frameSortData.data.begin(), m_frameSortData.data.end() );
+            auto mid = vec.begin() + m_frameSortData.frameNum;
+            pdqsort_branchless( mid, m_frameSortData.data.end() );
+            std::inplace_merge( vec.begin(), mid, vec.end() );
 
             m_frameSortData.average = float( total ) / fsz;
-            m_frameSortData.median = m_frameSortData.data[fsz/2];
+            m_frameSortData.median = vec[fsz/2];
             m_frameSortData.total = total;
+            m_frameSortData.frameNum = fsz;
         }
 
         const auto profileSpan = m_worker.GetLastTime() - m_worker.GetTimeBegin();

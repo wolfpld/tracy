@@ -6353,8 +6353,10 @@ void View::DrawInfo()
     TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
     TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
     TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
+
+    const auto fsz = m_worker.GetFrameCount( *m_frames ) - 1;
+    if( fsz != 0 )
     {
-        const auto fsz = m_worker.GetFrameCount( *m_frames );
         if( m_frameSortData.frameSet != m_frames || m_frameSortData.frameNum != fsz )
         {
             m_frameSortData.frameSet = m_frames;

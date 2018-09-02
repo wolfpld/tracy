@@ -396,6 +396,7 @@ private:
         bool logTime = true;
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins;
+        bool drawAvgMed = true;
     } m_frameSortData;
 };
 

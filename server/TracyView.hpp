@@ -287,7 +287,7 @@ private:
         bool logTime = true;
         bool cumulateTime = false;
         GroupBy groupBy = GroupBy::Thread;
-        SortBy sortBy = SortBy::Order;
+        SortBy sortBy = SortBy::Count;
         Region highlight;
         int64_t hlOrig_t0, hlOrig_t1;
         int64_t numBins = -1;

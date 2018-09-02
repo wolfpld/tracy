@@ -4869,10 +4869,20 @@ void View::DrawFindZone()
                         if( m_findZone.selGroup != m_findZone.Unselected )
                         {
                             TextFocused( "Zone group time:", TimeToString( m_findZone.groups[m_findZone.selGroup].time ) );
+                            TextFocused( "Group average:", TimeToString( m_findZone.selAverage ) );
+                            ImGui::SameLine();
+                            ImGui::Spacing();
+                            ImGui::SameLine();
+                            TextFocused( "Group median:", TimeToString( m_findZone.selMedian ) );
                         }
                         else
                         {
                             TextFocused( "Zone group time:", "none" );
+                            TextFocused( "Group average:", "none" );
+                            ImGui::SameLine();
+                            ImGui::Spacing();
+                            ImGui::SameLine();
+                            TextFocused( "Group median:", "none" );
                         }
 
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );

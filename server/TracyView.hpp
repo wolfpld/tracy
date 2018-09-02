@@ -294,9 +294,9 @@ private:
         std::unique_ptr<int64_t[]> bins, binTime, selBin;
         std::vector<int64_t> sorted, selSort;
         size_t sortedNum, selSortNum, selSortActive;
-        float average;
-        float median;
-        int64_t total;
+        float average, selAverage;
+        float median, selMedian;
+        int64_t total, selTotal;
 
         void Reset()
         {
@@ -324,6 +324,9 @@ private:
             selSort.clear();
             selSortNum = 0;
             selSortActive = 0;
+            selAverage = 0;
+            selMedian = 0;
+            selTotal = 0;
         }
 
         void ShowZone( int32_t srcloc, const char* name )

@@ -4638,19 +4638,26 @@ void View::DrawFindZone()
                     auto& vec = m_findZone.selSort;
                     vec.reserve( zsz );
                     auto act = m_findZone.selSortActive;
+                    int64_t total = m_findZone.selTotal;
                     size_t i;
                     for( i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                     {
                         auto& ev = zones[i];
                         if( selGroup == GetSelectionTarget( ev, groupBy ) )
                         {
-                            vec.emplace_back( ev.zone->end - ev.zone->start );
+                            const auto t = ev.zone->end - ev.zone->start;
+                            vec.emplace_back( t );
                             act++;
+                            total += t;
                         }
                     }
                     auto mid = vec.begin() + m_findZone.selSortActive;
                     pdqsort_branchless( mid, vec.end() );
                     std::inplace_merge( vec.begin(), mid, vec.end() );
+
+                    m_findZone.selAverage = float( total ) / act;
+                    m_findZone.selMedian = vec[act/2];
+                    m_findZone.selTotal = total;
                     m_findZone.selSortNum = m_findZone.sortedNum;
                     m_findZone.selSortActive = act;
                 }

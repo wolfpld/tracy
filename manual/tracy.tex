@@ -1022,7 +1022,7 @@ An example histogram is presented on figure~\ref{findzonehistogram}. Here you ca
 \label{findzonehistogram}
 \end{figure}
 
-The histogram is accompanied by various data statistics about displayed data, for example the \emph{total time} of the displayed samples, or the \emph{maximum number of counts} in histogram bins. The average and median zone times are displayed on the histogram as a red (average) and blue (median) vertical bars. There are three options that control how the data is presented:
+The histogram is accompanied by various data statistics about displayed data, for example the \emph{total time} of the displayed samples, or the \emph{maximum number of counts} in histogram bins. There are three options that control how the data is presented:
 
 \begin{itemize}
 \item \emph{Log values} -- Switches between linear and logarithmic scale on the y~axis of the graph, representing the call counts\footnote{Or time, if the \emph{cumulate time} option is enabled.}.
@@ -1075,6 +1075,8 @@ Clicking the \LMB{} left mouse button on group name will highlight the group tim
 \caption{Zone execution time histogram with a group highlighted.}
 \label{findzonehistogramgroup}
 \end{figure}
+
+The average and median zone times are displayed on the histogram as a red (average) and blue (median) vertical bars. When a group is selected, additional bars will indicate the average group time (orange) and median group time (green). You can disable drawing of either set of markers by clicking on the check-box next to the color legend.
 
 \subsection{Compare traces window}
 \label{compare}

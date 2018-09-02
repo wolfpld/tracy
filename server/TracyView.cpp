@@ -5017,10 +5017,21 @@ void View::DrawFindZone()
                                 m_findZone.highlight.active = true;
                                 m_findZone.highlight.start = t0;
                                 m_findZone.highlight.end = t1;
+                                m_findZone.hlOrig_t0 = t0;
+                                m_findZone.hlOrig_t1 = t1;
                             }
                             else if( ImGui::IsMouseDragging( 0, 0 ) )
                             {
-                                m_findZone.highlight.end = t1 > m_findZone.highlight.start ? t1 : t0;
+                                if( t0 < m_findZone.hlOrig_t0 )
+                                {
+                                    m_findZone.highlight.start = t0;
+                                    m_findZone.highlight.end = m_findZone.hlOrig_t1;
+                                }
+                                else
+                                {
+                                    m_findZone.highlight.start = m_findZone.hlOrig_t0;
+                                    m_findZone.highlight.end = t1;
+                                }
                                 m_findZone.ResetGroups();
                             }
                         }

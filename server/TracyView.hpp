@@ -289,6 +289,7 @@ private:
         GroupBy groupBy = GroupBy::Thread;
         SortBy sortBy = SortBy::Order;
         Region highlight;
+        int64_t hlOrig_t0, hlOrig_t1;
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins, binTime, selBin;
         std::vector<int64_t> sorted;

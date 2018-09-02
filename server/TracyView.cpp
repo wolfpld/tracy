@@ -4628,6 +4628,34 @@ void View::DrawFindZone()
                 m_findZone.sortedNum = i;
             }
 
+            if( m_findZone.selGroup != m_findZone.Unselected )
+            {
+                if( m_findZone.selSortNum != m_findZone.sortedNum )
+                {
+                    const auto selGroup = m_findZone.selGroup;
+                    const auto groupBy = m_findZone.groupBy;
+
+                    auto& vec = m_findZone.selSort;
+                    vec.reserve( zsz );
+                    auto act = m_findZone.selSortActive;
+                    size_t i;
+                    for( i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                    {
+                        auto& ev = zones[i];
+                        if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                        {
+                            vec.emplace_back( ev.zone->end - ev.zone->start );
+                            act++;
+                        }
+                    }
+                    auto mid = vec.begin() + m_findZone.selSortActive;
+                    pdqsort_branchless( mid, vec.end() );
+                    std::inplace_merge( vec.begin(), mid, vec.end() );
+                    m_findZone.selSortNum = m_findZone.sortedNum;
+                    m_findZone.selSortActive = act;
+                }
+            }
+
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
                 ImGui::Checkbox( "Log values", &m_findZone.logVal );
@@ -4649,8 +4677,6 @@ void View::DrawFindZone()
                 ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
                 const auto dt = double( tmax - tmin );
-                const auto selGroup = m_findZone.selGroup;
-                const auto groupBy = m_findZone.groupBy;
                 const auto cumulateTime = m_findZone.cumulateTime;
 
                 if( dt > 0 )
@@ -4686,42 +4712,47 @@ void View::DrawFindZone()
                         {
                             const auto tMinLog = log10( tmin );
                             const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
-                            auto zit = sorted.begin();
-                            while( zit != sorted.end() && *zit == 0 ) zit++;
-                            for( int64_t i=0; i<numBins; i++ )
                             {
-                                const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                                auto nit = std::lower_bound( zit, sorted.end(), nextBinVal );
-                                const auto distance = std::distance( zit, nit );
-                                const auto timeSum = std::accumulate( zit, nit, int64_t( 0 ) );
-                                bins[i] = distance;
-                                binTime[i] = timeSum;
-                                if( m_findZone.highlight.active )
+                                auto zit = sorted.begin();
+                                while( zit != sorted.end() && *zit == 0 ) zit++;
+                                for( int64_t i=0; i<numBins; i++ )
                                 {
-                                    auto end = nit == zit ? zit : nit-1;
-                                    if( *zit >= s && *end <= e ) selectionTime += timeSum;
-                                }
-                                zit = nit;
-                            }
-                            const auto timeSum = std::accumulate( zit, sorted.end(), int64_t( 0 ) );
-                            bins[numBins-1] += std::distance( zit, sorted.end() );
-                            binTime[numBins-1] += timeSum;
-                            if( m_findZone.highlight.active && *zit >= s && *(sorted.end()-1) <= e ) selectionTime += timeSum;
-
-                            if( selGroup != m_findZone.Unselected )
-                            {
-                                const auto idt = numBins / ( log10( tmax ) - tMinLog );
-                                for( auto& ev : zones )
-                                {
-                                    if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                    auto nit = std::lower_bound( zit, sorted.end(), nextBinVal );
+                                    const auto distance = std::distance( zit, nit );
+                                    const auto timeSum = std::accumulate( zit, nit, int64_t( 0 ) );
+                                    bins[i] = distance;
+                                    binTime[i] = timeSum;
+                                    if( m_findZone.highlight.active )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( log10( timeSpan ) - tMinLog ) * idt ) );
-                                            if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                        }
+                                        auto end = nit == zit ? zit : nit-1;
+                                        if( *zit >= s && *end <= e ) selectionTime += timeSum;
                                     }
+                                    zit = nit;
+                                }
+                                const auto timeSum = std::accumulate( zit, sorted.end(), int64_t( 0 ) );
+                                bins[numBins-1] += std::distance( zit, sorted.end() );
+                                binTime[numBins-1] += timeSum;
+                                if( m_findZone.highlight.active && *zit >= s && *(sorted.end()-1) <= e ) selectionTime += timeSum;
+                            }
+
+                            if( m_findZone.selGroup != m_findZone.Unselected )
+                            {
+                                auto zit = m_findZone.selSort.begin();
+                                while( zit != m_findZone.selSort.end() && *zit == 0 ) zit++;
+                                for( int64_t i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                    auto nit = std::lower_bound( zit, m_findZone.selSort.end(), nextBinVal );
+                                    if( cumulateTime )
+                                    {
+                                        selBin[i] = std::accumulate( zit, nit, int64_t( 0 ) );
+                                    }
+                                    else
+                                    {
+                                        selBin[i] = std::distance( zit, nit );
+                                    }
+                                    zit = nit;
                                 }
                             }
                         }
@@ -4750,20 +4781,23 @@ void View::DrawFindZone()
                             binTime[numBins-1] += timeSum;
                             if( m_findZone.highlight.active && *zit >= s && *(sorted.end()-1) <= e ) selectionTime += timeSum;
 
-                            if( selGroup != m_findZone.Unselected )
+                            if( m_findZone.selGroup != m_findZone.Unselected )
                             {
-                                const auto idt = numBins / dt;
-                                for( auto& ev : zones )
+                                auto zit = m_findZone.selSort.begin();
+                                while( zit != m_findZone.selSort.end() && *zit == 0 ) zit++;
+                                for( int64_t i=0; i<numBins; i++ )
                                 {
-                                    if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                                    const auto nextBinVal = ( i+1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( zit, m_findZone.selSort.end(), nextBinVal );
+                                    if( cumulateTime )
                                     {
-                                        const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                        if( timeSpan != 0 )
-                                        {
-                                            const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                            if( cumulateTime ) selBin[bin] += timeSpan; else selBin[bin]++;
-                                        }
+                                        selBin[i] = std::accumulate( zit, nit, int64_t( 0 ) );
                                     }
+                                    else
+                                    {
+                                        selBin[i] = std::distance( zit, nit );
+                                    }
+                                    zit = nit;
                                 }
                             }
                         }
@@ -4825,9 +4859,9 @@ void View::DrawFindZone()
                         {
                             TextFocused( "Selection time:", "none" );
                         }
-                        if( selGroup != m_findZone.Unselected )
+                        if( m_findZone.selGroup != m_findZone.Unselected )
                         {
-                            TextFocused( "Zone group time:", TimeToString( m_findZone.groups[selGroup].time ) );
+                            TextFocused( "Zone group time:", TimeToString( m_findZone.groups[m_findZone.selGroup].time ) );
                         }
                         else
                         {
@@ -5257,6 +5291,7 @@ void View::DrawFindZone()
             if( ImGui::IsItemClicked() )
             {
                 m_findZone.selGroup = v->first;
+                m_findZone.ResetSelection();
             }
             ImGui::PopID();
             ImGui::SameLine();
@@ -5327,6 +5362,7 @@ void View::DrawFindZone()
         if( ImGui::IsItemHovered() && ImGui::IsMouseClicked( 1 ) )
         {
             m_findZone.selGroup = m_findZone.Unselected;
+            m_findZone.ResetSelection();
         }
     }
 #endif

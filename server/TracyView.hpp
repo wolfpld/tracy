@@ -292,8 +292,8 @@ private:
         int64_t hlOrig_t0, hlOrig_t1;
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins, binTime, selBin;
-        std::vector<int64_t> sorted;
-        size_t sortedNum;
+        std::vector<int64_t> sorted, selSort;
+        size_t sortedNum, selSortNum, selSortActive;
         float average;
         float median;
         int64_t total;
@@ -314,8 +314,16 @@ private:
 
         void ResetGroups()
         {
+            ResetSelection();
             groups.clear();
             processed = 0;
+        }
+
+        void ResetSelection()
+        {
+            selSort.clear();
+            selSortNum = 0;
+            selSortActive = 0;
         }
 
         void ShowZone( int32_t srcloc, const char* name )

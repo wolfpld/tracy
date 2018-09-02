@@ -4887,13 +4887,25 @@ void View::DrawFindZone()
 
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Average time" );
+                        ImGui::Text( "Average" );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-                        ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0xAA/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Median time" );
+                        ImGui::Text( "Median" );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        ImGui::ColorButton( "c3", ImVec4( 0xFF/255.f, 0xAA/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::SameLine();
+                        ImGui::Text( "Group average" );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        ImGui::ColorButton( "c4", ImVec4( 0x44/255.f, 0xDD/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::SameLine();
+                        ImGui::Text( "Group median" );
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();
@@ -5025,22 +5037,28 @@ void View::DrawFindZone()
                             }
                         }
 
-                        float ta, tm;
+                        float ta, tm, tga, tgm;
                         if( m_findZone.logTime )
                         {
-                            const auto ltmin = log10fast( tmin );
-                            const auto ltmax = log10fast( tmax );
+                            const auto ltmin = log10( tmin );
+                            const auto ltmax = log10( tmax );
 
-                            ta = ( log10fast( m_findZone.average ) - ltmin ) / float( ltmax - ltmin ) * numBins;
-                            tm = ( log10fast( m_findZone.median ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                            ta = ( log10( m_findZone.average ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                            tm = ( log10( m_findZone.median ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                            tga = ( log10( m_findZone.selAverage ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                            tgm = ( log10( m_findZone.selMedian ) - ltmin ) / float( ltmax - ltmin ) * numBins;
                         }
                         else
                         {
                             ta = ( m_findZone.average - tmin ) / float( tmax - tmin ) * numBins;
                             tm = ( m_findZone.median - tmin ) / float( tmax - tmin ) * numBins;
+                            tga = ( m_findZone.selAverage - tmin ) / float( tmax - tmin ) * numBins;
+                            tgm = ( m_findZone.selMedian - tmin ) / float( tmax - tmin ) * numBins;
                         }
                         ta = round( ta );
                         tm = round( tm );
+                        tga = round( tga );
+                        tgm = round( tgm );
 
                         if( ta == tm )
                         {
@@ -5049,7 +5067,12 @@ void View::DrawFindZone()
                         else
                         {
                             draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFF4444FF );
-                            draw->AddLine( ImVec2( wpos.x + tm, wpos.y ), ImVec2( wpos.x + tm, wpos.y+Height-2 ), 0xFFFF8844 );
+                            draw->AddLine( ImVec2( wpos.x + tm, wpos.y ), ImVec2( wpos.x + tm, wpos.y+Height-2 ), 0xFFFFAA44 );
+                        }
+                        if( m_findZone.selGroup != m_findZone.Unselected )
+                        {
+                            draw->AddLine( ImVec2( wpos.x + tga, wpos.y ), ImVec2( wpos.x + tga, wpos.y+Height-2 ), 0xFF44AAFF );
+                            draw->AddLine( ImVec2( wpos.x + tgm, wpos.y ), ImVec2( wpos.x + tgm, wpos.y+Height-2 ), 0xFF44DD44 );
                         }
 
                         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )

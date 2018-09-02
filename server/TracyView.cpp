@@ -4885,17 +4885,18 @@ void View::DrawFindZone()
                             TextFocused( "Group median:", "none" );
                         }
 
+                        ImGui::Checkbox( "###draw1", &m_findZone.drawAvgMed );
+                        ImGui::SameLine();
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Average" );
+                        ImGui::Text( "Average time" );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
                         ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0xAA/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Median" );
-                        ImGui::SameLine();
-                        ImGui::Spacing();
+                        ImGui::Text( "Median time" );
+                        ImGui::Checkbox( "###draw2", &m_findZone.drawSelAvgMed );
                         ImGui::SameLine();
                         ImGui::ColorButton( "c3", ImVec4( 0xFF/255.f, 0xAA/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
@@ -5060,16 +5061,19 @@ void View::DrawFindZone()
                         tga = round( tga );
                         tgm = round( tgm );
 
-                        if( ta == tm )
+                        if( m_findZone.drawAvgMed )
                         {
-                            draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFFFF88FF );
+                            if( ta == tm )
+                            {
+                                draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFFFF88FF );
+                            }
+                            else
+                            {
+                                draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFF4444FF );
+                                draw->AddLine( ImVec2( wpos.x + tm, wpos.y ), ImVec2( wpos.x + tm, wpos.y+Height-2 ), 0xFFFFAA44 );
+                            }
                         }
-                        else
-                        {
-                            draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFF4444FF );
-                            draw->AddLine( ImVec2( wpos.x + tm, wpos.y ), ImVec2( wpos.x + tm, wpos.y+Height-2 ), 0xFFFFAA44 );
-                        }
-                        if( m_findZone.selGroup != m_findZone.Unselected )
+                        if( m_findZone.drawSelAvgMed && m_findZone.selGroup != m_findZone.Unselected )
                         {
                             draw->AddLine( ImVec2( wpos.x + tga, wpos.y ), ImVec2( wpos.x + tga, wpos.y+Height-2 ), 0xFF44AAFF );
                             draw->AddLine( ImVec2( wpos.x + tgm, wpos.y ), ImVec2( wpos.x + tgm, wpos.y+Height-2 ), 0xFF44DD44 );

@@ -297,6 +297,8 @@ private:
         float average, selAverage;
         float median, selMedian;
         int64_t total, selTotal;
+        bool drawAvgMed = true;
+        bool drawSelAvgMed = true;
 
         void Reset()
         {

@@ -302,11 +302,16 @@ private:
 
         void Reset()
         {
-            ResetGroups();
+            ResetMatch();
             match.clear();
             selMatch = 0;
             selGroup = Unselected;
             highlight.active = false;
+        }
+
+        void ResetMatch()
+        {
+            ResetGroups();
             sorted.clear();
             sortedNum = 0;
             average = 0;

@@ -4584,7 +4584,7 @@ void View::DrawFindZone()
 
             if( m_findZone.selMatch != prev )
             {
-                m_findZone.ResetGroups();
+                m_findZone.ResetMatch();
             }
         }
 

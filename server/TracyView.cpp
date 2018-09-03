@@ -5552,7 +5552,7 @@ void View::DrawCompare()
         ImGui::Separator();
         ImGui::NextColumn();
 
-        auto prev = m_compare.selMatch[0];
+        const auto prev0 = m_compare.selMatch[0];
         int idx = 0;
         for( auto& v : m_compare.match[0] )
         {
@@ -5566,7 +5566,7 @@ void View::DrawCompare()
         }
         ImGui::NextColumn();
 
-        prev = m_compare.selMatch[1];
+        const auto prev1 = m_compare.selMatch[1];
         idx = 0;
         for( auto& v : m_compare.match[1] )
         {
@@ -5579,9 +5579,13 @@ void View::DrawCompare()
             ImGui::PopID();
         }
         ImGui::NextColumn();
-
         ImGui::EndColumns();
         ImGui::TreePop();
+
+        if( prev0 != m_compare.selMatch[0] || prev1 != m_compare.selMatch[1] )
+        {
+            m_compare.ResetSelection();
+        }
     }
 
     ImGui::Separator();
@@ -5604,6 +5608,35 @@ void View::DrawCompare()
 
         auto tmin = std::min( zoneData0.min, zoneData1.min );
         auto tmax = std::max( zoneData0.max, zoneData1.max );;
+
+        const size_t zsz[2] = { zones0.size(), zones1.size() };
+        for( int k=0; k<2; k++ )
+        {
+            if( m_compare.sortedNum[k] != zsz[k] )
+            {
+                auto& zones = k == 0 ? zones0 : zones1;
+                auto& vec = m_compare.sorted[k];
+                vec.reserve( zsz[k] );
+                int64_t total = m_compare.total[k];
+                size_t i;
+                for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
+                {
+                    auto& zone = *zones[i].zone;
+                    if( zone.end < 0 ) break;
+                    const auto t = zone.end - zone.start;
+                    vec.emplace_back( t );
+                    total += t;
+                }
+                auto mid = vec.begin() + m_compare.sortedNum[k];
+                pdqsort_branchless( mid, vec.end() );
+                std::inplace_merge( vec.begin(), mid, vec.end() );
+
+                m_compare.average[k] = float( total ) / i;
+                m_compare.median[k] = vec[i/2];
+                m_compare.total[k] = total;
+                m_compare.sortedNum[k] = i;
+            }
+        }
 
         if( tmin != std::numeric_limits<int64_t>::max() )
         {

@@ -367,9 +367,27 @@ private:
         bool normalize = false;
         int64_t numBins = -1;
         std::unique_ptr<CompVal[]> bins, binTime;
+        std::vector<int64_t> sorted[2];
+        size_t sortedNum[2] = { 0, 0 };
+        float average[2];
+        float median[2];
+        int64_t total[2];
+
+        void ResetSelection()
+        {
+            for( int i=0; i<2; i++ )
+            {
+                sorted[i].clear();
+                sortedNum[i] = 0;
+                average[i] = 0;
+                median[i] = 0;
+                total[i] = 0;
+            }
+        }
 
         void Reset()
         {
+            ResetSelection();
             for( int i=0; i<2; i++ )
             {
                 match[i].clear();

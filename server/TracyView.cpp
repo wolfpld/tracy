@@ -4897,13 +4897,27 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         ImGui::ColorButton( "c3", ImVec4( 0xFF/255.f, 0xAA/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Group average" );
+                        if( m_findZone.selGroup != m_findZone.Unselected )
+                        {
+                            ImGui::Text( "Group average" );
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled( "Group average" );
+                        }
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
                         ImGui::ColorButton( "c4", ImVec4( 0x44/255.f, 0xDD/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Group median" );
+                        if( m_findZone.selGroup != m_findZone.Unselected )
+                        {
+                            ImGui::Text( "Group median" );
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled( "Group median" );
+                        }
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();

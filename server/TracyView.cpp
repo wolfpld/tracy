@@ -4610,12 +4610,9 @@ void View::DrawFindZone()
                 for( i=m_findZone.sortedNum; i<zsz; i++ )
                 {
                     auto& zone = *zones[i].zone;
-                    if( zone.end < 0 )
-                    {
-                        break;
-                    }
+                    if( zone.end < 0 ) break;
                     const auto t = zone.end - zone.start;
-                    m_findZone.sorted.emplace_back( t );
+                    vec.emplace_back( t );
                     total += t;
                 }
                 auto mid = vec.begin() + m_findZone.sortedNum;

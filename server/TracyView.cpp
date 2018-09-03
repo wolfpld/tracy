@@ -5717,107 +5717,42 @@ void View::DrawCompare()
                         {
                             adj0 = double( zones1.size() ) / zones0.size();
                         }
+                    }
 
-                        if( m_compare.logTime )
+                    const auto& sorted = m_compare.sorted;
+                    auto zit0 = sorted[0].begin();
+                    auto zit1 = sorted[1].begin();
+                    if( m_compare.logTime )
+                    {
+                        const auto tMinLog = log10( tmin );
+                        const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                        for( int64_t i=0; i<numBins; i++ )
                         {
-                            const auto tMinLog = log10fast( tmin );
-                            const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
-                            for( auto& ev : zones0 )
-                            {
-                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                if( timeSpan != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
-                                    bins[bin].v0 += adj0;
-                                    binTime[bin].v0 += timeSpan * adj0;
-                                }
-                            }
-                            for( auto& ev : zones1 )
-                            {
-                                const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                if( timeSpan != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
-                                    bins[bin].v1 += adj1;
-                                    binTime[bin].v1 += timeSpan * adj1;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            const auto idt = numBins / dt;
-                            for( auto& ev : zones0 )
-                            {
-                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                if( timeSpan != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                    bins[bin].v0 += adj0;
-                                    binTime[bin].v0 += timeSpan * adj0;
-                                }
-                            }
-                            for( auto& ev : zones1 )
-                            {
-                                const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                if( timeSpan != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                    bins[bin].v1 += adj1;
-                                    binTime[bin].v1 += timeSpan * adj1;
-                                }
-                            }
+                            const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                            auto nit0 = std::lower_bound( zit0, sorted[0].end(), nextBinVal );
+                            auto nit1 = std::lower_bound( zit1, sorted[1].end(), nextBinVal );
+                            bins[i].v0 += adj0 * std::distance( zit0, nit0 );
+                            bins[i].v1 += adj1 * std::distance( zit1, nit1 );
+                            binTime[i].v0 += adj0 * std::accumulate( zit0, nit0, int64_t( 0 ) );
+                            binTime[i].v1 += adj1 * std::accumulate( zit1, nit1, int64_t( 0 ) );
+                            zit0 = nit0;
+                            zit1 = nit1;
                         }
                     }
                     else
                     {
-                        if( m_compare.logTime )
+                        const auto zmax = tmax - tmin;
+                        for( int64_t i=0; i<numBins; i++ )
                         {
-                            const auto tMinLog = log10fast( tmin );
-                            const auto idt = numBins / ( log10fast( tmax ) - tMinLog );
-                            for( auto& ev : zones0 )
-                            {
-                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                if( timeSpan != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
-                                    bins[bin].v0++;
-                                    binTime[bin].v0 += timeSpan;
-                                }
-                            }
-                            for( auto& ev : zones1 )
-                            {
-                                const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                if( timeSpan != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( log10fast( timeSpan ) - tMinLog ) * idt ) );
-                                    bins[bin].v1++;
-                                    binTime[bin].v1 += timeSpan;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            const auto idt = numBins / dt;
-                            for( auto& ev : zones0 )
-                            {
-                                const auto timeSpan = m_worker.GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                if( timeSpan != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                    bins[bin].v0++;
-                                    binTime[bin].v0 += timeSpan;
-                                }
-                            }
-                            for( auto& ev : zones1 )
-                            {
-                                const auto timeSpan = m_compare.second->GetZoneEndDirect( *ev.zone ) - ev.zone->start;
-                                if( timeSpan != 0 )
-                                {
-                                    const auto bin = std::min( numBins - 1, int64_t( ( timeSpan - tmin ) * idt ) );
-                                    bins[bin].v1++;
-                                    binTime[bin].v1 += timeSpan;
-                                }
-                            }
+                            const auto nextBinVal = ( i+1 ) * zmax / numBins;
+                            auto nit0 = std::lower_bound( zit0, sorted[0].end(), nextBinVal );
+                            auto nit1 = std::lower_bound( zit1, sorted[1].end(), nextBinVal );
+                            bins[i].v0 += adj0 * std::distance( zit0, nit0 );
+                            bins[i].v1 += adj1 * std::distance( zit1, nit1 );
+                            binTime[i].v0 += adj0 * std::accumulate( zit0, nit0, int64_t( 0 ) );
+                            binTime[i].v1 += adj1 * std::accumulate( zit1, nit1, int64_t( 0 ) );
+                            zit0 = nit0;
+                            zit1 = nit1;
                         }
                     }
 

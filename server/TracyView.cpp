@@ -5851,8 +5851,36 @@ void View::DrawCompare()
                     ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
 #endif
-                    TextFocused( "Total time (external):", TimeToString( zoneData1.total * adj1 ) );
+                    TextFocused( "Total time (ext.):", TimeToString( zoneData1.total * adj1 ) );
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
+
+#ifdef TRACY_EXTENDED_FONT
+                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    ImGui::SameLine();
+#endif
+                    TextFocused( "Average time (this):", TimeToString( m_compare.average[0] ) );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    ImGui::SameLine();
+#endif
+                    TextFocused( "Median time (this):", TimeToString( m_compare.median[0] ) );
+
+#ifdef TRACY_EXTENDED_FONT
+                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    ImGui::SameLine();
+#endif
+                    TextFocused( "Average time (ext.):", TimeToString( m_compare.average[1] ) );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    ImGui::SameLine();
+#endif
+                    TextFocused( "Median time (ext.):", TimeToString( m_compare.median[1] ) );
 
 #ifdef TRACY_EXTENDED_FONT
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );

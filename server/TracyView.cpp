@@ -5844,6 +5844,9 @@ void View::DrawCompare()
                     ImGui::SameLine();
 #endif
                     TextFocused( "Total time (this):", TimeToString( zoneData0.total * adj0 ) );
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
                     ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();

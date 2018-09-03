@@ -299,6 +299,8 @@ private:
         int64_t total, selTotal;
         bool drawAvgMed = true;
         bool drawSelAvgMed = true;
+        float scale = 1.f;
+        float nextScrollPos = -1.f;
 
         void Reset()
         {

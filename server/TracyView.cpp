@@ -4685,9 +4685,10 @@ void View::DrawFindZone()
 
                 if( dt > 0 )
                 {
-                    const auto w = ImGui::GetContentRegionAvail().x;
+                    const auto wWin = ImGui::GetContentRegionAvail().x;
+                    const auto wHist = round( wWin * m_findZone.scale );
 
-                    const auto numBins = int64_t( w - 4 );
+                    const auto numBins = int64_t( wHist - 4 );
                     if( numBins > 1 )
                     {
                         if( numBins != m_findZone.numBins )
@@ -4920,14 +4921,23 @@ void View::DrawFindZone()
                         }
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
-                        const auto wpos = ImGui::GetCursorScreenPos();
 
-                        ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
+                        auto& style = ImGui::GetStyle();
+                        ImGui::BeginChild( "##histogramScroll", ImVec2( wWin, style.ScrollbarSize + 2 + Height + round( ty * 1.5 ) ), false, ImGuiWindowFlags_HorizontalScrollbar );
+                        const auto wposY = ImGui::GetCursorScreenPos().y;
+                        ImGui::InvisibleButton( "##histogram", ImVec2( wHist, Height + round( ty * 1.5 ) ) );
+                        if( m_findZone.nextScrollPos >= 0.f )
+                        {
+                            ImGui::SetScrollX( m_findZone.nextScrollPos );
+                            m_findZone.nextScrollPos = -1.f;
+                        }
+                        const auto wposX = ImGui::GetCursorScreenPos().x;
+                        const auto wpos = ImVec2( wposX, wposY );
                         const bool hover = ImGui::IsItemHovered();
 
                         auto draw = ImGui::GetWindowDrawList();
-                        draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
-                        draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
+                        draw->AddRectFilled( wpos, wpos + ImVec2( wHist, Height ), 0x22FFFFFF );
+                        draw->AddRect( wpos, wpos + ImVec2( wHist, Height ), 0x88FFFFFF );
 
                         if( m_findZone.logVal )
                         {
@@ -4973,7 +4983,7 @@ void View::DrawFindZone()
                             const auto end = int( ceil( ltmax ) );
 
                             const auto range = ltmax - ltmin;
-                            const auto step = w / range;
+                            const auto step = wHist / range;
                             auto offset = start - ltmin;
                             int tw = 0;
                             int tx = 0;
@@ -5090,7 +5100,7 @@ void View::DrawFindZone()
                             draw->AddLine( ImVec2( wpos.x + tgm, wpos.y ), ImVec2( wpos.x + tgm, wpos.y+Height-2 ), 0xFF44DD44 );
                         }
 
-                        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
+                        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( wHist-2, Height + round( ty * 1.5 ) ) ) )
                         {
                             const auto ltmin = log10( tmin );
                             const auto ltmax = log10( tmax );
@@ -5172,6 +5182,34 @@ void View::DrawFindZone()
                                 }
                                 m_findZone.ResetGroups();
                             }
+
+                            if( ImGui::IsMouseDragging( 1 ) )
+                            {
+                                ImGui::SetScrollX( ImGui::GetScrollX() - io.MouseDelta.x );
+                            }
+
+                            const auto wheel = io.MouseWheel;
+                            if( wheel != 0 )
+                            {
+                                if( wheel > 0 )
+                                {
+                                    m_findZone.scale = std::min( 10.f, m_findZone.scale * 1.25f );
+                                }
+                                else
+                                {
+                                    m_findZone.scale = std::max( 1.f, m_findZone.scale / 1.25f );
+                                }
+
+                                const double mouse = io.MousePos.x - wpos.x;
+                                const auto p = mouse / wHist;
+                                const auto sx = ImGui::GetScrollX();
+                                const auto newHist = wWin * m_findZone.scale;
+                                const auto newMouse = newHist * p;
+                                const auto diff = newMouse - mouse;
+                                const auto newSx = round( sx + diff );
+                                m_findZone.nextScrollPos = newSx;
+                                ImGui::SetScrollX( newSx );
+                            }
                         }
 
                         if( m_findZone.highlight.active && m_findZone.highlight.start != m_findZone.highlight.end )
@@ -5197,6 +5235,8 @@ void View::DrawFindZone()
                             draw->AddRectFilled( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x22DD8888 );
                             draw->AddRect( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x44DD8888 );
                         }
+
+                        ImGui::EndChild();
                     }
                 }
             }

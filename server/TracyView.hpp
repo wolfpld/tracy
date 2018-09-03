@@ -293,7 +293,7 @@ private:
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins, binTime, selBin;
         std::vector<int64_t> sorted, selSort;
-        size_t sortedNum, selSortNum, selSortActive;
+        size_t sortedNum = 0, selSortNum, selSortActive;
         float average, selAverage;
         float median, selMedian;
         int64_t total, selTotal;

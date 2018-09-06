@@ -422,7 +422,22 @@ Tracy can monitor memory usage of your application. Knowledge about each perform
 \item Memory allocation hot-spot tree.
 \end{itemize}
 
-To mark memory events, use the \texttt{TracyAlloc(ptr, size)} and \texttt{TracyFree(ptr)} macros. Typically you would do that in overloads of \texttt{operator new} and \texttt{operator delete}.
+To mark memory events, use the \texttt{TracyAlloc(ptr, size)} and \texttt{TracyFree(ptr)} macros. Typically you would do that in overloads of \texttt{operator new} and \texttt{operator delete}, for example:
+
+\begin{lstlisting}
+void* operator new( std::size_t count )
+{
+    auto ptr = malloc( count );
+    TracyAlloc( ptr, count );
+    return ptr;
+}
+
+void operator delete( void* ptr ) noexcept
+{
+    TracyFree( ptr );
+    free( ptr );
+}
+\end{lstlisting}
 
 \subsection{Lua support}
 

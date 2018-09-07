@@ -165,14 +165,18 @@ const char* GetThreadName( uint64_t id )
 #   endif
     snprintf( path, sizeof( path ), "/proc/self/task/%d/comm", tid );
     sprintf( buf, "%" PRIu64, id );
+#   ifndef __ANDROID__
     pthread_setcancelstate( PTHREAD_CANCEL_DISABLE, &cs );
+#   endif
     if ( ( fd = open( path, O_RDONLY ) ) > 0) {
         int len = read( fd, buf, 255 );
         if ( len > 0 )
             buf[len] = 0;
         close( fd );
     }
+#   ifndef __ANDROID__
     pthread_setcancelstate( cs, 0 );
+#   endif
     return buf;
 #  endif
 #endif

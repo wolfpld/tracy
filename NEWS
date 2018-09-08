@@ -94,8 +94,11 @@ v0.4 (xxxx-xx-xx)
 - Fonts should now be less blurry.
 - "Go to parent" button in zone info window won't be displayed if there is
   no parent to go to.
-- Compare menu now has colored markers to make it easier to distinguish
-  "this" and "external" traces.
+- Improvements to the compare traces menu.
+  - There are now colored markers to make it easier to distinguish "this" and
+    "external" traces.
+  - The amount of saved time is now displayed (a difference between total
+    run times of both traces).
 - Tracy will now collect host information, like CPU name, amount of system
   memory, etc.
 - Windows builds of the "profiler" utility will perform a check of supported

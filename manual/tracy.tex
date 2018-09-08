@@ -417,6 +417,25 @@ Using the \texttt{ZoneScoped} family of macros creates a stack variable named \t
 
 The \texttt{ZoneText} and \texttt{ZoneName} macros work only for the zones created using the \texttt{ZoneScoped} macros. For the \texttt{ZoneNamed} macros, you will need to invoke the methods \texttt{Text} or \texttt{Name} of the variable you have created.
 
+\subsubsection{Variable shadowing}
+
+The following code is fully compliant with the C++ standard:
+
+\begin{lstlisting}
+void Function()
+{
+	ZoneScoped;
+	...
+	for(int i=0; i<10; i++)
+	{
+		ZoneScoped;
+		...
+	}
+}
+\end{lstlisting}
+
+This doesn't stop some compilers from dispensing \emph{fashion advice} about variable shadowing (as both \texttt{ZoneScoped} calls create a variable with the same name, with the inner scope one shadowing the one in the outer scope). If you want to avoid these warnings, you will also need to use the \texttt{ZoneNamed} macros.
+
 \subsubsection{Filtering zones}
 \label{filteringzones}
 

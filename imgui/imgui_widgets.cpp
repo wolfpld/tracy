@@ -1,24 +1,27 @@
-// dear imgui, v1.64
+// dear imgui, v1.65
 // (widgets code)
 
 /*
 
 Index of this file:
-- Widgets: Text, etc.
-- Widgets: Button, Image, Checkbox, RadioButton, ProgressBar, Bullet, etc.
-- Widgets: ComboBox
-- Data Type and Data Formatting Helpers
-- Widgets: DragScalar, DragFloat, DragInt, etc.
-- Widgets: SliderScalar, SliderFloat, SliderInt, etc.
-- Widgets: InputScalar, InputFloat, InputInt, etc.
-- Widgets: InputText, InputTextMultiline
-- Widgets: ColorEdit, ColorPicker, ColorButton, etc.
-- Widgets: TreeNode, TreePush, TreePop, etc.
-- Widgets: Selectable
-- Widgets: ListBox
-- Widgets: PlotLines, PlotHistogram
-- Widgets: Value
-- Widgets: MenuItem, BeginMenu, EndMenu, etc.
+
+// [SECTION] Forward Declarations
+// [SECTION] Widgets: Text, etc.
+// [SECTION] Widgets: Main (Button, Image, Checkbox, RadioButton, ProgressBar, Bullet, etc.)
+// [SECTION] Widgets: Low-level Layout helpers (Spacing, Dummy, NewLine, Separator, etc.)
+// [SECTION] Widgets: ComboBox
+// [SECTION] Data Type and Data Formatting Helpers
+// [SECTION] Widgets: DragScalar, DragFloat, DragInt, etc.
+// [SECTION] Widgets: SliderScalar, SliderFloat, SliderInt, etc.
+// [SECTION] Widgets: InputScalar, InputFloat, InputInt, etc.
+// [SECTION] Widgets: InputText, InputTextMultiline
+// [SECTION] Widgets: ColorEdit, ColorPicker, ColorButton, etc.
+// [SECTION] Widgets: TreeNode, CollapsingHeader, etc.
+// [SECTION] Widgets: Selectable
+// [SECTION] Widgets: ListBox
+// [SECTION] Widgets: PlotLines, PlotHistogram
+// [SECTION] Widgets: Value helpers
+// [SECTION] Widgets: MenuItem, BeginMenu, EndMenu, etc.
 
 */
 
@@ -80,7 +83,7 @@ static const ImU64  IM_U64_MAX = (2ULL * 9223372036854775807LL + 1);
 #endif
 
 //-------------------------------------------------------------------------
-// Forward Declarations
+// [SECTION] Forward Declarations
 //-------------------------------------------------------------------------
 
 // Data Type helpers
@@ -93,20 +96,9 @@ static bool             InputTextFilterCharacter(unsigned int* p_char, ImGuiInpu
 static int              InputTextCalcTextLenAndLineCount(const char* text_begin, const char** out_text_end);
 static ImVec2           InputTextCalcTextSizeW(const ImWchar* text_begin, const ImWchar* text_end, const ImWchar** remaining = NULL, ImVec2* out_offset = NULL, bool stop_on_new_line = false);
 
-namespace ImGui
-{
-
-// Template widget behaviors
-template<typename TYPE, typename SIGNEDTYPE, typename FLOATTYPE>
-static bool             DragBehaviorT(ImGuiDataType data_type, TYPE* v, float v_speed, const TYPE v_min, const TYPE v_max, const char* format, float power);
-
-template<typename TYPE, typename SIGNEDTYPE, typename FLOATTYPE>
-static bool             SliderBehaviorT(const ImRect& bb, ImGuiID id, ImGuiDataType data_type, TYPE* v, const TYPE v_min, const TYPE v_max, const char* format, float power, ImGuiSliderFlags flags, ImRect* out_grab_bb);
-
-}
-
 //-------------------------------------------------------------------------
-// WIDGETS: Text
+// [SECTION] Widgets: Text, etc.
+//-------------------------------------------------------------------------
 // - TextUnformatted()
 // - Text()
 // - TextV()
@@ -361,7 +353,8 @@ void ImGui::BulletTextV(const char* fmt, va_list args)
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Main
+// [SECTION] Widgets: Main
+//-------------------------------------------------------------------------
 // - ButtonBehavior() [Internal]
 // - Button()
 // - SmallButton()
@@ -1064,7 +1057,191 @@ void ImGui::Bullet()
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Combo Box
+// [SECTION] Widgets: Low-level Layout helpers
+//-------------------------------------------------------------------------
+// - Spacing()
+// - Dummy()
+// - NewLine()
+// - AlignTextToFramePadding()
+// - Separator()
+// - VerticalSeparator() [Internal]
+// - SplitterBehavior() [Internal]
+//-------------------------------------------------------------------------
+
+void ImGui::Spacing()
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+    ItemSize(ImVec2(0,0));
+}
+
+void ImGui::Dummy(const ImVec2& size)
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+    ItemSize(bb);
+    ItemAdd(bb, 0);
+}
+
+void ImGui::NewLine()
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    ImGuiContext& g = *GImGui;
+    const ImGuiLayoutType backup_layout_type = window->DC.LayoutType;
+    window->DC.LayoutType = ImGuiLayoutType_Vertical;
+    if (window->DC.CurrentLineSize.y > 0.0f)     // In the event that we are on a line with items that is smaller that FontSize high, we will preserve its height.
+        ItemSize(ImVec2(0,0));
+    else
+        ItemSize(ImVec2(0.0f, g.FontSize));
+    window->DC.LayoutType = backup_layout_type;
+}
+
+void ImGui::AlignTextToFramePadding()
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    ImGuiContext& g = *GImGui;
+    window->DC.CurrentLineSize.y = ImMax(window->DC.CurrentLineSize.y, g.FontSize + g.Style.FramePadding.y * 2);
+    window->DC.CurrentLineTextBaseOffset = ImMax(window->DC.CurrentLineTextBaseOffset, g.Style.FramePadding.y);
+}
+
+// Horizontal/vertical separating line
+void ImGui::Separator()
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+    ImGuiContext& g = *GImGui;
+
+    // Those flags should eventually be overridable by the user
+    ImGuiSeparatorFlags flags = (window->DC.LayoutType == ImGuiLayoutType_Horizontal) ? ImGuiSeparatorFlags_Vertical : ImGuiSeparatorFlags_Horizontal;
+    IM_ASSERT(ImIsPowerOfTwo((int)(flags & (ImGuiSeparatorFlags_Horizontal | ImGuiSeparatorFlags_Vertical))));   // Check that only 1 option is selected
+    if (flags & ImGuiSeparatorFlags_Vertical)
+    {
+        VerticalSeparator();
+        return;
+    }
+
+    // Horizontal Separator
+    if (window->DC.ColumnsSet)
+        PopClipRect();
+
+    float x1 = window->Pos.x;
+    float x2 = window->Pos.x + window->Size.x;
+    if (!window->DC.GroupStack.empty())
+        x1 += window->DC.Indent.x;
+
+    const ImRect bb(ImVec2(x1, window->DC.CursorPos.y), ImVec2(x2, window->DC.CursorPos.y+1.0f));
+    ItemSize(ImVec2(0.0f, 0.0f)); // NB: we don't provide our width so that it doesn't get feed back into AutoFit, we don't provide height to not alter layout.
+    if (!ItemAdd(bb, 0))
+    {
+        if (window->DC.ColumnsSet)
+            PushColumnClipRect();
+        return;
+    }
+
+    window->DrawList->AddLine(bb.Min, ImVec2(bb.Max.x,bb.Min.y), GetColorU32(ImGuiCol_Separator));
+
+    if (g.LogEnabled)
+        LogRenderedText(NULL, IM_NEWLINE "--------------------------------");
+
+    if (window->DC.ColumnsSet)
+    {
+        PushColumnClipRect();
+        window->DC.ColumnsSet->LineMinY = window->DC.CursorPos.y;
+    }
+}
+
+void ImGui::VerticalSeparator()
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+    ImGuiContext& g = *GImGui;
+
+    float y1 = window->DC.CursorPos.y;
+    float y2 = window->DC.CursorPos.y + window->DC.CurrentLineSize.y;
+    const ImRect bb(ImVec2(window->DC.CursorPos.x, y1), ImVec2(window->DC.CursorPos.x + 1.0f, y2));
+    ItemSize(ImVec2(bb.GetWidth(), 0.0f));
+    if (!ItemAdd(bb, 0))
+        return;
+
+    window->DrawList->AddLine(ImVec2(bb.Min.x, bb.Min.y), ImVec2(bb.Min.x, bb.Max.y), GetColorU32(ImGuiCol_Separator));
+    if (g.LogEnabled)
+        LogText(" |");
+}
+
+// Using 'hover_visibility_delay' allows us to hide the highlight and mouse cursor for a short time, which can be convenient to reduce visual noise.
+bool ImGui::SplitterBehavior(const ImRect& bb, ImGuiID id, ImGuiAxis axis, float* size1, float* size2, float min_size1, float min_size2, float hover_extend, float hover_visibility_delay)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
+
+    const ImGuiItemFlags item_flags_backup = window->DC.ItemFlags;
+    window->DC.ItemFlags |= ImGuiItemFlags_NoNav | ImGuiItemFlags_NoNavDefaultFocus;
+    bool item_add = ItemAdd(bb, id);
+    window->DC.ItemFlags = item_flags_backup;
+    if (!item_add)
+        return false;
+
+    bool hovered, held;
+    ImRect bb_interact = bb;
+    bb_interact.Expand(axis == ImGuiAxis_Y ? ImVec2(0.0f, hover_extend) : ImVec2(hover_extend, 0.0f));
+    ButtonBehavior(bb_interact, id, &hovered, &held, ImGuiButtonFlags_FlattenChildren | ImGuiButtonFlags_AllowItemOverlap);
+    if (g.ActiveId != id)
+        SetItemAllowOverlap();
+
+    if (held || (g.HoveredId == id && g.HoveredIdPreviousFrame == id && g.HoveredIdTimer >= hover_visibility_delay))
+        SetMouseCursor(axis == ImGuiAxis_Y ? ImGuiMouseCursor_ResizeNS : ImGuiMouseCursor_ResizeEW);
+
+    ImRect bb_render = bb;
+    if (held)
+    {
+        ImVec2 mouse_delta_2d = g.IO.MousePos - g.ActiveIdClickOffset - bb_interact.Min;
+        float mouse_delta = (axis == ImGuiAxis_Y) ? mouse_delta_2d.y : mouse_delta_2d.x;
+
+        // Minimum pane size
+        float size_1_maximum_delta = ImMax(0.0f, *size1 - min_size1);
+        float size_2_maximum_delta = ImMax(0.0f, *size2 - min_size2);
+        if (mouse_delta < -size_1_maximum_delta)
+            mouse_delta = -size_1_maximum_delta;
+        if (mouse_delta > size_2_maximum_delta)
+            mouse_delta = size_2_maximum_delta;
+
+        // Apply resize
+        if (mouse_delta != 0.0f)
+        {
+            if (mouse_delta < 0.0f)
+                IM_ASSERT(*size1 + mouse_delta >= min_size1);
+            if (mouse_delta > 0.0f)
+                IM_ASSERT(*size2 - mouse_delta >= min_size2);
+            *size1 += mouse_delta;
+            *size2 -= mouse_delta;
+            bb_render.Translate((axis == ImGuiAxis_X) ? ImVec2(mouse_delta, 0.0f) : ImVec2(0.0f, mouse_delta));
+            MarkItemEdited(id);
+        }
+    }
+
+    // Render
+    const ImU32 col = GetColorU32(held ? ImGuiCol_SeparatorActive : (hovered && g.HoveredIdTimer >= hover_visibility_delay) ? ImGuiCol_SeparatorHovered : ImGuiCol_Separator);
+    window->DrawList->AddRectFilled(bb_render.Min, bb_render.Max, col, g.Style.FrameRounding);
+
+    return held;
+}
+
+
+//-------------------------------------------------------------------------
+// [SECTION] Widgets: Combo Box
+//-------------------------------------------------------------------------
 // - BeginCombo()
 // - EndCombo()
 // - Combo()
@@ -1278,7 +1455,8 @@ bool ImGui::Combo(const char* label, int* current_item, const char* items_separa
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Data Type and Data Formatting Helpers [Internal]
+// [SECTION] Data Type and Data Formatting Helpers [Internal]
+//-------------------------------------------------------------------------
 // - PatchFormatStringFloatToInt()
 // - DataTypeFormatString()
 // - DataTypeApplyOp()
@@ -1489,7 +1667,7 @@ static const char* ImAtoi(const char* src, TYPE* output)
 }
 
 template<typename TYPE, typename SIGNEDTYPE>
-static inline TYPE RoundScalarWithFormat(const char* format, ImGuiDataType data_type, TYPE v)
+TYPE ImGui::RoundScalarWithFormatT(const char* format, ImGuiDataType data_type, TYPE v)
 {
     const char* fmt_start = ImParseFormatFindStart(format);
     if (fmt_start[0] != '%' || fmt_start[1] == '%') // Don't apply if the value is not visible in the format string
@@ -1507,7 +1685,8 @@ static inline TYPE RoundScalarWithFormat(const char* format, ImGuiDataType data_
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Drags
+// [SECTION] Widgets: DragScalar, DragFloat, DragInt, etc.
+//-------------------------------------------------------------------------
 // - DragBehaviorT<>() [Internal]
 // - DragBehavior() [Internal]
 // - DragScalar()
@@ -1526,7 +1705,7 @@ static inline TYPE RoundScalarWithFormat(const char* format, ImGuiDataType data_
 
 // This is called by DragBehavior() when the widget is active (held by mouse or being manipulated with Nav controls)
 template<typename TYPE, typename SIGNEDTYPE, typename FLOATTYPE>
-static bool ImGui::DragBehaviorT(ImGuiDataType data_type, TYPE* v, float v_speed, const TYPE v_min, const TYPE v_max, const char* format, float power)
+bool ImGui::DragBehaviorT(ImGuiDataType data_type, TYPE* v, float v_speed, const TYPE v_min, const TYPE v_max, const char* format, float power)
 {
     ImGuiContext& g = *GImGui;
 
@@ -1589,7 +1768,7 @@ static bool ImGui::DragBehaviorT(ImGuiDataType data_type, TYPE* v, float v_speed
     }
 
     // Round to user desired precision based on format string
-    v_cur = RoundScalarWithFormat<TYPE, SIGNEDTYPE>(format, data_type, v_cur);
+    v_cur = RoundScalarWithFormatT<TYPE, SIGNEDTYPE>(format, data_type, v_cur);
 
     // Preserve remainder after rounding has been applied. This also allow slow tweaking of values.
     g.DragCurrentAccumDirty = false;
@@ -1844,7 +2023,8 @@ bool ImGui::DragIntRange2(const char* label, int* v_current_min, int* v_current_
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Sliders
+// [SECTION] Widgets: SliderScalar, SliderFloat, SliderInt, etc.
+//-------------------------------------------------------------------------
 // - SliderBehaviorT<>() [Internal]
 // - SliderBehavior() [Internal]
 // - SliderScalar()
@@ -1864,7 +2044,7 @@ bool ImGui::DragIntRange2(const char* label, int* v_current_min, int* v_current_
 //-------------------------------------------------------------------------
 
 template<typename TYPE, typename FLOATTYPE>
-static inline float SliderBehaviorCalcRatioFromValue(ImGuiDataType data_type, TYPE v, TYPE v_min, TYPE v_max, float power, float linear_zero_pos)
+float ImGui::SliderCalcRatioFromValueT(ImGuiDataType data_type, TYPE v, TYPE v_min, TYPE v_max, float power, float linear_zero_pos)
 {
     if (v_min == v_max)
         return 0.0f;
@@ -1891,7 +2071,7 @@ static inline float SliderBehaviorCalcRatioFromValue(ImGuiDataType data_type, TY
 
 // FIXME: Move some of the code into SliderBehavior(). Current responsability is larger than what the equivalent DragBehaviorT<> does, we also do some rendering, etc.
 template<typename TYPE, typename SIGNEDTYPE, typename FLOATTYPE>
-static bool ImGui::SliderBehaviorT(const ImRect& bb, ImGuiID id, ImGuiDataType data_type, TYPE* v, const TYPE v_min, const TYPE v_max, const char* format, float power, ImGuiSliderFlags flags, ImRect* out_grab_bb)
+bool ImGui::SliderBehaviorT(const ImRect& bb, ImGuiID id, ImGuiDataType data_type, TYPE* v, const TYPE v_min, const TYPE v_max, const char* format, float power, ImGuiSliderFlags flags, ImRect* out_grab_bb)
 {
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = g.Style;
@@ -1957,7 +2137,7 @@ static bool ImGui::SliderBehaviorT(const ImRect& bb, ImGuiID id, ImGuiDataType d
             }
             else if (delta != 0.0f)
             {
-                clicked_t = SliderBehaviorCalcRatioFromValue<TYPE,FLOATTYPE>(data_type, *v, v_min, v_max, power, linear_zero_pos);
+                clicked_t = SliderCalcRatioFromValueT<TYPE,FLOATTYPE>(data_type, *v, v_min, v_max, power, linear_zero_pos);
                 const int decimal_precision = is_decimal ? ImParseFormatPrecision(format, 3) : 0;
                 if ((decimal_precision > 0) || is_power)
                 {
@@ -2029,7 +2209,7 @@ static bool ImGui::SliderBehaviorT(const ImRect& bb, ImGuiID id, ImGuiDataType d
             }
 
             // Round to user desired precision based on format string
-            v_new = RoundScalarWithFormat<TYPE,SIGNEDTYPE>(format, data_type, v_new);
+            v_new = RoundScalarWithFormatT<TYPE,SIGNEDTYPE>(format, data_type, v_new);
 
             // Apply result
             if (*v != v_new)
@@ -2041,7 +2221,7 @@ static bool ImGui::SliderBehaviorT(const ImRect& bb, ImGuiID id, ImGuiDataType d
     }
 
     // Output grab position so it can be displayed by the caller
-    float grab_t = SliderBehaviorCalcRatioFromValue<TYPE,FLOATTYPE>(data_type, *v, v_min, v_max, power, linear_zero_pos);
+    float grab_t = SliderCalcRatioFromValueT<TYPE,FLOATTYPE>(data_type, *v, v_min, v_max, power, linear_zero_pos);
     if (!is_horizontal)
         grab_t = 1.0f - grab_t;
     const float grab_pos = ImLerp(slider_usable_pos_min, slider_usable_pos_max, grab_t);
@@ -2308,11 +2488,12 @@ bool ImGui::VSliderInt(const char* label, const ImVec2& size, int* v, int v_min,
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Inputs (_excepted InputText_)
-// - ImParseFormatFindStart()
-// - ImParseFormatFindEnd()
-// - ImParseFormatTrimDecorations()
-// - ImParseFormatPrecision()
+// [SECTION] Widgets: InputScalar, InputFloat, InputInt, etc.
+//-------------------------------------------------------------------------
+// - ImParseFormatFindStart() [Internal]
+// - ImParseFormatFindEnd() [Internal]
+// - ImParseFormatTrimDecorations() [Internal]
+// - ImParseFormatPrecision() [Internal]
 // - InputScalarAsWidgetReplacement() [Internal]
 // - InputScalar()
 // - InputScalarN()
@@ -2605,7 +2786,8 @@ bool ImGui::InputDouble(const char* label, double* v, double step, double step_f
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: InputText
+// [SECTION] Widgets: InputText, InputTextMultiline
+//-------------------------------------------------------------------------
 // - InputText()
 // - InputTextMultiline()
 // - InputTextEx() [Internal]
@@ -2778,7 +2960,7 @@ static bool STB_TEXTEDIT_INSERTCHARS(STB_TEXTEDIT_STRING* obj, int pos, const Im
 #define STB_TEXTEDIT_K_SHIFT        0x20000
 
 #define STB_TEXTEDIT_IMPLEMENTATION
-#include "stb_textedit.h"
+#include "imstb_textedit.h"
 
 }
 
@@ -3530,7 +3712,7 @@ bool ImGui::InputTextEx(const char* label, char* buf, int buf_size, const ImVec2
             draw_window->DrawList->AddText(g.Font, g.FontSize, render_pos - render_scroll, GetColorU32(ImGuiCol_Text), buf_display, buf_display + buf_display_len, 0.0f, is_multiline ? NULL : &clip_rect);
 
         // Draw blinking cursor
-        bool cursor_is_visible = (!g.IO.ConfigCursorBlink) || (g.InputTextState.CursorAnim <= 0.0f) || ImFmod(g.InputTextState.CursorAnim, 1.20f) <= 0.80f;
+        bool cursor_is_visible = (!g.IO.ConfigInputTextCursorBlink) || (g.InputTextState.CursorAnim <= 0.0f) || ImFmod(g.InputTextState.CursorAnim, 1.20f) <= 0.80f;
         ImVec2 cursor_screen_pos = render_pos + cursor_offset - render_scroll;
         ImRect cursor_screen_rect(cursor_screen_pos.x, cursor_screen_pos.y-g.FontSize+0.5f, cursor_screen_pos.x+1.0f, cursor_screen_pos.y-1.5f);
         if (cursor_is_visible && cursor_screen_rect.Overlaps(clip_rect))
@@ -3579,7 +3761,8 @@ bool ImGui::InputTextEx(const char* label, char* buf, int buf_size, const ImVec2
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Color Editor / Picker
+// [SECTION] Widgets: ColorEdit, ColorPicker, ColorButton, etc.
+//-------------------------------------------------------------------------
 // - ColorEdit3()
 // - ColorEdit4()
 // - ColorPicker3()
@@ -4379,7 +4562,8 @@ void ImGui::ColorPickerOptionsPopup(const float* ref_col, ImGuiColorEditFlags fl
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Trees
+// [SECTION] Widgets: TreeNode, CollapsingHeader, etc.
+//-------------------------------------------------------------------------
 // - TreeNode()
 // - TreeNodeV()
 // - TreeNodeEx()
@@ -4772,7 +4956,8 @@ bool ImGui::CollapsingHeader(const char* label, bool* p_open, ImGuiTreeNodeFlags
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Selectables
+// [SECTION] Widgets: Selectable
+//-------------------------------------------------------------------------
 // - Selectable()
 //-------------------------------------------------------------------------
 
@@ -4880,7 +5065,8 @@ bool ImGui::Selectable(const char* label, bool* p_selected, ImGuiSelectableFlags
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: List Box
+// [SECTION] Widgets: ListBox
+//-------------------------------------------------------------------------
 // - ListBox()
 // - ListBoxHeader()
 // - ListBoxFooter()
@@ -4989,7 +5175,8 @@ bool ImGui::ListBox(const char* label, int* current_item, bool (*items_getter)(v
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Data Plotting
+// [SECTION] Widgets: PlotLines, PlotHistogram
+//-------------------------------------------------------------------------
 // - PlotEx() [Internal]
 // - PlotLines()
 // - PlotHistogram()
@@ -5143,7 +5330,9 @@ void ImGui::PlotHistogram(const char* label, float (*values_getter)(void* data, 
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Value() helpers
+// [SECTION] Widgets: Value helpers
+// Those is not very useful, legacy API.
+//-------------------------------------------------------------------------
 // - Value()
 //-------------------------------------------------------------------------
 
@@ -5177,8 +5366,9 @@ void ImGui::Value(const char* prefix, float v, const char* float_format)
 }
 
 //-------------------------------------------------------------------------
-// WIDGETS: Menus
-// - ImGuiMenuColumns
+// [SECTION] MenuItem, BeginMenu, EndMenu, etc.
+//-------------------------------------------------------------------------
+// - ImGuiMenuColumns [Internal]
 // - BeginMainMenuBar()
 // - EndMainMenuBar()
 // - BeginMenuBar()
@@ -5533,4 +5723,3 @@ bool ImGui::MenuItem(const char* label, const char* shortcut, bool* p_selected, 
     }
     return false;
 }
-

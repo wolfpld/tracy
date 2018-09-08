@@ -42,15 +42,6 @@
     <ClCompile Include="..\..\src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\imgui\imgui.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\imgui\imgui_demo.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\imgui\imgui_draw.cpp">
-      <Filter>imgui</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\libs\gl3w\GL\gl3w.c">
       <Filter>gl3w</Filter>
     </ClCompile>
@@ -90,6 +81,15 @@
     <ClCompile Include="..\..\src\imgui_impl_opengl3.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\imgui\imgui.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\imgui\imgui_demo.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\imgui\imgui_draw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\..\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
@@ -121,24 +121,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyView.hpp">
       <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\imgui\imconfig.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\imgui\imgui.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\imgui\imgui_internal.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\imgui\stb_rect_pack.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\imgui\stb_textedit.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\imgui\stb_truetype.h">
-      <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\libs\gl3w\GL\gl3w.h">
       <Filter>gl3w</Filter>
@@ -187,12 +169,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\common\TracyAlign.hpp">
       <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\tracy_benaphore.h">
-      <Filter>imgui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\tracy_sema.h">
-      <Filter>imgui</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyFileHeader.hpp">
       <Filter>server</Filter>
@@ -250,6 +226,30 @@
     </ClInclude>
     <ClInclude Include="..\..\src\imgui_impl_opengl3.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\tracy_benaphore.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\tracy_sema.h">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\imgui\imconfig.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\imgui\imgui.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\imgui\imgui_internal.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\imgui\imstb_rectpack.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\imgui\imstb_textedit.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\imgui\imstb_truetype.h">
+      <Filter>imgui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

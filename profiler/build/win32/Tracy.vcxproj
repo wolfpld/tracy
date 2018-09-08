@@ -136,9 +136,9 @@
     <ClInclude Include="..\..\..\imgui\imconfig.h" />
     <ClInclude Include="..\..\..\imgui\imgui.h" />
     <ClInclude Include="..\..\..\imgui\imgui_internal.h" />
-    <ClInclude Include="..\..\..\imgui\stb_rect_pack.h" />
-    <ClInclude Include="..\..\..\imgui\stb_textedit.h" />
-    <ClInclude Include="..\..\..\imgui\stb_truetype.h" />
+    <ClInclude Include="..\..\..\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\..\..\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\..\..\imgui\imstb_truetype.h" />
     <ClInclude Include="..\..\..\nfd\common.h" />
     <ClInclude Include="..\..\..\nfd\nfd.h" />
     <ClInclude Include="..\..\..\nfd\nfd_common.h" />

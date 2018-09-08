@@ -6449,8 +6449,11 @@ void View::DrawInfo()
             for( size_t i=m_frameSortData.frameNum; i<fsz; i++ )
             {
                 const auto t = m_worker.GetFrameTime( *m_frames, i );
-                vec.emplace_back( t );
-                total += t;
+                if( t > 0 )
+                {
+                    vec.emplace_back( t );
+                    total += t;
+                }
             }
             auto mid = vec.begin() + m_frameSortData.frameNum;
             pdqsort_branchless( mid, m_frameSortData.data.end() );

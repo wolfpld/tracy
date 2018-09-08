@@ -5759,6 +5759,7 @@ void View::DrawCompare()
                     ImGui::SameLine();
 #endif
                     TextFocused( "Total time (ext.):", TimeToString( zoneData1.total * adj1 ) );
+                    TextFocused( "Savings:", TimeToString( zoneData1.total * adj1 - zoneData0.total * adj0 ) );
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
 
 #ifdef TRACY_EXTENDED_FONT

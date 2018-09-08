@@ -422,6 +422,38 @@ The \texttt{ZoneText} and \texttt{ZoneName} macros work only for the zones creat
 
 Zone logging can be disabled on a per zone basis, by making use of the \texttt{ZoneNamed} macros. Each of the macros takes an \texttt{active} argument ('\texttt{true}' in the example above), which will determine whether the zone should be logged.
 
+Note that this parameter may be a run-time variable, for example an user controlled switch to enable profiling of a specific part of code only when required. It is also useful to replace handling of the static order initialization fiasco on OSX.
+
+It may also be specified at compile-time, in which case it won't be a condition at all (the profiling code will either be always enabled, or won't be there at all). The following listing presents how profiling of specific application subsystems might be implemented:
+
+\begin{lstlisting}
+enum SubSystems
+{
+	Sys_Physics		= 1 << 0,
+	Sys_Rendering	= 1 << 1,
+	Sys_NasalDemons	= 1 << 2
+}
+
+...
+
+// Preferably a define in the build system
+#define SUBSYSTEMS Sys_Physics | Sys_NasalDemons
+
+...
+
+void Physics::Process()
+{
+	ZoneScopedN( __tracy, SUBSYSTEMS & Sys_Physics );		// always true, no runtime cost
+	...
+}
+
+void Graphics::Render()
+{
+	ZoneScopedN( __tracy, SUBSYSTEMS & Sys_Graphics );		// always false, no runtime cost
+	...
+}
+\end{lstlisting}
+
 \subsection{Marking locks}
 
 Modern programs must use multi-threading to achieve full performance capability of the CPU. Correct execution requires claiming exclusive access to data shared between threads. When many threads want to enter the critical section at once, the application's multi-threaded performance advantage is nullified. To answer this problem, Tracy can collect and display lock interactions in threads. 

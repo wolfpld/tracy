@@ -259,34 +259,6 @@ static const char* MemSizeToString( int64_t val )
     return buf;
 }
 
-tracy_force_inline float frexpf_fast( float f, int& power )
-{
-    float ret;
-    int32_t fl;
-    memcpy( &fl, &f, 4 );
-    power = ( fl >> 23 ) & 0x000000ff;
-    power -= 0x7e;
-    fl &= 0x807fffff;
-    fl |= 0x3f000000;
-    memcpy( &ret, &fl, 4 );
-    return ret;
-}
-
-tracy_force_inline float log2fast( float x )
-{
-    int e;
-    auto f = frexpf_fast( fabsf( x ), e );
-    auto t0 = 1.23149591368684f * f - 4.11852516267426f;
-    auto t1 = t0 * f + 6.02197014179219f;
-    auto t2 = t1 * f - 3.13396450166353f;
-    return t2 + e;
-}
-
-tracy_force_inline float log10fast( float x )
-{
-    return log2fast( x ) * 0.301029995663981195213738894724493026768189881462108541310f;    // 1/log2(10)
-}
-
 static void TextFocused( const char* label, const char* value )
 {
     ImGui::TextDisabled( "%s", label );
@@ -4931,16 +4903,16 @@ void View::DrawFindZone()
 
                         if( m_findZone.logVal )
                         {
-                            const auto hAdj = double( Height - 4 ) / log10fast( maxVal + 1 );
+                            const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
                             for( int i=0; i<numBins; i++ )
                             {
                                 const auto val = cumulateTime ? binTime[i] : bins[i];
                                 if( val > 0 )
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), 0xFF22DDDD );
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFF22DDDD );
                                     if( selBin[i] > 0 )
                                     {
-                                        draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10fast( selBin[i] + 1 ) * hAdj ), 0xFFDD7777 );
+                                        draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( selBin[i] + 1 ) * hAdj ), 0xFFDD7777 );
                                     }
                                 }
                             }
@@ -4967,8 +4939,8 @@ void View::DrawFindZone()
 
                         if( m_findZone.logTime )
                         {
-                            const auto ltmin = log10fast( tmin );
-                            const auto ltmax = log10fast( tmax );
+                            const auto ltmin = log10( tmin );
+                            const auto ltmax = log10( tmax );
                             const auto start = int( floor( ltmin ) );
                             const auto end = int( ceil( ltmax ) );
 
@@ -5014,7 +4986,7 @@ void View::DrawFindZone()
                         {
                             const auto pxns = numBins / dt;
                             const auto nspx = 1.0 / pxns;
-                            const auto scale = std::max<float>( 0.0f, round( log10fast( nspx ) + 2 ) );
+                            const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                             const auto step = pow( 10, scale );
 
                             const auto dx = step * pxns;
@@ -5182,11 +5154,11 @@ void View::DrawFindZone()
                             float t0, t1;
                             if( m_findZone.logTime )
                             {
-                                const auto ltmin = log10fast( tmin );
-                                const auto ltmax = log10fast( tmax );
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
 
-                                t0 = ( log10fast( s ) - ltmin ) / float( ltmax - ltmin ) * numBins;
-                                t1 = ( log10fast( e ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                                t0 = ( log10( s ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                                t1 = ( log10( e ) - ltmin ) / float( ltmax - ltmin ) * numBins;
                             }
                             else
                             {
@@ -5865,7 +5837,7 @@ void View::DrawCompare()
 
                     if( m_compare.logVal )
                     {
-                        const auto hAdj = double( Height - 4 ) / log10fast( maxVal + 1 );
+                        const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
                         for( int i=0; i<numBins; i++ )
                         {
                             const auto val0 = cumulateTime ? binTime[i].v0 : bins[i].v0;
@@ -5875,15 +5847,15 @@ void View::DrawCompare()
                                 const auto val = std::min( val0, val1 );
                                 if( val > 0 )
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), 0xFFBBBB44 );
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFFBBBB44 );
                                 }
                                 if( val1 == val )
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), wpos + ImVec2( 2+i, Height-3 - log10fast( val0 + 1 ) * hAdj ), 0xFF22DDDD );
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), wpos + ImVec2( 2+i, Height-3 - log10( val0 + 1 ) * hAdj ), 0xFF22DDDD );
                                 }
                                 else
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), wpos + ImVec2( 2+i, Height-3 - log10fast( val1 + 1 ) * hAdj ), 0xFF2222DD );
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), wpos + ImVec2( 2+i, Height-3 - log10( val1 + 1 ) * hAdj ), 0xFF2222DD );
                                 }
                             }
                         }
@@ -5919,8 +5891,8 @@ void View::DrawCompare()
 
                     if( m_compare.logTime )
                     {
-                        const auto ltmin = log10fast( tmin );
-                        const auto ltmax = log10fast( tmax );
+                        const auto ltmin = log10( tmin );
+                        const auto ltmax = log10( tmax );
                         const auto start = int( floor( ltmin ) );
                         const auto end = int( ceil( ltmax ) );
 
@@ -5966,7 +5938,7 @@ void View::DrawCompare()
                     {
                         const auto pxns = numBins / dt;
                         const auto nspx = 1.0 / pxns;
-                        const auto scale = std::max<float>( 0.0f, round( log10fast( nspx ) + 2 ) );
+                        const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                         const auto step = pow( 10, scale );
 
                         const auto dx = step * pxns;
@@ -6003,8 +5975,8 @@ void View::DrawCompare()
 
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
                     {
-                        const auto ltmin = log10fast( tmin );
-                        const auto ltmax = log10fast( tmax );
+                        const auto ltmin = log10( tmin );
+                        const auto ltmax = log10( tmax );
 
                         auto& io = ImGui::GetIO();
                         draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
@@ -6622,13 +6594,13 @@ void View::DrawInfo()
 
                         if( m_frameSortData.logVal )
                         {
-                            const auto hAdj = double( Height - 4 ) / log10fast( maxVal + 1 );
+                            const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
                             for( int i=0; i<numBins; i++ )
                             {
                                 const auto val = bins[i];
                                 if( val > 0 )
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10fast( val + 1 ) * hAdj ), 0xFF22DDDD );
+                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFF22DDDD );
                                 }
                             }
                         }
@@ -6650,8 +6622,8 @@ void View::DrawInfo()
 
                         if( m_frameSortData.logTime )
                         {
-                            const auto ltmin = log10fast( tmin );
-                            const auto ltmax = log10fast( tmax );
+                            const auto ltmin = log10( tmin );
+                            const auto ltmax = log10( tmax );
                             const auto start = int( floor( ltmin ) );
                             const auto end = int( ceil( ltmax ) );
 
@@ -6697,7 +6669,7 @@ void View::DrawInfo()
                         {
                             const auto pxns = numBins / dt;
                             const auto nspx = 1.0 / pxns;
-                            const auto scale = std::max<float>( 0.0f, round( log10fast( nspx ) + 2 ) );
+                            const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                             const auto step = pow( 10, scale );
 
                             const auto dx = step * pxns;
@@ -6737,11 +6709,11 @@ void View::DrawInfo()
                             float ta, tm;
                             if( m_frameSortData.logTime )
                             {
-                                const auto ltmin = log10fast( tmin );
-                                const auto ltmax = log10fast( tmax );
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
 
-                                ta = ( log10fast( m_frameSortData.average ) - ltmin ) / float( ltmax - ltmin ) * numBins;
-                                tm = ( log10fast( m_frameSortData.median ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                                ta = ( log10( m_frameSortData.average ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                                tm = ( log10( m_frameSortData.median ) - ltmin ) / float( ltmax - ltmin ) * numBins;
                             }
                             else
                             {
@@ -6764,8 +6736,8 @@ void View::DrawInfo()
 
                         if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
                         {
-                            const auto ltmin = log10fast( tmin );
-                            const auto ltmax = log10fast( tmax );
+                            const auto ltmin = log10( tmin );
+                            const auto ltmax = log10( tmax );
 
                             auto& io = ImGui::GetIO();
                             draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );

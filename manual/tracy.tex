@@ -118,6 +118,57 @@ And finally, one nanosecond ($\frac{1}{1000}$ of a microsecond) would be one nan
 
 Tracy can achieve single-digit nanosecond measurement resolution, due to usage of hardware timing mechanisms on the x86 and ARM architectures\footnote{In both 32 and 64~bit variants. On x86 Tracy requires a modern version of the \texttt{rdtscp} instruction (Sandy Bridge and later). On ARM-based systems Tracy will try to use the timer register (\textasciitilde 40 \si{\nano\second} resolution). If it fails (due to kernel configuration), Tracy falls back to system provided timer, which can range in resolution from 250 \si{\nano\second} to 1 \si{\micro\second}.}. Other profilers may rely on the timers provided by operating system, which do have significantly reduced resolution (about 300~\si{\nano\second} -- 1~\si{\micro\second}). This is enough to hide the subtle impact of cache access optimization, etc.
 
+\subsubsection{Timer accuracy}
+
+You may wonder why it is important to have a high resolution timer\footnote{Interestingly, the \texttt{std::chrono::high\_resolution\_clock} is not really a high resolution clock.}. After all, you only want to profile functions that have long execution times, and not some short-lived procedures, that have no impact on the application's run time.
+
+It is wrong to think so. Optimizing a function to execute in 430~\si{\nano\second}, instead of 535~\si{\nano\second} (note that there is only a 100~\si{\nano\second} difference) results in 14 \si{\milli\second} savings if the function is executed 18000 times\footnote{This is a real optimization case. The values are median function run times and do not reflect the real execution time, which explains the discrepancy in the total reported time.}. It may not seem like a big number, but this is how much time there is to render a complete frame in a 60~FPS game.
+
+You also need to understand how timer precision is reflected in measurement errors. Take a look at figure~\ref{timer}. There you can see three discrete timer tick events, which increase the value reported by the timer by 300~\si{\nano\second}. You can also see four readings of time ranges, marked $A_1$, $A_2$; $B_1$, $B_2$; $C_1$, $C_2$ and $D_1$, $D_2$.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw [-{Stealth}] (-1.5, 0) -- (11.5, 0) node[anchor=south east] {Time};
+\draw (0, -0.25) -- (0, 0.25) node[anchor=south] {\faClock};
+\draw (5, -0.25) -- (5, 0.25) node[anchor=south] {\faClock};
+\draw (10, -0.25) -- (10, 0.25) node[anchor=south] {\faClock};
+\draw (0, 0.9) -- (0, 1) -- (5, 1) -- (5, 0.9);
+\draw (2.5, 1) node[anchor=south] {300~\si{\nano\second}};
+
+\draw (4.9, 0.1) -- (4.9, -0.1);
+\draw [{Stealth}-] (4.9, -0.2) -- (4.8, -0.7) node[anchor=north] {$A_1$};
+\draw (5.1, 0.1) -- (5.1, -0.1);
+\draw [{Stealth}-] (5.1, -0.2) -- (5.2, -0.7) node[anchor=north] {$A_2$};
+
+\draw (0.1, 0.1) -- (0.1, -0.1);
+\draw [{Stealth}-] (0.1, -0.2) -- (0.2, -0.7) node[anchor=north] {$B_1$};
+\draw (9.9, 0.1) -- (9.9, -0.1);
+\draw [{Stealth}-] (9.9, -0.2) -- (9.8, -0.7) node[anchor=north] {$B_2$};
+
+\draw (-0.1, 0.1) -- (-0.1, -0.1);
+\draw [{Stealth}-] (-0.1, -0.2) -- (-0.2, -0.7) node[anchor=north] {$C_1$};
+\draw (10.1, 0.1) -- (10.1, -0.1);
+\draw [{Stealth}-] (10.1, -0.2) -- (10.2, -0.7) node[anchor=north] {$C_2$};
+
+\draw (2.4, 0.1) -- (2.4, -0.1);
+\draw [{Stealth}-] (2.4, -0.2) -- (2.3, -0.7) node[anchor=north] {$D_1$};
+\draw (2.6, 0.1) -- (2.6, -0.1);
+\draw [{Stealth}-] (2.6, -0.2) -- (2.7, -0.7) node[anchor=north] {$D_2$};
+\end{tikzpicture}
+\caption{Low precision (300~ns) timer. Discrete timer ticks are indicated by the \faClock{} icon.}
+\label{timer}
+\end{figure}
+
+Now let's take a look at the timer readings.
+
+\begin{itemize}
+\item The $A$ and $D$ ranges both take a very short amount of time (10~\si{\nano\second}), but the $A$ range is reported as 300~\si{\nano\second}, and the $D$ range is reported as 0~\si{\nano\second}.
+\item The $B$ range takes a considerable amount of time (590~\si{\nano\second}), but according to the timer readings, it took the same time (300~\si{\nano\second}) as the short lived $A$ range.
+\item The $C$ range (610~\si{\nano\second}) is only 20~\si{\nano\second} longer than the $B$ range, but it is reported as 900~\si{\nano\second}, a 600~\si{\nano\second} difference!
+\end{itemize}
+
+Now you can see why it is important to use a high precision timer. While there is no escape from the measurement errors, their impact can be reduced by increasing the timer accuracy.
+
 \subsection{Frame profiler}
 
 Tracy is aimed at understanding the inner workings of a tight game (or interactive application) loop. That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game (or any other program), preferably 60 times per second to achieve smooth animation.} as a basic work-unit\footnote{Frame usage is not required. See section~\ref{markingframes} for more information.}. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.

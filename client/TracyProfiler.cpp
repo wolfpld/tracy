@@ -997,6 +997,9 @@ void Profiler::Worker()
 #ifdef TRACY_ON_DEMAND
         m_isConnected.store( false, std::memory_order_relaxed );
 #endif
+
+        m_sock->~Socket();
+        tracy_free( m_sock );
     }
 
     for(;;)

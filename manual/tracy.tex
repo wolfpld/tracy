@@ -274,7 +274,7 @@ In case you want to profile a short-lived program (for example, a compression ut
 
 By default Tracy will begin profiling even before the program enters the \texttt{main} function. If you don't want to perform a full capture of application life-time, you may define the \texttt{TRACY\_ON\_DEMAND} macro, which will enable profiling only when there's an established connection with the server.
 
-It should be noted, that if on-demand profiling is \emph{disabled} (which is the default), then the recorded events will be stored in the system memory until a server connection is made and the data can be uploaded\footnote{This memory is never released, but it is reused for collection of further events.}. Depending on the amount of the things profiled, the requirements for event storage can easily grow up to a couple of gigabytes.
+It should be noted, that if on-demand profiling is \emph{disabled} (which is the default), then the recorded events will be stored in the system memory until a server connection is made and the data can be uploaded\footnote{This memory is never released, but it is reused for collection of further events.}. Depending on the amount of the things profiled, the requirements for event storage can easily grow up to a couple of gigabytes. Since this data is cleared after the initial connection is made, you won't be able to perform a second connection to a client, unless the on-demand mode is used.
 
 \begin{bclogo}[
 noborder=true,
@@ -298,15 +298,9 @@ The easiest way to get going is to build the data analyzer, available in the \te
 
 If you prefer to inspect the data only after a trace has been performed, you may use the command line utility in the \texttt{capture} directory. It will save a data dump that may be later opened in the graphical viewer application.
 
-See section~\ref{capturing} for more information.
+Note that ideally you should use the same version of the Tracy profiler on both client and server. The network protocol may change, in which case you won't be able to make a connection.
 
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bcbombe
-]{Important}
-You must use the same version of the Tracy profiler on both client and server! Network protocol mismatch will most likely lead to crashes. Tracy \emph{will not warn} about this!
-\end{bclogo}
+See section~\ref{capturing} for more information about performing captures.
 
 \subsubsection{Embedding the server in profiled application}
 \label{embeddingserver}

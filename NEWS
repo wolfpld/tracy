@@ -119,6 +119,12 @@ v0.4 (xxxx-xx-xx)
     and restored.
   - The size and position of internal windows now doesn't depend on the
     runtime directory of the profiler executable.
+- Added connection handshake.
+  - Server won't be able to connect to client if there's a protocol version
+    mismatch.
+  - Client not in on-demand mode will refuse connections after the first
+    connection was made and the initial event buffers were cleared.
+- A single server will no longer try to connect to multiple clients.
 
 
 v0.3.3 (2018-07-03)

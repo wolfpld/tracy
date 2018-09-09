@@ -1022,6 +1022,7 @@ void Profiler::Worker()
         m_sock->~Socket();
         tracy_free( m_sock );
 
+#ifndef TRACY_ON_DEMAND
         // Client is no longer available here
         for(;;)
         {
@@ -1079,6 +1080,7 @@ void Profiler::Worker()
                 tracy_free( m_sock );
             }
         }
+#endif
     }
 
     for(;;)

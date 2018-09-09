@@ -913,6 +913,21 @@ void Profiler::Worker()
             if( m_sock ) break;
         }
 
+        {
+            timeval tv;
+            tv.tv_sec = 2;
+            tv.tv_usec = 0;
+
+            char shibboleth[HandshakeShibbolethSize];
+            const auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, &tv );
+            if( !res || memcmp( shibboleth, HandshakeShibboleth, HandshakeShibbolethSize ) != 0 )
+            {
+                m_sock->~Socket();
+                tracy_free( m_sock );
+                continue;
+            }
+        }
+
 #ifdef TRACY_ON_DEMAND
         ClearQueues( token );
         m_isConnected.store( true, std::memory_order_relaxed );

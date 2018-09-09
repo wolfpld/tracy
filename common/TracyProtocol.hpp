@@ -27,6 +27,9 @@ enum ServerQuery : uint8_t
     ServerQueryFrameName,
 };
 
+enum { HandshakeShibbolethSize = 8 };
+static const char HandshakeShibboleth[HandshakeShibbolethSize] = { 'T', 'r', 'a', 'c', 'y', 'P', 'r', 'f' };
+
 enum { WelcomeMessageProgramNameSize = 64 };
 enum { WelcomeMessageHostInfoSize = 1024 };
 

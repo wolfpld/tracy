@@ -1279,6 +1279,8 @@ void Worker::Exec()
         if( m_sock.Connect( m_addr.c_str(), "8086" ) ) break;
     }
 
+    m_sock.Send( HandshakeShibboleth, HandshakeShibbolethSize );
+
     auto lz4buf = std::make_unique<char[]>( LZ4Size );
     std::chrono::time_point<std::chrono::high_resolution_clock> t0;
 

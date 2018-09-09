@@ -27,6 +27,7 @@ public:
     int Send( const void* buf, int len );
 
     bool Read( void* buf, int len, const timeval* tv, std::function<bool()> exitCb );
+    bool ReadRaw( void* buf, int len, const timeval* tv );
     bool HasData();
 
     Socket( const Socket& ) = delete;

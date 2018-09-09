@@ -229,6 +229,19 @@ bool Socket::Read( void* _buf, int len, const timeval* tv, std::function<bool()>
     return true;
 }
 
+bool Socket::ReadRaw( void* _buf, int len, const timeval* tv )
+{
+    auto buf = (char*)_buf;
+    while( len > 0 )
+    {
+        const auto sz = Recv( buf, len, tv );
+        if( sz <= 0 ) return false;
+        len -= sz;
+        buf += sz;
+    }
+    return true;
+}
+
 bool Socket::HasData()
 {
     if( m_bufLeft > 0 ) return true;

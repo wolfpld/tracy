@@ -264,6 +264,7 @@ public:
 
     void Write( FileWrite& f );
     int GetTraceVersion() const { return m_traceVersion; }
+    uint8_t GetHandshakeStatus() const { return m_handshake.load( std::memory_order_relaxed ); }
 
     static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
 
@@ -415,6 +416,7 @@ private:
     MbpsBlock m_mbpsData;
 
     int m_traceVersion;
+    std::atomic<uint8_t> m_handshake;
 
     static LoadProgress s_loadProgress;
 };

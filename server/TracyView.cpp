@@ -11,6 +11,7 @@
 #include <time.h>
 
 #include "../common/TracyMutex.hpp"
+#include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "tracy_pdqsort.h"
 #include "TracyBadVersion.hpp"
@@ -454,6 +455,28 @@ void View::DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color
 
 bool View::Draw()
 {
+    HandshakeStatus status = (HandshakeStatus)s_instance->m_worker.GetHandshakeStatus();
+    if( status == HandshakeProtocolMismatch )
+    {
+        ImGui::OpenPopup( "Protocol mismatch" );
+    }
+
+    if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+#endif
+        ImGui::Text( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
+        ImGui::Separator();
+        if( ImGui::Button( "My bad" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            return false;
+        }
+        ImGui::EndPopup();
+    }
+
     return s_instance->DrawImpl();
 }
 

@@ -201,6 +201,7 @@ Worker::Worker( const char* addr )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
     , m_traceVersion( CurrentVersion )
+    , m_handshake( 0 )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.threadExpand.push_back( 0 );
@@ -224,6 +225,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     , m_crashed( false )
     , m_stream( nullptr )
     , m_buffer( nullptr )
+    , m_handshake( 0 )
 {
     m_data.threadExpand.push_back( 0 );
     m_data.callstackPayload.push_back( nullptr );
@@ -1279,13 +1281,27 @@ void Worker::Exec()
         if( m_sock.Connect( m_addr.c_str(), "8086" ) ) break;
     }
 
-    m_sock.Send( HandshakeShibboleth, HandshakeShibbolethSize );
-
     auto lz4buf = std::make_unique<char[]>( LZ4Size );
+
     std::chrono::time_point<std::chrono::high_resolution_clock> t0;
 
     uint64_t bytes = 0;
     uint64_t decBytes = 0;
+
+    m_sock.Send( HandshakeShibboleth, HandshakeShibbolethSize );
+    uint32_t protocolVersion = ProtocolVersion;
+    m_sock.Send( &protocolVersion, sizeof( protocolVersion ) );
+    HandshakeStatus handshake;
+    if( !m_sock.Read( &handshake, sizeof( handshake ), &tv, ShouldExit ) ) goto close;
+    m_handshake.store( handshake, std::memory_order_relaxed );
+    switch( handshake )
+    {
+    case HandshakeWelcome:
+        break;
+    case HandshakeProtocolMismatch:
+    default:
+        goto close;
+    }
 
     m_data.framesBase = m_data.frames.Retrieve( 0, [this] ( uint64_t name ) {
         auto fd = m_slab.AllocInit<FrameData>();

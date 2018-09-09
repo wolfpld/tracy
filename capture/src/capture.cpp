@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../../common/TracyProtocol.hpp"
 #include "../../server/TracyFileWrite.hpp"
 #include "../../server/TracyMemory.hpp"
 #include "../../server/TracyWorker.hpp"
@@ -137,6 +138,16 @@ int main( int argc, char** argv )
     printf( "Connecting to %s...", address );
     fflush( stdout );
     tracy::Worker worker( address );
+    for(;;)
+    {
+        const auto handshake = worker.GetHandshakeStatus();
+        if( handshake == tracy::HandshakeWelcome ) break;
+        if( handshake == tracy::HandshakeProtocolMismatch )
+        {
+            printf( "\nThe client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server.\n" );
+            return 1;
+        }
+    }
     while( !worker.HasData() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     printf( "\nQueue delay: %s\nTimer resolution: %s\n", TimeToString( worker.GetDelay() ), TimeToString( worker.GetResolution() ) );
 

@@ -919,9 +919,27 @@ void Profiler::Worker()
             tv.tv_usec = 0;
 
             char shibboleth[HandshakeShibbolethSize];
-            const auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, &tv );
+            auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, &tv );
             if( !res || memcmp( shibboleth, HandshakeShibboleth, HandshakeShibbolethSize ) != 0 )
             {
+                m_sock->~Socket();
+                tracy_free( m_sock );
+                continue;
+            }
+
+            uint32_t protocolVersion;
+            res = m_sock->ReadRaw( &protocolVersion, sizeof( protocolVersion ), &tv );
+            if( !res )
+            {
+                m_sock->~Socket();
+                tracy_free( m_sock );
+                continue;
+            }
+
+            if( protocolVersion != ProtocolVersion )
+            {
+                HandshakeStatus status = HandshakeProtocolMismatch;
+                m_sock->Send( &status, sizeof( status ) );
                 m_sock->~Socket();
                 tracy_free( m_sock );
                 continue;
@@ -932,6 +950,9 @@ void Profiler::Worker()
         ClearQueues( token );
         m_isConnected.store( true, std::memory_order_relaxed );
 #endif
+
+        HandshakeStatus handshake = HandshakeWelcome;
+        m_sock->Send( &handshake, sizeof( handshake ) );
 
         LZ4_resetStream( m_stream );
         m_sock->Send( &welcome, sizeof( welcome ) );

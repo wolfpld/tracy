@@ -9,6 +9,8 @@
 namespace tracy
 {
 
+enum : uint32_t { ProtocolVersion = 0 };
+
 using lz4sz_t = uint32_t;
 
 enum { TargetFrameSize = 256 * 1024 };
@@ -29,6 +31,13 @@ enum ServerQuery : uint8_t
 
 enum { HandshakeShibbolethSize = 8 };
 static const char HandshakeShibboleth[HandshakeShibbolethSize] = { 'T', 'r', 'a', 'c', 'y', 'P', 'r', 'f' };
+
+enum HandshakeStatus : uint8_t
+{
+    HandshakePending,
+    HandshakeWelcome,
+    HandshakeProtocolMismatch,
+};
 
 enum { WelcomeMessageProgramNameSize = 64 };
 enum { WelcomeMessageHostInfoSize = 1024 };

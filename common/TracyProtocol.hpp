@@ -37,6 +37,7 @@ enum HandshakeStatus : uint8_t
     HandshakePending,
     HandshakeWelcome,
     HandshakeProtocolMismatch,
+    HandshakeNotAvailable
 };
 
 enum { WelcomeMessageProgramNameSize = 64 };

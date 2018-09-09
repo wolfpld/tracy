@@ -1299,6 +1299,7 @@ void Worker::Exec()
     case HandshakeWelcome:
         break;
     case HandshakeProtocolMismatch:
+    case HandshakeNotAvailable:
     default:
         goto close;
     }

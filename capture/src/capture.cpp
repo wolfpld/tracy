@@ -147,6 +147,11 @@ int main( int argc, char** argv )
             printf( "\nThe client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server.\n" );
             return 1;
         }
+        if( handshake == tracy::HandshakeNotAvailable )
+        {
+            printf( "\nThe client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled.\n" );
+            return 2;
+        }
     }
     while( !worker.HasData() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     printf( "\nQueue delay: %s\nTimer resolution: %s\n", TimeToString( worker.GetDelay() ), TimeToString( worker.GetResolution() ) );

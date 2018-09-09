@@ -1021,6 +1021,64 @@ void Profiler::Worker()
 
         m_sock->~Socket();
         tracy_free( m_sock );
+
+        // Client is no longer available here
+        for(;;)
+        {
+            if( ShouldExit() )
+            {
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
+            }
+
+            while( s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize ) > 0 ) {}
+            bool lockHeld = true;
+            while( !m_serialLock.try_lock() )
+            {
+                if( m_shutdownManual.load( std::memory_order_relaxed ) )
+                {
+                    lockHeld = false;
+                    break;
+                }
+            }
+            m_serialQueue.swap( m_serialDequeue );
+            if( lockHeld )
+            {
+                m_serialLock.unlock();
+            }
+            m_serialDequeue.clear();
+
+            m_sock = listen.Accept();
+            if( m_sock )
+            {
+                timeval tv;
+                tv.tv_sec = 1;
+                tv.tv_usec = 0;
+
+                char shibboleth[HandshakeShibbolethSize];
+                auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, &tv );
+                if( !res || memcmp( shibboleth, HandshakeShibboleth, HandshakeShibbolethSize ) != 0 )
+                {
+                    m_sock->~Socket();
+                    tracy_free( m_sock );
+                    continue;
+                }
+
+                uint32_t protocolVersion;
+                res = m_sock->ReadRaw( &protocolVersion, sizeof( protocolVersion ), &tv );
+                if( !res )
+                {
+                    m_sock->~Socket();
+                    tracy_free( m_sock );
+                    continue;
+                }
+
+                HandshakeStatus status = HandshakeNotAvailable;
+                m_sock->Send( &status, sizeof( status ) );
+                m_sock->~Socket();
+                tracy_free( m_sock );
+            }
+        }
     }
 
     for(;;)

@@ -460,6 +460,10 @@ bool View::Draw()
     {
         ImGui::OpenPopup( "Protocol mismatch" );
     }
+    else if( status == HandshakeNotAvailable )
+    {
+        ImGui::OpenPopup( "Client not ready" );
+    }
 
     if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
@@ -469,6 +473,22 @@ bool View::Draw()
         ImGui::Text( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
         ImGui::Separator();
         if( ImGui::Button( "My bad" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            return false;
+        }
+        ImGui::EndPopup();
+    }
+
+    if( ImGui::BeginPopupModal( "Client not ready", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_LIGHTBULB );
+#endif
+        ImGui::Text( "The client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled." );
+        ImGui::Separator();
+        if( ImGui::Button( "I understand" ) )
         {
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();

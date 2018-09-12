@@ -1,7 +1,7 @@
 /*
  *  LZ4 - Fast LZ compression algorithm
  *  Header File
- *  Copyright (C) 2011-2017, Yann Collet.
+ *  Copyright (C) 2011-present, Yann Collet.
 
    BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
 
@@ -47,7 +47,7 @@ namespace tracy
 /**
   Introduction
 
-  LZ4 is lossless compression algorithm, providing compression speed at 400 MB/s per core,
+  LZ4 is lossless compression algorithm, providing compression speed at 500 MB/s per core,
   scalable with multi-cores CPU. It features an extremely fast decoder, with speed in
   multiple GB/s per core, typically reaching RAM speed limits on multi-core systems.
 
@@ -63,8 +63,8 @@ namespace tracy
 
   An additional format, called LZ4 frame specification (doc/lz4_Frame_format.md),
   take care of encoding standard metadata alongside LZ4-compressed blocks.
-  If your application requires interoperability, it's recommended to use it.
-  A library is provided to take care of it, see lz4frame.h.
+  Frame format is required for interoperability.
+  It is delivered through a companion API, declared in lz4frame.h.
 */
 
 /*^***************************************************************
@@ -94,7 +94,7 @@ namespace tracy
 /*------   Version   ------*/
 #define LZ4_VERSION_MAJOR    1    /* for breaking interface changes  */
 #define LZ4_VERSION_MINOR    8    /* for new (non-breaking) interface capabilities */
-#define LZ4_VERSION_RELEASE  2    /* for tweaks, bug-fixes, or development */
+#define LZ4_VERSION_RELEASE  3    /* for tweaks, bug-fixes, or development */
 
 #define LZ4_VERSION_NUMBER (LZ4_VERSION_MAJOR *100*100 + LZ4_VERSION_MINOR *100 + LZ4_VERSION_RELEASE)
 
@@ -184,55 +184,72 @@ LZ4_compress_fast_extState() :
     Same compression function, just using an externally allocated memory space to store compression state.
     Use LZ4_sizeofState() to know how much memory must be allocated,
     and allocate it on 8-bytes boundaries (using malloc() typically).
-    Then, provide it as 'void* state' to compression function.
+    Then, provide this buffer as 'void* state' to compression function.
 */
 LZ4LIB_API int LZ4_sizeofState(void);
 LZ4LIB_API int LZ4_compress_fast_extState (void* state, const char* src, char* dst, int srcSize, int dstCapacity, int acceleration);
 
 
-/*!
-LZ4_compress_destSize() :
-    Reverse the logic : compresses as much data as possible from 'src' buffer
-    into already allocated buffer 'dst' of size 'targetDestSize'.
-    This function either compresses the entire 'src' content into 'dst' if it's large enough,
-    or fill 'dst' buffer completely with as much data as possible from 'src'.
-        *srcSizePtr : will be modified to indicate how many bytes where read from 'src' to fill 'dst'.
-                      New value is necessarily <= old value.
-        return : Nb bytes written into 'dst' (necessarily <= targetDestSize)
-                 or 0 if compression fails
+/*! LZ4_compress_destSize() :
+ *  Reverse the logic : compresses as much data as possible from 'src' buffer
+ *  into already allocated buffer 'dst', of size >= 'targetDestSize'.
+ *  This function either compresses the entire 'src' content into 'dst' if it's large enough,
+ *  or fill 'dst' buffer completely with as much data as possible from 'src'.
+ *  note: acceleration parameter is fixed to "default".
+ *
+ * *srcSizePtr : will be modified to indicate how many bytes where read from 'src' to fill 'dst'.
+ *               New value is necessarily <= input value.
+ * @return : Nb bytes written into 'dst' (necessarily <= targetDestSize)
+ *           or 0 if compression fails.
 */
 LZ4LIB_API int LZ4_compress_destSize (const char* src, char* dst, int* srcSizePtr, int targetDstSize);
 
 
-/*!
-LZ4_decompress_fast() : **unsafe!**
-This function is a bit faster than LZ4_decompress_safe(),
-but it may misbehave on malformed input because it doesn't perform full validation of compressed data.
-    originalSize : is the uncompressed size to regenerate
-                   Destination buffer must be already allocated, and its size must be >= 'originalSize' bytes.
-    return : number of bytes read from source buffer (== compressed size).
-             If the source stream is detected malformed, the function stops decoding and return a negative result.
-    note : This function is only usable if the originalSize of uncompressed data is known in advance.
-           The caller should also check that all the compressed input has been consumed properly,
-           i.e. that the return value matches the size of the buffer with compressed input.
-           The function never writes past the output buffer.  However, since it doesn't know its 'src' size,
-           it may read past the intended input.  Also, because match offsets are not validated during decoding,
-           reads from 'src' may underflow.  Use this function in trusted environment **only**.
-*/
+/*! LZ4_decompress_fast() : **unsafe!**
+ *  This function used to be a bit faster than LZ4_decompress_safe(),
+ *  though situation has changed in recent versions,
+ *  and now `LZ4_decompress_safe()` can be as fast and sometimes faster than `LZ4_decompress_fast()`.
+ *  Moreover, LZ4_decompress_fast() is not protected vs malformed input, as it doesn't perform full validation of compressed data.
+ *  As a consequence, this function is no longer recommended, and may be deprecated in future versions.
+ *  It's only remaining specificity is that it can decompress data without knowing its compressed size.
+ *
+ *  originalSize : is the uncompressed size to regenerate.
+ *                 `dst` must be already allocated, its size must be >= 'originalSize' bytes.
+ * @return : number of bytes read from source buffer (== compressed size).
+ *           If the source stream is detected malformed, the function stops decoding and returns a negative result.
+ *  note : This function requires uncompressed originalSize to be known in advance.
+ *         The function never writes past the output buffer.
+ *         However, since it doesn't know its 'src' size, it may read past the intended input.
+ *         Also, because match offsets are not validated during decoding,
+ *         reads from 'src' may underflow.
+ *         Use this function in trusted environment **only**.
+ */
 LZ4LIB_API int LZ4_decompress_fast (const char* src, char* dst, int originalSize);
 
-/*!
-LZ4_decompress_safe_partial() :
-    This function decompress a compressed block of size 'srcSize' at position 'src'
-    into destination buffer 'dst' of size 'dstCapacity'.
-    The function will decompress a minimum of 'targetOutputSize' bytes, and stop after that.
-    However, it's not accurate, and may write more than 'targetOutputSize' (but always <= dstCapacity).
-   @return : the number of bytes decoded in the destination buffer (necessarily <= dstCapacity)
-        Note : this number can also be < targetOutputSize, if compressed block contains less data.
-            Therefore, always control how many bytes were decoded.
-            If source stream is detected malformed, function returns a negative result.
-            This function is protected against malicious data packets.
-*/
+/*! LZ4_decompress_safe_partial() :
+ *  Decompress an LZ4 compressed block, of size 'srcSize' at position 'src',
+ *  into destination buffer 'dst' of size 'dstCapacity'.
+ *  Up to 'targetOutputSize' bytes will be decoded.
+ *  The function stops decoding on reaching this objective,
+ *  which can boost performance when only the beginning of a block is required.
+ *
+ * @return : the number of bytes decoded in `dst` (necessarily <= dstCapacity)
+ *           If source stream is detected malformed, function returns a negative result.
+ *
+ *  Note : @return can be < targetOutputSize, if compressed block contains less data.
+ *
+ *  Note 2 : this function features 2 parameters, targetOutputSize and dstCapacity,
+ *           and expects targetOutputSize <= dstCapacity.
+ *           It effectively stops decoding on reaching targetOutputSize,
+ *           so dstCapacity is kind of redundant.
+ *           This is because in a previous version of this function,
+ *           decoding operation would not "break" a sequence in the middle.
+ *           As a consequence, there was no guarantee that decoding would stop at exactly targetOutputSize,
+ *           it could write more bytes, though only up to dstCapacity.
+ *           Some "margin" used to be required for this operation to work properly.
+ *           This is no longer necessary.
+ *           The function nonetheless keeps its signature, in an effort to not break API.
+ */
 LZ4LIB_API int LZ4_decompress_safe_partial (const char* src, char* dst, int srcSize, int targetOutputSize, int dstCapacity);
 
 
@@ -267,16 +284,23 @@ LZ4LIB_API int LZ4_loadDict (LZ4_stream_t* streamPtr, const char* dictionary, in
  *  'dst' buffer must be already allocated.
  *  If dstCapacity >= LZ4_compressBound(srcSize), compression is guaranteed to succeed, and runs faster.
  *
- *  Important : The previous 64KB of compressed data is assumed to remain present and unmodified in memory!
- *
- *  Special 1 : When input is a double-buffer, they can have any size, including < 64 KB.
- *              Make sure that buffers are separated by at least one byte.
- *              This way, each block only depends on previous block.
- *  Special 2 : If input buffer is a ring-buffer, it can have any size, including < 64 KB.
- *
  * @return : size of compressed block
  *           or 0 if there is an error (typically, cannot fit into 'dst').
- *  After an error, the stream status is invalid, it can only be reset or freed.
+ *
+ *  Note 1 : Each invocation to LZ4_compress_fast_continue() generates a new block.
+ *           Each block has precise boundaries.
+ *           It's not possible to append blocks together and expect a single invocation of LZ4_decompress_*() to decompress them together.
+ *           Each block must be decompressed separately, calling LZ4_decompress_*() with associated metadata.
+ *
+ *  Note 2 : The previous 64KB of source data is __assumed__ to remain present, unmodified, at same address in memory!
+ *
+ *  Note 3 : When input is structured as a double-buffer, each buffer can have any size, including < 64 KB.
+ *           Make sure that buffers are separated, by at least one byte.
+ *           This construction ensures that each block only depends on previous block.
+ *
+ *  Note 4 : If input buffer is a ring-buffer, it can have any size, including < 64 KB.
+ *
+ *  Note 5 : After an error, the stream status is invalid, it can only be reset or freed.
  */
 LZ4LIB_API int LZ4_compress_fast_continue (LZ4_stream_t* streamPtr, const char* src, char* dst, int srcSize, int dstCapacity, int acceleration);
 
@@ -306,7 +330,7 @@ LZ4LIB_API int                 LZ4_freeStreamDecode (LZ4_streamDecode_t* LZ4_str
 /*! LZ4_setStreamDecode() :
  *  An LZ4_streamDecode_t context can be allocated once and re-used multiple times.
  *  Use this function to start decompression of a new stream of blocks.
- *  A dictionary can optionnally be set. Use NULL or size 0 for a reset order.
+ *  A dictionary can optionally be set. Use NULL or size 0 for a reset order.
  *  Dictionary is presumed stable : it must remain accessible and unmodified during next decompression.
  * @return : 1 if OK, 0 if error
  */
@@ -468,6 +492,7 @@ LZ4LIB_API void LZ4_attach_dictionary(LZ4_stream_t *working_stream, const LZ4_st
 #define LZ4_HASH_SIZE_U32 (1 << LZ4_HASHLOG)       /* required as macro for static allocation */
 
 #if defined(__cplusplus) || (defined (__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 */)
+#include <stdint.h>
 
 typedef struct LZ4_stream_t_internal LZ4_stream_t_internal;
 struct LZ4_stream_t_internal {
@@ -596,7 +621,7 @@ LZ4_DEPRECATED("Use LZ4_resetStream() instead") LZ4LIB_API  int   LZ4_resetStrea
 LZ4_DEPRECATED("Use LZ4_saveDict() instead") LZ4LIB_API     char* LZ4_slideInputBuffer (void* state);
 
 /* Obsolete streaming decoding functions */
-/*LZ4_DEPRECATED("use LZ4_decompress_safe_usingDict() instead")*/ LZ4LIB_API int LZ4_decompress_safe_withPrefix64k (const char* src, char* dst, int compressedSize, int maxDstSize);
+LZ4_DEPRECATED("use LZ4_decompress_safe_usingDict() instead") LZ4LIB_API int LZ4_decompress_safe_withPrefix64k (const char* src, char* dst, int compressedSize, int maxDstSize);
 LZ4_DEPRECATED("use LZ4_decompress_fast_usingDict() instead") LZ4LIB_API int LZ4_decompress_fast_withPrefix64k (const char* src, char* dst, int originalSize);
 
 }

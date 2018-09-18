@@ -2992,8 +2992,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         assert( false );
                         break;
                     }
-                    ImGui::Text( "Thread list:" );
+                    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
                     ImGui::Separator();
+                    ImGui::TextDisabled( "Thread list:" );
                     ImGui::Indent( ty );
                     for( const auto& t : v.second.threadList )
                     {

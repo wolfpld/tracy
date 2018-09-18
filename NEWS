@@ -57,6 +57,7 @@ v0.4 (xxxx-xx-xx)
 - Added support for cross-DLL profiling.
 - Items in options menu (locks, threads, etc.) are now described with number
   of events.
+  - Source location of lock declaration is also provided.
 - Created an extensive user manual for the profiler.
 - Added ability to capture multiple frame sets.
   - Viewer will display multiple frame ranges at once.

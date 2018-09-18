@@ -723,6 +723,7 @@ bool View::DrawImpl()
     m_callstackTreeBuzzAnim.Update( io.DeltaTime );
     m_zoneinfoBuzzAnim.Update( io.DeltaTime );
     m_findZoneBuzzAnim.Update( io.DeltaTime );
+    m_optionsLockBuzzAnim.Update( io.DeltaTime );
 
     return keepOpen;
 }
@@ -4260,11 +4261,34 @@ void View::DrawOptions()
             {
                 if( l.second.valid )
                 {
+                    auto& sl = m_worker.GetSourceLocation( l.second.srcloc );
+                    auto fileName = m_worker.GetString( sl.file );
+
                     char buf[1024];
                     sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
                     ImGui::Checkbox( buf, &Visible( &l.second ) );
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "%s events", RealToString( l.second.timeline.size(), true ) );
+                    if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
+                    {
+                        const auto time = m_optionsLockBuzzAnim.Time();
+                        const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                        ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+                    }
+                    else
+                    {
+                        ImGui::SameLine();
+                    }
+                    ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second.timeline.size(), true ), fileName, sl.line );
+                    if( ImGui::IsItemClicked( 1 ) )
+                    {
+                        if( FileExists( fileName ) )
+                        {
+                            SetTextEditorFile( fileName, sl.line );
+                        }
+                        else
+                        {
+                            m_optionsLockBuzzAnim.Enable( l.second.srcloc, 0.5f );
+                        }
+                    }
                 }
             }
             ImGui::TreePop();

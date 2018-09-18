@@ -253,6 +253,7 @@ private:
     BuzzAnim<int> m_callstackTreeBuzzAnim;
     BuzzAnim<const void*> m_zoneinfoBuzzAnim;
     BuzzAnim<int> m_findZoneBuzzAnim;
+    BuzzAnim<uint32_t> m_optionsLockBuzzAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;

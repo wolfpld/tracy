@@ -126,6 +126,7 @@ v0.4 (xxxx-xx-xx)
   - Client not in on-demand mode will refuse connections after the first
     connection was made and the initial event buffers were cleared.
 - A single server will no longer try to connect to multiple clients.
+- The capture utility will now display time span of the ongoing capture.
 
 
 v0.3.3 (2018-07-03)

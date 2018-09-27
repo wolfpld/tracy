@@ -7573,7 +7573,7 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
             {
                 if( v.callstacks.find( mem[i].csAlloc ) != v.callstacks.end() )
                 {
-                    m_memInfo.allocList.emplace_back( mem.data() + i );
+                    m_memInfo.allocList.emplace_back( i );
                 }
             }
         }
@@ -7670,9 +7670,17 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
 
 void View::DrawAllocList()
 {
+    std::vector<const MemEvent*> data;
+    auto basePtr = m_worker.GetMemData().data.data();
+    data.reserve( m_memInfo.allocList.size() );
+    for( auto& idx : m_memInfo.allocList )
+    {
+        data.emplace_back( basePtr + idx );
+    }
+
     ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size(), true ) );
-    ListMemData<decltype( m_memInfo.allocList.begin() )>( m_memInfo.allocList.begin(), m_memInfo.allocList.end(), [this]( auto& v ) {
+    ListMemData<decltype( data.begin() )>( data.begin(), data.end(), [this]( auto& v ) {
         ImGui::Text( "0x%" PRIx64, (*v)->ptr );
     }, "##allocations" );
     ImGui::End();

@@ -404,7 +404,7 @@ private:
         uint64_t ptrFind = 0;
         bool restrictTime = false;
         bool showAllocList = false;
-        std::vector<const MemEvent*> allocList;
+        std::vector<size_t> allocList;
     } m_memInfo;
 
     struct {

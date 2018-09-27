@@ -695,6 +695,7 @@ bool View::DrawImpl()
     if( m_findZone.show ) DrawFindZone();
     if( m_showStatistics ) DrawStatistics();
     if( m_memInfo.show ) DrawMemory();
+    if( m_memInfo.showAllocList ) DrawAllocList();
     if( m_compare.show ) DrawCompare();
     if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
     if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
@@ -7517,7 +7518,7 @@ void View::DrawMemory()
 #endif
     {
         ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
-        ImGui::TextDisabled( "Right click on file name to open source file." );
+        ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
 
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTree( mem );
@@ -7566,6 +7567,7 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
         {
             auto& mem = m_worker.GetMemData().data;
             const auto sz = mem.size();
+            m_memInfo.showAllocList = true;
             m_memInfo.allocList.clear();
             for( size_t i=0; i<sz; i++ )
             {
@@ -7664,6 +7666,16 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
             ImGui::TreePop();
         }
     }
+}
+
+void View::DrawAllocList()
+{
+    ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
+    TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size(), true ) );
+    ListMemData<decltype( m_memInfo.allocList.begin() )>( m_memInfo.allocList.begin(), m_memInfo.allocList.end(), [this]( auto& v ) {
+        ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+    }, "##allocations" );
+    ImGui::End();
 }
 
 std::pair<int8_t*, size_t> View::GetMemoryPages() const

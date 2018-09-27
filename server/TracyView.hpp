@@ -93,6 +93,7 @@ private:
     void DrawFindZone();
     void DrawStatistics();
     void DrawMemory();
+    void DrawAllocList();
     void DrawCompare();
     void DrawCallstackWindow();
     void DrawMemoryAllocWindow();
@@ -402,6 +403,7 @@ private:
         char pattern[1024] = {};
         uint64_t ptrFind = 0;
         bool restrictTime = false;
+        bool showAllocList = false;
         std::vector<const MemEvent*> allocList;
     } m_memInfo;
 

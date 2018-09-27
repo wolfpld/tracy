@@ -7562,6 +7562,20 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
             ImGui::PopID();
         }
 
+        if( ImGui::IsItemClicked( 1 ) )
+        {
+            auto& mem = m_worker.GetMemData().data;
+            const auto sz = mem.size();
+            m_memInfo.allocList.clear();
+            for( size_t i=0; i<sz; i++ )
+            {
+                if( v.callstacks.find( mem[i].csAlloc ) != v.callstacks.end() )
+                {
+                    m_memInfo.allocList.emplace_back( mem.data() + i );
+                }
+            }
+        }
+
         if( io.KeyCtrl && ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();

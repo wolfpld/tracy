@@ -402,6 +402,7 @@ private:
         char pattern[1024] = {};
         uint64_t ptrFind = 0;
         bool restrictTime = false;
+        std::vector<const MemEvent*> allocList;
     } m_memInfo;
 
     struct {

@@ -77,6 +77,7 @@ v0.4 (xxxx-xx-xx)
   - This includes frame time statistics and histogram.
 - Displayed memory sizes are now properly formatted.
 - Added call stack tree for memory allocations.
+  - You can display allocations list for each call stack tree entry.
 - The source code of the profiled application may now be viewed in the
   profiler.
   - BIG FAT WARNING: The actual profiled program source code is not known to

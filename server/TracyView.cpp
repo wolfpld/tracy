@@ -7211,12 +7211,14 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem 
         auto treePtr = GetFrameTreeItem( root, base );
         treePtr->countInclusive += path.second.cnt;
         treePtr->allocInclusive += path.second.mem;
+        treePtr->callstacks.emplace( path.first );
 
         for( int i = int( cs.size() ) - 2; i >= 0; i-- )
         {
             treePtr = GetFrameTreeItem( treePtr->children, cs[i] );
             treePtr->countInclusive += path.second.cnt;
             treePtr->allocInclusive += path.second.mem;
+            treePtr->callstacks.emplace( path.first );
         }
 
         treePtr->countExclusive += path.second.cnt;

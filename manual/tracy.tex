@@ -1264,7 +1264,9 @@ This view may be helpful in assessing the general memory behavior of the applica
 
 The \emph{\faAlignJustify{} Call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
 
-Each tree node consists of three elements: the function name, the source file location and the memory allocation data. Clicking the \RMB{} right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}). The memory allocation data is either yellow \emph{inclusive} events count (including all the children), or the cyan \emph{exclusive} events count. There are two values that are counted: total memory size and number of allocations.
+Each tree node consists of three elements: the function name, the source file location and the memory allocation data. The memory allocation data is either yellow \emph{inclusive} events count (including all the children), or the cyan \emph{exclusive} events count. There are two values that are counted: total memory size and number of allocations.
+
+Clicking the \RMB{}~right mouse button on the function name will open allocations list window (see section \ref{alloclist}), which list all the allocations included at the current call stack tree level. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
 Some function names may be too long to be properly displayed, with the events count data at the end. In such cases, you may press the \emph{control} button, which will display events count tooltip.
 
@@ -1329,6 +1331,11 @@ Source file view works on the local files you have on your disk. The traces them
 \item \textbf{The displayed source files might not reflect the code that was profiled!} It is up to you to verify that you don't have a modified version of the code, with regards to the trace.
 \end{itemize}
 \end{bclogo}
+
+\subsection{Allocations list window}
+\label{alloclist}
+
+This window displays the list of allocations included at the selected call stack tree level (see section~\ref{memorywindow}).
 
 \newpage
 \appendix

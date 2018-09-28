@@ -1238,7 +1238,7 @@ It may be difficult, if not impossible, to perform identical runs of a program. 
 
 The data gathered by profiling memory usage (section~\ref{memoryprofiling}) can be viewed in the memory window. The top row contains statistics, such as \emph{total allocations} count, number of \emph{active allocations}, current \emph{memory usage} and process \emph{memory span}\footnote{Memory span describes the address space consumed by the program. It is calculated as a difference between the maximum and minimum observed in-use memory address.}.
 
-The lists of captured memory allocations are displayed in a common multi-column format thorough the profiler. The first column specifies the memory address of an allocation, or an address and an offset, if the address is not at the start of the allocation. Clicking the \LMB{} left mouse button on an address will open the memory allocation information window\footnote{While the allocation information window is opened, the address will be highlighted on the list.}. The next column contains the allocation size.
+The lists of captured memory allocations are displayed in a common multi-column format thorough the profiler. The first column specifies the memory address of an allocation, or an address and an offset, if the address is not at the start of the allocation. Clicking the \LMB{} left mouse button on an address will open the memory allocation information window\footnote{While the allocation information window is opened, the address will be highlighted on the list.} (see section~\ref{memallocinfo}). Clicking the \MMB{}~middle mouse button on an address will zoom the timeline view to memory allocation's range. The next column contains the allocation size.
 
 The allocation's timing data is contained in two columns: \emph{appeared at} and \emph{duration}. Clicking the \LMB{}~left mouse button on the first one will center the timeline view at the beginning of allocation, and likewise, clicking on the second one will center the timeline view at the end of allocation. Note that allocations that have not yet been freed will have their duration displayed in green color.
 
@@ -1261,6 +1261,7 @@ On the \emph{\faMap{} Memory map} pane you can see the graphical representation 
 This view may be helpful in assessing the general memory behavior of the application, or in debugging the problems resulting from address space fragmentation.
 
 \subsubsection{Call stack tree}
+\label{callstacktree}
 
 The \emph{\faAlignJustify{} Call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
 
@@ -1273,6 +1274,16 @@ Some function names may be too long to be properly displayed, with the events co
 \subsubsection{Looking back at the memory history}
 
 By default the memory window displays the memory data at the current point of program execution. It is however possible to view the historical data by enabling the \emph{\faHistory{}~Restrict time} option. This will draw a vertical violet line on the timeline view, which will act as a terminator for memory events. The memory window will use only the events lying on the left side of the terminator line (in the past), ignoring everything that's on the right side.
+
+\subsection{Allocations list window}
+\label{alloclist}
+
+This window displays the list of allocations included at the selected call stack tree level (see section~\ref{memorywindow} and \ref{callstacktree}).
+
+\subsection{Memory allocation information window}
+\label{memallocinfo}
+
+The information about the selected memory allocation is displayed in this window. It lists the allocation's address and size, along with the time, thread and zone data of the allocation and free events. Clicking the \emph{\faMicroscope{}~Zoom to allocation} button will zoom the timeline view to the allocation's extent.
 
 \subsection{Trace information window}
 \label{traceinfo}
@@ -1331,11 +1342,6 @@ Source file view works on the local files you have on your disk. The traces them
 \item \textbf{The displayed source files might not reflect the code that was profiled!} It is up to you to verify that you don't have a modified version of the code, with regards to the trace.
 \end{itemize}
 \end{bclogo}
-
-\subsection{Allocations list window}
-\label{alloclist}
-
-This window displays the list of allocations included at the selected call stack tree level (see section~\ref{memorywindow}).
 
 \newpage
 \appendix

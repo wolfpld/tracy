@@ -31,9 +31,13 @@ v0.4 (xxxx-xx-xx)
   environmental variable to 1 to get the same effect.
 - Added ability to show/hide all threads and plots.
 - Performance improvements.
-- Added memory allocation info window.
-- Selecting memory allocation on a plot will draw time range of the
-  allocation.
+- Improvements to memory data presentation.
+  - Added memory allocation info window.
+  - Selecting memory allocation on a plot will draw time range of the
+    allocation.
+  - Middle clicking on an memory allocation address (or on a button in
+    memory allocation info window) will zoom the view to the allocation
+    range.
 - Find zone menu improvements:
   - Zones can be now also grouped by call stacks.
   - Zone groups can be now also sorted by time spend in each zone.

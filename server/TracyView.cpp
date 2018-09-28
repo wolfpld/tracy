@@ -6954,6 +6954,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
     {
         ImGui::BeginTooltip();
         ImGui::Text( "Click on address to display memory allocation info window." );
+        ImGui::Text( "Middle click to zoom to allocation range." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
@@ -7027,6 +7028,10 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             if( ImGui::IsItemClicked() )
             {
                 m_memoryAllocInfoWindow = arrIdx;
+            }
+            if( ImGui::IsItemClicked( 2 ) )
+            {
+                ZoomToRange( v->timeAlloc, v->timeFree >= 0 ? v->timeFree : m_worker.GetLastTime() );
             }
         }
         if( ImGui::IsItemHovered() )

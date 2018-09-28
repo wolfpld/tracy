@@ -6372,6 +6372,15 @@ void View::DrawMemoryAllocWindow()
     const auto tidFree = m_worker.DecompressThread( ev.threadFree );
     int idx = 0;
 
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to allocation" ) )
+#else
+    if( ImGui::Button( "Zoom to allocation" ) )
+#endif
+    {
+        ZoomToRange( ev.timeAlloc, ev.timeFree >= 0 ? ev.timeFree : m_worker.GetLastTime() );
+    }
+
     char buf[64];
     sprintf( buf, "0x%" PRIx64, ev.ptr );
     TextFocused( "Address:", buf );

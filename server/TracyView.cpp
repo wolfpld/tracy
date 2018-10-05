@@ -7051,10 +7051,10 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             {
                 m_memoryAllocInfoWindow = arrIdx;
             }
-            if( ImGui::IsItemClicked( 2 ) )
-            {
-                ZoomToRange( v->timeAlloc, v->timeFree >= 0 ? v->timeFree : m_worker.GetLastTime() );
-            }
+        }
+        if( ImGui::IsItemClicked( 2 ) )
+        {
+            ZoomToRange( v->timeAlloc, v->timeFree >= 0 ? v->timeFree : m_worker.GetLastTime() );
         }
         if( ImGui::IsItemHovered() )
         {

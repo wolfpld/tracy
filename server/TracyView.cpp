@@ -1293,6 +1293,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
     int64_t prev = -1;
     int64_t prevEnd = -1;
+    int64_t endPos = -1;
     bool tooltipDisplayed = false;
 
     for( int i = zrange.first; i < zrange.second; i++ )
@@ -1356,14 +1357,15 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
         if( m_frames == &frames )
         {
-            if( fbegin >= m_zvStart )
+            if( fbegin >= m_zvStart && endPos != fbegin )
             {
                 draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
             }
-            if( !frames.continuous && fend <= m_zvEnd )
+            if( fend <= m_zvEnd )
             {
                 draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
             }
+            endPos = fend;
         }
 
         auto buf = GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() );
@@ -1401,12 +1403,6 @@ bool View::DrawZoneFrames( const FrameData& frames )
     {
         DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
         prev = -1;
-    }
-
-    const auto fend = m_worker.GetFrameEnd( frames, zrange.second-1 );
-    if( fend == m_zvEnd )
-    {
-        draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
     }
 
     if( hover && !tooltipDisplayed )

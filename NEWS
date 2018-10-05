@@ -68,6 +68,8 @@ v0.4 (xxxx-xx-xx)
   - Only one frame set can be active at once. The selected one is used for
     the frame navigation graph, frame navigation buttons and drawing frame
     separators.
+  - The active frame set will be highlighted, and the rest will be dimmed
+    out.
   - Frames can now also be discontinuous.
 - Frames and zones too small to be displayed will be marked with a zig-zag
   pattern.

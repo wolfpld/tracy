@@ -1270,6 +1270,18 @@ static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, doub
     }
 }
 
+static uint32_t GetColorMuted( uint32_t color, bool active )
+{
+    if( active )
+    {
+        return 0xFF000000 | color;
+    }
+    else
+    {
+        return 0x66000000 | color;
+    }
+}
+
 bool View::DrawZoneFrames( const FrameData& frames )
 {
     const auto wpos = ImGui::GetCursorScreenPos();
@@ -1296,6 +1308,10 @@ bool View::DrawZoneFrames( const FrameData& frames )
     int64_t endPos = -1;
     bool tooltipDisplayed = false;
     const auto activeFrameSet = m_frames == &frames;
+
+    const auto inactiveColor = GetColorMuted( 0x888888, activeFrameSet );
+    const auto activeColor = GetColorMuted( 0xFFFFFF, activeFrameSet );
+    const auto redColor = GetColorMuted( 0x4444FF, activeFrameSet );
 
     for( int i = zrange.first; i < zrange.second; i++ )
     {
@@ -1326,7 +1342,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
             {
                 if( ( fbegin - prevEnd ) * pxns >= MinFrameSize )
                 {
-                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, inactiveColor );
                     prev = -1;
                 }
                 else
@@ -1347,11 +1363,11 @@ bool View::DrawZoneFrames( const FrameData& frames )
         {
             if( frames.continuous )
             {
-                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( fbegin - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( fbegin - m_zvStart ) * pxns, ty / 4, inactiveColor );
             }
             else
             {
-                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, inactiveColor );
             }
             prev = -1;
         }
@@ -1371,7 +1387,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
         auto buf = GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() );
         auto tx = ImGui::CalcTextSize( buf ).x;
-        uint32_t color = ( frames.name == 0 && i == 0 ) ? 0xFF4444FF : 0xFFFFFFFF;
+        uint32_t color = ( frames.name == 0 && i == 0 ) ? redColor : activeColor;
 
         if( fsz - 5 <= tx )
         {
@@ -1402,7 +1418,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
     if( prev != -1 )
     {
-        DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, 0xFF888888 );
+        DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, inactiveColor );
         prev = -1;
     }
 

@@ -1594,8 +1594,17 @@ void View::DrawZones()
                     const auto px = ( (*it)->time - m_zvStart ) * pxns;
                     if( dist > 1 )
                     {
-                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), 0xFFDDDDDD );
+                        unsigned int color = 0xFFDDDDDD;
+                        if( m_msgHighlight && m_msgHighlight->thread == v->id )
+                        {
+                            const auto hTime = m_msgHighlight->time;
+                            if( (*it)->time <= hTime && ( next == v->messages.end() || (*next)->time > hTime ) )
+                            {
+                                color = 0xFF4444FF;
+                            }
+                        }
+                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), color );
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), color );
                     }
                     else
                     {

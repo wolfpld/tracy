@@ -17,6 +17,7 @@ public:
     }
 
     tracy_force_inline operator const T& () const { return m_value; }
+    tracy_force_inline T operator->() const { return m_value; }
 
     tracy_force_inline DecayValue& operator=( const T& value )
     {

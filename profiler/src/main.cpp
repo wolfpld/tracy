@@ -348,13 +348,15 @@ int main( int argc, char** argv )
     FILE* f = fopen( winPosFile.c_str(), "wb" );
     if( f )
     {
-        glfwGetWindowPos( window, &x, &y );
-        glfwGetWindowSize( window, &w, &h );
 #ifdef GLFW_MAXIMIZED
         uint32_t maximized = glfwGetWindowAttrib( window, GLFW_MAXIMIZED );
+        if( maximized ) glfwRestoreWindow( window );
 #else
         uint32_t maximized = 0;
 #endif
+
+        glfwGetWindowPos( window, &x, &y );
+        glfwGetWindowSize( window, &w, &h );
 
         uint32_t data[5] = { uint32_t( x ), uint32_t( y ), uint32_t( w ), uint32_t( h ), maximized };
         fwrite( data, 1, sizeof( data ), f );

@@ -1295,6 +1295,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
     int64_t prevEnd = -1;
     int64_t endPos = -1;
     bool tooltipDisplayed = false;
+    const auto activeFrameSet = m_frames == &frames;
 
     for( int i = zrange.first; i < zrange.second; i++ )
     {
@@ -1355,7 +1356,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
             prev = -1;
         }
 
-        if( m_frames == &frames )
+        if( activeFrameSet )
         {
             if( fbegin >= m_zvStart && endPos != fbegin )
             {

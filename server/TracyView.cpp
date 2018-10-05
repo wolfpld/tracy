@@ -680,7 +680,27 @@ bool View::DrawImpl()
         ImGui::EndCombo();
     }
     ImGui::SameLine();
-    ImGui::Text( "Time span: %-10s View span: %-10s Zones: %-13s Queue delay: %s  Timer resolution: %s", TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ), TimeToString( m_zvEnd - m_zvStart ), RealToString( m_worker.GetZoneCount(), true ), TimeToString( m_worker.GetDelay() ), TimeToString( m_worker.GetResolution() ) );
+    ImGui::Spacing();
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Text( ICON_FA_EYE " %-10s", TimeToString( m_zvEnd - m_zvStart ) );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "View span" );
+        ImGui::EndTooltip();
+    }
+    ImGui::SameLine();
+    ImGui::Text( ICON_FA_DATABASE " %-10s", TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Time span" );
+        ImGui::EndTooltip();
+    }
+#else
+    ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_zvEnd - m_zvStart ), TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
+#endif
     DrawFrames();
     DrawZones();
     ImGui::End();

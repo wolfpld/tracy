@@ -43,6 +43,7 @@ v0.4 (xxxx-xx-xx)
   - Zone groups can be now also sorted by time spend in each zone.
   - Zone groups list now displays group times.
   - Average and median zone times are now displayed on the histogram.
+  - Selected zones will be highlighted on the timeline view.
 - Added named versions of tracing macros that allow specifying scoped
   variable name.
 - The main profiler window is now kept at the bottom of windows stack.

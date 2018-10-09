@@ -210,7 +210,23 @@ int main( int argc, char** argv )
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_VIDEO " Tutorial" ) )
             {
-                OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
+                ImGui::OpenPopup( "tutorial" );
+            }
+            if( ImGui::BeginPopup( "tutorial" ) )
+            {
+                if( ImGui::Selectable( ICON_FA_VIDEO " Introduction to the Tracy Profiler" ) )
+                {
+                    OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
+                }
+                if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.3" ) )
+                {
+                    OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
+                }
+                if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.4" ) )
+                {
+                    OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
+                }
+                ImGui::EndPopup();
             }
             ImGui::Separator();
             ImGui::Text( "Connect to client" );

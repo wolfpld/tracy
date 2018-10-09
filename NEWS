@@ -6,7 +6,7 @@ Note: Release numbers are nothing more than numbers. There are some
 "missing" versions due to trace file changes during development. This is not
 a mistake.
 
-v0.4 (xxxx-xx-xx)
+v0.4 (2018-10-09)
 -----------------
 
 - Renamed "standalone" utility to "profiler".

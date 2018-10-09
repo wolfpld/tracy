@@ -7832,9 +7832,16 @@ const char* View::GetPlotName( const PlotData* plot ) const
 
 uint32_t View::GetZoneColor( const ZoneEvent& ev )
 {
-    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
-    const auto color = srcloc.color;
-    return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
+    if( m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == ev.srcloc )
+    {
+        return 0xFF229999;
+    }
+    else
+    {
+        const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+        const auto color = srcloc.color;
+        return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
+    }
 }
 
 uint32_t View::GetZoneColor( const GpuEvent& ev )
@@ -7894,7 +7901,7 @@ uint32_t View::GetZoneHighlight( const GpuEvent& ev )
 
 float View::GetZoneThickness( const ZoneEvent& ev )
 {
-    if( m_zoneInfoWindow == &ev || m_zoneHighlight == &ev )
+    if( m_zoneInfoWindow == &ev || m_zoneHighlight == &ev || ( m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == ev.srcloc ) )
     {
         return 3.f;
     }

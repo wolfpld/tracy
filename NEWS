@@ -11,6 +11,7 @@ v0.5 (xxxx-xx-xx)
 
 - Active frame set can be now switched by clicking on a frame set on the
   timeline.
+- Add ability to go to a specified frame.
 
 v0.4 (2018-10-09)
 -----------------

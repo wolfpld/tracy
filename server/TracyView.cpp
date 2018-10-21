@@ -305,6 +305,7 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_onlyContendedLocks( true )
+    , m_goToFrame( false )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
@@ -351,6 +352,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_drawLocks( true )
     , m_drawPlots( true )
     , m_onlyContendedLocks( true )
+    , m_goToFrame( false )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
@@ -681,6 +683,18 @@ bool View::DrawImpl()
         ImGui::EndCombo();
     }
     ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    m_goToFrame |= ImGui::Button( ICON_FA_CROSSHAIRS );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Go to frame" );
+        ImGui::EndTooltip();
+    }
+#else
+    m_goToFrame |= ImGui::Button( "Go to" );
+#endif
+    ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -722,6 +736,7 @@ bool View::DrawImpl()
     if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
     if( m_showInfo ) DrawInfo();
     if( m_textEditorFile ) DrawTextEditor();
+    if( m_goToFrame ) DrawGoToFrame();
 
     const auto& io = ImGui::GetIO();
     if( m_zoomAnim.active )
@@ -6979,6 +6994,24 @@ void View::DrawTextEditor()
     if( m_textEditorFont ) ImGui::PopFont();
     ImGui::End();
     if( !show ) m_textEditorFile = nullptr;
+}
+
+void View::DrawGoToFrame()
+{
+    static int frameNum = 1;
+
+    const bool mainFrameSet = m_frames->name == 0;
+    const auto numFrames = mainFrameSet ? m_frames->frames.size() - 1 : m_frames->frames.size();
+    const auto frameOffset = mainFrameSet ? 0 : 1;
+
+    ImGui::Begin( "Go to frame", &m_goToFrame, ImGuiWindowFlags_AlwaysAutoResize );
+    ImGui::InputInt( "Frame", &frameNum );
+    frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
+    if( ImGui::Button( "Go to" ) )
+    {
+        ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
+    }
+    ImGui::End();
 }
 
 template<class T>

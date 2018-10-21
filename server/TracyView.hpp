@@ -99,6 +99,7 @@ private:
     void DrawMemoryAllocWindow();
     void DrawInfo();
     void DrawTextEditor();
+    void DrawGoToFrame();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
@@ -244,6 +245,7 @@ private:
     bool m_drawLocks;
     bool m_drawPlots;
     bool m_onlyContendedLocks;
+    bool m_goToFrame;
 
     int m_statSort;
     bool m_statSelf;

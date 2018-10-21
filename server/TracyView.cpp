@@ -1442,13 +1442,20 @@ bool View::DrawZoneFrames( const FrameData& frames )
         prev = -1;
     }
 
-    if( hover && !tooltipDisplayed )
+    if( hover )
     {
-        ImGui::BeginTooltip();
-        ImGui::TextDisabled( "Frame set:" );
-        ImGui::SameLine();
-        ImGui::Text( "%s", frames.name == 0 ? "Frames" : m_worker.GetString( frames.name ) );
-        ImGui::EndTooltip();
+        if( !tooltipDisplayed )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextDisabled( "Frame set:" );
+            ImGui::SameLine();
+            ImGui::Text( "%s", frames.name == 0 ? "Frames" : m_worker.GetString( frames.name ) );
+            ImGui::EndTooltip();
+        }
+        if( ImGui::IsMouseClicked( 0 ) )
+        {
+            m_frames = &frames;
+        }
     }
 
     return hover;

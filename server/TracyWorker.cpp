@@ -392,7 +392,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         uint64_t id, ptr;
         f.Read2( id, ptr );
-        m_data.strings.emplace( id, pointerMap.find( ptr )->second );
+        auto it = pointerMap.find( ptr );
+        if( it != pointerMap.end() )
+        {
+            m_data.strings.emplace( id, it->second );
+        }
     }
 
     f.Read( sz );
@@ -400,7 +404,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         uint64_t id, ptr;
         f.Read2( id, ptr );
-        m_data.threadNames.emplace( id, pointerMap.find( ptr )->second );
+        auto it = pointerMap.find( ptr );
+        if( it != pointerMap.end() )
+        {
+            m_data.threadNames.emplace( id, it->second );
+        }
     }
 
     if( fileVer >= FileVersion( 0, 3, 201 ) )

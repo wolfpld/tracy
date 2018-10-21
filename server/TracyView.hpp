@@ -150,6 +150,7 @@ private:
     const char* GetPlotName( const PlotData* plot ) const;
 
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx );
+    void SetViewToLastFrames();
 
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
     flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;

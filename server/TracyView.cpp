@@ -323,7 +323,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     : m_worker( f )
     , m_staticView( true )
     , m_frameScale( 0 )
-    , m_pause( false )
+    , m_pause( true )
     , m_frameStart( 0 )
     , m_zvStart( 0 )
     , m_zvEnd( 0 )
@@ -363,6 +363,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     s_instance = this;
 
     InitTextEditor();
+    SetViewToLastFrames();
 }
 
 View::~View()
@@ -893,15 +894,7 @@ void View::DrawFrames()
     if( !m_pause )
     {
         m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
-        m_zvStart = m_worker.GetFrameBegin( *m_frames, std::max( 0, total - 4 ) );
-        if( total == 1 )
-        {
-            m_zvEnd = m_worker.GetLastTime();
-        }
-        else
-        {
-            m_zvEnd = m_worker.GetFrameBegin( *m_frames, total - 1 );
-        }
+        SetViewToLastFrames();
     }
 
     if( hover )
@@ -8369,6 +8362,21 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx 
     if( ImGui::IsItemHovered() )
     {
         CallstackTooltip( callstack );
+    }
+}
+
+void View::SetViewToLastFrames()
+{
+    const int total = m_worker.GetFrameCount( *m_frames );
+
+    m_zvStart = m_worker.GetFrameBegin( *m_frames, std::max( 0, total - 4 ) );
+    if( total == 1 )
+    {
+        m_zvEnd = m_worker.GetLastTime();
+    }
+    else
+    {
+        m_zvEnd = m_worker.GetFrameBegin( *m_frames, total - 1 );
     }
 }
 

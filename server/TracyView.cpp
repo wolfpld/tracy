@@ -1446,7 +1446,16 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
     if( prev != -1 )
     {
-        DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, inactiveColor );
+        if( frames.continuous )
+        {
+            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, inactiveColor );
+        }
+        else
+        {
+            const auto begin = ( prev - m_zvStart ) * pxns;
+            const auto end = ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns;
+            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), begin, std::max( begin + MinFrameSize, end ), ty / 4, inactiveColor );
+        }
         prev = -1;
     }
 

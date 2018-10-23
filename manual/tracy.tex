@@ -669,19 +669,22 @@ The \emph{queue delay} and \emph{timer resolution} parameters are calibration re
 \subsection{Interactive profiling}
 \label{interactiveprofiling}
 
-If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the \texttt{profiler} directory.
+If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the \texttt{profiler} directory. After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faGlobeAmericas{}~\emph{Homepage} and \faVideo{}~\emph{Tutorial}).
 
-After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faGlobeAmericas{}~\emph{Homepage} and \faVideo{}~\emph{Tutorial}), along with the client address entry field and the \faWifi{}~\emph{Connect} button. A saved trace can be loaded from disk using the \faFolderOpen{}~\emph{Open saved trace} button.
+The client \emph{address entry} field and the \faWifi{}~\emph{Connect} button are used to connect to a running client. You can use the connection history button~\faCaretDown{} to display a list of commonly used addresses, from which you can quickly select an address. You can remove entries from this list by hovering the \faMousePointer{}~mouse cursor over an entry and pressing the \emph{delete} button on the keyboard.
+
+If you want to open a trace that you have stored on the disk, you can do so by pressing the \faFolderOpen{}~\emph{Open saved trace} button.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw (0, 0) rectangle (5, -2.9);
-\draw[pattern=crosshatch dots] (0, 0) rectangle+(5, 0.3);
+\draw (0, 0) rectangle (4.95, -2.9);
+\draw[pattern=crosshatch dots] (0, 0) rectangle+(4.95, 0.3);
 \draw[rounded corners=5pt] (0.1, -0.1) rectangle+(1.47, -0.5) node [midway] {\faBook};
 \draw[rounded corners=5pt] (1.77, -0.1) rectangle+(1.47, -0.5) node [midway] {\faGlobeAmericas};
 \draw[rounded corners=5pt] (3.37, -0.1) rectangle+(1.47, -0.5) node [midway] {\faVideo};
 
-\draw (0.1, -0.9) rectangle+(4.8, -0.5) node [midway] {Address entry};
+\draw (0.1, -0.9) rectangle+(4.1, -0.5) node [midway] {Address entry};
+\draw[rounded corners=5pt] (4.33, -0.9) rectangle+(0.5, -0.5) node [midway] {\faCaretDown};
 \draw[rounded corners=5pt] (0.1, -1.5) rectangle+(2, -0.5) node [midway] {\faWifi{}~Connect};
 \draw[rounded corners=5pt] (0.1, -2.3) rectangle+(3.5, -0.5) node [midway] {\faFolderOpen{}~Open saved trace};
 \end{tikzpicture}

@@ -276,6 +276,7 @@ int main( int argc, char** argv )
                 ImGui::SameLine();
                 if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
                 {
+                    int idxRemove = -1;
                     const auto sz = std::min<size_t>( 5, connHistVec.size() );
                     for( size_t i=0; i<sz; i++ )
                     {
@@ -284,6 +285,15 @@ int main( int argc, char** argv )
                         {
                             memcpy( addr, str.c_str(), str.size() + 1 );
                         }
+                        if( ImGui::IsItemHovered() && ImGui::IsKeyPressed( ImGui::GetKeyIndex( ImGuiKey_Delete ), false ) )
+                        {
+                            idxRemove = (int)i;
+                        }
+                    }
+                    if( idxRemove >= 0 )
+                    {
+                        connHistMap.erase( connHistVec[idxRemove] );
+                        connHistVec = RebuildConnectionHistory( connHistMap );
                     }
                     ImGui::EndCombo();
                 }

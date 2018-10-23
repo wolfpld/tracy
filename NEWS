@@ -12,6 +12,7 @@ v0.5 (xxxx-xx-xx)
 - Active frame set can be now switched by clicking on a frame set on the
   timeline.
 - Add ability to go to a specified frame.
+- Most commonly used addresses can be now selected from the drop-down menu.
 
 v0.4 (2018-10-09)
 -----------------

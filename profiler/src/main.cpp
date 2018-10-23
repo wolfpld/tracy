@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <assert.h>
 #include <inttypes.h>
 #include <imgui.h>
@@ -59,6 +60,18 @@ static void SetWindowTitleCallback( const char* title )
     s_customTitle = true;
 }
 
+std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildConnectionHistory( const std::unordered_map<std::string, uint64_t>& connHistMap )
+{
+    std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> ret;
+    ret.reserve( connHistMap.size() );
+    for( auto it = connHistMap.begin(); it != connHistMap.end(); ++it )
+    {
+        ret.emplace_back( it );
+    }
+    tracy::pdqsort_branchless( ret.begin(), ret.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second > rhs->second; } );
+    return ret;
+}
+
 int main( int argc, char** argv )
 {
     std::unique_ptr<tracy::View> view;
@@ -113,13 +126,7 @@ int main( int argc, char** argv )
                 connHistMap.emplace( std::string( tmp, tmp+ssz ), cnt );
             }
             fclose( f );
-
-            connHistVec.reserve( connHistMap.size() );
-            for( auto it = connHistMap.begin(); it != connHistMap.end(); ++it )
-            {
-                connHistVec.emplace_back( it );
-            }
-            tracy::pdqsort_branchless( connHistVec.begin(), connHistVec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second > rhs->second; } );
+            connHistVec = RebuildConnectionHistory( connHistMap );
         }
     }
 
@@ -263,7 +270,24 @@ int main( int argc, char** argv )
             }
             ImGui::Separator();
             ImGui::Text( "Connect to client" );
-            ImGui::InputText( "Address", addr, 1024 );
+            ImGui::InputText( "", addr, 1024 );
+            if( !connHistVec.empty() )
+            {
+                ImGui::SameLine();
+                if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
+                {
+                    const auto sz = std::min<size_t>( 5, connHistVec.size() );
+                    for( size_t i=0; i<sz; i++ )
+                    {
+                        const auto& str = connHistVec[i]->first;
+                        if( ImGui::Selectable( str.c_str() ) )
+                        {
+                            memcpy( addr, str.c_str(), str.size() + 1 );
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+            }
             if( ImGui::Button( ICON_FA_WIFI " Connect" ) && *addr && !loadThread.joinable() )
             {
                 std::string addrStr( addr );
@@ -276,6 +300,7 @@ int main( int argc, char** argv )
                 {
                     connHistMap.emplace( std::move( addr ), 1 );
                 }
+                connHistVec = RebuildConnectionHistory( connHistMap );
 
                 view = std::make_unique<tracy::View>( addr, fixedWidth, SetWindowTitleCallback );
             }

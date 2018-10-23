@@ -526,8 +526,9 @@ bool View::DrawImpl()
         TextCentered( ICON_FA_WIFI );
 #endif
         ImGui::Text( "Waiting for connection..." );
+        bool wasCancelled = ImGui::Button( "Cancel" );
         ImGui::End();
-        return true;
+        return !wasCancelled;
     }
 
     if( !m_frames ) m_frames = m_worker.GetFramesBase();

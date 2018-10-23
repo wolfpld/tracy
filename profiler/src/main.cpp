@@ -3,9 +3,11 @@
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <unordered_map>
 #include <GL/gl3w.h>
 #include <GLFW/glfw3.h>
 #include <memory>
@@ -17,6 +19,7 @@
 #  include <shellapi.h>
 #endif
 
+#include "../../server/tracy_pdqsort.h"
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyImGui.hpp"
@@ -87,6 +90,36 @@ int main( int argc, char** argv )
             w = data[2];
             h = data[3];
             maximize = data[4];
+        }
+    }
+
+    std::string connHistFile = tracy::GetSavePath( "connection.history" );
+    std::unordered_map<std::string, uint64_t> connHistMap;
+    std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> connHistVec;
+    {
+        FILE* f = fopen( connHistFile.c_str(), "rb" );
+        if( f )
+        {
+            uint64_t sz;
+            fread( &sz, 1, sizeof( sz ), f );
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint64_t ssz, cnt;
+                fread( &ssz, 1, sizeof( ssz ), f );
+                assert( ssz < 1024 );
+                char tmp[1024];
+                fread( tmp, 1, ssz, f );
+                fread( &cnt, 1, sizeof( cnt ), f );
+                connHistMap.emplace( std::string( tmp, tmp+ssz ), cnt );
+            }
+            fclose( f );
+
+            connHistVec.reserve( connHistMap.size() );
+            for( auto it = connHistMap.begin(); it != connHistMap.end(); ++it )
+            {
+                connHistVec.emplace_back( it );
+            }
+            tracy::pdqsort_branchless( connHistVec.begin(), connHistVec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second > rhs->second; } );
         }
     }
 
@@ -233,6 +266,17 @@ int main( int argc, char** argv )
             ImGui::InputText( "Address", addr, 1024 );
             if( ImGui::Button( ICON_FA_WIFI " Connect" ) && *addr && !loadThread.joinable() )
             {
+                std::string addrStr( addr );
+                auto it = connHistMap.find( addr );
+                if( it != connHistMap.end() )
+                {
+                    it->second++;
+                }
+                else
+                {
+                    connHistMap.emplace( std::move( addr ), 1 );
+                }
+
                 view = std::make_unique<tracy::View>( addr, fixedWidth, SetWindowTitleCallback );
             }
             ImGui::Separator();
@@ -361,22 +405,24 @@ int main( int argc, char** argv )
         }
     }
 
-    FILE* f = fopen( winPosFile.c_str(), "wb" );
-    if( f )
     {
+        FILE* f = fopen( winPosFile.c_str(), "wb" );
+        if( f )
+        {
 #ifdef GLFW_MAXIMIZED
-        uint32_t maximized = glfwGetWindowAttrib( window, GLFW_MAXIMIZED );
-        if( maximized ) glfwRestoreWindow( window );
+            uint32_t maximized = glfwGetWindowAttrib( window, GLFW_MAXIMIZED );
+            if( maximized ) glfwRestoreWindow( window );
 #else
-        uint32_t maximized = 0;
+            uint32_t maximized = 0;
 #endif
 
-        glfwGetWindowPos( window, &x, &y );
-        glfwGetWindowSize( window, &w, &h );
+            glfwGetWindowPos( window, &x, &y );
+            glfwGetWindowSize( window, &w, &h );
 
-        uint32_t data[5] = { uint32_t( x ), uint32_t( y ), uint32_t( w ), uint32_t( h ), maximized };
-        fwrite( data, 1, sizeof( data ), f );
-        fclose( f );
+            uint32_t data[5] = { uint32_t( x ), uint32_t( y ), uint32_t( w ), uint32_t( h ), maximized };
+            fwrite( data, 1, sizeof( data ), f );
+            fclose( f );
+        }
     }
 
     // Cleanup
@@ -386,6 +432,23 @@ int main( int argc, char** argv )
 
     glfwDestroyWindow(window);
     glfwTerminate();
+
+    {
+        FILE* f = fopen( connHistFile.c_str(), "wb" );
+        if( f )
+        {
+            uint64_t sz = uint64_t( connHistMap.size() );
+            fwrite( &sz, 1, sizeof( uint64_t ), f );
+            for( auto& v : connHistMap )
+            {
+                sz = uint64_t( v.first.size() );
+                fwrite( &sz, 1, sizeof( uint64_t ), f );
+                fwrite( v.first.c_str(), 1, sz, f );
+                fwrite( &v.second, 1, sizeof( v.second ), f );
+            }
+            fclose( f );
+        }
+    }
 
     return 0;
 }

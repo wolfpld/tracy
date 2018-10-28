@@ -56,6 +56,7 @@
 #if defined _MSC_VER || defined __CYGWIN__
 #  include <lmcons.h>
 extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
+#   define TRACY_USE_INITONCE (1)
 #else
 #  include <unistd.h>
 #  include <limits.h>
@@ -73,12 +74,40 @@ namespace tracy
 
 struct RPMallocInit
 {
-    RPMallocInit() { rpmalloc_initialize(); }
+    RPMallocInit()
+    {
+        #if defined TRACY_USE_INITONCE
+        rpmalloc_thread_initialize();
+        #else
+        rpmalloc_initialize();
+        #endif //if defined TRACY_USE_INITONCE
+    }
 };
+
+#if defined TRACY_USE_INITONCE
+namespace
+{
+    BOOL CALLBACK InitOnceCallback(
+        PINIT_ONCE initOnce,
+        PVOID Parameter,
+        PVOID *Context)
+    {
+        rpmalloc_initialize();
+        return TRUE;
+    }
+}
+#endif //if defined TRACY_USE_INITONCE
 
 struct RPMallocThreadInit
 {
-    RPMallocThreadInit() { rpmalloc_thread_initialize(); }
+    RPMallocThreadInit()
+    {
+        #if defined TRACY_USE_INITONCE
+        static INIT_ONCE InitOnce = INIT_ONCE_STATIC_INIT;
+        InitOnceExecuteOnce(&InitOnce, InitOnceCallback, nullptr, nullptr);
+        #endif //if defined TRACY_USE_INITONCE
+        rpmalloc_thread_initialize();
+    }
 };
 
 struct InitTimeWrapper

@@ -56,7 +56,7 @@
 #if defined _MSC_VER || defined __CYGWIN__
 #  include <lmcons.h>
 extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
-#  define TRACY_USE_INITONCE
+#  define TRACY_USE_INIT_ONCE
 #else
 #  include <unistd.h>
 #  include <limits.h>
@@ -72,7 +72,7 @@ extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 namespace tracy
 {
 
-#if defined TRACY_USE_INITONCE
+#if defined TRACY_USE_INIT_ONCE
 namespace
 {
     BOOL CALLBACK InitOnceCallback(
@@ -86,20 +86,20 @@ namespace
 
     INIT_ONCE InitOnce = INIT_ONCE_STATIC_INIT;
 }
-#endif //if defined TRACY_USE_INITONCE
+#endif //if defined TRACY_USE_INIT_ONCE
 
 struct RPMallocInit
 {
     RPMallocInit()
     {
-#if defined TRACY_USE_INITONCE
+#if defined TRACY_USE_INIT_ONCE
         InitOnceExecuteOnce(&InitOnce, InitOnceCallback, nullptr, nullptr);
         //We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might 
         //not be called on this thread if another thread has executed it earlier.
         rpmalloc_thread_initialize();
 #else
         rpmalloc_initialize();
-#endif //if defined TRACY_USE_INITONCE
+#endif //if defined TRACY_USE_INIT_ONCE
     }
 };
 
@@ -109,9 +109,9 @@ struct RPMallocThreadInit
 {
     RPMallocThreadInit()
     {
-#if defined TRACY_USE_INITONCE
+#if defined TRACY_USE_INIT_ONCE
         InitOnceExecuteOnce(&InitOnce, InitOnceCallback, nullptr, nullptr);
-#endif //if defined TRACY_USE_INITONCE
+#endif //if defined TRACY_USE_INIT_ONCE
         rpmalloc_thread_initialize();
     }
 };

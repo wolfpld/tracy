@@ -547,7 +547,7 @@ bool View::DrawImpl()
     bool* keepOpenPtr = nullptr;
     if( !m_staticView )
     {
-        DrawConnection();
+        if( !DrawConnection() ) return false;
     }
     else
     {
@@ -777,7 +777,7 @@ bool View::DrawImpl()
     return keepOpen;
 }
 
-void View::DrawConnection()
+bool View::DrawConnection()
 {
     const auto ty = ImGui::GetFontSize();
     const auto cs = ty * 0.9f;
@@ -854,7 +854,41 @@ void View::DrawConnection()
         }
     }
 
+    ImGui::SameLine( 0, ty * 4 );
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_EXCLAMATION_TRIANGLE " Discard" ) )
+#else
+    if( ImGui::Button( "Discard" ) )
+#endif
+    {
+        ImGui::OpenPopup( "Confirm trace discard" );
+    }
+
+    if( ImGui::BeginPopupModal( "Confirm trace discard", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+#endif
+        ImGui::Text( "All unsaved profiling data will be lost!" );
+        ImGui::Text( "Are you sure you want to proceed?" );
+        ImGui::Separator();
+        if( ImGui::Button( "Yes" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            ImGui::End();
+            return false;
+        }
+        ImGui::SameLine( 0, ty * 2 );
+        if( ImGui::Button( "No", ImVec2( ty * 8, 0 ) ) )
+        {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
     ImGui::End();
+    return true;
 }
 
 static ImU32 GetFrameColor( uint64_t frameTime )

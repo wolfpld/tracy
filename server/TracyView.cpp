@@ -506,10 +506,12 @@ bool View::Draw()
 static const char* MainWindowButtons[] = {
 #ifdef TRACY_EXTENDED_FONT
     ICON_FA_PLAY " Resume",
-    ICON_FA_PAUSE " Pause"
+    ICON_FA_PAUSE " Pause",
+    ICON_FA_SQUARE " Stopped"
 #else
     "Resume",
-    "Pause"
+    "Pause",
+    "Stopped"
 #endif
 };
 
@@ -584,7 +586,16 @@ bool View::DrawImpl()
     std::lock_guard<TracyMutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
-        if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;
+        if( m_worker.IsConnected() )
+        {
+            if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;
+        }
+        else
+        {
+            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
+            ImGui::ButtonEx( MainWindowButtons[2], ImVec2( bw, 0 ), ImGuiButtonFlags_Disabled );
+            ImGui::PopStyleColor( 1 );
+        }
     }
     else
     {

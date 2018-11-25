@@ -696,7 +696,7 @@ Both connecting to a client and opening a saved trace will present you with the 
 
 If this is a real-time capture, you will also see the connection window (figure~\ref{connectioninfo}), with the capture status similar to the one displayed by the command line utility. This dialog also displays the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
-You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file.
+You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file. The \faExclamationTriangle{}~\emph{Discard} button is used to discard current trace.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -709,6 +709,7 @@ You can use the \faSave{}~\emph{Save trace} button to save the current profile d
 \draw (0.1, -1.1) node[anchor=north west] {Memory usage: 77.57 MB};
 \draw (0.1, -1.6) node[anchor=north west] {FPS: 60 \hspace{5pt} Frame time: 16.7 ms};
 \draw[rounded corners=5pt] (0.1, -2.1) rectangle+(2.2, -0.5) node [midway] {\faSave{}~Save trace};
+\draw[rounded corners=5pt] (3.1, -2.1) rectangle+(2, -0.5) node [midway] {\faExclamationTriangle{}~Discard};
 \end{tikzpicture}
 \caption{Connection information window.}
 \label{connectioninfo}
@@ -790,9 +791,10 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 The control menu (top row of buttons) provides access to various features of the profiler. The buttons perform the following actions:
 
 \begin{itemize}
-\item \emph{\faPowerOff{} Close} -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by a pair of \emph{\faPause{} Pause} and \emph{\faPlay{} Resume} buttons.
+\item \emph{\faPowerOff{} Close} -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by \emph{\faPause{}~Pause}, \emph{\faPlay{}~Resume} and \emph{\faSquare{}~Stopped} buttons.
 \item \emph{\faPause{} Pause} -- While a live capture is in progress, the profiler will display the last three fully captured frames, so that you can see the current behavior of the program. Use this button\footnote{Or perform any action on the timeline view.} to stop the automatic updates of the timeline view (the capture will be still progressing).
 \item \emph{\faPlay{} Resume} -- Use this button to resume following the most recent three frames in a live capture.
+\item \emph{\faSquare{} Stopped} -- Inactive button used to indicate that the client application was terminated.
 \item \emph{\faCog{} Options} -- Opens the settings menu (section~\ref{options}).
 \item \emph{\faTags{} Messages} -- Opens the message log window (section~\ref{messages}), which displays custom messages sent by the client, as described in section~\ref{messagelog}.
 \item \emph{\faSearch{} Find zone} -- This buttons opens the find zone window, which allows inspection of zone behavior statistics (section~\ref{findzone}).

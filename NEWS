@@ -17,6 +17,7 @@ v0.5 (xxxx-xx-xx)
 - Added third state (stopped) to the pause/resume button. It will be used
   after the connection to the client is terminated.
 - Active trace can be discarded.
+- Call stack capture may be forced through TRACY_CALLSTACK define.
 
 v0.4 (2018-10-09)
 -----------------

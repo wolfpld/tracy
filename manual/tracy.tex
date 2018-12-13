@@ -627,6 +627,8 @@ Be aware that call stack collection is a relatively slow operation. Table~\ref{C
 \label{CallstackTimes}
 \end{table}
 
+You can force call stack capture in the non-\texttt{S} postfixed macros by adding the \texttt{TRACY\_CALLSTACK} define, set to the desired call stack capture depth. This setting doesn't affect the explicit call stack macros.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,

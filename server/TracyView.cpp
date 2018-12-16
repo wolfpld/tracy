@@ -3080,6 +3080,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     const auto coutline = drawState == LockState::HasLock ? 0xFF3BA33B : ( drawState == LockState::HasBlockingLock ? 0xFF3BA3A3 : 0xFF3B3BD6 );
                     draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( pxend, double( w + 10 ) ), offset + ty ), coutline );
                 }
+                else if( condensed > 1 )
+                {
+                    DrawZigZag( draw, wpos + ImVec2( 0, offset + round( ty / 2 ) ), px0, pxend, ty / 4, DarkenColor( cfilled ) );
+                }
 
                 const auto rx0 = ( t0 - m_zvStart ) * pxns;
                 if( dsz >= MinVisSize )

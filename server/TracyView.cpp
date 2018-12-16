@@ -2792,6 +2792,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     {
                         m_lockInfoWindow = v.first;
                     }
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( t0, t1 );
+                    }
 
                     if( condensed > 1 )
                     {

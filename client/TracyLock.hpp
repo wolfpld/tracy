@@ -32,6 +32,7 @@ public:
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::LockAnnounce );
         MemWrite( &item->lockAnnounce.id, m_id );
+        MemWrite( &item->lockAnnounce.time, Profiler::GetTime() );
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
         MemWrite( &item->lockAnnounce.type, LockType::Lockable );
 
@@ -206,6 +207,7 @@ public:
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::LockAnnounce );
         MemWrite( &item->lockAnnounce.id, m_id );
+        MemWrite( &item->lockAnnounce.time, Profiler::GetTime() );
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
         MemWrite( &item->lockAnnounce.type, LockType::SharedLockable );
 

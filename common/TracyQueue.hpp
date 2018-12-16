@@ -109,6 +109,7 @@ enum class LockType : uint8_t
 struct QueueLockAnnounce
 {
     uint32_t id;
+    int64_t time;
     uint64_t lckloc;    // ptr
     LockType type;
 };

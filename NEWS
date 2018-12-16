@@ -18,6 +18,7 @@ v0.5 (xxxx-xx-xx)
   after the connection to the client is terminated.
 - Active trace can be discarded.
 - Call stack capture may be forced through TRACY_CALLSTACK define.
+- Lock info window has been added.
 
 v0.4 (2018-10-09)
 -----------------

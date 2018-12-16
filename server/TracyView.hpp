@@ -64,6 +64,8 @@ private:
         Short
     };
 
+    enum { InvalidId = 0xFFFFFFFF };
+
     void InitTextEditor();
 
     const char* ShortenNamespace( const char* name ) const;
@@ -100,6 +102,7 @@ private:
     void DrawInfo();
     void DrawTextEditor();
     void DrawGoToFrame();
+    void DrawLockInfoWindow();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
@@ -228,6 +231,7 @@ private:
     int64_t m_memoryAllocHover;
     int m_memoryAllocHoverWait;
     const FrameData* m_frames;
+    uint32_t m_lockInfoWindow;
 
     Region m_highlight;
     Region m_highlightZoom;
@@ -258,6 +262,7 @@ private:
     BuzzAnim<const void*> m_zoneinfoBuzzAnim;
     BuzzAnim<int> m_findZoneBuzzAnim;
     BuzzAnim<uint32_t> m_optionsLockBuzzAnim;
+    BuzzAnim<uint32_t> m_lockInfoAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;

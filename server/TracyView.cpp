@@ -293,6 +293,7 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_memoryAllocHover( -1 )
     , m_memoryAllocHoverWait( 0 )
     , m_frames( nullptr )
+    , m_lockInfoWindow( InvalidId )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -340,6 +341,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_memoryAllocHover( -1 )
     , m_memoryAllocHoverWait( 0 )
     , m_frames( m_worker.GetFramesBase() )
+    , m_lockInfoWindow( InvalidId )
     , m_gpuThread( 0 )
     , m_gpuStart( 0 )
     , m_gpuEnd( 0 )
@@ -750,6 +752,7 @@ bool View::DrawImpl()
     if( m_showInfo ) DrawInfo();
     if( m_textEditorFile ) DrawTextEditor();
     if( m_goToFrame ) DrawGoToFrame();
+    if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
 
     const auto& io = ImGui::GetIO();
     if( m_zoomAnim.active )
@@ -774,6 +777,7 @@ bool View::DrawImpl()
     m_zoneinfoBuzzAnim.Update( io.DeltaTime );
     m_findZoneBuzzAnim.Update( io.DeltaTime );
     m_optionsLockBuzzAnim.Update( io.DeltaTime );
+    m_lockInfoAnim.Update( io.DeltaTime );
 
     return keepOpen;
 }
@@ -3119,6 +3123,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     ImGui::Separator();
                     TextFocused( "Lock events:", RealToString( v.second.timeline.size(), true ) );
                     ImGui::EndTooltip();
+
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_lockInfoWindow = v.first;
+                    }
                 }
                 cnt++;
             }
@@ -7068,6 +7077,71 @@ void View::DrawGoToFrame()
         ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
     }
     ImGui::End();
+}
+
+void View::DrawLockInfoWindow()
+{
+    auto it = m_worker.GetLockMap().find( m_lockInfoWindow );
+    assert( it != m_worker.GetLockMap().end() );
+    const auto& lock = it->second;
+    const auto& srcloc = m_worker.GetSourceLocation( lock.srcloc );
+    auto fileName = m_worker.GetString( srcloc.file );
+
+    bool visible = true;
+    ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
+    ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
+    ImGui::TextDisabled( "Location:" );
+    if( m_lockInfoAnim.Match( m_lockInfoWindow ) )
+    {
+        const auto time = m_lockInfoAnim.Time();
+        const auto indentVal = sin( time * 60.f ) * 10.f * time;
+        ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+    }
+    else
+    {
+        ImGui::SameLine();
+    }
+    ImGui::Text( "%s:%i", fileName, srcloc.line );
+    if( ImGui::IsItemClicked( 1 ) )
+    {
+        if( FileExists( fileName ) )
+        {
+            SetTextEditorFile( fileName, srcloc.line );
+        }
+        else
+        {
+            m_lockInfoAnim.Enable( m_lockInfoWindow, 0.5f );
+        }
+    }
+    switch( lock.type )
+    {
+    case LockType::Lockable:
+        TextFocused( "Type:", "lockable" );
+        break;
+    case LockType::SharedLockable:
+        TextFocused( "Type:", "shared lockable" );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+    TextFocused( "Lock events:", RealToString( lock.timeline.size(), true ) );
+    ImGui::Separator();
+    const auto threadList = ImGui::TreeNode( "Thread list" );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%zu)", lock.threadList.size() );
+    if( threadList )
+    {
+        for( const auto& t : lock.threadList )
+        {
+            ImGui::Text( "%s", m_worker.GetThreadString( t ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(0x%" PRIX64 ")", t );
+        }
+        ImGui::TreePop();
+    }
+    ImGui::End();
+    if( !visible ) m_lockInfoWindow = InvalidId;
 }
 
 template<class T>

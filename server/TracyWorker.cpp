@@ -2228,6 +2228,8 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
         LockMap lm;
         lm.srcloc = ShrinkSourceLocation( ev.lckloc );
         lm.type = ev.type;
+        lm.timeAnnounce = TscTime( ev.time );
+        lm.timeTerminate = 0;
         lm.valid = true;
         m_data.lockMap.emplace( ev.id, std::move( lm ) );
     }
@@ -2235,6 +2237,7 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     {
         it->second.srcloc = ShrinkSourceLocation( ev.lckloc );
         assert( it->second.type == ev.type );
+        it->second.timeAnnounce = TscTime( ev.time );
         it->second.valid = true;
     }
     CheckSourceLocation( ev.lckloc );
@@ -2242,6 +2245,21 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
 
 void Worker::ProcessLockTerminate( const QueueLockTerminate& ev )
 {
+    auto it = m_data.lockMap.find( ev.id );
+    if( it == m_data.lockMap.end() )
+    {
+        LockMap lm;
+        lm.type = ev.type;
+        lm.timeAnnounce = 0;
+        lm.timeTerminate = TscTime( ev.time );
+        lm.valid = false;
+        m_data.lockMap.emplace( ev.id, std::move( lm ) );
+    }
+    else
+    {
+        assert( it->second.type == ev.type );
+        it->second.timeTerminate = TscTime( ev.time );
+    }
 }
 
 void Worker::ProcessLockWait( const QueueLockWait& ev )
@@ -2250,6 +2268,8 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     if( it == m_data.lockMap.end() )
     {
         LockMap lm;
+        lm.timeAnnounce = 0;
+        lm.timeTerminate = 0;
         lm.valid = false;
         lm.type = ev.type;
         it = m_data.lockMap.emplace( ev.id, std::move( lm ) ).first;

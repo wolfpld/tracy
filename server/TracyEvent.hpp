@@ -231,6 +231,8 @@ struct LockMap
     flat_hash_map<uint64_t, uint8_t, nohash<uint64_t>> threadMap;
     std::vector<uint64_t> threadList;
     LockType type;
+    int64_t timeAnnounce;
+    int64_t timeTerminate;
     bool valid;
 };
 

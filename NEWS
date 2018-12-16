@@ -19,6 +19,7 @@ v0.5 (xxxx-xx-xx)
 - Active trace can be discarded.
 - Call stack capture may be forced through TRACY_CALLSTACK define.
 - Lock info window has been added.
+- Time of lock creation and termination is now being tracked.
 
 v0.4 (2018-10-09)
 -----------------

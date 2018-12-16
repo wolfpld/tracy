@@ -4394,6 +4394,14 @@ void View::DrawOptions()
                     Visible( &l.second ) = false;
                 }
             }
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(?)" );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "Right click on lock name to open lock information window." );
+                ImGui::EndTooltip();
+            }
 
             for( const auto& l : m_worker.GetLockMap() )
             {
@@ -4405,6 +4413,10 @@ void View::DrawOptions()
                     char buf[1024];
                     sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
                     ImGui::Checkbox( buf, &Visible( &l.second ) );
+                    if( ImGui::IsItemClicked( 1 ) )
+                    {
+                        m_lockInfoWindow = l.first;
+                    }
                     if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
                     {
                         const auto time = m_optionsLockBuzzAnim.Time();

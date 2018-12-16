@@ -26,6 +26,7 @@ enum class QueueType : uint8_t
     FrameMarkMsgEnd,
     SourceLocation,
     LockAnnounce,
+    LockTerminate,
     LockWait,
     LockObtain,
     LockRelease,
@@ -111,6 +112,13 @@ struct QueueLockAnnounce
     uint32_t id;
     int64_t time;
     uint64_t lckloc;    // ptr
+    LockType type;
+};
+
+struct QueueLockTerminate
+{
+    uint32_t id;
+    int64_t time;
     LockType type;
 };
 
@@ -265,6 +273,7 @@ struct QueueItem
         QueueSourceLocation srcloc;
         QueueZoneText zoneText;
         QueueLockAnnounce lockAnnounce;
+        QueueLockTerminate lockTerminate;
         QueueLockWait lockWait;
         QueueLockObtain lockObtain;
         QueueLockRelease lockRelease;
@@ -308,6 +317,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // end
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
     sizeof( QueueHeader ) + sizeof( QueueLockAnnounce ),
+    sizeof( QueueHeader ) + sizeof( QueueLockTerminate ),
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),

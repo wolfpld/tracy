@@ -46,6 +46,24 @@ public:
     Lockable( const Lockable& ) = delete;
     Lockable& operator=( const Lockable& ) = delete;
 
+    ~Lockable()
+    {
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::LockTerminate );
+        MemWrite( &item->lockTerminate.id, m_id );
+        MemWrite( &item->lockTerminate.time, Profiler::GetTime() );
+        MemWrite( &item->lockTerminate.type, LockType::Lockable );
+
+#ifdef TRACY_ON_DEMAND
+        s_profiler.DeferItem( *item );
+#endif
+
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     tracy_force_inline void lock()
     {
 #ifdef TRACY_ON_DEMAND
@@ -220,6 +238,24 @@ public:
 
     SharedLockable( const SharedLockable& ) = delete;
     SharedLockable& operator=( const SharedLockable& ) = delete;
+
+    ~SharedLockable()
+    {
+        Magic magic;
+        auto& token = s_token.ptr;
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::LockTerminate );
+        MemWrite( &item->lockTerminate.id, m_id );
+        MemWrite( &item->lockTerminate.time, Profiler::GetTime() );
+        MemWrite( &item->lockTerminate.type, LockType::SharedLockable );
+
+#ifdef TRACY_ON_DEMAND
+        s_profiler.DeferItem( *item );
+#endif
+
+        tail.store( magic + 1, std::memory_order_release );
+    }
 
     tracy_force_inline void lock()
     {

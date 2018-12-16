@@ -7100,6 +7100,20 @@ void View::DrawLockInfoWindow()
     const auto& srcloc = m_worker.GetSourceLocation( lock.srcloc );
     auto fileName = m_worker.GetString( srcloc.file );
 
+    int64_t timeAnnounce = lock.timeAnnounce;
+    int64_t timeTerminate = lock.timeTerminate;
+    if( !lock.timeline.empty() )
+    {
+        if( timeAnnounce == 0 )
+        {
+            timeAnnounce = lock.timeline.front()->time;
+        }
+        if( timeTerminate == 0 )
+        {
+            timeTerminate = lock.timeline.back()->time;
+        }
+    }
+
     bool visible = true;
     ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
     ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
@@ -7126,6 +7140,7 @@ void View::DrawLockInfoWindow()
             m_lockInfoAnim.Enable( m_lockInfoWindow, 0.5f );
         }
     }
+    ImGui::Separator();
     switch( lock.type )
     {
     case LockType::Lockable:
@@ -7139,6 +7154,9 @@ void View::DrawLockInfoWindow()
         break;
     }
     TextFocused( "Lock events:", RealToString( lock.timeline.size(), true ) );
+    TextFocused( "Announce time:", TimeToString( timeAnnounce - m_worker.GetTimeBegin() ) );
+    TextFocused( "Terminate time:", TimeToString( timeTerminate - m_worker.GetTimeBegin() ) );
+    TextFocused( "Lifetime:", TimeToString( timeTerminate - timeAnnounce ) );
     ImGui::Separator();
     const auto threadList = ImGui::TreeNode( "Thread list" );
     ImGui::SameLine();

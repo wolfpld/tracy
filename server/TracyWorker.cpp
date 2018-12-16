@@ -1951,6 +1951,9 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::LockAnnounce:
         ProcessLockAnnounce( ev.lockAnnounce );
         break;
+    case QueueType::LockTerminate:
+        ProcessLockTerminate( ev.lockTerminate );
+        break;
     case QueueType::LockWait:
         ProcessLockWait( ev.lockWait );
         break;
@@ -2235,6 +2238,10 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
         it->second.valid = true;
     }
     CheckSourceLocation( ev.lckloc );
+}
+
+void Worker::ProcessLockTerminate( const QueueLockTerminate& ev )
+{
 }
 
 void Worker::ProcessLockWait( const QueueLockWait& ev )

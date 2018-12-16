@@ -511,6 +511,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( lockmap.srcloc );
             f.Read( lockmap.type );
             f.Read( lockmap.valid );
+            if( fileVer >= FileVersion( 0, 4, 1 ) )
+            {
+                f.Read2( lockmap.timeAnnounce, lockmap.timeTerminate );
+            }
+            else
+            {
+                lockmap.timeAnnounce = lockmap.timeTerminate = 0;
+            }
             f.Read( tsz );
             for( uint64_t i=0; i<tsz; i++ )
             {
@@ -3215,6 +3223,8 @@ void Worker::Write( FileWrite& f )
         f.Write( &v.second.srcloc, sizeof( v.second.srcloc ) );
         f.Write( &v.second.type, sizeof( v.second.type ) );
         f.Write( &v.second.valid, sizeof( v.second.valid ) );
+        f.Write( &v.second.timeAnnounce, sizeof( v.second.timeAnnounce ) );
+        f.Write( &v.second.timeTerminate, sizeof( v.second.timeTerminate ) );
         sz = v.second.threadList.size();
         f.Write( &sz, sizeof( sz ) );
         for( auto& t : v.second.threadList )

@@ -395,9 +395,10 @@ void View::SetTextEditorFile( const char* fileName, int line )
         fseek( f, 0, SEEK_END );
         const auto sz = ftell( f );
         fseek( f, 0, SEEK_SET );
-        auto data = new char[sz];
+        auto data = new char[sz+1];
         fread( data, 1, sz, f );
         fclose( f );
+        data[sz] = '\0';
         m_textEditor->SetText( data );
         delete[] data;
     }

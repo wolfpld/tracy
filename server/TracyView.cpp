@@ -2788,6 +2788,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 bool itemHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( pxend, double( w + 10 ) ), offset + ty ) );
                 if( itemHovered )
                 {
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_lockInfoWindow = v.first;
+                    }
+
                     if( condensed > 1 )
                     {
                         ImGui::BeginTooltip();

@@ -289,6 +289,13 @@ static const char* GetHostInfo()
 
     ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
 #else
+#  ifndef HOST_NAME_MAX
+    const size_t HOST_NAME_MAX = 1024u;
+#  endif
+#  ifndef LOGIN_NAME_MAX
+    const size_t LOGIN_NAME_MAX = 1024u;
+#  endif
+
     char hostname[HOST_NAME_MAX];
     char user[LOGIN_NAME_MAX];
 

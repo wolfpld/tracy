@@ -96,7 +96,7 @@ struct RPMallocInit
     {
 #if defined TRACY_USE_INIT_ONCE
         InitOnceExecuteOnce(&InitOnce, InitOnceCallback, nullptr, nullptr);
-        //We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might 
+        //We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might
         //not be called on this thread if another thread has executed it earlier.
         rpmalloc_thread_initialize();
 #else

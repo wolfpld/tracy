@@ -267,15 +267,17 @@ static void TextFocused( const char* label, const char* value )
     ImGui::Text( "%s", value );
 }
 
+static void SetButtonHighlightColor()
+{
+    ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.45f, 0.6f, 0.6f ) );
+    ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.45f, 0.7f, 0.7f ) );
+    ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.45f, 0.8f, 0.8f ) );
+}
+
 static void ToggleButton( const char* label, bool& toggle )
 {
     const auto active = toggle;
-    if( active )
-    {
-        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.45f, 0.6f, 0.6f ) );
-        ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.45f, 0.7f, 0.7f ) );
-        ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.45f, 0.8f, 0.8f ) );
-    }
+    if( active ) SetButtonHighlightColor();
     if( ImGui::Button( label ) ) toggle = !toggle;
     if( active ) ImGui::PopStyleColor( 3 );
 }
@@ -3745,9 +3747,7 @@ void View::DrawZoneInfoWindow()
         bool hilite = m_callstackInfoWindow == ev.callstack;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
@@ -3769,9 +3769,7 @@ void View::DrawZoneInfoWindow()
         bool hilite = m_textEditorFile == fileName;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
@@ -4106,9 +4104,7 @@ void View::DrawGpuInfoWindow()
         bool hilite = m_callstackInfoWindow == ev.callstack;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
@@ -4130,9 +4126,7 @@ void View::DrawGpuInfoWindow()
         bool hilite = m_textEditorFile == fileName;
         if( hilite )
         {
-            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-            ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+            SetButtonHighlightColor();
         }
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
@@ -7049,9 +7043,7 @@ void View::DrawInfo()
             bool hilite = m_callstackInfoWindow == crash.callstack;
             if( hilite )
             {
-                ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-                ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+                SetButtonHighlightColor();
             }
 #ifdef TRACY_EXTENDED_FONT
             if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
@@ -8564,9 +8556,7 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx 
     bool hilite = m_callstackInfoWindow == callstack;
     if( hilite )
     {
-        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f ) );
-        ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f ) );
-        ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f ) );
+        SetButtonHighlightColor();
     }
     ImGui::PushID( idx++ );
     if( ImGui::SmallButton( name ) )

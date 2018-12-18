@@ -289,17 +289,10 @@ static const char* GetHostInfo()
 
     ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );
 #else
-#  ifndef HOST_NAME_MAX
-    const size_t HOST_NAME_MAX = 1024u;
-#  endif
-#  ifndef LOGIN_NAME_MAX
-    const size_t LOGIN_NAME_MAX = 1024u;
-#  endif
+    char hostname[_POSIX_HOST_NAME_MAX]{};
+    char user[_POSIX_LOGIN_NAME_MAX]{};
 
-    char hostname[HOST_NAME_MAX];
-    char user[LOGIN_NAME_MAX];
-
-    gethostname( hostname, HOST_NAME_MAX );
+    gethostname( hostname, _POSIX_HOST_NAME_MAX );
 #  if defined __ANDROID__
     const auto login = getlogin();
     if( login )
@@ -311,7 +304,7 @@ static const char* GetHostInfo()
         memcpy( user, "(?)", 4 );
     }
 #  else
-    getlogin_r( user, LOGIN_NAME_MAX );
+    getlogin_r( user, _POSIX_LOGIN_NAME_MAX );
 #  endif
 
     ptr += sprintf( ptr, "User: %s@%s\n", user, hostname );

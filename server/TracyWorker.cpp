@@ -4,6 +4,13 @@
 #  include <sys/time.h>
 #endif
 
+#if defined _MSC_VER || defined __MINGW32__
+#  include <malloc.h>
+#else
+#  include <alloca.h>
+#endif
+
+#include <cctype>
 #include <chrono>
 #include <mutex>
 #include <string.h>
@@ -1213,6 +1220,25 @@ const char* Worker::GetZoneName( const GpuEvent& ev, const SourceLocation& srclo
     {
         return GetString( srcloc.function );
     }
+}
+
+static bool strstr_nocase( const char* l, const char* r )
+{
+    const auto lsz = strlen( l );
+    const auto rsz = strlen( r );
+    auto ll = (char*)alloca( lsz + 1 );
+    auto rl = (char*)alloca( lsz + 1 );
+    for( size_t i=0; i<lsz; i++ )
+    {
+        ll[i] = tolower( l[i] );
+    }
+    ll[lsz] = '\0';
+    for( size_t i=0; i<rsz; i++ )
+    {
+        rl[i] = tolower( r[i] );
+    }
+    rl[rsz] = '\0';
+    return strstr( ll, rl ) != nullptr;
 }
 
 std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) const

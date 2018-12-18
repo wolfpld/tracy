@@ -20,6 +20,12 @@ v0.5 (xxxx-xx-xx)
 - Call stack capture may be forced through TRACY_CALLSTACK define.
 - Lock info window has been added.
 - Time of lock creation and termination is now being tracked.
+- Menu bar buttons are now toggles that can also close their corresponding
+  windows.
+- Find zone and compare menu improvements.
+  - Ability to ignore case during search.
+  - Pressing enter key will now start search, just like pressing the "find"
+    button.
 
 v0.4 (2018-10-09)
 -----------------

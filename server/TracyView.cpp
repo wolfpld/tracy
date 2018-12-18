@@ -4710,8 +4710,9 @@ void View::DrawFindZone()
         return;
     }
 
+    ImGui::PushItemWidth( -0.01f );
     ImGui::InputText( "", m_findZone.pattern, 1024 );
-    ImGui::SameLine();
+    ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
     const bool findClicked = ImGui::Button( ICON_FA_SEARCH " Find" );
@@ -4728,6 +4729,9 @@ void View::DrawFindZone()
     {
         m_findZone.Reset();
     }
+    ImGui::SameLine();
+
+    ImGui::Checkbox( "Ignore case", &m_findZone.ignoreCase );
 
     if( findClicked )
     {

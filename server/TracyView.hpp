@@ -287,6 +287,7 @@ private:
         };
 
         bool show = false;
+        bool ignoreCase = false;
         std::vector<int32_t> match;
         std::map<uint64_t, Group> groups;
         size_t processed;

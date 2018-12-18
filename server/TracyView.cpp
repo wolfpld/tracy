@@ -4710,14 +4710,16 @@ void View::DrawFindZone()
         return;
     }
 
+    bool findClicked = false;
+
     ImGui::PushItemWidth( -0.01f );
-    ImGui::InputText( "", m_findZone.pattern, 1024 );
+    findClicked |= ImGui::InputText( "", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
-    const bool findClicked = ImGui::Button( ICON_FA_SEARCH " Find" );
+    findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
 #else
-    const bool findClicked = ImGui::Button( "Find" );
+    findClicked |= ImGui::Button( "Find" );
 #endif
     ImGui::SameLine();
 

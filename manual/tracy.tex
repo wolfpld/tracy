@@ -1001,6 +1001,8 @@ The left hand side \emph{index area} of the timeline view displays various label
 \item \emph{Yellow label} -- Plot.
 \end{itemize}
 
+Labels accompanied by the \faCaretDown{}~symbol can be collapsed out of the view, to reduce visual clutter.
+
 \subparagraph{Zones}
 
 In an example on figure~\ref{zoneslocks} you can see that there are two threads: \emph{Main thread} and \emph{Streaming thread}\footnote{By clicking on a thread name you can temporarily disable display of the zones in this thread.}. We can see that the \emph{Main thread} has two root level zones visible: \emph{Update} and \emph{Render}. The \emph{Update} zone is split into further sub-zones, some of which are too small to be displayed at the current zoom level. This is indicated by drawing a zig-zag pattern over the merged zones box (section~\ref{collapseditems}), with the number of collapsed zones printed in place of zone name. We can also see that the \emph{Physics} zone acquires the \emph{Physics lock} mutex for the most of its run time.

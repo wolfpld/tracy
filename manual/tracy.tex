@@ -495,6 +495,14 @@ To mark the location of lock being held, use the \texttt{LockMark(varname)} macr
 
 Similarly, you can use \texttt{TracySharedLockable}, \texttt{TracySharedLockableN} and \texttt{SharedLockableBase} to mark locks implementing the SharedMutex requirement\footnote{\url{https://en.cppreference.com/w/cpp/named_req/SharedMutex}}. Note that while there's no support for timed mutices in Tracy, both \texttt{std::shared\_mutex} and \texttt{std::shared\_timed\_mutex} may be used\footnote{Since \texttt{std::shared\_mutex} was added in C++17, using \texttt{std::shared\_timed\_mutex} is the only way to have shared mutex functionality in C++14.}.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveats}
+Due to limits of internal bookkeeping in the profiler, each lock may be used in no more than 64 threads. If you have many short lived temporary threads, consider using a thread pool to limit the numbers of created threads.
+\end{bclogo}
+
 \subsection{Plotting data}
 
 Tracy is able to capture and draw numeric value changes over time. You may use it to analyze draw call counts, number of performed queries, etc. To report data, use the \texttt{TracyPlot(name, value)} macro.

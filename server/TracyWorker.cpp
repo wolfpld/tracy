@@ -1241,7 +1241,7 @@ static bool strstr_nocase( const char* l, const char* r )
     return strstr( ll, rl ) != nullptr;
 }
 
-std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) const
+std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query, bool ignoreCase ) const
 {
     std::vector<int32_t> match;
 
@@ -1252,7 +1252,16 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) cons
         assert( it != m_data.sourceLocation.end() );
         const auto& srcloc = it->second;
         const auto str = GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-        if( strstr( str, query ) != nullptr )
+        bool found = false;
+        if( ignoreCase )
+        {
+            found = strstr_nocase( str, query );
+        }
+        else
+        {
+            found = strstr( str, query ) != nullptr;
+        }
+        if( found )
         {
             match.push_back( (int32_t)i );
         }
@@ -1261,7 +1270,16 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query ) cons
     for( auto& srcloc : m_data.sourceLocationPayload )
     {
         const auto str = GetString( srcloc->name.active ? srcloc->name : srcloc->function );
-        if( strstr( str, query ) != nullptr )
+        bool found = false;
+        if( ignoreCase )
+        {
+            found = strstr_nocase( str, query );
+        }
+        else
+        {
+            found = strstr( str, query ) != nullptr;
+        }
+        if( found )
         {
             auto it = m_data.sourceLocationPayloadMap.find( srcloc );
             assert( it != m_data.sourceLocationPayloadMap.end() );

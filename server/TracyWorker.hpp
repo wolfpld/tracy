@@ -238,7 +238,7 @@ public:
     tracy_force_inline const Vector<ZoneEvent*>& GetZoneChildren( int32_t idx ) const { return m_data.m_zoneChildren[idx]; }
     tracy_force_inline const Vector<GpuEvent*>& GetGpuChildren( int32_t idx ) const { return m_data.m_gpuChildren[idx]; }
 
-    std::vector<int32_t> GetMatchingSourceLocation( const char* query ) const;
+    std::vector<int32_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
 
 #ifndef TRACY_NO_STATISTICS
     const SourceLocationZones& GetZonesForSourceLocation( int32_t srcloc ) const;

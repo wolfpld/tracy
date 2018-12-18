@@ -8502,7 +8502,7 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
 #ifndef TRACY_NO_STATISTICS
 void View::FindZones()
 {
-    m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern );
+    m_findZone.match = m_worker.GetMatchingSourceLocation( m_findZone.pattern, m_findZone.ignoreCase );
     if( m_findZone.match.empty() ) return;
 
     auto it = m_findZone.match.begin();
@@ -8521,7 +8521,7 @@ void View::FindZones()
 
 void View::FindZonesCompare()
 {
-    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern );
+    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern, false );
     if( !m_compare.match[0].empty() )
     {
         auto it = m_compare.match[0].begin();
@@ -8538,7 +8538,7 @@ void View::FindZonesCompare()
         }
     }
 
-    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern );
+    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern, false );
     if( !m_compare.match[1].empty() )
     {
         auto it = m_compare.match[1].begin();

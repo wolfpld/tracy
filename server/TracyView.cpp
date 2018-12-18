@@ -269,7 +269,15 @@ static void TextFocused( const char* label, const char* value )
 
 static void ToggleButton( const char* label, bool& toggle )
 {
+    const auto active = toggle;
+    if( active )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.45f, 0.6f, 0.6f ) );
+        ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.45f, 0.7f, 0.7f ) );
+        ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.45f, 0.8f, 0.8f ) );
+    }
     if( ImGui::Button( label ) ) toggle = !toggle;
+    if( active ) ImGui::PopStyleColor( 3 );
 }
 
 enum { MinVisSize = 3 };

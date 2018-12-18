@@ -1043,7 +1043,7 @@ Mutual exclusion zones are displayed in each thread that tries to acquire them. 
 \item \emph{Red region} -- The thread wants to acquire the lock, but is blocked by other thread, or threads in case of shared lock.
 \end{itemize}
 
-Hovering the \faMousePointer{}~mouse pointer over a lock event will display important information, for example a list of threads that are currently blocking, or which are blocked by the lock. Clicking the \LMB{}~left mouse button on a lock event or a lock label will open the lock information window. Clicking the \MMB{}~middle mouse button on a lock event will zoom the view to the extent of the event.
+Hovering the \faMousePointer{}~mouse pointer over a lock event will display important information, for example a list of threads that are currently blocking, or which are blocked by the lock. Clicking the \LMB{}~left mouse button on a lock event or a lock label will open the lock information window, as described in section~\ref{lockwindow}. Clicking the \MMB{}~middle mouse button on a lock event will zoom the view to the extent of the event.
 
 \subparagraph{Plots}
 
@@ -1364,6 +1364,11 @@ Source file view works on the local files you have on your disk. The traces them
 \item \textbf{The displayed source files might not reflect the code that was profiled!} It is up to you to verify that you don't have a modified version of the code, with regards to the trace.
 \end{itemize}
 \end{bclogo}
+
+\subsection{Lock information window}
+\label{lockwindow}
+
+This window presents information and statistics about a lock. The lock events count represents the total number collected of wait, obtain and release events. The announce, termination and lock lifetime measure the time from the lockable construction until destruction.
 
 \newpage
 \appendix

@@ -366,6 +366,7 @@ private:
 
     struct {
         bool show = false;
+        bool ignoreCase = false;
         std::unique_ptr<Worker> second;
         std::thread loadThread;
         int badVer = 0;

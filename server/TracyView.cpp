@@ -5715,13 +5715,16 @@ void View::DrawCompare()
         return;
     }
 
-    ImGui::InputText( "", m_compare.pattern, 1024 );
-    ImGui::SameLine();
+    bool findClicked = false;
+
+    ImGui::PushItemWidth( -0.01f );
+    findClicked |= ImGui::InputText( "", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+    ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
-    const bool findClicked = ImGui::Button( ICON_FA_SEARCH " Find" );
+    findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
 #else
-    const bool findClicked = ImGui::Button( "Find" );
+    findClicked |= ImGui::Button( "Find" );
 #endif
     ImGui::SameLine();
 
@@ -5733,6 +5736,9 @@ void View::DrawCompare()
     {
         m_compare.Reset();
     }
+    ImGui::SameLine();
+
+    ImGui::Checkbox( "Ignore case", &m_compare.ignoreCase );
 
     if( findClicked )
     {
@@ -8521,7 +8527,7 @@ void View::FindZones()
 
 void View::FindZonesCompare()
 {
-    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern, false );
+    m_compare.match[0] = m_worker.GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
     if( !m_compare.match[0].empty() )
     {
         auto it = m_compare.match[0].begin();
@@ -8538,7 +8544,7 @@ void View::FindZonesCompare()
         }
     }
 
-    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern, false );
+    m_compare.match[1] = m_compare.second->GetMatchingSourceLocation( m_compare.pattern, m_compare.ignoreCase );
     if( !m_compare.match[1].empty() )
     {
         auto it = m_compare.match[1].begin();

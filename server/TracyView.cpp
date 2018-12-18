@@ -267,6 +267,11 @@ static void TextFocused( const char* label, const char* value )
     ImGui::Text( "%s", value );
 }
 
+static void ToggleButton( const char* label, bool& toggle )
+{
+    if( ImGui::Button( label ) ) toggle = !toggle;
+}
+
 enum { MinVisSize = 3 };
 enum { MinFrameSize = 5 };
 
@@ -614,45 +619,45 @@ bool View::DrawImpl()
     }
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_COG " Options" ) ) m_showOptions = true;
+    ToggleButton( ICON_FA_COG " Options", m_showOptions );
 #else
-    if( ImGui::Button( "Options" ) ) m_showOptions = true;
+    ToggleButton( "Options", m_showOptions );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_TAGS " Messages" ) ) m_showMessages = true;
+    ToggleButton( ICON_FA_TAGS " Messages", m_showMessages );
 #else
-    if( ImGui::Button( "Messages" ) ) m_showMessages = true;
+    ToggleButton( "Messages", m_showMessages );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SEARCH " Find zone" ) ) m_findZone.show = true;
+    ToggleButton( ICON_FA_SEARCH " Find zone", m_findZone.show );
 #else
-    if( ImGui::Button( "Find zone" ) ) m_findZone.show = true;
+    ToggleButton( "Find zone", m_findZone.show );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SORT_AMOUNT_UP " Statistics" ) ) m_showStatistics = true;
+    ToggleButton( ICON_FA_SORT_AMOUNT_UP " Statistics", m_showStatistics );
 #else
-    if( ImGui::Button( "Statistics" ) ) m_showStatistics = true;
+    ToggleButton( "Statistics", m_showStatistics );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_MEMORY " Memory" ) ) m_memInfo.show = true;
+    ToggleButton( ICON_FA_MEMORY " Memory", m_memInfo.show );
 #else
-    if( ImGui::Button( "Memory" ) ) m_memInfo.show = true;
+    ToggleButton( "Memory", m_memInfo.show );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_BALANCE_SCALE " Compare" ) ) m_compare.show = true;
+    ToggleButton( ICON_FA_BALANCE_SCALE " Compare", m_compare.show );
 #else
-    if( ImGui::Button( "Compare" ) ) m_compare.show = true;
+    ToggleButton( "Compare", m_compare.show );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_FINGERPRINT " Info" ) ) m_showInfo = true;
+    ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
 #else
-    if( ImGui::Button( "Info" ) ) m_showInfo = true;
+    ToggleButton( "Info", m_showInfo );
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -699,7 +704,7 @@ bool View::DrawImpl()
     }
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    m_goToFrame |= ImGui::Button( ICON_FA_CROSSHAIRS );
+    ToggleButton( ICON_FA_CROSSHAIRS, m_goToFrame );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
@@ -707,7 +712,7 @@ bool View::DrawImpl()
         ImGui::EndTooltip();
     }
 #else
-    m_goToFrame |= ImGui::Button( "Go to" );
+    ToggleButton( "Go to", m_goToFrame );
 #endif
     ImGui::SameLine();
     ImGui::Spacing();

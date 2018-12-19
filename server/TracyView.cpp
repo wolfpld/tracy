@@ -7149,6 +7149,7 @@ void View::DrawLockInfoWindow()
     int64_t holdStartTime = 0;
     int64_t waitTotalTime = 0;
     int64_t holdTotalTime = 0;
+    uint32_t maxWaitingThreads = 0;
     for( auto& v : lock.timeline )
     {
         if( holdState )
@@ -7174,6 +7175,10 @@ void View::DrawLockInfoWindow()
                 waitTotalTime += v->time - waitStartTime;
                 waitState = false;
             }
+            else
+            {
+                maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v->waitList ) );
+            }
         }
         else
         {
@@ -7181,6 +7186,7 @@ void View::DrawLockInfoWindow()
             {
                 waitStartTime = v->time;
                 waitState = true;
+                maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v->waitList ) );
             }
         }
     }
@@ -7242,6 +7248,7 @@ void View::DrawLockInfoWindow()
     TextFocused( "Lock wait time:", TimeToString( waitTotalTime ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%.2f%%)", waitTotalTime / float( lifetime ) * 100.f );
+    TextFocused( "Max waiting threads:", RealToString( maxWaitingThreads, true ) );
     ImGui::Separator();
 
     const auto threadList = ImGui::TreeNode( "Thread list" );

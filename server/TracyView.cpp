@@ -7143,6 +7143,48 @@ void View::DrawLockInfoWindow()
         }
     }
 
+    bool waitState = false;
+    bool holdState = false;
+    int64_t waitStartTime = 0;
+    int64_t holdStartTime = 0;
+    int64_t waitTotalTime = 0;
+    int64_t holdTotalTime = 0;
+    for( auto& v : lock.timeline )
+    {
+        if( holdState )
+        {
+            if( v->lockCount == 0 )
+            {
+                holdTotalTime += v->time - holdStartTime;
+                holdState = false;
+            }
+        }
+        else
+        {
+            if( v->lockCount != 0 )
+            {
+                holdStartTime = v->time;
+                holdState = true;
+            }
+        }
+        if( waitState )
+        {
+            if( v->waitList == 0 )
+            {
+                waitTotalTime += v->time - waitStartTime;
+                waitState = false;
+            }
+        }
+        else
+        {
+            if( v->waitList != 0 )
+            {
+                waitStartTime = v->time;
+                waitState = true;
+            }
+        }
+    }
+
     bool visible = true;
     ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
     ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
@@ -7170,6 +7212,7 @@ void View::DrawLockInfoWindow()
         }
     }
     ImGui::Separator();
+
     switch( lock.type )
     {
     case LockType::Lockable:
@@ -7183,10 +7226,24 @@ void View::DrawLockInfoWindow()
         break;
     }
     TextFocused( "Lock events:", RealToString( lock.timeline.size(), true ) );
-    TextFocused( "Announce time:", TimeToString( timeAnnounce - m_worker.GetTimeBegin() ) );
-    TextFocused( "Terminate time:", TimeToString( timeTerminate - m_worker.GetTimeBegin() ) );
-    TextFocused( "Lifetime:", TimeToString( timeTerminate - timeAnnounce ) );
     ImGui::Separator();
+
+    const auto announce = timeAnnounce - m_worker.GetTimeBegin();
+    const auto terminate = timeTerminate - m_worker.GetTimeBegin();
+    const auto lifetime = timeTerminate - timeAnnounce;
+    TextFocused( "Announce time:", TimeToString( announce ) );
+    TextFocused( "Terminate time:", TimeToString( terminate ) );
+    TextFocused( "Lifetime:", TimeToString( lifetime ) );
+    ImGui::Separator();
+
+    TextFocused( "Lock hold time:", TimeToString( holdTotalTime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%%)", holdTotalTime / float( lifetime ) * 100.f );
+    TextFocused( "Lock wait time:", TimeToString( waitTotalTime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%%)", waitTotalTime / float( lifetime ) * 100.f );
+    ImGui::Separator();
+
     const auto threadList = ImGui::TreeNode( "Thread list" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", lock.threadList.size() );

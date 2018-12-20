@@ -2675,6 +2675,8 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 
 bool Worker::ProcessMemFree( const QueueMemFree& ev )
 {
+    if( ev.ptr == 0 ) return false;
+
     auto it = m_data.memory.active.find( ev.ptr );
     if( it == m_data.memory.active.end() )
     {

@@ -725,6 +725,10 @@ You can use the \faSave{}~\emph{Save trace} button to save the current profile d
 \label{connectioninfo}
 \end{figure}
 
+\subsubsection{Automatic loading or connecting}
+
+You can pass trace file name as an argument to the profiler application to open the capture, skipping the welcome dialog. You can also use the \texttt{-a address} argument to automatically connect to the given address.
+
 \subsection{Connection speed}
 
 Tracy will happily saturate a 1~Gbps network connection, as it can process up to 6~Gbps of uncompressed data. Note that at such data rates, the resulting capture will need to allocate about 1~GB of RAM per second.

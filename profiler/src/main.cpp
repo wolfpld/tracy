@@ -85,6 +85,10 @@ int main( int argc, char** argv )
             view = std::make_unique<tracy::View>( *f );
         }
     }
+    else if( argc == 3 && strcmp( argv[1], "-a" ) == 0 )
+    {
+        view = std::make_unique<tracy::View>( argv[2] );
+    }
 
     char title[128];
     sprintf( title, "Tracy server %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );

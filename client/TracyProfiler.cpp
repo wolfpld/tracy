@@ -933,7 +933,19 @@ void Profiler::Worker()
     moodycamel::ConsumerToken token( s_queue );
 
     ListenSocket listen;
-    listen.Listen( "8086", 8 );
+    if( !listen.Listen( "8086", 8 ) )
+    {
+        for(;;)
+        {
+            if( ShouldExit() )
+            {
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
+            }
+
+            ClearQueues( token );
+        }
+    }
 
     for(;;)
     {

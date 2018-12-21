@@ -1069,22 +1069,7 @@ void Profiler::Worker()
                 return;
             }
 
-            while( s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize ) > 0 ) {}
-            bool lockHeld = true;
-            while( !m_serialLock.try_lock() )
-            {
-                if( m_shutdownManual.load( std::memory_order_relaxed ) )
-                {
-                    lockHeld = false;
-                    break;
-                }
-            }
-            m_serialQueue.swap( m_serialDequeue );
-            if( lockHeld )
-            {
-                m_serialLock.unlock();
-            }
-            m_serialDequeue.clear();
+            ClearQueues( token );
 
             m_sock = listen.Accept();
             if( m_sock )

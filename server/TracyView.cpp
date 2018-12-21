@@ -325,6 +325,7 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
+    , m_showUnknownFrames( true )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
@@ -373,6 +374,7 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     , m_statSort( 0 )
     , m_statSelf( false )
     , m_showCallstackFrameAddress( false )
+    , m_showUnknownFrames( true )
     , m_namespace( Namespace::Full )
     , m_textEditorFont( fixedWidth )
     , m_stcb( stcb )
@@ -3566,12 +3568,15 @@ void View::DrawInfoWindow()
 }
 
 template<typename T>
-void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, BuzzAnim<const void*>& anim, View& view, std::function<void(T)> showZone )
+void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, BuzzAnim<const void*>& anim, View& view, bool& showUnknownFrames, std::function<void(T)> showZone )
 {
     bool expand = ImGui::TreeNode( "Zone trace" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( trace.size(), true ) );
     if( !expand ) return;
+
+    ImGui::SameLine();
+    if( ImGui::SmallButton( showUnknownFrames ? "Hide unknown frames" : "Show unknown frames" ) ) showUnknownFrames = !showUnknownFrames;
 
     if( !trace.empty() )
     {
@@ -3582,7 +3587,10 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             auto curr = trace[i];
             if( prev->callstack == 0 || curr->callstack == 0 )
             {
-                ImGui::TextDisabled( "[unknown frames]" );
+                if( showUnknownFrames )
+                {
+                    ImGui::TextDisabled( "[unknown frames]" );
+                }
             }
             else if( prev->callstack != curr->callstack )
             {
@@ -3653,7 +3661,10 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     auto last = trace.empty() ? zone : trace.back();
     if( last->callstack == 0 )
     {
-        ImGui::TextDisabled( "[unknown frames]" );
+        if( showUnknownFrames )
+        {
+            ImGui::TextDisabled( "[unknown frames]" );
+        }
     }
     else
     {
@@ -3953,7 +3964,7 @@ void View::DrawZoneInfoWindow()
          parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, [&idx, this] ( const ZoneEvent* v ) {
+    DrawZoneTrace<const ZoneEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const ZoneEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
@@ -4200,7 +4211,7 @@ void View::DrawGpuInfoWindow()
         parent = GetZoneParent( *parent );
     }
     int idx = 0;
-    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, [&idx, this] ( const GpuEvent* v ) {
+    DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const GpuEvent* v ) {
         const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );

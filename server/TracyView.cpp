@@ -489,6 +489,7 @@ bool View::DrawImpl()
     {
         if( ImGui::IsKeyPressed( 'F' ) )
         {
+            m_findZone.show = true;
             m_shortcut = ShortcutAction::OpenFind;
         }
     }
@@ -4648,6 +4649,8 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
 
 void View::DrawFindZone()
 {
+    if( m_shortcut == ShortcutAction::OpenFind ) ImGui::SetNextWindowFocus();
+
     ImGui::Begin( "Find zone", &m_findZone.show );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -4663,6 +4666,11 @@ void View::DrawFindZone()
     bool findClicked = false;
 
     ImGui::PushItemWidth( -0.01f );
+    if( m_shortcut == ShortcutAction::OpenFind )
+    {
+        ImGui::SetKeyboardFocusHere();
+        m_shortcut = ShortcutAction::None;
+    }
     findClicked |= ImGui::InputText( "", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 

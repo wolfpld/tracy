@@ -26,8 +26,12 @@ v0.5 (xxxx-xx-xx)
   - Ability to ignore case during search.
   - Pressing enter key will now start search, just like pressing the "find"
     button.
+  - Using the ^F keyboard shortcut will open the find zone menu and focus
+    the input box.
 - Added ability to automatically connect to an IP address in the graphical
   profiler application (use "-a address" argument to enable).
+- Pressing enter key after entering client address in the welcome dialog
+  will now automatically begin connection process.
 
 v0.4 (2018-10-09)
 -----------------

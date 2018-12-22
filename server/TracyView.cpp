@@ -482,6 +482,17 @@ bool View::DrawImpl()
         return !wasCancelled;
     }
 
+    const auto& io = ImGui::GetIO();
+
+    assert( m_shortcut == ShortcutAction::None );
+    if( io.KeyCtrl )
+    {
+        if( ImGui::IsKeyPressed( 'F' ) )
+        {
+            m_shortcut = ShortcutAction::OpenFind;
+        }
+    }
+
     if( !m_frames ) m_frames = m_worker.GetFramesBase();
 
     const auto th = ImGui::GetTextLineHeight();
@@ -700,7 +711,6 @@ bool View::DrawImpl()
     if( m_goToFrame ) DrawGoToFrame();
     if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
 
-    const auto& io = ImGui::GetIO();
     if( m_zoomAnim.active )
     {
         m_zoomAnim.progress += io.DeltaTime * m_zoomAnim.lenMod;

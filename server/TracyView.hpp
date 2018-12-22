@@ -64,6 +64,12 @@ private:
         Short
     };
 
+    enum class ShortcutAction : uint8_t
+    {
+        None,
+        OpenFind
+    };
+
     enum { InvalidId = 0xFFFFFFFF };
 
     void InitTextEditor();
@@ -256,6 +262,7 @@ private:
     bool m_showCallstackFrameAddress = false;
     bool m_showUnknownFrames = true;
 
+    ShortcutAction m_shortcut = ShortcutAction::None;
     Namespace m_namespace = Namespace::Full;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;

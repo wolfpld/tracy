@@ -204,59 +204,59 @@ private:
     Worker m_worker;
     bool m_staticView;
 
-    int m_frameScale;
+    int m_frameScale = 0;
     bool m_pause;
-    int m_frameStart;
+    int m_frameStart = 0;
 
-    int64_t m_zvStart;
-    int64_t m_zvEnd;
+    int64_t m_zvStart = 0;
+    int64_t m_zvEnd = 0;
     int64_t m_lastTime;
 
     int8_t m_lastCpu;
 
-    int m_zvHeight;
-    int m_zvScroll;
+    int m_zvHeight = 0;
+    int m_zvScroll = 0;
 
-    const ZoneEvent* m_zoneInfoWindow;
+    const ZoneEvent* m_zoneInfoWindow = nullptr;
     const ZoneEvent* m_zoneHighlight;
-    DecayValue<uint64_t> m_zoneSrcLocHighlight;
-    LockHighlight m_lockHighlight;
-    DecayValue<const MessageData*> m_msgHighlight;
-    const MessageData* m_msgToFocus;
-    const GpuEvent* m_gpuInfoWindow;
+    DecayValue<uint64_t> m_zoneSrcLocHighlight = 0;
+    LockHighlight m_lockHighlight { -1 };
+    DecayValue<const MessageData*> m_msgHighlight = nullptr;
+    const MessageData* m_msgToFocus = nullptr;
+    const GpuEvent* m_gpuInfoWindow = nullptr;
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;
-    uint32_t m_callstackInfoWindow;
-    int64_t m_memoryAllocInfoWindow;
-    int64_t m_memoryAllocHover;
-    int m_memoryAllocHoverWait;
+    uint32_t m_callstackInfoWindow = 0;
+    int64_t m_memoryAllocInfoWindow = -1;
+    int64_t m_memoryAllocHover = -1;
+    int m_memoryAllocHoverWait = 0;
     const FrameData* m_frames;
-    uint32_t m_lockInfoWindow;
+    uint32_t m_lockInfoWindow = InvalidId;
 
     Region m_highlight;
     Region m_highlightZoom;
 
-    uint64_t m_gpuThread;
-    int64_t m_gpuStart;
-    int64_t m_gpuEnd;
+    uint64_t m_gpuThread = 0;
+    int64_t m_gpuStart = 0;
+    int64_t m_gpuEnd = 0;
 
-    bool m_showOptions;
-    bool m_showMessages;
-    bool m_showStatistics;
-    bool m_showInfo;
-    bool m_drawGpuZones;
-    bool m_drawZones;
-    bool m_drawLocks;
-    bool m_drawPlots;
-    bool m_onlyContendedLocks;
-    bool m_goToFrame;
+    bool m_showOptions = false;
+    bool m_showMessages = false;
+    bool m_showStatistics = false;
+    bool m_showInfo = false;
+    bool m_drawGpuZones = true;
+    bool m_drawZones = true;
+    bool m_drawLocks = true;
+    bool m_drawPlots = true;
+    bool m_onlyContendedLocks = true;
+    bool m_goToFrame = false;
 
-    int m_statSort;
-    bool m_statSelf;
-    bool m_showCallstackFrameAddress;
-    bool m_showUnknownFrames;
+    int m_statSort = 0;
+    bool m_statSelf = false;
+    bool m_showCallstackFrameAddress = false;
+    bool m_showUnknownFrames = true;
 
-    Namespace m_namespace;
+    Namespace m_namespace = Namespace::Full;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
     BuzzAnim<int> m_callstackTreeBuzzAnim;
@@ -274,7 +274,7 @@ private:
 
     float m_rootWidth, m_rootHeight;
     SetTitleCallback m_stcb;
-    bool m_titleSet;
+    bool m_titleSet = false;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

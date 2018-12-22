@@ -274,7 +274,8 @@ int main( int argc, char** argv )
             }
             ImGui::Separator();
             ImGui::Text( "Connect to client" );
-            ImGui::InputText( "", addr, 1024 );
+            bool connectClicked = false;
+            connectClicked |= ImGui::InputText( "", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
             if( !connHistVec.empty() )
             {
                 ImGui::SameLine();
@@ -302,7 +303,8 @@ int main( int argc, char** argv )
                     ImGui::EndCombo();
                 }
             }
-            if( ImGui::Button( ICON_FA_WIFI " Connect" ) && *addr && !loadThread.joinable() )
+            connectClicked |= ImGui::Button( ICON_FA_WIFI " Connect" );
+            if( connectClicked && *addr && !loadThread.joinable() )
             {
                 std::string addrStr( addr );
                 auto it = connHistMap.find( addr );

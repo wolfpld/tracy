@@ -1,12 +1,12 @@
 #ifdef TRACY_ENABLE
 
 #ifdef _MSC_VER
-#  include <winsock2.h>
-#  include <windows.h>
-#  include <tlhelp32.h>
 #  ifndef NOMINMAX
 #    define NOMINMAX
 #  endif
+#  include <winsock2.h>
+#  include <windows.h>
+#  include <tlhelp32.h>
 #else
 #  include <sys/time.h>
 #endif

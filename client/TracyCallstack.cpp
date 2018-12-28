@@ -23,7 +23,7 @@ namespace tracy
 
 #if TRACY_HAS_CALLSTACK == 1
 
-extern "C" t_RtlWalkFrameChain RtlWalkFrameChain = 0;
+extern "C" { t_RtlWalkFrameChain RtlWalkFrameChain = 0; }
 
 void InitCallstack()
 {

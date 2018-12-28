@@ -349,7 +349,11 @@ static const char* GetHostInfo()
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof( statex );
     GlobalMemoryStatusEx( &statex );
+#  ifdef _MSC_VER
     ptr += sprintf( ptr, "RAM: %I64u MB\n", statex.ullTotalPhys / 1024 / 1024 );
+#  else
+    ptr += sprintf( ptr, "RAM: %llu MB\n", statex.ullTotalPhys / 1024 / 1024 );
+#  endif
 #elif defined __linux__
     struct sysinfo sysInfo;
     sysinfo( &sysInfo );

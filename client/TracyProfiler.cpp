@@ -645,12 +645,16 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
             break;
         }
         break;
+    case SIGINT:
+        strcpy( msgPtr, "User interrupt.\n" );
+        while( *msgPtr ) msgPtr++;
+        break;
     default:
         abort();
     }
     while( *msgPtr ) msgPtr++;
 
-    if( signal != SIGPIPE )
+    if( signal != SIGPIPE && signal != SIGINT )
     {
         strcpy( msgPtr, "Fault address: 0x" );
         while( *msgPtr ) msgPtr++;
@@ -703,7 +707,14 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
     s_profiler.RequestShutdown();
     while( !s_profiler.HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
 
-    abort();
+    if( signal == SIGINT )
+    {
+        exit( 0 );
+    }
+    else
+    {
+        abort();
+    }
 }
 #endif
 
@@ -867,6 +878,7 @@ Profiler::Profiler()
     sigaction( SIGSEGV, &crashHandler, nullptr );
     sigaction( SIGPIPE, &crashHandler, nullptr );
     sigaction( SIGBUS, &crashHandler, nullptr );
+    sigaction( SIGINT, &crashHandler, nullptr );
 #endif
 
 #ifdef TRACY_HAS_CALLSTACK

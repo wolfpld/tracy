@@ -352,20 +352,20 @@ private:
     uint16_t CompressThreadReal( uint64_t thread );
     uint16_t CompressThreadNew( uint64_t thread );
 
-    tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread );
-    tracy_force_inline void ReadTimelinePre033( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer );
-    tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone );
-    tracy_force_inline void ReadTimelinePre032( FileRead& f, GpuEvent* zone );
+    tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime );
+    tracy_force_inline void ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer );
+    tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime );
+    tracy_force_inline void ReadTimelinePre042( FileRead& f, GpuEvent* zone, int fileVer );
 
     tracy_force_inline void ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread );
 
-    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size );
-    void ReadTimelinePre033( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer );
-    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
-    void ReadTimelinePre032( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size );
+    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime );
+    void ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer );
+    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime );
+    void ReadTimelinePre042( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int fileVer );
 
-    void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec );
-    void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec );
+    void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t& refTime );
+    void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t& refTime );
 
     int64_t TscTime( int64_t tsc ) { return int64_t( tsc * m_timerMul ); }
     int64_t TscTime( uint64_t tsc ) { return int64_t( tsc * m_timerMul ); }

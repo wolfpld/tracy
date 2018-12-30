@@ -50,18 +50,31 @@ int main( int argc, char** argv )
 
     try
     {
-        tracy::Worker worker( *f );
-
-        auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, hc ? tracy::FileWrite::Compression::Slow : tracy::FileWrite::Compression::Fast ) );
-        if( !w )
+        int inVer;
         {
-            fprintf( stderr, "Cannot open output file!\n" );
-            exit( 1 );
-        }
-        worker.Write( *w );
+            tracy::Worker worker( *f );
 
-        const auto inVer = worker.GetTraceVersion();
-        printf( "%s (%i.%i.%i) -> %s (%i.%i.%i)\n", input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+            auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, hc ? tracy::FileWrite::Compression::Slow : tracy::FileWrite::Compression::Fast ) );
+            if( !w )
+            {
+                fprintf( stderr, "Cannot open output file!\n" );
+                exit( 1 );
+            }
+            worker.Write( *w );
+            inVer = worker.GetTraceVersion();
+        }
+
+        FILE* in = fopen( input, "rb" );
+        fseek( in, 0, SEEK_END );
+        const auto inSize = ftell( in );
+        fclose( in );
+
+        FILE* out = fopen( output, "rb" );
+        fseek( out, 0, SEEK_END );
+        const auto outSize = ftell( out );
+        fclose( out );
+
+        printf( "%s (%i.%i.%i) {%zu KB} -> %s (%i.%i.%i) {%zu KB}  %.2f%% size change\n", input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, inSize / 1024, output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, outSize / 1024, float( outSize ) / inSize * 100 );
     }
     catch( const tracy::UnsupportedVersion& e )
     {

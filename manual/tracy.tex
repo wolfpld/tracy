@@ -172,7 +172,7 @@ Now you can see why it is important to use a high precision timer. While there i
 
 \subsection{Frame profiler}
 
-Tracy is aimed at understanding the inner workings of a tight game (or interactive application) loop. That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game (or any other program), preferably 60 times per second to achieve smooth animation.} as a basic work-unit\footnote{Frame usage is not required. See section~\ref{markingframes} for more information.}. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.
+Tracy is aimed at understanding the inner workings of a tight loop of a game (or an interactive application). That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game (or any other program), preferably 60 times per second to achieve smooth animation.} as a basic work-unit\footnote{Frame usage is not required. See section~\ref{markingframes} for more information.}. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.
 
 \subsection{Remote or embedded telemetry}
 
@@ -334,7 +334,13 @@ On selected platforms\footnote{Windows, Linux and Android.} Tracy will intercept
 
 This is an automatic process and it doesn't require user interaction.
 
-Note that on MSVC the debugger has priority over the application in handling exceptions. If you want to finish the profiler data collection with the debugger hooked-up, select the \emph{continue} option in the debugger pop-up dialog.
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveats}
+On MSVC the debugger has priority over the application in handling exceptions. If you want to finish the profiler data collection with the debugger hooked-up, select the \emph{continue} option in the debugger pop-up dialog.
+\end{bclogo}
 
 \section{Client markup}
 \label{client}
@@ -438,7 +444,7 @@ Zone logging can be disabled on a per zone basis, by making use of the \texttt{Z
 
 Note that this parameter may be a run-time variable, for example an user controlled switch to enable profiling of a specific part of code only when required. It is also useful to replace handling of the static order initialization fiasco on OSX.
 
-It may also be specified at compile-time, in which case it won't be a condition at all (the profiling code will either be always enabled, or won't be there at all). The following listing presents how profiling of specific application subsystems might be implemented:
+If the condition is constant at compile-time, the resulting code will not contain a branch (the profiling code will either be always enabled, or won't be there at all). The following listing presents how profiling of specific application subsystems might be implemented:
 
 \begin{lstlisting}
 enum SubSystems
@@ -492,7 +498,7 @@ The standard \texttt{std::lock\_guard} and \texttt{std::unique\_lock} wrappers s
 std::lock_guard<LockableBase(std::mutex)> lock(m_lock);
 \end{lstlisting}
 
-To mark the location of lock being held, use the \texttt{LockMark(varname)} macro, after you have obtained the lock. Note that the \texttt{varname} must be a lock variable (a reference is also valid). This step is optional.
+To mark the location of a lock being held, use the \texttt{LockMark(varname)} macro, after you have obtained the lock. Note that the \texttt{varname} must be a lock variable (a reference is also valid). This step is optional.
 
 Similarly, you can use \texttt{TracySharedLockable}, \texttt{TracySharedLockableN} and \texttt{SharedLockableBase} to mark locks implementing the SharedMutex requirement\footnote{\url{https://en.cppreference.com/w/cpp/named_req/SharedMutex}}. Note that while there's no support for timed mutices in Tracy, both \texttt{std::shared\_mutex} and \texttt{std::shared\_timed\_mutex} may be used\footnote{Since \texttt{std::shared\_mutex} was added in C++17, using \texttt{std::shared\_timed\_mutex} is the only way to have shared mutex functionality in C++14.}.
 
@@ -501,7 +507,7 @@ noborder=true,
 couleur=black!5,
 logo=\bcattention
 ]{Caveats}
-Due to limits of internal bookkeeping in the profiler, each lock may be used in no more than 64 threads. If you have many short lived temporary threads, consider using a thread pool to limit the numbers of created threads.
+Due to limits of internal bookkeeping in the profiler, each lock may be used in no more than 64 unique threads. If you have many short lived temporary threads, consider using a thread pool to limit the numbers of created threads.
 \end{bclogo}
 
 \subsection{Plotting data}
@@ -520,7 +526,7 @@ Tracy can monitor memory usage of your application. Knowledge about each perform
 
 \begin{itemize}
 \item Memory usage graph (like in massif, but fully interactive).
-\item List of active allocations at program exit (leak list).
+\item List of active allocations at program exit (memory leaks).
 \item Visualization of memory map.
 \item Ability to rewind view of active allocations and memory map to any point of program execution.
 \item Information about memory statistics of each zone.
@@ -543,6 +549,23 @@ void operator delete(void* ptr) noexcept
     free(ptr);
 }
 \end{lstlisting}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Each tracked memory free event must also have a corresponding memory allocation event. Tracy will not be able to report correct data if this assumption is broken. If you encounter this issue, you may want to check for:
+
+\begin{itemize}
+\item Mismatched \texttt{malloc}/\texttt{new} or \texttt{free}/\texttt{delete}.
+\item Double freeing the memory.
+\item Untracked allocations made in external libraries, that are freed in the application.
+\item Places where the memory is allocated, but profiling markup is added.
+\end{itemize}
+
+This requirement is relaxed in the on-demand mode (section~\ref{ondemand}), because the memory allocation event might have happened before the connection was made.
+\end{bclogo}
 
 \subsection{Lua support}
 

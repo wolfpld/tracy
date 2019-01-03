@@ -822,7 +822,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 else
                 {
                     int64_t refTime = 0;
-                    ReadTimeline( f, ctx->timeline, tsz, refTime );
+                    int64_t refGpuTime = 0;
+                    ReadTimeline( f, ctx->timeline, tsz, refTime, refGpuTime );
                 }
             }
         }
@@ -3097,7 +3098,7 @@ void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     }
 }
 
-void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime )
+void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime )
 {
     uint64_t sz;
     f.Read( sz );
@@ -3110,7 +3111,7 @@ void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime )
         zone->child = m_data.m_gpuChildren.size();
         m_data.m_gpuChildren.push_back( Vector<GpuEvent*>() );
         Vector<GpuEvent*> tmp;
-        ReadTimeline( f, tmp, sz, refTime );
+        ReadTimeline( f, tmp, sz, refTime, refGpuTime );
         m_data.m_gpuChildren[zone->child] = std::move( tmp );
     }
 }
@@ -3224,7 +3225,7 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
     }
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime )
+void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime )
 {
     assert( size != 0 );
     vec.reserve_exact( size );
@@ -3236,9 +3237,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
         vec[i] = zone;
 
         zone->cpuStart = ReadTimeOffset( f, refTime );
-        int64_t gpuOffset;
-        f.Read2( zone->gpuStart, gpuOffset );
-        zone->gpuEnd = zone->gpuStart + gpuOffset;
+        zone->gpuStart = ReadTimeOffset( f, refGpuTime );
         f.Read2( zone->srcloc, zone->callstack );
 
         uint64_t thread;
@@ -3251,9 +3250,10 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
         {
             zone->thread = CompressThread( thread );
         }
-        ReadTimeline( f, zone, refTime );
+        ReadTimeline( f, zone, refTime, refGpuTime );
 
         zone->cpuEnd = ReadTimeOffset( f, refTime );
+        zone->gpuEnd = ReadTimeOffset( f, refGpuTime );
     }
 }
 
@@ -3484,11 +3484,12 @@ void Worker::Write( FileWrite& f )
     for( auto& ctx : m_data.gpuData )
     {
         int64_t refTime = 0;
+        int64_t refGpuTime = 0;
         f.Write( &ctx->thread, sizeof( ctx->thread ) );
         f.Write( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
         f.Write( &ctx->count, sizeof( ctx->count ) );
         f.Write( &ctx->period, sizeof( ctx->period ) );
-        WriteTimeline( f, ctx->timeline, refTime );
+        WriteTimeline( f, ctx->timeline, refTime, refGpuTime );
     }
 
     sz = m_data.plots.Data().size();
@@ -3585,7 +3586,7 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t
     }
 }
 
-void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t& refTime )
+void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t& refTime, int64_t& refGpuTime )
 {
     uint64_t sz = vec.size();
     f.Write( &sz, sizeof( sz ) );
@@ -3593,9 +3594,7 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t&
     for( auto& v : vec )
     {
         WriteTimeOffset( f, refTime, v->cpuStart );
-        f.Write( &v->gpuStart, sizeof( v->gpuStart ) );
-        int64_t gpuOffset = v->gpuEnd - v->gpuStart;
-        f.Write( &gpuOffset, sizeof( gpuOffset ) );
+        WriteTimeOffset( f, refGpuTime, v->gpuStart );
         f.Write( &v->srcloc, sizeof( v->srcloc ) );
         f.Write( &v->callstack, sizeof( v->callstack ) );
 
@@ -3608,10 +3607,11 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t&
         }
         else
         {
-            WriteTimeline( f, GetGpuChildren( v->child ), refTime );
+            WriteTimeline( f, GetGpuChildren( v->child ), refTime, refGpuTime );
         }
 
         WriteTimeOffset( f, refTime, v->cpuEnd );
+        WriteTimeOffset( f, refGpuTime, v->gpuEnd );
     }
 }
 

@@ -3176,11 +3176,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec[i] = zone;
         zone->start = ReadTimeOffset( f, refTime );
-        f.Read( zone->srcloc );
-        f.Read2( zone->cpu_start, zone->cpu_end );
-        f.Read( zone->text );
-        f.Read( zone->callstack );
-        f.Read( zone->name );
+        f.Read( &zone->srcloc, sizeof( zone->srcloc ) + sizeof( zone->cpu_start ) + sizeof( zone->cpu_end ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         ReadTimeline( f, zone, thread, refTime );
         zone->end = ReadTimeOffset( f, refTime );
         ReadTimelineUpdateStatistics( zone, thread );

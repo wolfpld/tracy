@@ -312,6 +312,9 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     assert( s_instance == nullptr );
     s_instance = this;
 
+    m_notificationTime = 4;
+    m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
+
     InitTextEditor();
     SetViewToLastFrames();
 }

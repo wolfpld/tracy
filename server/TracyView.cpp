@@ -696,7 +696,7 @@ bool View::DrawImpl()
     {
         m_notificationTime -= io.DeltaTime;
         ImGui::SameLine();
-        ImGui::TextDisabled( m_notificationText.c_str() );
+        ImGui::TextDisabled( "%s", m_notificationText.c_str() );
     }
     DrawFrames();
     DrawZones();

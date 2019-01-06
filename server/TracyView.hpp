@@ -283,6 +283,9 @@ private:
     SetTitleCallback m_stcb;
     bool m_titleSet = false;
 
+    float m_notificationTime = 0;
+    std::string m_notificationText;
+
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
         enum class GroupBy : int { Thread, UserText, Callstack };

@@ -689,6 +689,12 @@ bool View::DrawImpl()
 #else
     ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_zvEnd - m_zvStart ), TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
 #endif
+    if( m_notificationTime > 0 )
+    {
+        m_notificationTime -= io.DeltaTime;
+        ImGui::SameLine();
+        ImGui::TextDisabled( m_notificationText.c_str() );
+    }
     DrawFrames();
     DrawZones();
     ImGui::End();

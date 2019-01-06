@@ -6714,7 +6714,6 @@ void View::DrawInfo()
             auto& frames = m_frameSortData.data;
             const auto tmin = frames.front();
             const auto tmax = frames.back();
-            const auto timeTotal = m_frameSortData.total;
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {

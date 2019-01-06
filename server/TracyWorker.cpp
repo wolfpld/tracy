@@ -218,6 +218,7 @@ Worker::Worker( const char* addr )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
     , m_traceVersion( CurrentVersion )
+    , m_loadTime( 0 )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.threadExpand.push_back( 0 );
@@ -238,6 +239,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     , m_stream( nullptr )
     , m_buffer( nullptr )
 {
+    auto loadStart = std::chrono::high_resolution_clock::now();
+
     m_data.threadExpand.push_back( 0 );
     m_data.callstackPayload.push_back( nullptr );
 
@@ -868,6 +871,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     if( fileVer == 0 && f.IsEOF() )
     {
         s_loadProgress.total.store( 0, std::memory_order_relaxed );
+        m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
         return;
     }
 
@@ -1032,6 +1036,7 @@ finishLoading:
     }
 
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
+    m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 }
 
 Worker::~Worker()

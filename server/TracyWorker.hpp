@@ -267,6 +267,7 @@ public:
     uint8_t GetHandshakeStatus() const { return m_handshake.load( std::memory_order_relaxed ); }
 
     static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
+    int64_t GetLoadTime() const { return m_loadTime; }
 
 private:
     void Exec();
@@ -420,6 +421,7 @@ private:
     std::atomic<uint8_t> m_handshake = 0;
 
     static LoadProgress s_loadProgress;
+    int64_t m_loadTime;
 };
 
 }

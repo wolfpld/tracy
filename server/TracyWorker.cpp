@@ -209,11 +209,7 @@ LoadProgress Worker::s_loadProgress;
 
 Worker::Worker( const char* addr )
     : m_addr( addr )
-    , m_connected( false )
     , m_hasData( false )
-    , m_shutdown( false )
-    , m_terminate( false )
-    , m_crashed( false )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3 + 1] )
     , m_bufferOffset( 0 )
@@ -222,7 +218,6 @@ Worker::Worker( const char* addr )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
     , m_traceVersion( CurrentVersion )
-    , m_handshake( 0 )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.threadExpand.push_back( 0 );
@@ -239,14 +234,9 @@ Worker::Worker( const char* addr )
 }
 
 Worker::Worker( FileRead& f, EventType::Type eventMask )
-    : m_connected( false )
-    , m_hasData( true )
-    , m_shutdown( false )
-    , m_terminate( false )
-    , m_crashed( false )
+    : m_hasData( true )
     , m_stream( nullptr )
     , m_buffer( nullptr )
-    , m_handshake( 0 )
 {
     m_data.threadExpand.push_back( 0 );
     m_data.callstackPayload.push_back( nullptr );

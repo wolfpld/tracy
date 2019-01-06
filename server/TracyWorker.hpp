@@ -374,9 +374,9 @@ private:
     std::string m_addr;
 
     std::thread m_thread;
-    std::atomic<bool> m_connected;
+    std::atomic<bool> m_connected = false;
     std::atomic<bool> m_hasData;
-    std::atomic<bool> m_shutdown;
+    std::atomic<bool> m_shutdown = false;
 
     std::thread m_threadMemory, m_threadZones;
 
@@ -387,8 +387,8 @@ private:
     std::string m_captureProgram;
     uint64_t m_captureTime;
     std::string m_hostInfo;
-    bool m_terminate;
-    bool m_crashed;
+    bool m_terminate = false;
+    bool m_crashed = false;
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;
@@ -417,7 +417,7 @@ private:
     MbpsBlock m_mbpsData;
 
     int m_traceVersion;
-    std::atomic<uint8_t> m_handshake;
+    std::atomic<uint8_t> m_handshake = 0;
 
     static LoadProgress s_loadProgress;
 };

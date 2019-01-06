@@ -11,6 +11,7 @@ v0.5 (xxxx-xx-xx)
 
 - Major decrease of trace dump file size.
 - Display dump file size change in the update utility.
+- Display trace loading time.
 
 v0.4.1 (2018-12-30)
 -------------------

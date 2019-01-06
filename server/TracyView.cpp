@@ -7990,7 +7990,7 @@ void View::DrawAllocList()
 
     ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size(), true ) );
-    ListMemData<decltype( data.begin() )>( data.begin(), data.end(), [this]( auto& v ) {
+    ListMemData<decltype( data.begin() )>( data.begin(), data.end(), []( auto& v ) {
         ImGui::Text( "0x%" PRIx64, (*v)->ptr );
     }, "##allocations" );
     ImGui::End();

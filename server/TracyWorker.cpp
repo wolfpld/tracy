@@ -2027,7 +2027,7 @@ void Worker::HandlePlotName( uint64_t name, char* str, size_t sz )
 void Worker::HandleFrameName( uint64_t name, char* str, size_t sz )
 {
     const auto sl = StoreString( str, sz );
-    m_data.frames.StringDiscovered( name, sl, m_data.strings, [this] ( FrameData* dst, FrameData* src ) {
+    m_data.frames.StringDiscovered( name, sl, m_data.strings, [] ( FrameData* dst, FrameData* src ) {
         auto sz = dst->frames.size();
         dst->frames.insert( dst->frames.end(), src->frames.begin(), src->frames.end() );
         std::inplace_merge( dst->frames.begin(), dst->frames.begin() + sz, dst->frames.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.start < rhs.start; } );

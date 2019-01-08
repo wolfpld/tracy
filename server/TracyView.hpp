@@ -216,7 +216,6 @@ private:
 
     int64_t m_zvStart = 0;
     int64_t m_zvEnd = 0;
-    int64_t m_lastTime;
 
     int8_t m_lastCpu;
 

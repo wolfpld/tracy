@@ -2716,7 +2716,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 auto next = GetNextLockFunc( vbegin, vend, state, threadBit );
 
                 const auto t0 = (*vbegin)->time;
-                int64_t t1 = next == tl.end() ? m_lastTime : (*next)->time;
+                int64_t t1 = next == tl.end() ? m_worker.GetLastTime() : (*next)->time;
                 const auto px0 = std::max( pxend, ( t0 - m_zvStart ) * pxns );
                 auto tx0 = px0;
                 double px1 = ( t1 - m_zvStart ) * pxns;
@@ -2738,7 +2738,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
                     drawState = CombineLockState( drawState, state );
                     condensed++;
-                    const auto t2 = n == tl.end() ? m_lastTime : (*n)->time;
+                    const auto t2 = n == tl.end() ? m_worker.GetLastTime() : (*n)->time;
                     const auto px2 = ( t2 - m_zvStart ) * pxns;
                     if( px2 - px1 > MinVisSize ) break;
                     if( drawState != ns && px2 - px0 > MinVisSize && !( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) ) break;

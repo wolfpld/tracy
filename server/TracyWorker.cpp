@@ -656,6 +656,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Skip( sizeof( uint32_t ) + sizeof( LockMap::srcloc ) );
             f.Read( type );
             f.Skip( sizeof( LockMap::valid ) );
+            if( fileVer >= FileVersion( 0, 4, 1 ) )
+            {
+                f.Skip( sizeof( LockMap::timeAnnounce ) + sizeof( LockMap::timeTerminate ) );
+            }
             f.Read( tsz );
             f.Skip( tsz * sizeof( uint64_t ) );
             f.Read( tsz );

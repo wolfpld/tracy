@@ -4485,17 +4485,23 @@ void View::DrawOptions()
             ImGui::PushID( idx++ );
             ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Visible( t ) );
             ImGui::PopID();
-            ImGui::SameLine();
-            ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
             if( crash.thread == t->id )
             {
                 ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text( "Crashed" );
+                    ImGui::EndTooltip();
+                }
 #else
                 ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
 #endif
             }
+            ImGui::SameLine();
+            ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
         }
         ImGui::TreePop();
     }

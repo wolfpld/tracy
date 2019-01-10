@@ -60,12 +60,6 @@ struct GpuCtxWrapper
     GpuCtx* ptr;
 };
 
-class VkCtx;
-struct VkCtxWrapper
-{
-    VkCtx* ptr;
-};
-
 #ifdef TRACY_ON_DEMAND
 struct LuaZoneState
 {

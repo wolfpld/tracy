@@ -2388,6 +2388,7 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     const auto time = TscTime( ev.time );
     if( fd->frames.empty() )
     {
+        // TODO: add failure state
         assert( m_onDemand );
         return;
     }

@@ -210,6 +210,8 @@ struct ThreadData
     Vector<ZoneEvent*> timeline;
     Vector<ZoneEvent*> stack;
     Vector<MessageData*> messages;
+    uint32_t nextZoneId;
+    Vector<uint32_t> zoneIdStack;
 };
 
 struct GpuCtxData

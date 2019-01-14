@@ -1758,6 +1758,7 @@ ThreadData* Worker::NewThread( uint64_t thread )
     auto td = m_slab.AllocInit<ThreadData>();
     td->id = thread;
     td->count = 0;
+    td->nextZoneId = 0;
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
     return td;
@@ -2102,6 +2103,9 @@ void Worker::Process( const QueueItem& ev )
     case QueueType::ZoneEnd:
         ProcessZoneEnd( ev.zoneEnd );
         break;
+    case QueueType::ZoneValidation:
+        ProcessZoneValidation( ev.zoneValidation );
+        break;
     case QueueType::FrameMarkMsg:
         ProcessFrameMark( ev.frameMark );
         break;
@@ -2301,6 +2305,12 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         it->second.selfTotal += timeSpan;
     }
 #endif
+}
+
+void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
+{
+    auto td = NoticeThread( ev.thread );
+    td->nextZoneId = ev.id;
 }
 
 void Worker::ProcessFrameMark( const QueueFrameMark& ev )

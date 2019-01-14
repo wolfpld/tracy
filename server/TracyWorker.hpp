@@ -279,6 +279,7 @@ private:
     tracy_force_inline void ProcessZoneBeginCallstack( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
+    tracy_force_inline void ProcessZoneValidation( const QueueZoneValidation& ev );
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkStart( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkEnd( const QueueFrameMark& ev );

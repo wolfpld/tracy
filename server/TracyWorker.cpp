@@ -2282,7 +2282,11 @@ bool Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto td = tit->second;
     assert( !td->zoneIdStack.empty() );
     auto zoneId = td->zoneIdStack.back_and_pop();
-    if( zoneId != td->nextZoneId ) return false;
+    if( zoneId != td->nextZoneId )
+    {
+        ZoneStackFailure( ev.thread, td->stack.back() );
+        return false;
+    }
     td->nextZoneId = 0;
 
     auto& stack = td->stack;
@@ -2318,6 +2322,13 @@ bool Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 #endif
 
     return true;
+}
+
+void Worker::ZoneStackFailure( uint64_t thread, const ZoneEvent* ev )
+{
+    m_failure = Failure::ZoneStack;
+    m_failureData.thread = thread;
+    m_failureData.srcloc = ev->srcloc;
 }
 
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )

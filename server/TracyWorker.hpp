@@ -170,7 +170,19 @@ private:
         };
     };
 
+    struct FailureData
+    {
+        uint64_t thread;
+        int32_t srcloc;
+    };
+
 public:
+    enum class Failure
+    {
+        None,
+        ZoneStack
+    };
+
     Worker( const char* addr );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All );
     ~Worker();
@@ -269,6 +281,10 @@ public:
     static const LoadProgress& GetLoadProgress() { return s_loadProgress; }
     int64_t GetLoadTime() const { return m_loadTime; }
 
+    void ClearFailure() { m_failure = Failure::None; }
+    Failure GetFailureType() const { return m_failure; }
+    const FailureData& GetFailureData() const { return m_failureData; }
+
 private:
     void Exec();
     void ServerQuery( uint8_t type, uint64_t data );
@@ -313,6 +329,8 @@ private:
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev );
+
+    void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );
@@ -423,6 +441,9 @@ private:
 
     static LoadProgress s_loadProgress;
     int64_t m_loadTime;
+
+    Failure m_failure = Failure::None;
+    FailureData m_failureData;
 };
 
 }

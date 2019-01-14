@@ -273,12 +273,12 @@ private:
     void Exec();
     void ServerQuery( uint8_t type, uint64_t data );
 
-    tracy_force_inline void DispatchProcess( const QueueItem& ev, char*& ptr );
-    tracy_force_inline void Process( const QueueItem& ev );
+    tracy_force_inline bool DispatchProcess( const QueueItem& ev, char*& ptr );
+    tracy_force_inline bool Process( const QueueItem& ev );
     tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginCallstack( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
-    tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
+    tracy_force_inline bool ProcessZoneEnd( const QueueZoneEnd& ev );
     tracy_force_inline void ProcessZoneValidation( const QueueZoneValidation& ev );
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkStart( const QueueFrameMark& ev );

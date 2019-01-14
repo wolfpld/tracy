@@ -1618,7 +1618,7 @@ void Worker::ServerQuery( uint8_t type, uint64_t data )
     m_sock.Send( tmp, DataSize );
 }
 
-void Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
+bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
 {
     if( ev.hdr.idx >= (int)QueueType::StringData )
     {
@@ -1654,11 +1654,12 @@ void Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
             break;
         }
         ptr += sz;
+        return true;
     }
     else
     {
         ptr += QueueDataSize[ev.hdr.idx];
-        Process( ev );
+        return Process( ev );
     }
 }
 
@@ -1799,6 +1800,9 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
         }
         td->stack.push_back_non_empty( zone );
     }
+
+    td->zoneIdStack.push_back( td->nextZoneId );
+    td->nextZoneId = 0;
 }
 
 void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
@@ -2087,7 +2091,7 @@ StringLocation Worker::StoreString( char* str, size_t sz )
     return ret;
 }
 
-void Worker::Process( const QueueItem& ev )
+bool Worker::Process( const QueueItem& ev )
 {
     switch( ev.hdr.type )
     {
@@ -2101,7 +2105,7 @@ void Worker::Process( const QueueItem& ev )
         ProcessZoneBeginAllocSrcLoc( ev.zoneBegin );
         break;
     case QueueType::ZoneEnd:
-        ProcessZoneEnd( ev.zoneEnd );
+        if( !ProcessZoneEnd( ev.zoneEnd ) ) return false;
         break;
     case QueueType::ZoneValidation:
         ProcessZoneValidation( ev.zoneValidation );
@@ -2211,6 +2215,8 @@ void Worker::Process( const QueueItem& ev )
         assert( false );
         break;
     }
+
+    return true;
 }
 
 void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
@@ -2268,12 +2274,17 @@ void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     m_pendingSourceLocationPayload.erase( it );
 }
 
-void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
+bool Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
     auto tit = m_threadMap.find( ev.thread );
     assert( tit != m_threadMap.end() );
 
     auto td = tit->second;
+    assert( !td->zoneIdStack.empty() );
+    auto zoneId = td->zoneIdStack.back_and_pop();
+    if( zoneId != td->nextZoneId ) return false;
+    td->nextZoneId = 0;
+
     auto& stack = td->stack;
     assert( !stack.empty() );
     auto zone = stack.back_and_pop();
@@ -2305,6 +2316,8 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         it->second.selfTotal += timeSpan;
     }
 #endif
+
+    return true;
 }
 
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )

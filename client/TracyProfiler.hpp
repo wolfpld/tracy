@@ -126,6 +126,11 @@ public:
 #endif
     }
 
+    tracy_force_inline uint32_t GetNextZoneId()
+    {
+        return m_zoneId.fetch_add( 1, std::memory_order_relaxed );
+    }
+
     static tracy_force_inline void SendFrameMark()
     {
 #ifdef TRACY_ON_DEMAND
@@ -431,6 +436,7 @@ private:
     std::atomic<bool> m_shutdownFinished;
     Socket* m_sock;
     bool m_noExit;
+    std::atomic<uint32_t> m_zoneId;
 
     LZ4_stream_t* m_stream;
     char* m_buffer;

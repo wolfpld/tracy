@@ -44,6 +44,7 @@
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
+#include "../TracyC.h"
 
 #ifdef __GNUC__
 #define init_order( val ) __attribute__ ((init_priority(val)))
@@ -1736,5 +1737,89 @@ void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore
 }
 
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_data* srcloc, int active )
+{
+    ___tracy_c_zone_context ctx;
+#ifdef TRACY_ON_DEMAND
+    ctx.active = tracy::s_profiler.IsConnected();
+#else
+    ctx.active = active;
+#endif
+    if( !ctx.active ) return ctx;
+    tracy::Magic magic;
+    auto& token = tracy::s_token.ptr;
+    auto& tail = token->get_tail_index();
+    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBegin );
+#ifdef TRACY_RDTSCP_OPT
+    tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( item->zoneBegin.cpu ) );
+#else
+    uint32_t cpu;
+    tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( cpu ) );
+    tracy::MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+    tracy::MemWrite( &item->zoneBegin.thread, tracy::GetThreadHandle() );
+    tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
+    tail.store( magic + 1, std::memory_order_release );
+    return ctx;
+}
+
+TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_location_data* srcloc, int depth, int active )
+{
+    ___tracy_c_zone_context ctx;
+#ifdef TRACY_ON_DEMAND
+    ctx.active = tracy::s_profiler.IsConnected();
+#else
+    ctx.active = active;
+#endif
+    if( !ctx.active ) return ctx;
+    const auto thread = tracy::GetThreadHandle();
+    tracy::Magic magic;
+    auto& token = tracy::s_token.ptr;
+    auto& tail = token->get_tail_index();
+    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginCallstack );
+#ifdef TRACY_RDTSCP_OPT
+    tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( item->zoneBegin.cpu ) );
+#else
+    uint32_t cpu;
+    tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( cpu ) );
+    tracy::MemWrite( &item->zoneBegin.cpu, cpu );
+#endif
+    tracy::MemWrite( &item->zoneBegin.thread, thread );
+    tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
+    tail.store( magic + 1, std::memory_order_release );
+
+    tracy::s_profiler.SendCallstack( depth, thread );
+    return ctx;
+}
+
+void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
+{
+    if( !ctx.active ) return;
+    tracy::Magic magic;
+    auto& token = tracy::s_token.ptr;
+    auto& tail = token->get_tail_index();
+    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneEnd );
+#ifdef TRACY_RDTSCP_OPT
+    tracy::MemWrite( &item->zoneEnd.time, tracy::Profiler::GetTime( item->zoneEnd.cpu ) );
+#else
+    uint32_t cpu;
+    tracy::MemWrite( &item->zoneEnd.time, tracy::Profiler::GetTime( cpu ) );
+    tracy::MemWrite( &item->zoneEnd.cpu, cpu );
+#endif
+    tracy::MemWrite( &item->zoneEnd.thread, tracy::GetThreadHandle() );
+    tail.store( magic + 1, std::memory_order_release );
+}
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

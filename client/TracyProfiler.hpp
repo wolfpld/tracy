@@ -30,8 +30,12 @@
 #  endif
 #endif
 
-#define TracyConcat(x,y) TracyConcatIndirect(x,y)
-#define TracyConcatIndirect(x,y) x##y
+#ifndef TracyConcat
+#  define TracyConcat(x,y) TracyConcatIndirect(x,y)
+#endif
+#ifndef TracyConcatIndirect
+#  define TracyConcatIndirect(x,y) x##y
+#endif
 
 namespace tracy
 {

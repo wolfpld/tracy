@@ -1746,7 +1746,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
 {
     ___tracy_c_zone_context ctx;
 #ifdef TRACY_ON_DEMAND
-    ctx.active = tracy::s_profiler.IsConnected();
+    ctx.active = active && tracy::s_profiler.IsConnected();
 #else
     ctx.active = active;
 #endif
@@ -1773,7 +1773,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
 {
     ___tracy_c_zone_context ctx;
 #ifdef TRACY_ON_DEMAND
-    ctx.active = tracy::s_profiler.IsConnected();
+    ctx.active = active && tracy::s_profiler.IsConnected();
 #else
     ctx.active = active;
 #endif

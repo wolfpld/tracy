@@ -17,7 +17,7 @@ class ScopedZone
 public:
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
-        : m_active( s_profiler.IsConnected() )
+        : m_active( is_active && s_profiler.IsConnected() )
 #else
         : m_active( is_active )
 #endif
@@ -44,7 +44,7 @@ public:
 
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
-        : m_active( s_profiler.IsConnected() )
+        : m_active( is_active && s_profiler.IsConnected() )
 #else
         : m_active( is_active )
 #endif

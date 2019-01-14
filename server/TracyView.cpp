@@ -420,6 +420,12 @@ bool View::Draw()
         ImGui::OpenPopup( "Client not ready" );
     }
 
+    const auto& failure = s_instance->m_worker.GetFailureType();
+    if( failure != Worker::Failure::None )
+    {
+        ImGui::OpenPopup( "Instrumentation failure" );
+    }
+
     if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
 #ifdef TRACY_EXTENDED_FONT
@@ -448,6 +454,53 @@ bool View::Draw()
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
             return false;
+        }
+        ImGui::EndPopup();
+    }
+
+    if( ImGui::BeginPopupModal( "Instrumentation failure", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+        const auto& data = s_instance->m_worker.GetFailureData();
+        const auto& srcloc = s_instance->m_worker.GetSourceLocation( data.srcloc );
+
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_SKULL );
+#endif
+        ImGui::Text( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
+        ImGui::Text( "Reason:" );
+        ImGui::SameLine();
+        switch( failure )
+        {
+        case Worker::Failure::ZoneStack:
+            ImGui::Text( "Invalid order of zone begin and end events." );
+            break;
+        default:
+            assert( false );
+            break;
+        }
+        ImGui::Separator();
+        if( srcloc.name.active )
+        {
+            TextFocused( "Zone name:", s_instance->m_worker.GetString( srcloc.name ) );
+        }
+        TextFocused( "Function:", s_instance->m_worker.GetString( srcloc.function ) );
+        ImGui::TextDisabled( "Location:" );
+        ImGui::SameLine();
+        ImGui::Text( "%s:%i", s_instance->m_worker.GetString( srcloc.file ), srcloc.line );
+        TextFocused( "Thread:", s_instance->m_worker.GetThreadString( data.thread ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(id)" );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "0x%" PRIX64, data.thread );
+            ImGui::EndTooltip();
+        }
+        ImGui::Separator();
+        if( ImGui::Button( "I understand" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            s_instance->m_worker.ClearFailure();
         }
         ImGui::EndPopup();
     }

@@ -615,13 +615,13 @@ logo=\bcattention
 
 \subsubsection{Vulkan}
 
-Similarly, for Vulkan support you should include the \texttt{tracy/TracyVulkan.hpp} header file and initialize the Vulkan instance using the \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} macro. Cleanup is performed using the \texttt{TracyVkDestroy} macro. Currently you can't track more than one instance.
+Similarly, for Vulkan support you should include the \texttt{tracy/TracyVulkan.hpp} header file. Tracing Vulkan devices and queues is a bit more involved, and the Vulkan initialization macro \texttt{TracyVkContext(physdev, device, queue, cmdbuf)} returns an instance of \texttt{TracyVkCtx} object, which tracks an associated Vulkan queue. Cleanup is performed using the \texttt{TracyVkDestroy(ctx)} macro. You may create multiple Vulkan contexts.
 
 The physical device, logical device, queue and command buffer must relate with each other. The queue must support graphics or compute operations. The command buffer must be in the initial state and be able to be reset. It will be rerecorded and submitted to the queue multiple times and it will be in the executable state on exit from the initialization function.
 
-To mark a GPU zone use the \texttt{TracyVkZone(cmdbuf, name)} macro, where \texttt{name} is a string literal name of the zone. Alternatively you may use \texttt{TracyVkZoneC(cmdbuf, name, color)} to specify zone color. The provided command buffer must be in the recording state.
+To mark a GPU zone use the \texttt{TracyVkZone(ctx, cmdbuf, name)} macro, where \texttt{name} is a string literal name of the zone. Alternatively you may use \texttt{TracyVkZoneC(ctx, cmdbuf, name, color)} to specify zone color. The provided command buffer must be in the recording state and it must be created within the queue that is associated with \texttt{ctx} context.
 
-You also need to periodically collect the GPU events using the \texttt{TracyVkCollect(cmdbuf)} macro\footnote{It is considerably faster than the OpenGL's \texttt{TracyGpuCollect}.}. The provided command buffer must be in the recording state and outside of a render pass instance.
+You also need to periodically collect the GPU events using the \texttt{TracyVkCollect(ctx, cmdbuf)} macro\footnote{It is considerably faster than the OpenGL's \texttt{TracyGpuCollect}.}. The provided command buffer must be in the recording state and outside of a render pass instance.
 
 \begin{bclogo}[
 noborder=true,

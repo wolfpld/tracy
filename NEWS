@@ -12,6 +12,9 @@ v0.5 (xxxx-xx-xx)
 - Major decrease of trace dump file size.
 - Display dump file size change in the update utility.
 - Display trace loading time.
+- Added C API.
+- Profiling session may now gracefully terminate, due to incorrect
+  instrumentation. A popup with termination reason will be displayed.
 
 v0.4.1 (2018-12-30)
 -------------------

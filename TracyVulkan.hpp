@@ -16,10 +16,7 @@
 #define TracyVkZoneS(c,x,y,z)
 #define TracyVkZoneCS(c,x,y,z,w)
 
-namespace tracy
-{
-class VkCtx {};
-}
+using TracyVkCtx = void*;
 
 #else
 
@@ -295,6 +292,8 @@ static inline void DestroyVkContext( VkCtx* ctx )
 }
 
 }
+
+using TracyVkCtx = tracy::VkCtx*;
 
 #define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::CreateVkContext( physdev, device, queue, cmdbuf );
 #define TracyVkDestroy( ctx ) tracy::DestroyVkContext( ctx );

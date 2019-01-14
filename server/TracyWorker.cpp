@@ -1556,7 +1556,7 @@ void Worker::Exec()
             while( ptr < end )
             {
                 auto ev = (const QueueItem*)ptr;
-                DispatchProcess( *ev, ptr );
+                if( !DispatchProcess( *ev, ptr ) ) goto close;
             }
 
             m_bufferOffset += sz;

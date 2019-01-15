@@ -461,7 +461,6 @@ bool View::Draw()
     if( ImGui::BeginPopupModal( "Instrumentation failure", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
         const auto& data = s_instance->m_worker.GetFailureData();
-        const auto& srcloc = s_instance->m_worker.GetSourceLocation( data.srcloc );
 
 #ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_SKULL );
@@ -471,14 +470,18 @@ bool View::Draw()
         ImGui::SameLine();
         ImGui::Text( "%s", Worker::GetFailureString( failure ) );
         ImGui::Separator();
-        if( srcloc.name.active )
+        if( data.srcloc != 0 )
         {
-            TextFocused( "Zone name:", s_instance->m_worker.GetString( srcloc.name ) );
+            const auto& srcloc = s_instance->m_worker.GetSourceLocation( data.srcloc );
+            if( srcloc.name.active )
+            {
+                TextFocused( "Zone name:", s_instance->m_worker.GetString( srcloc.name ) );
+            }
+            TextFocused( "Function:", s_instance->m_worker.GetString( srcloc.function ) );
+            ImGui::TextDisabled( "Location:" );
+            ImGui::SameLine();
+            ImGui::Text( "%s:%i", s_instance->m_worker.GetString( srcloc.file ), srcloc.line );
         }
-        TextFocused( "Function:", s_instance->m_worker.GetString( srcloc.function ) );
-        ImGui::TextDisabled( "Location:" );
-        ImGui::SameLine();
-        ImGui::Text( "%s:%i", s_instance->m_worker.GetString( srcloc.file ), srcloc.line );
         TextFocused( "Thread:", s_instance->m_worker.GetThreadString( data.thread ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(id)" );

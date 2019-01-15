@@ -2329,6 +2329,13 @@ void Worker::ZoneStackFailure( uint64_t thread, const ZoneEvent* ev )
     m_failureData.srcloc = ev->srcloc;
 }
 
+void Worker::MemFreeFailure( uint64_t thread )
+{
+    m_failure = Failure::MemFree;
+    m_failureData.thread = thread;
+    m_failureData.srcloc = 0;
+}
+
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
     auto td = NoticeThread( ev.thread );
@@ -2386,7 +2393,6 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     const auto time = TscTime( ev.time );
     if( fd->frames.empty() )
     {
-        // TODO: add failure state
         assert( m_onDemand );
         return;
     }
@@ -2833,7 +2839,10 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
     auto it = m_data.memory.active.find( ev.ptr );
     if( it == m_data.memory.active.end() )
     {
-        assert( m_onDemand );
+        if( !m_onDemand )
+        {
+            MemFreeFailure( ev.thread );
+        }
         return false;
     }
 
@@ -3645,7 +3654,8 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t&
 
 static const char* s_failureReasons[] = {
     "<unknown reason>",
-    "Invalid order of zone begin and end events."
+    "Invalid order of zone begin and end events.",
+    "Memory free event without a matching allocation."
 };
 
 static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)Worker::Failure::NUM_FAILURES, "Missing failure reason description." );

@@ -3648,6 +3648,8 @@ static const char* s_failureReasons[] = {
     "Invalid order of zone begin and end events."
 };
 
+static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)Worker::Failure::NUM_FAILURES, "Missing failure reason description." );
+
 const char* Worker::GetFailureString( Worker::Failure failure )
 {
     return s_failureReasons[(int)failure];

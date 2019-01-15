@@ -1759,6 +1759,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
     tracy::Magic magic;
     auto& token = tracy::s_token.ptr;
     auto& tail = token->get_tail_index();
+#ifndef TRACY_NO_VERIFY
     {
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
@@ -1766,6 +1767,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
         tracy::MemWrite( &item->zoneValidation.id, id );
         tail.store( magic + 1, std::memory_order_release );
     }
+#endif
     {
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBegin );
@@ -1799,6 +1801,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
     tracy::Magic magic;
     auto& token = tracy::s_token.ptr;
     auto& tail = token->get_tail_index();
+#ifndef TRACY_NO_VERIFY
     {
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
@@ -1806,6 +1809,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
         tracy::MemWrite( &item->zoneValidation.id, id );
         tail.store( magic + 1, std::memory_order_release );
     }
+#endif
     {
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginCallstack );
@@ -1832,6 +1836,7 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
     tracy::Magic magic;
     auto& token = tracy::s_token.ptr;
     auto& tail = token->get_tail_index();
+#ifndef TRACY_NO_VERIFY
     {
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
@@ -1839,6 +1844,7 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
         tail.store( magic + 1, std::memory_order_release );
     }
+#endif
     {
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneEnd );

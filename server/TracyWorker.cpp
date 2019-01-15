@@ -3645,4 +3645,14 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t&
     }
 }
 
+static const char* s_failureReasons[] = {
+    "<unknown reason>",
+    "Invalid order of zone begin and end events."
+};
+
+const char* Worker::GetFailureString( Worker::Failure failure )
+{
+    return s_failureReasons[(int)failure];
+}
+
 }

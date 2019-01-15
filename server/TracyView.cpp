@@ -469,15 +469,7 @@ bool View::Draw()
         ImGui::Text( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
         ImGui::Text( "Reason:" );
         ImGui::SameLine();
-        switch( failure )
-        {
-        case Worker::Failure::ZoneStack:
-            ImGui::Text( "Invalid order of zone begin and end events." );
-            break;
-        default:
-            assert( false );
-            break;
-        }
+        ImGui::Text( "%s", Worker::GetFailureString( failure ) );
         ImGui::Separator();
         if( srcloc.name.active )
         {

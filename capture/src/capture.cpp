@@ -182,17 +182,7 @@ int main( int argc, char** argv )
     const auto& failure = worker.GetFailureType();
     if( failure != tracy::Worker::Failure::None )
     {
-        printf( "\n\033[31;1mInstrumentation failure: " );
-        switch( failure )
-        {
-        case tracy::Worker::Failure::ZoneStack:
-            printf( "Invalid order of zone begin and end events." );
-            break;
-        default:
-            printf( "<unknown reason>" );
-            break;
-        }
-        printf( "\033[0m" );
+        printf( "\n\033[31;1mInstrumentation failure: %s\033[0m", tracy::Worker::GetFailureString( failure ) );
     }
 
     printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nSaving trace...", worker.GetFrameCount( *worker.GetFramesBase() ), TimeToString( worker.GetLastTime() - worker.GetTimeBegin() ), RealToString( worker.GetZoneCount(), true ) );

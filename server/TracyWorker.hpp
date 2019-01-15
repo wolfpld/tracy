@@ -180,7 +180,9 @@ public:
     enum class Failure
     {
         None,
-        ZoneStack
+        ZoneStack,
+
+        NUM_FAILURES
     };
 
     Worker( const char* addr );
@@ -284,6 +286,7 @@ public:
     void ClearFailure() { m_failure = Failure::None; }
     Failure GetFailureType() const { return m_failure; }
     const FailureData& GetFailureData() const { return m_failureData; }
+    static const char* GetFailureString( Failure failure );
 
 private:
     void Exec();

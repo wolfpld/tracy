@@ -2105,7 +2105,7 @@ bool Worker::Process( const QueueItem& ev )
         ProcessZoneBeginAllocSrcLoc( ev.zoneBegin );
         break;
     case QueueType::ZoneEnd:
-        if( !ProcessZoneEnd( ev.zoneEnd ) ) return false;
+        ProcessZoneEnd( ev.zoneEnd );
         break;
     case QueueType::ZoneValidation:
         ProcessZoneValidation( ev.zoneValidation );
@@ -2216,7 +2216,7 @@ bool Worker::Process( const QueueItem& ev )
         break;
     }
 
-    return true;
+    return m_failure == Failure::None;
 }
 
 void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
@@ -2274,7 +2274,7 @@ void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     m_pendingSourceLocationPayload.erase( it );
 }
 
-bool Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
+void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
     auto tit = m_threadMap.find( ev.thread );
     assert( tit != m_threadMap.end() );
@@ -2285,7 +2285,7 @@ bool Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     if( zoneId != td->nextZoneId )
     {
         ZoneStackFailure( ev.thread, td->stack.back() );
-        return false;
+        return;
     }
     td->nextZoneId = 0;
 
@@ -2320,8 +2320,6 @@ bool Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         it->second.selfTotal += timeSpan;
     }
 #endif
-
-    return true;
 }
 
 void Worker::ZoneStackFailure( uint64_t thread, const ZoneEvent* ev )

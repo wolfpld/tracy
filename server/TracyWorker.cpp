@@ -2277,10 +2277,13 @@ void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
 void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
     auto tit = m_threadMap.find( ev.thread );
-    assert( tit != m_threadMap.end() );
+    if( tit == m_threadMap.end() || tit->second->zoneIdStack.empty() )
+    {
+        ZoneEndFailure( ev.thread );
+        return;
+    }
 
     auto td = tit->second;
-    assert( !td->zoneIdStack.empty() );
     auto zoneId = td->zoneIdStack.back_and_pop();
     if( zoneId != td->nextZoneId )
     {
@@ -2327,6 +2330,13 @@ void Worker::ZoneStackFailure( uint64_t thread, const ZoneEvent* ev )
     m_failure = Failure::ZoneStack;
     m_failureData.thread = thread;
     m_failureData.srcloc = ev->srcloc;
+}
+
+void Worker::ZoneEndFailure( uint64_t thread )
+{
+    m_failure = Failure::ZoneEnd;
+    m_failureData.thread = thread;
+    m_failureData.srcloc = 0;
 }
 
 void Worker::MemFreeFailure( uint64_t thread )
@@ -3655,6 +3665,7 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t&
 static const char* s_failureReasons[] = {
     "<unknown reason>",
     "Invalid order of zone begin and end events.",
+    "Received zone end event without a matching zone begin event.",
     "Memory free event without a matching allocation."
 };
 

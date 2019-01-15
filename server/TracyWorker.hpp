@@ -181,6 +181,7 @@ public:
     {
         None,
         ZoneStack,
+        ZoneEnd,
         MemFree,
 
         NUM_FAILURES
@@ -335,6 +336,7 @@ private:
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev );
 
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
+    void ZoneEndFailure( uint64_t thread );
     void MemFreeFailure( uint64_t thread );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );

@@ -52,6 +52,14 @@ The user manual for Tracy is available [at the following address](https://bitbuc
 
 ## Features
 
+#### Histogram of function execution times
+
+![](doc/histogram.png)
+
+#### Comparison of two profiling runs
+
+![](doc/compare.png)
+
 #### Marking locks
 
 ![](doc/locks.png)
@@ -63,7 +71,3 @@ The user manual for Tracy is available [at the following address](https://bitbuc
 #### Message log
 
 ![](doc/messages.png)
-
-#### Approximation of capture cost
-
-![](doc/cost.png)

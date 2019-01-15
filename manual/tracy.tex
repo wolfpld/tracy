@@ -87,7 +87,7 @@
 
 \section{A quick look at Tracy}
 
-Tracy is a real-time, nanosecond resolution \emph{frame profiler} that can be used for remote or embedded telemetry of applications. It can profile CPU (C++, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
+Tracy is a real-time, nanosecond resolution \emph{frame profiler} that can be used for remote or embedded telemetry of applications. It can profile CPU (C, C++, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
 
 In contrast with \emph{statistical profilers} (such as VTune, perf or Very Sleepy), Tracy does require manual markup of the source code. In return, it allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. This feat is by-design impossible to achieve in statistical profilers, which work by periodically sampling the \emph{program counter} register to see which part of the code is executing.
 
@@ -567,24 +567,6 @@ Each tracked memory free event must also have a corresponding memory allocation 
 This requirement is relaxed in the on-demand mode (section~\ref{ondemand}), because the memory allocation event might have happened before the connection was made.
 \end{bclogo}
 
-\subsection{Lua support}
-
-To profile Lua code using Tracy, include the \texttt{tracy/TracyLua.hpp} header file in your Lua wrapper and execute \texttt{tracy::LuaRegister(lua\_State*)} function to add instrumentation support.
-
-In the Lua code, add \texttt{tracy.ZoneBegin()} and \texttt{tracy.ZoneEnd()} calls to mark execution zones. You need to call the \texttt{ZoneEnd} method, because there is no automatic destruction of variables in Lua and we don't know when the garbage collection will be performed. \emph{Double check if you have included all return paths!}
-
-Use \texttt{tracy.ZoneBeginN(name)} if you want to set a custom zone name\footnote{While technically this name doesn't need to be constant, like in the \texttt{ZoneScopedN} macro, it should be, as it is used to group the zones together. This grouping is then used to display various statistics in the profiler. You may still set the per-call name using the \texttt{tracy.ZoneName} method.}.
-
-Use \texttt{tracy.ZoneText(text)} to set zone text.
-
-Use \texttt{tracy.Message(text)} to send messages.
-
-Use \texttt{tracy.ZoneName(text)} to set zone name on a per-call basis.
-
-Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.
-
-Even if Tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the \texttt{tracy::LuaRemove(char* script)} function, which will replace instrumentation calls with white-space. This function does nothing if profiler is enabled.
-
 \subsection{GPU profiling}
 \label{gpuprofiling}
 
@@ -673,6 +655,65 @@ To have proper call stack information, the profiled application must be compiled
 \item On gcc or clang remember to specify the debugging information \texttt{-g} parameter during compilation and omit the strip symbols \texttt{-s} parameter. Link the executable with an additional option \texttt{-rdynamic} (or \texttt{-{}-export-dynamic}, if you are passing parameters directly to the linker).
 \end{itemize}
 \end{bclogo}
+
+\subsection{Lua support}
+
+To profile Lua code using Tracy, include the \texttt{tracy/TracyLua.hpp} header file in your Lua wrapper and execute \texttt{tracy::LuaRegister(lua\_State*)} function to add instrumentation support.
+
+In the Lua code, add \texttt{tracy.ZoneBegin()} and \texttt{tracy.ZoneEnd()} calls to mark execution zones. You need to call the \texttt{ZoneEnd} method, because there is no automatic destruction of variables in Lua and we don't know when the garbage collection will be performed. \emph{Double check if you have included all return paths!}
+
+Use \texttt{tracy.ZoneBeginN(name)} if you want to set a custom zone name\footnote{While technically this name doesn't need to be constant, like in the \texttt{ZoneScopedN} macro, it should be, as it is used to group the zones together. This grouping is then used to display various statistics in the profiler. You may still set the per-call name using the \texttt{tracy.ZoneName} method.}.
+
+Use \texttt{tracy.ZoneText(text)} to set zone text.
+
+Use \texttt{tracy.Message(text)} to send messages.
+
+Use \texttt{tracy.ZoneName(text)} to set zone name on a per-call basis.
+
+Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.
+
+Even if Tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the \texttt{tracy::LuaRemove(char* script)} function, which will replace instrumentation calls with white-space. This function does nothing if profiler is enabled.
+
+\subsection{C API}
+
+In order to profile code written in C programming language, you will need to include the \texttt{tracy/TracyC.h} header file, which exposes the C API.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Tracy is written in C++, so you will need to have a C++ compiler and link with C++ standard library, even if your program is strictly pure C.
+\end{bclogo}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveats}
+If you are using MSVC, you will need to disable the \emph{Edit And Continue} feature, for the C API to work\footnote{There's no such requirement for C++ API.}. To do so, open the project properties and go to \emph{C/C++\textrightarrow General\textrightarrow Debug Information Format} and make sure \emph{Program Database for Edit And Continue (/ZI)} is \emph{not} selected.
+\end{bclogo}
+
+\subsubsection{Zone markup}
+
+The following macros mark the beginning of a zone:
+
+\begin{itemize}
+\item \texttt{TracyCZone(ctx, active)}
+\item \texttt{TracyCZoneN(ctx, name, active)}
+\item \texttt{TracyCZoneC(ctx, color, active)}
+\item \texttt{TracyCZoneNC(ctx, name, color, active)}
+\end{itemize}
+
+Refer to sections~\ref{markingzones} and~\ref{multizone} for description of macro variants and parameters. The \texttt{ctx} parameter specifies the name of a data structure, which will hold internal zone data.
+
+Unlike C++, there's no automatic destruction mechanism in C, so you will need to manually mark where the zone ends. To do so use the \texttt{TracyCZoneEnd(ctx)} macro.
+
+\subsubsection{Zone validation}
+
+Since all instrumentation using the C API has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section~\ref{instrumentationfailures} for more information.
+
+The validation comes with a performance cost though, which you may not want to pay. If you are \emph{completely sure} that the instrumentation is not broken in any way, you may use the \texttt{TRACY\_NO\_VERIFY} macro, which will disable the validation code.
 
 \section{Capturing the data}
 \label{capturing}
@@ -783,6 +824,11 @@ The new file contains the same data as the old one, but in the updated internal 
 The update utility supports optional higher level of data compression, enabled by passing the \texttt{-{}-hc} parameter. It can reduce the trace size by \numrange{15}{20}\%, at a considerable time cost ($\sim17\times$~increase of compression time).
 
 Note that trace files (even the ones created in high compression mode) are optimized for fast decompression. You still will be able to squeeze the data using normal compression methods. For example, 7-zip can compress traces to about 25\% of their uncompressed\footnote{Compressed internally.} size.
+
+\subsection{Instrumentation failures}
+\label{instrumentationfailures}
+
+In some cases your program may be incorrectly instrumented, for example you could have unbalanced zone begin and end events, or you could report a memory free event without first reporting a memory allocation event. When Tracy detects such misbehavior it immediately terminates connection with the client and displays an error message.
 
 \section{Analyzing captured data}
 \label{analyzingdata}

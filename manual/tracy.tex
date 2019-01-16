@@ -52,7 +52,8 @@
          framexleftmargin=17pt,
          framexrightmargin=5pt,
          framexbottommargin=4pt,
-         showstringspaces=false
+         showstringspaces=false,
+         escapeinside={@}{@},
 }
 
 \usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
@@ -64,6 +65,9 @@
 \newcommand{\RMB}{\includegraphics[height=.8\baselineskip]{icons/rmb}}
 \newcommand{\MMB}{\includegraphics[height=.8\baselineskip]{icons/mmb}}
 \newcommand{\Scroll}{\includegraphics[height=.8\baselineskip]{icons/scroll}}
+
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+    \node[shape=circle,draw,inner sep=1.5pt] (char) {#1};}}
 
 \begin{document}
 
@@ -418,6 +422,29 @@ Using the \texttt{ZoneScoped} family of macros creates a stack variable named \t
 
 The \texttt{ZoneText} and \texttt{ZoneName} macros work only for the zones created using the \texttt{ZoneScoped} macros. For the \texttt{ZoneNamed} macros, you will need to invoke the methods \texttt{Text} or \texttt{Name} of the variable you have created.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Zone stack}
+The \texttt{ZoneScoped} macros are imposing creation and usage of an implicit zone stack. You must follow the rules of this stack also when you are using the named macros, which give you some more leeway in doing things. For example, you can only set the text for the zone which is on top of the stack, as you only could do with the \texttt{ZoneText} macro. It doesn't matter that you can call the \texttt{Text} method of a non-top zone which is accessible through a variable. Take a look at the following code:
+
+\begin{lstlisting}
+{
+	ZoneNamed(Zone1, true);
+	@\circled{a}@
+	{
+		ZoneNamed(Zone2, true);
+		@\circled{b}@
+	}
+	@\circled{c}@
+}
+\end{lstlisting}
+
+It is valid to set the \texttt{Zone1} text or name \emph{only} in places \circled{a} or \circled{c}. After \texttt{Zone2} is created at \circled{b} you can no longer perform operations on \texttt{Zone1}, until \texttt{Zone2} is destroyed.
+
+\end{bclogo}
+
 \subsubsection{Variable shadowing}
 
 The following code is fully compliant with the C++ standard:
@@ -555,7 +582,7 @@ noborder=true,
 couleur=black!5,
 logo=\bcbombe
 ]{Important}
-Each tracked memory free event must also have a corresponding memory allocation event. Tracy will not be able to report correct data if this assumption is broken. If you encounter this issue, you may want to check for:
+Each tracked memory free event must also have a corresponding memory allocation event. Tracy will terminate the profiling session if this assumption is broken (see section~\ref{instrumentationfailures}). If you encounter this issue, you may want to check for:
 
 \begin{itemize}
 \item Mismatched \texttt{malloc}/\texttt{new} or \texttt{free}/\texttt{delete}.
@@ -708,6 +735,8 @@ The following macros mark the beginning of a zone:
 Refer to sections~\ref{markingzones} and~\ref{multizone} for description of macro variants and parameters. The \texttt{ctx} parameter specifies the name of a data structure, which will hold internal zone data.
 
 Unlike C++, there's no automatic destruction mechanism in C, so you will need to manually mark where the zone ends. To do so use the \texttt{TracyCZoneEnd(ctx)} macro.
+
+Zone text and name may be set by using the \texttt{TracyCZoneText(ctx, txt, size)} and \texttt{TracyCZoneName(ctx, txt, size)} macros. Make sure you are following the zone stack rules, as described in section~\ref{multizone}!
 
 \subsubsection{Zone validation}
 

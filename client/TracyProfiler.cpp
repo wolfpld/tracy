@@ -1860,6 +1860,62 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
     }
 }
 
+void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
+{
+    if( !ctx.active ) return;
+    const auto thread = tracy::GetThreadHandle();
+    tracy::Magic magic;
+    auto& token = tracy::s_token.ptr;
+    auto ptr = (char*)tracy::tracy_malloc( size+1 );
+    memcpy( ptr, txt, size );
+    ptr[size] = '\0';
+    auto& tail = token->get_tail_index();
+#ifndef TRACY_NO_VERIFY
+    {
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        tracy::MemWrite( &item->zoneValidation.thread, thread );
+        tracy::MemWrite( &item->zoneValidation.id, ctx.id );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+#endif
+    {
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneText );
+        tracy::MemWrite( &item->zoneText.thread, thread );
+        tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+}
+
+void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
+{
+    if( !ctx.active ) return;
+    const auto thread = tracy::GetThreadHandle();
+    tracy::Magic magic;
+    auto& token = tracy::s_token.ptr;
+    auto ptr = (char*)tracy::tracy_malloc( size+1 );
+    memcpy( ptr, txt, size );
+    ptr[size] = '\0';
+    auto& tail = token->get_tail_index();
+#ifndef TRACY_NO_VERIFY
+    {
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        tracy::MemWrite( &item->zoneValidation.thread, thread );
+        tracy::MemWrite( &item->zoneValidation.id, ctx.id );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+#endif
+    {
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneName );
+        tracy::MemWrite( &item->zoneText.thread, thread );
+        tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+}
+
 #ifdef __cplusplus
 }
 #endif

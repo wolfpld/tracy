@@ -182,6 +182,8 @@ public:
         None,
         ZoneStack,
         ZoneEnd,
+        ZoneText,
+        ZoneName,
         MemFree,
 
         NUM_FAILURES
@@ -337,6 +339,8 @@ private:
 
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneEndFailure( uint64_t thread );
+    void ZoneTextFailure( uint64_t thread );
+    void ZoneNameFailure( uint64_t thread );
     void MemFreeFailure( uint64_t thread );
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );

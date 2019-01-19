@@ -8,10 +8,10 @@
 #else
 #  include <dirent.h>
 #  include <sys/types.h>
-#  include <sys/stat.h>
 #  include <unistd.h>
 #  include <errno.h>
 #endif
+#include <sys/stat.h>
 
 #include "TracyStorage.hpp"
 

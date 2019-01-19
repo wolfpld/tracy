@@ -1,4 +1,4 @@
-// ImGui Renderer for: OpenGL3 / OpenGL ES2 / OpenGL ES3 (modern OpenGL with shaders / programmatic pipeline)
+// dear imgui: Renderer for OpenGL3 / OpenGL ES2 / OpenGL ES3 (modern OpenGL with shaders / programmatic pipeline)
 // This needs to be used along with a Platform Binding (e.g. GLFW, SDL, Win32, custom..)
 // (Note: We are using GL3W as a helper library to access OpenGL functions since there is no standard header to access modern OpenGL functions easily. Alternatives are GLEW, Glad, etc..)
 
@@ -18,6 +18,8 @@
 // The 'glsl_version' initialization parameter should be NULL (default) or a "#version XXX" string.
 // On computer platform the GLSL version default to "#version 130". On OpenGL ES 3 platform it defaults to "#version 300 es"
 // Only override if your GL version doesn't handle this GLSL version. See GLSL version table at the top of imgui_impl_opengl3.cpp.
+
+#pragma once
 
 // Set default OpenGL loader to be gl3w
 #if !defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)     \

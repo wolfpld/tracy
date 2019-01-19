@@ -284,7 +284,7 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "Compiler: unknown\n" );
 #endif
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 #  ifndef __CYGWIN__
     InitWinSock();
 #  endif

@@ -42,10 +42,9 @@ struct CallstackEntry
 };
 
 CallstackEntry DecodeCallstackPtr( uint64_t ptr );
+void InitCallstack();
 
 #if TRACY_HAS_CALLSTACK == 1
-
-void InitCallstack();
 
 static tracy_force_inline void* Callstack( int depth )
 {
@@ -59,8 +58,6 @@ static tracy_force_inline void* Callstack( int depth )
 }
 
 #elif TRACY_HAS_CALLSTACK == 2
-
-static tracy_force_inline void InitCallstack() {}
 
 struct BacktraceState
 {
@@ -94,8 +91,6 @@ static tracy_force_inline void* Callstack( int depth )
 }
 
 #elif TRACY_HAS_CALLSTACK == 3
-
-static tracy_force_inline void InitCallstack() {}
 
 static tracy_force_inline void* Callstack( int depth )
 {

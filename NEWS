@@ -15,6 +15,8 @@ v0.5 (xxxx-xx-xx)
 - Added C API.
 - Profiling session may now gracefully terminate, due to incorrect
   instrumentation. A popup with termination reason will be displayed.
+- Call stack frames now have a proper source file and file line information
+  on Linux.
 
 v0.4.1 (2018-12-30)
 -------------------

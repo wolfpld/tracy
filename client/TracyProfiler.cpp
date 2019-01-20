@@ -7,6 +7,7 @@
 #  include <winsock2.h>
 #  include <windows.h>
 #  include <tlhelp32.h>
+#  include <inttypes.h>
 #else
 #  include <sys/time.h>
 #endif

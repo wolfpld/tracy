@@ -31,7 +31,7 @@ struct power_of_two_hash_policy;
 template<typename T>
 struct nohash
 {
-    size_t operator()( const T& v ) { return (size_t)v; }
+    size_t operator()( const T& v ) const { return (size_t)v; }
     typedef tracy::power_of_two_hash_policy hash_policy;
 };
 

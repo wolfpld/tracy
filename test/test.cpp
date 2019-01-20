@@ -145,11 +145,18 @@ void MessageTest()
     }
 }
 
+static int Fibonacci( int n );
+
+static inline int FibonacciInline( int n )
+{
+    return Fibonacci( n );
+}
+
 static int Fibonacci( int n )
 {
     ZoneScoped;
     if( n < 2 ) return n;
-    return Fibonacci( n-1 ) + Fibonacci( n-2 );
+    return FibonacciInline( n-1 ) + FibonacciInline( n-2 );
 }
 
 void DepthTest()

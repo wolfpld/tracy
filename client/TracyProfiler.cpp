@@ -1,6 +1,6 @@
 #ifdef TRACY_ENABLE
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #  ifndef NOMINMAX
 #    define NOMINMAX
 #  endif
@@ -57,7 +57,7 @@
 #  include <setjmp.h>
 #endif
 
-#if defined _MSC_VER || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__
 #  include <lmcons.h>
 extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 #  if _WIN32_WINNT >= _WIN32_WINNT_VISTA
@@ -193,7 +193,7 @@ static int64_t SetupHwTimer()
 static const char* GetProcessName()
 {
     const char* processName = "unknown";
-#if defined _MSC_VER
+#ifdef _WIN32
     static char buf[_MAX_PATH];
     GetModuleFileNameA( nullptr, buf, _MAX_PATH );
     const char* ptr = buf;
@@ -216,7 +216,7 @@ static const char* GetHostInfo()
 {
     static char buf[1024];
     auto ptr = buf;
-#if defined _MSC_VER || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__
 #  ifdef UNICODE
     t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "RtlGetVersion" );
 #  else
@@ -225,10 +225,12 @@ static const char* GetHostInfo()
 
     if( !RtlGetVersion )
     {
-#  ifndef __CYGWIN__
-        ptr += sprintf( ptr, "OS: Windows\n" );
-#  else
+#  ifdef __CYGWIN__
         ptr += sprintf( ptr, "OS: Windows (Cygwin)\n" );
+#  elif defined __MINGW32__
+        ptr += sprintf( ptr, "OS: Windows (MingW)\n" );
+#  else
+        ptr += sprintf( ptr, "OS: Windows\n" );
 #  endif
     }
     else
@@ -236,10 +238,12 @@ static const char* GetHostInfo()
         RTL_OSVERSIONINFOW ver = { sizeof( RTL_OSVERSIONINFOW ) };
         RtlGetVersion( &ver );
 
-#  ifndef __CYGWIN__
-        ptr += sprintf( ptr, "OS: Windows %i.%i.%i\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
-#  else
+#  ifdef __CYGWIN__
         ptr += sprintf( ptr, "OS: Windows %i.%i.%i (Cygwin)\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
+#  elif defined __MINGW32__
+        ptr += sprintf( ptr, "OS: Windows %i.%i.%i (MingW)\n", (int)ver.dwMajorVersion, (int)ver.dwMinorVersion, (int)ver.dwBuildNumber );
+#  else
+        ptr += sprintf( ptr, "OS: Windows %i.%i.%i\n", ver.dwMajorVersion, ver.dwMinorVersion, ver.dwBuildNumber );
 #  endif
     }
 #elif defined __linux__
@@ -280,7 +284,7 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "Compiler: unknown\n" );
 #endif
 
-#if defined _MSC_VER || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__
 #  ifndef __CYGWIN__
     InitWinSock();
 #  endif
@@ -332,7 +336,7 @@ static const char* GetHostInfo()
     auto modelPtr = cpuModel;
     for( uint32_t i=0x80000002; i<0x80000005; ++i )
     {
-#  if defined _MSC_VER || defined __CYGWIN__
+#  if defined _WIN32 || defined __CYGWIN__
         __cpuidex( (int*)regs, i, 0 );
 #  else
         int zero = 0;
@@ -346,7 +350,7 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "CPU: unknown\n" );
 #endif
 
-#if defined _MSC_VER || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof( statex );
     GlobalMemoryStatusEx( &statex );
@@ -366,13 +370,13 @@ static const char* GetHostInfo()
     return buf;
 }
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 static DWORD s_profilerThreadId = 0;
 static char s_crashText[1024];
 
 LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 {
-    const auto ec = pExp->ExceptionRecord->ExceptionCode;
+    const unsigned ec = pExp->ExceptionRecord->ExceptionCode;
     auto msgPtr = s_crashText;
     switch( ec )
     {
@@ -381,13 +385,13 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
         switch( pExp->ExceptionRecord->ExceptionInformation[0] )
         {
         case 0:
-            msgPtr += sprintf( msgPtr, "Read violation at address 0x%Iu.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += sprintf( msgPtr, "Read violation at address 0x%" PRIxMAX ".", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         case 1:
-            msgPtr += sprintf( msgPtr, "Write violation at address 0x%Iu.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += sprintf( msgPtr, "Write violation at address 0x%" PRIxMAX ".", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         case 8:
-            msgPtr += sprintf( msgPtr, "DEP violation at address 0x%Iu.", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += sprintf( msgPtr, "DEP violation at address 0x%" PRIxMAX ".", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         default:
             break;
@@ -752,7 +756,7 @@ thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 static Profiler init_order(105) s_profilerInstance;
 Profiler& s_profiler = s_profilerInstance;
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #  define DLL_EXPORT __declspec(dllexport)
 #else
 #  define DLL_EXPORT __attribute__((visibility("default")))
@@ -850,8 +854,14 @@ Profiler::Profiler()
     new(s_thread) Thread( LaunchWorker, this );
     SetThreadName( s_thread->Handle(), "Tracy Profiler" );
 
-#ifdef _MSC_VER
+#if defined PTW32_VERSION
+    s_profilerThreadId = pthread_getw32threadid_np( s_thread->Handle() );
+#elif defined __WINPTHREADS_VERSION
+    s_profilerThreadId = GetThreadId( (HANDLE)pthread_gethandle( s_thread->Handle() ) );
+#elif defined _MSC_VER
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
+#endif
+#if defined _WIN32
     AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 

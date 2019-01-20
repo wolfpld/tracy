@@ -1,10 +1,10 @@
-#ifdef _MSC_VER
+#ifdef _WIN32
 #  include <winsock2.h>
 #else
 #  include <sys/time.h>
 #endif
 
-#if defined _MSC_VER || defined __MINGW32__
+#ifdef _WIN32
 #  include <malloc.h>
 #else
 #  include <alloca.h>

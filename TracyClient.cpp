@@ -21,6 +21,17 @@
 #include "common/TracySocket.cpp"
 #include "client/tracy_rpmalloc.cpp"
 
+#ifdef __linux
+#  include "libbacktrace/alloc.cpp"
+#  include "libbacktrace/dwarf.cpp"
+#  include "libbacktrace/elf.cpp"
+#  include "libbacktrace/fileline.cpp"
+#  include "libbacktrace/mmapio.cpp"
+#  include "libbacktrace/posix.cpp"
+#  include "libbacktrace/sort.cpp"
+#  include "libbacktrace/state.cpp"
+#endif
+
 #ifdef _MSC_VER
 #  pragma comment(lib, "ws2_32.lib")
 #  pragma comment(lib, "dbghelp.lib")

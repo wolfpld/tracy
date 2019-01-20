@@ -87,7 +87,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
 #elif TRACY_HAS_CALLSTACK >= 2
 
-enum { MaxCbTrace = 1 };
+enum { MaxCbTrace = 16 };
 
 struct backtrace_state* cb_bts;
 int cb_num;
@@ -223,8 +223,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     cb_num = 0;
     backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
-    assert( cb_num == 1 );
-    return { cb_data, cb_num };
+    assert( cb_num > 0 );
+    return { cb_data, uint8_t( cb_num ) };
 }
 
 #endif

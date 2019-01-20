@@ -1487,22 +1487,35 @@ void Profiler::SendCallstackPayload( uint64_t _ptr )
 void Profiler::SendCallstackFrame( uint64_t ptr )
 {
 #ifdef TRACY_HAS_CALLSTACK
-    auto frame = DecodeCallstackPtr( ptr );
+    const auto frameData = DecodeCallstackPtr( ptr );
 
-    SendString( uint64_t( frame.name ), frame.name, QueueType::CustomStringData );
-    SendString( uint64_t( frame.file ), frame.file, QueueType::CustomStringData );
+    {
+        QueueItem item;
+        MemWrite( &item.hdr.type, QueueType::CallstackFrameSize );
+        MemWrite( &item.callstackFrameSize.ptr, ptr );
+        MemWrite( &item.callstackFrameSize.size, frameData.size );
 
-    QueueItem item;
-    MemWrite( &item.hdr.type, QueueType::CallstackFrame );
-    MemWrite( &item.callstackFrame.ptr, ptr );
-    MemWrite( &item.callstackFrame.name, (uint64_t)frame.name );
-    MemWrite( &item.callstackFrame.file, (uint64_t)frame.file );
-    MemWrite( &item.callstackFrame.line, frame.line );
+        AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrameSize] );
+    }
 
-    AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrame] );
+    for( uint8_t i=0; i<frameData.size; i++ )
+    {
+        const auto& frame = frameData.data[i];
 
-    tracy_free( (void*)frame.name );
-    tracy_free( (void*)frame.file );
+        SendString( uint64_t( frame.name ), frame.name, QueueType::CustomStringData );
+        SendString( uint64_t( frame.file ), frame.file, QueueType::CustomStringData );
+
+        QueueItem item;
+        MemWrite( &item.hdr.type, QueueType::CallstackFrame );
+        MemWrite( &item.callstackFrame.name, (uint64_t)frame.name );
+        MemWrite( &item.callstackFrame.file, (uint64_t)frame.file );
+        MemWrite( &item.callstackFrame.line, frame.line );
+
+        AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrame] );
+
+        tracy_free( (void*)frame.name );
+        tracy_free( (void*)frame.file );
+    }
 #endif
 }
 
@@ -1720,10 +1733,13 @@ void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore
     uintptr_t i;
     for( i=0; i<sz; i++ )
     {
-        auto frame = DecodeCallstackPtr( uint64_t( data[i] ) );
-        const bool found = strcmp( frame.name, skipBefore ) == 0;
-        tracy_free( (void*)frame.name );
-        tracy_free( (void*)frame.file );
+        auto frameData = DecodeCallstackPtr( uint64_t( data[i] ) );
+        const bool found = strcmp( frameData.data[0].name, skipBefore ) == 0;
+        for( uint8_t j=0; j<frameData.size; j++ )
+        {
+            tracy_free( (void*)frameData.data[j].name );
+            tracy_free( (void*)frameData.data[j].file );
+        }
         if( found )
         {
             i++;

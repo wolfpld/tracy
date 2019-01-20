@@ -171,6 +171,15 @@ struct CallstackFrame
 
 enum { CallstackFrameSize = sizeof( CallstackFrame ) };
 
+struct CallstackFrameData
+{
+    CallstackFrame* data;
+    uint8_t size;
+};
+
+enum { CallstackFrameDataSize = sizeof( CallstackFrameData ) };
+
+
 struct CallstackFrameTree
 {
     uint64_t frame;

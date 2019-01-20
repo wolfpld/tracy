@@ -37,9 +37,9 @@ void InitCallstack()
     SymSetOptions( SYMOPT_LOAD_LINES );
 }
 
-CallstackEntry DecodeCallstackPtr( uint64_t ptr )
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
-    CallstackEntry ret;
+    static CallstackEntry ret;
 
     const auto proc = GetCurrentProcess();
 
@@ -82,7 +82,7 @@ CallstackEntry DecodeCallstackPtr( uint64_t ptr )
 
     ret.file = file;
 
-    return ret;
+    return { &ret, 1 };
 }
 
 #elif TRACY_HAS_CALLSTACK >= 2
@@ -219,12 +219,12 @@ static void CallstackErrorCb( void* data, const char* msg, int errnum )
     cb_num = 1;
 }
 
-CallstackEntry DecodeCallstackPtr( uint64_t ptr )
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     cb_num = 0;
     backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
     assert( cb_num == 1 );
-    return cb_data[0];
+    return { cb_data, cb_num };
 }
 
 #endif

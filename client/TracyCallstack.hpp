@@ -41,7 +41,13 @@ struct CallstackEntry
     uint32_t line;
 };
 
-CallstackEntry DecodeCallstackPtr( uint64_t ptr );
+struct CallstackEntryData
+{
+    const CallstackEntry* data;
+    uint8_t size;
+};
+
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr );
 void InitCallstack();
 
 #if TRACY_HAS_CALLSTACK == 1

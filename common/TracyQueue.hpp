@@ -46,6 +46,7 @@ enum class QueueType : uint8_t
     MemFree,
     MemAllocCallstack,
     MemFreeCallstack,
+    CallstackFrameSize,
     CallstackFrame,
     StringData,
     ThreadName,
@@ -244,9 +245,14 @@ struct QueueCallstack
     uint64_t thread;
 };
 
-struct QueueCallstackFrame
+struct QueueCallstackFrameSize
 {
     uint64_t ptr;
+    uint8_t size;
+};
+
+struct QueueCallstackFrame
+{
     uint64_t name;
     uint64_t file;
     uint32_t line;
@@ -296,6 +302,7 @@ struct QueueItem
         QueueMemFree memFree;
         QueueCallstackMemory callstackMemory;
         QueueCallstack callstack;
+        QueueCallstackFrameSize callstackFrameSize;
         QueueCallstackFrame callstackFrame;
         QueueCrashReport crashReport;
     };
@@ -345,6 +352,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // callstack
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // callstack
+    sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data

@@ -130,7 +130,7 @@ private:
 
         flat_hash_map<VarArray<uint64_t>*, uint32_t, VarArrayHasherPOT<uint64_t>, VarArrayComparator<uint64_t>> callstackMap;
         Vector<VarArray<uint64_t>*> callstackPayload;
-        flat_hash_map<uint64_t, CallstackFrame*> callstackFrameMap;
+        flat_hash_map<uint64_t, CallstackFrameData*> callstackFrameMap;
 
         std::map<uint32_t, LockMap> lockMap;
 
@@ -229,7 +229,7 @@ public:
     const MemData& GetMemData() const { return m_data.memory; }
 
     const VarArray<uint64_t>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
-    const CallstackFrame* GetCallstackFrame( uint64_t ptr ) const;
+    const CallstackFrameData* GetCallstackFrame( uint64_t ptr ) const;
 
     const CrashEvent& GetCrashEvent() const { return m_data.m_crashEvent; }
 
@@ -331,6 +331,7 @@ private:
     tracy_force_inline void ProcessMemFreeCallstack( const QueueMemFree& ev );
     tracy_force_inline void ProcessCallstackMemory( const QueueCallstackMemory& ev );
     tracy_force_inline void ProcessCallstack( const QueueCallstack& ev );
+    tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
 
@@ -438,6 +439,10 @@ private:
     uint32_t m_pendingThreads;
     uint32_t m_pendingSourceLocation;
     uint32_t m_pendingCallstackFrames;
+    uint8_t m_pendingCallstackSubframes;
+
+    CallstackFrameData* m_callstackFrameStaging;
+    uint64_t m_callstackFrameStagingPtr;
 
     uint64_t m_lastMemActionCallstack;
     bool m_lastMemActionWasAlloc;

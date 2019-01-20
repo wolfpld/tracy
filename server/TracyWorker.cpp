@@ -14,6 +14,7 @@
 #include <chrono>
 #include <mutex>
 #include <string.h>
+#include <inttypes.h>
 
 #if ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
 #  if __has_include(<execution>)
@@ -217,6 +218,8 @@ Worker::Worker( const char* addr )
     , m_pendingThreads( 0 )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
+    , m_pendingCallstackSubframes( 0 )
+    , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
 {
@@ -1020,17 +1023,41 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.callstackPayload.push_back_no_space_check( arr );
     }
 
-    f.Read( sz );
-    m_data.callstackFrameMap.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
+    if( fileVer >= FileVersion( 0, 4, 3 ) )
     {
-        uint64_t ptr;
-        f.Read( ptr );
+        f.Read( sz );
+        m_data.callstackFrameMap.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t ptr;
+            f.Read( ptr );
 
-        auto frame = m_slab.Alloc<CallstackFrame>();
-        f.Read( frame, sizeof( CallstackFrame ) );
+            auto frameData = m_slab.Alloc<CallstackFrameData>();
+            f.Read( frameData->size );
 
-        m_data.callstackFrameMap.emplace( ptr, frame );
+            frameData->data = m_slab.Alloc<CallstackFrame>( frameData->size );
+            f.Read( frameData->data, sizeof( CallstackFrame ) * frameData->size );
+
+            m_data.callstackFrameMap.emplace( ptr, frameData );
+        }
+    }
+    else
+    {
+        f.Read( sz );
+        m_data.callstackFrameMap.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t ptr;
+            f.Read( ptr );
+
+            auto frameData = m_slab.Alloc<CallstackFrameData>();
+            frameData->size = 1;
+
+            frameData->data = m_slab.Alloc<CallstackFrame>();
+            f.Read( frameData->data, sizeof( CallstackFrame ) );
+
+            m_data.callstackFrameMap.emplace( ptr, frameData );
+        }
     }
 
 finishLoading:
@@ -1201,7 +1228,7 @@ std::pair <int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, i
     return std::make_pair( zbegin, zend );
 }
 
-const CallstackFrame* Worker::GetCallstackFrame( uint64_t ptr ) const
+const CallstackFrameData* Worker::GetCallstackFrame( uint64_t ptr ) const
 {
     auto it = m_data.callstackFrameMap.find( ptr );
     if( it == m_data.callstackFrameMap.end() )
@@ -1582,7 +1609,7 @@ void Worker::Exec()
         if( m_terminate )
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
-                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || !m_pendingCallstacks.empty() )
+                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || !m_pendingCallstacks.empty() || m_pendingCallstackSubframes != 0 )
             {
                 continue;
             }
@@ -2196,6 +2223,9 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::Callstack:
         ProcessCallstack( ev.callstack );
+        break;
+    case QueueType::CallstackFrameSize:
+        ProcessCallstackFrameSize( ev.callstackFrameSize );
         break;
     case QueueType::CallstackFrame:
         ProcessCallstackFrame( ev.callstackFrame );
@@ -2961,28 +2991,53 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
     m_pendingCallstacks.erase( it );
 }
 
-void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
+void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
 {
+    assert( !m_callstackFrameStaging );
+    assert( m_pendingCallstackSubframes == 0 );
     assert( m_pendingCallstackFrames > 0 );
     m_pendingCallstackFrames--;
+    m_pendingCallstackSubframes = ev.size;
 
+    // Frames may be duplicated due to recursion
     auto fmit = m_data.callstackFrameMap.find( ev.ptr );
+    if( fmit == m_data.callstackFrameMap.end() )
+    {
+        m_callstackFrameStaging = m_slab.Alloc<CallstackFrameData>();
+        m_callstackFrameStaging->size = ev.size;
+        m_callstackFrameStaging->data = m_slab.Alloc<CallstackFrame>( ev.size );
+
+        m_callstackFrameStagingPtr = ev.ptr;
+    }
+}
+
+void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
+{
+    assert( m_pendingCallstackSubframes > 0 );
+
     auto nit = m_pendingCustomStrings.find( ev.name );
     assert( nit != m_pendingCustomStrings.end() );
     auto fit = m_pendingCustomStrings.find( ev.file );
     assert( fit != m_pendingCustomStrings.end() );
 
-    // Frames may be duplicated due to recursion
-    if( fmit == m_data.callstackFrameMap.end() )
+    if( m_callstackFrameStaging )
     {
-        CheckString( ev.file );
+        const auto idx = m_callstackFrameStaging->size - m_pendingCallstackSubframes;
 
-        auto frame = m_slab.Alloc<CallstackFrame>();
-        frame->name = StringIdx( nit->second.idx );
-        frame->file = StringIdx( fit->second.idx );
-        frame->line = ev.line;
+        m_callstackFrameStaging->data[idx].name = StringIdx( nit->second.idx );
+        m_callstackFrameStaging->data[idx].file = StringIdx( fit->second.idx );
+        m_callstackFrameStaging->data[idx].line = ev.line;
 
-        m_data.callstackFrameMap.emplace( ev.ptr, frame );
+        if( --m_pendingCallstackSubframes == 0 )
+        {
+            assert( m_data.callstackFrameMap.find( m_callstackFrameStagingPtr ) == m_data.callstackFrameMap.end() );
+            m_data.callstackFrameMap.emplace( m_callstackFrameStagingPtr, m_callstackFrameStaging );
+            m_callstackFrameStaging = nullptr;
+        }
+    }
+    else
+    {
+        m_pendingCallstackSubframes--;
     }
 
     m_pendingCustomStrings.erase( nit );
@@ -3622,7 +3677,8 @@ void Worker::Write( FileWrite& f )
     for( auto& frame : m_data.callstackFrameMap )
     {
         f.Write( &frame.first, sizeof( uint64_t ) );
-        f.Write( frame.second, sizeof( CallstackFrame ) );
+        f.Write( &frame.second->size, sizeof( frame.second->size ) );
+        f.Write( frame.second->data, sizeof( CallstackFrame ) * frame.second->size );
     }
 }
 

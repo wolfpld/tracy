@@ -3616,7 +3616,8 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                 }
                 for( int8_t j=1; j<idx; j++ )
                 {
-                    auto frame = worker.GetCallstackFrame( prevCs[j] );
+                    auto frameData = worker.GetCallstackFrame( prevCs[j] );
+                    auto frame = frameData->data;
                     ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
@@ -3672,7 +3673,8 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
         const auto csz = cs.size();
         for( uint8_t i=1; i<csz; i++ )
         {
-            auto frame = worker.GetCallstackFrame( cs[i] );
+            auto frameData = worker.GetCallstackFrame( cs[i] );
+            auto frame = frameData->data;
             ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
             ImGui::SameLine();
             ImGui::Spacing();
@@ -5559,7 +5561,7 @@ void View::DrawFindZone()
                 else
                 {
                     auto& callstack = m_worker.GetCallstack( v->first );
-                    hdrString = m_worker.GetString( m_worker.GetCallstackFrame( *callstack.begin() )->name );
+                    hdrString = m_worker.GetString( m_worker.GetCallstackFrame( *callstack.begin() )->data[0].name );
                 }
                 break;
             default:
@@ -6463,14 +6465,11 @@ void View::DrawCallstackWindow()
     ImGui::NextColumn();
 
     int fidx = 0;
+    int bidx = 0;
     for( auto& entry : cs )
     {
-        ImGui::Separator();
-        ImGui::Text( "%i", fidx++ );
-        ImGui::NextColumn();
-
-        auto frame = m_worker.GetCallstackFrame( entry );
-        if( !frame )
+        auto frameData = m_worker.GetCallstackFrame( entry );
+        if( !frameData )
         {
             char buf[32];
             sprintf( buf, "%p", (void*)entry );
@@ -6484,64 +6483,81 @@ void View::DrawCallstackWindow()
         }
         else
         {
-            auto txt = m_worker.GetString( frame->name );
-            ImGui::TextWrapped( "%s", txt );
-            if( ImGui::IsItemClicked() )
+            for( uint8_t f=0; f<frameData->size; f++ )
             {
-                ImGui::SetClipboardText( txt );
-            }
-            ImGui::NextColumn();
-            ImGui::PushTextWrapPos( 0.0f );
-            float indentVal = 0.f;
-            if( m_callstackBuzzAnim.Match( fidx ) )
-            {
-                const auto time = m_callstackBuzzAnim.Time();
-                indentVal = sin( time * 60.f ) * 10.f * time;
-                ImGui::Indent( indentVal );
-            }
-            txt = m_worker.GetString( frame->file );
-            if( m_showCallstackFrameAddress )
-            {
-                ImGui::TextDisabled( "0x%" PRIx64, entry );
-                if( ImGui::IsItemClicked() )
+                const auto& frame = frameData->data[f];
+                bidx++;
+
+                ImGui::Separator();
+                if( f == 0 )
                 {
-                    char tmp[32];
-                    sprintf( tmp, "0x%" PRIx64, entry );
-                    ImGui::SetClipboardText( tmp );
-                }
-            }
-            else
-            {
-                if( frame->line == 0 )
-                {
-                    ImGui::TextDisabled( "%s", txt );
+                    ImGui::Text( "%i", fidx++ );
                 }
                 else
                 {
-                    ImGui::TextDisabled( "%s:%i", txt, frame->line );
+                    ImGui::TextDisabled( "inline" );
                 }
+                ImGui::NextColumn();
+
+                auto txt = m_worker.GetString( frame.name );
+                ImGui::TextWrapped( "%s", txt );
                 if( ImGui::IsItemClicked() )
                 {
                     ImGui::SetClipboardText( txt );
                 }
-            }
-            if( ImGui::IsItemClicked( 1 ) )
-            {
-                if( FileExists( txt ) )
+                ImGui::NextColumn();
+                ImGui::PushTextWrapPos( 0.0f );
+                float indentVal = 0.f;
+                if( m_callstackBuzzAnim.Match( bidx ) )
                 {
-                    SetTextEditorFile( txt, frame->line );
+                    const auto time = m_callstackBuzzAnim.Time();
+                    indentVal = sin( time * 60.f ) * 10.f * time;
+                    ImGui::Indent( indentVal );
+                }
+                txt = m_worker.GetString( frame.file );
+                if( m_showCallstackFrameAddress )
+                {
+                    ImGui::TextDisabled( "0x%" PRIx64, entry );
+                    if( ImGui::IsItemClicked() )
+                    {
+                        char tmp[32];
+                        sprintf( tmp, "0x%" PRIx64, entry );
+                        ImGui::SetClipboardText( tmp );
+                    }
                 }
                 else
                 {
-                    m_callstackBuzzAnim.Enable( fidx, 0.5f );
+                    if( frame.line == 0 )
+                    {
+                        ImGui::TextDisabled( "%s", txt );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "%s:%i", txt, frame.line );
+                    }
+                    if( ImGui::IsItemClicked() )
+                    {
+                        ImGui::SetClipboardText( txt );
+                    }
                 }
+                if( ImGui::IsItemClicked( 1 ) )
+                {
+                    if( FileExists( txt ) )
+                    {
+                        SetTextEditorFile( txt, frame.line );
+                    }
+                    else
+                    {
+                        m_callstackBuzzAnim.Enable( bidx, 0.5f );
+                    }
+                }
+                if( indentVal != 0.f )
+                {
+                    ImGui::Unindent( indentVal );
+                }
+                ImGui::PopTextWrapPos();
+                ImGui::NextColumn();
             }
-            if( indentVal != 0.f )
-            {
-                ImGui::Unindent( indentVal );
-            }
-            ImGui::PopTextWrapPos();
-            ImGui::NextColumn();
         }
     }
 
@@ -7910,7 +7926,7 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
     for( auto& v : tree )
     {
         idx++;
-        auto frame = m_worker.GetCallstackFrame( v.frame );
+        auto frame = m_worker.GetCallstackFrame( v.frame )->data;
         bool expand = false;
         if( v.children.empty() )
         {
@@ -8454,7 +8470,7 @@ void View::CallstackTooltip( uint32_t idx )
         }
         else
         {
-            ImGui::Text( "%s", m_worker.GetString( frame->name ) );
+            ImGui::Text( "%s", m_worker.GetString( frame->data->name ) );
         }
     }
     ImGui::EndTooltip();

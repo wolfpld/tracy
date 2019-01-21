@@ -6483,13 +6483,14 @@ void View::DrawCallstackWindow()
         }
         else
         {
-            for( uint8_t f=0; f<frameData->size; f++ )
+            const auto fsz = frameData->size;
+            for( uint8_t f=0; f<fsz; f++ )
             {
                 const auto& frame = frameData->data[f];
                 bidx++;
 
                 ImGui::Separator();
-                if( f == 0 )
+                if( f == fsz-1 )
                 {
                     ImGui::Text( "%i", fidx++ );
                 }

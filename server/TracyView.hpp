@@ -161,6 +161,7 @@ private:
 
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx );
     void SetViewToLastFrames();
+    int64_t GetZoneChildTime( const ZoneEvent& zone );
 
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
     flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;

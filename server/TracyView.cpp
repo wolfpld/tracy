@@ -8707,4 +8707,18 @@ void View::SetViewToLastFrames()
     }
 }
 
+int64_t View::GetZoneChildTime( const ZoneEvent& zone )
+{
+    int64_t time = 0;
+    if( zone.child >= 0 )
+    {
+        for( auto& v : m_worker.GetZoneChildren( zone.child ) )
+        {
+            const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
+            time += childSpan;
+        }
+    }
+    return time;
+}
+
 }

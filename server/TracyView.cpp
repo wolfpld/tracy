@@ -3847,15 +3847,15 @@ void View::DrawZoneInfoWindow()
     const auto selftime = ztime - GetZoneChildTime( ev );
     TextFocused( "Time from start of program:", TimeToString( ev.start - m_worker.GetTimeBegin() ) );
     TextFocused( "Execution time:", TimeToString( ztime ) );
-    TextFocused( "Self time:", TimeToString( selftime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
         TextFocused( "Without profiling:", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
         ImGui::EndTooltip();
     }
+    TextFocused( "Self time:", TimeToString( selftime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
 
     auto& mem = m_worker.GetMemData();
     if( mem.plot )

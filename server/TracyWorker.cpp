@@ -2350,6 +2350,8 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
                 timeSpan -= childSpan;
             }
         }
+        it->second.selfMin = std::min( it->second.selfMin, timeSpan );
+        it->second.selfMax = std::max( it->second.selfMax, timeSpan );
         it->second.selfTotal += timeSpan;
     }
 #endif
@@ -3287,6 +3289,8 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
                     timeSpan -= childSpan;
                 }
             }
+            it->second.selfMin = std::min( it->second.selfMin, timeSpan );
+            it->second.selfMax = std::max( it->second.selfMax, timeSpan );
             it->second.selfTotal += timeSpan;
         }
     }

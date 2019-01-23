@@ -86,6 +86,8 @@ private:
             : min( std::numeric_limits<int64_t>::max() )
             , max( std::numeric_limits<int64_t>::min() )
             , total( 0 )
+            , selfMin( std::numeric_limits<int64_t>::max() )
+            , selfMax( std::numeric_limits<int64_t>::min() )
             , selfTotal( 0 )
         {}
 
@@ -93,6 +95,8 @@ private:
         int64_t min;
         int64_t max;
         int64_t total;
+        int64_t selfMin;
+        int64_t selfMax;
         int64_t selfTotal;
     };
 

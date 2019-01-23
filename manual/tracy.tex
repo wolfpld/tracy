@@ -1266,12 +1266,13 @@ An example histogram is presented on figure~\ref{findzonehistogram}. Here you ca
 \label{findzonehistogram}
 \end{figure}
 
-The histogram is accompanied by various data statistics about displayed data, for example the \emph{total time} of the displayed samples, or the \emph{maximum number of counts} in histogram bins. There are three options that control how the data is presented:
+The histogram is accompanied by various data statistics about displayed data, for example the \emph{total time} of the displayed samples, or the \emph{maximum number of counts} in histogram bins. There are four options that control how the data is presented:
 
 \begin{itemize}
 \item \emph{Log values} -- Switches between linear and logarithmic scale on the y~axis of the graph, representing the call counts\footnote{Or time, if the \emph{cumulate time} option is enabled.}.
 \item \emph{Log time} -- Switches between linear and logarithmic scale on the x~axis of the graph, representing the time bins.
 \item \emph{Cumulate time} -- Changes how the histogram bin values are calculated. By default the vertical bars on the graph represent the \emph{call counts} of zones that fit in the given time bin. If this option is enabled, the bars represent the \emph{time spent} in the zones. For example, on graph presented on figure~\ref{findzonehistogram} the 10~\si{\micro\second} cluster is the dominating one, if we look at the time spent in zone, even if the 300~\si{\nano\second} cluster has greater number of call counts.
+\item \emph{Self time} -- Removes children time from the analysed zones, which results in displaying only the time spent in the zone itself (or in non-instrumented function calls).
 \end{itemize}
 
 You can drag the \LMB{} left mouse button over the histogram to select a time range that you want to closely look at. This will display the data in the histogram info section and it will also filter zones displayed in the \emph{found zones} section. This is quite useful, if you want to actually look at the outliers, i.e.\ where did they originate from, what the program was doing at the moment, etc\footnote{More often than not you will find out, that the application was just starting, or an access to a cold file was required and there's not much you can do to optimize that particular case.}. You can reset the selection range by pressing the \RMB{} right mouse button on the histogram.

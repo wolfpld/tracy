@@ -8730,4 +8730,18 @@ int64_t View::GetZoneChildTime( const ZoneEvent& zone )
     return time;
 }
 
+int64_t View::GetZoneChildTimeFast( const ZoneEvent& zone )
+{
+    int64_t time = 0;
+    if( zone.child >= 0 )
+    {
+        for( auto& v : m_worker.GetZoneChildren( zone.child ) )
+        {
+            assert( v->end >= 0 );
+            time += v->end - v->start;
+        }
+    }
+    return time;
+}
+
 }

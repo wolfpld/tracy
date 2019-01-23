@@ -309,6 +309,7 @@ private:
         bool logVal = false;
         bool logTime = true;
         bool cumulateTime = false;
+        bool selfTime = false;
         GroupBy groupBy = GroupBy::Thread;
         SortBy sortBy = SortBy::Count;
         Region highlight;
@@ -322,6 +323,7 @@ private:
         int64_t total, selTotal;
         bool drawAvgMed = true;
         bool drawSelAvgMed = true;
+        bool scheduleResetMatch = false;
 
         void Reset()
         {

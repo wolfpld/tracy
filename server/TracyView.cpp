@@ -4819,6 +4819,11 @@ void View::DrawFindZone()
                 m_findZone.ResetMatch();
             }
         }
+        if( m_findZone.scheduleResetMatch )
+        {
+            m_findZone.scheduleResetMatch = false;
+            m_findZone.ResetMatch();
+        }
 
         ImGui::Separator();
 
@@ -4906,6 +4911,11 @@ void View::DrawFindZone()
                     ImGui::BeginTooltip();
                     ImGui::Text( "Show total time taken by calls in each bin instead of call counts." );
                     ImGui::EndTooltip();
+                }
+                ImGui::SameLine();
+                if( ImGui::Checkbox( "Self time", &m_findZone.selfTime ) )
+                {
+                    m_findZone.scheduleResetMatch = true;
                 }
 
                 ImGui::TextDisabled( "Time range:" );

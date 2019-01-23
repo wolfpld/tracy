@@ -4833,9 +4833,9 @@ void View::DrawFindZone()
 
             auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
             auto& zones = zoneData.zones;
-            const auto tmin = zoneData.min;
-            const auto tmax = zoneData.max;
-            const auto timeTotal = zoneData.total;
+            const auto tmin = m_findZone.selfTime ? zoneData.selfMin : zoneData.min;
+            const auto tmax = m_findZone.selfTime ? zoneData.selfMax : zoneData.max;
+            const auto timeTotal = m_findZone.selfTime ? zoneData.selfTotal : zoneData.total;
 
             const auto zsz = zones.size();
             if( m_findZone.sortedNum != zsz )
@@ -4844,13 +4844,27 @@ void View::DrawFindZone()
                 vec.reserve( zsz );
                 int64_t total = m_findZone.total;
                 size_t i;
-                for( i=m_findZone.sortedNum; i<zsz; i++ )
+                if( m_findZone.selfTime )
                 {
-                    auto& zone = *zones[i].zone;
-                    if( zone.end < 0 ) break;
-                    const auto t = zone.end - zone.start;
-                    vec.emplace_back( t );
-                    total += t;
+                    for( i=m_findZone.sortedNum; i<zsz; i++ )
+                    {
+                        auto& zone = *zones[i].zone;
+                        if( zone.end < 0 ) break;
+                        const auto t = zone.end - zone.start - GetZoneChildTimeFast( zone );
+                        vec.emplace_back( t );
+                        total += t;
+                    }
+                }
+                else
+                {
+                    for( i=m_findZone.sortedNum; i<zsz; i++ )
+                    {
+                        auto& zone = *zones[i].zone;
+                        if( zone.end < 0 ) break;
+                        const auto t = zone.end - zone.start;
+                        vec.emplace_back( t );
+                        total += t;
+                    }
                 }
                 auto mid = vec.begin() + m_findZone.sortedNum;
                 pdqsort_branchless( mid, vec.end() );
@@ -4873,16 +4887,32 @@ void View::DrawFindZone()
                     vec.reserve( zsz );
                     auto act = m_findZone.selSortActive;
                     int64_t total = m_findZone.selTotal;
-                    size_t i;
-                    for( i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                    if( m_findZone.selfTime )
                     {
-                        auto& ev = zones[i];
-                        if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                        for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                         {
-                            const auto t = ev.zone->end - ev.zone->start;
-                            vec.emplace_back( t );
-                            act++;
-                            total += t;
+                            auto& ev = zones[i];
+                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                            {
+                                const auto t = ev.zone->end - ev.zone->start - GetZoneChildTimeFast( *ev.zone );
+                                vec.emplace_back( t );
+                                act++;
+                                total += t;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                        {
+                            auto& ev = zones[i];
+                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                            {
+                                const auto t = ev.zone->end - ev.zone->start;
+                                vec.emplace_back( t );
+                                act++;
+                                total += t;
+                            }
                         }
                     }
                     auto mid = vec.begin() + m_findZone.selSortActive;
@@ -5492,12 +5522,13 @@ void View::DrawFindZone()
             if( ev.zone->end < 0 ) break;
 
             const auto end = m_worker.GetZoneEndDirect( *ev.zone );
-            const auto timespan = end - ev.zone->start;
+            auto timespan = end - ev.zone->start;
             if( timespan == 0 )
             {
                 processed++;
                 continue;
             }
+            if( m_findZone.selfTime ) timespan -= GetZoneChildTimeFast( *ev.zone );
 
             if( highlightActive )
             {
@@ -5622,7 +5653,8 @@ void View::DrawFindZone()
                 for( auto& ev : v->second.zones )
                 {
                     const auto end = m_worker.GetZoneEndDirect( *ev );
-                    const auto timespan = end - ev->start;
+                    auto timespan = end - ev->start;
+                    if( m_findZone.selfTime ) timespan -= GetZoneChildTimeFast( *ev );
 
                     ImGui::PushID( ev );
                     if( ImGui::Selectable( TimeToString( ev->start - m_worker.GetTimeBegin() ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )

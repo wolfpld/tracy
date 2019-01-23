@@ -4947,6 +4947,8 @@ void View::DrawFindZone()
                 {
                     m_findZone.scheduleResetMatch = true;
                 }
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%%)", 100.f * zoneData.selfTotal / zoneData.total );
 
                 ImGui::TextDisabled( "Time range:" );
                 ImGui::SameLine();

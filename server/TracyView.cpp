@@ -1823,6 +1823,8 @@ void View::DrawZones()
 
                 ImGui::BeginTooltip();
                 ImGui::Text( "%s", m_worker.GetThreadString( v->id ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(0x%" PRIx64 ")", v->id );
                 if( crash.thread == v->id )
                 {
                     ImGui::SameLine();

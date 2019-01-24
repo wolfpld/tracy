@@ -876,7 +876,27 @@ bool View::DrawConnection()
         }
     }
 
-    ImGui::SameLine( 0, ty * 4 );
+    ImGui::SameLine( 0, 2 * ty );
+#ifdef TRACY_EXTENDED_FONT
+    const char* stopStr = ICON_FA_PLUG " Stop";
+#else
+    const char* stopStr = "Stop";
+#endif
+    if( m_worker.IsConnected() )
+    {
+        if( ImGui::Button( stopStr ) )
+        {
+            m_worker.Disconnect();
+        }
+    }
+    else
+    {
+        ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
+        ImGui::ButtonEx( stopStr, ImVec2( 0, 0 ), ImGuiButtonFlags_Disabled );
+        ImGui::PopStyleColor( 1 );
+    }
+
+    ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_EXCLAMATION_TRIANGLE " Discard" ) )
 #else

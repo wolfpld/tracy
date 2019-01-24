@@ -16,6 +16,7 @@
 #include "../../server/TracyWorker.hpp"
 #include "getopt.h"
 
+#ifndef _MSC_VER
 struct sigaction oldsigint;
 bool disconnect = false;
 
@@ -23,6 +24,7 @@ void SigInt( int )
 {
     disconnect = true;
 }
+#endif
 
 static const char* TimeToString( int64_t ns )
 {
@@ -165,20 +167,24 @@ int main( int argc, char** argv )
     while( !worker.HasData() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     printf( "\nQueue delay: %s\nTimer resolution: %s\n", TimeToString( worker.GetDelay() ), TimeToString( worker.GetResolution() ) );
 
+#ifndef _MSC_VER
     struct sigaction sigint;
     memset( &sigint, 0, sizeof( sigint ) );
     sigint.sa_handler = SigInt;
     sigaction( SIGINT, &sigint, &oldsigint );
+#endif
 
     auto& lock = worker.GetMbpsDataLock();
 
     while( worker.IsConnected() )
     {
+#ifndef _MSC_VER
         if( disconnect )
         {
             worker.Disconnect();
             disconnect = false;
         }
+#endif
 
         lock.lock();
         const auto mbps = worker.GetMbpsData().back();

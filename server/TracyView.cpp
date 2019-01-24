@@ -5043,7 +5043,7 @@ void View::DrawFindZone()
                             while( zit != sorted.end() && *zit == 0 ) zit++;
                             for( int64_t i=0; i<numBins; i++ )
                             {
-                                const auto nextBinVal = ( i+1 ) * zmax / numBins;
+                                const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
                                 auto nit = std::lower_bound( zit, sorted.end(), nextBinVal );
                                 const auto distance = std::distance( zit, nit );
                                 const auto timeSum = std::accumulate( zit, nit, int64_t( 0 ) );

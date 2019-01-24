@@ -20,6 +20,7 @@ v0.5 (xxxx-xx-xx)
 - Single call stack frame may now have multiple entries, representing
   inlined function calls.
 - Self time of zones may be now displayed in the find zone menu.
+- Added ability to disconnect from a client (with some caveats).
 
 v0.4.1 (2018-12-30)
 -------------------

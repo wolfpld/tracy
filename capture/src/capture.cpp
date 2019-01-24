@@ -5,6 +5,7 @@
 #include <chrono>
 #include <inttypes.h>
 #include <mutex>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +15,14 @@
 #include "../../server/TracyMemory.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "getopt.h"
+
+struct sigaction oldsigint;
+bool disconnect = false;
+
+void SigInt( int )
+{
+    disconnect = true;
+}
 
 static const char* TimeToString( int64_t ns )
 {
@@ -156,10 +165,21 @@ int main( int argc, char** argv )
     while( !worker.HasData() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     printf( "\nQueue delay: %s\nTimer resolution: %s\n", TimeToString( worker.GetDelay() ), TimeToString( worker.GetResolution() ) );
 
+    struct sigaction sigint;
+    memset( &sigint, 0, sizeof( sigint ) );
+    sigint.sa_handler = SigInt;
+    sigaction( SIGINT, &sigint, &oldsigint );
+
     auto& lock = worker.GetMbpsDataLock();
 
     while( worker.IsConnected() )
     {
+        if( disconnect )
+        {
+            worker.Disconnect();
+            disconnect = false;
+        }
+
         lock.lock();
         const auto mbps = worker.GetMbpsData().back();
         const auto compRatio = worker.GetCompRatio();

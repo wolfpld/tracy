@@ -283,6 +283,7 @@ public:
     bool IsConnected() const { return m_connected.load( std::memory_order_relaxed ); }
     bool IsDataStatic() const { return !m_thread.joinable(); }
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
+    void Disconnect() { Shutdown(); }   // TODO: Needs proper implementation.
 
     void Write( FileWrite& f );
     int GetTraceVersion() const { return m_traceVersion; }

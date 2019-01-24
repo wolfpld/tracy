@@ -579,9 +579,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
                         lev->time = ReadTimeOffset( f, refTime );
-                        f.Read( lev->srcloc );
-                        f.Read( lev->thread );
-                        f.Read( lev->type );
+                        f.Read( &lev->srcloc, sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = lev;
                     }
                 }
@@ -591,9 +589,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
                         lev->time = ReadTimeOffset( f, refTime );
-                        f.Read( lev->srcloc );
-                        f.Read( lev->thread );
-                        f.Read( lev->type );
+                        f.Read( &lev->srcloc, sizeof( LockEventShared::srcloc ) + sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = lev;
                     }
                 }

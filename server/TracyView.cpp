@@ -5043,7 +5043,7 @@ void View::DrawFindZone()
                             while( zit != sorted.end() && *zit == 0 ) zit++;
                             for( int64_t i=0; i<numBins; i++ )
                             {
-                                const auto nextBinVal = ( i+1 ) * zmax / numBins;
+                                const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
                                 auto nit = std::lower_bound( zit, sorted.end(), nextBinVal );
                                 const auto distance = std::distance( zit, nit );
                                 const auto timeSum = std::accumulate( zit, nit, int64_t( 0 ) );
@@ -5067,7 +5067,7 @@ void View::DrawFindZone()
                                 while( zit != m_findZone.selSort.end() && *zit == 0 ) zit++;
                                 for( int64_t i=0; i<numBins; i++ )
                                 {
-                                    const auto nextBinVal = ( i+1 ) * zmax / numBins;
+                                    const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
                                     auto nit = std::lower_bound( zit, m_findZone.selSort.end(), nextBinVal );
                                     if( cumulateTime )
                                     {
@@ -6028,7 +6028,7 @@ void View::DrawCompare()
                         const auto zmax = tmax - tmin;
                         for( int64_t i=0; i<numBins; i++ )
                         {
-                            const auto nextBinVal = ( i+1 ) * zmax / numBins;
+                            const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
                             auto nit0 = std::lower_bound( zit0, sorted[0].end(), nextBinVal );
                             auto nit1 = std::lower_bound( zit1, sorted[1].end(), nextBinVal );
                             bins[i].v0 += adj0 * std::distance( zit0, nit0 );
@@ -6895,7 +6895,7 @@ void View::DrawInfo()
                             while( fit != frames.end() && *fit == 0 ) fit++;
                             for( int64_t i=0; i<numBins; i++ )
                             {
-                                const auto nextBinVal = ( i+1 ) * zmax / numBins;
+                                const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
                                 auto nit = std::lower_bound( fit, frames.end(), nextBinVal );
                                 bins[i] = std::distance( fit, nit );
                                 fit = nit;

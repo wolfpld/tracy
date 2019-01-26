@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <stdio.h>
 #include "TracyCallstack.hpp"
 
@@ -24,6 +25,11 @@ namespace tracy
 
 #if TRACY_HAS_CALLSTACK == 1
 
+enum { MaxCbTrace = 16 };
+
+int cb_num;
+CallstackEntry cb_data[MaxCbTrace];
+
 extern "C" { t_RtlWalkFrameChain RtlWalkFrameChain = 0; }
 
 void InitCallstack()
@@ -39,9 +45,22 @@ void InitCallstack()
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
-    static CallstackEntry ret;
-
     const auto proc = GetCurrentProcess();
+    const auto inlineNum = std::min<DWORD>( MaxCbTrace - 1, SymAddrIncludeInlineTrace( proc, ptr ) );
+    DWORD ctx, idx;
+    int write;
+    BOOL doInline = FALSE;
+    if( inlineNum != 0 ) doInline = SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
+    if( doInline )
+    {
+        write = inlineNum;
+        cb_num = 1 + inlineNum;
+    }
+    else
+    {
+        write = 0;
+        cb_num = 1;
+    }
 
     char buf[sizeof( SYMBOL_INFO ) + 1024];
     auto si = (SYMBOL_INFO*)buf;
@@ -58,7 +77,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     memcpy( name, si->Name, si->NameLen );
     name[si->NameLen] = '\0';
 
-    ret.name = name;
+    cb_data[write].name = name;
 
     const char* filename;
     IMAGEHLP_LINE64 line;
@@ -67,12 +86,12 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
     {
         filename = "[unknown]";
-        ret.line = 0;
+        cb_data[write].line = 0;
     }
     else
     {
         filename = line.FileName;
-        ret.line = line.LineNumber;
+        cb_data[write].line = line.LineNumber;
     }
 
     const auto fsz = strlen( filename );
@@ -80,9 +99,47 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     memcpy( file, filename, fsz );
     file[fsz] = '\0';
 
-    ret.file = file;
+    cb_data[write].file = file;
 
-    return { &ret, 1 };
+    if( doInline )
+    {
+        for( DWORD i=0; i<inlineNum; i++ )
+        {
+            auto& cb = cb_data[i];
+
+            if( SymFromInlineContext( proc, ptr, ctx, nullptr, si ) == 0 )
+            {
+                memcpy( si->Name, "[unknown]", 10 );
+                si->NameLen = 9;
+            }
+
+            auto name = (char*)tracy_malloc( si->NameLen + 1 );
+            memcpy( name, si->Name, si->NameLen );
+            name[si->NameLen] = '\0';
+            cb.name = name;
+
+            if( SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) == 0 )
+            {
+                filename = "[unknown]";
+                cb.line = 0;
+            }
+            else
+            {
+                filename = line.FileName;
+                cb.line = line.LineNumber;
+            }
+
+            const auto fsz = strlen( filename );
+            auto file = (char*)tracy_malloc( fsz + 1 );
+            memcpy( file, filename, fsz );
+            file[fsz] = '\0';
+            cb.file = file;
+
+            ctx++;
+        }
+    }
+
+    return { cb_data, uint8_t( cb_num ) };
 }
 
 #elif TRACY_HAS_CALLSTACK >= 2

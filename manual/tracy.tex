@@ -1468,9 +1468,34 @@ The zone information window has the following controls available:
 
 This window shows the frames contained in the selected call stack. Each frame is described by the function name and source file location. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
-On some systems it is possible to retrieve multiple function calls for a single stack frame, which happens in case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number.
+A single stack frame may have multiple function call places associated with it. This happens in case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number.
 
 Sometimes it may be more useful to have just the function address, instead of the source file location\footnote{It can pinpoint the exact assembly instruction which caused the crash.}. This can be achieved by selecting the \emph{\faAt{}~Show frame addresses} option.
+
+\subsubsection{Reading call stacks}
+
+You need to take special care when reading call stacks. Contrary to their name, call stacks do not show \emph{function call stacks}, but rather \emph{function return stacks}. This might be a bit confusing at first, but this is how programs do work. Consider the following source code:
+
+\begin{lstlisting}
+int main()
+{
+    auto app = std::make_unique<Application>();
+    app->Run();
+    app.reset();
+}
+\end{lstlisting}
+
+Let's say you are looking at the call stack of some function called within \texttt{Application::Run}. This is the result you might get:
+
+\begin{lstlisting}
+0. @\ldots@
+1. @\ldots@
+2. Application::Run
+3. std::unique_ptr<Application>::reset
+4. main
+\end{lstlisting}
+
+At the first glance it may look like \texttt{unique\_ptr::reset} was the \emph{call site} of the \texttt{Application::Run}, which would make no sense, but this is not the case here. When you remember these are the \emph{function return points}, it becomes much more clear what is happening. As an optimization, \texttt{Application::Run} is returning directly into \texttt{unique\_ptr::reset}, skipping the return to \texttt{main} and an unnecessary \texttt{reset} function call.
 
 \subsection{Source file view window}
 \label{sourceview}

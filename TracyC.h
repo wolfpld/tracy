@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "client/TracyCallstack.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

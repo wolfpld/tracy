@@ -1,24 +1,18 @@
 #ifndef __TRACYCALLSTACK_HPP__
 #define __TRACYCALLSTACK_HPP__
 
-#if defined _WIN32 || defined __CYGWIN__
-#  define TRACY_HAS_CALLSTACK 1
+#include "TracyCallstack.h"
+
+#if TRACY_HAS_CALLSTACK == 1
 extern "C"
 {
     typedef unsigned long (__stdcall *t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
     extern t_RtlWalkFrameChain RtlWalkFrameChain;
 }
-#elif defined __ANDROID__
-#  define TRACY_HAS_CALLSTACK 2
+#elif TRACY_HAS_CALLSTACK == 2
 #  include <unwind.h>
-#elif defined __linux
-#  if defined _GNU_SOURCE && defined __GLIBC__
-#    define TRACY_HAS_CALLSTACK 3
-#    include <execinfo.h>
-#  else
-#    define TRACY_HAS_CALLSTACK 2
-#    include <unwind.h>
-#  endif
+#elif TRACY_HAS_CALLSTACK == 3
+#  include <execinfo.h>
 #endif
 
 

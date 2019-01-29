@@ -1544,7 +1544,6 @@ bool View::DrawZoneFrames( const FrameData& frames )
             const auto end = ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns;
             DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), begin, std::max( begin + MinFrameSize, end ), ty / 4, inactiveColor );
         }
-        prev = -1;
     }
 
     if( hover )
@@ -1574,8 +1573,7 @@ void View::DrawZones()
     if( m_zvStart == m_zvEnd ) return;
     assert( m_zvStart < m_zvEnd );
 
-    ImGuiWindow* window = ImGui::GetCurrentWindow();
-    if( window->SkipItems ) return;
+    if( ImGui::GetCurrentWindow()->SkipItems ) return;
 
     m_gpuThread = 0;
     m_gpuStart = 0;
@@ -1596,7 +1594,6 @@ void View::DrawZones()
 
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
-    window = ImGui::GetCurrentWindow();
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto h = std::max<float>( m_zvHeight, ImGui::GetContentRegionAvail().y - 4 );    // magic border value
@@ -3335,7 +3332,6 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         min = tmp[i].val < min ? tmp[i].val : min;
                         max = tmp[i].val > max ? tmp[i].val : max;
                     }
-                    tmp += sz;
                 }
 
                 const auto revrange = 1.0 / ( max - min );

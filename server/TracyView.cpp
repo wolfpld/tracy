@@ -3213,7 +3213,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
         assert( !v->data.empty() );
         bool& showFull = ShowFull( v );
 
-        float txtx;
+        float txtx = 0;
         auto yPos = wpos.y + offset;
         if( yPos + ty >= yMin && yPos <= yMax )
         {

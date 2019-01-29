@@ -5014,7 +5014,7 @@ void View::DrawFindZone()
                             const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
                             {
                                 auto zit = sorted.begin();
-                                while( zit != sorted.end() && *zit == 0 ) zit++;
+                                while( zit != sorted.end() && *zit == 0 ) ++zit;
                                 for( int64_t i=0; i<numBins; i++ )
                                 {
                                     const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
@@ -5039,7 +5039,7 @@ void View::DrawFindZone()
                             if( m_findZone.selGroup != m_findZone.Unselected )
                             {
                                 auto zit = m_findZone.selSort.begin();
-                                while( zit != m_findZone.selSort.end() && *zit == 0 ) zit++;
+                                while( zit != m_findZone.selSort.end() && *zit == 0 ) ++zit;
                                 for( int64_t i=0; i<numBins; i++ )
                                 {
                                     const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
@@ -5060,7 +5060,7 @@ void View::DrawFindZone()
                         {
                             const auto zmax = tmax - tmin;
                             auto zit = sorted.begin();
-                            while( zit != sorted.end() && *zit == 0 ) zit++;
+                            while( zit != sorted.end() && *zit == 0 ) ++zit;
                             for( int64_t i=0; i<numBins; i++ )
                             {
                                 const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
@@ -5084,7 +5084,7 @@ void View::DrawFindZone()
                             if( m_findZone.selGroup != m_findZone.Unselected )
                             {
                                 auto zit = m_findZone.selSort.begin();
-                                while( zit != m_findZone.selSort.end() && *zit == 0 ) zit++;
+                                while( zit != m_findZone.selSort.end() && *zit == 0 ) ++zit;
                                 for( int64_t i=0; i<numBins; i++ )
                                 {
                                     const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
@@ -6898,7 +6898,7 @@ void View::DrawInfo()
                             const auto tMinLog = log10( tmin );
                             const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
                             auto fit = frames.begin();
-                            while( fit != frames.end() && *fit == 0 ) fit++;
+                            while( fit != frames.end() && *fit == 0 ) ++fit;
                             for( int64_t i=0; i<numBins; i++ )
                             {
                                 const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
@@ -6912,7 +6912,7 @@ void View::DrawInfo()
                         {
                             const auto zmax = tmax - tmin;
                             auto fit = frames.begin();
-                            while( fit != frames.end() && *fit == 0 ) fit++;
+                            while( fit != frames.end() && *fit == 0 ) ++fit;
                             for( int64_t i=0; i<numBins; i++ )
                             {
                                 const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;

@@ -56,9 +56,9 @@ void InitWinSock()
 #endif
 
 Socket::Socket()
-    : m_sock( -1 )
-    , m_buf( (char*)tracy_malloc( BufSize ) )
+    : m_buf( (char*)tracy_malloc( BufSize ) )
     , m_bufPtr( nullptr )
+    , m_sock( -1 )
     , m_bufLeft( 0 )
 {
 #ifdef _WIN32
@@ -67,9 +67,9 @@ Socket::Socket()
 }
 
 Socket::Socket( int sock )
-    : m_sock( sock )
-    , m_buf( (char*)tracy_malloc( BufSize ) )
+    : m_buf( (char*)tracy_malloc( BufSize ) )
     , m_bufPtr( nullptr )
+    , m_sock( sock )
     , m_bufLeft( 0 )
 {
 }

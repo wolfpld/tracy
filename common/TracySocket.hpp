@@ -39,10 +39,9 @@ private:
     int RecvBuffered( void* buf, int len, const timeval* tv );
     int Recv( void* buf, int len, const timeval* tv );
 
-    int m_sock;
-
     char* m_buf;
     char* m_bufPtr;
+    int m_sock;
     int m_bufLeft;
 };
 

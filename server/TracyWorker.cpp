@@ -2336,9 +2336,10 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     {
         auto it = m_data.sourceLocationZones.find( zone->srcloc );
         assert( it != m_data.sourceLocationZones.end() );
-        it->second.min = std::min( it->second.min, timeSpan );
-        it->second.max = std::max( it->second.max, timeSpan );
-        it->second.total += timeSpan;
+        auto& slz = it->second;
+        slz.min = std::min( slz.min, timeSpan );
+        slz.max = std::max( slz.max, timeSpan );
+        slz.total += timeSpan;
         if( zone->child >= 0 )
         {
             for( auto& v : GetZoneChildren( zone->child ) )
@@ -2347,9 +2348,9 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
                 timeSpan -= childSpan;
             }
         }
-        it->second.selfMin = std::min( it->second.selfMin, timeSpan );
-        it->second.selfMax = std::max( it->second.selfMax, timeSpan );
-        it->second.selfTotal += timeSpan;
+        slz.selfMin = std::min( slz.selfMin, timeSpan );
+        slz.selfMax = std::max( slz.selfMax, timeSpan );
+        slz.selfTotal += timeSpan;
     }
 #endif
 }
@@ -3266,7 +3267,8 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
 #ifndef TRACY_NO_STATISTICS
     auto it = m_data.sourceLocationZones.find( zone->srcloc );
     assert( it != m_data.sourceLocationZones.end() );
-    auto& ztd = it->second.zones.push_next();
+    auto& slz = it->second;
+    auto& ztd = slz.zones.push_next();
     ztd.zone = zone;
     ztd.thread = thread;
 
@@ -3275,9 +3277,9 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
         auto timeSpan = zone->end - zone->start;
         if( timeSpan > 0 )
         {
-            it->second.min = std::min( it->second.min, timeSpan );
-            it->second.max = std::max( it->second.max, timeSpan );
-            it->second.total += timeSpan;
+            slz.min = std::min( slz.min, timeSpan );
+            slz.max = std::max( slz.max, timeSpan );
+            slz.total += timeSpan;
             if( zone->child >= 0 )
             {
                 for( auto& v : GetZoneChildren( zone->child ) )
@@ -3286,9 +3288,9 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
                     timeSpan -= childSpan;
                 }
             }
-            it->second.selfMin = std::min( it->second.selfMin, timeSpan );
-            it->second.selfMax = std::max( it->second.selfMax, timeSpan );
-            it->second.selfTotal += timeSpan;
+            slz.selfMin = std::min( slz.selfMin, timeSpan );
+            slz.selfMax = std::max( slz.selfMax, timeSpan );
+            slz.selfTotal += timeSpan;
         }
     }
 #else

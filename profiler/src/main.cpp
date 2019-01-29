@@ -307,14 +307,14 @@ int main( int argc, char** argv )
             if( connectClicked && *addr && !loadThread.joinable() )
             {
                 std::string addrStr( addr );
-                auto it = connHistMap.find( addr );
+                auto it = connHistMap.find( addrStr );
                 if( it != connHistMap.end() )
                 {
                     it->second++;
                 }
                 else
                 {
-                    connHistMap.emplace( std::move( addr ), 1 );
+                    connHistMap.emplace( std::move( addrStr ), 1 );
                 }
                 connHistVec = RebuildConnectionHistory( connHistMap );
 

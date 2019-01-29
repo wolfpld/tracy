@@ -180,7 +180,7 @@ static const char* RealToString( double val, bool separator )
     if( *ptr == '\0' ) return buf;
     while( *ptr != '\0' ) ptr++;
     ptr--;
-    while( *ptr == '0' && *ptr != ',' && *ptr != '.' ) ptr--;
+    while( *ptr == '0' ) ptr--;
     if( *ptr != '.' && *ptr != ',' ) ptr++;
     *ptr = '\0';
     return buf;

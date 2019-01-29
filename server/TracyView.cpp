@@ -3240,7 +3240,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     showFull = !showFull;
                 }
 
-                const auto tr = v->data.back().time - v->data.front().time;
+                const auto lastTime = v->data.back().time;
+                const auto tr = lastTime - v->data.front().time;
 
                 ImGui::BeginTooltip();
                 ImGui::Text( "Plot \"%s\"", txt );
@@ -3252,8 +3253,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 TextFocused( "Time range:", TimeToString( tr ) );
                 TextFocused( "Data/second:", RealToString( double( v->data.size() ) / tr * 1000000000ll, true ) );
 
-                const auto it = std::lower_bound( v->data.begin(), v->data.end(), v->data.back().time - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-                const auto tr10 = v->data.back().time - it->time;
+                const auto it = std::lower_bound( v->data.begin(), v->data.end(), lastTime - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+                const auto tr10 = lastTime - it->time;
                 if( tr10 != 0 )
                 {
                     TextFocused( "D/s (10s):", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ll, true ) );

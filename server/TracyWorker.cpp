@@ -1168,9 +1168,10 @@ int64_t Worker::GetFrameTime( const FrameData& fd, size_t idx ) const
     }
     else
     {
-        if( fd.frames[idx].end >= 0 )
+        const auto& frame = fd.frames[idx];
+        if( frame.end >= 0 )
         {
-            return fd.frames[idx].end - fd.frames[idx].start;
+            return frame.end - frame.start;
         }
         else
         {
@@ -3124,7 +3125,8 @@ void Worker::ReconstructMemAllocPlot()
     if( aptr != aend && fptr != fend )
     {
         auto atime = aptr->timeAlloc;
-        auto ftime = mem.data[*fptr].timeFree;
+        const auto& memData = mem.data[*fptr];
+        auto ftime = memData.timeFree;
 
         for(;;)
         {
@@ -3142,7 +3144,7 @@ void Worker::ReconstructMemAllocPlot()
             }
             else
             {
-                usage -= int64_t( mem.data[*fptr].size );
+                usage -= int64_t( memData.size );
                 assert( usage >= 0 );
                 if( max < usage ) max = usage;
                 ptr->time = ftime;
@@ -3150,7 +3152,7 @@ void Worker::ReconstructMemAllocPlot()
                 ptr++;
                 fptr++;
                 if( fptr == fend ) break;
-                ftime = mem.data[*fptr].timeFree;
+                ftime = memData.timeFree;
             }
         }
     }
@@ -3169,8 +3171,9 @@ void Worker::ReconstructMemAllocPlot()
     }
     while( fptr != fend )
     {
-        int64_t time = mem.data[*fptr].timeFree;
-        usage -= int64_t( mem.data[*fptr].size );
+        const auto& memData = mem.data[*fptr];
+        int64_t time = memData.timeFree;
+        usage -= int64_t( memData.size );
         assert( usage >= 0 );
         assert( max >= usage );
         ptr->time = time;

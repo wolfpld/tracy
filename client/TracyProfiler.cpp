@@ -1368,8 +1368,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
 
 bool Profiler::AppendData( const void* data, size_t len )
 {
-    auto ret = true;
-    ret = NeedDataSize( len );
+    const auto ret = NeedDataSize( len );
     AppendDataUnsafe( data, len );
     return ret;
 }

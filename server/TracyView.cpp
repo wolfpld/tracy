@@ -5529,6 +5529,16 @@ void View::DrawFindZone()
         ImGui::RadioButton( "Count", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Count );
         ImGui::SameLine();
         ImGui::RadioButton( "Time", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Time );
+        ImGui::SameLine();
+        ImGui::RadioButton( "MTPC", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Mtpc );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(?)" );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "Mean time per call" );
+            ImGui::EndTooltip();
+        }
 
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();
@@ -5600,6 +5610,9 @@ void View::DrawFindZone()
             break;
         case FindZone::SortBy::Time:
             pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
+            break;
+        case FindZone::SortBy::Mtpc:
+            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return double( lhs->second.time ) / lhs->second.zones.size() > double( rhs->second.time ) / rhs->second.zones.size(); } );
             break;
         default:
             assert( false );

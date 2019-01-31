@@ -3125,8 +3125,7 @@ void Worker::ReconstructMemAllocPlot()
     if( aptr != aend && fptr != fend )
     {
         auto atime = aptr->timeAlloc;
-        const auto& memData = mem.data[*fptr];
-        auto ftime = memData.timeFree;
+        auto ftime = mem.data[*fptr].timeFree;
 
         for(;;)
         {
@@ -3144,7 +3143,7 @@ void Worker::ReconstructMemAllocPlot()
             }
             else
             {
-                usage -= int64_t( memData.size );
+                usage -= int64_t( mem.data[*fptr].size );
                 assert( usage >= 0 );
                 if( max < usage ) max = usage;
                 ptr->time = ftime;
@@ -3152,7 +3151,7 @@ void Worker::ReconstructMemAllocPlot()
                 ptr++;
                 fptr++;
                 if( fptr == fend ) break;
-                ftime = memData.timeFree;
+                ftime = mem.data[*fptr].timeFree;
             }
         }
     }

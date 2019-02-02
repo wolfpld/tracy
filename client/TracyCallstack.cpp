@@ -45,10 +45,11 @@ void InitCallstack()
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
+    int write;
     const auto proc = GetCurrentProcess();
+#ifndef __CYGWIN__
     const auto inlineNum = std::min<DWORD>( MaxCbTrace - 1, SymAddrIncludeInlineTrace( proc, ptr ) );
     DWORD ctx, idx;
-    int write;
     BOOL doInline = FALSE;
     if( inlineNum != 0 ) doInline = SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
     if( doInline )
@@ -57,6 +58,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         cb_num = 1 + inlineNum;
     }
     else
+#endif
     {
         write = 0;
         cb_num = 1;
@@ -101,6 +103,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     cb_data[write].file = file;
 
+#ifndef __CYGWIN__
     if( doInline )
     {
         for( DWORD i=0; i<inlineNum; i++ )
@@ -138,6 +141,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             ctx++;
         }
     }
+#endif
 
     return { cb_data, uint8_t( cb_num ) };
 }

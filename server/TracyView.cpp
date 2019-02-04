@@ -6567,6 +6567,18 @@ void View::DrawCallstackWindow()
             for( uint8_t f=0; f<fsz; f++ )
             {
                 const auto& frame = frameData->data[f];
+                auto txt = m_worker.GetString( frame.name );
+
+                if( fidx == 0 && f != fsz-1 )
+                {
+                    if( strcmp( txt, "tracy::Callstack" ) == 0 ||
+                        strcmp( txt, "tracy::Profiler::SendCallstack" ) == 0 ||
+                        strcmp( txt, "tracy::ScopedZone::{ctor}" ) == 0 )
+                    {
+                        continue;
+                    }
+                }
+
                 bidx++;
 
                 ImGui::Separator();
@@ -6580,7 +6592,6 @@ void View::DrawCallstackWindow()
                 }
                 ImGui::NextColumn();
 
-                auto txt = m_worker.GetString( frame.name );
                 ImGui::TextWrapped( "%s", txt );
                 if( ImGui::IsItemClicked() )
                 {

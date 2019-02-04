@@ -6573,7 +6573,9 @@ void View::DrawCallstackWindow()
                 {
                     if( strcmp( txt, "tracy::Callstack" ) == 0 ||
                         strcmp( txt, "tracy::Profiler::SendCallstack" ) == 0 ||
-                        strcmp( txt, "tracy::ScopedZone::{ctor}" ) == 0 )
+                        strcmp( txt, "tracy::ScopedZone::{ctor}" ) == 0 ||
+                        strcmp( txt, "tracy::Profiler::SendCallstack(int, unsigned long)" ) == 0 ||
+                        strcmp( txt, "tracy::ScopedZone::ScopedZone(tracy::SourceLocationData const*, int, bool)" ) == 0 )
                     {
                         continue;
                     }

@@ -6507,6 +6507,15 @@ void View::DrawStatistics()
     ImGui::End();
 }
 
+static const char* s_tracyStackFrames[] = {
+    "tracy::Callstack",
+    "tracy::Profiler::SendCallstack",
+    "tracy::ScopedZone::{ctor}",
+    "tracy::Profiler::SendCallstack(int, unsigned long)",
+    "tracy::ScopedZone::ScopedZone(tracy::SourceLocationData const*, int, bool)",
+    nullptr
+};
+
 void View::DrawCallstackWindow()
 {
     bool show = true;
@@ -6572,14 +6581,18 @@ void View::DrawCallstackWindow()
 
                 if( fidx == 0 && f != fsz-1 )
                 {
-                    if( strcmp( txt, "tracy::Callstack" ) == 0 ||
-                        strcmp( txt, "tracy::Profiler::SendCallstack" ) == 0 ||
-                        strcmp( txt, "tracy::ScopedZone::{ctor}" ) == 0 ||
-                        strcmp( txt, "tracy::Profiler::SendCallstack(int, unsigned long)" ) == 0 ||
-                        strcmp( txt, "tracy::ScopedZone::ScopedZone(tracy::SourceLocationData const*, int, bool)" ) == 0 )
+                    auto test = s_tracyStackFrames;
+                    bool match = false;
+                    do
                     {
-                        continue;
+                        if( strcmp( txt, *test ) == 0 )
+                        {
+                            match = true;
+                            break;
+                        }
                     }
+                    while( *++test );
+                    if( match ) continue;
                 }
 
                 bidx++;

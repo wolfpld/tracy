@@ -295,8 +295,8 @@ private:
     float m_notificationTime = 0;
     std::string m_notificationText;
 
-    bool m_groupCallstackTreeByNameBottomUp = false;
-    bool m_groupCallstackTreeByNameTopDown = false;
+    bool m_groupCallstackTreeByNameBottomUp = true;
+    bool m_groupCallstackTreeByNameTopDown = true;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

@@ -3636,7 +3636,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                 for( int8_t j=1; j<idx; j++ )
                 {
                     auto frameData = worker.GetCallstackFrame( prevCs[j] );
-                    auto frame = frameData->data;
+                    auto frame = frameData->data + frameData->size - 1;
                     ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
@@ -3693,7 +3693,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
         for( uint8_t i=1; i<csz; i++ )
         {
             auto frameData = worker.GetCallstackFrame( cs[i] );
-            auto frame = frameData->data;
+            auto frame = frameData->data + frameData->size - 1;
             ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
             ImGui::SameLine();
             ImGui::Spacing();
@@ -5640,7 +5640,8 @@ void View::DrawFindZone()
                 else
                 {
                     auto& callstack = m_worker.GetCallstack( v->first );
-                    hdrString = m_worker.GetString( m_worker.GetCallstackFrame( *callstack.begin() )->data[0].name );
+                    auto& frameData = *m_worker.GetCallstackFrame( *callstack.begin() );
+                    hdrString = m_worker.GetString( frameData.data[frameData.size-1].name );
                 }
                 break;
             default:
@@ -8066,12 +8067,13 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
     for( auto& v : tree )
     {
         idx++;
-        auto frame = m_worker.GetCallstackFrame( v.frame )->data;
+        auto& frameData = *m_worker.GetCallstackFrame( v.frame );
+        auto frame = frameData.data[frameData.size-1];
         bool expand = false;
         if( v.children.empty() )
         {
             ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
-            ImGui::Text( "%s", m_worker.GetString( frame->name ) );
+            ImGui::Text( "%s", m_worker.GetString( frame.name ) );
             ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
         }
         else
@@ -8079,11 +8081,11 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
             ImGui::PushID( lidx++ );
             if( tree.size() == 1 )
             {
-                expand = ImGui::TreeNodeEx( m_worker.GetString( frame->name ), ImGuiTreeNodeFlags_DefaultOpen );
+                expand = ImGui::TreeNodeEx( m_worker.GetString( frame.name ), ImGuiTreeNodeFlags_DefaultOpen );
             }
             else
             {
-                expand = ImGui::TreeNode( m_worker.GetString( frame->name ) );
+                expand = ImGui::TreeNode( m_worker.GetString( frame.name ) );
             }
             ImGui::PopID();
         }
@@ -8156,13 +8158,13 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
         {
             ImGui::SameLine();
         }
-        const auto fileName = m_worker.GetString( frame->file );
-        ImGui::TextDisabled( "%s:%i", fileName, frame->line );
+        const auto fileName = m_worker.GetString( frame.file );
+        ImGui::TextDisabled( "%s:%i", fileName, frame.line );
         if( ImGui::IsItemClicked( 1 ) )
         {
             if( FileExists( fileName ) )
             {
-                SetTextEditorFile( fileName, frame->line );
+                SetTextEditorFile( fileName, frame.line );
             }
             else
             {
@@ -8615,7 +8617,7 @@ void View::CallstackTooltip( uint32_t idx )
         }
         else
         {
-            ImGui::Text( "%s", m_worker.GetString( frame->data->name ) );
+            ImGui::Text( "%s", m_worker.GetString( frame->data[frame->size-1].name ) );
         }
     }
     ImGui::EndTooltip();

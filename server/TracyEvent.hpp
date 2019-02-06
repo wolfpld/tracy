@@ -183,8 +183,8 @@ enum { CallstackFrameDataSize = sizeof( CallstackFrameData ) };
 struct CallstackFrameTree
 {
     uint64_t frame;
-    uint64_t allocExclusive, allocInclusive;
-    uint32_t countExclusive, countInclusive;
+    uint64_t alloc;
+    uint32_t count;
     std::vector<CallstackFrameTree> children;
     flat_hash_set<uint32_t, nohash<uint32_t>> callstacks;
 };

@@ -7718,20 +7718,17 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTreeBottomUp( const MemDa
 
         auto base = cs.back();
         auto treePtr = GetFrameTreeItem( root, base, m_worker, m_groupCallstackTreeByNameBottomUp );
-        treePtr->countInclusive += path.second.cnt;
-        treePtr->allocInclusive += path.second.mem;
+        treePtr->count += path.second.cnt;
+        treePtr->alloc += path.second.mem;
         treePtr->callstacks.emplace( path.first );
 
         for( int i = int( cs.size() ) - 2; i >= 0; i-- )
         {
             treePtr = GetFrameTreeItem( treePtr->children, cs[i], m_worker, m_groupCallstackTreeByNameBottomUp );
-            treePtr->countInclusive += path.second.cnt;
-            treePtr->allocInclusive += path.second.mem;
+            treePtr->count += path.second.cnt;
+            treePtr->alloc += path.second.mem;
             treePtr->callstacks.emplace( path.first );
         }
-
-        treePtr->countExclusive += path.second.cnt;
-        treePtr->allocExclusive += path.second.mem;
     }
     return root;
 }
@@ -7746,20 +7743,17 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTreeTopDown( const MemDat
 
         auto base = cs.front();
         auto treePtr = GetFrameTreeItem( root, base, m_worker, m_groupCallstackTreeByNameTopDown );
-        treePtr->countInclusive += path.second.cnt;
-        treePtr->allocInclusive += path.second.mem;
+        treePtr->count += path.second.cnt;
+        treePtr->alloc += path.second.mem;
         treePtr->callstacks.emplace( path.first );
 
         for( int i = 1; i < cs.size(); i++ )
         {
             treePtr = GetFrameTreeItem( treePtr->children, cs[i], m_worker, m_groupCallstackTreeByNameTopDown );
-            treePtr->countInclusive += path.second.cnt;
-            treePtr->allocInclusive += path.second.mem;
+            treePtr->count += path.second.cnt;
+            treePtr->alloc += path.second.mem;
             treePtr->callstacks.emplace( path.first );
         }
-
-        treePtr->countExclusive += path.second.cnt;
-        treePtr->allocExclusive += path.second.mem;
     }
     return root;
 }
@@ -8110,7 +8104,7 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
     auto& io = ImGui::GetIO();
 
     int lidx = 0;
-    pdqsort_branchless( tree.begin(), tree.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.allocInclusive > rhs.allocInclusive; } );
+    pdqsort_branchless( tree.begin(), tree.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.alloc > rhs.alloc; } );
     for( auto& v : tree )
     {
         idx++;
@@ -8155,43 +8149,10 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
         if( io.KeyCtrl && ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
-
-            ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "Inclusive alloc size:" );
+            TextFocused( "Allocations size:", MemSizeToString( v.alloc ) );
+            TextFocused( "Allocations count:", RealToString( v.count, true ) );
+            TextFocused( "Average allocation size:", MemSizeToString( v.alloc / v.count ) );
             ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s", MemSizeToString( v.allocInclusive ) );
-            ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "count:" );
-            ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s", RealToString( v.countInclusive, true ) );
-            ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "Average inclusive alloc size:" );
-            ImGui::SameLine();
-            if( v.countInclusive != 0 )
-            {
-                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s", MemSizeToString( v.allocInclusive / v.countInclusive ) );
-            }
-            else
-            {
-                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "-" );
-            }
-
-            ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "Exclusive alloc size:" );
-            ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s", MemSizeToString( v.allocExclusive ) );
-            ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "count:" );
-            ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s", RealToString( v.countExclusive, true ) );
-            ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "Average exclusive alloc size:" );
-            ImGui::SameLine();
-            if( v.countExclusive != 0 )
-            {
-                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s", MemSizeToString( v.allocExclusive / v.countExclusive ) );
-            }
-            else
-            {
-                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "-" );
-            }
-
             ImGui::EndTooltip();
         }
 
@@ -8219,19 +8180,14 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
             }
         }
 
-        if( v.allocExclusive != v.allocInclusive )
+        ImGui::SameLine();
+        if( v.children.empty() )
         {
-            ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.4, 0.4, 0.1, 1.0 ), "I:" );
-            ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s (%s)", MemSizeToString( v.allocInclusive ), RealToString( v.countInclusive, true ) );
+            ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count, true ) );
         }
-        if( v.allocExclusive != 0 )
+        else
         {
-            ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.1, 0.4, 0.4, 1.0 ), "E:" );
-            ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s (%s)", MemSizeToString( v.allocExclusive ), RealToString( v.countExclusive, true ) );
+            ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count, true ) );
         }
 
         if( expand )

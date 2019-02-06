@@ -8054,6 +8054,14 @@ void View::DrawMemory()
 #endif
     {
         ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameBottomUp );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(?)" );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "If enabled, only one source location will be displayed (which may be incorrect)." );
+            ImGui::EndTooltip();
+        }
         ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
         ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
 
@@ -8074,6 +8082,14 @@ void View::DrawMemory()
 #endif
     {
         ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameTopDown );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(?)" );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "If enabled, only one source location will be displayed (which may be incorrect)." );
+            ImGui::EndTooltip();
+        }
         ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
         ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
 

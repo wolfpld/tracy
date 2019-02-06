@@ -7678,7 +7678,7 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
     return pathSum;
 }
 
-std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem ) const
+std::vector<CallstackFrameTree> View::GetCallstackFrameTreeBottomUp( const MemData& mem ) const
 {
     std::vector<CallstackFrameTree> root;
     auto pathSum = GetCallstackPaths( mem );
@@ -7693,6 +7693,34 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem 
         treePtr->callstacks.emplace( path.first );
 
         for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+        {
+            treePtr = GetFrameTreeItem( treePtr->children, cs[i] );
+            treePtr->countInclusive += path.second.cnt;
+            treePtr->allocInclusive += path.second.mem;
+            treePtr->callstacks.emplace( path.first );
+        }
+
+        treePtr->countExclusive += path.second.cnt;
+        treePtr->allocExclusive += path.second.mem;
+    }
+    return root;
+}
+
+std::vector<CallstackFrameTree> View::GetCallstackFrameTreeTopDown( const MemData& mem ) const
+{
+    std::vector<CallstackFrameTree> root;
+    auto pathSum = GetCallstackPaths( mem );
+    for( auto& path : pathSum )
+    {
+        auto& cs = m_worker.GetCallstack( path.first );
+
+        auto base = cs.front();
+        auto treePtr = GetFrameTreeItem( root, base );
+        treePtr->countInclusive += path.second.cnt;
+        treePtr->allocInclusive += path.second.mem;
+        treePtr->callstacks.emplace( path.first );
+
+        for( int i = 1; i < cs.size(); i++ )
         {
             treePtr = GetFrameTreeItem( treePtr->children, cs[i] );
             treePtr->countInclusive += path.second.cnt;
@@ -7990,16 +8018,35 @@ void View::DrawMemory()
 
     ImGui::Separator();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Call stack tree" ) )
+    if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Bottom-up call stack tree" ) )
 #else
-    if( ImGui::TreeNode( "Call stack tree" ) )
+    if( ImGui::TreeNode( "Bottom-up call stack tree" ) )
 #endif
     {
         ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
         ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
 
         auto& mem = m_worker.GetMemData();
-        auto tree = GetCallstackFrameTree( mem );
+        auto tree = GetCallstackFrameTreeBottomUp( mem );
+
+        int idx = 0;
+        DrawFrameTreeLevel( tree, idx );
+
+        ImGui::TreePop();
+    }
+
+    ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Top-down call stack tree" ) )
+#else
+    if( ImGui::TreeNode( "Top-down call stack tree" ) )
+#endif
+    {
+        ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
+        ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
+
+        auto& mem = m_worker.GetMemData();
+        auto tree = GetCallstackFrameTreeTopDown( mem );
 
         int idx = 0;
         DrawFrameTreeLevel( tree, idx );

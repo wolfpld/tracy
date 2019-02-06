@@ -120,7 +120,8 @@ private:
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
 
     flat_hash_map<uint32_t, PathData, nohash<uint32_t>> GetCallstackPaths( const MemData& mem ) const;
-    std::vector<CallstackFrameTree> GetCallstackFrameTree( const MemData& mem ) const;
+    std::vector<CallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
+    std::vector<CallstackFrameTree> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
     void DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx );
 
     void DrawInfoWindow();

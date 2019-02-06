@@ -8037,6 +8037,7 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Bottom-up call stack tree" ) )
 #endif
     {
+        ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameBottomUp );
         ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
         ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
 
@@ -8056,6 +8057,7 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Top-down call stack tree" ) )
 #endif
     {
+        ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameTopDown );
         ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
         ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
 

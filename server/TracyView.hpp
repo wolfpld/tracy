@@ -72,6 +72,12 @@ private:
 
     enum { InvalidId = 0xFFFFFFFF };
 
+    struct PathData
+    {
+        uint32_t cnt;
+        uint64_t mem;
+    };
+
     void InitTextEditor();
 
     const char* ShortenNamespace( const char* name ) const;
@@ -113,6 +119,7 @@ private:
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr );
 
+    flat_hash_map<uint32_t, PathData, nohash<uint32_t>> GetCallstackPaths( const MemData& mem ) const;
     std::vector<CallstackFrameTree> GetCallstackFrameTree( const MemData& mem ) const;
     void DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx );
 

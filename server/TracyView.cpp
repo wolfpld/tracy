@@ -7652,15 +7652,8 @@ static tracy_force_inline CallstackFrameTree* GetFrameTreeItem( std::vector<Call
     }
 }
 
-std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem ) const
+flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPaths( const MemData& mem ) const
 {
-    struct PathData
-    {
-        uint32_t cnt;
-        uint64_t mem;
-    };
-
-    std::vector<CallstackFrameTree> root;
     flat_hash_map<uint32_t, PathData, nohash<uint32_t>> pathSum;
     pathSum.reserve( m_worker.GetCallstackPayloadCount() );
 
@@ -7682,7 +7675,13 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem 
             it->second.mem += ev.size;
         }
     }
+    return pathSum;
+}
 
+std::vector<CallstackFrameTree> View::GetCallstackFrameTree( const MemData& mem ) const
+{
+    std::vector<CallstackFrameTree> root;
+    auto pathSum = GetCallstackPaths( mem );
     for( auto& path : pathSum )
     {
         auto& cs = m_worker.GetCallstack( path.first );

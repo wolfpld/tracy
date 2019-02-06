@@ -22,6 +22,8 @@ v0.5 (xxxx-xx-xx)
 - Self time of zones may be now displayed in the find zone menu.
 - Added ability to disconnect from a client (with some caveats).
 - Find zone groups can now be sorted by mean time per call.
+- Call stack memory allocations tree is now available in bottom-up and
+  top-down variants.
 
 v0.4.1 (2018-12-30)
 -------------------

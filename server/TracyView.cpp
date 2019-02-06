@@ -7652,9 +7652,25 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
     ImGui::EndChild();
 }
 
-static tracy_force_inline CallstackFrameTree* GetFrameTreeItem( std::vector<CallstackFrameTree>& tree, uint64_t idx )
+static tracy_force_inline CallstackFrameTree* GetFrameTreeItem( std::vector<CallstackFrameTree>& tree, uint64_t idx, const Worker& worker, bool groupByName )
 {
-    auto it = std::find_if( tree.begin(), tree.end(), [idx] ( const auto& v ) { return v.frame == idx; } );
+    std::vector<CallstackFrameTree>::iterator it;
+    if( groupByName )
+    {
+        auto& frameData = *worker.GetCallstackFrame( idx );
+        auto& frame = frameData.data[frameData.size-1];
+        auto fidx = frame.name.idx;
+
+        it = std::find_if( tree.begin(), tree.end(), [&worker, fidx] ( const auto& v ) {
+            auto& frameData = *worker.GetCallstackFrame( v.frame );
+            auto& frame = frameData.data[frameData.size-1];
+            return frame.name.idx == fidx;
+        } );
+    }
+    else
+    {
+        it = std::find_if( tree.begin(), tree.end(), [idx] ( const auto& v ) { return v.frame == idx; } );
+    }
     if( it == tree.end() )
     {
         tree.emplace_back( CallstackFrameTree { idx } );
@@ -7701,14 +7717,14 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTreeBottomUp( const MemDa
         auto& cs = m_worker.GetCallstack( path.first );
 
         auto base = cs.back();
-        auto treePtr = GetFrameTreeItem( root, base );
+        auto treePtr = GetFrameTreeItem( root, base, m_worker, m_groupCallstackTreeByNameBottomUp );
         treePtr->countInclusive += path.second.cnt;
         treePtr->allocInclusive += path.second.mem;
         treePtr->callstacks.emplace( path.first );
 
         for( int i = int( cs.size() ) - 2; i >= 0; i-- )
         {
-            treePtr = GetFrameTreeItem( treePtr->children, cs[i] );
+            treePtr = GetFrameTreeItem( treePtr->children, cs[i], m_worker, m_groupCallstackTreeByNameBottomUp );
             treePtr->countInclusive += path.second.cnt;
             treePtr->allocInclusive += path.second.mem;
             treePtr->callstacks.emplace( path.first );
@@ -7729,14 +7745,14 @@ std::vector<CallstackFrameTree> View::GetCallstackFrameTreeTopDown( const MemDat
         auto& cs = m_worker.GetCallstack( path.first );
 
         auto base = cs.front();
-        auto treePtr = GetFrameTreeItem( root, base );
+        auto treePtr = GetFrameTreeItem( root, base, m_worker, m_groupCallstackTreeByNameTopDown );
         treePtr->countInclusive += path.second.cnt;
         treePtr->allocInclusive += path.second.mem;
         treePtr->callstacks.emplace( path.first );
 
         for( int i = 1; i < cs.size(); i++ )
         {
-            treePtr = GetFrameTreeItem( treePtr->children, cs[i] );
+            treePtr = GetFrameTreeItem( treePtr->children, cs[i], m_worker, m_groupCallstackTreeByNameTopDown );
             treePtr->countInclusive += path.second.cnt;
             treePtr->allocInclusive += path.second.mem;
             treePtr->callstacks.emplace( path.first );

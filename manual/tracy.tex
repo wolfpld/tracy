@@ -1405,16 +1405,20 @@ On the \emph{\faMap{} Memory map} pane you can see the graphical representation 
 
 This view may be helpful in assessing the general memory behavior of the application, or in debugging the problems resulting from address space fragmentation.
 
-\subsubsection{Call stack tree}
+\subsubsection{Bottom-up call stack tree}
 \label{callstacktree}
 
-The \emph{\faAlignJustify{} Call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
+The \emph{\faAlignJustify{}~Bottom-up call stack tree} pane is only available, if the memory events were collecting the call stack data (section~\ref{collectingcallstacks}). In this view you are presented with a tree of memory allocations, starting at the call stack entry point and going up to the allocation's pinpointed place. Each level of the tree is sorted according to the number of bytes allocated in given branch.
 
 Each tree node consists of three elements: the function name, the source file location and the memory allocation data. The memory allocation data is either yellow \emph{inclusive} events count (including all the children), or the cyan \emph{exclusive} events count. There are two values that are counted: total memory size and number of allocations.
 
 Clicking the \RMB{}~right mouse button on the function name will open allocations list window (see section \ref{alloclist}), which list all the allocations included at the current call stack tree level. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
 Some function names may be too long to be properly displayed, with the events count data at the end. In such cases, you may press the \emph{control} button, which will display events count tooltip.
+
+\subsubsection{Top-down call stack tree}
+
+This pane is identical in functionality to the \emph{Bottom-up call stack tree}, but the call stack order is reversed when the tree is built. This means that the tree starts at the memory allocation functions and goes down to the call stack entry point.
 
 \subsubsection{Looking back at the memory history}
 

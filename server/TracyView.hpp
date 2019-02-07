@@ -267,7 +267,6 @@ private:
     bool m_goToFrame = false;
 
     int m_statSort = 0;
-    int m_findZoneSort = 0;
     bool m_statSelf = false;
     bool m_showCallstackFrameAddress = false;
     bool m_showUnknownFrames = true;
@@ -303,6 +302,7 @@ private:
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
         enum class GroupBy : int { Thread, UserText, Callstack };
         enum class SortBy : int { Order, Count, Time, Mtpc };
+        enum class TableSortBy : int { Starttime, Runtime, Name };
 
         struct Group
         {
@@ -324,6 +324,7 @@ private:
         bool selfTime = false;
         GroupBy groupBy = GroupBy::Thread;
         SortBy sortBy = SortBy::Count;
+        TableSortBy tableSortBy = TableSortBy::Starttime;
         Region highlight;
         int64_t hlOrig_t0, hlOrig_t1;
         int64_t numBins = -1;

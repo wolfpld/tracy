@@ -267,6 +267,7 @@ private:
     bool m_goToFrame = false;
 
     int m_statSort = 0;
+    int m_findZoneSort = 0;
     bool m_statSelf = false;
     bool m_showCallstackFrameAddress = false;
     bool m_showUnknownFrames = true;

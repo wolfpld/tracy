@@ -5669,11 +5669,11 @@ void View::DrawFindZone()
             {
                 ImGui::Columns( 3, hdrString );
                 ImGui::Separator();
-                ImGui::Text( "Time from start" );
+                if( ImGui::SmallButton( "Time from start" ) ) m_findZoneSort = 0;
                 ImGui::NextColumn();
-                ImGui::Text( "Execution time" );
+                if( ImGui::SmallButton( "Execution time" ) ) m_findZoneSort = 1;
                 ImGui::NextColumn();
-                ImGui::Text( "Name" );
+                if( ImGui::SmallButton( "Name" ) ) m_findZoneSort = 2;
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(?)" );
                 if( ImGui::IsItemHovered() )
@@ -5685,7 +5685,37 @@ void View::DrawFindZone()
                 ImGui::NextColumn();
                 ImGui::Separator();
 
-                for( auto& ev : v->second.zones )
+                Vector<ZoneEvent*> sortedZones;
+                sortedZones.reserve_and_use( v->second.zones.size() );
+                std::copy(v->second.zones.begin(), v->second.zones.end(), sortedZones.begin());
+                
+
+                switch( m_findZoneSort )
+                {
+                case 0:
+                    //Already sorted by time from start
+                    break;
+                case 1:
+                    if( m_findZone.selfTime )
+                        pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) { return (m_worker.GetZoneEndDirect( *lhs ) - lhs->start - GetZoneChildTimeFast( *lhs )) > (m_worker.GetZoneEndDirect( *rhs ) - rhs->start - GetZoneChildTimeFast( *rhs )); } );
+                    else
+                        pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) { return (m_worker.GetZoneEndDirect( *lhs ) - lhs->start) > (m_worker.GetZoneEndDirect( *rhs ) - rhs->start); } );	
+                    break;
+                case 2:
+                    pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs )
+						{
+                            if (lhs->name.active != rhs->name.active) return lhs->name.active > rhs->name.active;
+                    
+                            return strcmp(m_worker.GetString( lhs->name ), m_worker.GetString( rhs->name )) < 0;
+                        } );
+                    break;
+                default:
+                    assert( false );
+                    break;
+                }
+
+
+                for( auto& ev : sortedZones )
                 {
                     const auto end = m_worker.GetZoneEndDirect( *ev );
                     auto timespan = end - ev->start;

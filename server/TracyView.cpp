@@ -48,47 +48,48 @@ static const char* TimeToString( int64_t ns )
     static char bufpool[Pool][64];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];
+    char* bufstart = buf;
     bufsel = ( bufsel + 1 ) % Pool;
 
-    const char* sign = "";
     if( ns < 0 )
     {
-        sign = "-";
+        *buf = '-';
+        buf++;
         ns = -ns;
     }
 
     if( ns < 1000 )
     {
-        sprintf( buf, "%s%" PRIi64 " ns", sign, ns );
+        sprintf( buf, "%" PRIi64 " ns", ns );
     }
     else if( ns < 1000ll * 1000 )
     {
 #ifdef TRACY_EXTENDED_FONT
-        sprintf( buf, "%s%.2f \xce\xbcs", sign, ns / 1000. );
+        sprintf( buf, "%.2f \xce\xbcs", ns / 1000. );
 #else
-        sprintf( buf, "%s%.2f us", sign, ns / 1000. );
+        sprintf( buf, "%.2f us", ns / 1000. );
 #endif
     }
     else if( ns < 1000ll * 1000 * 1000 )
     {
-        sprintf( buf, "%s%.2f ms", sign, ns / ( 1000. * 1000. ) );
+        sprintf( buf, "%.2f ms", ns / ( 1000. * 1000. ) );
     }
     else if( ns < 1000ll * 1000 * 1000 * 60 )
     {
-        sprintf( buf, "%s%.2f s", sign, ns / ( 1000. * 1000. * 1000. ) );
+        sprintf( buf, "%.2f s", ns / ( 1000. * 1000. * 1000. ) );
     }
     else if( ns < 1000ll * 1000 * 1000 * 60 * 60 )
     {
         const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) );
         const auto s = int64_t( ns - m * ( 1000ll * 1000 * 1000 * 60 ) ) / ( 1000. * 1000. * 1000. );
-        sprintf( buf, "%s%" PRIi64 ":%04.1f", sign, m, s );
+        sprintf( buf, "%" PRIi64 ":%04.1f", m, s );
     }
     else if( ns < 1000ll * 1000 * 1000 * 60 * 60 * 24 )
     {
         const auto h = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 * 60 ) );
         const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) - h * 60 );
         const auto s = int64_t( ns / ( 1000ll * 1000 * 1000 ) - h * ( 60 * 60 ) - m * 60 );
-        sprintf( buf, "%s%" PRIi64 ":%02" PRIi64 ":%02" PRIi64, sign, h, m, s );
+        sprintf( buf, "%" PRIi64 ":%02" PRIi64 ":%02" PRIi64, h, m, s );
     }
     else
     {
@@ -96,9 +97,9 @@ static const char* TimeToString( int64_t ns )
         const auto h = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 * 60 ) - d * 24 );
         const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) - d * ( 60 * 24 ) - h * 60 );
         const auto s = int64_t( ns / ( 1000ll * 1000 * 1000 ) - d * ( 60 * 60 * 24 ) - h * ( 60 * 60 ) - m * 60 );
-        sprintf( buf, "%s%" PRIi64 "d%02" PRIi64 ":%02" PRIi64 ":%02" PRIi64, sign, d, h, m, s );
+        sprintf( buf, "%" PRIi64 "d%02" PRIi64 ":%02" PRIi64 ":%02" PRIi64, d, h, m, s );
     }
-    return buf;
+    return bufstart;
 }
 
 static const char* TimeToStringInteger( int64_t ns )

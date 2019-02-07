@@ -5692,8 +5692,7 @@ void View::DrawFindZone()
                 {
                     zonesToIterate = &sortedZones;
                     sortedZones.reserve_and_use( v->second.zones.size() );
-                    std::copy(v->second.zones.begin(), v->second.zones.end(), sortedZones.begin());
-                    
+                    memcpy(sortedZones.data(), v->second.zones.data(), sizeof(ZoneEvent*)*v->second.zones.size());
 
                     switch( m_findZone.tableSortBy )
                     {

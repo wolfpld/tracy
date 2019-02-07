@@ -48,6 +48,7 @@ static const char* TimeToString( int64_t ns )
     static char bufpool[Pool][64];
     static int bufsel = 0;
     char* buf = bufpool[bufsel];
+    char* bufstart = buf;
     bufsel = ( bufsel + 1 ) % Pool;
 
     if( ns < 0 )
@@ -98,7 +99,7 @@ static const char* TimeToString( int64_t ns )
         const auto s = int64_t( ns / ( 1000ll * 1000 * 1000 ) - d * ( 60 * 60 * 24 ) - h * ( 60 * 60 ) - m * 60 );
         sprintf( buf, "%" PRIi64 "d%02" PRIi64 ":%02" PRIi64 ":%02" PRIi64, d, h, m, s );
     }
-    return buf;
+    return bufstart;
 }
 
 static const char* TimeToStringInteger( int64_t ns )

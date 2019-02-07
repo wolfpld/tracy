@@ -47,8 +47,15 @@ static const char* TimeToString( int64_t ns )
     enum { Pool = 8 };
     static char bufpool[Pool][64];
     static int bufsel = 0;
-    char* buf = bufpool[bufsel] + 1;
+    char* buf = bufpool[bufsel];
     bufsel = ( bufsel + 1 ) % Pool;
+
+    if( ns < 0 )
+    {
+        *buf = '-';
+        buf++;
+        ns = -ns;
+    }
 
     if( ns < 1000 )
     {
@@ -91,13 +98,6 @@ static const char* TimeToString( int64_t ns )
         const auto s = int64_t( ns / ( 1000ll * 1000 * 1000 ) - d * ( 60 * 60 * 24 ) - h * ( 60 * 60 ) - m * 60 );
         sprintf( buf, "%" PRIi64 "d%02" PRIi64 ":%02" PRIi64 ":%02" PRIi64, d, h, m, s );
     }
-    
-    if( ns < 0 )
-    {
-        buf[-1] = '-';
-        return buf - 1;
-    }
-
     return buf;
 }
 

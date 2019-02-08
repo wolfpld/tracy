@@ -5701,8 +5701,8 @@ void View::DrawFindZone()
                         if( m_findZone.selfTime )
                         {
                             pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
-                                return m_worker.GetZoneEndDirect( *lhs ) - lhs->start - GetZoneChildTimeFast( *lhs ) >
-                                       m_worker.GetZoneEndDirect( *rhs ) - rhs->start - GetZoneChildTimeFast( *rhs );
+                                return m_worker.GetZoneEndDirect( *lhs ) - lhs->start - this->GetZoneChildTimeFast( *lhs ) >
+                                       m_worker.GetZoneEndDirect( *rhs ) - rhs->start - this->GetZoneChildTimeFast( *rhs );
                             } );
                         }
                         else

@@ -5670,11 +5670,11 @@ void View::DrawFindZone()
             {
                 ImGui::Columns( 3, hdrString );
                 ImGui::Separator();
-                ImGui::Text( "Time from start" );
+                if( ImGui::SmallButton( "Time from start" ) ) m_findZone.tableSortBy = FindZone::TableSortBy::Starttime;
                 ImGui::NextColumn();
-                ImGui::Text( "Execution time" );
+                if( ImGui::SmallButton( "Execution time" ) )  m_findZone.tableSortBy = FindZone::TableSortBy::Runtime;
                 ImGui::NextColumn();
-                ImGui::Text( "Name" );
+                if( ImGui::SmallButton( "Name" ) )  m_findZone.tableSortBy = FindZone::TableSortBy::Name;
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(?)" );
                 if( ImGui::IsItemHovered() )
@@ -5686,7 +5686,44 @@ void View::DrawFindZone()
                 ImGui::NextColumn();
                 ImGui::Separator();
 
-                for( auto& ev : v->second.zones )
+                Vector<ZoneEvent*>* zonesToIterate = &v->second.zones;
+                Vector<ZoneEvent*> sortedZones;
+
+                if ( m_findZone.tableSortBy != FindZone::TableSortBy::Starttime )
+                {
+                    zonesToIterate = &sortedZones;
+                    sortedZones.reserve_and_use( v->second.zones.size() );
+                    memcpy(sortedZones.data(), v->second.zones.data(), sizeof(ZoneEvent*)*v->second.zones.size());
+
+                    switch( m_findZone.tableSortBy )
+                    {
+                    case FindZone::TableSortBy::Runtime:
+                        if( m_findZone.selfTime )
+                            pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs )
+                                {
+                                    return  (m_worker.GetZoneEndDirect( *lhs ) - lhs->start - GetZoneChildTimeFast( *lhs )) 
+                                            > 
+                                            (m_worker.GetZoneEndDirect( *rhs ) - rhs->start - GetZoneChildTimeFast( *rhs ));
+                                } );
+                        else
+                            pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) { return (m_worker.GetZoneEndDirect( *lhs ) - lhs->start) > (m_worker.GetZoneEndDirect( *rhs ) - rhs->start); } );
+                        break;
+                    case FindZone::TableSortBy::Name:
+                        pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs )
+                            {
+                                if (lhs->name.active != rhs->name.active) return lhs->name.active > rhs->name.active;
+                        
+                                return strcmp(m_worker.GetString( lhs->name ), m_worker.GetString( rhs->name )) < 0;
+                            } );
+                        break;
+                    default:
+                        assert( false );
+                        break;
+                    }
+
+                }
+
+                for( auto& ev : *zonesToIterate )
                 {
                     const auto end = m_worker.GetZoneEndDirect( *ev );
                     auto timespan = end - ev->start;

@@ -3,7 +3,7 @@ platform:
   - x64
 image:
   - Visual Studio 2017
-  - Ubuntu
+  - Ubuntu1804
 before_build:
   - cmd: cd profiler\build\win32
   - cmd: nuget restore

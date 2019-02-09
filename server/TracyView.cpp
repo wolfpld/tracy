@@ -54,28 +54,26 @@ static const char* IntTable100 =
 "80818283848586878889"
 "90919293949596979899";
 
-static const char* IntTable10 = "0123456789";
-
 static inline void PrintTinyInt( char*& buf, uint64_t v )
 {
     if( v >= 10 )
     {
-        *buf++ = IntTable10[v/10];
+        *buf++ = '0' + v/10;
     }
-    *buf++ = IntTable10[v%10];
+    *buf++ = '0' + v%10;
 }
 
 static inline void PrintTinyInt0( char*& buf, uint64_t v )
 {
     if( v >= 10 )
     {
-        *buf++ = IntTable10[v/10];
+        *buf++ = '0' + v/10;
     }
     else
     {
         *buf++ = '0';
     }
-    *buf++ = IntTable10[v%10];
+    *buf++ = '0' + v%10;
 }
 
 static inline void PrintSmallInt( char*& buf, uint64_t v )
@@ -87,9 +85,9 @@ static inline void PrintSmallInt( char*& buf, uint64_t v )
     }
     else if( v >= 10 )
     {
-        *buf++ = IntTable10[v/10];
+        *buf++ = '0' + v/10;
     }
-    *buf++ = IntTable10[v%10];
+    *buf++ = '0' + v%10;
 }
 
 static inline void PrintFrac00( char*& buf, uint64_t v )
@@ -102,7 +100,7 @@ static inline void PrintFrac00( char*& buf, uint64_t v )
 static inline void PrintFrac0( char*& buf, uint64_t v )
 {
     *buf++ = '.';
-    *buf++ = IntTable10[(v+50)/100];
+    *buf++ = '0' + (v+50)/100;
 }
 
 static inline void PrintSmallIntFrac( char*& buf, uint64_t v )

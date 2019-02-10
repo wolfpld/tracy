@@ -4157,13 +4157,14 @@ void View::DrawZoneInfoWindow()
 
             pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
+            const auto rztime = 1.0 / ztime;
             const auto ty = ImGui::GetTextLineHeight();
             ImGui::Columns( 2 );
             ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
             ImGui::NextColumn();
             char buf[128];
             sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
-            ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
+            ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
             for( size_t i=0; i<children.size(); i++ )
             {
@@ -4186,7 +4187,7 @@ void View::DrawZoneInfoWindow()
                 }
                 ImGui::PopID();
                 ImGui::NextColumn();
-                const auto part = double( ctt[cti[i]] ) / ztime;
+                const auto part = double( ctt[cti[i]] ) * rztime;
                 char buf[128];
                 sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
                 ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );

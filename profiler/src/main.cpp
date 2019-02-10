@@ -281,7 +281,7 @@ int main( int argc, char** argv )
                 ImGui::EndPopup();
             }
             ImGui::Separator();
-            ImGui::Text( "Connect to client" );
+            ImGui::TextUnformatted( "Connect to client" );
             bool connectClicked = false;
             connectClicked |= ImGui::InputText( "", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
             if( !connHistVec.empty() )
@@ -394,28 +394,28 @@ int main( int argc, char** argv )
             switch( currProgress )
             {
             case tracy::LoadProgress::Initialization:
-                ImGui::Text( "Initialization..." );
+                ImGui::TextUnformatted( "Initialization..." );
                 break;
             case tracy::LoadProgress::Locks:
-                ImGui::Text( "Locks..." );
+                ImGui::TextUnformatted( "Locks..." );
                 break;
             case tracy::LoadProgress::Messages:
-                ImGui::Text( "Messages..." );
+                ImGui::TextUnformatted( "Messages..." );
                 break;
             case tracy::LoadProgress::Zones:
-                ImGui::Text( "CPU zones..." );
+                ImGui::TextUnformatted( "CPU zones..." );
                 break;
             case tracy::LoadProgress::GpuZones:
-                ImGui::Text( "GPU zones..." );
+                ImGui::TextUnformatted( "GPU zones..." );
                 break;
             case tracy::LoadProgress::Plots:
-                ImGui::Text( "Plots..." );
+                ImGui::TextUnformatted( "Plots..." );
                 break;
             case tracy::LoadProgress::Memory:
-                ImGui::Text( "Memory..." );
+                ImGui::TextUnformatted( "Memory..." );
                 break;
             case tracy::LoadProgress::CallStacks:
-                ImGui::Text( "Call stacks..." );
+                ImGui::TextUnformatted( "Call stacks..." );
                 break;
             default:
                 assert( false );
@@ -423,7 +423,7 @@ int main( int argc, char** argv )
             }
             ImGui::ProgressBar( float( currProgress ) / totalProgress, ImVec2( 200 * dpiScale, 0 ) );
 
-            ImGui::Text( "Progress..." );
+            ImGui::TextUnformatted( "Progress..." );
             auto subTotal = progress.subTotal.load( std::memory_order_relaxed );
             auto subProgress = progress.subProgress.load( std::memory_order_relaxed );
             if( subTotal == 0 )

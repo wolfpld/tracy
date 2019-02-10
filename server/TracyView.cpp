@@ -356,11 +356,18 @@ static const char* MemSizeToString( int64_t val )
     return buf;
 }
 
+static void TextDisabledUnformatted( const char* begin, const char* end = nullptr )
+{
+    ImGui::PushStyleColor(ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled]);
+    ImGui::TextUnformatted( begin, end );
+    ImGui::PopStyleColor();
+}
+
 static void TextFocused( const char* label, const char* value )
 {
-    ImGui::TextDisabled( "%s", label );
+    TextDisabledUnformatted( label );
     ImGui::SameLine();
-    ImGui::Text( "%s", value );
+    ImGui::TextUnformatted( value );
 }
 
 static void SetButtonHighlightColor()
@@ -487,7 +494,7 @@ const char* View::ShortenNamespace( const char* name ) const
 
 void View::DrawHelpMarker( const char* desc ) const
 {
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
@@ -527,7 +534,7 @@ bool View::Draw()
 #ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
 #endif
-        ImGui::Text( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
+        ImGui::TextUnformatted( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
         ImGui::Separator();
         if( ImGui::Button( "My bad" ) )
         {
@@ -543,7 +550,7 @@ bool View::Draw()
 #ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_LIGHTBULB );
 #endif
-        ImGui::Text( "The client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled." );
+        ImGui::TextUnformatted( "The client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled." );
         ImGui::Separator();
         if( ImGui::Button( "I understand" ) )
         {
@@ -561,10 +568,10 @@ bool View::Draw()
 #ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_SKULL );
 #endif
-        ImGui::Text( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
-        ImGui::Text( "Reason:" );
+        ImGui::TextUnformatted( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
+        ImGui::TextUnformatted( "Reason:" );
         ImGui::SameLine();
-        ImGui::Text( "%s", Worker::GetFailureString( failure ) );
+        ImGui::TextUnformatted( Worker::GetFailureString( failure ) );
         ImGui::Separator();
         if( data.srcloc != 0 )
         {
@@ -574,13 +581,13 @@ bool View::Draw()
                 TextFocused( "Zone name:", s_instance->m_worker.GetString( srcloc.name ) );
             }
             TextFocused( "Function:", s_instance->m_worker.GetString( srcloc.function ) );
-            ImGui::TextDisabled( "Location:" );
+            TextDisabledUnformatted( "Location:" );
             ImGui::SameLine();
             ImGui::Text( "%s:%i", s_instance->m_worker.GetString( srcloc.file ), srcloc.line );
         }
         TextFocused( "Thread:", s_instance->m_worker.GetThreadString( data.thread ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(id)" );
+        TextDisabledUnformatted( "(id)" );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -623,7 +630,7 @@ bool View::DrawImpl()
 #ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_WIFI );
 #endif
-        ImGui::Text( "Waiting for connection..." );
+        ImGui::TextUnformatted( "Waiting for connection..." );
         bool wasCancelled = ImGui::Button( "Cancel" );
         ImGui::End();
         return !wasCancelled;
@@ -808,7 +815,7 @@ bool View::DrawImpl()
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Go to frame" );
+        ImGui::TextUnformatted( "Go to frame" );
         ImGui::EndTooltip();
     }
 #else
@@ -840,7 +847,7 @@ bool View::DrawImpl()
     {
         m_notificationTime -= io.DeltaTime;
         ImGui::SameLine();
-        ImGui::TextDisabled( "%s", m_notificationText.c_str() );
+        TextDisabledUnformatted( m_notificationText.c_str() );
     }
     DrawFrames();
     DrawZones();
@@ -1004,8 +1011,8 @@ bool View::DrawConnection()
 #ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
 #endif
-        ImGui::Text( "All unsaved profiling data will be lost!" );
-        ImGui::Text( "Are you sure you want to proceed?" );
+        ImGui::TextUnformatted( "All unsaved profiling data will be lost!" );
+        ImGui::TextUnformatted( "Are you sure you want to proceed?" );
         ImGui::Separator();
         if( ImGui::Button( "Yes" ) )
         {
@@ -1126,7 +1133,7 @@ void View::DrawFrames()
                         f = std::max( f, m_worker.GetFrameTime( *m_frames, sel + j ) );
                     }
 
-                    ImGui::TextDisabled( "Frames:" );
+                    TextDisabledUnformatted( "Frames:" );
                     ImGui::SameLine();
                     ImGui::Text( "%s - %s (%s)", RealToString( sel, true ), RealToString( sel + g - 1, true ), RealToString( g, true ) );
                     ImGui::Separator();
@@ -1139,29 +1146,29 @@ void View::DrawFrames()
                         const auto offset = m_worker.GetFrameOffset();
                         if( sel == 0 )
                         {
-                            ImGui::Text( "Tracy initialization" );
+                            ImGui::TextUnformatted( "Tracy initialization" );
                             ImGui::Separator();
                             TextFocused( "Time:", TimeToString( m_worker.GetFrameTime( *m_frames, sel ) ) );
                         }
                         else if( offset == 0 )
                         {
-                            ImGui::TextDisabled( "Frame:" );
+                            TextDisabledUnformatted( "Frame:" );
                             ImGui::SameLine();
-                            ImGui::Text( "%s", RealToString( sel, true ) );
+                            ImGui::TextUnformatted( RealToString( sel, true ) );
                             ImGui::Separator();
                             TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( *m_frames, sel ) ) );
                         }
                         else if( sel == 1 )
                         {
-                            ImGui::Text( "Missed frames" );
+                            ImGui::TextUnformatted( "Missed frames" );
                             ImGui::Separator();
                             TextFocused( "Time:", TimeToString( m_worker.GetFrameTime( *m_frames, 1 ) ) );
                         }
                         else
                         {
-                            ImGui::TextDisabled( "Frame:" );
+                            TextDisabledUnformatted( "Frame:" );
                             ImGui::SameLine();
-                            ImGui::Text( "%s", RealToString( sel + offset - 1, true ) );
+                            ImGui::TextUnformatted( RealToString( sel + offset - 1, true ) );
                             ImGui::Separator();
                             TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( *m_frames, sel ) ) );
                         }
@@ -1170,7 +1177,7 @@ void View::DrawFrames()
                     {
                         ImGui::TextDisabled( "%s:", m_worker.GetString( m_frames->name ) );
                         ImGui::SameLine();
-                        ImGui::Text( "%s", RealToString( sel + 1, true ) );
+                        ImGui::TextUnformatted( RealToString( sel + 1, true ) );
                         ImGui::Separator();
                         TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( *m_frames, sel ) ) );
                     }
@@ -1534,7 +1541,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
             tooltipDisplayed = true;
 
             ImGui::BeginTooltip();
-            ImGui::Text( "%s", GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
+            ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
             ImGui::Separator();
             TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( frames, i ) - m_worker.GetTimeBegin() ) );
             ImGui::EndTooltip();
@@ -1644,9 +1651,9 @@ bool View::DrawZoneFrames( const FrameData& frames )
         if( !tooltipDisplayed )
         {
             ImGui::BeginTooltip();
-            ImGui::TextDisabled( "Frame set:" );
+            TextDisabledUnformatted( "Frame set:" );
             ImGui::SameLine();
-            ImGui::Text( "%s", frames.name == 0 ? "Frames" : m_worker.GetString( frames.name ) );
+            ImGui::TextUnformatted( frames.name == 0 ? "Frames" : m_worker.GetString( frames.name ) );
             ImGui::EndTooltip();
         }
         if( ImGui::IsMouseClicked( 0 ) )
@@ -1757,7 +1764,7 @@ void View::DrawZones()
                     }
 
                     ImGui::BeginTooltip();
-                    ImGui::Text( "%s", buf );
+                    ImGui::TextUnformatted( buf );
                     ImGui::Separator();
                     if( !isVulkan )
                     {
@@ -1779,7 +1786,7 @@ void View::DrawZones()
                     }
                     else
                     {
-                        ImGui::TextDisabled( "Query accuracy bits:" );
+                        TextDisabledUnformatted( "Query accuracy bits:" );
                         ImGui::SameLine();
                         ImGui::Text( "%i", v->accuracyBits );
                     }
@@ -1855,9 +1862,9 @@ void View::DrawZones()
                         }
                         else
                         {
-                            ImGui::Text( "%s", TimeToString( (*it)->time - m_worker.GetTimeBegin() ) );
+                            ImGui::TextUnformatted( TimeToString( (*it)->time - m_worker.GetTimeBegin() ) );
                             ImGui::Separator();
-                            ImGui::Text( "Message text:" );
+                            ImGui::TextUnformatted( "Message text:" );
                             ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( (*it)->ref ) );
                         }
                         ImGui::EndTooltip();
@@ -1932,7 +1939,7 @@ void View::DrawZones()
                 }
 
                 ImGui::BeginTooltip();
-                ImGui::Text( "%s", m_worker.GetThreadString( v->id ) );
+                ImGui::TextUnformatted( m_worker.GetThreadString( v->id ) );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(0x%" PRIx64 ")", v->id );
                 if( crash.thread == v->id )
@@ -2017,7 +2024,7 @@ void View::DrawZones()
         draw->AddRect( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x44DD8888 );
 
         ImGui::BeginTooltip();
-        ImGui::Text( "%s", TimeToString( e - s ) );
+        ImGui::TextUnformatted( TimeToString( e - s ) );
         ImGui::EndTooltip();
     }
     else if( drawMouseLine )
@@ -2996,8 +3003,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         if( markloc != 0 )
                         {
                             const auto& marklocdata = m_worker.GetSourceLocation( markloc );
-                            ImGui::Text( "Lock event location:" );
-                            ImGui::Text( "%s", m_worker.GetString( marklocdata.function ) );
+                            ImGui::TextUnformatted( "Lock event location:" );
+                            ImGui::TextUnformatted( m_worker.GetString( marklocdata.function ) );
                             ImGui::Text( "%s:%i", m_worker.GetString( marklocdata.file ), marklocdata.line );
                             ImGui::Separator();
                         }
@@ -3018,7 +3025,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 if( (*vbegin)->waitList != 0 )
                                 {
                                     assert( !AreOtherWaiting( (*next)->waitList, threadBit ) );
-                                    ImGui::Text( "Recursive lock acquire in thread." );
+                                    ImGui::TextUnformatted( "Recursive lock acquire in thread." );
                                 }
                                 break;
                             case LockState::HasBlockingLock:
@@ -3255,11 +3262,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     }
                     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
                     ImGui::Separator();
-                    ImGui::TextDisabled( "Thread list:" );
+                    TextDisabledUnformatted( "Thread list:" );
                     ImGui::Indent( ty );
                     for( const auto& t : v.second.threadList )
                     {
-                        ImGui::Text( "%s", m_worker.GetThreadString( t ) );
+                        ImGui::TextUnformatted( m_worker.GetThreadString( t ) );
                     }
                     ImGui::Unindent( ty );
                     ImGui::Separator();
@@ -3574,11 +3581,11 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
         ImGui::BeginTooltip();
         if( type == PlotType::Memory )
         {
-            ImGui::TextDisabled( "Value:" );
+            TextDisabledUnformatted( "Value:" );
             ImGui::SameLine();
             if( item->val < 10000ll )
             {
-                ImGui::Text( "%s", MemSizeToString( item->val ) );
+                ImGui::TextUnformatted( MemSizeToString( item->val ) );
             }
             else
             {
@@ -3618,7 +3625,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                 if( ev )
                 {
                     ImGui::Separator();
-                    ImGui::TextDisabled( "Address:" );
+                    TextDisabledUnformatted( "Address:" );
                     ImGui::SameLine();
                     ImGui::Text( "0x%" PRIx64, ev->ptr );
                     TextFocused( "Appeared at", TimeToString( ev->timeAlloc - m_worker.GetTimeBegin() ) );
@@ -3629,7 +3636,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     }
                     if( ev->timeFree < 0 )
                     {
-                        ImGui::Text( "Allocation still active" );
+                        ImGui::TextUnformatted( "Allocation still active" );
                     }
                     else
                     {
@@ -3637,7 +3644,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                         if( change < 0 )
                         {
                             ImGui::SameLine();
-                            ImGui::TextDisabled( "(this event)" );
+                            TextDisabledUnformatted( "(this event)" );
                         }
                         TextFocused( "Duration:", TimeToString( ev->timeFree - ev->timeAlloc ) );
                     }
@@ -3701,7 +3708,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             {
                 if( showUnknownFrames )
                 {
-                    ImGui::TextDisabled( "[unknown frames]" );
+                    TextDisabledUnformatted( "[unknown frames]" );
                 }
             }
             else if( prev->callstack != curr->callstack )
@@ -3730,7 +3737,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                 {
                     auto frameData = worker.GetCallstackFrame( prevCs[j] );
                     auto frame = frameData->data + frameData->size - 1;
-                    ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
+                    TextDisabledUnformatted( worker.GetString( frame->name ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     if( anim.Match( frame ) )
@@ -3746,7 +3753,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                     const auto fileName = worker.GetString( frame->file );
                     if( frame->line == 0 )
                     {
-                        ImGui::TextDisabled( "%s", fileName );
+                        TextDisabledUnformatted( fileName );
                     }
                     else
                     {
@@ -3776,7 +3783,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     {
         if( showUnknownFrames )
         {
-            ImGui::TextDisabled( "[unknown frames]" );
+            TextDisabledUnformatted( "[unknown frames]" );
         }
     }
     else
@@ -3787,7 +3794,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
         {
             auto frameData = worker.GetCallstackFrame( cs[i] );
             auto frame = frameData->data + frameData->size - 1;
-            ImGui::TextDisabled( "%s", worker.GetString( frame->name ) );
+            TextDisabledUnformatted( worker.GetString( frame->name ) );
             ImGui::SameLine();
             ImGui::Spacing();
             if( anim.Match( frame ) )
@@ -3803,7 +3810,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             const auto fileName = worker.GetString( frame->file );
             if( frame->line == 0 )
             {
-                ImGui::TextDisabled( "%s", fileName );
+                TextDisabledUnformatted( fileName );
             }
             else
             {
@@ -3934,12 +3941,12 @@ void View::DrawZoneInfoWindow()
         TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
     }
     TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
-    ImGui::TextDisabled( "Location:" );
+    TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(id)" );
+    TextDisabledUnformatted( "(id)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
@@ -3986,7 +3993,7 @@ void View::DrawZoneInfoWindow()
         const auto fDist = std::distance( fit, fend );
         if( aDist == 0 && fDist == 0 )
         {
-            ImGui::Text( "No memory events." );
+            ImGui::TextUnformatted( "No memory events." );
         }
         else
         {
@@ -4019,20 +4026,20 @@ void View::DrawZoneInfoWindow()
 
             if( nAlloc == 0 && nFree == 0 )
             {
-                ImGui::Text( "No memory events." );
+                ImGui::TextUnformatted( "No memory events." );
             }
             else
             {
-                ImGui::Text( "%s", RealToString( nAlloc + nFree, true ) );
+                ImGui::TextUnformatted( RealToString( nAlloc + nFree, true ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "memory events." );
-                ImGui::Text( "%s", RealToString( nAlloc, true ) );
+                TextDisabledUnformatted( "memory events." );
+                ImGui::TextUnformatted( RealToString( nAlloc, true ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "allocs," );
+                TextDisabledUnformatted( "allocs," );
                 ImGui::SameLine();
-                ImGui::Text( "%s", RealToString( nFree, true ) );
+                ImGui::TextUnformatted( RealToString( nFree, true ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "frees." );
+                TextDisabledUnformatted( "frees." );
                 TextFocused( "Memory allocated:", MemSizeToString( cAlloc ) );
                 TextFocused( "Memory freed:", MemSizeToString( cFree ) );
                 TextFocused( "Overall change:", MemSizeToString( cAlloc - cFree ) );
@@ -4288,12 +4295,12 @@ void View::DrawGpuInfoWindow()
     const auto tid = GetZoneThread( ev );
     TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
     TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
-    ImGui::TextDisabled( "Location:" );
+    TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(id)" );
+    TextDisabledUnformatted( "(id)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
@@ -4510,7 +4517,7 @@ void View::DrawOptions()
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
-            ImGui::Text( "Locks with no recorded events are counted, but not listed." );
+            ImGui::TextUnformatted( "Locks with no recorded events are counted, but not listed." );
             ImGui::EndTooltip();
         }
         if( expand )
@@ -4531,11 +4538,11 @@ void View::DrawOptions()
                 }
             }
             ImGui::SameLine();
-            ImGui::TextDisabled( "(?)" );
+            TextDisabledUnformatted( "(?)" );
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( "Right click on lock name to open lock information window." );
+                ImGui::TextUnformatted( "Right click on lock name to open lock information window." );
                 ImGui::EndTooltip();
             }
 
@@ -4662,7 +4669,7 @@ void View::DrawOptions()
                 if( ImGui::IsItemHovered() )
                 {
                     ImGui::BeginTooltip();
-                    ImGui::Text( "Crashed" );
+                    ImGui::TextUnformatted( "Crashed" );
                     ImGui::EndTooltip();
                 }
 #else
@@ -4767,19 +4774,19 @@ void View::DrawMessages()
 
     ImGui::Separator();
     ImGui::Columns( 3 );
-    ImGui::Text( "Time" );
+    ImGui::TextUnformatted( "Time" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Click on message to center timeline on it." );
+        ImGui::TextUnformatted( "Click on message to center timeline on it." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
-    ImGui::Text( "Thread" );
+    ImGui::TextUnformatted( "Thread" );
     ImGui::NextColumn();
-    ImGui::Text( "Message" );
+    ImGui::TextUnformatted( "Message" );
     ImGui::NextColumn();
     ImGui::Separator();
 
@@ -4803,7 +4810,7 @@ void View::DrawMessages()
             }
             ImGui::PopID();
             ImGui::NextColumn();
-            ImGui::Text( "%s", m_worker.GetThreadString( v->thread ) );
+            ImGui::TextUnformatted( m_worker.GetThreadString( v->thread ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(0x%" PRIX64 ")", v->thread );
             ImGui::NextColumn();
@@ -5047,11 +5054,11 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 ImGui::Checkbox( "Cumulate time", &m_findZone.cumulateTime );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(?)" );
+                TextDisabledUnformatted( "(?)" );
                 if( ImGui::IsItemHovered() )
                 {
                     ImGui::BeginTooltip();
-                    ImGui::Text( "Show total time taken by calls in each bin instead of call counts." );
+                    ImGui::TextUnformatted( "Show total time taken by calls in each bin instead of call counts." );
                     ImGui::EndTooltip();
                 }
                 ImGui::SameLine();
@@ -5062,7 +5069,7 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.2f%%)", 100.f * zoneData.selfTotal / zoneData.total );
 
-                ImGui::TextDisabled( "Time range:" );
+                TextDisabledUnformatted( "Time range:" );
                 ImGui::SameLine();
                 ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
@@ -5221,7 +5228,7 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         TextFocused( "Median time:", TimeToString( m_findZone.median ) );
 
-                        ImGui::TextDisabled( "Selection range:" );
+                        TextDisabledUnformatted( "Selection range:" );
                         ImGui::SameLine();
                         if( m_findZone.highlight.active )
                         {
@@ -5231,14 +5238,14 @@ void View::DrawFindZone()
                         }
                         else
                         {
-                            ImGui::Text( "none" );
+                            ImGui::TextUnformatted( "none" );
                         }
                         ImGui::SameLine();
-                        ImGui::TextDisabled( "(?)" );
+                        TextDisabledUnformatted( "(?)" );
                         if( ImGui::IsItemHovered() )
                         {
                             ImGui::BeginTooltip();
-                            ImGui::Text( "Left draw on histogram to select range. Right click to clear selection." );
+                            ImGui::TextUnformatted( "Left draw on histogram to select range. Right click to clear selection." );
                             ImGui::EndTooltip();
                         }
                         if( m_findZone.highlight.active )
@@ -5272,24 +5279,24 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Average time" );
+                        ImGui::TextUnformatted( "Average time" );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
                         ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0xAA/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Median time" );
+                        ImGui::TextUnformatted( "Median time" );
                         ImGui::Checkbox( "###draw2", &m_findZone.drawSelAvgMed );
                         ImGui::SameLine();
                         ImGui::ColorButton( "c3", ImVec4( 0xFF/255.f, 0xAA/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
                         if( m_findZone.selGroup != m_findZone.Unselected )
                         {
-                            ImGui::Text( "Group average" );
+                            ImGui::TextUnformatted( "Group average" );
                         }
                         else
                         {
-                            ImGui::TextDisabled( "Group average" );
+                            TextDisabledUnformatted( "Group average" );
                         }
                         ImGui::SameLine();
                         ImGui::Spacing();
@@ -5298,11 +5305,11 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         if( m_findZone.selGroup != m_findZone.Unselected )
                         {
-                            ImGui::Text( "Group median" );
+                            ImGui::TextUnformatted( "Group median" );
                         }
                         else
                         {
-                            ImGui::TextDisabled( "Group median" );
+                            TextDisabledUnformatted( "Group median" );
                         }
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
@@ -5520,10 +5527,10 @@ void View::DrawFindZone()
                             }
 
                             ImGui::BeginTooltip();
-                            ImGui::TextDisabled( "Time range:" );
+                            TextDisabledUnformatted( "Time range:" );
                             ImGui::SameLine();
                             ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
-                            ImGui::TextDisabled( "Count:" );
+                            TextDisabledUnformatted( "Count:" );
                             ImGui::SameLine();
                             ImGui::Text( "%" PRIu64, bins[bin] );
                             TextFocused( "Time spent in bin:", TimeToString( binTime[bin] ) );
@@ -5591,18 +5598,18 @@ void View::DrawFindZone()
         }
 
         ImGui::Separator();
-        ImGui::Text( "Found zones:" );
+        ImGui::TextUnformatted( "Found zones:" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(?)" );
+        TextDisabledUnformatted( "(?)" );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
-            ImGui::Text( "Left click to highlight entry. Right click to clear selection." );
+            ImGui::TextUnformatted( "Left click to highlight entry. Right click to clear selection." );
             ImGui::EndTooltip();
         }
 
         bool groupChanged = false;
-        ImGui::Text( "Group by:" );
+        ImGui::TextUnformatted( "Group by:" );
         ImGui::SameLine();
         groupChanged |= ImGui::RadioButton( "Thread", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Thread );
         ImGui::SameLine();
@@ -5615,7 +5622,7 @@ void View::DrawFindZone()
             m_findZone.ResetGroups();
         }
 
-        ImGui::Text( "Sort by:" );
+        ImGui::TextUnformatted( "Sort by:" );
         ImGui::SameLine();
         ImGui::RadioButton( "Order", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Order );
         ImGui::SameLine();
@@ -5625,11 +5632,11 @@ void View::DrawFindZone()
         ImGui::SameLine();
         ImGui::RadioButton( "MTPC", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Mtpc );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(?)" );
+        TextDisabledUnformatted( "(?)" );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
-            ImGui::Text( "Mean time per call" );
+            ImGui::TextUnformatted( "Mean time per call" );
             ImGui::EndTooltip();
         }
 
@@ -5768,11 +5775,11 @@ void View::DrawFindZone()
                 ImGui::NextColumn();
                 if( ImGui::SmallButton( "Name" ) )  m_findZone.tableSortBy = FindZone::TableSortBy::Name;
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(?)" );
+                TextDisabledUnformatted( "(?)" );
                 if( ImGui::IsItemHovered() )
                 {
                     ImGui::BeginTooltip();
-                    ImGui::Text( "Only displayed if custom zone name is set." );
+                    ImGui::TextUnformatted( "Only displayed if custom zone name is set." );
                     ImGui::EndTooltip();
                 }
                 ImGui::NextColumn();
@@ -5838,11 +5845,11 @@ void View::DrawFindZone()
                     }
 
                     ImGui::NextColumn();
-                    ImGui::Text( "%s", TimeToString( timespan ) );
+                    ImGui::TextUnformatted( TimeToString( timespan ) );
                     ImGui::NextColumn();
                     if( ev->name.active )
                     {
-                        ImGui::Text( "%s", m_worker.GetString( ev->name ) );
+                        ImGui::TextUnformatted( m_worker.GetString( ev->name ) );
                     }
                     ImGui::NextColumn();
 
@@ -5929,17 +5936,17 @@ void View::DrawCompare()
     ImGui::TextColored( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
     ImGui::SameLine();
 #endif
-    ImGui::TextDisabled( "This trace:" );
+    TextDisabledUnformatted( "This trace:" );
     ImGui::SameLine();
-    ImGui::Text( "%s", m_worker.GetCaptureName().c_str() );
+    ImGui::TextUnformatted( m_worker.GetCaptureName().c_str() );
 
 #ifdef TRACY_EXTENDED_FONT
     ImGui::TextColored( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
     ImGui::SameLine();
 #endif
-    ImGui::TextDisabled( "External trace:" );
+    TextDisabledUnformatted( "External trace:" );
     ImGui::SameLine();
-    ImGui::Text( "%s", m_compare.second->GetCaptureName().c_str() );
+    ImGui::TextUnformatted( m_compare.second->GetCaptureName().c_str() );
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
     if( ImGui::SmallButton( ICON_FA_TRASH_ALT " Unload" ) )
@@ -5998,7 +6005,7 @@ void View::DrawCompare()
         ImGui::TextColored( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
         ImGui::SameLine();
 #endif
-        ImGui::Text( "This trace" );
+        ImGui::TextUnformatted( "This trace" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_compare.match[0].size() );
         ImGui::NextColumn();
@@ -6006,7 +6013,7 @@ void View::DrawCompare()
         ImGui::TextColored( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
         ImGui::SameLine();
 #endif
-        ImGui::Text( "External trace" );
+        ImGui::TextUnformatted( "External trace" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_compare.match[1].size() );
         ImGui::Separator();
@@ -6106,25 +6113,25 @@ void View::DrawCompare()
             ImGui::SameLine();
             ImGui::Checkbox( "Cumulate time", &m_compare.cumulateTime );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(?)" );
+            TextDisabledUnformatted( "(?)" );
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( "Show total time taken by calls in each bin instead of call counts." );
+                ImGui::TextUnformatted( "Show total time taken by calls in each bin instead of call counts." );
                 ImGui::EndTooltip();
             }
             ImGui::SameLine();
             ImGui::Checkbox( "Normalize values", &m_compare.normalize );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(?)" );
+            TextDisabledUnformatted( "(?)" );
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( "Normalization will fudge reported data values!" );
+                ImGui::TextUnformatted( "Normalization will fudge reported data values!" );
                 ImGui::EndTooltip();
             }
 
-            ImGui::TextDisabled( "Time range:" );
+            TextDisabledUnformatted( "Time range:" );
             ImGui::SameLine();
             ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
@@ -6277,7 +6284,7 @@ void View::DrawCompare()
                     ImGui::ColorButton( "c1", ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
 #endif
                     ImGui::SameLine();
-                    ImGui::Text( "This trace" );
+                    ImGui::TextUnformatted( "This trace" );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
@@ -6293,14 +6300,14 @@ void View::DrawCompare()
                     ImGui::ColorButton( "c2", ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
 #endif
                     ImGui::SameLine();
-                    ImGui::Text( "External trace" );
+                    ImGui::TextUnformatted( "External trace" );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
 
                     ImGui::ColorButton( "c3", ImVec4( 0x44/255.f, 0xBB/255.f, 0xBB/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                     ImGui::SameLine();
-                    ImGui::Text( "Overlap" );
+                    ImGui::TextUnformatted( "Overlap" );
 
                     const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                     const auto wpos = ImGui::GetCursorScreenPos();
@@ -6486,34 +6493,34 @@ void View::DrawCompare()
                         }
 
                         ImGui::BeginTooltip();
-                        ImGui::TextDisabled( "Time range:" );
+                        TextDisabledUnformatted( "Time range:" );
                         ImGui::SameLine();
                         ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
-                        ImGui::TextDisabled( "Count:" );
+                        TextDisabledUnformatted( "Count:" );
                         ImGui::SameLine();
                         ImGui::Text( "%g / %g", floor( bins[bin].v0 ), floor( bins[bin].v1 ) );
-                        ImGui::TextDisabled( "Time spent in bin:" );
+                        TextDisabledUnformatted( "Time spent in bin:" );
                         ImGui::SameLine();
                         ImGui::Text( "%s / %s", TimeToString( binTime[bin].v0 ), TimeToString( binTime[bin].v1 ) );
-                        ImGui::TextDisabled( "Time spent in the left bins:" );
+                        TextDisabledUnformatted( "Time spent in the left bins:" );
                         ImGui::SameLine();
                         ImGui::Text( "%s / %s", TimeToString( tBefore[0] ), TimeToString( tBefore[1] ) );
-                        ImGui::TextDisabled( "Time spent in the right bins:" );
+                        TextDisabledUnformatted( "Time spent in the right bins:" );
                         ImGui::SameLine();
                         ImGui::Text( "%s / %s", TimeToString( tAfter[0] ), TimeToString( tAfter[1] ) );
-                        ImGui::TextDisabled( "(Data is displayed as:" );
+                        TextDisabledUnformatted( "(Data is displayed as:" );
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
                         ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                         ImGui::SameLine();
 #endif
-                        ImGui::TextDisabled( "[this trace] /" );
+                        TextDisabledUnformatted( "[this trace] /" );
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
                         ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
 #endif
-                        ImGui::TextDisabled( "[external trace])" );
+                        TextDisabledUnformatted( "[external trace])" );
                         ImGui::EndTooltip();
                     }
                 }
@@ -6591,9 +6598,9 @@ void View::DrawStatistics()
 
     ImGui::Columns( 5 );
     ImGui::Separator();
-    ImGui::Text( "Name" );
+    ImGui::TextUnformatted( "Name" );
     ImGui::NextColumn();
-    ImGui::Text( "Location" );
+    ImGui::TextUnformatted( "Location" );
     ImGui::NextColumn();
     if( ImGui::SmallButton( "Total time" ) ) m_statSort = 0;
     ImGui::NextColumn();
@@ -6601,11 +6608,11 @@ void View::DrawStatistics()
     ImGui::NextColumn();
     if( ImGui::SmallButton( "MTPC" ) ) m_statSort = 2;
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Mean time per call" );
+        ImGui::TextUnformatted( "Mean time per call" );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
@@ -6624,11 +6631,11 @@ void View::DrawStatistics()
         ImGui::NextColumn();
         ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
         ImGui::NextColumn();
-        ImGui::Text( "%s", TimeToString( m_statSelf ? v->second.selfTotal : v->second.total ) );
+        ImGui::TextUnformatted( TimeToString( m_statSelf ? v->second.selfTotal : v->second.total ) );
         ImGui::NextColumn();
-        ImGui::Text( "%s", RealToString( v->second.zones.size(), true ) );
+        ImGui::TextUnformatted( RealToString( v->second.zones.size(), true ) );
         ImGui::NextColumn();
-        ImGui::Text( "%s", TimeToString( ( m_statSelf ? v->second.selfTotal : v->second.total ) / v->second.zones.size() ) );
+        ImGui::TextUnformatted( TimeToString( ( m_statSelf ? v->second.selfTotal : v->second.total ) / v->second.zones.size() ) );
         ImGui::NextColumn();
 
         ImGui::PopID();
@@ -6661,26 +6668,26 @@ void View::DrawCallstackWindow()
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
 
     ImGui::Columns( 3 );
-    ImGui::Text( "Frame" );
+    ImGui::TextUnformatted( "Frame" );
     ImGui::NextColumn();
-    ImGui::Text( "Function" );
+    ImGui::TextUnformatted( "Function" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Click on entry to copy it to clipboard." );
+        ImGui::TextUnformatted( "Click on entry to copy it to clipboard." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
-    ImGui::Text( "Location" );
+    ImGui::TextUnformatted( "Location" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Click on entry to copy it to clipboard." );
-        ImGui::Text( "Right click on entry to try to open source file." );
+        ImGui::TextUnformatted( "Click on entry to copy it to clipboard." );
+        ImGui::TextUnformatted( "Right click on entry to try to open source file." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
@@ -6694,7 +6701,7 @@ void View::DrawCallstackWindow()
         {
             char buf[32];
             sprintf( buf, "%p", (void*)entry );
-            ImGui::Text( "%s", buf );
+            ImGui::TextUnformatted( buf );
             if( ImGui::IsItemClicked() )
             {
                 ImGui::SetClipboardText( buf );
@@ -6735,7 +6742,7 @@ void View::DrawCallstackWindow()
                 }
                 else
                 {
-                    ImGui::TextDisabled( "inline" );
+                    TextDisabledUnformatted( "inline" );
                 }
                 ImGui::NextColumn();
 
@@ -6768,7 +6775,7 @@ void View::DrawCallstackWindow()
                 {
                     if( frame.line == 0 )
                     {
-                        ImGui::TextDisabled( "%s", txt );
+                        TextDisabledUnformatted( txt );
                     }
                     else
                     {
@@ -6852,7 +6859,7 @@ void View::DrawMemoryAllocWindow()
     }
     if( ev.timeFree < 0 )
     {
-        ImGui::TextDisabled( "Allocation still active" );
+        TextDisabledUnformatted( "Allocation still active" );
     }
     else
     {
@@ -6923,7 +6930,7 @@ void View::DrawMemoryAllocWindow()
         if( zoneAlloc != 0 && zoneAlloc == zoneFree )
         {
             ImGui::SameLine();
-            ImGui::TextDisabled( "(same zone)" );
+            TextDisabledUnformatted( "(same zone)" );
         }
     }
 
@@ -7035,11 +7042,11 @@ void View::DrawInfo()
                 ImGui::SameLine();
                 ImGui::Checkbox( "Log time", &m_frameSortData.logTime );
 
-                ImGui::TextDisabled( "Time range:" );
+                TextDisabledUnformatted( "Time range:" );
                 ImGui::SameLine();
                 ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
-                ImGui::TextDisabled( "FPS range:" );
+                TextDisabledUnformatted( "FPS range:" );
                 ImGui::SameLine();
                 ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ), true ), RealToString( round( 1000000000.0 / tmax ), true ) );
 
@@ -7103,13 +7110,13 @@ void View::DrawInfo()
                         ImGui::SameLine();
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Average time" );
+                        ImGui::TextUnformatted( "Average time" );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
                         ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
-                        ImGui::Text( "Median time" );
+                        ImGui::TextUnformatted( "Median time" );
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();
@@ -7295,12 +7302,12 @@ void View::DrawInfo()
                             }
 
                             ImGui::BeginTooltip();
-                            ImGui::TextDisabled( "Time range:" );
+                            TextDisabledUnformatted( "Time range:" );
                             ImGui::SameLine();
                             ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
                             ImGui::SameLine();
                             ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( round( 1000000000.0 / t0 ), true ), RealToString( round( 1000000000.0 / t1 ), true ) );
-                            ImGui::TextDisabled( "Count:" );
+                            TextDisabledUnformatted( "Count:" );
                             ImGui::SameLine();
                             ImGui::Text( "%" PRIu64, bins[bin] );
                             ImGui::EndTooltip();
@@ -7327,7 +7334,7 @@ void View::DrawInfo()
         TextFocused( "Thread:", m_worker.GetThreadString( crash.thread ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(0x%" PRIX64 ")", crash.thread );
-        ImGui::TextDisabled( "Reason:" );
+        TextDisabledUnformatted( "Reason:" );
         ImGui::SameLine();
         ImGui::TextWrapped( "%s", m_worker.GetString( crash.message ) );
         if( crash.callstack != 0 )
@@ -7474,7 +7481,7 @@ void View::DrawLockInfoWindow()
     bool visible = true;
     ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
     ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
-    ImGui::TextDisabled( "Location:" );
+    TextDisabledUnformatted( "Location:" );
     if( m_lockInfoAnim.Match( m_lockInfoWindow ) )
     {
         const auto time = m_lockInfoAnim.Time();
@@ -7538,7 +7545,7 @@ void View::DrawLockInfoWindow()
     {
         for( const auto& t : lock.threadList )
         {
-            ImGui::Text( "%s", m_worker.GetThreadString( t ) );
+            ImGui::TextUnformatted( m_worker.GetThreadString( t ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(0x%" PRIX64 ")", t );
         }
@@ -7557,64 +7564,64 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
 
     ImGui::BeginChild( id ? id : "##memScroll", ImVec2( 0, std::max( ty * std::min<int64_t>( dist, 5 ), std::min( ty * dist, ImGui::GetContentRegionAvail().y ) ) ) );
     ImGui::Columns( 8 );
-    ImGui::Text( "Address" );
+    ImGui::TextUnformatted( "Address" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Click on address to display memory allocation info window." );
-        ImGui::Text( "Middle click to zoom to allocation range." );
+        ImGui::TextUnformatted( "Click on address to display memory allocation info window." );
+        ImGui::TextUnformatted( "Middle click to zoom to allocation range." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
-    ImGui::Text( "Size" );
+    ImGui::TextUnformatted( "Size" );
     ImGui::NextColumn();
-    ImGui::Text( "Appeared at" );
+    ImGui::TextUnformatted( "Appeared at" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Click on entry to center timeline at the memory allocation time." );
+        ImGui::TextUnformatted( "Click on entry to center timeline at the memory allocation time." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
-    ImGui::Text( "Duration" );
+    ImGui::TextUnformatted( "Duration" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Active allocations are displayed using green color." );
-        ImGui::Text( "Click on entry to center timeline at the memory release time." );
+        ImGui::TextUnformatted( "Active allocations are displayed using green color." );
+        ImGui::TextUnformatted( "Click on entry to center timeline at the memory release time." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
-    ImGui::Text( "Thread" );
+    ImGui::TextUnformatted( "Thread" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Shows one thread if alloc and free was performed on the same thread." );
-        ImGui::Text( "Otherwise two threads are displayed in order: alloc, free." );
+        ImGui::TextUnformatted( "Shows one thread if alloc and free was performed on the same thread." );
+        ImGui::TextUnformatted( "Otherwise two threads are displayed in order: alloc, free." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
-    ImGui::Text( "Zone alloc" );
+    ImGui::TextUnformatted( "Zone alloc" );
     ImGui::NextColumn();
-    ImGui::Text( "Zone free" );
+    ImGui::TextUnformatted( "Zone free" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "If alloc and free is performed in the same zone, it is displayed in yellow color." );
+        ImGui::TextUnformatted( "If alloc and free is performed in the same zone, it is displayed in yellow color." );
         ImGui::EndTooltip();
     }
     ImGui::NextColumn();
-    ImGui::Text( "Call stack" );
+    ImGui::TextUnformatted( "Call stack" );
     ImGui::NextColumn();
     ImGui::Separator();
 
@@ -7650,7 +7657,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             m_memoryAllocHoverWait = 2;
         }
         ImGui::NextColumn();
-        ImGui::Text( "%s", MemSizeToString( v->size ) );
+        ImGui::TextUnformatted( MemSizeToString( v->size ) );
         ImGui::NextColumn();
         ImGui::PushID( idx++ );
         if( ImGui::Selectable( TimeToString( v->timeAlloc - m_worker.GetTimeBegin() ) ) )
@@ -7663,7 +7670,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         {
             ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "%s", TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
             ImGui::NextColumn();
-            ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+            ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
         }
         else
         {
@@ -7676,7 +7683,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             ImGui::NextColumn();
             if( v->threadAlloc == v->threadFree )
             {
-                ImGui::Text( "%s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+                ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
             }
             else
             {
@@ -7687,7 +7694,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         auto zone = FindZoneAtTime( m_worker.DecompressThread( v->threadAlloc ), v->timeAlloc );
         if( !zone )
         {
-            ImGui::Text( "-" );
+            ImGui::TextUnformatted( "-" );
         }
         else
         {
@@ -7721,7 +7728,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             auto zoneFree = FindZoneAtTime( m_worker.DecompressThread( v->threadFree ), v->timeFree );
             if( !zoneFree )
             {
-                ImGui::Text( "-" );
+                ImGui::TextUnformatted( "-" );
             }
             else
             {
@@ -7759,7 +7766,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         ImGui::NextColumn();
         if( v->csAlloc == 0 )
         {
-            ImGui::TextDisabled( "[alloc]" );
+            TextDisabledUnformatted( "[alloc]" );
         }
         else
         {
@@ -7770,7 +7777,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         ImGui::SameLine();
         if( v->csFree == 0 )
         {
-            ImGui::TextDisabled( "[free]" );
+            TextDisabledUnformatted( "[free]" );
         }
         else
         {
@@ -7956,12 +7963,12 @@ void View::DrawMemory()
     ImGui::Checkbox( "Restrict time", &m_memInfo.restrictTime );
 #endif
     ImGui::SameLine();
-    ImGui::TextDisabled( "(?)" );
+    TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
-        ImGui::Text( "Don't show allocations beyond the middle of timeline" );
-        ImGui::Text( "display (it is indicated by purple line)." );
+        ImGui::TextUnformatted( "Don't show allocations beyond the middle of timeline" );
+        ImGui::TextUnformatted( "display (it is indicated by purple line)." );
         ImGui::EndTooltip();
     }
 
@@ -8023,7 +8030,7 @@ void View::DrawMemory()
 
             if( match.empty() )
             {
-                ImGui::Text( "Found no allocations at given address" );
+                ImGui::TextUnformatted( "Found no allocations at given address" );
             }
             else
             {
@@ -8180,15 +8187,15 @@ void View::DrawMemory()
     {
         ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameBottomUp );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(?)" );
+        TextDisabledUnformatted( "(?)" );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
-            ImGui::Text( "If enabled, only one source location will be displayed (which may be incorrect)." );
+            ImGui::TextUnformatted( "If enabled, only one source location will be displayed (which may be incorrect)." );
             ImGui::EndTooltip();
         }
-        ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
-        ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
+        TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip." );
+        TextDisabledUnformatted( "Right click on function name to display allocations list. Right click on file name to open source file." );
 
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeBottomUp( mem );
@@ -8208,15 +8215,15 @@ void View::DrawMemory()
     {
         ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameTopDown );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(?)" );
+        TextDisabledUnformatted( "(?)" );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
-            ImGui::Text( "If enabled, only one source location will be displayed (which may be incorrect)." );
+            ImGui::TextUnformatted( "If enabled, only one source location will be displayed (which may be incorrect)." );
             ImGui::EndTooltip();
         }
-        ImGui::TextDisabled( "Press ctrl key to display allocation info tooltip." );
-        ImGui::TextDisabled( "Right click on function name to display allocations list. Right click on file name to open source file." );
+        TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip." );
+        TextDisabledUnformatted( "Right click on function name to display allocations list. Right click on file name to open source file." );
 
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeTopDown( mem );
@@ -8245,7 +8252,7 @@ void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
         if( v.children.empty() )
         {
             ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
-            ImGui::Text( "%s", m_worker.GetString( frame.name ) );
+            ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
             ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
         }
         else
@@ -8664,13 +8671,13 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::BeginTooltip();
     if( ev.name.active )
     {
-        ImGui::Text( "%s", m_worker.GetString( ev.name ) );
+        ImGui::TextUnformatted( m_worker.GetString( ev.name ) );
     }
     if( srcloc.name.active )
     {
-        ImGui::Text( "%s", m_worker.GetString( srcloc.name ) );
+        ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
     }
-    ImGui::Text( "%s", m_worker.GetString( srcloc.function ) );
+    ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
@@ -8683,7 +8690,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
     if( ev.cpu_start >= 0 )
     {
-        ImGui::TextDisabled( "CPU:" );
+        TextDisabledUnformatted( "CPU:" );
         ImGui::SameLine();
         if( ev.end < 0 || ev.cpu_start == ev.cpu_end )
         {
@@ -8709,8 +8716,8 @@ void View::ZoneTooltip( const GpuEvent& ev )
     const auto end = m_worker.GetZoneEnd( ev );
 
     ImGui::BeginTooltip();
-    ImGui::Text( "%s", m_worker.GetString( srcloc.name ) );
-    ImGui::Text( "%s", m_worker.GetString( srcloc.function ) );
+    ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
+    ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
@@ -8751,7 +8758,7 @@ void View::CallstackTooltip( uint32_t idx )
         }
         else
         {
-            ImGui::Text( "%s", m_worker.GetString( frame->data[frame->size-1].name ) );
+            ImGui::TextUnformatted( m_worker.GetString( frame->data[frame->size-1].name ) );
         }
     }
     ImGui::EndTooltip();

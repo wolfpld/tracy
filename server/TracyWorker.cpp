@@ -1,7 +1,5 @@
 #ifdef _WIN32
 #  include <winsock2.h>
-#else
-#  include <sys/time.h>
 #endif
 
 #ifdef _WIN32
@@ -1471,10 +1469,6 @@ uint16_t Worker::CompressThreadNew( uint64_t thread )
 
 void Worker::Exec()
 {
-    timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 10000;
-
     auto ShouldExit = [this]
     {
         return m_shutdown.load( std::memory_order_relaxed );
@@ -1497,7 +1491,7 @@ void Worker::Exec()
     uint32_t protocolVersion = ProtocolVersion;
     m_sock.Send( &protocolVersion, sizeof( protocolVersion ) );
     HandshakeStatus handshake;
-    if( !m_sock.Read( &handshake, sizeof( handshake ), &tv, ShouldExit ) ) goto close;
+    if( !m_sock.Read( &handshake, sizeof( handshake ), 10, ShouldExit ) ) goto close;
     m_handshake.store( handshake, std::memory_order_relaxed );
     switch( handshake )
     {
@@ -1522,7 +1516,7 @@ void Worker::Exec()
 
     {
         WelcomeMessage welcome;
-        if( !m_sock.Read( &welcome, sizeof( welcome ), &tv, ShouldExit ) ) goto close;
+        if( !m_sock.Read( &welcome, sizeof( welcome ), 10, ShouldExit ) ) goto close;
         m_timerMul = welcome.timerMul;
         const auto initEnd = TscTime( welcome.initEnd );
         m_data.framesBase->frames.push_back( FrameEvent{ TscTime( welcome.initBegin ), -1 } );
@@ -1547,7 +1541,7 @@ void Worker::Exec()
         if( welcome.onDemand != 0 )
         {
             OnDemandPayloadMessage onDemand;
-            if( !m_sock.Read( &onDemand, sizeof( onDemand ), &tv, ShouldExit ) ) goto close;
+            if( !m_sock.Read( &onDemand, sizeof( onDemand ), 10, ShouldExit ) ) goto close;
             m_data.frameOffset = onDemand.frames;
         }
     }
@@ -1565,8 +1559,8 @@ void Worker::Exec()
 
         auto buf = m_buffer + m_bufferOffset;
         lz4sz_t lz4sz;
-        if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), &tv, ShouldExit ) ) goto close;
-        if( !m_sock.Read( lz4buf.get(), lz4sz, &tv, ShouldExit ) ) goto close;
+        if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), 10, ShouldExit ) ) goto close;
+        if( !m_sock.Read( lz4buf.get(), lz4sz, 10, ShouldExit ) ) goto close;
         bytes += sizeof( lz4sz ) + lz4sz;
 
         auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf.get(), buf, lz4sz, TargetFrameSize );

@@ -16,10 +16,12 @@
 #    pragma warning(disable:4244)
 #    pragma warning(disable:4267)
 #  endif
+#  define poll WSAPoll
 #else
 #  include <sys/socket.h>
 #  include <netdb.h>
 #  include <unistd.h>
+#  include <poll.h>
 #endif
 
 #ifndef MSG_NOSIGNAL
@@ -147,7 +149,7 @@ int Socket::Send( const void* _buf, int len )
     return int( buf - start );
 }
 
-int Socket::RecvBuffered( void* buf, int len, const timeval* tv )
+int Socket::RecvBuffered( void* buf, int len, int timeout )
 {
     if( len <= m_bufLeft )
     {
@@ -165,9 +167,9 @@ int Socket::RecvBuffered( void* buf, int len, const timeval* tv )
         return ret;
     }
 
-    if( len >= BufSize ) return Recv( buf, len, tv );
+    if( len >= BufSize ) return Recv( buf, len, timeout );
 
-    m_bufLeft = Recv( m_buf, BufSize, tv );
+    m_bufLeft = Recv( m_buf, BufSize, timeout );
     if( m_bufLeft <= 0 ) return m_bufLeft;
 
     const auto sz = std::min( len, m_bufLeft );
@@ -177,21 +179,15 @@ int Socket::RecvBuffered( void* buf, int len, const timeval* tv )
     return sz;
 }
 
-int Socket::Recv( void* _buf, int len, const timeval* tv )
+int Socket::Recv( void* _buf, int len, int timeout )
 {
     auto buf = (char*)_buf;
 
-    fd_set fds;
-    FD_ZERO( &fds );
-    FD_SET( static_cast<socket_t>(m_sock), &fds );
+    struct pollfd fd;
+    fd.fd = (socket_t)m_sock;
+    fd.events = POLLIN;
 
-#if !defined _WIN32 || defined __MINGW32__
-    timeval _tv = *tv;
-    select( m_sock+1, &fds, nullptr, nullptr, &_tv );
-#else
-    select( m_sock+1, &fds, nullptr, nullptr, tv );
-#endif
-    if( FD_ISSET( m_sock, &fds ) )
+    if( poll( &fd, 1, timeout ) > 0 )
     {
         return recv( m_sock, buf, len, 0 );
     }
@@ -201,14 +197,14 @@ int Socket::Recv( void* _buf, int len, const timeval* tv )
     }
 }
 
-bool Socket::Read( void* _buf, int len, const timeval* tv, std::function<bool()> exitCb )
+bool Socket::Read( void* _buf, int len, int timeout, std::function<bool()> exitCb )
 {
     auto buf = (char*)_buf;
 
     while( len > 0 )
     {
         if( exitCb() ) return false;
-        const auto sz = RecvBuffered( buf, len, tv );
+        const auto sz = RecvBuffered( buf, len, timeout );
         switch( sz )
         {
         case 0:
@@ -231,12 +227,12 @@ bool Socket::Read( void* _buf, int len, const timeval* tv, std::function<bool()>
     return true;
 }
 
-bool Socket::ReadRaw( void* _buf, int len, const timeval* tv )
+bool Socket::ReadRaw( void* _buf, int len, int timeout )
 {
     auto buf = (char*)_buf;
     while( len > 0 )
     {
-        const auto sz = Recv( buf, len, tv );
+        const auto sz = Recv( buf, len, timeout );
         if( sz <= 0 ) return false;
         len -= sz;
         buf += sz;
@@ -248,14 +244,11 @@ bool Socket::HasData()
 {
     if( m_bufLeft > 0 ) return true;
 
-    struct timeval tv;
-    memset( &tv, 0, sizeof( tv ) );
+    struct pollfd fd;
+    fd.fd = (socket_t)m_sock;
+    fd.events = POLLIN;
 
-    fd_set fds;
-    FD_ZERO( &fds );
-    FD_SET( static_cast<socket_t>(m_sock), &fds );
-
-    return select( m_sock+1, &fds, nullptr, nullptr, &tv ) > 0;
+    return poll( &fd, 1, 0 ) > 0;
 }
 
 
@@ -303,16 +296,11 @@ Socket* ListenSocket::Accept()
     struct sockaddr_storage remote;
     socklen_t sz = sizeof( remote );
 
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 10000;
+    struct pollfd fd;
+    fd.fd = (socket_t)m_sock;
+    fd.events = POLLIN;
 
-    fd_set fds;
-    FD_ZERO( &fds );
-    FD_SET( static_cast<socket_t>(m_sock), &fds );
-
-    select( m_sock+1, &fds, nullptr, nullptr, &tv );
-    if( FD_ISSET( m_sock, &fds ) )
+    if( poll( &fd, 1, 10 ) > 0 )
     {
         int sock = accept( m_sock, (sockaddr*)&remote, &sz);
 #if defined __APPLE__

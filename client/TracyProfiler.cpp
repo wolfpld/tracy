@@ -982,12 +982,8 @@ void Profiler::Worker()
         }
 
         {
-            timeval tv;
-            tv.tv_sec = 2;
-            tv.tv_usec = 0;
-
             char shibboleth[HandshakeShibbolethSize];
-            auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, &tv );
+            auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, 2000 );
             if( !res || memcmp( shibboleth, HandshakeShibboleth, HandshakeShibbolethSize ) != 0 )
             {
                 m_sock->~Socket();
@@ -996,7 +992,7 @@ void Profiler::Worker()
             }
 
             uint32_t protocolVersion;
-            res = m_sock->ReadRaw( &protocolVersion, sizeof( protocolVersion ), &tv );
+            res = m_sock->ReadRaw( &protocolVersion, sizeof( protocolVersion ), 2000 );
             if( !res )
             {
                 m_sock->~Socket();
@@ -1105,12 +1101,8 @@ void Profiler::Worker()
             m_sock = listen.Accept();
             if( m_sock )
             {
-                timeval tv;
-                tv.tv_sec = 1;
-                tv.tv_usec = 0;
-
                 char shibboleth[HandshakeShibbolethSize];
-                auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, &tv );
+                auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, 1000 );
                 if( !res || memcmp( shibboleth, HandshakeShibboleth, HandshakeShibbolethSize ) != 0 )
                 {
                     m_sock->~Socket();
@@ -1119,7 +1111,7 @@ void Profiler::Worker()
                 }
 
                 uint32_t protocolVersion;
-                res = m_sock->ReadRaw( &protocolVersion, sizeof( protocolVersion ), &tv );
+                res = m_sock->ReadRaw( &protocolVersion, sizeof( protocolVersion ), 1000 );
                 if( !res )
                 {
                     m_sock->~Socket();
@@ -1523,15 +1515,11 @@ static bool DontExit() { return false; }
 
 bool Profiler::HandleServerQuery()
 {
-    timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 10000;
-
     uint8_t type;
-    if( !m_sock->Read( &type, sizeof( type ), &tv, DontExit ) ) return false;
+    if( !m_sock->Read( &type, sizeof( type ), 10, DontExit ) ) return false;
 
     uint64_t ptr;
-    if( !m_sock->Read( &ptr, sizeof( ptr ), &tv, DontExit ) ) return false;
+    if( !m_sock->Read( &ptr, sizeof( ptr ), 10, DontExit ) ) return false;
 
     switch( type )
     {

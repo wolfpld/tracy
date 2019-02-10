@@ -26,6 +26,12 @@ v0.5 (xxxx-xx-xx)
   - Add top-down variant to complement the previously available bottom-up
     one.
   - Add ability to group tree nodes by function name.
+- Zones displayed in the find zone menu can be now grouped by order of
+  appearance, execution time or name.
+- Time is now displayed without trailing fractional zeros (e.g. "2.5 ms"
+  instead of "2.50 ms").
+- Child zones displayed in zone info window can be now grouped by source
+  location.
 
 v0.4.1 (2018-12-30)
 -------------------

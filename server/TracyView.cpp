@@ -93,8 +93,16 @@ static inline void PrintSmallInt( char*& buf, uint64_t v )
 static inline void PrintFrac00( char*& buf, uint64_t v )
 {
     *buf++ = '.';
-    memcpy( buf, IntTable100 + (v+5)/10*2, 2 );
-    buf += 2;
+    v += 5;
+    if( v/10%10 == 0 )
+    {
+        *buf++ = '0' + v/100;
+    }
+    else
+    {
+        memcpy( buf, IntTable100 + v/10*2, 2 );
+        buf += 2;
+    }
 }
 
 static inline void PrintFrac0( char*& buf, uint64_t v )

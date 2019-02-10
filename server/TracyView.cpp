@@ -238,50 +238,6 @@ static const char* TimeToString( int64_t _ns )
     return bufstart;
 }
 
-static const char* TimeToStringInteger( int64_t ns )
-{
-    enum { Pool = 8 };
-    static char bufpool[Pool][64];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    bufsel = ( bufsel + 1 ) % Pool;
-
-    const char* sign = "";
-    if( ns < 0 )
-    {
-        sign = "-";
-        ns = -ns;
-    }
-
-    if( ns < 1000 )
-    {
-        sprintf( buf, "%s%" PRIi64 " ns", sign, ns );
-    }
-    else if( ns < 1000ll * 1000 )
-    {
-#ifdef TRACY_EXTENDED_FONT
-        sprintf( buf, "%s%.0f \xce\xbcs", sign, ns / 1000. );
-#else
-        sprintf( buf, "%s%.0f us", sign, ns / 1000. );
-#endif
-    }
-    else if( ns < 1000ll * 1000 * 1000 )
-    {
-        sprintf( buf, "%s%.0f ms", sign, ns / ( 1000. * 1000. ) );
-    }
-    else if( ns < 1000ll * 1000 * 1000 * 60 )
-    {
-        sprintf( buf, "%s%.0f s", sign, ns / ( 1000. * 1000. * 1000. ) );
-    }
-    else
-    {
-        const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) );
-        const auto s = int64_t( ns - m * ( 1000ll * 1000 * 1000 * 60 ) );
-        sprintf( buf, "%s%" PRIi64 ":%02.0f", sign, m, s / ( 1000. * 1000. * 1000. ) );
-    }
-    return buf;
-}
-
 static const char* RealToString( double val, bool separator )
 {
     enum { Pool = 8 };
@@ -5422,7 +5378,7 @@ void View::DrawFindZone()
                                     if( tw == 0 || x > tx + tw + ty * 1.1 )
                                     {
                                         tx = x;
-                                        auto txt = TimeToStringInteger( tt );
+                                        auto txt = TimeToString( tt );
                                         draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
                                         tw = ImGui::CalcTextSize( txt ).x;
                                     }
@@ -5468,7 +5424,7 @@ void View::DrawFindZone()
                                 if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 1.1 ) )
                                 {
                                     tx = x;
-                                    auto txt = TimeToStringInteger( tt );
+                                    auto txt = TimeToString( tt );
                                     draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
                                     tw = ImGui::CalcTextSize( txt ).x;
                                 }
@@ -6437,7 +6393,7 @@ void View::DrawCompare()
                                 if( tw == 0 || x > tx + tw + ty * 1.1 )
                                 {
                                     tx = x;
-                                    auto txt = TimeToStringInteger( tt );
+                                    auto txt = TimeToString( tt );
                                     draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
                                     tw = ImGui::CalcTextSize( txt ).x;
                                 }
@@ -6483,7 +6439,7 @@ void View::DrawCompare()
                             if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 1.1 ) )
                             {
                                 tx = x;
-                                auto txt = TimeToStringInteger( tt );
+                                auto txt = TimeToString( tt );
                                 draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
                                 tw = ImGui::CalcTextSize( txt ).x;
                             }
@@ -7220,7 +7176,7 @@ void View::DrawInfo()
                                     if( tw == 0 || x > tx + tw + ty * 1.1 )
                                     {
                                         tx = x;
-                                        auto txt = TimeToStringInteger( tt );
+                                        auto txt = TimeToString( tt );
                                         draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
                                         tw = ImGui::CalcTextSize( txt ).x;
                                     }
@@ -7266,7 +7222,7 @@ void View::DrawInfo()
                                 if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 1.1 ) )
                                 {
                                     tx = x;
-                                    auto txt = TimeToStringInteger( tt );
+                                    auto txt = TimeToString( tt );
                                     draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
                                     tw = ImGui::CalcTextSize( txt ).x;
                                 }

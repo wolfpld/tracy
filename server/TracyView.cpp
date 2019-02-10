@@ -110,8 +110,6 @@ static inline void PrintSmallIntFrac( char*& buf, uint64_t v )
     if( fr >= 995 )
     {
         PrintSmallInt( buf, in+1 );
-        memcpy( buf, ".00", 3 );
-        buf += 3;
     }
     else
     {
@@ -119,11 +117,6 @@ static inline void PrintSmallIntFrac( char*& buf, uint64_t v )
         if( fr > 5 )
         {
             PrintFrac00( buf, fr );
-        }
-        else
-        {
-            memcpy( buf, ".00", 3 );
-            buf += 3;
         }
     }
 }
@@ -135,8 +128,6 @@ static inline void PrintSecondsFrac( char*& buf, uint64_t v )
     if( fr >= 950 )
     {
         PrintTinyInt0( buf, in+1 );
-        memcpy( buf, ".0", 2 );
-        buf += 2;
     }
     else
     {
@@ -144,11 +135,6 @@ static inline void PrintSecondsFrac( char*& buf, uint64_t v )
         if( fr > 50 )
         {
             PrintFrac0( buf, fr );
-        }
-        else
-        {
-            memcpy( buf, ".0", 2 );
-            buf += 2;
         }
     }
 }

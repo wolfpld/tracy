@@ -108,6 +108,14 @@ int main( int argc, char** argv )
             h = data[3];
             maximize = data[4];
         }
+        if( w <= 0 || h <= 0 || x+w < 0 || y+h < 0 )
+        {
+            x = 200;
+            y = 200;
+            w = 1650;
+            h = 960;
+            maximize = 0;
+        }
     }
 
     std::string connHistFile = tracy::GetSavePath( "connection.history" );

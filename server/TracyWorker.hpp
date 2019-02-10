@@ -252,6 +252,7 @@ public:
     const char* GetThreadString( uint64_t id ) const;
     const SourceLocation& GetSourceLocation( int32_t srcloc ) const;
 
+    const char* GetZoneName( const SourceLocation& srcloc ) const;
     const char* GetZoneName( const ZoneEvent& ev ) const;
     const char* GetZoneName( const ZoneEvent& ev, const SourceLocation& srcloc ) const;
     const char* GetZoneName( const GpuEvent& ev ) const;

@@ -1325,6 +1325,18 @@ const SourceLocation& Worker::GetSourceLocation( int32_t srcloc ) const
     }
 }
 
+const char* Worker::GetZoneName( const SourceLocation& srcloc ) const
+{
+    if( srcloc.name.active )
+    {
+        return GetString( srcloc.name );
+    }
+    else
+    {
+        return GetString( srcloc.function );
+    }
+}
+
 const char* Worker::GetZoneName( const ZoneEvent& ev ) const
 {
     auto& srcloc = GetSourceLocation( ev.srcloc );

@@ -6619,6 +6619,7 @@ void View::DrawCallstackWindow()
     ImGui::TextUnformatted( "Location" );
     ImGui::SameLine();
     DrawHelpMarker( "Click on entry to copy it to clipboard.\nRight click on entry to try to open source file." );
+    ImGui::NextColumn();
 
     int fidx = 0;
     int bidx = 0;

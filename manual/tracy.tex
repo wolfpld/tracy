@@ -1288,7 +1288,7 @@ The \emph{found zones} section displays the individual zones grouped according t
 \item \emph{Call stacks} -- Zones are grouped by the originating call stack (see section~\ref{collectingcallstacks}).
 \end{itemize}
 
-Each group may be sorted according to the \emph{order} in which it appeared, the call \emph{count}, the total \emph{time} spent in the group, or the \emph{mean time per call}. Expanding the group view will display individual occurrences of the zone, sorted by application's time. Clicking the \LMB{} left mouse button on a zone will open the zone information window (section~\ref{zoneinfo}). Clicking the \MMB{} middle mouse button on a zone will zoom the timeline view to the zone's extent.
+Each group may be sorted according to the \emph{order} in which it appeared, the call \emph{count}, the total \emph{time} spent in the group, or the \emph{mean time per call}. Expanding the group view will display individual occurrences of the zone, which can be sorted by application's time, execution time or zone's name. Clicking the \LMB{} left mouse button on a zone will open the zone information window (section~\ref{zoneinfo}). Clicking the \MMB{} middle mouse button on a zone will zoom the timeline view to the zone's extent.
 
 Clicking the \LMB{} left mouse button on group name will highlight the group time data on the histogram (figure~\ref{findzonehistogramgroup}). This function provides a quick insight about the impact of the originating thread, or input data on the zone performance. Clicking the \RMB{} right mouse button on the group names area will reset the group selection.
 
@@ -1455,7 +1455,7 @@ The zone information window displays detailed information about a single zone. T
 \item Timing information.
 \item Memory events list, both summarized and a list of individual allocation/free events (see section~\ref{memorywindow} for more information on the memory events list).
 \item Zone trace, taking into account the zone tree and call stack information (section~\ref{collectingcallstacks}), trying to reconstruct a combined zone + call stack trace\footnote{Reconstruction is only possible, if all zones have full call stack capture data available. In case where that's not available, an \emph{unknown frames} entry will be present.}. Captured zones are displayed as normal text, while functions that were not instrumented are dimmed. Hovering the \faMousePointer{}~mouse pointer over a zone will highlight it on the timeline view with a red outline. Clicking the \LMB{}~left mouse button on a zone will switch the zone info window to that zone. Clicking the \MMB{}~middle mouse button on a zone will zoom the timeline view to the zone's extent. Clicking the \RMB{}~right mouse button on a source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
-\item Child zones list, showing how the current zone's execution time was used. All the controls from the zone trace are also available here.
+\item Child zones list, showing how the current zone's execution time was used. Zones on this list can be grouped according to their source location. Each group can be expanded to show individual entries. All the controls from the zone trace are also available here.
 \end{itemize}
 
 The zone information window has the following controls available:

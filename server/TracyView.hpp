@@ -270,6 +270,7 @@ private:
     bool m_statSelf = false;
     bool m_showCallstackFrameAddress = false;
     bool m_showUnknownFrames = true;
+    bool m_groupChildrenLocations = false;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
     Namespace m_namespace = Namespace::Full;

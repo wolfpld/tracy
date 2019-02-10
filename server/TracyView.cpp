@@ -4146,6 +4146,9 @@ void View::DrawZoneInfoWindow()
         ImGui::TextDisabled( "(%s)", RealToString( children.size(), true ) );
         if( expand )
         {
+            ImGui::SameLine();
+            if( ImGui::SmallButton( m_groupChildrenLocations ? "Display all children separate" : "Group children locations" ) ) m_groupChildrenLocations = !m_groupChildrenLocations;
+
             auto ctt = std::make_unique<uint64_t[]>( children.size() );
             auto cti = std::make_unique<uint32_t[]>( children.size() );
             uint64_t ctime = 0;

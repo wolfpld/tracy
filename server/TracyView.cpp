@@ -497,8 +497,9 @@ void View::DrawHelpMarker( const char* desc ) const
     TextDisabledUnformatted( "(?)" );
     if( ImGui::IsItemHovered() )
     {
+        const auto ty = ImGui::GetFontSize();
         ImGui::BeginTooltip();
-        ImGui::PushTextWrapPos( 450.0f );
+        ImGui::PushTextWrapPos( 450.0f * ty / 15.f );
         ImGui::TextUnformatted( desc );
         ImGui::PopTextWrapPos();
         ImGui::EndTooltip();
@@ -4538,13 +4539,7 @@ void View::DrawOptions()
                 }
             }
             ImGui::SameLine();
-            TextDisabledUnformatted( "(?)" );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Right click on lock name to open lock information window." );
-                ImGui::EndTooltip();
-            }
+            DrawHelpMarker( "Right click on lock name to open lock information window." );
 
             for( const auto& l : m_worker.GetLockMap() )
             {
@@ -4776,13 +4771,7 @@ void View::DrawMessages()
     ImGui::Columns( 3 );
     ImGui::TextUnformatted( "Time" );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Click on message to center timeline on it." );
-        ImGui::EndTooltip();
-    }
+    DrawHelpMarker( "Click on message to center timeline on it." );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Thread" );
     ImGui::NextColumn();
@@ -5054,13 +5043,7 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 ImGui::Checkbox( "Cumulate time", &m_findZone.cumulateTime );
                 ImGui::SameLine();
-                TextDisabledUnformatted( "(?)" );
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Show total time taken by calls in each bin instead of call counts." );
-                    ImGui::EndTooltip();
-                }
+                DrawHelpMarker( "Show total time taken by calls in each bin instead of call counts." );
                 ImGui::SameLine();
                 if( ImGui::Checkbox( "Self time", &m_findZone.selfTime ) )
                 {
@@ -5241,13 +5224,7 @@ void View::DrawFindZone()
                             ImGui::TextUnformatted( "none" );
                         }
                         ImGui::SameLine();
-                        TextDisabledUnformatted( "(?)" );
-                        if( ImGui::IsItemHovered() )
-                        {
-                            ImGui::BeginTooltip();
-                            ImGui::TextUnformatted( "Left draw on histogram to select range. Right click to clear selection." );
-                            ImGui::EndTooltip();
-                        }
+                        DrawHelpMarker( "Left draw on histogram to select range. Right click to clear selection." );
                         if( m_findZone.highlight.active )
                         {
                             TextFocused( "Selection time:", TimeToString( selectionTime ) );
@@ -5600,13 +5577,7 @@ void View::DrawFindZone()
         ImGui::Separator();
         ImGui::TextUnformatted( "Found zones:" );
         ImGui::SameLine();
-        TextDisabledUnformatted( "(?)" );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Left click to highlight entry. Right click to clear selection." );
-            ImGui::EndTooltip();
-        }
+        DrawHelpMarker( "Left click to highlight entry. Right click to clear selection." );
 
         bool groupChanged = false;
         ImGui::TextUnformatted( "Group by:" );
@@ -5632,13 +5603,7 @@ void View::DrawFindZone()
         ImGui::SameLine();
         ImGui::RadioButton( "MTPC", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Mtpc );
         ImGui::SameLine();
-        TextDisabledUnformatted( "(?)" );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "Mean time per call" );
-            ImGui::EndTooltip();
-        }
+        DrawHelpMarker( "Mean time per call" );
 
         auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
         auto sz = zones.size();
@@ -5775,13 +5740,7 @@ void View::DrawFindZone()
                 ImGui::NextColumn();
                 if( ImGui::SmallButton( "Name" ) )  m_findZone.tableSortBy = FindZone::TableSortBy::Name;
                 ImGui::SameLine();
-                TextDisabledUnformatted( "(?)" );
-                if( ImGui::IsItemHovered() )
-                {
-                    ImGui::BeginTooltip();
-                    ImGui::TextUnformatted( "Only displayed if custom zone name is set." );
-                    ImGui::EndTooltip();
-                }
+                DrawHelpMarker( "Only displayed if custom zone name is set." );
                 ImGui::NextColumn();
                 ImGui::Separator();
 
@@ -6113,23 +6072,11 @@ void View::DrawCompare()
             ImGui::SameLine();
             ImGui::Checkbox( "Cumulate time", &m_compare.cumulateTime );
             ImGui::SameLine();
-            TextDisabledUnformatted( "(?)" );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Show total time taken by calls in each bin instead of call counts." );
-                ImGui::EndTooltip();
-            }
+            DrawHelpMarker( "Show total time taken by calls in each bin instead of call counts." );
             ImGui::SameLine();
             ImGui::Checkbox( "Normalize values", &m_compare.normalize );
             ImGui::SameLine();
-            TextDisabledUnformatted( "(?)" );
-            if( ImGui::IsItemHovered() )
-            {
-                ImGui::BeginTooltip();
-                ImGui::TextUnformatted( "Normalization will fudge reported data values!" );
-                ImGui::EndTooltip();
-            }
+            DrawHelpMarker( "Normalization will fudge reported data values!" );
 
             TextDisabledUnformatted( "Time range:" );
             ImGui::SameLine();
@@ -6608,13 +6555,7 @@ void View::DrawStatistics()
     ImGui::NextColumn();
     if( ImGui::SmallButton( "MTPC" ) ) m_statSort = 2;
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Mean time per call" );
-        ImGui::EndTooltip();
-    }
+    DrawHelpMarker( "Mean time per call" );
     ImGui::NextColumn();
     ImGui::Separator();
 
@@ -6672,25 +6613,11 @@ void View::DrawCallstackWindow()
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Function" );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Click on entry to copy it to clipboard." );
-        ImGui::EndTooltip();
-    }
+    DrawHelpMarker( "Click on entry to copy it to clipboard." );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Location" );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Click on entry to copy it to clipboard." );
-        ImGui::TextUnformatted( "Right click on entry to try to open source file." );
-        ImGui::EndTooltip();
-    }
-    ImGui::NextColumn();
+    DrawHelpMarker( "Click on entry to copy it to clipboard.\nRight click on entry to try to open source file." );
 
     int fidx = 0;
     int bidx = 0;
@@ -7566,60 +7493,27 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
     ImGui::Columns( 8 );
     ImGui::TextUnformatted( "Address" );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Click on address to display memory allocation info window." );
-        ImGui::TextUnformatted( "Middle click to zoom to allocation range." );
-        ImGui::EndTooltip();
-    }
+    DrawHelpMarker( "Click on address to display memory allocation info window.\nMiddle click to zoom to allocation range." );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Size" );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Appeared at" );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Click on entry to center timeline at the memory allocation time." );
-        ImGui::EndTooltip();
-    }
+    DrawHelpMarker( "Click on entry to center timeline at the memory allocation time." );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Duration" );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Active allocations are displayed using green color." );
-        ImGui::TextUnformatted( "Click on entry to center timeline at the memory release time." );
-        ImGui::EndTooltip();
-    }
+    DrawHelpMarker( "Active allocations are displayed using green color.\nClick on entry to center timeline at the memory release time." );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Thread" );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Shows one thread if alloc and free was performed on the same thread." );
-        ImGui::TextUnformatted( "Otherwise two threads are displayed in order: alloc, free." );
-        ImGui::EndTooltip();
-    }
+    DrawHelpMarker( "Shows one thread if alloc and free was performed on the same thread.\nOtherwise two threads are displayed in order: alloc, free." );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Zone alloc" );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Zone free" );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "If alloc and free is performed in the same zone, it is displayed in yellow color." );
-        ImGui::EndTooltip();
-    }
+    DrawHelpMarker( "If alloc and free is performed in the same zone, it is displayed in yellow color." );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Call stack" );
     ImGui::NextColumn();
@@ -7963,14 +7857,7 @@ void View::DrawMemory()
     ImGui::Checkbox( "Restrict time", &m_memInfo.restrictTime );
 #endif
     ImGui::SameLine();
-    TextDisabledUnformatted( "(?)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Don't show allocations beyond the middle of timeline" );
-        ImGui::TextUnformatted( "display (it is indicated by purple line)." );
-        ImGui::EndTooltip();
-    }
+    DrawHelpMarker( "Don't show allocations beyond the middle of timeline display (it is indicated by purple line)." );
 
     const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
 
@@ -8187,13 +8074,7 @@ void View::DrawMemory()
     {
         ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameBottomUp );
         ImGui::SameLine();
-        TextDisabledUnformatted( "(?)" );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "If enabled, only one source location will be displayed (which may be incorrect)." );
-            ImGui::EndTooltip();
-        }
+        DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
         TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip." );
         TextDisabledUnformatted( "Right click on function name to display allocations list. Right click on file name to open source file." );
 
@@ -8215,13 +8096,7 @@ void View::DrawMemory()
     {
         ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameTopDown );
         ImGui::SameLine();
-        TextDisabledUnformatted( "(?)" );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( "If enabled, only one source location will be displayed (which may be incorrect)." );
-            ImGui::EndTooltip();
-        }
+        DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
         TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip." );
         TextDisabledUnformatted( "Right click on function name to display allocations list. Right click on file name to open source file." );
 

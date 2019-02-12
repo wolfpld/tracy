@@ -149,10 +149,9 @@ int main( int argc, char** argv )
     printf( "Connecting to %s...", address );
     fflush( stdout );
     tracy::Worker worker( address );
-    for(;;)
+    while( !worker.IsConnected() )
     {
         const auto handshake = worker.GetHandshakeStatus();
-        if( handshake == tracy::HandshakeWelcome ) break;
         if( handshake == tracy::HandshakeProtocolMismatch )
         {
             printf( "\nThe client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server.\n" );
@@ -162,6 +161,11 @@ int main( int argc, char** argv )
         {
             printf( "\nThe client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled.\n" );
             return 2;
+        }
+        if( handshake == tracy::HandshakeDropped )
+        {
+            printf( "\nThe client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration.\n" );
+            return 3;
         }
     }
     while( !worker.HasData() ) std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );

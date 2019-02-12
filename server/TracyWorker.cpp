@@ -1503,7 +1503,11 @@ void Worker::Exec()
     uint32_t protocolVersion = ProtocolVersion;
     m_sock.Send( &protocolVersion, sizeof( protocolVersion ) );
     HandshakeStatus handshake;
-    if( !m_sock.Read( &handshake, sizeof( handshake ), 10, ShouldExit ) ) goto close;
+    if( !m_sock.Read( &handshake, sizeof( handshake ), 10, ShouldExit ) )
+    {
+        m_handshake.store( HandshakeDropped, std::memory_order_relaxed );
+        goto close;
+    }
     m_handshake.store( handshake, std::memory_order_relaxed );
     switch( handshake )
     {

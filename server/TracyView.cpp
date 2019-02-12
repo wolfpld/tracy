@@ -515,13 +515,19 @@ void View::DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color
 bool View::Draw()
 {
     HandshakeStatus status = (HandshakeStatus)s_instance->m_worker.GetHandshakeStatus();
-    if( status == HandshakeProtocolMismatch )
+    switch( status )
     {
+    case HandshakeProtocolMismatch:
         ImGui::OpenPopup( "Protocol mismatch" );
-    }
-    else if( status == HandshakeNotAvailable )
-    {
+        break;
+    case HandshakeNotAvailable:
         ImGui::OpenPopup( "Client not ready" );
+        break;
+    case HandshakeDropped:
+        ImGui::OpenPopup( "Client disconnected" );
+        break;
+    default:
+        break;
     }
 
     const auto& failure = s_instance->m_worker.GetFailureType();
@@ -554,6 +560,22 @@ bool View::Draw()
         ImGui::TextUnformatted( "The client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled." );
         ImGui::Separator();
         if( ImGui::Button( "I understand" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            return false;
+        }
+        ImGui::EndPopup();
+    }
+
+    if( ImGui::BeginPopupModal( "Client disconnected", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_HANDSHAKE );
+#endif
+        ImGui::TextUnformatted( "The client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration." );
+        ImGui::Separator();
+        if( ImGui::Button( "Will do" ) )
         {
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();

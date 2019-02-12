@@ -2,6 +2,7 @@
 #define __TRACYVARARRAY_HPP__
 
 #include <stdint.h>
+#include <string.h>
 
 #include "../common/TracyForceInline.hpp"
 #include "tracy_flat_hash_map.hpp"
@@ -60,12 +61,7 @@ template<typename T>
 bool Compare( const VarArray<T>& lhs, const VarArray<T>& rhs )
 {
     if( lhs.size() != rhs.size() || lhs.get_hash() != rhs.get_hash() ) return false;
-    const auto sz = lhs.size();
-    for( uint8_t i=0; i<sz; i++ )
-    {
-        if( lhs[i] != rhs[i] ) return false;
-    }
-    return true;
+    return memcmp( lhs.data(), rhs.data(), lhs.size() * sizeof( T ) ) == 0;
 }
 
 template<typename T>

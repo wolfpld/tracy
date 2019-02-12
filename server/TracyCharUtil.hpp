@@ -69,6 +69,33 @@ struct LessComparator
     }
 };
 
+struct StringKey
+{
+    const char* ptr;
+    size_t sz;
+
+    struct Hasher
+    {
+        size_t operator()( const StringKey& key ) const
+        {
+            return hash( key.ptr, key.sz );
+        }
+    };
+
+    struct HasherPOT : public Hasher
+    {
+        typedef tracy::power_of_two_hash_policy hash_policy;
+    };
+
+    struct Comparator
+    {
+        bool operator()( const StringKey& lhs, const StringKey& rhs ) const
+        {
+            return lhs.sz == rhs.sz && memcmp( lhs.ptr, rhs.ptr, lhs.sz ) == 0;
+        }
+    };
+};
+
 }
 }
 

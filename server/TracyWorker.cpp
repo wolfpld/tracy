@@ -2114,7 +2114,8 @@ StringLocation Worker::StoreString( char* str, size_t sz )
     StringLocation ret;
     const char backup = str[sz];
     str[sz] = '\0';
-    auto sit = m_data.stringMap.find( str );
+    charutil::StringKey key = { str, sz };
+    auto sit = m_data.stringMap.find( key );
     if( sit == m_data.stringMap.end() )
     {
         auto ptr = m_slab.Alloc<char>( sz+1 );
@@ -2122,12 +2123,12 @@ StringLocation Worker::StoreString( char* str, size_t sz )
         ptr[sz] = '\0';
         ret.ptr = ptr;
         ret.idx = m_data.stringData.size();
-        m_data.stringMap.emplace( ptr, m_data.stringData.size() );
+        m_data.stringMap.emplace( charutil::StringKey { ptr, sz }, m_data.stringData.size() );
         m_data.stringData.push_back( ptr );
     }
     else
     {
-        ret.ptr = sit->first;
+        ret.ptr = sit->first.ptr;
         ret.idx = sit->second;
     }
     str[sz] = backup;

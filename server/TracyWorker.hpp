@@ -118,7 +118,7 @@ private:
 
         flat_hash_map<uint64_t, const char*, nohash<uint64_t>> strings;
         Vector<const char*> stringData;
-        flat_hash_map<const char*, uint32_t, charutil::HasherPOT, charutil::Comparator> stringMap;
+        flat_hash_map<charutil::StringKey, uint32_t, charutil::StringKey::HasherPOT, charutil::StringKey::Comparator> stringMap;
         flat_hash_map<uint64_t, const char*, nohash<uint64_t>> threadNames;
 
         flat_hash_map<uint64_t, SourceLocation, nohash<uint64_t>> sourceLocation;

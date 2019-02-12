@@ -1532,7 +1532,11 @@ void Worker::Exec()
 
     {
         WelcomeMessage welcome;
-        if( !m_sock.Read( &welcome, sizeof( welcome ), 10, ShouldExit ) ) goto close;
+        if( !m_sock.Read( &welcome, sizeof( welcome ), 10, ShouldExit ) )
+        {
+            m_handshake.store( HandshakeDropped, std::memory_order_relaxed );
+            goto close;
+        }
         m_timerMul = welcome.timerMul;
         const auto initEnd = TscTime( welcome.initEnd );
         m_data.framesBase->frames.push_back( FrameEvent{ TscTime( welcome.initBegin ), -1 } );
@@ -1557,7 +1561,11 @@ void Worker::Exec()
         if( welcome.onDemand != 0 )
         {
             OnDemandPayloadMessage onDemand;
-            if( !m_sock.Read( &onDemand, sizeof( onDemand ), 10, ShouldExit ) ) goto close;
+            if( !m_sock.Read( &onDemand, sizeof( onDemand ), 10, ShouldExit ) )
+            {
+                m_handshake.store( HandshakeDropped, std::memory_order_relaxed );
+                goto close;
+            }
             m_data.frameOffset = onDemand.frames;
         }
     }

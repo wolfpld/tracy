@@ -30,13 +30,9 @@ public:
 
     Vector( const Vector& ) = delete;
     Vector( Vector&& src ) noexcept
-        : m_ptr( src.m_ptr )
-        , m_size( src.m_size )
-        , m_capacity( src.m_capacity )
     {
-        src.m_ptr = nullptr;
-        src.m_size = 0;
-        src.m_capacity = 0;
+        memcpy( this, &src, sizeof( Vector<T> ) );
+        memset( &src, 0, sizeof( Vector<T> ) );
     }
 
     Vector( const T& value )
@@ -65,12 +61,8 @@ public:
     Vector& operator=( Vector&& src ) noexcept
     {
         delete[] m_ptr;
-        m_ptr = src.m_ptr;
-        m_size = src.m_size;
-        m_capacity = src.m_capacity;
-        src.m_ptr = nullptr;
-        src.m_size = 0;
-        src.m_capacity = 0;
+        memcpy( this, &src, sizeof( Vector<T> ) );
+        memset( &src, 0, sizeof( Vector<T> ) );
         return *this;
     }
 

@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <limits>
 #include <stdint.h>
+#include <type_traits>
 
 #include "../common/TracyForceInline.hpp"
 #include "TracyMemory.hpp"
@@ -280,7 +281,17 @@ private:
         T* ptr = new T[CapacityNoNullptrCheck()];
         if( m_size != 0 )
         {
-            memcpy( ptr, m_ptr, m_size * sizeof( T ) );
+            if( std::is_trivially_copyable<T>() )
+            {
+                memcpy( ptr, m_ptr, m_size * sizeof( T ) );
+            }
+            else
+            {
+                for( uint32_t i=0; i<m_size; i++ )
+                {
+                    ptr[i] = std::move( m_ptr[i] );
+                }
+            }
             delete[] m_ptr;
         }
         m_ptr = ptr;

@@ -189,14 +189,14 @@ static inline void UpdateLockCount( LockMap& lockmap, size_t pos )
     }
 }
 
-static inline void WriteTimeOffset( FileWrite& f, int64_t& refTime, int64_t time )
+static tracy_force_inline void WriteTimeOffset( FileWrite& f, int64_t& refTime, int64_t time )
 {
     int64_t timeOffset = time - refTime;
     refTime += timeOffset;
     f.Write( &timeOffset, sizeof( timeOffset ) );
 }
 
-static inline int64_t ReadTimeOffset( FileRead& f, int64_t& refTime )
+static tracy_force_inline int64_t ReadTimeOffset( FileRead& f, int64_t& refTime )
 {
     int64_t timeOffset;
     f.Read( timeOffset );

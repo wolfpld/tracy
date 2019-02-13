@@ -142,8 +142,8 @@ private:
         Vector<uint64_t> threadExpand;
         std::pair<uint64_t, uint16_t> threadLast;
 
-        std::vector<Vector<ZoneEvent*>> m_zoneChildren;
-        std::vector<Vector<GpuEvent*>> m_gpuChildren;
+        Vector<Vector<ZoneEvent*>> m_zoneChildren;
+        Vector<Vector<GpuEvent*>> m_gpuChildren;
 
         CrashEvent m_crashEvent;
     };

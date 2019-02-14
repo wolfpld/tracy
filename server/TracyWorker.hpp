@@ -416,7 +416,7 @@ private:
     std::atomic<bool> m_hasData;
     std::atomic<bool> m_shutdown = { false };
 
-    std::thread m_threadMemory, m_threadZones;
+    std::thread m_threadBackground;
 
     int64_t m_delay;
     int64_t m_resolution;

@@ -766,22 +766,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.threads[i] = td;
     }
 
-#ifndef TRACY_NO_STATISTICS
-    m_threadZones = std::thread( [this] {
-        for( auto& v : m_data.sourceLocationZones )
-        {
-            auto& zones = v.second.zones;
-#ifdef MY_LIBCPP_SUCKS
-            pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
-#else
-            std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
-#endif
-        }
-        std::lock_guard<TracyMutex> lock( m_data.lock );
-        m_data.sourceLocationZonesReady = true;
-    } );
-#endif
-
     s_loadProgress.progress.store( LoadProgress::GpuZones, std::memory_order_relaxed );
     f.Read( sz );
     m_data.gpuData.reserve_exact( sz );
@@ -1052,13 +1036,32 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
 finishLoading:
-    if( reconstructMemAllocPlot )
-    {
-        m_threadMemory = std::thread( [this] { ReconstructMemAllocPlot(); } );
-    }
-
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
+
+#ifndef TRACY_NO_STATISTICS
+    m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
+        for( auto& v : m_data.sourceLocationZones )
+        {
+            auto& zones = v.second.zones;
+#ifdef MY_LIBCPP_SUCKS
+            pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
+#else
+            std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
+#endif
+        }
+        {
+            std::lock_guard<TracyMutex> lock( m_data.lock );
+            m_data.sourceLocationZonesReady = true;
+        }
+        if( reconstructMemAllocPlot ) ReconstructMemAllocPlot();
+    } );
+#else
+    if( reconstructMemAllocPlot )
+    {
+        m_threadBackground = std::thread( [this] { ReconstructMemAllocPlot(); } );
+    }
+#endif
 }
 
 Worker::~Worker()
@@ -1066,8 +1069,7 @@ Worker::~Worker()
     Shutdown();
 
     if( m_thread.joinable() ) m_thread.join();
-    if( m_threadMemory.joinable() ) m_threadMemory.join();
-    if( m_threadZones.joinable() ) m_threadZones.join();
+    if( m_threadBackground.joinable() ) m_threadBackground.join();
 
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );

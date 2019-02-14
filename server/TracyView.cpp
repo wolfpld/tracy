@@ -4574,56 +4574,212 @@ void View::DrawGpuInfoWindow()
         ImGui::TextDisabled( "(%s)", RealToString( children.size(), true ) );
         if( expand )
         {
-            auto ctt = std::make_unique<uint64_t[]>( children.size() );
-            auto cti = std::make_unique<uint32_t[]>( children.size() );
-            uint64_t ctime = 0;
-            for( size_t i=0; i<children.size(); i++ )
-            {
-                const auto cend = m_worker.GetZoneEnd( *children[i] );
-                const auto ct = cend - children[i]->gpuStart;
-                ctime += ct;
-                ctt[i] = ct;
-                cti[i] = uint32_t( i );
-            }
-
-            pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
-
+            const auto rztime = 1.0 / ztime;
             const auto ty = ImGui::GetTextLineHeight();
-            ImGui::Columns( 2 );
-            ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
-            ImGui::NextColumn();
-            char buf[128];
-            sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
-            ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
-            ImGui::NextColumn();
-            for( size_t i=0; i<children.size(); i++ )
+
+            ImGui::SameLine();
+            if( ImGui::SmallButton( m_groupChildrenLocations ? "Display all children separate" : "Group children locations" ) ) m_groupChildrenLocations = !m_groupChildrenLocations;
+
+            if( m_groupChildrenLocations )
             {
-                auto& cev = *children[cti[i]];
-                bool b = false;
-                ImGui::PushID( (int)i );
-                if( ImGui::Selectable( m_worker.GetZoneName( cev ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                struct ChildGroup
                 {
-                    ShowZoneInfo( cev, m_gpuInfoWindowThread );
-                }
-                if( ImGui::IsItemHovered() )
+                    int32_t srcloc;
+                    uint64_t t;
+                    Vector<uint32_t> v;
+                };
+                uint64_t ctime = 0;
+                flat_hash_map<int32_t, ChildGroup, nohash<int32_t>> cmap;
+                cmap.reserve( 128 );
+                for( size_t i=0; i<children.size(); i++ )
                 {
-                    m_gpuHighlight = &cev;
-                    if( ImGui::IsMouseClicked( 2 ) )
-                    {
-                        ZoomToZone( cev );
-                    }
-                    ZoneTooltip( cev );
+                    const auto& child = *children[i];
+                    const auto cend = m_worker.GetZoneEnd( child );
+                    const auto ct = cend - child.gpuStart;
+                    const auto srcloc = child.srcloc;
+                    ctime += ct;
+
+                    auto it = cmap.find( srcloc );
+                    if( it == cmap.end() ) it = cmap.emplace( srcloc, ChildGroup { srcloc } ).first;
+
+                    it->second.t += ct;
+                    it->second.v.push_back( i );
                 }
-                ImGui::PopID();
+
+                auto msz = cmap.size();
+                Vector<ChildGroup*> cgvec;
+                cgvec.reserve_exact( msz );
+                size_t idx = 0;
+                for( auto& it : cmap )
+                {
+                    cgvec[idx++] = &it.second;
+                }
+
+                pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
+
+                ImGui::Columns( 2 );
+                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
                 ImGui::NextColumn();
-                const auto part = double( ctt[cti[i]] ) / ztime;
                 char buf[128];
-                sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
-                ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+                sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+                ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
                 ImGui::NextColumn();
+                for( size_t i=0; i<msz; i++ )
+                {
+                    bool expandGroup = false;
+                    const auto& cgr = *cgvec[i];
+                    const auto& srcloc = m_worker.GetSourceLocation( cgr.srcloc );
+                    const auto txt = m_worker.GetZoneName( srcloc );
+                    if( cgr.v.size() == 1 )
+                    {
+                        auto& cev = *children[cgr.v.front()];
+                        const auto txt = m_worker.GetZoneName( cev );
+                        bool b = false;
+                        ImGui::PushID( (int)cgr.v.front() );
+                        if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                        {
+                            ShowZoneInfo( cev, m_gpuInfoWindowThread );
+                        }
+                        if( ImGui::IsItemHovered() )
+                        {
+                            m_gpuHighlight = &cev;
+                            if( ImGui::IsMouseClicked( 2 ) )
+                            {
+                                ZoomToZone( cev );
+                            }
+                            ZoneTooltip( cev );
+                        }
+                        ImGui::PopID();
+                    }
+                    else
+                    {
+                        ImGui::PushID( cgr.srcloc );
+                        expandGroup = ImGui::TreeNode( txt );
+                        ImGui::PopID();
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            if( srcloc.name.active )
+                            {
+                                ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
+                            }
+                            ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
+                            ImGui::Separator();
+                            ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                            ImGui::EndTooltip();
+                        }
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( cgr.v.size(), true ) );
+                    }
+                    ImGui::NextColumn();
+                    const auto part = double( cgr.t ) * rztime;
+                    char buf[128];
+                    sprintf( buf, "%s (%.2f%%)", TimeToString( cgr.t ), part * 100 );
+                    ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+                    ImGui::NextColumn();
+                    if( expandGroup )
+                    {
+                        auto ctt = std::make_unique<uint64_t[]>( cgr.v.size() );
+                        auto cti = std::make_unique<uint32_t[]>( cgr.v.size() );
+                        for( size_t i=0; i<cgr.v.size(); i++ )
+                        {
+                            const auto& child = *children[cgr.v[i]];
+                            const auto cend = m_worker.GetZoneEnd( child );
+                            const auto ct = cend - child.gpuStart;
+                            ctt[i] = ct;
+                            cti[i] = uint32_t( i );
+                        }
+
+                        pdqsort_branchless( cti.get(), cti.get() + cgr.v.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+
+                        for( size_t i=0; i<cgr.v.size(); i++ )
+                        {
+                            auto& cev = *children[cgr.v[cti[i]]];
+                            const auto txt = m_worker.GetZoneName( cev );
+                            bool b = false;
+                            ImGui::Indent();
+                            ImGui::PushID( (int)cgr.v[cti[i]] );
+                            if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                            {
+                                ShowZoneInfo( cev, m_gpuInfoWindowThread );
+                            }
+                            if( ImGui::IsItemHovered() )
+                            {
+                                m_gpuHighlight = &cev;
+                                if( ImGui::IsMouseClicked( 2 ) )
+                                {
+                                    ZoomToZone( cev );
+                                }
+                                ZoneTooltip( cev );
+                            }
+                            ImGui::PopID();
+                            ImGui::Unindent();
+                            ImGui::NextColumn();
+                            const auto part = double( ctt[cti[i]] ) * rztime;
+                            char buf[128];
+                            sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+                            ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+                            ImGui::NextColumn();
+                        }
+                        ImGui::TreePop();
+                    }
+                }
+                ImGui::EndColumns();
             }
-            ImGui::EndColumns();
-            ImGui::TreePop();
+            else
+            {
+                auto ctt = std::make_unique<uint64_t[]>( children.size() );
+                auto cti = std::make_unique<uint32_t[]>( children.size() );
+                uint64_t ctime = 0;
+                for( size_t i=0; i<children.size(); i++ )
+                {
+                    const auto& child = *children[i];
+                    const auto cend = m_worker.GetZoneEnd( child );
+                    const auto ct = cend - child.gpuStart;
+                    ctime += ct;
+                    ctt[i] = ct;
+                    cti[i] = uint32_t( i );
+                }
+
+                pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
+
+                const auto ty = ImGui::GetTextLineHeight();
+                ImGui::Columns( 2 );
+                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+                ImGui::NextColumn();
+                char buf[128];
+                sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+                ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
+                ImGui::NextColumn();
+                for( size_t i=0; i<children.size(); i++ )
+                {
+                    auto& cev = *children[cti[i]];
+                    bool b = false;
+                    ImGui::PushID( (int)i );
+                    if( ImGui::Selectable( m_worker.GetZoneName( cev ), &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                    {
+                        ShowZoneInfo( cev, m_gpuInfoWindowThread );
+                    }
+                    if( ImGui::IsItemHovered() )
+                    {
+                        m_gpuHighlight = &cev;
+                        if( ImGui::IsMouseClicked( 2 ) )
+                        {
+                            ZoomToZone( cev );
+                        }
+                        ZoneTooltip( cev );
+                    }
+                    ImGui::PopID();
+                    ImGui::NextColumn();
+                    const auto part = double( ctt[cti[i]] ) / ztime;
+                    char buf[128];
+                    sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+                    ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+                    ImGui::NextColumn();
+                }
+                ImGui::EndColumns();
+                ImGui::TreePop();
+            }
         }
     }
 

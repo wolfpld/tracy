@@ -8770,6 +8770,8 @@ void View::ZoneTooltip( const GpuEvent& ev )
     const auto tid = GetZoneThread( ev );
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     const auto end = m_worker.GetZoneEnd( ev );
+    const auto ztime = end - ev.gpuStart;
+    const auto selftime = ztime - GetZoneChildTime( ev );
 
     ImGui::BeginTooltip();
     ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
@@ -8780,7 +8782,10 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::SameLine();
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
     ImGui::Separator();
-    TextFocused( "GPU execution time:", TimeToString( end - ev.gpuStart ) );
+    TextFocused( "GPU execution time:", TimeToString( ztime ) );
+    TextFocused( "GPU self time:", TimeToString( selftime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
     TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )

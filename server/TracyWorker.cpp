@@ -869,18 +869,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
+    bool reconstructMemAllocPlot = false;
+
     // Support pre-0.3 traces
-    if( fileVer == 0 && f.IsEOF() )
-    {
-        s_loadProgress.total.store( 0, std::memory_order_relaxed );
-        m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
-        return;
-    }
+    if( fileVer == 0 && f.IsEOF() ) goto finishLoading;
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( LoadProgress::Memory, std::memory_order_relaxed );
     f.Read( sz );
-    bool reconstructMemAllocPlot = false;
     if( eventMask & EventType::Memory )
     {
         m_data.memory.data.reserve_exact( sz );

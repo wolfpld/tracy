@@ -4493,8 +4493,12 @@ void View::DrawGpuInfoWindow()
 
     const auto end = m_worker.GetZoneEnd( ev );
     const auto ztime = end - ev.gpuStart;
+    const auto selftime = ztime - GetZoneChildTime( ev );
     TextFocused( "Time from start of program:", TimeToString( ev.gpuStart - m_worker.GetTimeBegin() ) );
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
+    TextFocused( "GPU self time:", TimeToString( selftime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
     TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )

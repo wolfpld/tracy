@@ -170,6 +170,7 @@ private:
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx );
     void SetViewToLastFrames();
     int64_t GetZoneChildTime( const ZoneEvent& zone );
+    int64_t GetZoneChildTime( const GpuEvent& zone );
     int64_t GetZoneChildTimeFast( const ZoneEvent& zone );
 
     flat_hash_map<const void*, bool, nohash<const void*>> m_visible;

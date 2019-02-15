@@ -83,6 +83,13 @@ public:
             m_offset += size;
             return ret;
         }
+        else if( size <= BlockSize && BlockSize - m_offset <= 1024 )
+        {
+            DoAlloc();
+            void* ret = m_ptr + m_offset;
+            m_offset += size;
+            return ret;
+        }
         else
         {
             memUsage.fetch_add( size );

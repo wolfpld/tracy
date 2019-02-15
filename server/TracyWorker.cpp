@@ -2808,13 +2808,13 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
 
 void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
 {
-    auto zone = m_slab.AllocInit<GpuEvent>();
+    auto zone = m_slab.Alloc<GpuEvent>();
     ProcessGpuZoneBeginImpl( zone, ev );
 }
 
 void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev )
 {
-    auto zone = m_slab.AllocInit<GpuEvent>();
+    auto zone = m_slab.Alloc<GpuEvent>();
     ProcessGpuZoneBeginImpl( zone, ev );
 
     auto& next = m_nextCallstack[ev.thread];
@@ -3379,7 +3379,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
     for( uint64_t i=0; i<size; i++ )
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
-        auto zone = m_slab.AllocInit<GpuEvent>();
+        auto zone = m_slab.Alloc<GpuEvent>();
         vec[i] = zone;
 
         zone->cpuStart = ReadTimeOffset( f, refTime );
@@ -3411,7 +3411,7 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
     for( uint64_t i=0; i<size; i++ )
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
-        auto zone = m_slab.AllocInit<GpuEvent>();
+        auto zone = m_slab.Alloc<GpuEvent>();
         vec[i] = zone;
 
         if( fileVer <= FileVersion( 0, 3, 1 ) )

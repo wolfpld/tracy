@@ -75,6 +75,23 @@ public:
         m_offset -= size;
     }
 
+    tracy_force_inline void* AllocBig( size_t size )
+    {
+        if( m_offset + size <= BlockSize )
+        {
+            void* ret = m_ptr + m_offset;
+            m_offset += size;
+            return ret;
+        }
+        else
+        {
+            memUsage.fetch_add( size );
+            auto ret = new char[size];
+            m_buffer.emplace_back( ret );
+            return ret;
+        }
+    }
+
     void Reset()
     {
         if( m_buffer.size() > 1 )

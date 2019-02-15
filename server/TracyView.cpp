@@ -4202,7 +4202,7 @@ void View::DrawZoneInfoWindow()
 
                 auto msz = cmap.size();
                 Vector<ChildGroup*> cgvec;
-                cgvec.reserve_exact( msz );
+                cgvec.reserve_and_use( msz );
                 size_t idx = 0;
                 for( auto& it : cmap )
                 {
@@ -4608,7 +4608,7 @@ void View::DrawGpuInfoWindow()
 
                 auto msz = cmap.size();
                 Vector<ChildGroup*> cgvec;
-                cgvec.reserve_exact( msz );
+                cgvec.reserve_and_use( msz );
                 size_t idx = 0;
                 for( auto& it : cmap )
                 {

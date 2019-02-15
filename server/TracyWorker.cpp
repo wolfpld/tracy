@@ -3330,8 +3330,10 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec[i] = zone;
-        zone->start = ReadTimeOffset( f, refTime );
-        f.Read( &zone->srcloc, sizeof( zone->srcloc ) + sizeof( zone->cpu_start ) + sizeof( zone->cpu_end ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
+        // Use zone->end as scratch buffer for zone start time offset.
+        f.Read( &zone->end, sizeof( zone->end ) + sizeof( zone->srcloc ) + sizeof( zone->cpu_start ) + sizeof( zone->cpu_end ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
+        refTime += zone->end;
+        zone->start = refTime;
         ReadTimeline( f, zone, thread, refTime );
         zone->end = ReadTimeOffset( f, refTime );
         ReadTimelineUpdateStatistics( zone, thread );
@@ -3382,9 +3384,13 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
         auto zone = m_slab.Alloc<GpuEvent>();
         vec[i] = zone;
 
-        zone->cpuStart = ReadTimeOffset( f, refTime );
-        zone->gpuStart = ReadTimeOffset( f, refGpuTime );
-        f.Read2( zone->srcloc, zone->callstack );
+        // Use zone->gpuStart as scratch buffer for CPU zone start time offset.
+        // Use zone->gpuEnd as scratch buffer for GPU zone start time offset.
+        f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) + sizeof( zone->gpuEnd ) + sizeof( zone->srcloc ) + sizeof( zone->callstack ) );
+        refTime += zone->gpuStart;
+        refGpuTime += zone->gpuEnd;
+        zone->cpuStart = refTime;
+        zone->gpuStart = refGpuTime;
 
         uint64_t thread;
         f.Read( thread );

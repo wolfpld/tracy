@@ -344,7 +344,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     if( fileVer >= FileVersion( 0, 3, 202 ) )
     {
         f.Read( sz );
-        m_data.frames.Data().reserve_exact( sz );
+        m_data.frames.Data().reserve_exact( sz, m_slab );
         for( uint64_t i=0; i<sz; i++ )
         {
             auto ptr = m_slab.AllocInit<FrameData>();
@@ -352,7 +352,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( &ptr->continuous, sizeof( ptr->continuous ) );
             uint64_t fsz;
             f.Read( &fsz, sizeof( fsz ) );
-            ptr->frames.reserve_exact( fsz );
+            ptr->frames.reserve_exact( fsz, m_slab );
             if( fileVer >= FileVersion( 0, 4, 2 ) )
             {
                 int64_t refTime = 0;
@@ -400,7 +400,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         ptr->name = 0;
         ptr->continuous = 1;
         f.Read( sz );
-        ptr->frames.reserve_exact( sz );
+        ptr->frames.reserve_exact( sz, m_slab );
         for( uint64_t i=0; i<sz; i++ )
         {
             f.Read( &ptr->frames[i].start, sizeof( int64_t ) );
@@ -413,7 +413,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     flat_hash_map<uint64_t, const char*, nohash<uint64_t>> pointerMap;
 
     f.Read( sz );
-    m_data.stringData.reserve_exact( sz );
+    m_data.stringData.reserve_exact( sz, m_slab );
     for( uint64_t i=0; i<sz; i++ )
     {
         uint64_t ptr, ssz;
@@ -466,12 +466,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
     f.Read( sz );
-    m_data.sourceLocationExpand.reserve_exact( sz );
+    m_data.sourceLocationExpand.reserve_exact( sz, m_slab );
     f.Read( m_data.sourceLocationExpand.data(), sizeof( uint64_t ) * sz );
     const auto sle = sz;
 
     f.Read( sz );
-    m_data.sourceLocationPayload.reserve_exact( sz );
+    m_data.sourceLocationPayload.reserve_exact( sz, m_slab );
     for( uint64_t i=0; i<sz; i++ )
     {
         auto srcloc = m_slab.Alloc<SourceLocation>();
@@ -566,7 +566,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 lockmap.threadList.emplace_back( t );
             }
             f.Read( tsz );
-            lockmap.timeline.reserve_exact( tsz );
+            lockmap.timeline.reserve_exact( tsz, m_slab );
             auto ptr = lockmap.timeline.data();
             if( fileVer >= FileVersion( 0, 4, 2 ) )
             {
@@ -677,7 +677,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( sz );
     if( eventMask & EventType::Messages )
     {
-        m_data.messages.reserve_exact( sz );
+        m_data.messages.reserve_exact( sz, m_slab );
         if( fileVer >= FileVersion( 0, 4, 2 ) )
         {
             int64_t refTime = 0;
@@ -721,7 +721,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
     s_loadProgress.progress.store( LoadProgress::Zones, std::memory_order_relaxed );
     f.Read( sz );
-    m_data.threads.reserve_exact( sz );
+    m_data.threads.reserve_exact( sz, m_slab );
     for( uint64_t i=0; i<sz; i++ )
     {
         auto td = m_slab.AllocInit<ThreadData>();
@@ -749,7 +749,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( msz );
         if( eventMask & EventType::Messages )
         {
-            td->messages.reserve_exact( msz );
+            td->messages.reserve_exact( msz, m_slab );
             for( uint64_t j=0; j<msz; j++ )
             {
                 uint64_t ptr;
@@ -768,7 +768,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
     s_loadProgress.progress.store( LoadProgress::GpuZones, std::memory_order_relaxed );
     f.Read( sz );
-    m_data.gpuData.reserve_exact( sz );
+    m_data.gpuData.reserve_exact( sz, m_slab );
     for( uint64_t i=0; i<sz; i++ )
     {
         auto ctx = m_slab.AllocInit<GpuCtxData>();
@@ -825,7 +825,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( pd->max );
             uint64_t psz;
             f.Read( psz );
-            pd->data.reserve_exact( psz );
+            pd->data.reserve_exact( psz, m_slab );
             if( fileVer >= FileVersion( 0, 4, 2 ) )
             {
                 int64_t refTime = 0;
@@ -863,13 +863,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( sz );
     if( eventMask & EventType::Memory )
     {
-        m_data.memory.data.reserve_exact( sz );
+        m_data.memory.data.reserve_exact( sz, m_slab );
         if( fileVer >= FileVersion( 0, 3, 201 ) )
         {
             uint64_t activeSz, freesSz;
             f.Read2( activeSz, freesSz );
             m_data.memory.active.reserve( activeSz );
-            m_data.memory.frees.reserve_exact( freesSz );
+            m_data.memory.frees.reserve_exact( freesSz, m_slab );
         }
         auto mem = m_data.memory.data.data();
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
@@ -3124,7 +3124,7 @@ void Worker::ReconstructMemAllocPlot()
 
     plot->name = 0;
     plot->type = PlotType::Memory;
-    plot->data.reserve_exact( psz );
+    plot->data.reserve_exact( psz, m_slab );
 
     auto aptr = mem.data.begin();
     auto aend = mem.data.end();
@@ -3322,7 +3322,7 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
 void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime )
 {
     assert( size != 0 );
-    vec.reserve_exact( size );
+    vec.reserve_exact( size, m_slab );
     m_data.zonesCnt += size;
 
     for( uint64_t i=0; i<size; i++ )
@@ -3341,7 +3341,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
 void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer )
 {
     assert( size != 0 );
-    vec.reserve_exact( size );
+    vec.reserve_exact( size, m_slab );
     m_data.zonesCnt += size;
 
     for( uint64_t i=0; i<size; i++ )
@@ -3374,7 +3374,7 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
 void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime )
 {
     assert( size != 0 );
-    vec.reserve_exact( size );
+    vec.reserve_exact( size, m_slab );
 
     for( uint64_t i=0; i<size; i++ )
     {
@@ -3406,7 +3406,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
 void Worker::ReadTimelinePre042( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int fileVer )
 {
     assert( size != 0 );
-    vec.reserve_exact( size );
+    vec.reserve_exact( size, m_slab );
 
     for( uint64_t i=0; i<size; i++ )
     {

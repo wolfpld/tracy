@@ -9,6 +9,7 @@
 #include "../common/TracyForceInline.hpp"
 #include "TracyMemory.hpp"
 #include "TracyPopcnt.hpp"
+#include "TracySlab.hpp"
 
 namespace tracy
 {
@@ -46,15 +47,11 @@ public:
 
     ~Vector()
     {
-        if( m_capacity == std::numeric_limits<uint8_t>::max() )
-        {
-            memUsage.fetch_sub( m_size * sizeof( T ) );
-        }
-        else
+        if( m_capacity != std::numeric_limits<uint8_t>::max() )
         {
             memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
+            delete[] m_ptr;
         }
-        delete[] m_ptr;
     }
 
     Vector& operator=( const Vector& ) = delete;
@@ -234,13 +231,13 @@ public:
         m_size = sz;
     }
 
-    tracy_force_inline void reserve_exact( uint32_t sz )
+    template<size_t U>
+    tracy_force_inline void reserve_exact( uint32_t sz, Slab<U>& slab )
     {
         assert( !m_ptr );
         m_capacity = std::numeric_limits<uint8_t>::max();
         m_size = sz;
-        m_ptr = new T[sz];
-        memUsage.fetch_add( sz * sizeof( T ) );
+        m_ptr = (T*)slab.AllocBig( sizeof( T ) * sz );
     }
 
     tracy_force_inline void clear()

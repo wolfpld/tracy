@@ -17,13 +17,14 @@ public:
         : m_ptr( new char[BlockSize] )
         , m_offset( 0 )
         , m_buffer( { m_ptr } )
+        , m_usage( BlockSize )
     {
         memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
     }
 
     ~Slab()
     {
-        memUsage.fetch_sub( BlockSize * m_buffer.size(), std::memory_order_relaxed );
+        memUsage.fetch_sub( m_usage, std::memory_order_relaxed );
         for( auto& v : m_buffer )
         {
             delete[] v;
@@ -93,6 +94,7 @@ public:
         else
         {
             memUsage.fetch_add( size );
+            m_usage += size;
             auto ret = new char[size];
             m_buffer.emplace_back( ret );
             return ret;
@@ -103,7 +105,8 @@ public:
     {
         if( m_buffer.size() > 1 )
         {
-            memUsage.fetch_sub( BlockSize * ( m_buffer.size() - 1 ), std::memory_order_relaxed );
+            memUsage.fetch_sub( m_usage - BlockSize, std::memory_order_relaxed );
+            m_usage = BlockSize;
             for( int i=1; i<m_buffer.size(); i++ )
             {
                 delete[] m_buffer[i];
@@ -128,11 +131,13 @@ private:
         m_offset = 0;
         m_buffer.emplace_back( m_ptr );
         memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
+        m_usage += BlockSize;
     }
 
     char* m_ptr;
     uint32_t m_offset;
     std::vector<char*> m_buffer;
+    size_t m_usage;
 };
 
 }

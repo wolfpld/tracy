@@ -449,7 +449,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
-    if( fileVer >= FileVersion( 0, 3, 201 ) )
+    if( fileVer >= FileVersion( 0, 4, 4 ) )
+    {
+        f.Read( sz );
+        m_data.threadExpand.reserve_and_use( sz );
+        f.Read( m_data.threadExpand.data(), sizeof( uint64_t ) * sz );
+    }
+    else if( fileVer >= FileVersion( 0, 3, 201 ) )
     {
         f.Read( sz );
         m_data.threadExpand.reserve( sz );
@@ -3529,6 +3535,7 @@ void Worker::Write( FileWrite& f )
 
     sz = m_data.threadExpand.size();
     f.Write( &sz, sizeof( sz ) );
+    f.Write( m_data.threadExpand.data(), sz * sizeof( uint64_t ) );
 
     sz = m_data.sourceLocation.size();
     f.Write( &sz, sizeof( sz ) );

@@ -880,19 +880,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
             if( fileVer > FileVersion( 0, 4, 1 ) )
             {
-                f.Read2( mem->ptr, mem->size );
-                mem->timeAlloc = ReadTimeOffset( f, refTime );
-                int64_t freeOffset;
-                f.Read( freeOffset );
-                if( freeOffset < 0 )
-                {
-                    mem->timeFree = freeOffset;
-                }
-                else
-                {
-                    mem->timeFree = mem->timeAlloc + freeOffset;
-                }
-                f.Read2( mem->csAlloc, mem->csFree );
+                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+                refTime += mem->timeAlloc;
+                mem->timeAlloc = refTime;
+                if( mem->timeFree >= 0 ) mem->timeFree += refTime;
             }
             else if( fileVer > FileVersion( 0, 3, 1 ) )
             {

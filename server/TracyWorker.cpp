@@ -881,57 +881,84 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
         size_t fidx = 0;
         int64_t refTime = 0;
-        for( uint64_t i=0; i<sz; i++ )
+        if( fileVer >= FileVersion( 0, 4, 4 ) )
         {
-            s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
-            if( fileVer > FileVersion( 0, 4, 1 ) )
+            auto& frees = m_data.memory.frees;
+            auto& active = m_data.memory.active;
+
+            for( uint64_t i=0; i<sz; i++ )
             {
-                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + sizeof( MemEvent::threadAlloc ) + sizeof( MemEvent::threadFree ) );
                 refTime += mem->timeAlloc;
                 mem->timeAlloc = refTime;
-                if( mem->timeFree >= 0 ) mem->timeFree += refTime;
-            }
-            else if( fileVer > FileVersion( 0, 3, 1 ) )
-            {
-                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
-            }
-            else
-            {
-                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
-                mem->csAlloc = 0;
-                mem->csFree = 0;
-            }
-
-            uint64_t t0, t1;
-            f.Read2( t0, t1 );
-            mem->threadAlloc = CompressThread( t0 );
-            if( t0 == t1 )
-            {
-                mem->threadFree = mem->threadAlloc;
-            }
-            else
-            {
-                mem->threadFree = CompressThread( t1 );
-            }
-
-            if( mem->timeFree < 0 )
-            {
-                m_data.memory.active.emplace( mem->ptr, i );
-            }
-            else
-            {
-                if( fileVer >= FileVersion( 0, 3, 201 ) )
+                if( mem->timeFree >= 0 )
                 {
-                    m_data.memory.frees[fidx++] = i;
+                    mem->timeFree += refTime;
+                    frees[fidx++] = i;
                 }
                 else
                 {
-                    m_data.memory.frees.push_back( i );
+                    active.emplace( mem->ptr, i );
                 }
+                mem++;
             }
-
-            mem++;
         }
+        else
+        {
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                if( fileVer > FileVersion( 0, 4, 1 ) )
+                {
+                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+                    refTime += mem->timeAlloc;
+                    mem->timeAlloc = refTime;
+                    if( mem->timeFree >= 0 ) mem->timeFree += refTime;
+                }
+                else if( fileVer > FileVersion( 0, 3, 1 ) )
+                {
+                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+                }
+                else
+                {
+                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
+                    mem->csAlloc = 0;
+                    mem->csFree = 0;
+                }
+
+                uint64_t t0, t1;
+                f.Read2( t0, t1 );
+                mem->threadAlloc = CompressThread( t0 );
+                if( t0 == t1 )
+                {
+                    mem->threadFree = mem->threadAlloc;
+                }
+                else
+                {
+                    mem->threadFree = CompressThread( t1 );
+                }
+
+                if( mem->timeFree < 0 )
+                {
+                    m_data.memory.active.emplace( mem->ptr, i );
+                }
+                else
+                {
+                    if( fileVer >= FileVersion( 0, 3, 201 ) )
+                    {
+                        m_data.memory.frees[fidx++] = i;
+                    }
+                    else
+                    {
+                        m_data.memory.frees.push_back( i );
+                    }
+                }
+
+                mem++;
+            }
+        }
+
         f.Read( m_data.memory.high );
         f.Read( m_data.memory.low );
         f.Read( m_data.memory.usage );
@@ -947,28 +974,24 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             f.Skip( 2 * sizeof( uint64_t ) );
         }
-        if( fileVer <= FileVersion( 0, 3, 1 ) )
+
+        if( fileVer >= FileVersion( 0, 4, 4 ) )
         {
-            f.Skip( sz * (
-                sizeof( MemEvent::ptr ) +
-                sizeof( MemEvent::size ) +
-                sizeof( MemEvent::timeAlloc ) +
-                sizeof( MemEvent::timeFree ) +
-                sizeof( uint64_t ) +
-                sizeof( uint64_t ) ) );
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + sizeof( MemEvent::threadAlloc ) + sizeof( MemEvent::threadFree ) ) );
+        }
+        else if( fileVer > FileVersion( 0, 4, 1 ) )
+        {
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + 2 * sizeof( uint64_t ) ) );
+        }
+        else if( fileVer > FileVersion( 0, 3, 1 ) )
+        {
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + 2 * sizeof( uint64_t ) ) );
         }
         else
         {
-            f.Skip( sz * (
-                sizeof( MemEvent::ptr ) +
-                sizeof( MemEvent::size ) +
-                sizeof( MemEvent::timeAlloc ) +
-                sizeof( MemEvent::timeFree ) +
-                sizeof( MemEvent::csAlloc ) +
-                sizeof( MemEvent::csFree ) +
-                sizeof( uint64_t ) +
-                sizeof( uint64_t ) ) );
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + 2 * sizeof( uint64_t ) ) );
         }
+
         f.Skip( sizeof( MemData::high ) + sizeof( MemData::low ) + sizeof( MemData::usage ) );
     }
 
@@ -3688,10 +3711,8 @@ void Worker::Write( FileWrite& f )
             f.Write( &freeOffset, sizeof( freeOffset ) );
             f.Write( &mem.csAlloc, sizeof( mem.csAlloc ) );
             f.Write( &mem.csFree, sizeof( mem.csFree ) );
-            uint64_t t[2];
-            t[0] = DecompressThread( mem.threadAlloc );
-            t[1] = DecompressThread( mem.threadFree );
-            f.Write( &t, sizeof( t ) );
+            f.Write( &mem.threadAlloc, sizeof( mem.threadAlloc ) );
+            f.Write( &mem.threadFree, sizeof( mem.threadFree ) );
         }
         f.Write( &m_data.memory.high, sizeof( m_data.memory.high ) );
         f.Write( &m_data.memory.low, sizeof( m_data.memory.low ) );

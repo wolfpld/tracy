@@ -783,6 +783,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( ctx->count );
         s_loadProgress.subTotal.store( ctx->count, std::memory_order_relaxed );
         s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
+        int64_t refTime = 0;
+        int64_t refGpuTime = 0;
         if( fileVer <= FileVersion( 0, 3, 1 ) )
         {
             ctx->period = 1.f;
@@ -790,7 +792,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( tsz );
             if( tsz != 0 )
             {
-                ReadTimelinePre042( f, ctx->timeline, tsz, fileVer );
+                ReadTimelinePre044( f, ctx->timeline, tsz, refTime, refGpuTime, fileVer );
             }
         }
         else
@@ -800,14 +802,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( tsz );
             if( tsz != 0 )
             {
-                if( fileVer <= FileVersion( 0, 4, 1 ) )
+                if( fileVer <= FileVersion( 0, 4, 3 ) )
                 {
-                    ReadTimelinePre042( f, ctx->timeline, tsz, fileVer );
+                    ReadTimelinePre044( f, ctx->timeline, tsz, refTime, refGpuTime, fileVer );
                 }
                 else
                 {
-                    int64_t refTime = 0;
-                    int64_t refGpuTime = 0;
+
                     ReadTimeline( f, ctx->timeline, tsz, refTime, refGpuTime );
                 }
             }
@@ -3283,7 +3284,7 @@ void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_
     }
 }
 
-void Worker::ReadTimelinePre042( FileRead& f, GpuEvent* zone, int fileVer )
+void Worker::ReadTimelinePre044( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int fileVer )
 {
     uint64_t sz;
     f.Read( sz );
@@ -3296,7 +3297,7 @@ void Worker::ReadTimelinePre042( FileRead& f, GpuEvent* zone, int fileVer )
         zone->child = m_data.m_gpuChildren.size();
         m_data.m_gpuChildren.push_back( Vector<GpuEvent*>() );
         Vector<GpuEvent*> tmp;
-        ReadTimelinePre042( f, tmp, sz, fileVer );
+        ReadTimelinePre044( f, tmp, sz, refTime, refGpuTime, fileVer );
         m_data.m_gpuChildren[zone->child] = std::move( tmp );
     }
 }
@@ -3415,22 +3416,12 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
 
         // Use zone->gpuStart as scratch buffer for CPU zone start time offset.
         // Use zone->gpuEnd as scratch buffer for GPU zone start time offset.
-        f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) + sizeof( zone->gpuEnd ) + sizeof( zone->srcloc ) + sizeof( zone->callstack ) );
+        f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) + sizeof( zone->gpuEnd ) + sizeof( zone->srcloc ) + sizeof( zone->callstack ) + sizeof( zone->thread ) );
         refTime += zone->gpuStart;
         refGpuTime += zone->gpuEnd;
         zone->cpuStart = refTime;
         zone->gpuStart = refGpuTime;
 
-        uint64_t thread;
-        f.Read( thread );
-        if( thread == 0 )
-        {
-            zone->thread = 0;
-        }
-        else
-        {
-            zone->thread = CompressThread( thread );
-        }
         ReadTimeline( f, zone, refTime, refGpuTime );
 
         zone->cpuEnd = ReadTimeOffset( f, refTime );
@@ -3439,7 +3430,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
     while( ++zone != zptr );
 }
 
-void Worker::ReadTimelinePre042( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int fileVer )
+void Worker::ReadTimelinePre044( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer )
 {
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
@@ -3456,9 +3447,8 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
             zone->thread = 0;
             zone->callstack = 0;
         }
-        else
+        else if( fileVer <= FileVersion( 0, 4, 1 ) )
         {
-            assert( fileVer <= FileVersion( 0, 4, 1 ) );
             f.Read( zone, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) + sizeof( GpuEvent::callstack ) );
             uint64_t thread;
             f.Read( thread );
@@ -3471,7 +3461,34 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
                 zone->thread = CompressThread( thread );
             }
         }
-        ReadTimelinePre042( f, zone, fileVer );
+        else
+        {
+            assert( fileVer <= FileVersion( 0, 4, 3 ) );
+
+            f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) + sizeof( zone->gpuEnd ) + sizeof( zone->srcloc ) + sizeof( zone->callstack ) );
+            refTime += zone->gpuStart;
+            refGpuTime += zone->gpuEnd;
+            zone->cpuStart = refTime;
+            zone->gpuStart = refGpuTime;
+
+            uint64_t thread;
+            f.Read( thread );
+            if( thread == 0 )
+            {
+                zone->thread = 0;
+            }
+            else
+            {
+                zone->thread = CompressThread( thread );
+            }
+        }
+        ReadTimelinePre044( f, zone, refTime, refGpuTime, fileVer );
+        if( fileVer > FileVersion( 0, 4, 1 ) )
+        {
+            assert( fileVer <= FileVersion( 0, 4, 3 ) );
+            zone->cpuEnd = ReadTimeOffset( f, refTime );
+            zone->gpuEnd = ReadTimeOffset( f, refGpuTime );
+        }
     }
 }
 
@@ -3779,9 +3796,8 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t&
         WriteTimeOffset( f, refGpuTime, v->gpuStart );
         f.Write( &v->srcloc, sizeof( v->srcloc ) );
         f.Write( &v->callstack, sizeof( v->callstack ) );
+        f.Write( &v->thread, sizeof( v->thread ) );
 
-        uint64_t thread = DecompressThread( v->thread );
-        f.Write( &thread, sizeof( thread ) );
         if( v->child < 0 )
         {
             sz = 0;

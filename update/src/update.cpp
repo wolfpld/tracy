@@ -74,7 +74,7 @@ int main( int argc, char** argv )
         const auto outSize = ftell( out );
         fclose( out );
 
-        printf( "%s (%i.%i.%i) {%zu KB} -> %s (%i.%i.%i) {%zu KB}  %.2f%% size change\n", input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, inSize / 1024, output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, outSize / 1024, float( outSize ) / inSize * 100 );
+        printf( "%s (%i.%i.%i) {%zu KB} -> %s (%i.%i.%i) {%zu KB}  %.2f%% size change\n", input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, size_t( inSize / 1024 ), output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, size_t( outSize / 1024 ), float( outSize ) / inSize * 100 );
     }
     catch( const tracy::UnsupportedVersion& e )
     {

@@ -3324,12 +3324,16 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
     m_data.zonesCnt += size;
-
+    auto zone = (ZoneEvent*)m_slab.AllocBig( sizeof( ZoneEvent ) * size );
+    auto zptr = zone;
+    auto vptr = vec.data();
     for( uint64_t i=0; i<size; i++ )
     {
+        *vptr++ = zptr++;
+    }
+    do
+    {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
-        auto zone = m_slab.Alloc<ZoneEvent>();
-        vec[i] = zone;
         // Use zone->end as scratch buffer for zone start time offset.
         f.Read( &zone->end, sizeof( zone->end ) + sizeof( zone->srcloc ) + sizeof( zone->cpu_start ) + sizeof( zone->cpu_end ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         refTime += zone->end;
@@ -3338,6 +3342,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
         zone->end = ReadTimeOffset( f, refTime );
         ReadTimelineUpdateStatistics( zone, thread );
     }
+    while( ++zone != zptr );
 }
 
 void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer )
@@ -3377,12 +3382,16 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
 {
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
-
+    auto zone = (GpuEvent*)m_slab.AllocBig( sizeof( GpuEvent ) * size );
+    auto zptr = zone;
+    auto vptr = vec.data();
     for( uint64_t i=0; i<size; i++ )
     {
+        *vptr++ = zptr++;
+    }
+    do
+    {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
-        auto zone = m_slab.Alloc<GpuEvent>();
-        vec[i] = zone;
 
         // Use zone->gpuStart as scratch buffer for CPU zone start time offset.
         // Use zone->gpuEnd as scratch buffer for GPU zone start time offset.
@@ -3407,6 +3416,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
         zone->cpuEnd = ReadTimeOffset( f, refTime );
         zone->gpuEnd = ReadTimeOffset( f, refGpuTime );
     }
+    while( ++zone != zptr );
 }
 
 void Worker::ReadTimelinePre042( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int fileVer )

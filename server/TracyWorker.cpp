@@ -878,17 +878,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         for( uint64_t i=0; i<sz; i++ )
         {
             s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
-            if( fileVer <= FileVersion( 0, 3, 1 ) )
-            {
-                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
-                mem->csAlloc = 0;
-                mem->csFree = 0;
-            }
-            else if( fileVer <= FileVersion( 0, 4, 1 ) )
-            {
-                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
-            }
-            else
+            if( fileVer > FileVersion( 0, 4, 1 ) )
             {
                 f.Read2( mem->ptr, mem->size );
                 mem->timeAlloc = ReadTimeOffset( f, refTime );
@@ -903,6 +893,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     mem->timeFree = mem->timeAlloc + freeOffset;
                 }
                 f.Read2( mem->csAlloc, mem->csFree );
+            }
+            else if( fileVer > FileVersion( 0, 3, 1 ) )
+            {
+                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+            }
+            else
+            {
+                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
+                mem->csAlloc = 0;
+                mem->csFree = 0;
             }
 
             uint64_t t0, t1;

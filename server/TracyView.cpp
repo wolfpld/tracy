@@ -2881,9 +2881,22 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         auto it = lockmap.threadMap.find( tid );
         if( it == lockmap.threadMap.end() ) continue;
 
+        const auto offset = _offset + ostep * cnt;
+
         const auto& tl = lockmap.timeline;
         assert( !tl.empty() );
-        if( tl.back()->time < m_zvStart ) continue;
+        if( tl.back()->time < m_zvStart )
+        {
+            if( m_lockInfoWindow == v.first )
+            {
+                draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x2288DD88 );
+                draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x4488DD88 );
+                DrawLockHeader( v.first, lockmap, m_worker.GetSourceLocation( lockmap.srcloc ), hover, draw, wpos, w, ty, offset );
+                cnt++;
+            }
+
+            continue;
+        }
 
         auto GetNextLockFunc = lockmap.type == LockType::Lockable ? GetNextLockEvent : GetNextLockEventShared;
 
@@ -2894,8 +2907,6 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         const auto vend = std::lower_bound( vbegin, tl.end(), m_zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->time < r; } );
 
         if( vbegin > tl.begin() ) vbegin--;
-
-        const auto offset = _offset + ostep * cnt;
 
         if( m_lockInfoWindow == v.first )
         {

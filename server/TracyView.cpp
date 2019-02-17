@@ -4924,9 +4924,14 @@ void View::DrawOptions()
                     char buf[1024];
                     sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
                     ImGui::Checkbox( buf, &Visible( &l.second ) );
-                    if( ImGui::IsItemClicked( 1 ) )
+                    if( ImGui::IsItemHovered() )
                     {
-                        m_lockInfoWindow = l.first;
+                        m_lockHoverHighlight = l.first;
+
+                        if( ImGui::IsItemClicked( 1 ) )
+                        {
+                            m_lockInfoWindow = l.first;
+                        }
                     }
                     if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
                     {

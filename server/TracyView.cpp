@@ -2908,17 +2908,6 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
         if( vbegin > tl.begin() ) vbegin--;
 
-        if( m_lockInfoWindow == v.first )
-        {
-            draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x2288DD88 );
-            draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x4488DD88 );
-        }
-        else if( m_lockHoverHighlight == v.first )
-        {
-            draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x228888DD );
-            draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x448888DD );
-        }
-
         LockState state = LockState::Nothing;
         if( lockmap.type == LockType::Lockable )
         {
@@ -3336,6 +3325,17 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
             if( drawn || m_lockInfoWindow == v.first )
             {
+                if( m_lockInfoWindow == v.first )
+                {
+                    draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x2288DD88 );
+                    draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x4488DD88 );
+                }
+                else if( m_lockHoverHighlight == v.first )
+                {
+                    draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x228888DD );
+                    draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x448888DD );
+                }
+
                 DrawLockHeader( v.first, lockmap, srcloc, hover, draw, wpos, w, ty, offset );
                 cnt++;
             }

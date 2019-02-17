@@ -4914,48 +4914,131 @@ void View::DrawOptions()
             ImGui::SameLine();
             DrawHelpMarker( "Right click on lock name to open lock information window." );
 
-            for( const auto& l : m_worker.GetLockMap() )
+            if( ImGui::TreeNodeEx( "Locks present in multiple threads", ImGuiTreeNodeFlags_DefaultOpen ) )
             {
-                if( l.second.valid )
+                if( ImGui::SmallButton( "Select all" ) )
                 {
-                    auto& sl = m_worker.GetSourceLocation( l.second.srcloc );
-                    auto fileName = m_worker.GetString( sl.file );
-
-                    char buf[1024];
-                    sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
-                    ImGui::Checkbox( buf, &Visible( &l.second ) );
-                    if( ImGui::IsItemHovered() )
+                    for( const auto& l : m_worker.GetLockMap() )
                     {
-                        m_lockHoverHighlight = l.first;
+                        if( l.second.threadList.size() != 1 ) Visible( &l.second ) = true;
+                    }
+                }
+                ImGui::SameLine();
+                if( ImGui::SmallButton( "Unselect all" ) )
+                {
+                    for( const auto& l : m_worker.GetLockMap() )
+                    {
+                        if( l.second.threadList.size() != 1 ) Visible( &l.second ) = false;
+                    }
+                }
 
-                        if( ImGui::IsItemClicked( 1 ) )
+                for( const auto& l : m_worker.GetLockMap() )
+                {
+                    if( l.second.valid && l.second.threadList.size() != 1 )
+                    {
+                        auto& sl = m_worker.GetSourceLocation( l.second.srcloc );
+                        auto fileName = m_worker.GetString( sl.file );
+
+                        char buf[1024];
+                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
+                        ImGui::Checkbox( buf, &Visible( &l.second ) );
+                        if( ImGui::IsItemHovered() )
                         {
-                            m_lockInfoWindow = l.first;
+                            m_lockHoverHighlight = l.first;
+
+                            if( ImGui::IsItemClicked( 1 ) )
+                            {
+                                m_lockInfoWindow = l.first;
+                            }
                         }
-                    }
-                    if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
-                    {
-                        const auto time = m_optionsLockBuzzAnim.Time();
-                        const auto indentVal = sin( time * 60.f ) * 10.f * time;
-                        ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
-                    }
-                    else
-                    {
-                        ImGui::SameLine();
-                    }
-                    ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second.timeline.size(), true ), fileName, sl.line );
-                    if( ImGui::IsItemClicked( 1 ) )
-                    {
-                        if( FileExists( fileName ) )
+                        if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
                         {
-                            SetTextEditorFile( fileName, sl.line );
+                            const auto time = m_optionsLockBuzzAnim.Time();
+                            const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
                         }
                         else
                         {
-                            m_optionsLockBuzzAnim.Enable( l.second.srcloc, 0.5f );
+                            ImGui::SameLine();
+                        }
+                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second.timeline.size(), true ), fileName, sl.line );
+                        if( ImGui::IsItemClicked( 1 ) )
+                        {
+                            if( FileExists( fileName ) )
+                            {
+                                SetTextEditorFile( fileName, sl.line );
+                            }
+                            else
+                            {
+                                m_optionsLockBuzzAnim.Enable( l.second.srcloc, 0.5f );
+                            }
                         }
                     }
                 }
+                ImGui::TreePop();
+            }
+            if( ImGui::TreeNodeEx( "Locks present in a single thread", ImGuiTreeNodeFlags_DefaultOpen ) )
+            {
+                if( ImGui::SmallButton( "Select all" ) )
+                {
+                    for( const auto& l : m_worker.GetLockMap() )
+                    {
+                        if( l.second.threadList.size() == 1 ) Visible( &l.second ) = true;
+                    }
+                }
+                ImGui::SameLine();
+                if( ImGui::SmallButton( "Unselect all" ) )
+                {
+                    for( const auto& l : m_worker.GetLockMap() )
+                    {
+                        if( l.second.threadList.size() == 1 ) Visible( &l.second ) = false;
+                    }
+                }
+
+                for( const auto& l : m_worker.GetLockMap() )
+                {
+                    if( l.second.valid && l.second.threadList.size() == 1 )
+                    {
+                        auto& sl = m_worker.GetSourceLocation( l.second.srcloc );
+                        auto fileName = m_worker.GetString( sl.file );
+
+                        char buf[1024];
+                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
+                        ImGui::Checkbox( buf, &Visible( &l.second ) );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            m_lockHoverHighlight = l.first;
+
+                            if( ImGui::IsItemClicked( 1 ) )
+                            {
+                                m_lockInfoWindow = l.first;
+                            }
+                        }
+                        if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
+                        {
+                            const auto time = m_optionsLockBuzzAnim.Time();
+                            const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+                        }
+                        else
+                        {
+                            ImGui::SameLine();
+                        }
+                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second.timeline.size(), true ), fileName, sl.line );
+                        if( ImGui::IsItemClicked( 1 ) )
+                        {
+                            if( FileExists( fileName ) )
+                            {
+                                SetTextEditorFile( fileName, sl.line );
+                            }
+                            else
+                            {
+                                m_optionsLockBuzzAnim.Enable( l.second.srcloc, 0.5f );
+                            }
+                        }
+                    }
+                }
+                ImGui::TreePop();
             }
             ImGui::TreePop();
         }

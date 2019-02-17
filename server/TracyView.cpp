@@ -1695,6 +1695,7 @@ void View::DrawZones()
 {
     m_msgHighlight.Decay( nullptr );
     m_zoneSrcLocHighlight.Decay( 0 );
+    m_lockHoverHighlight.Decay( InvalidId );
 
     if( m_zvStart == m_zvEnd ) return;
     assert( m_zvStart < m_zvEnd );
@@ -2851,6 +2852,17 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
         const auto offset = _offset + ostep * cnt;
 
+        if( m_lockInfoWindow == v.first )
+        {
+            draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x2288DD88 );
+            draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x4488DD88 );
+        }
+        else if( m_lockHoverHighlight == v.first )
+        {
+            draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x228888DD );
+            draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x448888DD );
+        }
+
         LockState state = LockState::Nothing;
         if( lockmap.type == LockType::Lockable )
         {
@@ -3266,42 +3278,47 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 vbegin = next;
             }
 
-            if( drawn )
+            if( drawn || m_lockInfoWindow == v.first )
             {
                 char buf[1024];
                 sprintf( buf, "%" PRIu32 ": %s", v.first, m_worker.GetString( srcloc.function ) );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ) ) )
                 {
-                    ImGui::BeginTooltip();
-                    switch( v.second.type )
-                    {
-                    case LockType::Lockable:
-                        TextFocused( "Type:", "lockable" );
-                        break;
-                    case LockType::SharedLockable:
-                        TextFocused( "Type:", "shared lockable" );
-                        break;
-                    default:
-                        assert( false );
-                        break;
-                    }
-                    ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-                    ImGui::Separator();
-                    TextDisabledUnformatted( "Thread list:" );
-                    ImGui::Indent( ty );
-                    for( const auto& t : v.second.threadList )
-                    {
-                        ImGui::TextUnformatted( m_worker.GetThreadString( t ) );
-                    }
-                    ImGui::Unindent( ty );
-                    ImGui::Separator();
-                    TextFocused( "Lock events:", RealToString( v.second.timeline.size(), true ) );
-                    ImGui::EndTooltip();
+                    m_lockHoverHighlight = v.first;
 
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
                     {
-                        m_lockInfoWindow = v.first;
+                        ImGui::BeginTooltip();
+                        switch( v.second.type )
+                        {
+                        case LockType::Lockable:
+                            TextFocused( "Type:", "lockable" );
+                            break;
+                        case LockType::SharedLockable:
+                            TextFocused( "Type:", "shared lockable" );
+                            break;
+                        default:
+                            assert( false );
+                            break;
+                        }
+                        ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+                        ImGui::Separator();
+                        TextDisabledUnformatted( "Thread list:" );
+                        ImGui::Indent( ty );
+                        for( const auto& t : v.second.threadList )
+                        {
+                            ImGui::TextUnformatted( m_worker.GetThreadString( t ) );
+                        }
+                        ImGui::Unindent( ty );
+                        ImGui::Separator();
+                        TextFocused( "Lock events:", RealToString( v.second.timeline.size(), true ) );
+                        ImGui::EndTooltip();
+
+                        if( ImGui::IsMouseClicked( 0 ) )
+                        {
+                            m_lockInfoWindow = v.first;
+                        }
                     }
                 }
                 cnt++;

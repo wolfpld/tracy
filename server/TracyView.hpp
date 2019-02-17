@@ -238,6 +238,7 @@ private:
     DecayValue<uint64_t> m_zoneSrcLocHighlight = 0;
     LockHighlight m_lockHighlight { -1 };
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
+    DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;
     const MessageData* m_msgToFocus = nullptr;
     const GpuEvent* m_gpuInfoWindow = nullptr;
     const GpuEvent* m_gpuHighlight;

@@ -4877,6 +4877,25 @@ void View::DrawOptions()
 
     if( !m_worker.GetLockMap().empty() )
     {
+        size_t lockCnt = 0;
+        size_t singleCnt = 0;
+        size_t multiCnt = 0;
+        for( const auto& l : m_worker.GetLockMap() )
+        {
+            if( l.second.valid && !l.second.timeline.empty() )
+            {
+                lockCnt++;
+                if( l.second.threadList.size() == 1 )
+                {
+                    singleCnt++;
+                }
+                else
+                {
+                    multiCnt++;
+                }
+            }
+        }
+
         ImGui::Separator();
 #ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_LOCK " Draw locks", &m_drawLocks );
@@ -4887,7 +4906,7 @@ void View::DrawOptions()
         ImGui::Checkbox( "Only contended", &m_onlyContendedLocks );
         const auto expand = ImGui::TreeNode( "Locks" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%zu)", m_worker.GetLockMap().size() );
+        ImGui::TextDisabled( "(%zu)", lockCnt );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -4914,7 +4933,10 @@ void View::DrawOptions()
             ImGui::SameLine();
             DrawHelpMarker( "Right click on lock name to open lock information window." );
 
-            if( ImGui::TreeNodeEx( "Locks present in multiple threads", ImGuiTreeNodeFlags_DefaultOpen ) )
+            const bool multiExpand = ImGui::TreeNodeEx( "Locks present in multiple threads", ImGuiTreeNodeFlags_DefaultOpen );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%zu)", multiCnt );
+            if( multiExpand )
             {
                 if( ImGui::SmallButton( "Select all" ) )
                 {
@@ -4977,7 +4999,10 @@ void View::DrawOptions()
                 }
                 ImGui::TreePop();
             }
-            if( ImGui::TreeNodeEx( "Locks present in a single thread", ImGuiTreeNodeFlags_DefaultOpen ) )
+            const auto singleExpand = ImGui::TreeNodeEx( "Locks present in a single thread", ImGuiTreeNodeFlags_DefaultOpen );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%zu)", singleCnt );
+            if( singleExpand )
             {
                 if( ImGui::SmallButton( "Select all" ) )
                 {

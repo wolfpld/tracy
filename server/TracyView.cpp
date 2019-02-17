@@ -4934,7 +4934,7 @@ void View::DrawOptions()
 
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    if( l.second.valid && l.second.threadList.size() != 1 )
+                    if( l.second.valid && !l.second.timeline.empty() && l.second.threadList.size() != 1 )
                     {
                         auto& sl = m_worker.GetSourceLocation( l.second.srcloc );
                         auto fileName = m_worker.GetString( sl.file );
@@ -4997,7 +4997,7 @@ void View::DrawOptions()
 
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    if( l.second.valid && l.second.threadList.size() == 1 )
+                    if( l.second.valid && !l.second.timeline.empty() && l.second.threadList.size() == 1 )
                     {
                         auto& sl = m_worker.GetSourceLocation( l.second.srcloc );
                         auto fileName = m_worker.GetString( sl.file );

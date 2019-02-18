@@ -17,6 +17,11 @@
 #define TracyGpuZoneS(x,y)
 #define TracyGpuZoneCS(x,y,z)
 
+namespace tracy
+{
+class GpuCtxScope {};
+}
+
 #else
 
 #include <atomic>

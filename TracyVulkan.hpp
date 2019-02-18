@@ -16,6 +16,11 @@
 #define TracyVkZoneS(c,x,y,z)
 #define TracyVkZoneCS(c,x,y,z,w)
 
+namespace tracy
+{
+class VkCtxScope {};
+}
+
 using TracyVkCtx = void*;
 
 #else

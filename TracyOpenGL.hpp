@@ -19,7 +19,13 @@
 
 namespace tracy
 {
-class GpuCtxScope {};
+struct SourceLocationData;
+class GpuCtxScope
+{
+public:
+    GpuCtxScope( const SourceLocationData* ) {}
+    GpuCtxScope( const SourceLocationData*, int depth ) {}
+};
 }
 
 #else

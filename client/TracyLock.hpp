@@ -11,14 +11,12 @@
 namespace tracy
 {
 
-extern std::atomic<uint32_t> s_lockCounter;
-
 template<class T>
 class Lockable
 {
 public:
     tracy_force_inline Lockable( const SourceLocationData* srcloc )
-        : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
+        : m_id( GetLockCounter().fetch_add( 1, std::memory_order_relaxed ) )
 #ifdef TRACY_ON_DEMAND
         , m_lockCount( 0 )
         , m_active( false )
@@ -211,7 +209,7 @@ class SharedLockable
 {
 public:
     tracy_force_inline SharedLockable( const SourceLocationData* srcloc )
-        : m_id( s_lockCounter.fetch_add( 1, std::memory_order_relaxed ) )
+        : m_id( GetLockCounter().fetch_add( 1, std::memory_order_relaxed ) )
 #ifdef TRACY_ON_DEMAND
         , m_lockCount( 0 )
         , m_active( false )

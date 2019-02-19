@@ -119,7 +119,7 @@ namespace tracy
 {
 
 #ifdef TRACY_ON_DEMAND
-extern thread_local LuaZoneState s_luaZoneState;
+LuaZoneState& GetLuaZoneState();
 #endif
 
 namespace detail
@@ -128,10 +128,10 @@ namespace detail
 static inline int LuaZoneBegin( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    const auto zoneCnt = s_luaZoneState.counter++;
-    if( zoneCnt != 0 && !s_luaZoneState.active ) return 0;
-    s_luaZoneState.active = GetProfiler().IsConnected();
-    if( !s_luaZoneState.active ) return 0;
+    const auto zoneCnt = GetLuaZoneState().counter++;
+    if( zoneCnt != 0 && !GetLuaZoneState().active ) return 0;
+    GetLuaZoneState().active = GetProfiler().IsConnected();
+    if( !GetLuaZoneState().active ) return 0;
 #endif
 
     const uint32_t color = Color::DeepSkyBlue3;
@@ -182,10 +182,10 @@ static inline int LuaZoneBegin( lua_State* L )
 static inline int LuaZoneBeginN( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    const auto zoneCnt = s_luaZoneState.counter++;
-    if( zoneCnt != 0 && !s_luaZoneState.active ) return 0;
-    s_luaZoneState.active = GetProfiler().IsConnected();
-    if( !s_luaZoneState.active ) return 0;
+    const auto zoneCnt = GetLuaZoneState().counter++;
+    if( zoneCnt != 0 && !GetLuaZoneState().active ) return 0;
+    GetLuaZoneState().active = GetProfiler().IsConnected();
+    if( !GetLuaZoneState().active ) return 0;
 #endif
 
     const uint32_t color = Color::DeepSkyBlue3;
@@ -240,12 +240,12 @@ static inline int LuaZoneBeginN( lua_State* L )
 static inline int LuaZoneEnd( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    assert( s_luaZoneState.counter != 0 );
-    s_luaZoneState.counter--;
-    if( !s_luaZoneState.active ) return 0;
+    assert( GetLuaZoneState().counter != 0 );
+    GetLuaZoneState().counter--;
+    if( !GetLuaZoneState().active ) return 0;
     if( !GetProfiler().IsConnected() )
     {
-        s_luaZoneState.active = false;
+        GetLuaZoneState().active = false;
         return 0;
     }
 #endif
@@ -270,10 +270,10 @@ static inline int LuaZoneEnd( lua_State* L )
 static inline int LuaZoneText( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    if( !s_luaZoneState.active ) return 0;
+    if( !GetLuaZoneState().active ) return 0;
     if( !GetProfiler().IsConnected() )
     {
-        s_luaZoneState.active = false;
+        GetLuaZoneState().active = false;
         return 0;
     }
 #endif
@@ -298,10 +298,10 @@ static inline int LuaZoneText( lua_State* L )
 static inline int LuaZoneName( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    if( !s_luaZoneState.active ) return 0;
+    if( !GetLuaZoneState().active ) return 0;
     if( !GetProfiler().IsConnected() )
     {
-        s_luaZoneState.active = false;
+        GetLuaZoneState().active = false;
         return 0;
     }
 #endif

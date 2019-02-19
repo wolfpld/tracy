@@ -32,6 +32,25 @@ namespace tracy
     DLL_IMPORT void(*get_rpfree())(void* ptr);
     DLL_IMPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*get_token())();
     DLL_IMPORT Profiler&(*get_profiler())();
+    DLL_IMPORT std::atomic<uint32_t>&(*get_getlockcounter())();
+    DLL_IMPORT std::atomic<uint8_t>&(*get_getgpuctxcounter())();
+    DLL_IMPORT GpuCtxWrapper&(*get_getgpuctx())();
+
+    static void*(*rpmalloc_fpt)(size_t size) = get_rpmalloc();
+    static void(*rpfree_fpt)(void* ptr) = get_rpfree();
+    static moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*GetToken_fpt)() = get_token();
+    static Profiler&(*GetProfiler_fpt)() = get_profiler();
+    static std::atomic<uint32_t>&(*GetLockCounter_fpt)() = get_getlockcounter();
+    static std::atomic<uint8_t>&(*GetGpuCtxCounter_fpt)() = get_getgpuctxcounter();
+    static GpuCtxWrapper&(*GetGpuCtx_fpt)() = get_getgpuctx();
+
+    RPMALLOC_RESTRICT void* rpmalloc(size_t size) { return rpmalloc_fpt(size); }
+    void rpfree(void* ptr) { rpfree_fpt(ptr); }
+    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetToken_fpt(); }
+    Profiler& GetProfiler() { return GetProfiler_fpt(); }
+    std::atomic<uint32_t>& GetLockCounter() { return GetLockCounter_fpt(); }
+    std::atomic<uint8_t>& GetGpuCtxCounter() { return GetGpuCtxCounter_fpt(); }
+    GpuCtxWrapper& GetGpuCtx() { return GetGpuCtx_fpt(); }
 
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
     DLL_IMPORT int64_t(*get_GetTimeImpl())();
@@ -40,43 +59,23 @@ namespace tracy
 #endif
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
-    DLL_IMPORT std::atomic<ThreadNameData*>& get_threadNameData();
+    DLL_IMPORT std::atomic<ThreadNameData*>& get_threadnamedata();
     DLL_IMPORT void(*get_rpmalloc_thread_initialize())();
 
-    std::atomic<ThreadNameData*>& s_threadNameData = get_threadNameData();
-    void(*rpmalloc_thread_initialize_fpt)() = get_rpmalloc_thread_initialize();
+    static std::atomic<ThreadNameData*>&(*GetThreadNameData_fpt)() = get_getthreadnamedata();
+    static void(*rpmalloc_thread_initialize_fpt)() = get_rpmalloc_thread_initialize();
 
-    void rpmalloc_thread_initialize(void)
-    {
-        rpmalloc_thread_initialize_fpt();
-    }
+    std::atomic<ThreadNameData*>& GetThreadNameData() { return GetThreadNameData_fpt(); }
+    void rpmalloc_thread_initialize(void) { rpmalloc_thread_initialize_fpt(); }
 #endif
 
-    static void*(*rpmalloc_fpt)(size_t size) = get_rpmalloc();
-    static void(*rpfree_fpt)(void* ptr) = get_rpfree();
-    static moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*GetToken_fpt)() = get_token;
-    static Profiler&(*GetProfiler_fpt)() = get_profiler();
+#ifdef TRACY_ON_DEMAND
+    DLL_IMPORT LuaZoneState&(*get_getluazonestate())();
 
-    RPMALLOC_RESTRICT void* rpmalloc(size_t size)
-    {
-        return rpmalloc_fpt(size);
-    }
+    static LuaZoneState&(*GetLuaZoneState_fpt)() = get_getluazonestate();
 
-    void rpfree(void* ptr)
-    {
-        rpfree_fpt(ptr);
-    }
-
-    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken()
-    {
-        return GetToken_fpt();
-    }
-
-    Profiler& GetProfiler()
-    {
-        return GetProfiler_fpt();
-    }
-
+    LuaZoneState& GetLuaZoneState() { return GetLuaZoneState_fpt(); }
+#endif
 }
 
 #endif

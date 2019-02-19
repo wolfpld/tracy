@@ -768,57 +768,43 @@ static Profiler init_order(105) s_profiler;
 #endif
 
 
-moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken()
-{
-    return s_token.ptr;
-}
+moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
+Profiler& GetProfiler() { return s_profiler; }
+moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
+InitTimeWrapper& GetInitTime() { return s_initTime; }
+std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
+std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
+GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
 
-Profiler& GetProfiler()
-{
-    return s_profiler;
-}
+#ifdef TRACY_COLLECT_THREAD_NAMES
+std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
+#endif
+
+#ifdef TRACY_ON_DEMAND
+LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
+#endif
 
 // DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
-
-DLL_EXPORT void*(*get_rpmalloc())(size_t size)
-{
-    return rpmalloc;
-}
-
-DLL_EXPORT void(*get_rpfree())(void* ptr)
-{
-    return rpfree;
-}
-
-DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*get_token())()
-{
-    return GetToken;
-}
-
-DLL_EXPORT Profiler&(*get_profiler())()
-{
-    return GetProfiler;
-}
+DLL_EXPORT void*(*get_rpmalloc())(size_t size) { return rpmalloc; }
+DLL_EXPORT void(*get_rpfree())(void* ptr) { return rpfree; }
+DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*get_token())() { return GetToken; }
+DLL_EXPORT Profiler&(*get_profiler())() { return GetProfiler; }
+DLL_EXPORT std::atomic<uint32_t>&(*get_getlockcounter())() { return GetLockCounter; }
+DLL_EXPORT std::atomic<uint8_t>&(*get_getgpuctxcounter())() { return GetGpuCtxCounter; }
+DLL_EXPORT GpuCtxWrapper&(*get_getgpuctx())() { return GetGpuCtx; }
 
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
-DLL_EXPORT int64_t(*get_GetTimeImpl())()
-{
-    return GetTimeImpl;
-}
+DLL_EXPORT int64_t(*get_GetTimeImpl())() { return GetTimeImpl; }
 #endif
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
-DLL_EXPORT std::atomic<ThreadNameData*>& get_threadNameData()
-{
-    return s_threadNameData;
-}
-
-DLL_EXPORT void(*get_rpmalloc_thread_initialize())()
-{
-    return rpmalloc_thread_initialize;
-}
+DLL_EXPORT std::atomic<ThreadNameData*>&(*get_threadnamedata())() { return GetThreadNameData; }
+DLL_EXPORT void(*get_rpmalloc_thread_initialize())() { return rpmalloc_thread_initialize; }
 #endif
 
+#ifdef TRACY_ON_DEMAND
+DLL_EXPORT LuaZoneState&(*get_getluazonestate())() { return GetLuaZoneState; }
+#endif
 
 enum { BulkSize = TargetFrameSize / QueueItemSize };
 
@@ -953,7 +939,7 @@ void Profiler::Worker()
 
     WelcomeMessage welcome;
     MemWrite( &welcome.timerMul, m_timerMul );
-    MemWrite( &welcome.initBegin, s_initTime.val );
+    MemWrite( &welcome.initBegin, GetInitTime().val );
     MemWrite( &welcome.initEnd, m_timeBegin.load( std::memory_order_relaxed ) );
     MemWrite( &welcome.delay, m_delay );
     MemWrite( &welcome.resolution, m_resolution );
@@ -964,7 +950,7 @@ void Profiler::Worker()
     memcpy( welcome.hostInfo, hostinfo, hisz );
     memset( welcome.hostInfo + hisz, 0, WelcomeMessageHostInfoSize - hisz );
 
-    moodycamel::ConsumerToken token( s_queue );
+    moodycamel::ConsumerToken token( GetQueue() );
 
     ListenSocket listen;
     if( !listen.Listen( "8086", 8 ) )
@@ -1240,7 +1226,7 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 {
     for(;;)
     {
-        const auto sz = s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize );
+        const auto sz = GetQueue().try_dequeue_bulk( token, m_itemBuf, BulkSize );
         if( sz == 0 ) break;
         for( size_t i=0; i<sz; i++ ) FreeAssociatedMemory( m_itemBuf[i] );
     }
@@ -1269,7 +1255,7 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 
 Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 {
-    const auto sz = s_queue.try_dequeue_bulk( token, m_itemBuf, BulkSize );
+    const auto sz = GetQueue().try_dequeue_bulk( token, m_itemBuf, BulkSize );
     if( sz > 0 )
     {
         auto end = m_itemBuf + sz;
@@ -1619,8 +1605,8 @@ void Profiler::CalibrateDelay()
     enum { Events = Iterations * 2 };   // start + end
     static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
-    moodycamel::ProducerToken ptoken_detail( s_queue );
-    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = s_queue.get_explicit_producer( ptoken_detail );
+    moodycamel::ProducerToken ptoken_detail( GetQueue() );
+    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = GetQueue().get_explicit_producer( ptoken_detail );
     for( int i=0; i<Iterations; i++ )
     {
         static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
@@ -1715,12 +1701,12 @@ void Profiler::CalibrateDelay()
     m_resolution = mindiff;
 
     enum { Bulk = 1000 };
-    moodycamel::ConsumerToken token( s_queue );
+    moodycamel::ConsumerToken token( GetQueue() );
     int left = Events * 2;
     QueueItem item[Bulk];
     while( left != 0 )
     {
-        const auto sz = s_queue.try_dequeue_bulk( token, item, std::min( left, (int)Bulk ) );
+        const auto sz = GetQueue().try_dequeue_bulk( token, item, std::min( left, (int)Bulk ) );
         assert( sz > 0 );
         left -= (int)sz;
     }

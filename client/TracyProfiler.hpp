@@ -40,8 +40,20 @@
 namespace tracy
 {
 
+class GpuCtx;
 class Profiler;
 class Socket;
+
+struct GpuCtxWrapper
+{
+    GpuCtx* ptr;
+};
+
+moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
+Profiler& GetProfiler();
+std::atomic<uint32_t>& GetLockCounter();
+std::atomic<uint8_t>& GetGpuCtxCounter();
+GpuCtxWrapper& GetGpuCtx();
 
 struct SourceLocationData
 {
@@ -50,15 +62,6 @@ struct SourceLocationData
     const char* file;
     uint32_t line;
     uint32_t color;
-};
-
-moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
-Profiler& GetProfiler();
-
-class GpuCtx;
-struct GpuCtxWrapper
-{
-    GpuCtx* ptr;
 };
 
 #ifdef TRACY_ON_DEMAND

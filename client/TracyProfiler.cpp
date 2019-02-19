@@ -429,7 +429,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     {
         const auto thread = GetThreadHandle();
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::CrashReport );
@@ -471,7 +471,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 
     {
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::Crash );
@@ -667,7 +667,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
     {
         const auto thread = GetThreadHandle();
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::CrashReport );
@@ -698,7 +698,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
 
     {
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::Crash );
@@ -712,6 +712,11 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
     abort();
 }
 #endif
+
+struct ProducerWrapper
+{
+    tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
+};
 
 
 enum { QueuePrealloc = 256 * 1024 };
@@ -763,12 +768,13 @@ Profiler& s_profiler = s_profilerInstance;
 #  define DLL_EXPORT __attribute__((visibility("default")))
 #endif
 
-// DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
 
-DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* get_token()
+tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken()
 {
     return s_token.ptr;
 }
+
+// DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
 
 DLL_EXPORT void*(*get_rpmalloc())(size_t size)
 {
@@ -1741,7 +1747,7 @@ void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore
     }
 
     Magic magic;
-    auto& token = s_token.ptr;
+    auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
     MemWrite( &item->hdr.type, QueueType::Callstack );
@@ -1771,7 +1777,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
     ctx.id = id;
 
     tracy::Magic magic;
-    auto& token = tracy::s_token.ptr;
+    auto token = tracy::GetToken();
     auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
@@ -1813,7 +1819,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
     ctx.id = id;
 
     tracy::Magic magic;
-    auto& token = tracy::s_token.ptr;
+    auto token = tracy::GetToken();
     auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
@@ -1848,7 +1854,7 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
     if( !ctx.active ) return;
     const auto thread = tracy::GetThreadHandle();
     tracy::Magic magic;
-    auto& token = tracy::s_token.ptr;
+    auto token = tracy::GetToken();
     auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
@@ -1879,7 +1885,7 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
     if( !ctx.active ) return;
     const auto thread = tracy::GetThreadHandle();
     tracy::Magic magic;
-    auto& token = tracy::s_token.ptr;
+    auto token = tracy::GetToken();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
@@ -1907,7 +1913,7 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
     if( !ctx.active ) return;
     const auto thread = tracy::GetThreadHandle();
     tracy::Magic magic;
-    auto& token = tracy::s_token.ptr;
+    auto token = tracy::GetToken();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';

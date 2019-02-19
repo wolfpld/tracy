@@ -28,7 +28,6 @@ namespace tracy
 #  define DLL_IMPORT
 #endif
 
-    DLL_IMPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* get_token();
     DLL_IMPORT void*(*get_rpmalloc())(size_t size);
     DLL_IMPORT void(*get_rpfree())(void* ptr);
     DLL_IMPORT Profiler& get_profiler();
@@ -66,8 +65,6 @@ namespace tracy
     }
 
     Profiler& s_profiler = get_profiler();
-
-    thread_local ProducerWrapper s_token { get_token() };
 }
 
 #endif

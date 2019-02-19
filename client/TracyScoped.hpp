@@ -26,7 +26,7 @@ public:
         const auto thread = GetThreadHandle();
         m_thread = thread;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBegin );
@@ -53,7 +53,7 @@ public:
         const auto thread = GetThreadHandle();
         m_thread = thread;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBeginCallstack );
@@ -75,7 +75,7 @@ public:
     {
         if( !m_active ) return;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneEnd );
@@ -94,7 +94,7 @@ public:
     {
         if( !m_active ) return;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
@@ -110,7 +110,7 @@ public:
     {
         if( !m_active ) return;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';

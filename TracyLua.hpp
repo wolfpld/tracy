@@ -162,7 +162,7 @@ static inline int LuaZoneBegin( lua_State* L )
     memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
 
     Magic magic;
-    auto& token = s_token.ptr;
+    auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
@@ -220,7 +220,7 @@ static inline int LuaZoneBeginN( lua_State* L )
     memcpy( ptr + 12 + fsz + 1 + ssz + 1, name, nsz );
 
     Magic magic;
-    auto& token = s_token.ptr;
+    auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
@@ -251,7 +251,7 @@ static inline int LuaZoneEnd( lua_State* L )
 #endif
 
     Magic magic;
-    auto& token = s_token.ptr;
+    auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneEnd );
@@ -282,7 +282,7 @@ static inline int LuaZoneText( lua_State* L )
     const auto size = strlen( txt );
 
     Magic magic;
-    auto& token = s_token.ptr;
+    auto token = GetToken();
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
@@ -310,7 +310,7 @@ static inline int LuaZoneName( lua_State* L )
     const auto size = strlen( txt );
 
     Magic magic;
-    auto& token = s_token.ptr;
+    auto token = GetToken();
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
@@ -333,7 +333,7 @@ static inline int LuaMessage( lua_State* L )
     const auto size = strlen( txt );
 
     Magic magic;
-    auto& token = s_token.ptr;
+    auto token = GetToken();
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';

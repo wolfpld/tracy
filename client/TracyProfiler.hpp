@@ -51,12 +51,7 @@ struct SourceLocationData
     uint32_t color;
 };
 
-struct ProducerWrapper
-{
-    tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
-};
-
-extern thread_local ProducerWrapper s_token;
+tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
 
 class GpuCtx;
 struct GpuCtxWrapper
@@ -138,7 +133,7 @@ public:
         if( !s_profiler.IsConnected() ) return;
 #endif
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
@@ -154,7 +149,7 @@ public:
         if( !s_profiler.IsConnected() ) return;
 #endif
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, type );
@@ -169,7 +164,7 @@ public:
         if( !s_profiler.IsConnected() ) return;
 #endif
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
@@ -186,7 +181,7 @@ public:
         if( !s_profiler.IsConnected() ) return;
 #endif
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
@@ -203,7 +198,7 @@ public:
         if( !s_profiler.IsConnected() ) return;
 #endif
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
@@ -220,7 +215,7 @@ public:
         if( !s_profiler.IsConnected() ) return;
 #endif
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
@@ -239,7 +234,7 @@ public:
         if( !s_profiler.IsConnected() ) return;
 #endif
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteral );
@@ -318,7 +313,7 @@ public:
 #ifdef TRACY_HAS_CALLSTACK
         auto ptr = Callstack( depth );
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::Callstack );

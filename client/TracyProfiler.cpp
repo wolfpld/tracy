@@ -47,10 +47,14 @@
 #include "TracyThread.hpp"
 #include "../TracyC.h"
 
-#ifdef __GNUC__
-#define init_order( val ) __attribute__ ((init_priority(val)))
+#if __APPLE__
+#  define TRACY_DELAYED_INIT
 #else
-#define init_order(x)
+#  ifdef __GNUC__
+#    define init_order( val ) __attribute__ ((init_priority(val)))
+#  else
+#    define init_order(x)
+#  endif
 #endif
 
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
@@ -79,7 +83,8 @@ extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 namespace tracy
 {
 
-#if defined TRACY_USE_INIT_ONCE
+#ifndef TRACY_DELAYED_INIT
+#  if defined TRACY_USE_INIT_ONCE
 namespace
 {
     BOOL CALLBACK InitOnceCallback(
@@ -93,32 +98,30 @@ namespace
 
     INIT_ONCE InitOnce = INIT_ONCE_STATIC_INIT;
 }
-#endif //if defined TRACY_USE_INIT_ONCE
+#  endif //if defined TRACY_USE_INIT_ONCE
 
 struct RPMallocInit
 {
     RPMallocInit()
     {
-#if defined TRACY_USE_INIT_ONCE
+#  if defined TRACY_USE_INIT_ONCE
         InitOnceExecuteOnce(&InitOnce, InitOnceCallback, nullptr, nullptr);
         //We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might
         //not be called on this thread if another thread has executed it earlier.
         rpmalloc_thread_initialize();
-#else
+#  else
         rpmalloc_initialize();
-#endif //if defined TRACY_USE_INIT_ONCE
+#  endif //if defined TRACY_USE_INIT_ONCE
     }
 };
-
-
 
 struct RPMallocThreadInit
 {
     RPMallocThreadInit()
     {
-#if defined TRACY_USE_INIT_ONCE
+#  if defined TRACY_USE_INIT_ONCE
         InitOnceExecuteOnce(&InitOnce, InitOnceCallback, nullptr, nullptr);
-#endif //if defined TRACY_USE_INIT_ONCE
+#  endif //if defined TRACY_USE_INIT_ONCE
         rpmalloc_thread_initialize();
     }
 };
@@ -127,6 +130,13 @@ struct InitTimeWrapper
 {
     int64_t val;
 };
+
+struct ProducerWrapper
+{
+    tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
+};
+#endif
+
 
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
 int64_t (*GetTimeImpl)();
@@ -713,18 +723,99 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
 }
 #endif
 
-struct ProducerWrapper
-{
-    tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
-};
-
 
 enum { QueuePrealloc = 256 * 1024 };
 
-// MSVC static initialization order solution. gcc/clang uses init_order() to avoid all this.
+static Profiler* s_instance;
+static Thread* s_thread;
 
-static Profiler* s_instance = nullptr;
-static Thread* s_thread = nullptr;
+#ifdef TRACY_DELAYED_INIT
+struct ThreadNameData;
+moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
+
+struct RPMallocInit { RPMallocInit() { rpmalloc_initialize(); } };
+struct RPMallocThreadInit { RPMallocThreadInit() { rpmalloc_thread_initialize(); } };
+
+void InitRPMallocThread()
+{
+    rpmalloc_initialize();
+    rpmalloc_thread_initialize();
+}
+
+struct ProfilerData
+{
+    int64_t initTime = SetupHwTimer();
+    RPMallocInit rpmalloc_init;
+    moodycamel::ConcurrentQueue<QueueItem> queue;
+    Profiler profiler;
+    std::atomic<uint32_t> lockCounter = 0;
+    std::atomic<uint8_t> gpuCtxCounter = 0;
+#  ifdef TRACY_COLLECT_THREAD_NAMES
+    std::atomic<ThreadNameData*> threadNameData = nullptr;
+#endif
+};
+
+struct ProducerWrapper
+{
+    ProducerWrapper( ProfilerData& data ) : detail( data.queue ), ptr( data.queue.get_explicit_producer( detail ) ) {}
+    moodycamel::ProducerToken detail;
+    tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
+};
+
+struct ProfilerThreadData
+{
+    ProfilerThreadData( ProfilerData& data ) : token( data ), gpuCtx( { nullptr } ) {}
+    RPMallocInit rpmalloc_init;
+    RPMallocThreadInit rpmalloc_thread_init;
+    ProducerWrapper token;
+    GpuCtxWrapper gpuCtx;
+#  ifdef TRACY_ON_DEMAND
+    LuaZoneState luaZoneState;
+#  endif
+};
+
+static ProfilerData* profilerData;
+
+static ProfilerData& GetProfilerData()
+{
+    // Cannot use magic statics here.
+    if( !profilerData )
+    {
+        profilerData = (ProfilerData*)malloc( sizeof( ProfilerData ) );
+        new (profilerData) ProfilerData();
+    }
+    return *profilerData;
+}
+
+static ProfilerThreadData& GetProfilerThreadData()
+{
+    thread_local ProfilerThreadData data( GetProfilerData() );
+    return data;
+}
+
+moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetProfilerThreadData().token.ptr; }
+Profiler& GetProfiler() { return GetProfilerData().profiler; }
+moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return GetProfilerData().queue; }
+int64_t GetInitTime() { return GetProfilerData().initTime; }
+std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
+std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
+GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
+
+#  ifdef TRACY_COLLECT_THREAD_NAMES
+std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
+#  endif
+
+#  ifdef TRACY_ON_DEMAND
+LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
+#  endif
+
+#else
+void InitRPMallocThread()
+{
+    rpmalloc_thread_initialize();
+}
+
+// MSVC static initialization order solution. gcc/clang uses init_order() to avoid all this.
 
 // 1a. But s_queue is needed for initialization of variables in point 2.
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
@@ -735,11 +826,11 @@ thread_local RPMallocThreadInit init_order(106) s_rpmalloc_thread_init;
 thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
 thread_local ProducerWrapper init_order(108) s_token { s_queue.get_explicit_producer( s_token_detail ) };
 
-#ifdef _MSC_VER
+#  ifdef _MSC_VER
 // 1. Initialize these static variables before all other variables.
-#  pragma warning( disable : 4075 )
-#  pragma init_seg( ".CRT$XCB" )
-#endif
+#    pragma warning( disable : 4075 )
+#    pragma init_seg( ".CRT$XCB" )
+#  endif
 
 static InitTimeWrapper init_order(101) s_initTime { SetupHwTimer() };
 static RPMallocInit init_order(102) s_rpmalloc_init;
@@ -749,42 +840,42 @@ std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );
 
 thread_local GpuCtxWrapper init_order(104) s_gpuCtx { nullptr };
 
-#ifdef TRACY_COLLECT_THREAD_NAMES
+#  ifdef TRACY_COLLECT_THREAD_NAMES
 struct ThreadNameData;
 static std::atomic<ThreadNameData*> init_order(104) s_threadNameDataInstance( nullptr );
 std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
-#endif
+#  endif
 
-#ifdef TRACY_ON_DEMAND
+#  ifdef TRACY_ON_DEMAND
 thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
-#endif
+#  endif
 
 static Profiler init_order(105) s_profiler;
 
+moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
+Profiler& GetProfiler() { return s_profiler; }
+moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
+int64_t GetInitTime() { return s_initTime.val; }
+std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
+std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
+GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
+
+#  ifdef TRACY_COLLECT_THREAD_NAMES
+std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
+#  endif
+
+#  ifdef TRACY_ON_DEMAND
+LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
+#  endif
+#endif
+
+// DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
 #ifdef _WIN32
 #  define DLL_EXPORT __declspec(dllexport)
 #else
 #  define DLL_EXPORT __attribute__((visibility("default")))
 #endif
 
-
-moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
-Profiler& GetProfiler() { return s_profiler; }
-moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
-InitTimeWrapper& GetInitTime() { return s_initTime; }
-std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
-std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
-GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
-
-#ifdef TRACY_COLLECT_THREAD_NAMES
-std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
-#endif
-
-#ifdef TRACY_ON_DEMAND
-LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
-#endif
-
-// DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
 DLL_EXPORT void*(*get_rpmalloc())(size_t size) { return rpmalloc; }
 DLL_EXPORT void(*get_rpfree())(void* ptr) { return rpfree; }
 DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*get_token())() { return GetToken; }
@@ -835,10 +926,12 @@ Profiler::Profiler()
     assert( !s_instance );
     s_instance = this;
 
-#ifdef _MSC_VER
+#ifndef TRACY_DELAYED_INIT
+#  ifdef _MSC_VER
     // 3. But these variables need to be initialized in main thread within the .CRT$XCB section. Do it here.
     s_token_detail = moodycamel::ProducerToken( s_queue );
     s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
+#  endif
 #endif
 
     CalibrateTimer();
@@ -939,7 +1032,7 @@ void Profiler::Worker()
 
     WelcomeMessage welcome;
     MemWrite( &welcome.timerMul, m_timerMul );
-    MemWrite( &welcome.initBegin, GetInitTime().val );
+    MemWrite( &welcome.initBegin, GetInitTime() );
     MemWrite( &welcome.initEnd, m_timeBegin.load( std::memory_order_relaxed ) );
     MemWrite( &welcome.delay, m_delay );
     MemWrite( &welcome.resolution, m_resolution );

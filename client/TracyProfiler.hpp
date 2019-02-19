@@ -55,6 +55,8 @@ std::atomic<uint32_t>& GetLockCounter();
 std::atomic<uint8_t>& GetGpuCtxCounter();
 GpuCtxWrapper& GetGpuCtx();
 
+void InitRPMallocThread();
+
 struct SourceLocationData
 {
     const char* name;
@@ -273,19 +275,20 @@ public:
 
     static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth )
     {
+        auto& profiler = GetProfiler();
 #ifdef TRACY_HAS_CALLSTACK
 #  ifdef TRACY_ON_DEMAND
-        if( !GetProfiler().IsConnected() ) return;
+        if( !profiler.IsConnected() ) return;
 #  endif
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
         auto callstack = Callstack( depth );
 
-        GetProfiler().m_serialLock.lock();
+        profiler.m_serialLock.lock();
         SendMemAlloc( QueueType::MemAllocCallstack, thread, ptr, size );
         SendCallstackMemory( callstack );
-        GetProfiler().m_serialLock.unlock();
+        profiler.m_serialLock.unlock();
 #else
         MemAlloc( ptr, size );
 #endif
@@ -293,19 +296,20 @@ public:
 
     static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth )
     {
+        auto& profiler = GetProfiler();
 #ifdef TRACY_HAS_CALLSTACK
 #  ifdef TRACY_ON_DEMAND
-        if( !GetProfiler().IsConnected() ) return;
+        if( !profiler.IsConnected() ) return;
 #  endif
         const auto thread = GetThreadHandle();
 
         rpmalloc_thread_initialize();
         auto callstack = Callstack( depth );
 
-        GetProfiler().m_serialLock.lock();
+        profiler.m_serialLock.lock();
         SendMemFree( QueueType::MemFreeCallstack, thread, ptr );
         SendCallstackMemory( callstack );
-        GetProfiler().m_serialLock.unlock();
+        profiler.m_serialLock.unlock();
 #else
         MemFree( ptr );
 #endif

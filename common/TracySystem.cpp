@@ -45,6 +45,7 @@ struct ThreadNameData
     ThreadNameData* next;
 };
 std::atomic<ThreadNameData*>& GetThreadNameData();
+void InitRPMallocThread();
 #endif
 
 void SetThreadName( std::thread& thread, const char* name )
@@ -104,7 +105,7 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
 #endif
 #ifdef TRACY_COLLECT_THREAD_NAMES
     {
-        rpmalloc_thread_initialize();
+        InitRPMallocThread();
         const auto sz = strlen( name );
         char* buf = (char*)tracy_malloc( sz+1 );
         memcpy( buf, name, sz );

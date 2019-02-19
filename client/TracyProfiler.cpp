@@ -47,7 +47,7 @@
 #include "TracyThread.hpp"
 #include "../TracyC.h"
 
-#if __APPLE__
+#ifdef __APPLE__
 #  define TRACY_DELAYED_INIT
 #else
 #  ifdef __GNUC__

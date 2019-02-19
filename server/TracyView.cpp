@@ -7113,6 +7113,9 @@ void View::DrawCallstackWindow()
         auto frameData = m_worker.GetCallstackFrame( entry );
         if( !frameData )
         {
+            ImGui::Separator();
+            ImGui::Text( "%i", fidx++ );
+            ImGui::NextColumn();
             char buf[32];
             sprintf( buf, "%p", (void*)entry );
             ImGui::TextUnformatted( buf );

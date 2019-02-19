@@ -52,7 +52,7 @@ struct SourceLocationData
     uint32_t color;
 };
 
-tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
+moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
 Profiler& GetProfiler();
 
 class GpuCtx;
@@ -69,7 +69,7 @@ struct LuaZoneState
 };
 #endif
 
-using Magic = tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t;
+using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
 #if __ARM_ARCH >= 6
 extern int64_t (*GetTimeImpl)();

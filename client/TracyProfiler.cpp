@@ -768,7 +768,7 @@ static Profiler init_order(105) s_profiler;
 #endif
 
 
-tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken()
+moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken()
 {
     return s_token.ptr;
 }
@@ -790,6 +790,15 @@ DLL_EXPORT void(*get_rpfree())(void* ptr)
     return rpfree;
 }
 
+DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*get_token())()
+{
+    return GetToken;
+}
+
+DLL_EXPORT Profiler&(*get_profiler())()
+{
+    return GetProfiler;
+}
 
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
 DLL_EXPORT int64_t(*get_GetTimeImpl())()

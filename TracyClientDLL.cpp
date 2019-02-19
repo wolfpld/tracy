@@ -30,6 +30,8 @@ namespace tracy
 
     DLL_IMPORT void*(*get_rpmalloc())(size_t size);
     DLL_IMPORT void(*get_rpfree())(void* ptr);
+    DLL_IMPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*get_token())();
+    DLL_IMPORT Profiler&(*get_profiler())();
 
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
     DLL_IMPORT int64_t(*get_GetTimeImpl())();
@@ -52,6 +54,8 @@ namespace tracy
 
     static void*(*rpmalloc_fpt)(size_t size) = get_rpmalloc();
     static void(*rpfree_fpt)(void* ptr) = get_rpfree();
+    static moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*GetToken_fpt)() = get_token;
+    static Profiler&(*GetProfiler_fpt)() = get_profiler();
 
     RPMALLOC_RESTRICT void* rpmalloc(size_t size)
     {
@@ -62,6 +66,17 @@ namespace tracy
     {
         rpfree_fpt(ptr);
     }
+
+    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken()
+    {
+        return GetToken_fpt();
+    }
+
+    Profiler& GetProfiler()
+    {
+        return GetProfiler_fpt();
+    }
+
 }
 
 #endif

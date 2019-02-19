@@ -2,11 +2,17 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/968a88arq06gm3el/branch/master?svg=true)](https://ci.appveyor.com/project/wolfpld/tracy/branch/master)
 
-Tracy is a real time, nanosecond resolution frame profiler that can be used for remote or embedded telemetry of your application. It can profile CPU (C, C++, Lua), GPU (OpenGL, Vulkan) and memory. It also can display locks held by threads and their interactions with each other.
+Tracy is a real time, nanosecond resolution frame profiler that can be used for remote or embedded telemetry of your application. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan) and memory. It also can display locks held by threads and their interactions with each other.
 
 ![](doc/profiler.png)
 
-Tracy requires compiler support for C++11, Thread Local Storage and a way to workaround static initialization order fiasco. There are no other requirements. The following platforms are confirmed to be working (this is not a complete list):
+The following compilers are supported:
+
+- MSVC
+- gcc
+- clang
+
+The following platforms are confirmed to be working (this is not a complete list):
 
 - Windows (x86, x64)
 - Linux (x86, x64, ARM, ARM64)
@@ -15,12 +21,6 @@ Tracy requires compiler support for C++11, Thread Local Storage and a way to wor
 - Cygwin (x64)
 - WSL (x64)
 - OSX (x64)
-
-The following compilers are supported:
-
-- MSVC
-- gcc
-- clang
 
 [Introduction to Tracy Profiler v0.2](https://www.youtube.com/watch?v=fB5B46lbapc)  
 [New features in Tracy Profiler v0.3](https://www.youtube.com/watch?v=3SXpDpDh2Uo)  

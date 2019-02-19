@@ -91,7 +91,7 @@
 
 \section{A quick look at Tracy}
 
-Tracy is a real-time, nanosecond resolution \emph{frame profiler} that can be used for remote or embedded telemetry of applications. It can profile CPU (C, C++, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
+Tracy is a real-time, nanosecond resolution \emph{frame profiler} that can be used for remote or embedded telemetry of applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
 
 In contrast with \emph{statistical profilers} (such as VTune, perf or Very Sleepy), Tracy does require manual markup of the source code. In return, it allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. This feat is by-design impossible to achieve in statistical profilers, which work by periodically sampling the \emph{program counter} register to see which part of the code is executing.
 
@@ -240,7 +240,15 @@ It should be noted that Tracy has a constant initialization cost, needed to perf
 
 \section{First steps}
 
-Tracy requires compiler support for C++11, Thread Local Storage and a way to workaround static initialization order fiasco. There are no other requirements. The following platforms are confirmed to be working (this is not a complete list):
+The following compilers are supported:
+
+\begin{itemize}
+\item MSVC
+\item gcc
+\item clang
+\end{itemize}
+
+The following platforms are confirmed to be working (this is not a complete list):
 
 \begin{itemize}
 \item Windows (x86, x64)
@@ -249,15 +257,7 @@ Tracy requires compiler support for C++11, Thread Local Storage and a way to wor
 \item FreeBSD (x64)
 \item Cygwin (x64)
 \item WSL (x64)
-\item OSX (x64)\footnote{In the Apple world everything has to be \emph{think different}. Support for Thread Local Storage is only available since Xcode 8 and not before iOS 9. There's no way to handle static initialization order fiasco, so you will have to make your own workarounds. Zone filtering described in section~\ref{filteringzones} may be of help.}
-\end{itemize}
-
-The following compilers are supported:
-
-\begin{itemize}
-\item MSVC
-\item gcc
-\item clang
+\item OSX (x64)\footnote{Be aware that support for Thread Local Storage is required. It is only available since Xcode 8 and not before iOS 9.}
 \end{itemize}
 
 \subsection{Initial client setup}
@@ -296,6 +296,16 @@ In projects that consist of multiple DLLs/shared objects things are a bit differ
 For that you need a \emph{main DLL} to which your executable and the other DLLs link. If that doesn't exist you have to create one explicitly for Tracy. Link the executable and all DLLs which you want to profile to this DLL.
 
 You should compile the main library with the \texttt{tracy/TracyClient.cpp} source file and then add the \texttt{tracy/TracyClientDLL.cpp} file to the source files lists of the executable and the other DLLs.
+
+\subsubsection{Apple woes}
+
+Because Apple \emph{has} to be \emph{think different}, there are some problems when using Tracy on OSX and iOS. First, the performance hit due to profiling is higher than on onther platforms. Second, some critical features are missing and won't be possible to achieve:
+
+\begin{itemize}
+\item There's no support for the \texttt{TRACY\_NO\_EXIT} mode.
+\item Profiling is interrupted when the application exits. This will result in missing zones, memory allocations, or even source location names.
+\item OpenGL can't be profiled.
+\end{itemize}
 
 \subsection{Running the server}
 
@@ -469,7 +479,7 @@ This doesn't stop some compilers from dispensing \emph{fashion advice} about var
 
 Zone logging can be disabled on a per zone basis, by making use of the \texttt{ZoneNamed} macros. Each of the macros takes an \texttt{active} argument ('\texttt{true}' in the example above), which will determine whether the zone should be logged.
 
-Note that this parameter may be a run-time variable, for example an user controlled switch to enable profiling of a specific part of code only when required. It is also useful to replace handling of the static order initialization fiasco on OSX.
+Note that this parameter may be a run-time variable, for example an user controlled switch to enable profiling of a specific part of code only when required.
 
 If the condition is constant at compile-time, the resulting code will not contain a branch (the profiling code will either be always enabled, or won't be there at all). The following listing presents how profiling of specific application subsystems might be implemented:
 

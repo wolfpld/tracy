@@ -37,7 +37,7 @@ public:
         MemWrite( &item->lockAnnounce.type, LockType::Lockable );
 
 #ifdef TRACY_ON_DEMAND
-        s_profiler.DeferItem( *item );
+        GetProfiler().DeferItem( *item );
 #endif
 
         tail.store( magic + 1, std::memory_order_release );
@@ -58,7 +58,7 @@ public:
         MemWrite( &item->lockTerminate.type, LockType::Lockable );
 
 #ifdef TRACY_ON_DEMAND
-        s_profiler.DeferItem( *item );
+        GetProfiler().DeferItem( *item );
 #endif
 
         tail.store( magic + 1, std::memory_order_release );
@@ -72,7 +72,7 @@ public:
         const auto active = m_active.load( std::memory_order_relaxed );
         if( locks == 0 || active )
         {
-            const bool connected = s_profiler.IsConnected();
+            const bool connected = GetProfiler().IsConnected();
             if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
             if( connected ) queue = true;
         }
@@ -118,7 +118,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
         if( !m_active.load( std::memory_order_relaxed ) ) return;
-        if( !s_profiler.IsConnected() )
+        if( !GetProfiler().IsConnected() )
         {
             m_active.store( false, std::memory_order_relaxed );
             return;
@@ -148,7 +148,7 @@ public:
         const auto active = m_active.load( std::memory_order_relaxed );
         if( locks == 0 || active )
         {
-            const bool connected = s_profiler.IsConnected();
+            const bool connected = GetProfiler().IsConnected();
             if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
             if( connected ) queue = true;
         }
@@ -176,7 +176,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         const auto active = m_active.load( std::memory_order_relaxed );
         if( !active ) return;
-        const auto connected = s_profiler.IsConnected();
+        const auto connected = GetProfiler().IsConnected();
         if( !connected )
         {
             if( active ) m_active.store( false, std::memory_order_relaxed );
@@ -230,7 +230,7 @@ public:
         MemWrite( &item->lockAnnounce.type, LockType::SharedLockable );
 
 #ifdef TRACY_ON_DEMAND
-        s_profiler.DeferItem( *item );
+        GetProfiler().DeferItem( *item );
 #endif
 
         tail.store( magic + 1, std::memory_order_release );
@@ -251,7 +251,7 @@ public:
         MemWrite( &item->lockTerminate.type, LockType::SharedLockable );
 
 #ifdef TRACY_ON_DEMAND
-        s_profiler.DeferItem( *item );
+        GetProfiler().DeferItem( *item );
 #endif
 
         tail.store( magic + 1, std::memory_order_release );
@@ -265,7 +265,7 @@ public:
         const auto active = m_active.load( std::memory_order_relaxed );
         if( locks == 0 || active )
         {
-            const bool connected = s_profiler.IsConnected();
+            const bool connected = GetProfiler().IsConnected();
             if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
             if( connected ) queue = true;
         }
@@ -311,7 +311,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
         if( !m_active.load( std::memory_order_relaxed ) ) return;
-        if( !s_profiler.IsConnected() )
+        if( !GetProfiler().IsConnected() )
         {
             m_active.store( false, std::memory_order_relaxed );
             return;
@@ -341,7 +341,7 @@ public:
         const auto active = m_active.load( std::memory_order_relaxed );
         if( locks == 0 || active )
         {
-            const bool connected = s_profiler.IsConnected();
+            const bool connected = GetProfiler().IsConnected();
             if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
             if( connected ) queue = true;
         }
@@ -372,7 +372,7 @@ public:
         const auto active = m_active.load( std::memory_order_relaxed );
         if( locks == 0 || active )
         {
-            const bool connected = s_profiler.IsConnected();
+            const bool connected = GetProfiler().IsConnected();
             if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
             if( connected ) queue = true;
         }
@@ -418,7 +418,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         m_lockCount.fetch_sub( 1, std::memory_order_relaxed );
         if( !m_active.load( std::memory_order_relaxed ) ) return;
-        if( !s_profiler.IsConnected() )
+        if( !GetProfiler().IsConnected() )
         {
             m_active.store( false, std::memory_order_relaxed );
             return;
@@ -448,7 +448,7 @@ public:
         const auto active = m_active.load( std::memory_order_relaxed );
         if( locks == 0 || active )
         {
-            const bool connected = s_profiler.IsConnected();
+            const bool connected = GetProfiler().IsConnected();
             if( active != connected ) m_active.store( connected, std::memory_order_relaxed );
             if( connected ) queue = true;
         }
@@ -476,7 +476,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         const auto active = m_active.load( std::memory_order_relaxed );
         if( !active ) return;
-        const auto connected = s_profiler.IsConnected();
+        const auto connected = GetProfiler().IsConnected();
         if( !connected )
         {
             if( active ) m_active.store( false, std::memory_order_relaxed );

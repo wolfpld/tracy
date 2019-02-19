@@ -30,7 +30,6 @@ namespace tracy
 
     DLL_IMPORT void*(*get_rpmalloc())(size_t size);
     DLL_IMPORT void(*get_rpfree())(void* ptr);
-    DLL_IMPORT Profiler& get_profiler();
 
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
     DLL_IMPORT int64_t(*get_GetTimeImpl())();
@@ -63,8 +62,6 @@ namespace tracy
     {
         rpfree_fpt(ptr);
     }
-
-    Profiler& s_profiler = get_profiler();
 }
 
 #endif

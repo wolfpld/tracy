@@ -438,7 +438,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
         item->crashReport.text = (uint64_t)s_crashText;
         tail.store( magic + 1, std::memory_order_release );
 
-        s_profiler.SendCallstack( 60, thread, "KiUserExceptionDispatcher" );
+        GetProfiler().SendCallstack( 60, thread, "KiUserExceptionDispatcher" );
     }
 
     HANDLE h = CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
@@ -479,8 +479,8 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     }
 
     std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-    s_profiler.RequestShutdown();
-    while( !s_profiler.HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
+    GetProfiler().RequestShutdown();
+    while( !GetProfiler().HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
 
     TerminateProcess( GetCurrentProcess(), 1 );
 
@@ -676,7 +676,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
         item->crashReport.text = (uint64_t)s_crashText;
         tail.store( magic + 1, std::memory_order_release );
 
-        s_profiler.SendCallstack( 60, thread, "__kernel_rt_sigreturn" );
+        GetProfiler().SendCallstack( 60, thread, "__kernel_rt_sigreturn" );
     }
 
     DIR* dp = opendir( "/proc/self/task" );
@@ -706,8 +706,8 @@ static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
     }
 
     std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
-    s_profiler.RequestShutdown();
-    while( !s_profiler.HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
+    GetProfiler().RequestShutdown();
+    while( !GetProfiler().HasShutdownFinished() ) { std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) ); };
 
     abort();
 }
@@ -759,8 +759,7 @@ std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
 thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 #endif
 
-static Profiler init_order(105) s_profilerInstance;
-Profiler& s_profiler = s_profilerInstance;
+static Profiler init_order(105) s_profiler;
 
 #ifdef _WIN32
 #  define DLL_EXPORT __declspec(dllexport)
@@ -772,6 +771,11 @@ Profiler& s_profiler = s_profilerInstance;
 tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken()
 {
     return s_token.ptr;
+}
+
+Profiler& GetProfiler()
+{
+    return s_profiler;
 }
 
 // DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
@@ -786,17 +790,13 @@ DLL_EXPORT void(*get_rpfree())(void* ptr)
     return rpfree;
 }
 
+
 #if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
 DLL_EXPORT int64_t(*get_GetTimeImpl())()
 {
     return GetTimeImpl;
 }
 #endif
-
-DLL_EXPORT Profiler& get_profiler()
-{
-    return s_profiler;
-}
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
 DLL_EXPORT std::atomic<ThreadNameData*>& get_threadNameData()
@@ -1767,13 +1767,13 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
 {
     ___tracy_c_zone_context ctx;
 #ifdef TRACY_ON_DEMAND
-    ctx.active = active && tracy::s_profiler.IsConnected();
+    ctx.active = active && tracy::GetProfiler().IsConnected();
 #else
     ctx.active = active;
 #endif
     if( !ctx.active ) return ctx;
     const auto thread = tracy::GetThreadHandle();
-    const auto id = tracy::s_profiler.GetNextZoneId();
+    const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
     tracy::Magic magic;
@@ -1809,13 +1809,13 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
 {
     ___tracy_c_zone_context ctx;
 #ifdef TRACY_ON_DEMAND
-    ctx.active = active && tracy::s_profiler.IsConnected();
+    ctx.active = active && tracy::GetProfiler().IsConnected();
 #else
     ctx.active = active;
 #endif
     if( !ctx.active ) return ctx;
     const auto thread = tracy::GetThreadHandle();
-    const auto id = tracy::s_profiler.GetNextZoneId();
+    const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
     tracy::Magic magic;
@@ -1845,7 +1845,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
         tail.store( magic + 1, std::memory_order_release );
     }
 
-    tracy::s_profiler.SendCallstack( depth, thread );
+    tracy::GetProfiler().SendCallstack( depth, thread );
     return ctx;
 }
 

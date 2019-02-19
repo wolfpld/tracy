@@ -130,7 +130,7 @@ static inline int LuaZoneBegin( lua_State* L )
 #ifdef TRACY_ON_DEMAND
     const auto zoneCnt = s_luaZoneState.counter++;
     if( zoneCnt != 0 && !s_luaZoneState.active ) return 0;
-    s_luaZoneState.active = s_profiler.IsConnected();
+    s_luaZoneState.active = GetProfiler().IsConnected();
     if( !s_luaZoneState.active ) return 0;
 #endif
 
@@ -184,7 +184,7 @@ static inline int LuaZoneBeginN( lua_State* L )
 #ifdef TRACY_ON_DEMAND
     const auto zoneCnt = s_luaZoneState.counter++;
     if( zoneCnt != 0 && !s_luaZoneState.active ) return 0;
-    s_luaZoneState.active = s_profiler.IsConnected();
+    s_luaZoneState.active = GetProfiler().IsConnected();
     if( !s_luaZoneState.active ) return 0;
 #endif
 
@@ -243,7 +243,7 @@ static inline int LuaZoneEnd( lua_State* L )
     assert( s_luaZoneState.counter != 0 );
     s_luaZoneState.counter--;
     if( !s_luaZoneState.active ) return 0;
-    if( !s_profiler.IsConnected() )
+    if( !GetProfiler().IsConnected() )
     {
         s_luaZoneState.active = false;
         return 0;
@@ -271,7 +271,7 @@ static inline int LuaZoneText( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
     if( !s_luaZoneState.active ) return 0;
-    if( !s_profiler.IsConnected() )
+    if( !GetProfiler().IsConnected() )
     {
         s_luaZoneState.active = false;
         return 0;
@@ -299,7 +299,7 @@ static inline int LuaZoneName( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
     if( !s_luaZoneState.active ) return 0;
-    if( !s_profiler.IsConnected() )
+    if( !GetProfiler().IsConnected() )
     {
         s_luaZoneState.active = false;
         return 0;
@@ -326,7 +326,7 @@ static inline int LuaZoneName( lua_State* L )
 static inline int LuaMessage( lua_State* L )
 {
 #ifdef TRACY_ON_DEMAND
-    if( !s_profiler.IsConnected() ) return 0;
+    if( !GetProfiler().IsConnected() ) return 0;
 #endif
 
     auto txt = lua_tostring( L, 1 );

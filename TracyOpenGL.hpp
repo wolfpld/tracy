@@ -108,7 +108,7 @@ public:
         MemWrite( &item->gpuNewContext.accuracyBits, (uint8_t)bits );
 
 #ifdef TRACY_ON_DEMAND
-        s_profiler.DeferItem( *item );
+        GetProfiler().DeferItem( *item );
 #endif
 
         tail.store( magic + 1, std::memory_order_release );
@@ -121,7 +121,7 @@ public:
         if( m_tail == m_head ) return;
 
 #ifdef TRACY_ON_DEMAND
-        if( !s_profiler.IsConnected() )
+        if( !GetProfiler().IsConnected() )
         {
             m_head = m_tail = 0;
             return;
@@ -201,7 +201,7 @@ class GpuCtxScope
 public:
     tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc )
 #ifdef TRACY_ON_DEMAND
-        : m_active( s_profiler.IsConnected() )
+        : m_active( GetProfiler().IsConnected() )
 #endif
     {
 #ifdef TRACY_ON_DEMAND
@@ -225,7 +225,7 @@ public:
 
     tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc, int depth )
 #ifdef TRACY_ON_DEMAND
-        : m_active( s_profiler.IsConnected() )
+        : m_active( GetProfiler().IsConnected() )
 #endif
     {
 #ifdef TRACY_ON_DEMAND
@@ -248,7 +248,7 @@ public:
         MemWrite( &item->gpuZoneBegin.context, s_gpuCtx.ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
 
-        s_profiler.SendCallstack( depth, thread );
+        GetProfiler().SendCallstack( depth, thread );
     }
 
     tracy_force_inline ~GpuCtxScope()

@@ -266,9 +266,9 @@ static const char* GetHostInfo()
     ptr += sprintf( ptr, "OS: Linux %s\n", utsName.release );
 #  endif
 #elif defined __APPLE__
-#  if defined TARGET_OS_IPHONE
+#  if TARGET_OS_IPHONE == 1
     ptr += sprintf( ptr, "OS: Darwin (iOS)\n" );
-#  elif defined TARGET_OS_MAC
+#  elif TARGET_OS_MAC == 1
     ptr += sprintf( ptr, "OS: Darwin (OSX)\n" );
 #  else
     ptr += sprintf( ptr, "OS: Darwin (unknown)\n" );

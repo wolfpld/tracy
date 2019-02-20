@@ -889,8 +889,9 @@ DLL_EXPORT int64_t(*get_GetTimeImpl())() { return GetTimeImpl; }
 #endif
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
-DLL_EXPORT std::atomic<ThreadNameData*>&(*get_threadnamedata())() { return GetThreadNameData; }
+DLL_EXPORT std::atomic<ThreadNameData*>&(*get_getthreadnamedata())() { return GetThreadNameData; }
 DLL_EXPORT void(*get_rpmalloc_thread_initialize())() { return rpmalloc_thread_initialize; }
+DLL_EXPORT void(*get_InitRPMallocThread())() { return InitRPMallocThread; }
 #endif
 
 #ifdef TRACY_ON_DEMAND

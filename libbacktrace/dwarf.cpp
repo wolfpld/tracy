@@ -850,10 +850,10 @@ read_attribute (enum dwarf_form form, struct dwarf_buf *buf,
       return 1;
     case DW_FORM_indirect:
       {
-	uint64_t form;
+	uint64_t form2;
 
-	form = read_uleb128 (buf);
-	return read_attribute ((enum dwarf_form) form, buf, is_dwarf64,
+	form2 = read_uleb128 (buf);
+	return read_attribute ((enum dwarf_form) form2, buf, is_dwarf64,
 			       version, addrsize, dwarf_str, dwarf_str_size,
 			       val);
       }
@@ -2855,22 +2855,22 @@ dwarf_lookup_pc (struct backtrace_state *state, struct dwarf_data *ddata,
 
       if (entry->u->abs_filename == NULL)
 	{
-	  const char *filename;
+	  const char *filename2;
 
-	  filename = entry->u->filename;
-	  if (filename != NULL
-	      && !IS_ABSOLUTE_PATH (filename)
+	  filename2 = entry->u->filename;
+	  if (filename2 != NULL
+	      && !IS_ABSOLUTE_PATH (filename2)
 	      && entry->u->comp_dir != NULL)
 	    {
-	      size_t filename_len;
+	      size_t filename2_len;
 	      const char *dir;
 	      size_t dir_len;
 	      char *s;
 
-	      filename_len = strlen (filename);
+	      filename2_len = strlen (filename2);
 	      dir = entry->u->comp_dir;
 	      dir_len = strlen (dir);
-	      s = (char *) backtrace_alloc (state, dir_len + filename_len + 2,
+	      s = (char *) backtrace_alloc (state, dir_len + filename2_len + 2,
 					    error_callback, data);
 	      if (s == NULL)
 		{
@@ -2880,10 +2880,10 @@ dwarf_lookup_pc (struct backtrace_state *state, struct dwarf_data *ddata,
 	      memcpy (s, dir, dir_len);
 	      /* FIXME: Should use backslash if DOS file system.  */
 	      s[dir_len] = '/';
-	      memcpy (s + dir_len + 1, filename, filename_len + 1);
-	      filename = s;
+	      memcpy (s + dir_len + 1, filename2, filename2_len + 1);
+	      filename2 = s;
 	    }
-	  entry->u->abs_filename = filename;
+	  entry->u->abs_filename = filename2;
 	}
 
       return callback (data, pc, entry->u->abs_filename, 0, NULL);

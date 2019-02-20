@@ -30,6 +30,8 @@
 #ifdef __APPLE__
 #  include <unistd.h>
 #  include <libproc.h>
+#  include <sys/types.h>
+#  include <sys/sysctl.h>
 #endif
 
 #include <atomic>
@@ -383,6 +385,11 @@ static const char* GetHostInfo()
     struct sysinfo sysInfo;
     sysinfo( &sysInfo );
     ptr += sprintf( ptr, "RAM: %lu MB\n", sysInfo.totalram / 1024 / 1024 );
+#elif defined __APPLE__
+    size_t memSize;
+    size_t sz = sizeof( memSize );
+    sysctlbyname( "hw.memsize", &memSize, &sz, nullptr, 0 );
+    ptr += sprintf( ptr, "RAM: %zu MB\n", memSize / 1024 / 1024 );
 #else
     ptr += sprintf( ptr, "RAM: unknown\n" );
 #endif

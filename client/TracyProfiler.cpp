@@ -27,6 +27,11 @@
 #  include <sys/syscall.h>
 #endif
 
+#ifdef __APPLE__
+#  include <unistd.h>
+#  include <libproc.h>
+#endif
+
 #include <atomic>
 #include <assert.h>
 #include <chrono>
@@ -219,6 +224,10 @@ static const char* GetProcessName()
 #  endif
 #elif defined _GNU_SOURCE || defined __CYGWIN__
     processName = program_invocation_short_name;
+#elif defined __APPLE__
+    static char buf[1024];
+    proc_name( getpid(), buf, 1024 );
+    processName = buf;
 #endif
     return processName;
 }

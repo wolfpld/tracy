@@ -95,9 +95,9 @@ namespace tracy
 namespace
 {
     BOOL CALLBACK InitOnceCallback(
-        PINIT_ONCE initOnce,
-        PVOID Parameter,
-        PVOID *Context)
+        PINIT_ONCE /*initOnce*/,
+        PVOID /*Parameter*/,
+        PVOID* /*Context*/)
     {
         rpmalloc_initialize();
         return TRUE;
@@ -412,13 +412,13 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
         switch( pExp->ExceptionRecord->ExceptionInformation[0] )
         {
         case 0:
-            msgPtr += sprintf( msgPtr, "Read violation at address 0x%" PRIxMAX ".", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += sprintf( msgPtr, "Read violation at address 0x%" PRIxPTR ".", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         case 1:
-            msgPtr += sprintf( msgPtr, "Write violation at address 0x%" PRIxMAX ".", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += sprintf( msgPtr, "Write violation at address 0x%" PRIxPTR ".", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         case 8:
-            msgPtr += sprintf( msgPtr, "DEP violation at address 0x%" PRIxMAX ".", pExp->ExceptionRecord->ExceptionInformation[1] );
+            msgPtr += sprintf( msgPtr, "DEP violation at address 0x%" PRIxPTR ".", pExp->ExceptionRecord->ExceptionInformation[1] );
             break;
         default:
             break;
@@ -519,7 +519,7 @@ static long s_profilerTid = 0;
 static char s_crashText[1024];
 static std::atomic<bool> s_alreadyCrashed( false );
 
-static void ThreadFreezer( int signal )
+static void ThreadFreezer( int /*signal*/ )
 {
     for(;;) sleep( 1000 );
 }
@@ -550,7 +550,7 @@ static inline void HexPrint( char*& ptr, uint64_t val )
     while( bptr != buf );
 }
 
-static void CrashHandler( int signal, siginfo_t* info, void* ucontext )
+static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 {
     bool expected = false;
     if( !s_alreadyCrashed.compare_exchange_strong( expected, true ) ) ThreadFreezer( signal );
@@ -905,8 +905,9 @@ DLL_EXPORT int64_t(*get_GetTimeImpl())() { return GetTimeImpl; }
 #endif
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
-DLL_EXPORT std::atomic<ThreadNameData*>&(*get_threadnamedata())() { return GetThreadNameData; }
+DLL_EXPORT std::atomic<ThreadNameData*>&(*get_getthreadnamedata())() { return GetThreadNameData; }
 DLL_EXPORT void(*get_rpmalloc_thread_initialize())() { return rpmalloc_thread_initialize; }
+DLL_EXPORT void(*get_InitRPMallocThread())() { return InitRPMallocThread; }
 #endif
 
 #ifdef TRACY_ON_DEMAND

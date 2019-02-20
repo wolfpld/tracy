@@ -59,14 +59,17 @@ namespace tracy
 #endif
 
 #ifdef TRACY_COLLECT_THREAD_NAMES
-    DLL_IMPORT std::atomic<ThreadNameData*>& get_threadnamedata();
+    DLL_IMPORT std::atomic<ThreadNameData*>&(*get_getthreadnamedata())();
     DLL_IMPORT void(*get_rpmalloc_thread_initialize())();
+    DLL_IMPORT void(*get_InitRPMallocThread())();
 
     static std::atomic<ThreadNameData*>&(*GetThreadNameData_fpt)() = get_getthreadnamedata();
     static void(*rpmalloc_thread_initialize_fpt)() = get_rpmalloc_thread_initialize();
+    static void(*InitRPMallocThread_fpt)() = get_InitRPMallocThread();
 
     std::atomic<ThreadNameData*>& GetThreadNameData() { return GetThreadNameData_fpt(); }
     void rpmalloc_thread_initialize(void) { rpmalloc_thread_initialize_fpt(); }
+    void InitRPMallocThread() { InitRPMallocThread_fpt(); }
 #endif
 
 #ifdef TRACY_ON_DEMAND

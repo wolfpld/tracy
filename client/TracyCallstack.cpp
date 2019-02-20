@@ -49,7 +49,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     const auto proc = GetCurrentProcess();
 #ifndef __CYGWIN__
     const auto inlineNum = std::min<DWORD>( MaxCbTrace - 1, SymAddrIncludeInlineTrace( proc, ptr ) );
-    DWORD ctx, idx;
+    DWORD ctx = 0;
+    DWORD idx;
     BOOL doInline = FALSE;
     if( inlineNum != 0 ) doInline = SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
     if( doInline )
@@ -75,33 +76,36 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         si->NameLen = 9;
     }
 
-    auto name = (char*)tracy_malloc( si->NameLen + 1 );
-    memcpy( name, si->Name, si->NameLen );
-    name[si->NameLen] = '\0';
-
-    cb_data[write].name = name;
-
-    const char* filename;
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
-    line.SizeOfStruct = sizeof( IMAGEHLP_LINE64 );
-    if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
-    {
-        filename = "[unknown]";
-        cb_data[write].line = 0;
-    }
-    else
-    {
-        filename = line.FileName;
-        cb_data[write].line = line.LineNumber;
-    }
+    line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
 
-    const auto fsz = strlen( filename );
-    auto file = (char*)tracy_malloc( fsz + 1 );
-    memcpy( file, filename, fsz );
-    file[fsz] = '\0';
+    {
+        auto name = (char*)tracy_malloc(si->NameLen + 1);
+        memcpy(name, si->Name, si->NameLen);
+        name[si->NameLen] = '\0';
 
-    cb_data[write].file = file;
+        cb_data[write].name = name;
+
+        const char* filename;
+        if (SymGetLineFromAddr64(proc, ptr, &displacement, &line) == 0)
+        {
+            filename = "[unknown]";
+            cb_data[write].line = 0;
+        }
+        else
+        {
+            filename = line.FileName;
+            cb_data[write].line = line.LineNumber;
+        }
+
+        const auto fsz = strlen(filename);
+        auto file = (char*)tracy_malloc(fsz + 1);
+        memcpy(file, filename, fsz);
+        file[fsz] = '\0';
+
+        cb_data[write].file = file;
+    }
 
 #ifndef __CYGWIN__
     if( doInline )
@@ -121,6 +125,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             name[si->NameLen] = '\0';
             cb.name = name;
 
+            const char* filename;
             if( SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) == 0 )
             {
                 filename = "[unknown]";
@@ -257,7 +262,7 @@ static inline char* CopyString( const char* src )
     return dst;
 }
 
-static int CallstackDataCb( void* data, uintptr_t pc, const char* fn, int lineno, const char* function )
+static int CallstackDataCb( void* /*data*/, uintptr_t pc, const char* fn, int lineno, const char* function )
 {
     enum { DemangleBufLen = 64*1024 };
     char demangled[DemangleBufLen];
@@ -354,7 +359,7 @@ static int CallstackDataCb( void* data, uintptr_t pc, const char* fn, int lineno
     }
 }
 
-static void CallstackErrorCb( void* data, const char* msg, int errnum )
+static void CallstackErrorCb( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
 {
     for( int i=0; i<cb_num; i++ )
     {

@@ -11,7 +11,7 @@ extern "C"
 }
 #elif TRACY_HAS_CALLSTACK == 2
 #  include <unwind.h>
-#elif TRACY_HAS_CALLSTACK == 3
+#elif TRACY_HAS_CALLSTACK >= 3
 #  include <execinfo.h>
 #endif
 
@@ -90,7 +90,7 @@ static tracy_force_inline void* Callstack( int depth )
     return trace;
 }
 
-#elif TRACY_HAS_CALLSTACK == 3
+#elif TRACY_HAS_CALLSTACK >= 3
 
 static tracy_force_inline void* Callstack( int depth )
 {

@@ -11,6 +11,8 @@
 #  else
 #    define TRACY_HAS_CALLSTACK 2
 #  endif
+#elif defined __APPLE__
+#  define TRACY_HAS_CALLSTACK 4
 #endif
 
 #endif

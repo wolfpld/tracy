@@ -5,12 +5,13 @@
 // Changelog:
 // - v0.50: (2017/08/16) imported from https://github.com/Vuhdo/imgui_freetype into http://www.github.com/ocornut/imgui_club, updated for latest changes in ImFontAtlas, minor tweaks.
 // - v0.51: (2017/08/26) cleanup, optimizations, support for ImFontConfig::RasterizerFlags, ImFontConfig::RasterizerMultiply.
-// - v0.52: (2017/09/26) fixes for imgui internal changes
-// - v0.53: (2017/10/22) minor inconsequential change to match change in master (removed an unnecessary statement)
-// - v0.54: (2018/01/22) fix for addition of ImFontAtlas::TexUvscale member
+// - v0.52: (2017/09/26) fixes for imgui internal changes.
+// - v0.53: (2017/10/22) minor inconsequential change to match change in master (removed an unnecessary statement).
+// - v0.54: (2018/01/22) fix for addition of ImFontAtlas::TexUvscale member.
 // - v0.55: (2018/02/04) moved to main imgui repository (away from http://www.github.com/ocornut/imgui_club)
-// - v0.56: (2018/06/08) added support for ImFontConfig::GlyphMinAdvanceX, GlyphMaxAdvanceX
+// - v0.56: (2018/06/08) added support for ImFontConfig::GlyphMinAdvanceX, GlyphMaxAdvanceX.
 // - v0.60: (2019/01/10) re-factored to match big update in STB builder. fixed texture height waste. fixed redundant glyphs when merging. support for glyph padding.
+// - v0.61: (2019/01/15) added support for imgui allocators + added FreeType only override function SetAllocatorFunctions().
 
 // Gamma Correct Blending:
 //  FreeType assumes blending in linear space rather than gamma space.
@@ -18,7 +19,6 @@
 //  For correct results you need to be using sRGB and convert to linear space in the pixel shader output.
 //  The default imgui styles will be impacted by this change (alpha values will need tweaking).
 
-// FIXME: FreeType's memory allocator is not overridden.
 // FIXME: cfg.OversampleH, OversampleV are not supported (but perhaps not so necessary with this rasterizer).
 
 #include "imgui_freetype.h"
@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H          // <freetype/freetype.h>
+#include FT_MODULE_H            // <freetype/ftmodapi.h>
 #include FT_GLYPH_H             // <freetype/ftglyph.h>
 #include FT_SYNTHESIS_H         // <freetype/ftsynth.h>
 
@@ -37,7 +38,7 @@
 #pragma GCC diagnostic ignored "-Wunused-function"          // warning: 'xxxx' defined but not used
 #endif
 
-namespace 
+namespace
 {
     // Glyph metrics:
     // --------------
@@ -71,7 +72,7 @@ namespace
     //              |------------- advanceX ----------->|
 
     /// A structure that describe a glyph.
-    struct GlyphInfo 
+    struct GlyphInfo
     {
         int         Width;              // Glyph's width in pixels.
         int         Height;             // Glyph's height in pixels.
@@ -115,7 +116,6 @@ namespace
 
     bool FreeTypeFont::InitFont(FT_Library ft_library, const ImFontConfig& cfg, unsigned int extra_user_flags)
     {
-        // FIXME: substitute allocator
         FT_Error error = FT_New_Memory_Face(ft_library, (uint8_t*)cfg.FontData, (uint32_t)cfg.FontDataSize, (uint32_t)cfg.FontNo, &Face);
         if (error != 0)
             return false;
@@ -139,7 +139,7 @@ namespace
             LoadFlags |= FT_LOAD_TARGET_LIGHT;
         else if (UserFlags & ImGuiFreeType::MonoHinting)
             LoadFlags |= FT_LOAD_TARGET_MONO;
-        else                                                
+        else
             LoadFlags |= FT_LOAD_TARGET_NORMAL;
 
         return true;
@@ -147,16 +147,16 @@ namespace
 
     void FreeTypeFont::CloseFont()
     {
-        if (Face) 
+        if (Face)
         {
             FT_Done_Face(Face);
             Face = NULL;
         }
     }
 
-    void FreeTypeFont::SetPixelHeight(int pixel_height) 
+    void FreeTypeFont::SetPixelHeight(int pixel_height)
     {
-        // Vuhdo: I'm not sure how to deal with font sizes properly. As far as I understand, currently ImGui assumes that the 'pixel_height' 
+        // Vuhdo: I'm not sure how to deal with font sizes properly. As far as I understand, currently ImGui assumes that the 'pixel_height'
         // is a maximum height of an any given glyph, i.e. it's the sum of font's ascender and descender. Seems strange to me.
         // NB: FT_Set_Pixel_Sizes() doesn't seem to get us the same result.
         FT_Size_RequestRec req;
@@ -244,10 +244,12 @@ namespace
     }
 }
 
+#ifndef STB_RECT_PACK_IMPLEMENTATION        // in case the user already have an implementation in the _same_ compilation unit (e.g. unity builds)
 #define STBRP_ASSERT(x)    IM_ASSERT(x)
 #define STBRP_STATIC
 #define STB_RECT_PACK_IMPLEMENTATION
 #include "imstb_rectpack.h"
+#endif
 
 struct ImFontBuildSrcGlyphFT
 {
@@ -334,15 +336,14 @@ bool ImFontAtlasBuildWithFreeType(FT_Library ft_library, ImFontAtlas* atlas, uns
     {
         ImFontBuildSrcDataFT& src_tmp = src_tmp_array[src_i];
         ImFontBuildDstDataFT& dst_tmp = dst_tmp_array[src_tmp.DstIndex];
-        ImFontConfig& cfg = atlas->ConfigData[src_i];
         src_tmp.GlyphsSet.Resize(src_tmp.GlyphsHighest + 1);
-        if (dst_tmp.SrcCount > 1 && dst_tmp.GlyphsSet.Storage.empty())
+        if (dst_tmp.GlyphsSet.Storage.empty())
             dst_tmp.GlyphsSet.Resize(dst_tmp.GlyphsHighest + 1);
 
         for (const ImWchar* src_range = src_tmp.SrcRanges; src_range[0] && src_range[1]; src_range += 2)
             for (int codepoint = src_range[0]; codepoint <= src_range[1]; codepoint++)
             {
-                if (cfg.MergeMode && dst_tmp.GlyphsSet.GetBit(codepoint))               // Don't overwrite existing glyphs. We could make this an option (e.g. MergeOverwrite)
+                if (dst_tmp.GlyphsSet.GetBit(codepoint))    // Don't overwrite existing glyphs. We could make this an option (e.g. MergeOverwrite)
                     continue;
                 uint32_t glyph_index = FT_Get_Char_Index(src_tmp.Font.Face, codepoint); // It is actually in the font? (FIXME-OPT: We are not storing the glyph_index..)
                 if (glyph_index == 0)
@@ -352,8 +353,7 @@ bool ImFontAtlasBuildWithFreeType(FT_Library ft_library, ImFontAtlas* atlas, uns
                 src_tmp.GlyphsCount++;
                 dst_tmp.GlyphsCount++;
                 src_tmp.GlyphsSet.SetBit(codepoint, true);
-                if (dst_tmp.SrcCount > 1)
-                    dst_tmp.GlyphsSet.SetBit(codepoint, true);
+                dst_tmp.GlyphsSet.SetBit(codepoint, true);
                 total_glyphs_count++;
             }
     }
@@ -391,7 +391,7 @@ bool ImFontAtlasBuildWithFreeType(FT_Library ft_library, ImFontAtlas* atlas, uns
     buf_rects.resize(total_glyphs_count);
     memset(buf_rects.Data, 0, (size_t)buf_rects.size_in_bytes());
 
-    // Allocate temporary rasterization data buffers. 
+    // Allocate temporary rasterization data buffers.
     // We could not find a way to retrieve accurate glyph size without rendering them.
     // (e.g. slot->metrics->width not always matching bitmap->width, especially considering the Oblique transform)
     // We allocate in chunks of 256 KB to not waste too much extra memory ahead. Hopefully users of FreeType won't find the temporary allocations.
@@ -539,7 +539,7 @@ bool ImFontAtlasBuildWithFreeType(FT_Library ft_library, ImFontAtlas* atlas, uns
             float char_off_x = font_off_x;
             if (char_advance_x_org != char_advance_x_mod)
                 char_off_x += cfg.PixelSnapH ? (float)(int)((char_advance_x_mod - char_advance_x_org) * 0.5f) : (char_advance_x_mod - char_advance_x_org) * 0.5f;
-            
+
             // Register glyph
             float x0 = info.OffsetX + char_off_x;
             float y0 = info.OffsetY + font_off_y;
@@ -566,15 +566,75 @@ bool ImFontAtlasBuildWithFreeType(FT_Library ft_library, ImFontAtlas* atlas, uns
     return true;
 }
 
+// Default memory allocators
+static void* ImFreeTypeDefaultAllocFunc(size_t size, void* user_data)	{ IM_UNUSED(user_data); return ImGui::MemAlloc(size); }
+static void  ImFreeTypeDefaultFreeFunc(void* ptr, void* user_data)	    { IM_UNUSED(user_data); ImGui::MemFree(ptr); }
+
+// Current memory allocators
+static void* (*GImFreeTypeAllocFunc)(size_t size, void* user_data) = ImFreeTypeDefaultAllocFunc;
+static void  (*GImFreeTypeFreeFunc)(void* ptr, void* user_data) = ImFreeTypeDefaultFreeFunc;
+static void* GImFreeTypeAllocatorUserData = NULL;
+
+// FreeType memory allocation callbacks
+static void* FreeType_Alloc(FT_Memory /*memory*/, long size)
+{
+    return GImFreeTypeAllocFunc((size_t)size, GImFreeTypeAllocatorUserData);
+}
+
+static void FreeType_Free(FT_Memory /*memory*/, void* block)
+{
+    GImFreeTypeFreeFunc(block, GImFreeTypeAllocatorUserData);
+}
+
+static void* FreeType_Realloc(FT_Memory /*memory*/, long cur_size, long new_size, void* block)
+{
+    // Implement realloc() as we don't ask user to provide it.
+    if (block == NULL)
+        return GImFreeTypeAllocFunc((size_t)new_size, GImFreeTypeAllocatorUserData);
+
+    if (new_size == 0)
+    {
+        GImFreeTypeFreeFunc(block, GImFreeTypeAllocatorUserData);
+        return NULL;
+    }
+
+    if (new_size > cur_size)
+    {
+        void* new_block = GImFreeTypeAllocFunc((size_t)new_size, GImFreeTypeAllocatorUserData);
+        memcpy(new_block, block, (size_t)cur_size);
+        GImFreeTypeFreeFunc(block, GImFreeTypeAllocatorUserData);
+        return new_block;
+    }
+
+    return block;
+}
+
 bool ImGuiFreeType::BuildFontAtlas(ImFontAtlas* atlas, unsigned int extra_flags)
 {
+    // FreeType memory management: https://www.freetype.org/freetype2/docs/design/design-4.html
+    FT_MemoryRec_ memory_rec = { 0 };
+    memory_rec.alloc = &FreeType_Alloc;
+    memory_rec.free = &FreeType_Free;
+    memory_rec.realloc = &FreeType_Realloc;
+
+    // https://www.freetype.org/freetype2/docs/reference/ft2-module_management.html#FT_New_Library
     FT_Library ft_library;
-    FT_Error error = FT_Init_FreeType(&ft_library);
+    FT_Error error = FT_New_Library(&memory_rec, &ft_library);
     if (error != 0)
         return false;
 
+    // If you don't call FT_Add_Default_Modules() the rest of code may work, but FreeType won't use our custom allocator.
+    FT_Add_Default_Modules(ft_library);
+
     bool ret = ImFontAtlasBuildWithFreeType(ft_library, atlas, extra_flags);
-    FT_Done_FreeType(ft_library);
+    FT_Done_Library(ft_library);
 
     return ret;
+}
+
+void ImGuiFreeType::SetAllocatorFunctions(void* (*alloc_func)(size_t sz, void* user_data), void (*free_func)(void* ptr, void* user_data), void* user_data)
+{
+    GImFreeTypeAllocFunc = alloc_func;
+    GImFreeTypeFreeFunc = free_func;
+    GImFreeTypeAllocatorUserData = user_data;
 }

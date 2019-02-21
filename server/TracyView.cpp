@@ -797,7 +797,7 @@ bool View::DrawImpl()
 #endif
     ImGui::SameLine();
     {
-        const auto vis = Visible( m_frames );
+        const auto vis = Vis( m_frames ).visible;
         if( !vis )
         {
             ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
@@ -1713,7 +1713,7 @@ void View::DrawZones()
     auto& frames = m_worker.GetFrames();
     for( auto fd : frames )
     {
-        if( Visible( fd ) )
+        if( Vis( fd ).visible )
         {
             drawMouseLine |= DrawZoneFrames( *fd );
         }
@@ -1755,8 +1755,9 @@ void View::DrawZones()
         for( size_t i=0; i<m_worker.GetGpuData().size(); i++ )
         {
             const auto& v = m_worker.GetGpuData()[i];
-            if( !Visible( v ) ) continue;
-            bool& showFull = ShowFull( v );
+            auto& vis = Vis( v );
+            if( !vis.visible ) continue;
+            bool& showFull = vis.showFull;
 
             const auto yPos = wpos.y + offset;
             if( yPos + ostep >= yMin && yPos <= yMax )
@@ -1838,8 +1839,9 @@ void View::DrawZones()
     LockHighlight nextLockHighlight { -1 };
     for( const auto& v : m_worker.GetThreadData() )
     {
-        if( !Visible( v ) ) continue;
-        bool& showFull = ShowFull( v );
+        auto& vis = Vis( v );
+        if( !vis.visible ) continue;
+        bool& showFull = vis.showFull;
 
         const auto yPos = wpos.y + offset;
         if( yPos + ostep >= yMin && yPos <= yMax )
@@ -2876,7 +2878,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     for( const auto& v : m_worker.GetLockMap() )
     {
         const auto& lockmap = v.second;
-        if( !lockmap.valid || !Visible( &lockmap ) ) continue;
+        if( !lockmap.valid || !Vis( &lockmap ).visible ) continue;
 
         auto it = lockmap.threadMap.find( tid );
         if( it == lockmap.threadMap.end() ) continue;
@@ -3368,9 +3370,10 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
     for( const auto& v : m_worker.GetPlots() )
     {
-        if( !Visible( v ) ) continue;
+        auto& vis = Vis( v );
+        if( !vis.visible ) continue;
         assert( !v->data.empty() );
-        bool& showFull = ShowFull( v );
+        bool& showFull = vis.showFull;
 
         float txtx = 0;
         auto yPos = wpos.y + offset;
@@ -4854,7 +4857,7 @@ void View::DrawOptions()
                 {
                     sprintf( buf, "OpenGL context %zu", i );
                 }
-                ImGui::Checkbox( buf, &Visible( gpuData[i] ) );
+                ImGui::Checkbox( buf, &Vis( gpuData[i] ).visible );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s top level zones", RealToString( gpuData[i]->timeline.size(), true ) );
                 ImGui::TreePush();
@@ -4919,7 +4922,7 @@ void View::DrawOptions()
             {
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    Visible( &l.second ) = true;
+                    Vis( &l.second ).visible = true;
                 }
             }
             ImGui::SameLine();
@@ -4927,7 +4930,7 @@ void View::DrawOptions()
             {
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    Visible( &l.second ) = false;
+                    Vis( &l.second ).visible = false;
                 }
             }
             ImGui::SameLine();
@@ -4942,7 +4945,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second.threadList.size() != 1 ) Visible( &l.second ) = true;
+                        if( l.second.threadList.size() != 1 ) Vis( &l.second ).visible = true;
                     }
                 }
                 ImGui::SameLine();
@@ -4950,7 +4953,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second.threadList.size() != 1 ) Visible( &l.second ) = false;
+                        if( l.second.threadList.size() != 1 ) Vis( &l.second ).visible = false;
                     }
                 }
 
@@ -4963,7 +4966,7 @@ void View::DrawOptions()
 
                         char buf[1024];
                         sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Visible( &l.second ) );
+                        ImGui::Checkbox( buf, &Vis( &l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5008,7 +5011,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second.threadList.size() == 1 ) Visible( &l.second ) = true;
+                        if( l.second.threadList.size() == 1 ) Vis( &l.second ).visible = true;
                     }
                 }
                 ImGui::SameLine();
@@ -5016,7 +5019,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second.threadList.size() == 1 ) Visible( &l.second ) = false;
+                        if( l.second.threadList.size() == 1 ) Vis( &l.second ).visible = false;
                     }
                 }
 
@@ -5029,7 +5032,7 @@ void View::DrawOptions()
 
                         char buf[1024];
                         sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Visible( &l.second ) );
+                        ImGui::Checkbox( buf, &Vis( &l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5086,7 +5089,7 @@ void View::DrawOptions()
             {
                 for( const auto& p : m_worker.GetPlots() )
                 {
-                    Visible( p ) = true;
+                    Vis( p ).visible = true;
                 }
             }
             ImGui::SameLine();
@@ -5094,13 +5097,13 @@ void View::DrawOptions()
             {
                 for( const auto& p : m_worker.GetPlots() )
                 {
-                    Visible( p ) = false;
+                    Vis( p ).visible = false;
                 }
             }
 
             for( const auto& p : m_worker.GetPlots() )
             {
-                ImGui::Checkbox( GetPlotName( p ), &Visible( p ) );
+                ImGui::Checkbox( GetPlotName( p ), &Vis( p ).visible );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s data points", RealToString( p->data.size(), true ) );
             }
@@ -5124,7 +5127,7 @@ void View::DrawOptions()
         {
             for( const auto& t : m_worker.GetThreadData() )
             {
-                Visible( t ) = true;
+                Vis( t ).visible = true;
             }
         }
         ImGui::SameLine();
@@ -5132,7 +5135,7 @@ void View::DrawOptions()
         {
             for( const auto& t : m_worker.GetThreadData() )
             {
-                Visible( t ) = false;
+                Vis( t ).visible = false;
             }
         }
 
@@ -5140,7 +5143,7 @@ void View::DrawOptions()
         for( const auto& t : m_worker.GetThreadData() )
         {
             ImGui::PushID( idx++ );
-            ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Visible( t ) );
+            ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Vis( t ).visible );
             ImGui::PopID();
             if( crash.thread == t->id )
             {
@@ -5177,7 +5180,7 @@ void View::DrawOptions()
         {
             for( const auto& fd : m_worker.GetFrames() )
             {
-                Visible( fd ) = true;
+                Vis( fd ).visible = true;
             }
         }
         ImGui::SameLine();
@@ -5185,7 +5188,7 @@ void View::DrawOptions()
         {
             for( const auto& fd : m_worker.GetFrames() )
             {
-                Visible( fd ) = false;
+                Vis( fd ).visible = false;
             }
         }
 
@@ -5193,7 +5196,7 @@ void View::DrawOptions()
         for( const auto& fd : m_worker.GetFrames() )
         {
             ImGui::PushID( idx++ );
-            ImGui::Checkbox( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), &Visible( fd ) );
+            ImGui::Checkbox( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), &Vis( fd ).visible );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "%s %sframes", RealToString( fd->frames.size(), true ), fd->continuous ? "" : "discontinuous " );

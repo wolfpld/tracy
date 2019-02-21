@@ -77,6 +77,12 @@ private:
         uint64_t mem;
     };
 
+    struct VisData
+    {
+        bool visible = true;
+        bool showFull = true;
+    };
+
     void InitTextEditor();
 
     const char* ShortenNamespace( const char* name ) const;
@@ -173,19 +179,13 @@ private:
     int64_t GetZoneChildTime( const GpuEvent& zone );
     int64_t GetZoneChildTimeFast( const ZoneEvent& zone );
 
-    flat_hash_map<const void*, bool, nohash<const void*>> m_visible;
+    flat_hash_map<const void*, VisData, nohash<const void*>> m_visData;
     flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
-    flat_hash_map<const void*, bool, nohash<const void*>> m_showFull;
     flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;
 
-    tracy_force_inline bool& Visible( const void* ptr )
+    tracy_force_inline VisData& Vis( const void* ptr )
     {
-        auto it = m_visible.find( ptr );
-        if( it == m_visible.end() )
-        {
-            it = m_visible.emplace( ptr, true ).first;
-        }
-        return it->second;
+        return m_visData[ptr];
     }
 
     tracy_force_inline bool& VisibleMsgThread( uint64_t thread )
@@ -194,16 +194,6 @@ private:
         if( it == m_visibleMsgThread.end() )
         {
             it = m_visibleMsgThread.emplace( thread, true ).first;
-        }
-        return it->second;
-    }
-
-    tracy_force_inline bool& ShowFull( const void* ptr )
-    {
-        auto it = m_showFull.find( ptr );
-        if( it == m_showFull.end() )
-        {
-            it = m_showFull.emplace( ptr, true ).first;
         }
         return it->second;
     }

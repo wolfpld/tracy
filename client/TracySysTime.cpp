@@ -2,14 +2,14 @@
 
 #ifdef TRACY_HAS_SYSTIME
 
-#  ifdef _WIN32
+#  if defined _WIN32 || defined __CYGWIN__
 #    include <windows.h>
 #  endif
 
 namespace tracy
 {
 
-#  ifdef _WIN32
+#  if defined _WIN32 || defined __CYGWIN__
 
 static inline uint64_t ConvertTime( const FILETIME& t )
 {

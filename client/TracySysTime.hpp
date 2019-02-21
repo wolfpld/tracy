@@ -1,7 +1,7 @@
 #ifndef __TRACYSYSTIME_HPP__
 #define __TRACYSYSTIME_HPP__
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 #  define TRACY_HAS_SYSTIME
 #endif
 
@@ -19,7 +19,7 @@ public:
     float Get();
 
 private:
-#  ifdef _WIN32
+#  if defined _WIN32 || defined __CYGWIN__
     uint64_t idle, used;
 #  endif
 };

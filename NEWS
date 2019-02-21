@@ -39,6 +39,7 @@ v0.5 (xxxx-xx-xx)
   possible), taking a performance and functionality hit.
 - Thread position and height is now animated, to eliminate flickering that
   was happening when depth of displayed zones was changing.
+- CPU usage is now being monitored on selected platforms (win32).
 
 v0.4.1 (2018-12-30)
 -------------------

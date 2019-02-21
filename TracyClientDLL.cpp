@@ -20,6 +20,10 @@
 
 #include "common/TracyQueue.hpp"
 
+#ifdef __APPLE__
+#  include <TargetConditionals.h>
+#endif
+
 namespace tracy
 {
 #ifdef _WIN32
@@ -52,7 +56,7 @@ namespace tracy
     std::atomic<uint8_t>& GetGpuCtxCounter() { return GetGpuCtxCounter_fpt(); }
     GpuCtxWrapper& GetGpuCtx() { return GetGpuCtx_fpt(); }
 
-#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
+#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
     DLL_IMPORT int64_t(*get_GetTimeImpl())();
 
     int64_t(*GetTimeImpl)() = get_GetTimeImpl();

@@ -20,6 +20,10 @@
 #if defined _WIN32 || defined __CYGWIN__
 #  include <intrin.h>
 #endif
+#ifdef __APPLE__
+#  include <TargetConditionals.h>
+#  include <mach/mach_time.h>
+#endif
 
 #if defined _WIN32 || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __ANDROID__ ) || __ARM_ARCH >= 6
 #  define TRACY_HW_TIMER
@@ -76,7 +80,7 @@ struct LuaZoneState
 
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
-#if __ARM_ARCH >= 6
+#if __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
 extern int64_t (*GetTimeImpl)();
 #endif
 
@@ -90,7 +94,10 @@ public:
     static tracy_force_inline int64_t GetTime( uint32_t& cpu )
     {
 #ifdef TRACY_HW_TIMER
-#  if __ARM_ARCH >= 6
+#  if TARGET_OS_IOS == 1
+        cpu = 0xFFFFFFFF;
+        return mach_absolute_time();
+#  elif __ARM_ARCH >= 6
         cpu = 0xFFFFFFFF;
         return GetTimeImpl();
 #  elif defined _WIN32 || defined __CYGWIN__
@@ -110,7 +117,9 @@ public:
     static tracy_force_inline int64_t GetTime()
     {
 #ifdef TRACY_HW_TIMER
-#  if __ARM_ARCH >= 6
+#  if TARGET_OS_IOS == 1
+        return mach_absolute_time();
+#  elif __ARM_ARCH >= 6
         return GetTimeImpl();
 #  elif defined _WIN32 || defined __CYGWIN__
         unsigned int dontcare;

@@ -62,7 +62,7 @@
 #  endif
 #endif
 
-#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
+#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
 #  include <signal.h>
 #  include <setjmp.h>
 #endif
@@ -143,7 +143,7 @@ struct ProducerWrapper
 #endif
 
 
-#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
+#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
 int64_t (*GetTimeImpl)();
 
 int64_t GetTimeImplFallback()
@@ -897,7 +897,7 @@ DLL_EXPORT std::atomic<uint32_t>&(*get_getlockcounter())() { return GetLockCount
 DLL_EXPORT std::atomic<uint8_t>&(*get_getgpuctxcounter())() { return GetGpuCtxCounter; }
 DLL_EXPORT GpuCtxWrapper&(*get_getgpuctx())() { return GetGpuCtx; }
 
-#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6
+#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
 DLL_EXPORT int64_t(*get_GetTimeImpl())() { return GetTimeImpl; }
 #endif
 
@@ -1669,7 +1669,7 @@ bool Profiler::HandleServerQuery()
 void Profiler::CalibrateTimer()
 {
 #ifdef TRACY_HW_TIMER
-#  if __ARM_ARCH >= 6
+#  if __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
     if( GetTimeImpl == GetTimeImplFallback )
     {
         m_timerMul = 1.;

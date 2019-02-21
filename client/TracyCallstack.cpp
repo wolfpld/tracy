@@ -162,7 +162,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     static CallstackEntry cb;
     cb.line = 0;
 
-    char* demangled;
+    char* demangled = nullptr;
     const char* symname = nullptr;
     const char* symloc = nullptr;
     auto vptr = (void*)ptr;

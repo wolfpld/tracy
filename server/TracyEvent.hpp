@@ -262,7 +262,7 @@ struct PlotItem
     double val;
 };
 
-enum class PlotType
+enum class PlotType : uint8_t
 {
     User,
     Memory,

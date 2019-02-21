@@ -826,7 +826,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
             auto pd = m_slab.AllocInit<PlotData>();
-            pd->type = PlotType::User;
+            if( fileVer >= FileVersion( 0, 4, 5 ) )
+            {
+                f.Read( pd->type );
+            }
+            else
+            {
+                pd->type = PlotType::User;
+            }
             f.Read( pd->name );
             f.Read( pd->min );
             f.Read( pd->max );
@@ -3720,11 +3727,12 @@ void Worker::Write( FileWrite& f )
     }
 
     sz = m_data.plots.Data().size();
-    for( auto& plot : m_data.plots.Data() ) { if( plot->type != PlotType::User ) sz--; }
+    for( auto& plot : m_data.plots.Data() ) { if( plot->type == PlotType::Memory ) sz--; }
     f.Write( &sz, sizeof( sz ) );
     for( auto& plot : m_data.plots.Data() )
     {
-        if( plot->type != PlotType::User ) continue;
+        if( plot->type == PlotType::Memory ) continue;
+        f.Write( &plot->type, sizeof( plot->type ) );
         f.Write( &plot->name, sizeof( plot->name ) );
         f.Write( &plot->min, sizeof( plot->min ) );
         f.Write( &plot->max, sizeof( plot->max ) );

@@ -1191,6 +1191,8 @@ The numerical data values (figure~\ref{plot}) are plotted right below the zones 
 
 When memory profiling (section~\ref{memoryprofiling}) is enabled, Tracy will automatically generate a \emph{\faMemory{}~Memory usage} plot, which has extended capabilities. Hovering over a data point (memory allocation event) will visually display duration of the allocation. Clicking the \LMB{} left mouse button on the data point will open the memory allocation information window, which will display the duration of the allocation as long as the window is open.
 
+Another plot that is automatically provided by Tracy is the \emph{\faTachometer*{}~CPU usage} plot. It is only available on some platforms and it represents the total system CPU usage percentage (it is not limited to the profiled application).
+
 \subsubsection{Navigating the view}
 
 Hovering the \faMousePointer{} mouse pointer over the timeline view will display a vertical line that can be used to visually line-up events in multiple threads. Dragging the \LMB{} left mouse button will display time measurement of the selected region.

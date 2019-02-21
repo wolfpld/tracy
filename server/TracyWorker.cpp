@@ -2277,6 +2277,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::CrashReport:
         ProcessCrashReport( ev.crashReport );
         break;
+    case QueueType::SysTimeReport:
+        ProcessSysTime( ev.sysTime );
+        break;
     default:
         assert( false );
         break;
@@ -3094,6 +3097,30 @@ void Worker::ProcessCrashReport( const QueueCrashReport& ev )
     m_data.m_crashEvent.time = TscTime( ev.time );
     m_data.m_crashEvent.message = ev.text;
     m_data.m_crashEvent.callstack = 0;
+}
+
+void Worker::ProcessSysTime( const QueueSysTime& ev )
+{
+    const auto time = TscTime( ev.time );
+    const auto val = ev.sysTime;
+    if( !m_sysTimePlot )
+    {
+        m_sysTimePlot = m_slab.AllocInit<PlotData>();
+        m_sysTimePlot->name = 0;
+        m_sysTimePlot->type = PlotType::SysTime;
+        m_sysTimePlot->min = val;
+        m_sysTimePlot->max = val;
+        m_sysTimePlot->data.push_back( { time, val } );
+        m_data.plots.Data().push_back( m_sysTimePlot );
+    }
+    else
+    {
+        assert( !m_sysTimePlot->data.empty() );
+        assert( m_sysTimePlot->data.back().time <= time );
+        if( m_sysTimePlot->min > val ) m_sysTimePlot->min = val;
+        else if( m_sysTimePlot->max < val ) m_sysTimePlot->max = val;
+        m_sysTimePlot->data.push_back_non_empty( { time, val } );
+    }
 }
 
 void Worker::MemAllocChanged( int64_t time )

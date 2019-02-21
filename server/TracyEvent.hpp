@@ -265,7 +265,8 @@ struct PlotItem
 enum class PlotType
 {
     User,
-    Memory
+    Memory,
+    SysTime
 };
 
 struct PlotData

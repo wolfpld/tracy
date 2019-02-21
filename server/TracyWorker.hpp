@@ -340,6 +340,7 @@ private:
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
+    tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev );
@@ -466,6 +467,8 @@ private:
 
     Failure m_failure = Failure::None;
     FailureData m_failureData;
+
+    PlotData* m_sysTimePlot = nullptr;
 };
 
 }

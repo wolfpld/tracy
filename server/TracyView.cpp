@@ -8863,6 +8863,12 @@ const char* View::GetPlotName( const PlotData* plot ) const
 #else
         return "Memory usage";
 #endif
+    case PlotType::SysTime:
+#ifdef TRACY_EXTENDED_FONT
+        return ICON_FA_TACHOMETER_ALT " CPU usage";
+#else
+        return "CPU usage";
+#endif
     default:
         assert( false );
         return nullptr;

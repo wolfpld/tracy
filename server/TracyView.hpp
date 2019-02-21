@@ -43,6 +43,14 @@ class View
     };
 
 public:
+    struct VisData
+    {
+        bool visible = true;
+        bool showFull = true;
+        int offset = 0;
+        int height = 0;
+    };
+
     using SetTitleCallback = void(*)( const char* );
 
     View( ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", fixedWidth, stcb ) {}
@@ -75,12 +83,6 @@ private:
     {
         uint32_t cnt;
         uint64_t mem;
-    };
-
-    struct VisData
-    {
-        bool visible = true;
-        bool showFull = true;
     };
 
     void InitTextEditor();

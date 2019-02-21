@@ -1691,6 +1691,39 @@ bool View::DrawZoneFrames( const FrameData& frames )
     return hover;
 }
 
+static float AdjustThreadPosition( View::VisData& vis, float wy, int& offset )
+{
+    if( vis.offset < offset )
+    {
+        vis.offset = offset;
+    }
+    else if( vis.offset > offset )
+    {
+        const auto diff = vis.offset - offset;
+        const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
+        offset = vis.offset = int( std::max<double>( vis.offset - move, offset ) );
+    }
+
+    return offset + wy;
+}
+
+static void AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset )
+{
+    const auto h = offset - oldOffset;
+    if( vis.height > h )
+    {
+        vis.height = h;
+        offset = oldOffset + vis.height;
+    }
+    else if( vis.height < h )
+    {
+        const auto diff = h - vis.height;
+        const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
+        vis.height = int( std::min<double>( vis.height + move, h ) );
+        offset = oldOffset + vis.height;
+    }
+}
+
 void View::DrawZones()
 {
     m_msgHighlight.Decay( nullptr );
@@ -1756,10 +1789,17 @@ void View::DrawZones()
         {
             const auto& v = m_worker.GetGpuData()[i];
             auto& vis = Vis( v );
-            if( !vis.visible ) continue;
+            if( !vis.visible )
+            {
+                vis.height = 0;
+                vis.offset = 0;
+                continue;
+            }
             bool& showFull = vis.showFull;
 
-            const auto yPos = wpos.y + offset;
+            const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
+            const auto oldOffset = offset;
+            ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + vis.height ), true );
             if( yPos + ostep >= yMin && yPos <= yMax )
             {
                 draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
@@ -1831,6 +1871,8 @@ void View::DrawZones()
                 offset += ostep * depth;
             }
             offset += ostep * 0.2f;
+            AdjustThreadHeight( vis, oldOffset, offset );
+            ImGui::PopClipRect();
         }
     }
 
@@ -1840,10 +1882,17 @@ void View::DrawZones()
     for( const auto& v : m_worker.GetThreadData() )
     {
         auto& vis = Vis( v );
-        if( !vis.visible ) continue;
+        if( !vis.visible )
+        {
+            vis.height = 0;
+            vis.offset = 0;
+            continue;
+        }
         bool& showFull = vis.showFull;
 
-        const auto yPos = wpos.y + offset;
+        const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
+        const auto oldOffset = offset;
+        ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + vis.height ), true );
         if( yPos + ostep >= yMin && yPos <= yMax )
         {
             draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
@@ -2009,6 +2058,8 @@ void View::DrawZones()
             }
         }
         offset += ostep * 0.2f;
+        AdjustThreadHeight( vis, oldOffset, offset );
+        ImGui::PopClipRect();
     }
     m_lockHighlight = nextLockHighlight;
 
@@ -3371,12 +3422,19 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
     for( const auto& v : m_worker.GetPlots() )
     {
         auto& vis = Vis( v );
-        if( !vis.visible ) continue;
+        if( !vis.visible )
+        {
+            vis.height = 0;
+            vis.offset = 0;
+            continue;
+        }
         assert( !v->data.empty() );
         bool& showFull = vis.showFull;
 
         float txtx = 0;
-        auto yPos = wpos.y + offset;
+        const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
+        const auto oldOffset = offset;
+        ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + vis.height ), true );
         if( yPos + ty >= yMin && yPos <= yMax )
         {
             if( showFull )
@@ -3597,6 +3655,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             }
         }
         offset += 0.2 * ty;
+        AdjustThreadHeight( vis, oldOffset, offset );
+        ImGui::PopClipRect();
     }
 
     return offset;

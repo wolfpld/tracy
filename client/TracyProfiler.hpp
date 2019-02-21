@@ -9,6 +9,7 @@
 
 #include "concurrentqueue.h"
 #include "TracyCallstack.hpp"
+#include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
@@ -466,6 +467,15 @@ private:
 
     TracyMutex m_deferredLock;
     FastVector<QueueItem> m_deferredQueue;
+#endif
+
+#ifdef TRACY_HAS_SYSTIME
+    void ProcessSysTime();
+
+    SysTime m_sysTime;
+    uint64_t m_sysTimeLast = 0;
+#else
+    void ProcessSysTime() {}
 #endif
 };
 

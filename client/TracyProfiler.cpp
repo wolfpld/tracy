@@ -28,8 +28,11 @@
 #endif
 
 #ifdef __APPLE__
+#  include <TargetConditionals.h>
 #  include <unistd.h>
-#  include <libproc.h>
+#  if TARGET_OS_IOS == 0
+#    include <libproc.h>
+#  endif
 #  include <sys/types.h>
 #  include <sys/sysctl.h>
 #endif
@@ -227,9 +230,11 @@ static const char* GetProcessName()
 #elif defined _GNU_SOURCE || defined __CYGWIN__
     processName = program_invocation_short_name;
 #elif defined __APPLE__
+#  if TARGET_OS_IOS == 0
     static char buf[1024];
     proc_name( getpid(), buf, 1024 );
     processName = buf;
+#  endif
 #endif
     return processName;
 }

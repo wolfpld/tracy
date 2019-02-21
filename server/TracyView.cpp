@@ -897,7 +897,7 @@ bool View::DrawImpl()
 
     if( m_zoomAnim.active )
     {
-        m_zoomAnim.progress += io.DeltaTime * m_zoomAnim.lenMod;
+        m_zoomAnim.progress += io.DeltaTime * 3.33f;
         if( m_zoomAnim.progress >= 1.f )
         {
             m_zoomAnim.active = false;
@@ -8938,11 +8938,6 @@ void View::ZoomToRange( int64_t start, int64_t end )
     m_zoomAnim.end0 = m_zvEnd;
     m_zoomAnim.end1 = end;
     m_zoomAnim.progress = 0;
-
-    const auto d0 = double( m_zoomAnim.end0 - m_zoomAnim.start0 );
-    const auto d1 = double( m_zoomAnim.end1 - m_zoomAnim.start1 );
-    const auto diff = d0>d1 ? d0/d1 : d1/d0;
-    m_zoomAnim.lenMod = 10.0 / log10( diff );
 }
 
 void View::ZoomToPrevFrame()

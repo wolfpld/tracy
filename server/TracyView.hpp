@@ -33,7 +33,6 @@ class View
         int64_t start0, start1;
         int64_t end0, end1;
         double progress;
-        double lenMod;
     };
 
     struct Region

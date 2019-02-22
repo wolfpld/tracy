@@ -829,6 +829,8 @@ bool View::DrawImpl()
             {
                 ImGui::SetItemDefaultFocus();
             }
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size(), true ) );
         }
         ImGui::EndCombo();
     }

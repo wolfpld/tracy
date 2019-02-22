@@ -200,6 +200,7 @@ int main( int argc, char** argv )
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, rangesBasic );
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * dpiScale, &configMerge, rangesIcons );
     auto fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 15.0f * dpiScale );
+    auto bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, 20.0f * dpiScale );
 
     ImGuiFreeType::BuildFontAtlas( io.Fonts, ImGuiFreeType::LightHinting );
 
@@ -249,7 +250,10 @@ int main( int argc, char** argv )
             ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
             char buf[128];
             sprintf( buf, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+            ImGui::PushFont( bigFont );
             tracy::TextCentered( buf );
+            ImGui::PopFont();
+            ImGui::Spacing();
             if( ImGui::Button( ICON_FA_BOOK " User manual" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf" );

@@ -610,13 +610,7 @@ bool View::Draw()
         }
         TextFocused( "Thread:", s_instance->m_worker.GetThreadString( data.thread ) );
         ImGui::SameLine();
-        TextDisabledUnformatted( "(id)" );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text( "0x%" PRIX64, data.thread );
-            ImGui::EndTooltip();
-        }
+        ImGui::TextDisabled( "(0x%" PRIX64 ")", data.thread );
         ImGui::Separator();
         if( ImGui::Button( "I understand" ) )
         {
@@ -4091,13 +4085,7 @@ void View::DrawZoneInfoWindow()
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(id)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text( "0x%" PRIX64, tid );
-        ImGui::EndTooltip();
-    }
+    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
     if( ev.text.active )
     {
         TextFocused( "User text:", m_worker.GetString( ev.text ) );
@@ -4600,13 +4588,7 @@ void View::DrawGpuInfoWindow()
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
-    TextDisabledUnformatted( "(id)" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text( "0x%" PRIX64, tid );
-        ImGui::EndTooltip();
-    }
+    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
 
     ImGui::Separator();
 

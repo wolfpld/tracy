@@ -1795,7 +1795,7 @@ void View::DrawZones()
 
             const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
             const auto oldOffset = offset;
-            ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + vis.height ), true );
+            ImGui::PushClipRect( wpos, wpos + ImVec2( w, oldOffset + vis.height ), true );
             if( yPos + ostep >= yMin && yPos <= yMax )
             {
                 draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
@@ -1888,7 +1888,7 @@ void View::DrawZones()
 
         const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
         const auto oldOffset = offset;
-        ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + vis.height ), true );
+        ImGui::PushClipRect( wpos, wpos + ImVec2( w, offset + vis.height ), true );
         if( yPos + ostep >= yMin && yPos <= yMax )
         {
             draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
@@ -3451,7 +3451,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
         float txtx = 0;
         const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
         const auto oldOffset = offset;
-        ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + vis.height ), true );
+        ImGui::PushClipRect( wpos, wpos + ImVec2( w, offset + vis.height ), true );
         if( yPos + ty >= yMin && yPos <= yMax )
         {
             if( showFull )

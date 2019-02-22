@@ -5324,6 +5324,8 @@ void View::DrawMessages()
             ImGui::PushID( idx++ );
             ImGui::Checkbox( m_worker.GetThreadString( t->id ), &VisibleMsgThread( t->id ) );
             ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", RealToString( t->messages.size(), true ) );
             if( crash.thread == t->id )
             {
                 ImGui::SameLine();

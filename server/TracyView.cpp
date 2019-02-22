@@ -5291,13 +5291,16 @@ void View::DrawMessages()
 {
     ImGui::Begin( "Messages", &m_showMessages );
 
+    size_t tsz = 0;
+    for( const auto& t : m_worker.GetThreadData() ) if( !t->messages.empty() ) tsz++;
+
 #ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
 #else
     auto expand = ImGui::TreeNode( "Visible threads:" );
 #endif
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%zu)", m_worker.GetThreadData().size() );
+    ImGui::TextDisabled( "(%zu)", tsz );
     if( expand )
     {
         auto& crash = m_worker.GetCrashEvent();
@@ -5321,6 +5324,7 @@ void View::DrawMessages()
         int idx = 0;
         for( const auto& t : m_worker.GetThreadData() )
         {
+            if( t->messages.empty() ) continue;
             ImGui::PushID( idx++ );
             ImGui::Checkbox( m_worker.GetThreadString( t->id ), &VisibleMsgThread( t->id ) );
             ImGui::PopID();

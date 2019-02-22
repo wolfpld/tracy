@@ -91,7 +91,7 @@ int main( int argc, char** argv )
     }
 
     char title[128];
-    sprintf( title, "Tracy server %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+    sprintf( title, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
 
     std::string winPosFile = tracy::GetSavePath( "window.position" );
     int x = 200, y = 200, w = 1650, h = 960, maximize = 0;
@@ -246,9 +246,9 @@ int main( int argc, char** argv )
                 glfwSetWindowTitle( window, title );
             }
 
-            ImGui::Begin( "Tracy server", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+            ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
             char buf[128];
-            sprintf( buf, "Tracy %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+            sprintf( buf, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
             tracy::TextCentered( buf );
             if( ImGui::Button( ICON_FA_BOOK " User manual" ) )
             {

@@ -1922,7 +1922,7 @@ void View::DrawZones()
         auto msgit = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
         auto msgend = std::lower_bound( msgit, v->messages.end(), m_zvEnd, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
 
-        if( !m_drawEmptyLabels && showFull && depth == 0 && msgit == msgend )
+        if( !m_drawEmptyLabels && showFull && depth == 0 && msgit == msgend && crash.thread != v->id )
         {
             vis.height = 0;
             vis.offset = 0;

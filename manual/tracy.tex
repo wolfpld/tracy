@@ -1207,6 +1207,7 @@ You can zoom in and out the timeline view by using the \Scroll{} mouse scroll. Y
 In this window you can set various trace-related options. The timeline view might sometimes become overcrowded, in which case disabling display of some profiling events can increase readability.
 
 \begin{itemize}
+\item \emph{\faExpand{} Draw empty labels} -- By default threads that don't have anything to display at the current zoom level are hidden. Enabling this option will show them anyway.
 \item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets (see section~\ref{gpuprofiling} for more information).
 \item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed. The \emph{Namespaces} drop-down controls the display behavior of long zone names:
 \begin{itemize}

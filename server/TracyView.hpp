@@ -259,6 +259,7 @@ private:
     bool m_drawPlots = true;
     bool m_onlyContendedLocks = true;
     bool m_goToFrame = false;
+    bool m_drawEmptyLabels = false;
 
     int m_statSort = 0;
     bool m_statSelf = false;

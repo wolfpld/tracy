@@ -1796,17 +1796,35 @@ void View::DrawZones()
             const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
             const auto oldOffset = offset;
             ImGui::PushClipRect( wpos, wpos + ImVec2( w, oldOffset + vis.height ), true );
-            if( yPos + ostep >= yMin && yPos <= yMax )
+
+            int depth = 0;
+            offset += ostep;
+            if( showFull && !v->timeline.empty() && v->timeline.front()->gpuStart != std::numeric_limits<int64_t>::max() )
             {
-                draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
+                const auto begin = v->timeline.front()->gpuStart;
+                const auto drift = GpuDrift( v );
+                depth = DispatchGpuZoneLevel( v->timeline, hover, pxns, wpos, offset, 0, v->thread, yMin, yMax, begin, drift );
+                offset += ostep * depth;
+            }
+            offset += ostep * 0.2f;
+
+            if( !m_drawEmptyLabels && showFull && depth == 0 )
+            {
+                vis.height = 0;
+                vis.offset = 0;
+                offset = oldOffset;
+            }
+            else if( yPos + ostep >= yMin && yPos <= yMax )
+            {
+                draw->AddLine( wpos + ImVec2( 0, oldOffset + ostep - 1 ), wpos + ImVec2( w, oldOffset + ostep - 1 ), 0x33FFFFFF );
 
                 if( showFull )
                 {
-                    draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFFFAAAA );
+                    draw->AddTriangleFilled( wpos + ImVec2( to/2, oldOffset + to/2 ), wpos + ImVec2( ty - to/2, oldOffset + to/2 ), wpos + ImVec2( ty * 0.5, oldOffset + to/2 + th ), 0xFFFFAAAA );
                 }
                 else
                 {
-                    draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF886666, 2.0f );
+                    draw->AddTriangle( wpos + ImVec2( to/2, oldOffset + to/2 ), wpos + ImVec2( to/2, oldOffset + ty - to/2 ), wpos + ImVec2( to/2 + th, oldOffset + ty * 0.5 ), 0xFF886666, 2.0f );
                 }
                 const bool isVulkan = v->thread == 0;
                 char buf[64];
@@ -1818,9 +1836,9 @@ void View::DrawZones()
                 {
                     sprintf( buf, "OpenGL context %zu", i );
                 }
-                draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
+                draw->AddText( wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
 
-                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, oldOffset + ty ) ) )
                 {
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
@@ -1858,15 +1876,6 @@ void View::DrawZones()
                 }
             }
 
-            offset += ostep;
-            if( showFull && !v->timeline.empty() && v->timeline.front()->gpuStart != std::numeric_limits<int64_t>::max() )
-            {
-                const auto begin = v->timeline.front()->gpuStart;
-                const auto drift = GpuDrift( v );
-                const auto depth = DispatchGpuZoneLevel( v->timeline, hover, pxns, wpos, offset, 0, v->thread, yMin, yMax, begin, drift );
-                offset += ostep * depth;
-            }
-            offset += ostep * 0.2f;
             AdjustThreadHeight( vis, oldOffset, offset );
             ImGui::PopClipRect();
         }
@@ -1889,45 +1898,72 @@ void View::DrawZones()
         const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
         const auto oldOffset = offset;
         ImGui::PushClipRect( wpos, wpos + ImVec2( w, offset + vis.height ), true );
-        if( yPos + ostep >= yMin && yPos <= yMax )
+
+        int depth = 0;
+        offset += ostep;
+        if( showFull )
         {
-            draw->AddLine( wpos + ImVec2( 0, offset + ostep - 1 ), wpos + ImVec2( w, offset + ostep - 1 ), 0x33FFFFFF );
+            m_lastCpu = -1;
+            if( m_drawZones )
+            {
+                depth = DispatchZoneLevel( v->timeline, hover, pxns, wpos, offset, 0, yMin, yMax );
+                offset += ostep * depth;
+            }
+
+            if( m_drawLocks )
+            {
+                const auto lockDepth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight, yMin, yMax );
+                offset += ostep * lockDepth;
+                depth += lockDepth;
+            }
+        }
+        offset += ostep * 0.2f;
+
+        auto msgit = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        auto msgend = std::lower_bound( msgit, v->messages.end(), m_zvEnd, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+
+        if( !m_drawEmptyLabels && showFull && depth == 0 && msgit == msgend )
+        {
+            vis.height = 0;
+            vis.offset = 0;
+            offset = oldOffset;
+        }
+        else if( yPos + ostep >= yMin && yPos <= yMax )
+        {
+            draw->AddLine( wpos + ImVec2( 0, oldOffset + ostep - 1 ), wpos + ImVec2( w, oldOffset + ostep - 1 ), 0x33FFFFFF );
 
             const auto labelColor = crash.thread == v->id ? ( showFull ? 0xFF2222FF : 0xFF111188 ) : ( showFull ? 0xFFFFFFFF : 0xFF888888 );
 
             if( showFull )
             {
-                draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), labelColor );
+                draw->AddTriangleFilled( wpos + ImVec2( to/2, oldOffset + to/2 ), wpos + ImVec2( ty - to/2, oldOffset + to/2 ), wpos + ImVec2( ty * 0.5, oldOffset + to/2 + th ), labelColor );
 
-                auto it = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-                auto end = std::lower_bound( it, v->messages.end(), m_zvEnd, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-
-                while( it < end )
+                while( msgit < msgend )
                 {
-                    const auto next = std::upper_bound( it, v->messages.end(), (*it)->time + MinVisSize * nspx, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
-                    const auto dist = std::distance( it, next );
+                    const auto next = std::upper_bound( msgit, v->messages.end(), (*msgit)->time + MinVisSize * nspx, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
+                    const auto dist = std::distance( msgit, next );
 
-                    const auto px = ( (*it)->time - m_zvStart ) * pxns;
+                    const auto px = ( (*msgit)->time - m_zvStart ) * pxns;
                     if( dist > 1 )
                     {
                         unsigned int color = 0xFFDDDDDD;
                         if( m_msgHighlight && m_msgHighlight->thread == v->id )
                         {
                             const auto hTime = m_msgHighlight->time;
-                            if( (*it)->time <= hTime && ( next == v->messages.end() || (*next)->time > hTime ) )
+                            if( (*msgit)->time <= hTime && ( next == v->messages.end() || (*next)->time > hTime ) )
                             {
                                 color = 0xFF4444FF;
                             }
                         }
-                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), color );
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), color, 2.0f );
+                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px, oldOffset + to + th ), color );
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px, oldOffset + to + th ), color, 2.0f );
                     }
                     else
                     {
-                        const auto color = ( m_msgHighlight == *it ) ? 0xFF4444FF : 0xFFDDDDDD;
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, offset + to ), wpos + ImVec2( px + (ty - to) * 0.5, offset + to ), wpos + ImVec2( px, offset + to + th ), color, 2.0f );
+                        const auto color = ( m_msgHighlight == *msgit ) ? 0xFF4444FF : 0xFFDDDDDD;
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px, oldOffset + to + th ), color, 2.0f );
                     }
-                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
+                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) ) )
                     {
                         ImGui::BeginTooltip();
                         if( dist > 1 )
@@ -1936,33 +1972,33 @@ void View::DrawZones()
                         }
                         else
                         {
-                            ImGui::TextUnformatted( TimeToString( (*it)->time - m_worker.GetTimeBegin() ) );
+                            ImGui::TextUnformatted( TimeToString( (*msgit)->time - m_worker.GetTimeBegin() ) );
                             ImGui::Separator();
                             ImGui::TextUnformatted( "Message text:" );
-                            ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( (*it)->ref ) );
+                            ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( (*msgit)->ref ) );
                         }
                         ImGui::EndTooltip();
-                        m_msgHighlight = *it;
+                        m_msgHighlight = *msgit;
 
                         if( ImGui::IsMouseClicked( 0 ) )
                         {
                             m_showMessages = true;
-                            m_msgToFocus = *it;
+                            m_msgToFocus = *msgit;
                         }
                         if( ImGui::IsMouseClicked( 2 ) )
                         {
-                            CenterAtTime( (*it)->time );
+                            CenterAtTime( (*msgit)->time );
                         }
                     }
-                    it = next;
+                    msgit = next;
                 }
 
                 if( crash.thread == v->id && crash.time >= m_zvStart && crash.time <= m_zvEnd )
                 {
                     const auto px = ( crash.time - m_zvStart ) * pxns;
 
-                    draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF );
-                    draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, offset + to + th * 0.5f ), wpos + ImVec2( px, offset + to + th ), 0xFF2222FF, 2.0f );
+                    draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px, oldOffset + to + th ), 0xFF2222FF );
+                    draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px, oldOffset + to + th ), 0xFF2222FF, 2.0f );
 
 #ifdef TRACY_EXTENDED_FONT
                     const auto crashText = ICON_FA_SKULL " crash " ICON_FA_SKULL;
@@ -1971,9 +2007,9 @@ void View::DrawZones()
 #endif
 
                     auto ctw = ImGui::CalcTextSize( crashText ).x;
-                    draw->AddText( wpos + ImVec2( px - ctw * 0.5f, offset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
+                    draw->AddText( wpos + ImVec2( px - ctw * 0.5f, oldOffset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
 
-                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, offset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, offset + ty ) ) )
+                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) ) )
                     {
                         ImGui::BeginTooltip();
                         TextFocused( "Time:", TimeToString( crash.time - m_worker.GetTimeBegin() ) );
@@ -1989,23 +2025,23 @@ void View::DrawZones()
             }
             else
             {
-                draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), labelColor, 2.0f );
+                draw->AddTriangle( wpos + ImVec2( to/2, oldOffset + to/2 ), wpos + ImVec2( to/2, oldOffset + ty - to/2 ), wpos + ImVec2( to/2 + th, oldOffset + ty * 0.5 ), labelColor, 2.0f );
             }
             const auto txt = m_worker.GetThreadString( v->id );
             const auto txtsz = ImGui::CalcTextSize( txt );
             if( m_gpuThread == v->id )
             {
-                draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x448888DD );
-                draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x888888DD );
+                draw->AddRectFilled( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x + 4, oldOffset + ty ), 0x448888DD );
+                draw->AddRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x + 4, oldOffset + ty ), 0x888888DD );
             }
             if( m_gpuInfoWindow && m_gpuInfoWindowThread == v->id )
             {
-                draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x4488DD88 );
-                draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x + 4, offset + ty ), 0x8888DD88 );
+                draw->AddRectFilled( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x + 4, oldOffset + ty ), 0x4488DD88 );
+                draw->AddRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x + 4, oldOffset + ty ), 0x8888DD88 );
             }
-            draw->AddText( wpos + ImVec2( ty, offset ), labelColor, txt );
+            draw->AddText( wpos + ImVec2( ty, oldOffset ), labelColor, txt );
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtsz.x, offset + ty ) ) )
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
             {
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
@@ -2036,24 +2072,6 @@ void View::DrawZones()
             }
         }
 
-        offset += ostep;
-
-        if( showFull )
-        {
-            m_lastCpu = -1;
-            if( m_drawZones )
-            {
-                const auto depth = DispatchZoneLevel( v->timeline, hover, pxns, wpos, offset, 0, yMin, yMax );
-                offset += ostep * depth;
-            }
-
-            if( m_drawLocks )
-            {
-                const auto depth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight, yMin, yMax );
-                offset += ostep * depth;
-            }
-        }
-        offset += ostep * 0.2f;
         AdjustThreadHeight( vis, oldOffset, offset );
         ImGui::PopClipRect();
     }
@@ -4896,6 +4914,13 @@ void View::DrawGpuInfoWindow()
 void View::DrawOptions()
 {
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
+
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_EXPAND " Draw empty labels", &m_drawEmptyLabels );
+#else
+    ImGui::Checkbox( "Draw empty labels", &m_drawEmptyLabels );
+#endif
+    ImGui::Separator();
 
     const auto& gpuData = m_worker.GetGpuData();
     if( !gpuData.empty() )

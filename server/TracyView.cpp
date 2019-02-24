@@ -2948,7 +2948,7 @@ static LockState CombineLockState( LockState state, LockState next )
     return (LockState)std::max( (int)state, (int)next );
 }
 
-void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLocation& srcloc, bool hover, ImDrawList* draw, const ImVec2& wpos, float w, float ty, float offset )
+void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLocation& srcloc, bool hover, ImDrawList* draw, const ImVec2& wpos, float w, float ty, float offset, uint8_t tid )
 {
     char buf[1024];
     sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( srcloc.function ) );
@@ -2989,6 +2989,14 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             {
                 m_lockInfoWindow = id;
             }
+            if( ImGui::IsMouseClicked( 2 ) )
+            {
+                auto lptr = lockmap.timeline.data();
+                auto eptr = lptr + lockmap.timeline.size() - 1;
+                while( (*lptr)->thread != tid ) lptr++;
+                while( (*eptr)->thread != tid ) eptr--;
+                ZoomToRange( (*lptr)->time, (*eptr)->time );
+            }
         }
     }
 }
@@ -3023,7 +3031,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             {
                 draw->AddRectFilled( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x2288DD88 );
                 draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x4488DD88 );
-                DrawLockHeader( v.first, lockmap, m_worker.GetSourceLocation( lockmap.srcloc ), hover, draw, wpos, w, ty, offset );
+                DrawLockHeader( v.first, lockmap, m_worker.GetSourceLocation( lockmap.srcloc ), hover, draw, wpos, w, ty, offset, it->second );
                 cnt++;
             }
 
@@ -3468,7 +3476,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     draw->AddRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ), 0x448888DD );
                 }
 
-                DrawLockHeader( v.first, lockmap, srcloc, hover, draw, wpos, w, ty, offset );
+                DrawLockHeader( v.first, lockmap, srcloc, hover, draw, wpos, w, ty, offset, it->second );
                 cnt++;
             }
         }

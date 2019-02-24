@@ -1087,6 +1087,9 @@ void Profiler::Worker()
 #endif
             m_sock = listen.Accept();
             if( m_sock ) break;
+#ifndef TRACY_ON_DEMAND
+            ProcessSysTime();
+#endif
         }
 
         {

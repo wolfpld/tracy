@@ -2105,26 +2105,12 @@ void View::DrawZones()
                     if( it == lockmap.threadMap.end() ) continue;
                     lockCnt++;
                     const auto thread = it->second;
-                    const auto threadBit = GetThreadBit( thread );
-                    if( lockmap.type == LockType::Lockable )
-                    {
-                        auto lptr = lockmap.timeline.data();
-                        auto eptr = lptr + lockmap.timeline.size() - 1;
-                        while( (*lptr)->time < first && (*lptr)->lockingThread != thread && !IsThreadWaiting( (*lptr)->waitList, threadBit ) ) lptr++;
-                        if( (*lptr)->time < first ) first = (*lptr)->time;
-                        while( (*eptr)->time > last && (*eptr)->lockingThread != thread && !IsThreadWaiting( (*eptr)->waitList, threadBit ) ) eptr--;
-                        if( (*eptr)->time > last ) last = (*eptr)->time;
-                    }
-                    else
-                    {
-                        assert( lockmap.type == LockType::SharedLockable );
-                        auto lptr = (LockEventShared**)lockmap.timeline.data();
-                        auto eptr = lptr + lockmap.timeline.size() - 1;
-                        while( (*lptr)->time < first && (*lptr)->lockingThread != thread && !IsThreadWaiting( (*lptr)->waitList, threadBit ) && !IsThreadWaiting( (*lptr)->sharedList, threadBit ) && !IsThreadWaiting( (*lptr)->waitShared, threadBit ) ) lptr++;
-                        if( (*lptr)->time < first ) first = (*lptr)->time;
-                        while( (*eptr)->time > last && (*eptr)->lockingThread != thread && !IsThreadWaiting( (*eptr)->waitList, threadBit ) && !IsThreadWaiting( (*eptr)->sharedList, threadBit ) && !IsThreadWaiting( (*eptr)->waitShared, threadBit ) ) eptr--;
-                        if( (*eptr)->time > last ) last = (*eptr)->time;
-                    }
+                    auto lptr = lockmap.timeline.data();
+                    auto eptr = lptr + lockmap.timeline.size() - 1;
+                    while( (*lptr)->thread != thread ) lptr++;
+                    if( (*lptr)->time < first ) first = (*lptr)->time;
+                    while( (*eptr)->thread != thread ) eptr--;
+                    if( (*eptr)->time > last ) last = (*eptr)->time;
                 }
 
                 if( last >= 0 )

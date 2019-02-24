@@ -2908,6 +2908,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 {
     const auto time = TscTime( ev.time );
+    m_data.lastTime = std::max( m_data.lastTime, time );
     NoticeThread( ev.thread );
 
     assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
@@ -2958,6 +2959,7 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
     }
 
     const auto time = TscTime( ev.time );
+    m_data.lastTime = std::max( m_data.lastTime, time );
     NoticeThread( ev.thread );
 
     m_data.memory.frees.push_back( it->second );
@@ -3109,6 +3111,7 @@ void Worker::ProcessCrashReport( const QueueCrashReport& ev )
 void Worker::ProcessSysTime( const QueueSysTime& ev )
 {
     const auto time = TscTime( ev.time );
+    m_data.lastTime = std::max( m_data.lastTime, time );
     const auto val = ev.sysTime;
     if( !m_sysTimePlot )
     {

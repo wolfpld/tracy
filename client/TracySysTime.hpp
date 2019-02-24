@@ -1,7 +1,7 @@
 #ifndef __TRACYSYSTIME_HPP__
 #define __TRACYSYSTIME_HPP__
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__ || defined __linux__
 #  define TRACY_HAS_SYSTIME
 #endif
 
@@ -18,10 +18,10 @@ public:
     SysTime();
     float Get();
 
+    void ReadTimes();
+
 private:
-#  if defined _WIN32 || defined __CYGWIN__
     uint64_t idle, used;
-#  endif
 };
 
 }

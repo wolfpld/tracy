@@ -2091,12 +2091,14 @@ void View::DrawZones()
                     first = std::min( first, v->messages.front()->time );
                     last = std::max( last, v->messages.back()->time );
                 }
+                size_t lockCnt = 0;
                 for( const auto& lock : m_worker.GetLockMap() )
                 {
                     const auto& lockmap = lock.second;
                     if( !lockmap.valid ) continue;
                     auto it = lockmap.threadMap.find( v->id );
                     if( it == lockmap.threadMap.end() ) continue;
+                    lockCnt++;
                     const auto thread = it->second;
                     const auto threadBit = GetThreadBit( thread );
                     if( lockmap.type == LockType::Lockable )
@@ -2132,11 +2134,19 @@ void View::DrawZones()
                     ImGui::TextDisabled( "(%.2f%%)", activity / double( traceLen ) * 100 );
                 }
 
+                ImGui::Separator();
                 if( !v->timeline.empty() )
                 {
-                    ImGui::Separator();
                     TextFocused( "Zone count:", RealToString( v->count, true ) );
                     TextFocused( "Top-level zones:", RealToString( v->timeline.size(), true ) );
+                }
+                if( !v->messages.empty() )
+                {
+                    TextFocused( "Messages:", RealToString( v->messages.size(), true ) );
+                }
+                if( lockCnt != 0 )
+                {
+                    TextFocused( "Locks:", RealToString( lockCnt, true ) );
                 }
                 ImGui::EndTooltip();
             }

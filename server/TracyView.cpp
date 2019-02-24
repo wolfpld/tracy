@@ -1754,6 +1754,23 @@ void View::DrawZones()
     const auto linepos = ImGui::GetCursorScreenPos();
     const auto lineh = ImGui::GetContentRegionAvail().y;
 
+    auto draw = ImGui::GetWindowDrawList();
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto timespan = m_zvEnd - m_zvStart;
+    auto pxns = w / double( timespan );
+    {
+        const auto tbegin = m_worker.GetTimeBegin();
+        const auto tend = m_worker.GetLastTime();
+        if( tbegin > m_zvStart )
+        {
+            draw->AddRectFilled( linepos, linepos + ImVec2( ( tbegin - m_zvStart ) * pxns, lineh ), 0x44000000 );
+        }
+        if( tend < m_zvEnd )
+        {
+            draw->AddRectFilled( linepos + ImVec2( ( tend - m_zvStart ) * pxns, 0 ), linepos + ImVec2( w, lineh ), 0x44000000 );
+        }
+    }
+
     bool drawMouseLine = DrawZoneFramesHeader();
     auto& frames = m_worker.GetFrames();
     for( auto fd : frames )
@@ -1767,15 +1784,10 @@ void View::DrawZones()
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
     const auto wpos = ImGui::GetCursorScreenPos();
-    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto h = std::max<float>( m_zvHeight, ImGui::GetContentRegionAvail().y - 4 );    // magic border value
-    auto draw = ImGui::GetWindowDrawList();
 
     ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
     bool hover = ImGui::IsItemHovered();
-
-    const auto timespan = m_zvEnd - m_zvStart;
-    auto pxns = w / double( timespan );
 
     if( hover )
     {

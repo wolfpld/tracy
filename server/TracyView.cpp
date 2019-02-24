@@ -385,6 +385,22 @@ static void ToggleButton( const char* label, bool& toggle )
     if( active ) ImGui::PopStyleColor( 3 );
 }
 
+static inline uint64_t GetThreadBit( uint8_t thread )
+{
+    return uint64_t( 1 ) << thread;
+}
+
+static inline bool IsThreadWaiting( uint64_t bitlist, uint64_t threadBit )
+{
+    return ( bitlist & threadBit ) != 0;
+}
+
+static inline bool AreOtherWaiting( uint64_t bitlist, uint64_t threadBit )
+{
+    return ( bitlist & ~threadBit ) != 0;
+}
+
+
 enum { MinVisSize = 3 };
 enum { MinFrameSize = 5 };
 
@@ -2061,10 +2077,64 @@ void View::DrawZones()
                     ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
 #endif
                 }
+
+                ImGui::Separator();
+                int64_t first = std::numeric_limits<int64_t>::max();
+                int64_t last = -1;
+                if( !v->timeline.empty() )
+                {
+                    first = v->timeline.front()->start;
+                    last = m_worker.GetZoneEnd( *v->timeline.back() );
+                }
+                if( !v->messages.empty() )
+                {
+                    first = std::min( first, v->messages.front()->time );
+                    last = std::max( last, v->messages.back()->time );
+                }
+                for( const auto& lock : m_worker.GetLockMap() )
+                {
+                    const auto& lockmap = lock.second;
+                    if( !lockmap.valid ) continue;
+                    auto it = lockmap.threadMap.find( v->id );
+                    if( it == lockmap.threadMap.end() ) continue;
+                    const auto thread = it->second;
+                    const auto threadBit = GetThreadBit( thread );
+                    if( lockmap.type == LockType::Lockable )
+                    {
+                        auto lptr = lockmap.timeline.data();
+                        auto eptr = lptr + lockmap.timeline.size() - 1;
+                        while( (*lptr)->time < first && (*lptr)->lockingThread != thread && !IsThreadWaiting( (*lptr)->waitList, threadBit ) ) lptr++;
+                        if( (*lptr)->time < first ) first = (*lptr)->time;
+                        while( (*eptr)->time > last && (*eptr)->lockingThread != thread && !IsThreadWaiting( (*eptr)->waitList, threadBit ) ) eptr--;
+                        if( (*eptr)->time > last ) last = (*eptr)->time;
+                    }
+                    else
+                    {
+                        assert( lockmap.type == LockType::SharedLockable );
+                        auto lptr = (LockEventShared**)lockmap.timeline.data();
+                        auto eptr = lptr + lockmap.timeline.size() - 1;
+                        while( (*lptr)->time < first && (*lptr)->lockingThread != thread && !IsThreadWaiting( (*lptr)->waitList, threadBit ) && !IsThreadWaiting( (*lptr)->sharedList, threadBit ) && !IsThreadWaiting( (*lptr)->waitShared, threadBit ) ) lptr++;
+                        if( (*lptr)->time < first ) first = (*lptr)->time;
+                        while( (*eptr)->time > last && (*eptr)->lockingThread != thread && !IsThreadWaiting( (*eptr)->waitList, threadBit ) && !IsThreadWaiting( (*eptr)->sharedList, threadBit ) && !IsThreadWaiting( (*eptr)->waitShared, threadBit ) ) eptr--;
+                        if( (*eptr)->time > last ) last = (*eptr)->time;
+                    }
+                }
+
+                if( last >= 0 )
+                {
+                    const auto activity = last - first;
+                    const auto traceLen = m_worker.GetLastTime() - m_worker.GetTimeBegin();
+
+                    TextFocused( "Appeared at", TimeToString( first - m_worker.GetTimeBegin() ) );
+                    TextFocused( "Last event at", TimeToString( last - m_worker.GetTimeBegin() ) );
+                    TextFocused( "Activity time:", TimeToString( activity ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%.2f%%)", activity / double( traceLen ) * 100 );
+                }
+
                 if( !v->timeline.empty() )
                 {
                     ImGui::Separator();
-                    TextFocused( "Appeared at", TimeToString( v->timeline.front()->start - m_worker.GetTimeBegin() ) );
                     TextFocused( "Zone count:", RealToString( v->count, true ) );
                     TextFocused( "Top-level zones:", RealToString( v->timeline.size(), true ) );
                 }
@@ -2644,21 +2714,6 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         }
     }
     return maxdepth;
-}
-
-static inline uint64_t GetThreadBit( uint8_t thread )
-{
-    return uint64_t( 1 ) << thread;
-}
-
-static inline bool IsThreadWaiting( uint64_t bitlist, uint64_t threadBit )
-{
-    return ( bitlist & threadBit ) != 0;
-}
-
-static inline bool AreOtherWaiting( uint64_t bitlist, uint64_t threadBit )
-{
-    return ( bitlist & ~threadBit ) != 0;
 }
 
 enum class LockState

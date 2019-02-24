@@ -3566,32 +3566,43 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
             {
-                if( ImGui::IsMouseClicked( 0 ) )
-                {
-                    showFull = !showFull;
-                }
-
-                const auto lastTime = v->data.back().time;
-                const auto tr = lastTime - v->data.front().time;
-
                 ImGui::BeginTooltip();
                 ImGui::Text( "Plot \"%s\"", txt );
+                ImGui::Separator();
+
+                const auto first = v->data.front().time;
+                const auto last = v->data.back().time;
+                const auto activity = last - first;
+                const auto traceLen = m_worker.GetLastTime() - m_worker.GetTimeBegin();
+
+                TextFocused( "Appeared at", TimeToString( first - m_worker.GetTimeBegin() ) );
+                TextFocused( "Last event at", TimeToString( last - m_worker.GetTimeBegin() ) );
+                TextFocused( "Activity time:", TimeToString( activity ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%%)", activity / double( traceLen ) * 100 );
                 ImGui::Separator();
                 TextFocused( "Data points:", RealToString( v->data.size(), true ) );
                 TextFocused( "Data range:", FormatPlotValue( v->max - v->min, v->type ) );
                 TextFocused( "Min value:", FormatPlotValue( v->min, v->type ) );
                 TextFocused( "Max value:", FormatPlotValue( v->max, v->type ) );
-                TextFocused( "Time range:", TimeToString( tr ) );
-                TextFocused( "Data/second:", RealToString( double( v->data.size() ) / tr * 1000000000ll, true ) );
+                TextFocused( "Data/second:", RealToString( double( v->data.size() ) / activity * 1000000000ll, true ) );
 
-                const auto it = std::lower_bound( v->data.begin(), v->data.end(), lastTime - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-                const auto tr10 = lastTime - it->time;
+                const auto it = std::lower_bound( v->data.begin(), v->data.end(), last - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+                const auto tr10 = last - it->time;
                 if( tr10 != 0 )
                 {
                     TextFocused( "D/s (10s):", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ll, true ) );
                 }
-
                 ImGui::EndTooltip();
+
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    showFull = !showFull;
+                }
+                if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToRange( first, last );
+                }
             }
         }
 

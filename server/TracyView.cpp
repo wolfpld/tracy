@@ -2959,6 +2959,30 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
 
         if( ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
         {
+            auto lptr = lockmap.timeline.data();
+            auto eptr = lptr + lockmap.timeline.size() - 1;
+            while( (*lptr)->thread != tid ) lptr++;
+            const auto first = (*lptr)->time;
+            while( (*eptr)->thread != tid ) eptr--;
+            const auto last = (*eptr)->time;
+            const auto activity = last - first;
+            const auto traceLen = m_worker.GetLastTime() - m_worker.GetTimeBegin();
+
+            int64_t timeAnnounce = lockmap.timeAnnounce;
+            int64_t timeTerminate = lockmap.timeTerminate;
+            if( !lockmap.timeline.empty() )
+            {
+                if( timeAnnounce == 0 )
+                {
+                    timeAnnounce = lockmap.timeline.front()->time;
+                }
+                if( timeTerminate == 0 )
+                {
+                    timeTerminate = lockmap.timeline.back()->time;
+                }
+            }
+            const auto lockLen = timeTerminate - timeAnnounce;
+
             ImGui::BeginTooltip();
             switch( lockmap.type )
             {
@@ -2973,6 +2997,25 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
                 break;
             }
             ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+            ImGui::Separator();
+#ifdef TRACY_EXTENDED_FONT
+            TextFocused( ICON_FA_RANDOM " Appeared at", TimeToString( first - m_worker.GetTimeBegin() ) );
+            TextFocused( ICON_FA_RANDOM " Last event at", TimeToString( last - m_worker.GetTimeBegin() ) );
+            TextFocused( ICON_FA_RANDOM " Activity time:", TimeToString( activity ) );
+#else
+            ImGui::TextUnformatted( "This thread" );
+            TextFocused( "Appeared at", TimeToString( first - m_worker.GetTimeBegin() ) );
+            TextFocused( "Last event at", TimeToString( last - m_worker.GetTimeBegin() ) );
+            TextFocused( "Activity time:", TimeToString( activity ) );
+#endif
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%.2f%% of lock lifetime)", activity / double( lockLen ) * 100 );
+            ImGui::Separator();
+            TextFocused( "Announce time:", TimeToString( timeAnnounce - m_worker.GetTimeBegin() ) );
+            TextFocused( "Terminate time:", TimeToString( timeTerminate - m_worker.GetTimeBegin() ) );
+            TextFocused( "Lifetime:", TimeToString( lockLen ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%.2f%% of trace time)", lockLen / double( traceLen ) * 100 );
             ImGui::Separator();
             TextDisabledUnformatted( "Thread list:" );
             ImGui::Indent( ty );
@@ -2991,11 +3034,7 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             }
             if( ImGui::IsMouseClicked( 2 ) )
             {
-                auto lptr = lockmap.timeline.data();
-                auto eptr = lptr + lockmap.timeline.size() - 1;
-                while( (*lptr)->thread != tid ) lptr++;
-                while( (*eptr)->thread != tid ) eptr--;
-                ZoomToRange( (*lptr)->time, (*eptr)->time );
+                ZoomToRange( first, last );
             }
         }
     }
@@ -8124,17 +8163,21 @@ void View::DrawLockInfoWindow()
     const auto announce = timeAnnounce - m_worker.GetTimeBegin();
     const auto terminate = timeTerminate - m_worker.GetTimeBegin();
     const auto lifetime = timeTerminate - timeAnnounce;
+    const auto traceLen = m_worker.GetLastTime() - m_worker.GetTimeBegin();
+
     TextFocused( "Announce time:", TimeToString( announce ) );
     TextFocused( "Terminate time:", TimeToString( terminate ) );
     TextFocused( "Lifetime:", TimeToString( lifetime ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%% of trace time)", lifetime / double( traceLen ) * 100 );
     ImGui::Separator();
 
     TextFocused( "Lock hold time:", TimeToString( holdTotalTime ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", holdTotalTime / float( lifetime ) * 100.f );
+    ImGui::TextDisabled( "(%.2f%% of lock lifetime)", holdTotalTime / float( lifetime ) * 100.f );
     TextFocused( "Lock wait time:", TimeToString( waitTotalTime ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", waitTotalTime / float( lifetime ) * 100.f );
+    ImGui::TextDisabled( "(%.2f%% of lock lifetime)", waitTotalTime / float( lifetime ) * 100.f );
     TextFocused( "Max waiting threads:", RealToString( maxWaitingThreads, true ) );
     ImGui::Separator();
 

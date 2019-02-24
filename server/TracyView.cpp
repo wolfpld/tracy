@@ -1860,6 +1860,16 @@ void View::DrawZones()
                     {
                         showFull = !showFull;
                     }
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        const auto t0 = v->timeline.front()->gpuStart;
+                        if( t0 != std::numeric_limits<int64_t>::max() )
+                        {
+                            // FIXME
+                            const auto t1 = std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( *v->timeline.back() ) );
+                            ZoomToRange( t0, t1 );
+                        }
+                    }
 
                     ImGui::BeginTooltip();
                     ImGui::TextUnformatted( buf );
@@ -2059,11 +2069,6 @@ void View::DrawZones()
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
             {
-                if( ImGui::IsMouseClicked( 0 ) )
-                {
-                    showFull = !showFull;
-                }
-
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( m_worker.GetThreadString( v->id ) );
                 ImGui::SameLine();
@@ -2149,6 +2154,15 @@ void View::DrawZones()
                     TextFocused( "Locks:", RealToString( lockCnt, true ) );
                 }
                 ImGui::EndTooltip();
+
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    showFull = !showFull;
+                }
+                if( last >= 0 && ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToRange( first, last );
+                }
             }
         }
 

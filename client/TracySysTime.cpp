@@ -78,10 +78,10 @@ float SysTime::Get()
     const auto diffUsed = used - oldUsed;
 
 #if defined _WIN32 || defined __CYGWIN__
-    return diffUsed == 0 ? 0 : ( diffUsed - diffIdle ) * 100.f / diffUsed;
+    return diffUsed == 0 ? -1 : ( diffUsed - diffIdle ) * 100.f / diffUsed;
 #elif defined __linux__ || defined __APPLE__
     const auto total = diffUsed + diffIdle;
-    return total == 0 ? 0 : diffUsed * 100.f / total;
+    return total == 0 ? -1 : diffUsed * 100.f / total;
 #endif
 }
 

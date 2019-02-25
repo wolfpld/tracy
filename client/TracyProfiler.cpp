@@ -1869,16 +1869,20 @@ void Profiler::ProcessSysTime()
     auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     if( t - m_sysTimeLast > 100000000 )    // 100 ms
     {
-        m_sysTimeLast = t;
+        auto sysTime = m_sysTime.Get();
+        if( sysTime >= 0 )
+        {
+            m_sysTimeLast = t;
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
-        MemWrite( &item->hdr.type, QueueType::SysTimeReport );
-        MemWrite( &item->sysTime.time, GetTime() );
-        MemWrite( &item->sysTime.sysTime, m_sysTime.Get() );
-        tail.store( magic + 1, std::memory_order_release );
+            Magic magic;
+            auto token = GetToken();
+            auto& tail = token->get_tail_index();
+            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            MemWrite( &item->hdr.type, QueueType::SysTimeReport );
+            MemWrite( &item->sysTime.time, GetTime() );
+            MemWrite( &item->sysTime.sysTime, sysTime );
+            tail.store( magic + 1, std::memory_order_release );
+        }
     }
 }
 #endif

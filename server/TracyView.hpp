@@ -131,6 +131,7 @@ private:
     std::vector<CallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
     std::vector<CallstackFrameTree> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
     void DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx );
+    void DrawZoneList( const Vector<ZoneEvent*>& zones );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
@@ -333,6 +334,7 @@ private:
         bool drawAvgMed = true;
         bool drawSelAvgMed = true;
         bool scheduleResetMatch = false;
+        int selCs = 0;
 
         void Reset()
         {
@@ -358,6 +360,7 @@ private:
             ResetSelection();
             groups.clear();
             processed = 0;
+            selCs = 0;
         }
 
         void ResetSelection()

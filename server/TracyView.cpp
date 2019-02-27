@@ -42,6 +42,15 @@
 namespace tracy
 {
 
+static const char* s_tracyStackFrames[] = {
+    "tracy::Callstack",
+    "tracy::Profiler::SendCallstack",
+    "tracy::ScopedZone::{ctor}",
+    "tracy::Profiler::SendCallstack(int, unsigned long)",
+    "tracy::ScopedZone::ScopedZone(tracy::SourceLocationData const*, int, bool)",
+    nullptr
+};
+
 static const char* IntTable100 =
 "00010203040506070809"
 "10111213141516171819"
@@ -6457,28 +6466,60 @@ void View::DrawFindZone()
                 if( group->first != 0 )
                 {
                     ImGui::SameLine();
-                    int fidx = 0;
+                    int idx = 0;
 #ifdef TRACY_EXTENDED_FONT
-                    SmallCallstackButton( " " ICON_FA_ALIGN_JUSTIFY " ", group->first, fidx, false );
+                    SmallCallstackButton( " " ICON_FA_ALIGN_JUSTIFY " ", group->first, idx, false );
 #else
-                    SmallCallstackButton( "Call stack", group->first, fidx, false );
+                    SmallCallstackButton( "Call stack", group->first, idx, false );
 #endif
 
+                    int fidx = 0;
                     ImGui::Spacing();
                     ImGui::Indent();
                     auto& csdata = m_worker.GetCallstack( group->first );
                     for( auto& entry : csdata )
                     {
-                        ImGui::TextDisabled( "%i.", fidx++ );
-                        ImGui::SameLine();
-                        auto frame = m_worker.GetCallstackFrame( entry );
-                        if( !frame )
+                        auto frameData = m_worker.GetCallstackFrame( entry );
+                        if( !frameData )
                         {
-                            ImGui::Text( "0x%" PRIX64, entry );
+                            ImGui::TextDisabled( "%i.", fidx++ );
+                            ImGui::SameLine();
+                            ImGui::Text( "%p", (void*)entry );
                         }
                         else
                         {
-                            ImGui::TextUnformatted( m_worker.GetString( frame->data[frame->size-1].name ) );
+                            const auto fsz = frameData->size;
+                            for( uint8_t f=0; f<fsz; f++ )
+                            {
+                                const auto& frame = frameData->data[f];
+                                auto txt = m_worker.GetString( frame.name );
+
+                                if( fidx == 0 && f != fsz-1 )
+                                {
+                                    auto test = s_tracyStackFrames;
+                                    bool match = false;
+                                    do
+                                    {
+                                        if( strcmp( txt, *test ) == 0 )
+                                        {
+                                            match = true;
+                                            break;
+                                        }
+                                    }
+                                    while( *++test );
+                                    if( match ) continue;
+                                }
+                                if( f == fsz-1 )
+                                {
+                                    ImGui::TextDisabled( "%i.", fidx++ );
+                                }
+                                else
+                                {
+                                    TextDisabledUnformatted( "--" );
+                                }
+                                ImGui::SameLine();
+                                ImGui::TextUnformatted( txt );
+                            }
                         }
                     }
                     ImGui::Unindent();
@@ -7396,15 +7437,6 @@ void View::DrawStatistics()
 #endif
     ImGui::End();
 }
-
-static const char* s_tracyStackFrames[] = {
-    "tracy::Callstack",
-    "tracy::Profiler::SendCallstack",
-    "tracy::ScopedZone::{ctor}",
-    "tracy::Profiler::SendCallstack(int, unsigned long)",
-    "tracy::ScopedZone::ScopedZone(tracy::SourceLocationData const*, int, bool)",
-    nullptr
-};
 
 void View::DrawCallstackWindow()
 {
@@ -9449,16 +9481,47 @@ void View::CallstackTooltip( uint32_t idx )
     int fidx = 0;
     for( auto& entry : cs )
     {
-        ImGui::TextDisabled( "%i.", fidx++ );
-        ImGui::SameLine();
-        auto frame = m_worker.GetCallstackFrame( entry );
-        if( !frame )
+        auto frameData = m_worker.GetCallstackFrame( entry );
+        if( !frameData )
         {
-            ImGui::Text( "0x%" PRIX64, entry );
+            ImGui::TextDisabled( "%i.", fidx++ );
+            ImGui::SameLine();
+            ImGui::Text( "%p", (void*)entry );
         }
         else
         {
-            ImGui::TextUnformatted( m_worker.GetString( frame->data[frame->size-1].name ) );
+            const auto fsz = frameData->size;
+            for( uint8_t f=0; f<fsz; f++ )
+            {
+                const auto& frame = frameData->data[f];
+                auto txt = m_worker.GetString( frame.name );
+
+                if( fidx == 0 && f != fsz-1 )
+                {
+                    auto test = s_tracyStackFrames;
+                    bool match = false;
+                    do
+                    {
+                        if( strcmp( txt, *test ) == 0 )
+                        {
+                            match = true;
+                            break;
+                        }
+                    }
+                    while( *++test );
+                    if( match ) continue;
+                }
+                if( f == fsz-1 )
+                {
+                    ImGui::TextDisabled( "%i.", fidx++ );
+                }
+                else
+                {
+                    TextDisabledUnformatted( "--" );
+                }
+                ImGui::SameLine();
+                ImGui::TextUnformatted( txt );
+            }
         }
     }
     ImGui::EndTooltip();

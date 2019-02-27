@@ -9565,7 +9565,7 @@ void View::FindZonesCompare()
 }
 #endif
 
-void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx )
+void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx, bool tooltip )
 {
     bool hilite = m_callstackInfoWindow == callstack;
     if( hilite )
@@ -9582,7 +9582,7 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx 
     {
         ImGui::PopStyleColor( 3 );
     }
-    if( ImGui::IsItemHovered() )
+    if( tooltip && ImGui::IsItemHovered() )
     {
         CallstackTooltip( callstack );
     }

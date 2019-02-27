@@ -175,7 +175,7 @@ private:
     std::pair<int8_t*, size_t> GetMemoryPages() const;
     const char* GetPlotName( const PlotData* plot ) const;
 
-    void SmallCallstackButton( const char* name, uint32_t callstack, int& idx );
+    void SmallCallstackButton( const char* name, uint32_t callstack, int& idx, bool tooltip = true );
     void SetViewToLastFrames();
     int64_t GetZoneChildTime( const ZoneEvent& zone );
     int64_t GetZoneChildTime( const GpuEvent& zone );

@@ -43,6 +43,7 @@ v0.5 (xxxx-xx-xx)
 - Threads that have nothing to display in the current view are now hidden by
   default.
 - Dimmed-out the timeline outside the profiling area.
+- Call stack grouping in the find zone menu now has a special display mode.
 
 v0.4.1 (2018-12-30)
 -------------------

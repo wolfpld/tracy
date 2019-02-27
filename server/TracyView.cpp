@@ -801,9 +801,9 @@ bool View::DrawImpl()
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::SmallButton( ICON_FA_CARET_LEFT ) ) ZoomToPrevFrame();
+    if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) ) ZoomToPrevFrame();
 #else
-    if( ImGui::SmallButton( "<" ) ) ZoomToPrevFrame();
+    if( ImGui::SmallButton( " < " ) ) ZoomToPrevFrame();
 #endif
     ImGui::SameLine();
     {
@@ -820,9 +820,9 @@ bool View::DrawImpl()
     }
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::SmallButton( ICON_FA_CARET_RIGHT ) ) ZoomToNextFrame();
+    if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) ) ZoomToNextFrame();
 #else
-    if( ImGui::SmallButton( ">" ) ) ZoomToNextFrame();
+    if( ImGui::SmallButton( " > " ) ) ZoomToNextFrame();
 #endif
     ImGui::SameLine();
     if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )

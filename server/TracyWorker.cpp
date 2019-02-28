@@ -2439,6 +2439,13 @@ void Worker::MemFreeFailure( uint64_t thread )
     m_failureData.srcloc = 0;
 }
 
+void Worker::FrameEndFailure()
+{
+    m_failure = Failure::ZoneEnd;
+    m_failureData.thread = 0;
+    m_failureData.srcloc = 0;
+}
+
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
     auto td = NoticeThread( ev.thread );
@@ -2496,7 +2503,7 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     const auto time = TscTime( ev.time );
     if( fd->frames.empty() )
     {
-        assert( m_onDemand );
+        FrameEndFailure();
         return;
     }
     assert( fd->frames.back().end == -1 );
@@ -3857,7 +3864,8 @@ static const char* s_failureReasons[] = {
     "Received zone end event without a matching zone begin event.",
     "Zone text transfer destination doesn't match active zone.",
     "Zone name transfer destination doesn't match active zone.",
-    "Memory free event without a matching allocation."
+    "Memory free event without a matching allocation.",
+    "Discontinuous frame begin/end mismatch.",
 };
 
 static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)Worker::Failure::NUM_FAILURES, "Missing failure reason description." );

@@ -633,9 +633,12 @@ bool View::Draw()
             ImGui::SameLine();
             ImGui::Text( "%s:%i", s_instance->m_worker.GetString( srcloc.file ), srcloc.line );
         }
-        TextFocused( "Thread:", s_instance->m_worker.GetThreadString( data.thread ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(0x%" PRIX64 ")", data.thread );
+        if( data.thread != 0 )
+        {
+            TextFocused( "Thread:", s_instance->m_worker.GetThreadString( data.thread ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(0x%" PRIX64 ")", data.thread );
+        }
         ImGui::Separator();
         if( ImGui::Button( "I understand" ) )
         {

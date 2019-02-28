@@ -404,7 +404,8 @@ logo=\bcbombe
 ]{Important}
 \begin{itemize}
 \item Frame types \emph{must not} be mixed. For each frame set, identified by an unique name, use either continuous or discontinuous frames only!
-\item You \emph{must} issue the \texttt{FrameMarkStart} and \texttt{FrameMarkEnd} macros in proper order. Be extra careful, especially if multi-threading is involved. Note that the profiler event data is unordered between threads, so you can't start a frame in one thread and end it in another one.
+\item You \emph{must} issue the \texttt{FrameMarkStart} and \texttt{FrameMarkEnd} macros in proper order. Be extra careful, especially if multi-threading is involved.
+\item Discontinuous frames may not work correctly if the profiled program doesn't have string pooling enabled. This is an implementation issue which will be fixed in the future.
 \end{itemize}
 \end{bclogo}
 

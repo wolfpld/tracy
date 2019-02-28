@@ -1324,6 +1324,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
         tracy_free( (void*)ptr );
         break;
     case QueueType::Callstack:
+    case QueueType::CallstackAlloc:
         ptr = MemRead<uint64_t>( &item.callstack.ptr );
         tracy_free( (void*)ptr );
         break;
@@ -1398,6 +1399,11 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                 case QueueType::Callstack:
                     ptr = MemRead<uint64_t>( &item->callstack.ptr );
                     SendCallstackPayload( ptr );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::CallstackAlloc:
+                    ptr = MemRead<uint64_t>( &item->callstack.ptr );
+                    SendCallstackAlloc( ptr );
                     tracy_free( (void*)ptr );
                     break;
                 default:
@@ -1585,6 +1591,25 @@ void Profiler::SendCallstackPayload( uint64_t _ptr )
             AppendDataUnsafe( &val, sizeof( uint64_t ) );
         }
     }
+}
+
+void Profiler::SendCallstackAlloc( uint64_t _ptr )
+{
+    auto ptr = (const char*)_ptr;
+
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::CallstackAllocPayload );
+    MemWrite( &item.stringTransfer.ptr, _ptr );
+
+    const auto len = *((uint32_t*)ptr);
+    assert( len <= std::numeric_limits<uint16_t>::max() );
+    const auto l16 = uint16_t( len );
+
+    NeedDataSize( QueueDataSize[(int)QueueType::CallstackAllocPayload] + sizeof( l16 ) + l16 );
+
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::CallstackAllocPayload] );
+    AppendDataUnsafe( &l16, sizeof( l16 ) );
+    AppendDataUnsafe( ptr + 4, l16 );
 }
 
 void Profiler::SendCallstackFrame( uint64_t ptr )

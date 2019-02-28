@@ -56,6 +56,7 @@ enum class QueueType : uint8_t
     PlotName,
     SourceLocationPayload,
     CallstackPayload,
+    CallstackAllocPayload,
     FrameName,
     NUM_TYPES
 };
@@ -372,6 +373,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // allocated source location payload
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // callstack payload
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // callstack alloc payload
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // frame name
 };
 

@@ -79,8 +79,8 @@
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size );
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
 
-#define FrameMark tracy::Profiler::SendFrameMark();
-#define FrameMarkNamed( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsg );
+#define FrameMark tracy::Profiler::SendFrameMark( nullptr );
+#define FrameMarkNamed( name ) tracy::Profiler::SendFrameMark( name );
 #define FrameMarkStart( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgStart );
 #define FrameMarkEnd( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgEnd );
 

@@ -141,10 +141,9 @@ public:
         return m_zoneId.fetch_add( 1, std::memory_order_relaxed );
     }
 
-    static tracy_force_inline void SendFrameMark()
+    static tracy_force_inline void SendFrameMark( const char* name )
     {
 #ifdef TRACY_ON_DEMAND
-        GetProfiler().m_frameCount.fetch_add( 1, std::memory_order_relaxed );
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
@@ -153,24 +152,23 @@ public:
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
-        MemWrite( &item->frameMark.name, uint64_t( 0 ) );
+        MemWrite( &item->frameMark.name, uint64_t( name ) );
         tail.store( magic + 1, std::memory_order_release );
     }
 
     static tracy_force_inline void SendFrameMark( const char* name, QueueType type )
     {
-        assert( type == QueueType::FrameMarkMsg || type == QueueType::FrameMarkMsgStart || type == QueueType::FrameMarkMsgEnd );
+        assert( type == QueueType::FrameMarkMsgStart || type == QueueType::FrameMarkMsgEnd );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        GetProfiler().m_serialLock.lock();
+        auto item = GetProfiler().m_serialQueue.prepare_next();
         MemWrite( &item->hdr.type, type );
         MemWrite( &item->frameMark.time, GetTime() );
         MemWrite( &item->frameMark.name, uint64_t( name ) );
-        tail.store( magic + 1, std::memory_order_release );
+        GetProfiler().m_serialQueue.commit_next();
+        GetProfiler().m_serialLock.unlock();
     }
 
     static tracy_force_inline void PlotData( const char* name, int64_t val )

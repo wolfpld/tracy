@@ -14,6 +14,7 @@ enum class QueueType : uint8_t
     ZoneBeginAllocSrcLoc,
     CallstackMemory,
     Callstack,
+    CallstackAlloc,
     Terminate,
     KeepAlive,
     Crash,
@@ -327,6 +328,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ),
     sizeof( QueueHeader ) + sizeof( QueueCallstack ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstack ),       // callstack alloc
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

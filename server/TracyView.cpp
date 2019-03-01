@@ -7752,6 +7752,10 @@ void View::DrawInfo()
     ImGui::Separator();
     TextFocused( "Captured program:", m_worker.GetCaptureProgram().c_str() );
     TextFocused( "Capture time:", dtmp );
+    ImGui::TextDisabled( "Trace version:" );
+    ImGui::SameLine();
+    const auto version = m_worker.GetTraceVersion();
+    ImGui::Text( "%i.%i.%i", version >> 16, ( version >> 8 ) & 0xFF, version & 0xFF );
     ImGui::Separator();
     TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
     TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );

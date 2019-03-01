@@ -1767,7 +1767,7 @@ void View::DrawZones()
     const auto lineh = ImGui::GetContentRegionAvail().y;
 
     auto draw = ImGui::GetWindowDrawList();
-    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
     const auto timespan = m_zvEnd - m_zvStart;
     auto pxns = w / double( timespan );
     {
@@ -3068,7 +3068,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
-    const auto w = ImGui::GetWindowContentRegionWidth();
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
     auto draw = ImGui::GetWindowDrawList();

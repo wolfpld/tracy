@@ -197,7 +197,7 @@ enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
 
 struct CallstackFrameTree
 {
-    uint64_t frame;
+    CallstackFrameId frame;
     uint64_t alloc;
     uint32_t count;
     std::vector<CallstackFrameTree> children;

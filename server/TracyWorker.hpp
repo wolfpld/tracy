@@ -143,9 +143,9 @@ private:
         flat_hash_map<int32_t, uint64_t> sourceLocationZonesCnt;
 #endif
 
-        flat_hash_map<VarArray<uint64_t>*, uint32_t, VarArrayHasherPOT<uint64_t>, VarArrayComparator<uint64_t>> callstackMap;
-        Vector<VarArray<uint64_t>*> callstackPayload;
-        flat_hash_map<uint64_t, CallstackFrameData*> callstackFrameMap;
+        flat_hash_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasherPOT<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
+        Vector<VarArray<CallstackFrameId>*> callstackPayload;
+        flat_hash_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameMap;
 
         std::map<uint32_t, LockMap> lockMap;
 
@@ -244,8 +244,8 @@ public:
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
     const MemData& GetMemData() const { return m_data.memory; }
 
-    const VarArray<uint64_t>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
-    const CallstackFrameData* GetCallstackFrame( uint64_t ptr ) const;
+    const VarArray<CallstackFrameId>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
+    const CallstackFrameData* GetCallstackFrame( const CallstackFrameId& ptr ) const;
     uint64_t GetCanonicalPointer( const CallstackFrameId& id ) const;
 
     const CrashEvent& GetCrashEvent() const { return m_data.m_crashEvent; }

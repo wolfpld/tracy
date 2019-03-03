@@ -1018,24 +1018,69 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     s_loadProgress.progress.store( LoadProgress::CallStacks, std::memory_order_relaxed );
     f.Read( sz );
     m_data.callstackPayload.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
+    if( fileVer >= FileVersion( 0, 4, 6 ) )
     {
-        uint8_t csz;
-        f.Read( csz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint8_t csz;
+            f.Read( csz );
 
-        const auto memsize = sizeof( VarArray<uint64_t> ) + csz * sizeof( uint64_t );
-        auto mem = (char*)m_slab.AllocRaw( memsize );
+            const auto memsize = sizeof( VarArray<CallstackFrameId> ) + csz * sizeof( CallstackFrameId );
+            auto mem = (char*)m_slab.AllocRaw( memsize );
 
-        auto data = (uint64_t*)mem;
-        f.Read( data, csz * sizeof( uint64_t ) );
+            auto data = (CallstackFrameId*)mem;
+            f.Read( data, csz * sizeof( CallstackFrameId ) );
 
-        auto arr = (VarArray<uint64_t>*)( mem + csz * sizeof( uint64_t ) );
-        new(arr) VarArray<uint64_t>( csz, data );
+            auto arr = (VarArray<CallstackFrameId>*)( mem + csz * sizeof( CallstackFrameId ) );
+            new(arr) VarArray<CallstackFrameId>( csz, data );
 
-        m_data.callstackPayload.push_back_no_space_check( arr );
+            m_data.callstackPayload.push_back_no_space_check( arr );
+        }
+    }
+    else
+    {
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint8_t csz;
+            f.Read( csz );
+
+            const auto memsize = sizeof( VarArray<CallstackFrameId> ) + csz * sizeof( CallstackFrameId );
+            auto mem = (char*)m_slab.AllocRaw( memsize );
+
+            auto data = (CallstackFrameId*)mem;
+            for( uint8_t j=0; j<csz; j++ )
+            {
+                uint64_t ptr;
+                f.Read( ptr );
+                data[j] = PackPointer( ptr );
+            }
+
+            auto arr = (VarArray<CallstackFrameId>*)( mem + csz * sizeof( CallstackFrameId ) );
+            new(arr) VarArray<CallstackFrameId>( csz, data );
+
+            m_data.callstackPayload.push_back_no_space_check( arr );
+        }
     }
 
-    if( fileVer >= FileVersion( 0, 4, 3 ) )
+    if( fileVer >= FileVersion( 0, 4, 6 ) )
+    {
+        f.Read( sz );
+        m_data.callstackFrameMap.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            CallstackFrameId id;
+            f.Read( id );
+
+            auto frameData = m_slab.Alloc<CallstackFrameData>();
+            f.Read( frameData->size );
+
+            frameData->data = m_slab.Alloc<CallstackFrame>( frameData->size );
+            f.Read( frameData->data, sizeof( CallstackFrame ) * frameData->size );
+
+            m_data.callstackFrameMap.emplace( id, frameData );
+        }
+    }
+    else if( fileVer >= FileVersion( 0, 4, 3 ) )
     {
         f.Read( sz );
         m_data.callstackFrameMap.reserve( sz );
@@ -1050,7 +1095,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             frameData->data = m_slab.Alloc<CallstackFrame>( frameData->size );
             f.Read( frameData->data, sizeof( CallstackFrame ) * frameData->size );
 
-            m_data.callstackFrameMap.emplace( ptr, frameData );
+            m_data.callstackFrameMap.emplace( PackPointer( ptr ), frameData );
         }
     }
     else
@@ -1068,7 +1113,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             frameData->data = m_slab.Alloc<CallstackFrame>();
             f.Read( frameData->data, sizeof( CallstackFrame ) );
 
-            m_data.callstackFrameMap.emplace( ptr, frameData );
+            m_data.callstackFrameMap.emplace( PackPointer( ptr ), frameData );
         }
     }
 
@@ -1259,7 +1304,7 @@ std::pair <int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, i
     return std::make_pair( zbegin, zend );
 }
 
-const CallstackFrameData* Worker::GetCallstackFrame( uint64_t ptr ) const
+const CallstackFrameData* Worker::GetCallstackFrame( const CallstackFrameId& ptr ) const
 {
     auto it = m_data.callstackFrameMap.find( ptr );
     if( it == m_data.callstackFrameMap.end() )
@@ -1775,7 +1820,7 @@ uint32_t Worker::ShrinkSourceLocation( uint64_t srcloc )
 
 uint32_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
 {
-    const auto sz = m_data.sourceLocationExpand.size();
+    const auto sz = int32_t( m_data.sourceLocationExpand.size() );
     m_data.sourceLocationExpand.push_back( srcloc );
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZones.emplace( sz, SourceLocationZones() );
@@ -2036,18 +2081,24 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
     return ( id.idx & 0x7FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x4000000000000000 ) << 1 );
 }
 
-void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t sz )
+void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t _sz )
 {
     assert( m_pendingCallstacks.find( ptr ) == m_pendingCallstacks.end() );
 
-    const auto memsize = sizeof( VarArray<uint64_t> ) + sz;
+    const auto sz = _sz / sizeof( uint64_t );
+    const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
     auto mem = (char*)m_slab.AllocRaw( memsize );
 
-    auto data = (uint64_t*)mem;
-    memcpy( data, _data, sz );
+    auto data = (CallstackFrameId*)mem;
+    auto dst = data;
+    auto src = (uint64_t*)_data;
+    for( size_t i=0; i<sz; i++ )
+    {
+        *dst++ = PackPointer( *src++ );
+    }
 
-    auto arr = (VarArray<uint64_t>*)( mem + sz );
-    new(arr) VarArray<uint64_t>( sz / sizeof( uint64_t ), data );
+    auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
+    new(arr) VarArray<CallstackFrameId>( sz, data );
 
     uint32_t idx;
     auto it = m_data.callstackMap.find( arr );
@@ -2063,7 +2114,7 @@ void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t sz )
             if( fit == m_data.callstackFrameMap.end() )
             {
                 m_pendingCallstackFrames++;
-                ServerQuery( ServerQueryCallstackFrame, frame );
+                ServerQuery( ServerQueryCallstackFrame, GetCanonicalPointer( frame ) );
             }
         }
     }
@@ -3073,7 +3124,7 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
     m_pendingCallstackSubframes = ev.size;
 
     // Frames may be duplicated due to recursion
-    auto fmit = m_data.callstackFrameMap.find( ev.ptr );
+    auto fmit = m_data.callstackFrameMap.find( PackPointer( ev.ptr ) );
     if( fmit == m_data.callstackFrameMap.end() )
     {
         m_callstackFrameStaging = m_slab.Alloc<CallstackFrameData>();
@@ -3103,8 +3154,8 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
 
         if( --m_pendingCallstackSubframes == 0 )
         {
-            assert( m_data.callstackFrameMap.find( m_callstackFrameStagingPtr ) == m_data.callstackFrameMap.end() );
-            m_data.callstackFrameMap.emplace( m_callstackFrameStagingPtr, m_callstackFrameStaging );
+            assert( m_data.callstackFrameMap.find( PackPointer( m_callstackFrameStagingPtr ) ) == m_data.callstackFrameMap.end() );
+            m_data.callstackFrameMap.emplace( PackPointer( m_callstackFrameStagingPtr ), m_callstackFrameStaging );
             m_callstackFrameStaging = nullptr;
         }
     }
@@ -3803,14 +3854,14 @@ void Worker::Write( FileWrite& f )
         auto cs = m_data.callstackPayload[i];
         uint8_t csz = cs->size();
         f.Write( &csz, sizeof( csz ) );
-        f.Write( cs->data(), sizeof( uint64_t ) * csz );
+        f.Write( cs->data(), sizeof( CallstackFrameId ) * csz );
     }
 
     sz = m_data.callstackFrameMap.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& frame : m_data.callstackFrameMap )
     {
-        f.Write( &frame.first, sizeof( uint64_t ) );
+        f.Write( &frame.first, sizeof( CallstackFrameId ) );
         f.Write( &frame.second->size, sizeof( frame.second->size ) );
         f.Write( frame.second->data, sizeof( CallstackFrame ) * frame.second->size );
     }

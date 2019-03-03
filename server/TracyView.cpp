@@ -4040,7 +4040,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                     bool found = false;
                     for( auto& cf : currCs )
                     {
-                        if( cf == pf )
+                        if( cf.data == pf.data )
                         {
                             idx--;
                             found = true;
@@ -6509,7 +6509,7 @@ void View::DrawFindZone()
                         {
                             ImGui::TextDisabled( "%i.", fidx++ );
                             ImGui::SameLine();
-                            ImGui::Text( "%p", (void*)entry );
+                            ImGui::Text( "%p", (void*)m_worker.GetCanonicalPointer( entry ) );
                         }
                         else
                         {
@@ -7499,7 +7499,7 @@ void View::DrawCallstackWindow()
             ImGui::Text( "%i", fidx++ );
             ImGui::NextColumn();
             char buf[32];
-            sprintf( buf, "%p", (void*)entry );
+            sprintf( buf, "%p", (void*)m_worker.GetCanonicalPointer( entry ) );
             ImGui::TextUnformatted( buf );
             if( ImGui::IsItemClicked() )
             {
@@ -8564,7 +8564,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
     ImGui::EndChild();
 }
 
-static tracy_force_inline CallstackFrameTree* GetFrameTreeItem( std::vector<CallstackFrameTree>& tree, uint64_t idx, const Worker& worker, bool groupByName )
+static tracy_force_inline CallstackFrameTree* GetFrameTreeItem( std::vector<CallstackFrameTree>& tree, CallstackFrameId idx, const Worker& worker, bool groupByName )
 {
     std::vector<CallstackFrameTree>::iterator it;
     if( groupByName )
@@ -8581,7 +8581,7 @@ static tracy_force_inline CallstackFrameTree* GetFrameTreeItem( std::vector<Call
     }
     else
     {
-        it = std::find_if( tree.begin(), tree.end(), [idx] ( const auto& v ) { return v.frame == idx; } );
+        it = std::find_if( tree.begin(), tree.end(), [idx] ( const auto& v ) { return v.frame.data == idx.data; } );
     }
     if( it == tree.end() )
     {
@@ -9515,7 +9515,7 @@ void View::CallstackTooltip( uint32_t idx )
         {
             ImGui::TextDisabled( "%i.", fidx++ );
             ImGui::SameLine();
-            ImGui::Text( "%p", (void*)entry );
+            ImGui::Text( "%p", (void*)m_worker.GetCanonicalPointer( entry ) );
         }
         else
         {

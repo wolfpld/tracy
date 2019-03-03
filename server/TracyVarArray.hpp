@@ -21,12 +21,7 @@ public:
         : m_size( size )
         , m_ptr( data )
     {
-        T hash = 5381;
-        for( uint8_t i=0; i<size; i++ )
-        {
-            hash = ( ( hash << 5 ) + hash ) ^ data[i];
-        }
-        m_hash = uint32_t( hash );
+        CalcHash();
     }
 
     VarArray( const VarArray& ) = delete;
@@ -51,11 +46,24 @@ public:
     tracy_force_inline const T& operator[]( size_t idx ) const { return m_ptr[idx]; }
 
 private:
+    tracy_force_inline void CalcHash();
+
     uint8_t m_size;
     uint32_t m_hash;
     const T* m_ptr;
 };
 #pragma pack()
+
+template<typename T>
+void VarArray<T>::CalcHash()
+{
+    T hash = 5381;
+    for( uint8_t i=0; i<m_size; i++ )
+    {
+        hash = ( ( hash << 5 ) + hash ) ^ m_ptr[i];
+    }
+    m_hash = uint32_t( hash );
+}
 
 template<typename T>
 bool Compare( const VarArray<T>& lhs, const VarArray<T>& rhs )

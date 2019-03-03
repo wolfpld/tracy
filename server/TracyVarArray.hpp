@@ -8,6 +8,7 @@
 #include "tracy_flat_hash_map.hpp"
 #include "TracyCharUtil.hpp"
 #include "TracyMemory.hpp"
+#include "TracyEvent.hpp"
 
 namespace tracy
 {
@@ -61,6 +62,17 @@ void VarArray<T>::CalcHash()
     for( uint8_t i=0; i<m_size; i++ )
     {
         hash = ( ( hash << 5 ) + hash ) ^ m_ptr[i];
+    }
+    m_hash = uint32_t( hash );
+}
+
+template<>
+void VarArray<CallstackFrameId>::CalcHash()
+{
+    uint64_t hash = 5381;
+    for( uint8_t i=0; i<m_size; i++ )
+    {
+        hash = ( ( hash << 5 ) + hash ) ^ m_ptr[i].data;
     }
     m_hash = uint32_t( hash );
 }

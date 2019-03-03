@@ -100,6 +100,17 @@ private:
         int64_t selfTotal;
     };
 
+    struct CallstackFrameIdHash
+    {
+        size_t operator()( const CallstackFrameId& id ) { return id.data; }
+        typedef tracy::power_of_two_hash_policy hash_policy;
+    };
+
+    struct CallstackFrameIdCompare
+    {
+        bool operator()( const CallstackFrameId& lhs, const CallstackFrameId& rhs ) { return lhs.data == rhs.data; }
+    };
+
     struct DataBlock
     {
         DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}

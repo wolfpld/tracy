@@ -179,6 +179,21 @@ struct CallstackFrameData
 
 enum { CallstackFrameDataSize = sizeof( CallstackFrameData ) };
 
+// This union exploits the fact that the current implementations of x64 and arm64 do not provide
+// full 64 bit address space. The high bits must be bit-extended, so 0x80... is an invalid pointer.
+// This allows using the highest bit as a selector between a native pointer and a table index here.
+union CallstackFrameId
+{
+    struct
+    {
+        uint64_t idx : 63;
+        uint64_t sel : 1;
+    };
+    uint64_t data;
+};
+
+enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
+
 
 struct CallstackFrameTree
 {

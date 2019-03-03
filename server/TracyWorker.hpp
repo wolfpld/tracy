@@ -111,6 +111,36 @@ private:
         bool operator()( const CallstackFrameId& lhs, const CallstackFrameId& rhs ) { return lhs.data == rhs.data; }
     };
 
+    struct RevFrameHash
+    {
+        size_t operator()( const CallstackFrameData* data )
+        {
+            size_t hash = data->size;
+            for( uint8_t i=0; i<data->size; i++ )
+            {
+                const auto& v = data->data[i];
+                hash = ( ( hash << 5 ) + hash ) ^ size_t( v.line );
+                hash = ( ( hash << 5 ) + hash ) ^ size_t( v.file.__data );
+                hash = ( ( hash << 5 ) + hash ) ^ size_t( v.name.__data );
+            }
+            return hash;
+        }
+        typedef tracy::power_of_two_hash_policy hash_policy;
+    };
+
+    struct RevFrameComp
+    {
+        bool operator()( const CallstackFrameData* lhs, const CallstackFrameData* rhs )
+        {
+            if( lhs->size != rhs->size ) return false;
+            for( uint8_t i=0; i<lhs->size; i++ )
+            {
+                if( memcmp( lhs->data + i, rhs->data + i, sizeof( CallstackFrame ) ) != 0 ) return false;
+            }
+            return true;
+        }
+    };
+
     struct DataBlock
     {
         DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
@@ -146,6 +176,7 @@ private:
         flat_hash_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasherPOT<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
         Vector<VarArray<CallstackFrameId>*> callstackPayload;
         flat_hash_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameMap;
+        flat_hash_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revFrameMap;
 
         std::map<uint32_t, LockMap> lockMap;
 
@@ -394,6 +425,7 @@ private:
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
 
     tracy_force_inline void AddCallstackPayload( uint64_t ptr, char* data, size_t sz );
+    tracy_force_inline void AddCallstackAllocPayload( uint64_t ptr, char* data, size_t sz );
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
     void HandlePlotName( uint64_t name, char* str, size_t sz );
@@ -464,6 +496,7 @@ private:
 
     CallstackFrameData* m_callstackFrameStaging;
     uint64_t m_callstackFrameStagingPtr;
+    uint64_t m_callstackAllocNextIdx = 0;
 
     uint64_t m_lastMemActionCallstack;
     bool m_lastMemActionWasAlloc;

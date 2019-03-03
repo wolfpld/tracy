@@ -1772,6 +1772,9 @@ bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
         case QueueType::FrameName:
             HandleFrameName( ev.stringTransfer.ptr, ptr, sz );
             break;
+        case QueueType::CallstackAllocPayload:
+            AddCallstackAllocPayload( ev.stringTransfer.ptr, ptr, sz );
+            break;
         default:
             assert( false );
             break;
@@ -2099,6 +2102,79 @@ void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t _sz )
 
     auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
     new(arr) VarArray<CallstackFrameId>( sz, data );
+
+    uint32_t idx;
+    auto it = m_data.callstackMap.find( arr );
+    if( it == m_data.callstackMap.end() )
+    {
+        idx = m_data.callstackPayload.size();
+        m_data.callstackMap.emplace( arr, idx );
+        m_data.callstackPayload.push_back( arr );
+
+        for( auto& frame : *arr )
+        {
+            auto fit = m_data.callstackFrameMap.find( frame );
+            if( fit == m_data.callstackFrameMap.end() )
+            {
+                m_pendingCallstackFrames++;
+                ServerQuery( ServerQueryCallstackFrame, GetCanonicalPointer( frame ) );
+            }
+        }
+    }
+    else
+    {
+        idx = it->second;
+        m_slab.Unalloc( memsize );
+    }
+
+    m_pendingCallstacks.emplace( ptr, idx );
+}
+
+void Worker::AddCallstackAllocPayload( uint64_t ptr, char* data, size_t _sz )
+{
+    assert( m_pendingCallstacks.find( ptr ) == m_pendingCallstacks.end() );
+
+    CallstackFrameId stack[64];
+    const auto sz = *(uint32_t*)data; data += 4;
+    assert( sz <= 64 );
+    for( uint32_t i=0; i<sz; i++ )
+    {
+        uint32_t sz;
+        CallstackFrame cf;
+        memcpy( &cf.line, data, 4 ); data += 4;
+        memcpy( &sz, data, 4 ); data += 4;
+        cf.name = StoreString( data, sz ).idx; data += sz;
+        memcpy( &sz, data, 4 ); data += 4;
+        cf.file = StoreString( data, sz ).idx; data += sz;
+        CallstackFrameData cfd = { &cf, 1 };
+
+        CallstackFrameId id;
+        auto it = m_data.revFrameMap.find( &cfd );
+        if( it == m_data.revFrameMap.end() )
+        {
+            auto frame = m_slab.Alloc<CallstackFrame>();
+            memcpy( frame, &cf, sizeof( CallstackFrame ) );
+            auto frameData = m_slab.Alloc<CallstackFrameData>();
+            frameData->data = frame;
+            frameData->size = 1;
+            id.idx = m_callstackAllocNextIdx++;
+            id.sel = 1;
+            m_data.callstackFrameMap.emplace( id, frameData );
+            m_data.revFrameMap.emplace( frameData, id );
+        }
+        else
+        {
+            id = it->second;
+        }
+        stack[i] = id;
+    }
+
+    const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
+    auto mem = (char*)m_slab.AllocRaw( memsize );
+    memcpy( mem, stack, sizeof( CallstackFrameId ) * sz );
+
+    auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
+    new(arr) VarArray<CallstackFrameId>( sz, (CallstackFrameId*)mem );
 
     uint32_t idx;
     auto it = m_data.callstackMap.find( arr );

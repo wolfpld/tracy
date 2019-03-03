@@ -40,6 +40,15 @@
 namespace tracy
 {
 
+static inline CallstackFrameId PackPointer( uint64_t ptr )
+{
+    assert( ( ( ptr & 0x4000000000000000 ) << 1 ) == ( ptr & 0x8000000000000000 ) );
+    CallstackFrameId id;
+    id.idx = ptr;
+    id.sel = 0;
+    return id;
+}
+
 static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
 {
     return ( h5 << 16 ) | ( h6 << 8 ) | h7;
@@ -2019,6 +2028,12 @@ void Worker::AddCustomString( uint64_t ptr, char* str, size_t sz )
 {
     assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
+}
+
+uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
+{
+    assert( id.sel == 0 );
+    return ( id.idx & 0x7FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x4000000000000000 ) << 1 );
 }
 
 void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t sz )

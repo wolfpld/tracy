@@ -7562,12 +7562,19 @@ void View::DrawCallstackWindow()
                 txt = m_worker.GetString( frame.file );
                 if( m_showCallstackFrameAddress )
                 {
-                    ImGui::TextDisabled( "0x%" PRIx64, entry );
-                    if( ImGui::IsItemClicked() )
+                    if( entry.sel == 0 )
                     {
-                        char tmp[32];
-                        sprintf( tmp, "0x%" PRIx64, entry );
-                        ImGui::SetClipboardText( tmp );
+                        ImGui::TextDisabled( "0x%" PRIx64, entry.idx );
+                        if( ImGui::IsItemClicked() )
+                        {
+                            char tmp[32];
+                            sprintf( tmp, "0x%" PRIx64, entry.idx );
+                            ImGui::SetClipboardText( tmp );
+                        }
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "Custom #%" PRIu64, entry.idx );
                     }
                 }
                 else

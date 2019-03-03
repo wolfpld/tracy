@@ -56,7 +56,7 @@ private:
 #pragma pack()
 
 template<typename T>
-void VarArray<T>::CalcHash()
+inline void VarArray<T>::CalcHash()
 {
     T hash = 5381;
     for( uint8_t i=0; i<m_size; i++ )
@@ -67,7 +67,7 @@ void VarArray<T>::CalcHash()
 }
 
 template<>
-void VarArray<CallstackFrameId>::CalcHash()
+inline void VarArray<CallstackFrameId>::CalcHash()
 {
     uint64_t hash = 5381;
     for( uint8_t i=0; i<m_size; i++ )
@@ -78,7 +78,7 @@ void VarArray<CallstackFrameId>::CalcHash()
 }
 
 template<typename T>
-bool Compare( const VarArray<T>& lhs, const VarArray<T>& rhs )
+static inline bool Compare( const VarArray<T>& lhs, const VarArray<T>& rhs )
 {
     if( lhs.size() != rhs.size() || lhs.get_hash() != rhs.get_hash() ) return false;
     return memcmp( lhs.data(), rhs.data(), lhs.size() * sizeof( T ) ) == 0;

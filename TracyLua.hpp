@@ -227,7 +227,7 @@ static inline int LuaZoneBeginS( lua_State* L )
     auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
-    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
+    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLocCallstack );
 #ifdef TRACY_RDTSCP_OPT
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
 #else
@@ -293,7 +293,7 @@ static inline int LuaZoneBeginNS( lua_State* L )
     auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
-    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
+    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLocCallstack );
 #ifdef TRACY_RDTSCP_OPT
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
 #else

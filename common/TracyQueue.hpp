@@ -12,6 +12,7 @@ enum class QueueType : uint8_t
     ZoneName,
     Message,
     ZoneBeginAllocSrcLoc,
+    ZoneBeginAllocSrcLocCallstack,
     CallstackMemory,
     Callstack,
     CallstackAlloc,
@@ -327,6 +328,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),        // zone name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location, callstack
     sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ),
     sizeof( QueueHeader ) + sizeof( QueueCallstack ),
     sizeof( QueueHeader ) + sizeof( QueueCallstack ),       // callstack alloc

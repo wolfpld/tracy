@@ -2316,6 +2316,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ZoneBeginAllocSrcLoc:
         ProcessZoneBeginAllocSrcLoc( ev.zoneBegin );
         break;
+    case QueueType::ZoneBeginAllocSrcLocCallstack:
+        ProcessZoneBeginAllocSrcLocCallstack( ev.zoneBegin );
+        break;
     case QueueType::ZoneEnd:
         ProcessZoneEnd( ev.zoneEnd );
         break;
@@ -2407,6 +2410,7 @@ bool Worker::Process( const QueueItem& ev )
         ProcessCallstackMemory( ev.callstackMemory );
         break;
     case QueueType::Callstack:
+    case QueueType::CallstackAlloc:
         ProcessCallstack( ev.callstack );
         break;
     case QueueType::CallstackFrameSize:
@@ -2470,12 +2474,10 @@ void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
     next.zone = zone;
 }
 
-void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
+void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 {
     auto it = m_pendingSourceLocationPayload.find( ev.srcloc );
     assert( it != m_pendingSourceLocationPayload.end() );
-
-    auto zone = m_slab.AllocInit<ZoneEvent>();
 
     zone->start = TscTime( ev.time );
     zone->end = -1;
@@ -2490,6 +2492,22 @@ void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
     NewZone( zone, ev.thread );
 
     m_pendingSourceLocationPayload.erase( it );
+}
+
+void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
+{
+    auto zone = m_slab.AllocInit<ZoneEvent>();
+    ProcessZoneBeginAllocSrcLocImpl( zone, ev );
+}
+
+void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBegin& ev )
+{
+    auto zone = m_slab.AllocInit<ZoneEvent>();
+    ProcessZoneBeginAllocSrcLocImpl( zone, ev );
+
+    auto& next = m_nextCallstack[ev.thread];
+    next.type = NextCallstackType::Zone;
+    next.zone = zone;
 }
 
 void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )

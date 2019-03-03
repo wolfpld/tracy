@@ -1316,6 +1316,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
         tracy_free( (void*)ptr );
         break;
     case QueueType::ZoneBeginAllocSrcLoc:
+    case QueueType::ZoneBeginAllocSrcLocCallstack:
         ptr = MemRead<uint64_t>( &item.zoneBegin.srcloc );
         tracy_free( (void*)ptr );
         break;
@@ -1392,6 +1393,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     tracy_free( (void*)ptr );
                     break;
                 case QueueType::ZoneBeginAllocSrcLoc:
+                case QueueType::ZoneBeginAllocSrcLocCallstack:
                     ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
                     SendSourceLocationPayload( ptr );
                     tracy_free( (void*)ptr );

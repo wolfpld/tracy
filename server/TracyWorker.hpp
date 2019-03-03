@@ -351,6 +351,7 @@ private:
     tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginCallstack( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneEnd( const QueueZoneEnd& ev );
     tracy_force_inline void ProcessZoneValidation( const QueueZoneValidation& ev );
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
@@ -387,6 +388,7 @@ private:
     tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
+    tracy_force_inline void ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev );
 
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );

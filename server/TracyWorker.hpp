@@ -102,18 +102,18 @@ private:
 
     struct CallstackFrameIdHash
     {
-        size_t operator()( const CallstackFrameId& id ) { return id.data; }
+        size_t operator()( const CallstackFrameId& id ) const { return id.data; }
         typedef tracy::power_of_two_hash_policy hash_policy;
     };
 
     struct CallstackFrameIdCompare
     {
-        bool operator()( const CallstackFrameId& lhs, const CallstackFrameId& rhs ) { return lhs.data == rhs.data; }
+        bool operator()( const CallstackFrameId& lhs, const CallstackFrameId& rhs ) const { return lhs.data == rhs.data; }
     };
 
     struct RevFrameHash
     {
-        size_t operator()( const CallstackFrameData* data )
+        size_t operator()( const CallstackFrameData* data ) const
         {
             size_t hash = data->size;
             for( uint8_t i=0; i<data->size; i++ )
@@ -130,7 +130,7 @@ private:
 
     struct RevFrameComp
     {
-        bool operator()( const CallstackFrameData* lhs, const CallstackFrameData* rhs )
+        bool operator()( const CallstackFrameData* lhs, const CallstackFrameData* rhs ) const
         {
             if( lhs->size != rhs->size ) return false;
             for( uint8_t i=0; i<lhs->size; i++ )

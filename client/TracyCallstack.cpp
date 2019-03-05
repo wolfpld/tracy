@@ -43,6 +43,28 @@ void InitCallstack()
     SymSetOptions( SYMOPT_LOAD_LINES );
 }
 
+const char* DecodeCallstackPtrFast( uint64_t ptr )
+{
+    static char ret[1024];
+    const auto proc = GetCurrentProcess();
+
+    char buf[sizeof( SYMBOL_INFO ) + 1024];
+    auto si = (SYMBOL_INFO*)buf;
+    si->SizeOfStruct = sizeof( SYMBOL_INFO );
+    si->MaxNameLen = 1024;
+
+    if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
+    {
+        *ret = '\0';
+    }
+    else
+    {
+        memcpy( ret, si->Name, si->NameLen );
+        ret[si->NameLen] = '\0';
+    }
+    return ret;
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     int write;
@@ -157,6 +179,36 @@ void InitCallstack()
 {
 }
 
+const char* DecodeCallstackPtrFast( uint64_t ptr )
+{
+    static char ret[1024];
+    auto vptr = (void*)ptr;
+    char** sym = nullptr;
+    const char* symname = nullptr;
+    Dl_info dlinfo;
+    if( dladdr( vptr, &dlinfo ) && dlinfo.dli_sname )
+    {
+        symname = dlinfo.dli_sname;
+    }
+    else
+    {
+        sym = backtrace_symbols( &vptr, 1 );
+        if( sym )
+        {
+            symname = *sym;
+        }
+    }
+    if( symname )
+    {
+        strcpy( ret, symname );
+    }
+    else
+    {
+        *ret = '\0';
+    }
+    return ret;
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     static CallstackEntry cb;
@@ -260,6 +312,15 @@ static inline char* CopyString( const char* src )
     memcpy( dst, src, sz );
     dst[sz] = '\0';
     return dst;
+}
+
+const char* DecodeCallstackPtrFast( uint64_t ptr )
+{
+    static char ret[1024];
+
+    // TODO
+
+    return ret;
 }
 
 static int CallstackDataCb( void* /*data*/, uintptr_t pc, const char* fn, int lineno, const char* function )

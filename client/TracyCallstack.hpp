@@ -41,6 +41,7 @@ struct CallstackEntryData
     uint8_t size;
 };
 
+const char* DecodeCallstackPtrFast( uint64_t ptr );
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr );
 void InitCallstack();
 

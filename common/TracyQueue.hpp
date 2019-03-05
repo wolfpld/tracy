@@ -249,6 +249,13 @@ struct QueueCallstack
     uint64_t thread;
 };
 
+struct QueueCallstackAlloc
+{
+    uint64_t ptr;
+    uint64_t nativePtr;
+    uint64_t thread;
+};
+
 struct QueueCallstackFrameSize
 {
     uint64_t ptr;
@@ -312,6 +319,7 @@ struct QueueItem
         QueueMemFree memFree;
         QueueCallstackMemory callstackMemory;
         QueueCallstack callstack;
+        QueueCallstackAlloc callstackAlloc;
         QueueCallstackFrameSize callstackFrameSize;
         QueueCallstackFrame callstackFrame;
         QueueCrashReport crashReport;
@@ -331,7 +339,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location, callstack
     sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ),
     sizeof( QueueHeader ) + sizeof( QueueCallstack ),
-    sizeof( QueueHeader ) + sizeof( QueueCallstack ),       // callstack alloc
+    sizeof( QueueHeader ) + sizeof( QueueCallstackAlloc ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

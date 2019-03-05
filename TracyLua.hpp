@@ -182,8 +182,9 @@ static inline void SendLuaCallstack( lua_State* L, uint32_t depth )
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
     MemWrite( &item->hdr.type, QueueType::CallstackAlloc );
-    MemWrite( &item->callstack.ptr, (uint64_t)ptr );
-    MemWrite( &item->callstack.thread, GetThreadHandle() );
+    MemWrite( &item->callstackAlloc.ptr, (uint64_t)ptr );
+    MemWrite( &item->callstackAlloc.nativePtr, (uint64_t)Callstack( depth ) );
+    MemWrite( &item->callstackAlloc.thread, GetThreadHandle() );
     tail.store( magic + 1, std::memory_order_release );
 }
 

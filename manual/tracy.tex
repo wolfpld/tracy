@@ -54,6 +54,8 @@
          framexbottommargin=4pt,
          showstringspaces=false,
          escapeinside={@}{@},
+         aboveskip=0pt,
+         belowskip=\baselineskip
 }
 
 \usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
@@ -127,7 +129,7 @@ Tracy can achieve single-digit nanosecond measurement resolution, due to usage o
 
 You may wonder why it is important to have a high resolution timer\footnote{Interestingly, the \texttt{std::chrono::high\_resolution\_clock} is not really a high resolution clock.}. After all, you only want to profile functions that have long execution times, and not some short-lived procedures, that have no impact on the application's run time.
 
-It is wrong to think so. Optimizing a function to execute in 430~\si{\nano\second}, instead of 535~\si{\nano\second} (note that there is only a 100~\si{\nano\second} difference) results in 14 \si{\milli\second} savings if the function is executed 18000 times\footnote{This is a real optimization case. The values are median function run times and do not reflect the real execution time, which explains the discrepancy in the total reported time.}. It may not seem like a big number, but this is how much time there is to render a complete frame in a 60~FPS game.
+It is wrong to think so. Optimizing a function to execute in 430~\si{\nano\second}, instead of 535~\si{\nano\second} (note that there is only a 100~\si{\nano\second} difference) results in 14 \si{\milli\second} savings if the function is executed 18000 times\footnote{This is a real optimization case. The values are median function run times and do not reflect the real execution time, which explains the discrepancy in the total reported time.}. It may not seem like a big number, but this is how much time there is to render a complete frame in a 60~FPS game. Imagine that this is your particle processing loop.
 
 You also need to understand how timer precision is reflected in measurement errors. Take a look at figure~\ref{timer}. There you can see three discrete timer tick events, which increase the value reported by the timer by 300~\si{\nano\second}. You can also see four readings of time ranges, marked $A_1$, $A_2$; $B_1$, $B_2$; $C_1$, $C_2$ and $D_1$, $D_2$.
 
@@ -172,15 +174,15 @@ Now let's take a look at the timer readings.
 \item The $C$ range (610~\si{\nano\second}) is only 20~\si{\nano\second} longer than the $B$ range, but it is reported as 900~\si{\nano\second}, a 600~\si{\nano\second} difference!
 \end{itemize}
 
-Now you can see why it is important to use a high precision timer. While there is no escape from the measurement errors, their impact can be reduced by increasing the timer accuracy.
+Here you can see why it is important to use a high precision timer. While there is no escape from the measurement errors, their impact can be reduced by increasing the timer accuracy.
 
 \subsection{Frame profiler}
 
-Tracy is aimed at understanding the inner workings of a tight loop of a game (or an interactive application). That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game (or any other program), preferably 60 times per second to achieve smooth animation.} as a basic work-unit\footnote{Frame usage is not required. See section~\ref{markingframes} for more information.}. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.
+Tracy is aimed at understanding the inner workings of a tight loop of a game (or an interactive application). That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game (or any other program), preferably 60 times per second to achieve smooth animation. You can also think about physics update frames, audio processing frames, etc.} as a basic work-unit\footnote{Frame usage is not required. See section~\ref{markingframes} for more information.}. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.
 
 \subsection{Remote or embedded telemetry}
 
-Tracy uses the client-server model to enable a wide range of use-cases (see figure~\ref{clientserver}). For example, a game on a mobile phone may be profiled over the wireless connection, with the profiler running on a desktop computer. Or you can run the client and server on the same computer, using a localhost connection. It is also possible to embed the visualization front-end in the profiled application, making the profiling self-contained\footnote{See section~\ref{embeddingserver} for guidelines.}.
+Tracy uses the client-server model to enable a wide range of use-cases (see figure~\ref{clientserver}). For example, a game on a mobile phone may be profiled over the wireless connection, with the profiler running on a desktop computer. Or you can run the client and server on the same machine, using a localhost connection. It is also possible to embed the visualization front-end in the profiled application, making the profiling self-contained\footnote{See section~\ref{embeddingserver} for guidelines.}.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -216,7 +218,7 @@ Tracy uses the client-server model to enable a wide range of use-cases (see figu
 \label{clientserver}
 \end{figure}
 
-In the Tracy terminology, the profiled application is the \emph{client} and the profiler itself is the \emph{server}. It was named this way because the client is a thin layer that just collects events and sends them for processing and long-term storage on the server. The fact that the server needs to connect to the client to begin the profiling session may be a bit confusing at first.
+In Tracy terminology, the profiled application is a \emph{client} and the profiler itself is a \emph{server}. It was named this way because the client is a thin layer that just collects events and sends them for processing and long-term storage on the server. The fact that the server needs to connect to the client to begin the profiling session may be a bit confusing at first.
 
 \subsection{Performance impact}
 \label{perfimpact}
@@ -264,9 +266,9 @@ The following platforms are confirmed to be working (this is not a complete list
 
 The recommended way to integrate Tracy into an application is to create a git submodule in the repository (assuming that git is used for version control). This way it is very easy to update Tracy to newly released versions.
 
-If that's not an option, copy all files from the \texttt{tracy/client} and \texttt{tracy/common} directories, along with the source files in Tracy's root directory to your project. Next, add the \texttt{tracy/TracyClient.cpp} source file to the IDE project and/or makefile. That's all. Tracy is now integrated into the application.
+If that's not an option, copy all files from the Tracy checkout directory to your project. Next, add the \texttt{tracy/TracyClient.cpp} source file to the IDE project and/or makefile. That's all. Tracy is now integrated into the application.
 
-In the default configuration Tracy is disabled. This way you don't have to worry that the production builds will perform collection of the profiling data. You will probably want to create a separate build configuration, with the \texttt{TRACY\_ENABLE} define, which enables profiling.
+In the default configuration Tracy is disabled. This way you don't have to worry that the production builds will perform collection of profiling data. You will probably want to create a separate build configuration, with the \texttt{TRACY\_ENABLE} define, which enables profiling.
 
 Finally, on Unix make sure that the application is linked with libraries \texttt{libpthread} and \texttt{libdl}.
 
@@ -313,7 +315,7 @@ The easiest way to get going is to build the data analyzer, available in the \te
 
 If you prefer to inspect the data only after a trace has been performed, you may use the command line utility in the \texttt{capture} directory. It will save a data dump that may be later opened in the graphical viewer application.
 
-Note that ideally you should use the same version of the Tracy profiler on both client and server. The network protocol may change, in which case you won't be able to make a connection.
+Note that ideally you should be using the same version of the Tracy profiler on both client and server. The network protocol may change in between versions, in which case you won't be able to make a connection.
 
 See section~\ref{capturing} for more information about performing captures.
 
@@ -359,7 +361,7 @@ On MSVC the debugger has priority over the application in handling exceptions. I
 \section{Client markup}
 \label{client}
 
-With the aforementioned steps you will be able to connect to the profiled program, but there won't be any data collection performed. In order to begin profiling, Tracy requires that you manually instrument the application\footnote{Automatic tracing of every entered function is not feasible due to the amount of data that would generate.}. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
+With the aforementioned steps you will be able to connect to the profiled program, but there won't be any data collection performed\footnote{With some small exceptions. For example, the profiler performs CPU usage measurement by itself (see section~\ref{plots}).}. In order to begin profiling, Tracy requires that you manually instrument the application\footnote{Automatic tracing of every entered function is not feasible due to the amount of data that would generate.}. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
 
 The best way to start is to add markup to the main loop of the application, along with a few function that are called there. This will give you a rough outline of the function's time cost, which you may then further refine by instrumenting functions deeper in the call stack.
 
@@ -478,7 +480,7 @@ This doesn't stop some compilers from dispensing \emph{fashion advice} about var
 \subsubsection{Filtering zones}
 \label{filteringzones}
 
-Zone logging can be disabled on a per zone basis, by making use of the \texttt{ZoneNamed} macros. Each of the macros takes an \texttt{active} argument ('\texttt{true}' in the example above), which will determine whether the zone should be logged.
+Zone logging can be disabled on a per zone basis, by making use of the \texttt{ZoneNamed} macros. Each of the macros takes an \texttt{active} argument ('\texttt{true}' in the example in section~\ref{multizone}), which will determine whether the zone should be logged.
 
 Note that this parameter may be a run-time variable, for example an user controlled switch to enable profiling of a specific part of code only when required.
 
@@ -514,7 +516,7 @@ void Graphics::Render()
 
 \subsection{Marking locks}
 
-Modern programs must use multi-threading to achieve full performance capability of the CPU. Correct execution requires claiming exclusive access to data shared between threads. When many threads want to enter the critical section at once, the application's multi-threaded performance advantage is nullified. To answer this problem, Tracy can collect and display lock interactions in threads. 
+Modern programs must use multi-threading to achieve full performance capability of the CPU. Correct execution requires claiming exclusive access to data shared between threads. When many threads want to enter the same critical section at once, the application's multi-threaded performance advantage is nullified. To help solve this problem, Tracy can collect and display lock interactions in threads.
 
 To mark a lock (mutex) for event reporting, use the \texttt{TracyLockable(type, varname)} macro. Note that the lock must implement the Mutex requirement\footnote{\url{https://en.cppreference.com/w/cpp/named_req/Mutex}} (i.e.\ there's no support for timed mutices). For a concrete example, you would replace the line
 
@@ -1136,7 +1138,7 @@ The left hand side \emph{index area} of the timeline view displays various label
 \item \emph{Yellow label} -- Plot.
 \end{itemize}
 
-Labels accompanied by the \faCaretDown{}~symbol can be collapsed out of the view, to reduce visual clutter. Hover the \faMousePointer{}~mouse pointer over the label to display additional information. Click the \MMB{}~middle mouse button on a label to zoom the view to the extent of the label contents.
+Labels accompanied by the \faCaretDown{}~symbol can be collapsed out of the view, to reduce visual clutter. Hover the~\faMousePointer{}~mouse pointer over the label to display additional information. Click the \MMB{}~middle mouse button on a label to zoom the view to the extent of the label contents.
 
 \subparagraph{Zones}
 
@@ -1181,6 +1183,7 @@ Mutual exclusion zones are displayed in each thread that tries to acquire them. 
 Hovering the \faMousePointer{}~mouse pointer over a lock timeline will highlight the lock in all threads to help reading the lock behavior. Hovering the \faMousePointer{}~mouse pointer over a lock event will display important information, for example a list of threads that are currently blocking, or which are blocked by the lock. Clicking the \LMB{}~left mouse button on a lock event or a lock label will open the lock information window, as described in section~\ref{lockwindow}. Clicking the \MMB{}~middle mouse button on a lock event will zoom the view to the extent of the event.
 
 \subparagraph{Plots}
+\label{plots}
 
 The numerical data values (figure~\ref{plot}) are plotted right below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot. The discrete data points are indicated with little rectangles. Multiple data points are indicated by a filled rectangle.
 

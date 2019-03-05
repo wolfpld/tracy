@@ -1413,6 +1413,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     SendCallstackAlloc( ptr );
                     tracy_free( (void*)ptr );
                     ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );
+                    CutCallstack( (void*)ptr, "lua_pcall" );
                     SendCallstackPayload( ptr );
                     tracy_free( (void*)ptr );
                     break;

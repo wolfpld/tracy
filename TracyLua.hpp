@@ -128,6 +128,7 @@ static inline void LuaRemove( char* script )
 
 #include "common/TracyColor.hpp"
 #include "common/TracyAlign.hpp"
+#include "common/TracyForceInline.hpp"
 #include "common/TracySystem.hpp"
 #include "client/TracyProfiler.hpp"
 
@@ -141,7 +142,7 @@ LuaZoneState& GetLuaZoneState();
 namespace detail
 {
 
-static inline void SendLuaCallstack( lua_State* L, uint32_t depth )
+static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
 {
     assert( depth <= 64 );
     lua_Debug dbg[64];

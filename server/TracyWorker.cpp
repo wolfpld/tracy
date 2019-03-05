@@ -2410,8 +2410,10 @@ bool Worker::Process( const QueueItem& ev )
         ProcessCallstackMemory( ev.callstackMemory );
         break;
     case QueueType::Callstack:
-    case QueueType::CallstackAlloc:
         ProcessCallstack( ev.callstack );
+        break;
+    case QueueType::CallstackAlloc:
+        ProcessCallstackAlloc( ev.callstackAlloc );
         break;
     case QueueType::CallstackFrameSize:
         ProcessCallstackFrameSize( ev.callstackFrameSize );
@@ -3207,6 +3209,37 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
     }
 
     m_pendingCallstacks.erase( it );
+}
+
+void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
+{
+    auto it = m_pendingCallstacks.find( ev.nativePtr );
+    assert( it != m_pendingCallstacks.end() );
+    auto itAlloc = m_pendingCallstacks.find( ev.ptr );
+    assert( itAlloc != m_pendingCallstacks.end() );
+
+    auto nit = m_nextCallstack.find( ev.thread );
+    assert( nit != m_nextCallstack.end() );
+    auto& next = nit->second;
+
+    switch( next.type )
+    {
+    case NextCallstackType::Zone:
+        next.zone->callstack = it->second;
+        break;
+    case NextCallstackType::Gpu:
+        next.gpu->callstack = it->second;
+        break;
+    case NextCallstackType::Crash:
+        m_data.m_crashEvent.callstack = it->second;
+        break;
+    default:
+        assert( false );
+        break;
+    }
+
+    m_pendingCallstacks.erase( it );
+    m_pendingCallstacks.erase( itAlloc );
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )

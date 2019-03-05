@@ -1862,7 +1862,23 @@ void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore
 {
 #ifdef TRACY_HAS_CALLSTACK
     auto ptr = Callstack( depth );
-    auto data = (uintptr_t*)ptr;
+    CutCallstack( ptr, skipBefore );
+
+    Magic magic;
+    auto token = GetToken();
+    auto& tail = token->get_tail_index();
+    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    MemWrite( &item->hdr.type, QueueType::Callstack );
+    MemWrite( &item->callstack.ptr, ptr );
+    MemWrite( &item->callstack.thread, thread );
+    tail.store( magic + 1, std::memory_order_release );
+#endif
+}
+
+void Profiler::CutCallstack( void* callstack, const char* skipBefore )
+{
+#ifdef TRACY_HAS_CALLSTACK
+    auto data = (uintptr_t*)callstack;
     const auto sz = *data++;
     uintptr_t i;
     for( i=0; i<sz; i++ )
@@ -1886,15 +1902,6 @@ void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore
         memmove( data, data + i, ( sz - i ) * sizeof( uintptr_t* ) );
         *--data = sz - i;
     }
-
-    Magic magic;
-    auto token = GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
-    MemWrite( &item->hdr.type, QueueType::Callstack );
-    MemWrite( &item->callstack.ptr, ptr );
-    MemWrite( &item->callstack.thread, thread );
-    tail.store( magic + 1, std::memory_order_release );
 #endif
 }
 

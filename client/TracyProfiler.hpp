@@ -339,6 +339,7 @@ public:
     }
 
     void SendCallstack( int depth, uint64_t thread, const char* skipBefore );
+    static void CutCallstack( void* callstack, const char* skipBefore );
 
     static bool ShouldExit();
 

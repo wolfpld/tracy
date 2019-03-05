@@ -1884,13 +1884,8 @@ void Profiler::CutCallstack( void* callstack, const char* skipBefore )
     uintptr_t i;
     for( i=0; i<sz; i++ )
     {
-        auto frameData = DecodeCallstackPtr( uint64_t( data[i] ) );
-        const bool found = strcmp( frameData.data[0].name, skipBefore ) == 0;
-        for( uint8_t j=0; j<frameData.size; j++ )
-        {
-            tracy_free( (void*)frameData.data[j].name );
-            tracy_free( (void*)frameData.data[j].file );
-        }
+        auto name = DecodeCallstackPtrFast( uint64_t( data[i] ) );
+        const bool found = strcmp( name, skipBefore ) == 0;
         if( found )
         {
             i++;

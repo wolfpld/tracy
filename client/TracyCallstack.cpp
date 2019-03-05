@@ -322,7 +322,21 @@ static int FastCallstackDataCb( void* data, uintptr_t pc, const char* fn, int li
     }
     else
     {
-        *(char*)data = '\0';
+        const char* symname = nullptr;
+        auto vptr = (void*)pc;
+        Dl_info dlinfo;
+        if( dladdr( vptr, &dlinfo ) )
+        {
+            symname = dlinfo.dli_sname;
+        }
+        if( symname )
+        {
+            strcpy( (char*)data, symname );
+        }
+        else
+        {
+            *(char*)data = '\0';
+        }
     }
     return 1;
 }

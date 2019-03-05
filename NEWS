@@ -15,17 +15,20 @@ v0.5 (xxxx-xx-xx)
 - Added C API.
 - Profiling session may now gracefully terminate, due to incorrect
   instrumentation. A popup with termination reason will be displayed.
-- Call stack frames now have a proper source file and file line information
-  on Linux.
-- Single call stack frame may now have multiple entries, representing
-  inlined function calls.
+- Call stack improvements.
+  - Call stack frames now have a proper source file and file line
+    information on Linux.
+  - Single call stack frame may now have multiple entries, representing
+    inlined function calls.
+  - Call stack grouping in the find zone menu now has a special display
+    mode.
+  - Call stack memory allocations tree improvements:
+    - Add top-down variant to complement the previously available bottom-up
+      one.
+    - Add ability to group tree nodes by function name.
 - Self time of zones may be now displayed in the find zone menu.
 - Added ability to disconnect from a client (with some caveats).
 - Find zone groups can now be sorted by mean time per call.
-- Call stack memory allocations tree improvements:
-  - Add top-down variant to complement the previously available bottom-up
-    one.
-  - Add ability to group tree nodes by function name.
 - Zones displayed in the find zone menu can be now grouped by order of
   appearance, execution time or name.
 - Time is now displayed without trailing fractional zeros (e.g. "2.5 ms"
@@ -43,7 +46,6 @@ v0.5 (xxxx-xx-xx)
 - Threads that have nothing to display in the current view are now hidden by
   default.
 - Dimmed-out the timeline outside the profiling area.
-- Call stack grouping in the find zone menu now has a special display mode.
 
 v0.4.1 (2018-12-30)
 -------------------

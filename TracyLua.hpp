@@ -311,7 +311,7 @@ static inline int LuaZoneBeginNS( lua_State* L )
 #ifdef TRACY_CALLSTACK
     const uint32_t depth = TRACY_CALLSTACK;
 #else
-    const auto depth = uint32_t( lua_tointeger( L, 1 ) );
+    const auto depth = uint32_t( lua_tointeger( L, 2 ) );
 #endif
     SendLuaCallstack( L, depth );
 

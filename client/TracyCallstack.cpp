@@ -314,12 +314,28 @@ static inline char* CopyString( const char* src )
     return dst;
 }
 
+static int FastCallstackDataCb( void* data, uintptr_t pc, const char* fn, int lineno, const char* function )
+{
+    if( function )
+    {
+        strcpy( data, function );
+    }
+    else
+    {
+        *data = '\0';
+    }
+    return 1;
+}
+
+static void FastCallstackErrorCb( void* data, const char* /*msg*/, int /*errnum*/ )
+{
+    *data = '\0';
+}
+
 const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
     static char ret[1024];
-
-    // TODO
-
+    backtrace_pcinfo( cb_bts, ptr, FastCallstackDataCb, FastCallstackErrorCb, ret );
     return ret;
 }
 

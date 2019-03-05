@@ -1329,9 +1329,9 @@ static void FreeAssociatedMemory( const QueueItem& item )
         tracy_free( (void*)ptr );
         break;
     case QueueType::CallstackAlloc:
-        ptr = MemRead<uint64_t>( &item.callstackAlloc.ptr );
-        tracy_free( (void*)ptr );
         ptr = MemRead<uint64_t>( &item.callstackAlloc.nativePtr );
+        tracy_free( (void*)ptr );
+        ptr = MemRead<uint64_t>( &item.callstackAlloc.ptr );
         tracy_free( (void*)ptr );
         break;
     default:
@@ -1409,12 +1409,12 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     tracy_free( (void*)ptr );
                     break;
                 case QueueType::CallstackAlloc:
-                    ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
-                    SendCallstackAlloc( ptr );
-                    tracy_free( (void*)ptr );
                     ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );
                     CutCallstack( (void*)ptr, "lua_pcall" );
                     SendCallstackPayload( ptr );
+                    tracy_free( (void*)ptr );
+                    ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
+                    SendCallstackAlloc( ptr );
                     tracy_free( (void*)ptr );
                     break;
                 default:

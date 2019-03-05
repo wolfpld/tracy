@@ -681,6 +681,8 @@ Be aware that call stack collection is a relatively slow operation. Table~\ref{C
 
 You can force call stack capture in the non-\texttt{S} postfixed macros by adding the \texttt{TRACY\_CALLSTACK} define, set to the desired call stack capture depth. This setting doesn't affect the explicit call stack macros.
 
+The maximum call stack depth that can be retrieved is 64 frames. This is a restriction at the level of operating system.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
@@ -709,6 +711,14 @@ Use \texttt{tracy.Message(text)} to send messages.
 Use \texttt{tracy.ZoneName(text)} to set zone name on a per-call basis.
 
 Lua instrumentation needs to perform additional work (including memory allocation) to store source location. This approximately doubles the data collection cost.
+
+\subsubsection{Call stacks}
+
+To collect Lua call stacks (see section~\ref{collectingcallstacks}), replace \texttt{tracy.ZoneBegin()} calls with \texttt{tracy.ZoneBeginS(depth)}, and \texttt{tracy.ZoneBeginN(name)} calls with \texttt{tracy.ZoneBeginNS(name, depth)}. Using the \texttt{TRACY\_CALLSTACK} macro automatically enables call stack collection in all zones.
+
+Be aware that for Lua call stack retrieval to work, you need to be on a platform which supports collection of native call stacks.
+
+\subsubsection{Instrumentation cleanup}
 
 Even if Tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the \texttt{tracy::LuaRemove(char* script)} function, which will replace instrumentation calls with white-space. This function does nothing if profiler is enabled.
 

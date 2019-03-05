@@ -2133,7 +2133,7 @@ void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t _sz )
 
 void Worker::AddCallstackAllocPayload( uint64_t ptr, char* data, size_t _sz )
 {
-    //assert( m_pendingCallstacks.find( ptr ) == m_pendingCallstacks.end() );
+    assert( m_pendingCallstackPtr != 0 );
 
     CallstackFrameId stack[64];
     const auto sz = *(uint32_t*)data; data += 4;
@@ -2170,12 +2170,17 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, char* data, size_t _sz )
         stack[i] = id;
     }
 
-    const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
+    const auto nativeCs = m_data.callstackPayload[m_pendingCallstackId];
+    const auto nsz = nativeCs->size();
+    const auto tsz = sz + nsz;
+
+    const auto memsize = sizeof( VarArray<CallstackFrameId> ) + tsz * sizeof( CallstackFrameId );
     auto mem = (char*)m_slab.AllocRaw( memsize );
     memcpy( mem, stack, sizeof( CallstackFrameId ) * sz );
+    memcpy( mem + sizeof( CallstackFrameId ) * sz, nativeCs->data(), sizeof( CallstackFrameId ) * nsz );
 
-    auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
-    new(arr) VarArray<CallstackFrameId>( sz, (CallstackFrameId*)mem );
+    auto arr = (VarArray<CallstackFrameId>*)( mem + tsz * sizeof( CallstackFrameId ) );
+    new(arr) VarArray<CallstackFrameId>( tsz, (CallstackFrameId*)mem );
 
     uint32_t idx;
     auto it = m_data.callstackMap.find( arr );
@@ -2201,7 +2206,8 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, char* data, size_t _sz )
         m_slab.Unalloc( memsize );
     }
 
-    //m_pendingCallstacks.emplace( ptr, idx );
+    m_pendingCallstackPtr = ptr;
+    m_pendingCallstackId = idx;
 }
 
 void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
@@ -3210,7 +3216,7 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
 
 void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
 {
-    assert( m_pendingCallstackPtr == ev.nativePtr );
+    assert( m_pendingCallstackPtr == ev.ptr );
     m_pendingCallstackPtr = 0;
 
     auto nit = m_nextCallstack.find( ev.thread );

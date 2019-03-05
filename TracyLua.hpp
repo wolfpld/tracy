@@ -142,6 +142,7 @@ LuaZoneState& GetLuaZoneState();
 namespace detail
 {
 
+#ifdef TRACY_HAS_CALLSTACK
 static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
 {
     assert( depth <= 64 );
@@ -316,10 +317,11 @@ static inline int LuaZoneBeginNS( lua_State* L )
 
     return 0;
 }
+#endif
 
 static inline int LuaZoneBegin( lua_State* L )
 {
-#ifdef TRACY_CALLSTACK
+#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
     return LuaZoneBeginS( L );
 #else
 #ifdef TRACY_ON_DEMAND
@@ -377,7 +379,7 @@ static inline int LuaZoneBegin( lua_State* L )
 
 static inline int LuaZoneBeginN( lua_State* L )
 {
-#ifdef TRACY_CALLSTACK
+#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
     return LuaZoneBeginNS( L );
 #else
 #ifdef TRACY_ON_DEMAND
@@ -556,10 +558,17 @@ static inline void LuaRegister( lua_State* L )
     lua_setfield( L, -2, "ZoneBegin" );
     lua_pushcfunction( L, detail::LuaZoneBeginN );
     lua_setfield( L, -2, "ZoneBeginN" );
+#ifdef TRACY_HAS_CALLSTACK
     lua_pushcfunction( L, detail::LuaZoneBeginS );
     lua_setfield( L, -2, "ZoneBeginS" );
     lua_pushcfunction( L, detail::LuaZoneBeginNS );
     lua_setfield( L, -2, "ZoneBeginNS" );
+#else
+    lua_pushcfunction( L, detail::LuaZoneBegin );
+    lua_setfield( L, -2, "ZoneBeginS" );
+    lua_pushcfunction( L, detail::LuaZoneBeginN );
+    lua_setfield( L, -2, "ZoneBeginNS" );
+#endif
     lua_pushcfunction( L, detail::LuaZoneEnd );
     lua_setfield( L, -2, "ZoneEnd" );
     lua_pushcfunction( L, detail::LuaZoneText );

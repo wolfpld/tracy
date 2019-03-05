@@ -318,18 +318,18 @@ static int FastCallstackDataCb( void* data, uintptr_t pc, const char* fn, int li
 {
     if( function )
     {
-        strcpy( data, function );
+        strcpy( (char*)data, function );
     }
     else
     {
-        *data = '\0';
+        *(char*)data = '\0';
     }
     return 1;
 }
 
 static void FastCallstackErrorCb( void* data, const char* /*msg*/, int /*errnum*/ )
 {
-    *data = '\0';
+    *(char*)data = '\0';
 }
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )

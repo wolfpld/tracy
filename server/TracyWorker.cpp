@@ -1705,7 +1705,7 @@ void Worker::Exec()
         if( m_terminate )
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
-                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || !m_pendingCallstacks.empty() || m_pendingCallstackSubframes != 0 )
+                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 || m_pendingCallstackSubframes != 0 )
             {
                 continue;
             }
@@ -2086,7 +2086,7 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
 
 void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t _sz )
 {
-    assert( m_pendingCallstacks.find( ptr ) == m_pendingCallstacks.end() );
+    assert( m_pendingCallstackPtr == 0 );
 
     const auto sz = _sz / sizeof( uint64_t );
     const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
@@ -2127,12 +2127,13 @@ void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t _sz )
         m_slab.Unalloc( memsize );
     }
 
-    m_pendingCallstacks.emplace( ptr, idx );
+    m_pendingCallstackPtr = ptr;
+    m_pendingCallstackId = idx;
 }
 
 void Worker::AddCallstackAllocPayload( uint64_t ptr, char* data, size_t _sz )
 {
-    assert( m_pendingCallstacks.find( ptr ) == m_pendingCallstacks.end() );
+    //assert( m_pendingCallstacks.find( ptr ) == m_pendingCallstacks.end() );
 
     CallstackFrameId stack[64];
     const auto sz = *(uint32_t*)data; data += 4;
@@ -2200,7 +2201,7 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, char* data, size_t _sz )
         m_slab.Unalloc( memsize );
     }
 
-    m_pendingCallstacks.emplace( ptr, idx );
+    //m_pendingCallstacks.emplace( ptr, idx );
 }
 
 void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
@@ -3164,29 +3165,27 @@ void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
 
 void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
 {
-    auto it = m_pendingCallstacks.find( ev.ptr );
-    assert( it != m_pendingCallstacks.end() );
+    assert( m_pendingCallstackPtr == ev.ptr );
+    m_pendingCallstackPtr = 0;
 
     if( m_lastMemActionCallstack != std::numeric_limits<uint64_t>::max() )
     {
         auto& mem = m_data.memory.data[m_lastMemActionCallstack];
         if( m_lastMemActionWasAlloc )
         {
-            mem.csAlloc = it->second;
+            mem.csAlloc = m_pendingCallstackId;
         }
         else
         {
-            mem.csFree = it->second;
+            mem.csFree = m_pendingCallstackId;
         }
     }
-
-    m_pendingCallstacks.erase( it );
 }
 
 void Worker::ProcessCallstack( const QueueCallstack& ev )
 {
-    auto it = m_pendingCallstacks.find( ev.ptr );
-    assert( it != m_pendingCallstacks.end() );
+    assert( m_pendingCallstackPtr == ev.ptr );
+    m_pendingCallstackPtr = 0;
 
     auto nit = m_nextCallstack.find( ev.thread );
     assert( nit != m_nextCallstack.end() );
@@ -3195,28 +3194,24 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
     switch( next.type )
     {
     case NextCallstackType::Zone:
-        next.zone->callstack = it->second;
+        next.zone->callstack = m_pendingCallstackId;
         break;
     case NextCallstackType::Gpu:
-        next.gpu->callstack = it->second;
+        next.gpu->callstack = m_pendingCallstackId;
         break;
     case NextCallstackType::Crash:
-        m_data.m_crashEvent.callstack = it->second;
+        m_data.m_crashEvent.callstack = m_pendingCallstackId;
         break;
     default:
         assert( false );
         break;
     }
-
-    m_pendingCallstacks.erase( it );
 }
 
 void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
 {
-    auto it = m_pendingCallstacks.find( ev.nativePtr );
-    assert( it != m_pendingCallstacks.end() );
-    auto itAlloc = m_pendingCallstacks.find( ev.ptr );
-    assert( itAlloc != m_pendingCallstacks.end() );
+    assert( m_pendingCallstackPtr == ev.nativePtr );
+    m_pendingCallstackPtr = 0;
 
     auto nit = m_nextCallstack.find( ev.thread );
     assert( nit != m_nextCallstack.end() );
@@ -3225,21 +3220,18 @@ void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
     switch( next.type )
     {
     case NextCallstackType::Zone:
-        next.zone->callstack = it->second;
+        next.zone->callstack = m_pendingCallstackId;
         break;
     case NextCallstackType::Gpu:
-        next.gpu->callstack = it->second;
+        next.gpu->callstack = m_pendingCallstackId;
         break;
     case NextCallstackType::Crash:
-        m_data.m_crashEvent.callstack = it->second;
+        m_data.m_crashEvent.callstack = m_pendingCallstackId;
         break;
     default:
         assert( false );
         break;
     }
-
-    m_pendingCallstacks.erase( it );
-    m_pendingCallstacks.erase( itAlloc );
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )

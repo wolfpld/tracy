@@ -42,6 +42,8 @@
 namespace tracy
 {
 
+static double s_time = 0;
+
 static const char* s_tracyStackFrames[] = {
     "tracy::Callstack",
     "tracy::GpuCtxScope::{ctor}",
@@ -5627,6 +5629,8 @@ void View::DrawFindZone()
     if( !m_worker.AreSourceLocationZonesReady() )
     {
         ImGui::TextWrapped( "Please wait, computing data..." );
+        s_time += ImGui::GetIO().DeltaTime;
+        DrawWaitingDots( s_time );
         ImGui::End();
         return;
     }

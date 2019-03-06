@@ -4330,104 +4330,112 @@ void View::DrawZoneInfoWindow()
     ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
 
     auto& mem = m_worker.GetMemData();
-    if( mem.plot )
+    if( !mem.data.empty() )
     {
         ImGui::Separator();
 
-        const auto thread = m_worker.CompressThread( tid );
-
-        auto ait = std::lower_bound( mem.data.begin(), mem.data.end(), ev.start, [] ( const auto& l, const auto& r ) { return l.timeAlloc < r; } );
-        const auto aend = std::upper_bound( mem.data.begin(), mem.data.end(), end, [] ( const auto& l, const auto& r ) { return l < r.timeAlloc; } );
-
-        auto fit = std::lower_bound( mem.frees.begin(), mem.frees.end(), ev.start, [&mem] ( const auto& l, const auto& r ) { return mem.data[l].timeFree < r; } );
-        const auto fend = std::upper_bound( mem.frees.begin(), mem.frees.end(), end, [&mem] ( const auto& l, const auto& r ) { return l < mem.data[r].timeFree; } );
-
-        const auto aDist = std::distance( ait, aend );
-        const auto fDist = std::distance( fit, fend );
-        if( aDist == 0 && fDist == 0 )
+        if( !mem.plot )
         {
-            ImGui::TextUnformatted( "No memory events." );
+            ImGui::Text( "Please wait, computing data..." );
+            DrawWaitingDots( s_time );
         }
         else
         {
-            int64_t cAlloc = 0;
-            int64_t cFree = 0;
-            int64_t nAlloc = 0;
-            int64_t nFree = 0;
+            const auto thread = m_worker.CompressThread( tid );
 
-            auto ait2 = ait;
-            auto fit2 = fit;
+            auto ait = std::lower_bound( mem.data.begin(), mem.data.end(), ev.start, [] ( const auto& l, const auto& r ) { return l.timeAlloc < r; } );
+            const auto aend = std::upper_bound( mem.data.begin(), mem.data.end(), end, [] ( const auto& l, const auto& r ) { return l < r.timeAlloc; } );
 
-            while( ait != aend )
-            {
-                if( ait->threadAlloc == thread )
-                {
-                    cAlloc += ait->size;
-                    nAlloc++;
-                }
-                ait++;
-            }
-            while( fit != fend )
-            {
-                if( mem.data[*fit].threadFree == thread )
-                {
-                    cFree += mem.data[*fit].size;
-                    nFree++;
-                }
-                fit++;
-            }
+            auto fit = std::lower_bound( mem.frees.begin(), mem.frees.end(), ev.start, [&mem] ( const auto& l, const auto& r ) { return mem.data[l].timeFree < r; } );
+            const auto fend = std::upper_bound( mem.frees.begin(), mem.frees.end(), end, [&mem] ( const auto& l, const auto& r ) { return l < mem.data[r].timeFree; } );
 
-            if( nAlloc == 0 && nFree == 0 )
+            const auto aDist = std::distance( ait, aend );
+            const auto fDist = std::distance( fit, fend );
+            if( aDist == 0 && fDist == 0 )
             {
                 ImGui::TextUnformatted( "No memory events." );
             }
             else
             {
-                ImGui::TextUnformatted( RealToString( nAlloc + nFree, true ) );
-                ImGui::SameLine();
-                TextDisabledUnformatted( "memory events." );
-                ImGui::TextUnformatted( RealToString( nAlloc, true ) );
-                ImGui::SameLine();
-                TextDisabledUnformatted( "allocs," );
-                ImGui::SameLine();
-                ImGui::TextUnformatted( RealToString( nFree, true ) );
-                ImGui::SameLine();
-                TextDisabledUnformatted( "frees." );
-                TextFocused( "Memory allocated:", MemSizeToString( cAlloc ) );
-                TextFocused( "Memory freed:", MemSizeToString( cFree ) );
-                TextFocused( "Overall change:", MemSizeToString( cAlloc - cFree ) );
+                int64_t cAlloc = 0;
+                int64_t cFree = 0;
+                int64_t nAlloc = 0;
+                int64_t nFree = 0;
 
-                if( ImGui::TreeNode( "Allocations list" ) )
+                auto ait2 = ait;
+                auto fit2 = fit;
+
+                while( ait != aend )
                 {
-                    std::vector<const MemEvent*> v;
-                    v.reserve( nAlloc + nFree );
-
-                    auto it = ait2;
-                    while( it != aend )
+                    if( ait->threadAlloc == thread )
                     {
-                        if( it->threadAlloc == thread )
-                        {
-                            v.emplace_back( it );
-                        }
-                        it++;
+                        cAlloc += ait->size;
+                        nAlloc++;
                     }
-                    while( fit2 != fend )
+                    ait++;
+                }
+                while( fit != fend )
+                {
+                    if( mem.data[*fit].threadFree == thread )
                     {
-                        const auto ptr = &mem.data[*fit2++];
-                        if( ptr->threadFree == thread )
+                        cFree += mem.data[*fit].size;
+                        nFree++;
+                    }
+                    fit++;
+                }
+
+                if( nAlloc == 0 && nFree == 0 )
+                {
+                    ImGui::TextUnformatted( "No memory events." );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( RealToString( nAlloc + nFree, true ) );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "memory events." );
+                    ImGui::TextUnformatted( RealToString( nAlloc, true ) );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "allocs," );
+                    ImGui::SameLine();
+                    ImGui::TextUnformatted( RealToString( nFree, true ) );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "frees." );
+                    TextFocused( "Memory allocated:", MemSizeToString( cAlloc ) );
+                    TextFocused( "Memory freed:", MemSizeToString( cFree ) );
+                    TextFocused( "Overall change:", MemSizeToString( cAlloc - cFree ) );
+
+                    if( ImGui::TreeNode( "Allocations list" ) )
+                    {
+                        std::vector<const MemEvent*> v;
+                        v.reserve( nAlloc + nFree );
+
+                        auto it = ait2;
+                        while( it != aend )
                         {
-                            if( ptr < ait2 || ptr >= aend )
+                            if( it->threadAlloc == thread )
                             {
-                                v.emplace_back( ptr );
+                                v.emplace_back( it );
+                            }
+                            it++;
+                        }
+                        while( fit2 != fend )
+                        {
+                            const auto ptr = &mem.data[*fit2++];
+                            if( ptr->threadFree == thread )
+                            {
+                                if( ptr < ait2 || ptr >= aend )
+                                {
+                                    v.emplace_back( ptr );
+                                }
                             }
                         }
-                    }
-                    pdqsort_branchless( v.begin(), v.end(), [] ( const auto& l, const auto& r ) { return l->timeAlloc < r->timeAlloc; } );
+                        pdqsort_branchless( v.begin(), v.end(), [] ( const auto& l, const auto& r ) { return l->timeAlloc < r->timeAlloc; } );
 
-                    ListMemData<decltype( v.begin() )>( v.begin(), v.end(), []( auto& v ) {
-                        ImGui::Text( "0x%" PRIx64, (*v)->ptr );
-                    } );
-                    ImGui::TreePop();
+                        ListMemData<decltype( v.begin() )>( v.begin(), v.end(), []( auto& v ) {
+                            ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+                        } );
+                        ImGui::TreePop();
+                    }
                 }
             }
         }

@@ -462,6 +462,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( sz );
         m_data.threadExpand.reserve_and_use( sz );
         f.Read( m_data.threadExpand.data(), sizeof( uint64_t ) * sz );
+        m_data.threadMap.reserve( sz );
+        for( size_t i=0; i<sz; i++ )
+        {
+            m_data.threadMap.emplace( m_data.threadExpand[i], i );
+        }
     }
     else if( fileVer >= FileVersion( 0, 3, 201 ) )
     {

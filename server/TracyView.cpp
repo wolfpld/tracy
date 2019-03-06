@@ -655,6 +655,7 @@ bool View::Draw()
         ImGui::EndPopup();
     }
 
+    s_time += ImGui::GetIO().DeltaTime;
     return s_instance->DrawImpl();
 }
 
@@ -5629,7 +5630,6 @@ void View::DrawFindZone()
     if( !m_worker.AreSourceLocationZonesReady() )
     {
         ImGui::TextWrapped( "Please wait, computing data..." );
-        s_time += ImGui::GetIO().DeltaTime;
         DrawWaitingDots( s_time );
         ImGui::End();
         return;

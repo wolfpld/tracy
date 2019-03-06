@@ -1240,6 +1240,7 @@ void View::DrawFrames()
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
                     m_pause = true;
+                    m_zoomAnim.active = false;
                     m_zvStart = m_worker.GetFrameBegin( *m_frames, sel );
                     m_zvEnd = m_worker.GetFrameEnd( *m_frames, sel + group - 1 );
                     if( m_zvStart == m_zvEnd ) m_zvStart--;

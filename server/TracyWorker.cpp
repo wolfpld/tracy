@@ -251,7 +251,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 {
     auto loadStart = std::chrono::high_resolution_clock::now();
 
-    m_data.threadExpand.push_back( 0 );
     m_data.callstackPayload.push_back( nullptr );
 
     int fileVer = 0;
@@ -468,6 +467,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         f.Read( sz );
         m_data.threadExpand.reserve( sz );
+        m_data.threadExpand.push_back( 0 );
+    }
+    else
+    {
+        m_data.threadExpand.push_back( 0 );
     }
 
     f.Read( sz );

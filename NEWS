@@ -41,8 +41,11 @@ v0.5 (xxxx-xx-xx)
   locks list.
 - On broken platforms the profiler can now be initialized as needed (and
   possible), taking a performance and functionality hit.
-- Thread position and height is now animated, to eliminate flickering that
-  was happening when depth of displayed zones was changing.
+- User experience improvements in the graphical profiler.
+  - Thread position and height is now animated, to eliminate flickering that
+    was happening when depth of displayed zones was changing.
+  - Zooming in/out using the mouse wheel is not animated. Press the control
+    key for old behavior.
 - System CPU usage is now being monitored.
 - Threads that have nothing to display in the current view are now hidden by
   default.

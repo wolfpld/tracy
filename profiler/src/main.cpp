@@ -391,16 +391,8 @@ int main( int argc, char** argv )
         {
             tracy::TextCentered( ICON_FA_HOURGLASS_HALF );
 
-            ImGui::TextUnformatted( "" );
-            auto draw = ImGui::GetWindowDrawList();
-            const auto wpos = ImGui::GetWindowPos();
-            const auto ty = ImGui::GetFontSize();
-            const auto h = ImGui::GetCursorPosY() - ty * 0.5f;
-            const auto w = ImGui::GetWindowWidth();
             time += io.DeltaTime;
-            draw->AddCircleFilled( wpos + ImVec2( w * 0.5f - ty, h ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f + 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
-            draw->AddCircleFilled( wpos + ImVec2( w * 0.5f     , h ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f        ), 16.f ) ) ), 0xFFBBBBBB, 12 );
-            draw->AddCircleFilled( wpos + ImVec2( w * 0.5f + ty, h ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
+            tracy::DrawWaitingDots( time );
 
             auto currProgress = progress.progress.load( std::memory_order_relaxed );
             if( totalProgress == 0 )

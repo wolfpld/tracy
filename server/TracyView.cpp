@@ -1247,8 +1247,9 @@ void View::DrawFrames()
                 }
                 else if( ImGui::IsMouseDragging( 0 ) )
                 {
-                    m_zvStart = std::min( m_zvStart, m_worker.GetFrameBegin( *m_frames, sel ) );
-                    m_zvEnd = std::max( m_zvEnd, m_worker.GetFrameEnd( *m_frames, sel + group - 1 ) );
+                    const auto t0 = std::min( m_zvStart, m_worker.GetFrameBegin( *m_frames, sel ) );
+                    const auto t1 = std::max( m_zvEnd, m_worker.GetFrameEnd( *m_frames, sel + group - 1 ) );
+                    ZoomToRange( t0, t1 );
                 }
             }
 

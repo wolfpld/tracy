@@ -6810,6 +6810,7 @@ void View::DrawCompare()
     if( !m_worker.AreSourceLocationZonesReady() || !m_compare.second->AreSourceLocationZonesReady() )
     {
         ImGui::TextWrapped( "Please wait, computing data..." );
+        DrawWaitingDots( s_time );
         ImGui::End();
         return;
     }

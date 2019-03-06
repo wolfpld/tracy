@@ -7414,6 +7414,7 @@ void View::DrawStatistics()
     if( !m_worker.AreSourceLocationZonesReady() )
     {
         ImGui::TextWrapped( "Please wait, computing data..." );
+        DrawWaitingDots( s_time );
         ImGui::End();
         return;
     }

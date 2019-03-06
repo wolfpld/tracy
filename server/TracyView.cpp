@@ -1385,24 +1385,56 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     const auto wheel = io.MouseWheel;
     if( wheel != 0 )
     {
-        m_zoomAnim.active = false;
-        m_pause = true;
         const double mouse = io.MousePos.x - wpos.x;
         const auto p = mouse / w;
-        const auto p1 = timespan * p;
-        const auto p2 = timespan - p1;
-        if( wheel > 0 )
+
+        if( io.KeyCtrl )
         {
-            m_zvStart += int64_t( p1 * 0.25 );
-            m_zvEnd -= int64_t( p2 * 0.25 );
+            m_zoomAnim.active = false;
+            m_pause = true;
+            const auto p1 = timespan * p;
+            const auto p2 = timespan - p1;
+            if( wheel > 0 )
+            {
+                m_zvStart += int64_t( p1 * 0.25 );
+                m_zvEnd -= int64_t( p2 * 0.25 );
+            }
+            else if( timespan < 1000ll * 1000 * 1000 * 60 * 60 )
+            {
+                m_zvStart -= std::max( int64_t( 1 ), int64_t( p1 * 0.25 ) );
+                m_zvEnd += std::max( int64_t( 1 ), int64_t( p2 * 0.25 ) );
+            }
+            timespan = m_zvEnd - m_zvStart;
+            pxns = w / double( timespan );
         }
-        else if( timespan < 1000ll * 1000 * 1000 * 60 * 60 )
+        else
         {
-            m_zvStart -= std::max( int64_t( 1 ), int64_t( p1 * 0.25 ) );
-            m_zvEnd += std::max( int64_t( 1 ), int64_t( p2 * 0.25 ) );
+            int64_t t0, t1;
+            if( m_zoomAnim.active )
+            {
+                t0 = m_zoomAnim.start1;
+                t1 = m_zoomAnim.end1;
+            }
+            else
+            {
+                t0 = m_zvStart;
+                t1 = m_zvEnd;
+            }
+            const auto zoomSpan = t1 - t0;
+            const auto p1 = zoomSpan * p;
+            const auto p2 = zoomSpan - p1;
+            if( wheel > 0 )
+            {
+                t0 += int64_t( p1 * 0.25 );
+                t1 -= int64_t( p2 * 0.25 );
+            }
+            else if( zoomSpan < 1000ll * 1000 * 1000 * 60 * 60 )
+            {
+                t0 -= std::max( int64_t( 1 ), int64_t( p1 * 0.25 ) );
+                t1 += std::max( int64_t( 1 ), int64_t( p2 * 0.25 ) );
+            }
+            ZoomToRange( t0, t1 );
         }
-        timespan = m_zvEnd - m_zvStart;
-        pxns = w / double( timespan );
     }
 }
 

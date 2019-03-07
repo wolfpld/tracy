@@ -684,6 +684,9 @@ bool View::DrawImpl()
         TextCentered( ICON_FA_WIFI );
 #endif
         ImGui::TextUnformatted( "Waiting for connection..." );
+        DrawWaitingDots( s_time );
+        ImGui::Spacing();
+        ImGui::Separator();
         bool wasCancelled = ImGui::Button( "Cancel" );
         ImGui::End();
         return !wasCancelled;

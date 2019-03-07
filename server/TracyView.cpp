@@ -736,6 +736,7 @@ bool View::DrawImpl()
     style.WindowRounding = 0.f;
     style.WindowBorderSize = 0.f;
     style.WindowPadding = ImVec2( 4.f, 4.f );
+    style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
 
     ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
     ImGui::SetNextWindowSize( ImVec2( m_rootWidth, m_rootHeight ) );
@@ -744,6 +745,7 @@ bool View::DrawImpl()
     style.WindowRounding = wrPrev;
     style.WindowBorderSize = wbsPrev;
     style.WindowPadding = wpPrev;
+    style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 1.f );
 #else
     char tmp[2048];
     sprintf( tmp, "%s###Profiler", m_worker.GetCaptureName().c_str() );

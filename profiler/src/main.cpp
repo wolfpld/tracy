@@ -210,7 +210,6 @@ int main( int argc, char** argv )
     style.FrameBorderSize = 1.f * dpiScale;
     style.FrameRounding = 5.f * dpiScale;
     style.ScrollbarSize *= dpiScale;
-    style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 0.94f );
     style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
 
     ImVec4 clear_color = ImColor(114, 144, 154);
@@ -248,6 +247,7 @@ int main( int argc, char** argv )
                 glfwSetWindowTitle( window, title );
             }
 
+            style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
             ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
             char buf[128];
             sprintf( buf, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );

@@ -277,6 +277,7 @@ private:
     BuzzAnim<int> m_findZoneBuzzAnim;
     BuzzAnim<uint32_t> m_optionsLockBuzzAnim;
     BuzzAnim<uint32_t> m_lockInfoAnim;
+    BuzzAnim<uint32_t> m_statBuzzAnim;
 
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;

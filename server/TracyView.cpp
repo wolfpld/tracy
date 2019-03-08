@@ -955,6 +955,7 @@ bool View::DrawImpl()
     m_findZoneBuzzAnim.Update( io.DeltaTime );
     m_optionsLockBuzzAnim.Update( io.DeltaTime );
     m_lockInfoAnim.Update( io.DeltaTime );
+    m_statBuzzAnim.Update( io.DeltaTime );
 
     return keepOpen;
 }
@@ -7500,7 +7501,30 @@ void View::DrawStatistics()
             m_findZone.ShowZone( v->first, name );
         }
         ImGui::NextColumn();
-        ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+        float indentVal = 0.f;
+        if( m_statBuzzAnim.Match( v->first ) )
+        {
+            const auto time = m_statBuzzAnim.Time();
+            indentVal = sin( time * 60.f ) * 10.f * time;
+            ImGui::Indent( indentVal );
+        }
+        const auto file = m_worker.GetString( srcloc.file );
+        ImGui::TextDisabled( "%s:%i", file, srcloc.line );
+        if( ImGui::IsItemClicked( 1 ) )
+        {
+            if( FileExists( file ) )
+            {
+                SetTextEditorFile( file, srcloc.line );
+            }
+            else
+            {
+                m_statBuzzAnim.Enable( v->first, 0.5f );
+            }
+        }
+        if( indentVal != 0.f )
+        {
+            ImGui::Unindent( indentVal );
+        }
         ImGui::NextColumn();
         ImGui::TextUnformatted( TimeToString( m_statSelf ? v->second.selfTotal : v->second.total ) );
         ImGui::NextColumn();

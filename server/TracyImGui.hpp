@@ -32,6 +32,14 @@ namespace tracy
         draw->AddCircleFilled( wpos + ImVec2( w * 0.5f + ty, h ), ty * ( 0.15f + 0.2f * ( pow( cos( time * 3.5f - 0.3f ), 16.f ) ) ), 0xFFBBBBBB, 12 );
     }
 
+    static inline bool SmallCheckbox( const char* label, bool* var )
+    {
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        auto ret = ImGui::Checkbox( label, var );
+        ImGui::PopStyleVar();
+        return ret;
+    }
+
 }
 
 #endif

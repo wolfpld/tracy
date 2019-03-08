@@ -4046,7 +4046,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     if( !expand ) return;
 
     ImGui::SameLine();
-    if( ImGui::SmallButton( showUnknownFrames ? "Hide unknown frames" : "Show unknown frames" ) ) showUnknownFrames = !showUnknownFrames;
+    SmallCheckbox( "Show unknown frames", &showUnknownFrames );
 
     int fidx = 1;
     TextDisabledUnformatted( "0." );
@@ -4514,7 +4514,7 @@ void View::DrawZoneInfoWindow()
             const auto ty = ImGui::GetTextLineHeight();
 
             ImGui::SameLine();
-            if( ImGui::SmallButton( m_groupChildrenLocations ? "Display all children separate" : "Group children locations" ) ) m_groupChildrenLocations = !m_groupChildrenLocations;
+            SmallCheckbox( "Group children locations", &m_groupChildrenLocations );
 
             if( m_groupChildrenLocations )
             {
@@ -4916,7 +4916,7 @@ void View::DrawGpuInfoWindow()
             const auto ty = ImGui::GetTextLineHeight();
 
             ImGui::SameLine();
-            if( ImGui::SmallButton( m_groupChildrenLocations ? "Display all children separate" : "Group children locations" ) ) m_groupChildrenLocations = !m_groupChildrenLocations;
+            SmallCheckbox( "Group children locations", &m_groupChildrenLocations );
 
             if( m_groupChildrenLocations )
             {

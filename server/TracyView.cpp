@@ -7500,7 +7500,7 @@ void View::DrawStatistics()
             m_findZone.ShowZone( v->first, name );
         }
         ImGui::NextColumn();
-        ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+        ImGui::TextDisabled( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
         ImGui::NextColumn();
         ImGui::TextUnformatted( TimeToString( m_statSelf ? v->second.selfTotal : v->second.total ) );
         ImGui::NextColumn();

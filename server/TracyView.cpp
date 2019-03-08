@@ -5518,6 +5518,7 @@ void View::DrawOptions()
 
 void View::DrawMessages()
 {
+    ImGui::SetNextWindowSize( ImVec2( 1200, 600 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Messages", &m_showMessages );
 
     size_t tsz = 0;
@@ -5573,7 +5574,16 @@ void View::DrawMessages()
     }
 
     ImGui::Separator();
+    const auto w = ImGui::GetWindowWidth();
+    static bool widthSet = false;
     ImGui::Columns( 3 );
+    if( !widthSet )
+    {
+        widthSet = true;
+        ImGui::SetColumnWidth( 0, w * 0.07f );
+        ImGui::SetColumnWidth( 1, w * 0.13f );
+        ImGui::SetColumnWidth( 2, w * 0.8f );
+    }
     ImGui::TextUnformatted( "Time" );
     ImGui::SameLine();
     DrawHelpMarker( "Click on message to center timeline on it." );

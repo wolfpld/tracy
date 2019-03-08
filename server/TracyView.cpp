@@ -7412,6 +7412,7 @@ void View::DrawCompare()
 
 void View::DrawStatistics()
 {
+    ImGui::SetNextWindowSize( ImVec2( 1000, 600 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Statistics", &m_showStatistics );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -7474,7 +7475,18 @@ void View::DrawStatistics()
 
     TextFocused( "Recorded source locations:", RealToString( srcloc.size(), true ) );
 
+    const auto w = ImGui::GetWindowWidth();
+    static bool widthSet = false;
     ImGui::Columns( 5 );
+    if( !widthSet )
+    {
+        widthSet = true;
+        ImGui::SetColumnWidth( 0, w * 0.3f );
+        ImGui::SetColumnWidth( 1, w * 0.4f );
+        ImGui::SetColumnWidth( 2, w * 0.1f );
+        ImGui::SetColumnWidth( 3, w * 0.1f );
+        ImGui::SetColumnWidth( 4, w * 0.1f );
+    }
     ImGui::Separator();
     ImGui::TextUnformatted( "Name" );
     ImGui::NextColumn();

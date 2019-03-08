@@ -7555,6 +7555,7 @@ void View::DrawStatistics()
 void View::DrawCallstackWindow()
 {
     bool show = true;
+    ImGui::SetNextWindowSize( ImVec2( 1200, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Call stack", &show );
 
 #ifdef TRACY_EXTENDED_FONT
@@ -7565,7 +7566,16 @@ void View::DrawCallstackWindow()
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
 
+    const auto w = ImGui::GetWindowWidth();
+    static bool widthSet = false;
     ImGui::Columns( 3 );
+    if( !widthSet )
+    {
+        widthSet = true;
+        ImGui::SetColumnWidth( 0, w * 0.05f );
+        ImGui::SetColumnWidth( 1, w * 0.475f );
+        ImGui::SetColumnWidth( 2, w * 0.475f );
+    }
     ImGui::TextUnformatted( "Frame" );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Function" );

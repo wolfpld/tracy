@@ -1,8 +1,8 @@
 Bartosz Taudul <wolf.pld@gmail.com>
-Kamil Klimek <kamil.klimek@sharkbits.com>
-Bartosz Szreder <zgredder@gmail.com>
-Arvid Gerstmann <dev@arvid-g.de>
-Rokas Kupstys <rokups@zoho.com>
-Till Rathmann <till.rathmann@gmx.de>
-Sherief Farouk <sherief.personal@gmail.com>
-Dedmen Miller <dedmen@dedmen.de>
+Kamil Klimek <kamil.klimek@sharkbits.com>           (initial find zone implementation)
+Bartosz Szreder <zgredder@gmail.com>                (view/worker split)
+Arvid Gerstmann <dev@arvid-g.de>                    (compatibility fixes)
+Rokas Kupstys <rokups@zoho.com>                     (compatibility fixes, initial CI work, MingW support)
+Till Rathmann <till.rathmann@gmx.de>                (DLL support)
+Sherief Farouk <sherief.personal@gmail.com>         (compatibility fixes)
+Dedmen Miller <dedmen@dedmen.de>                    (find zone bug fixes, improvements)

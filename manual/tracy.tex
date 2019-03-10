@@ -670,14 +670,26 @@ Be aware that call stack collection is a relatively slow operation. Table~\ref{C
 
 \begin{table}[h]
 \centering
-\begin{tabular}[h]{c|c|c}
-\textbf{Depth} & \textbf{x86} & \textbf{x64} \\ \hline
-1 & 37 \si{\nano\second} & 97 \si{\nano\second} \\
-5 & 51 \si{\nano\second} & 312 \si{\nano\second} \\
-10 & 71 \si{\nano\second} & 468 \si{\nano\second} \\
-20 & 84 \si{\nano\second} & 517 \si{\nano\second}
+\begin{tabular}[h]{c|c|c|c|c}
+\textbf{Depth} & \textbf{x86} & \textbf{x64} & \textbf{ARM} & \textbf{ARM64} \\ \hline
+1 & 34 \si{\nano\second} & 98 \si{\nano\second} & 6.62 \si{\micro\second} & 6.63 \si{\micro\second} \\
+2 & 35 \si{\nano\second} & 150 \si{\nano\second} & 8.08 \si{\micro\second} & 8.25 \si{\micro\second} \\
+3 & 36 \si{\nano\second} & 168 \si{\nano\second} & 9.75 \si{\micro\second} & 10 \si{\micro\second} \\
+4 & 39 \si{\nano\second} & 190 \si{\nano\second} & 10.92 \si{\micro\second} & 11.58 \si{\micro\second} \\
+5 & 42 \si{\nano\second} & 206 \si{\nano\second} & 12.5 \si{\micro\second} & 13.33 \si{\micro\second} \\
+10 & 52 \si{\nano\second} & 306 \si{\nano\second} & 19.62 \si{\micro\second} & 21.71 \si{\micro\second} \\
+15 & 63 \si{\nano\second} & 415 \si{\nano\second} & 26.83 \si{\micro\second} & 30.13 \si{\micro\second} \\
+20 & 77 \si{\nano\second} & 531 \si{\nano\second} & 34.25 \si{\micro\second} & 38.71 \si{\micro\second} \\
+25 & 89 \si{\nano\second} & 630 \si{\nano\second} & 41.17 \si{\micro\second} & 47.17 \si{\micro\second} \\
+30 & 109 \si{\nano\second} & 735 \si{\nano\second} & 48.33 \si{\micro\second} & 55.63 \si{\micro\second} \\
+35 & 123 \si{\nano\second} & 843 \si{\nano\second} & 55.87 \si{\micro\second} & 64.09 \si{\micro\second} \\
+40 & 142 \si{\nano\second} & 950 \si{\nano\second} & 63.12 \si{\micro\second} & 72.59 \si{\micro\second} \\
+45 & 154 \si{\nano\second} & 1.05 \si{\micro\second} & 70.54 \si{\micro\second} & 81 \si{\micro\second} \\
+50 & 167 \si{\nano\second} & 1.16 \si{\micro\second} & 78 \si{\micro\second} & 89.5 \si{\micro\second} \\
+55 & 179 \si{\nano\second} & 1.26 \si{\micro\second} & 85.04 \si{\micro\second} & 98 \si{\micro\second} \\
+60 & 193 \si{\nano\second} & 1.37 \si{\micro\second} & 92.75 \si{\micro\second} & 106.59 \si{\micro\second}
 \end{tabular}
-\caption{Call stack capture times.}
+\caption{Median times of zone capture with call stack. x86, x64: i7 8700K; ARM: Banana Pi; ARM64: ODROID-C2}
 \label{CallstackTimes}
 \end{table}
 

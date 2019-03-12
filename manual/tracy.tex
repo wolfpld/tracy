@@ -9,6 +9,7 @@
 \usepackage{microtype}
 \usepackage[group-separator={,}]{siunitx}
 \usepackage[tikz]{bclogo}
+\usepackage{pgfplots}
 \usepackage{appendix}
 \usepackage{verbatim}
 \usepackage[hyphens]{url}
@@ -666,7 +667,7 @@ Remember that you need to provide your own name for the created stack variable a
 
 Tracy can capture true calls stacks on most platforms. It can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named variants.
 
-Be aware that call stack collection is a relatively slow operation. Table~\ref{CallstackTimes} shows how long it took to perform a single capture of varying depth on multiple CPU architectures.
+Be aware that call stack collection is a relatively slow operation. Table~\ref{CallstackTimes} and figure~\ref{CallstackPlot} show how long it took to perform a single capture of varying depth on multiple CPU architectures.
 
 \begin{table}[h]
 \centering
@@ -689,9 +690,26 @@ Be aware that call stack collection is a relatively slow operation. Table~\ref{C
 55 & 179 \si{\nano\second} & 1.26 \si{\micro\second} & 85.04 \si{\micro\second} & 98 \si{\micro\second} \\
 60 & 193 \si{\nano\second} & 1.37 \si{\micro\second} & 92.75 \si{\micro\second} & 106.59 \si{\micro\second}
 \end{tabular}
-\caption{Median times of zone capture with call stack. x86, x64: i7 8700K; ARM: Banana Pi; ARM64: ODROID-C2}
+\caption{Median times of zone capture with call stack. x86, x64: i7 8700K; ARM: Banana Pi; ARM64: ODROID-C2. Selected architectures are plotted on figure~\ref{CallstackPlot}}
 \label{CallstackTimes}
 \end{table}
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\begin{axis}[xlabel=Call stack depth,ylabel=Time (\si{\nano\second}), legend pos=north west]
+\addplot[smooth, mark=o, red] plot coordinates {
+(1, 98) (2, 150) (3, 168) (4, 190) (5, 206) (10, 306) (15, 415) (20, 531) (25, 630) (30, 735) (35, 843) (40, 950) (45, 1050) (50, 1160) (55, 1260) (60, 1370)
+};
+\addlegendentry{x64}
+\addplot[smooth, mark=x, blue] plot coordinates {
+(1, 34) (2, 35) (3, 36) (4, 39) (5, 42) (10, 52) (15, 63) (20, 77) (25, 89) (30, 109) (35, 123) (40, 142) (45, 154) (50, 167) (55, 179) (60, 193)
+};
+\addlegendentry{x86}
+\end{axis}
+\end{tikzpicture}
+\caption{Plot of call stack capture times (see table~\ref{CallstackTimes}). Notice that the capture time grows linearly with requested capture depth}
+\label{CallstackPlot}
+\end{figure}
 
 You can force call stack capture in the non-\texttt{S} postfixed macros by adding the \texttt{TRACY\_CALLSTACK} define, set to the desired call stack capture depth. This setting doesn't affect the explicit call stack macros.
 

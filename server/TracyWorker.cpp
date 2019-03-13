@@ -1132,6 +1132,26 @@ finishLoading:
 
 #ifndef TRACY_NO_STATISTICS
     m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
+        std::function<void(const Vector<ZoneEvent*>&, uint16_t)> ProcessTimeline;
+        ProcessTimeline = [this, &ProcessTimeline] ( const Vector<ZoneEvent*>& vec, uint16_t thread )
+        {
+            for( auto& zone : vec )
+            {
+                ReadTimelineUpdateStatistics( zone, thread );
+                if( zone->child >= 0 )
+                {
+                    ProcessTimeline( GetZoneChildren( zone->child ), thread );
+                }
+            }
+        };
+
+        for( auto& t : m_data.threads )
+        {
+            // Don't touch thread compression cache in a thread.
+            auto it = m_data.threadMap.find( t->id );
+            assert( it != m_data.threadMap.end() );
+            ProcessTimeline( t->timeline, it->second );
+        }
         for( auto& v : m_data.sourceLocationZones )
         {
             auto& zones = v.second.zones;
@@ -3605,7 +3625,9 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
         zone->start = refTime;
         ReadTimeline( f, zone, thread, refTime );
         zone->end = ReadTimeOffset( f, refTime );
+#ifdef TRACY_NO_STATISTICS
         ReadTimelineUpdateStatistics( zone, thread );
+#endif
     }
     while( ++zone != zptr );
 }
@@ -3639,7 +3661,9 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
             f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
         }
         ReadTimelinePre042( f, zone, thread, fileVer );
+#ifdef TRACY_NO_STATISTICS
         ReadTimelineUpdateStatistics( zone, thread );
+#endif
     }
 }
 

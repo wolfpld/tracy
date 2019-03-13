@@ -2,6 +2,7 @@
 #  include <windows.h>
 #endif
 
+#include <chrono>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,6 +54,10 @@ int main( int argc, char** argv )
         int inVer;
         {
             tracy::Worker worker( *f );
+
+#ifndef TRACY_NO_STATISTICS
+            while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+#endif
 
             auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, hc ? tracy::FileWrite::Compression::Slow : tracy::FileWrite::Compression::Fast ) );
             if( !w )

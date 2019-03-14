@@ -82,22 +82,13 @@ public:
 private:
     struct SourceLocationZones
     {
-        SourceLocationZones()
-            : min( std::numeric_limits<int64_t>::max() )
-            , max( std::numeric_limits<int64_t>::min() )
-            , total( 0 )
-            , selfMin( std::numeric_limits<int64_t>::max() )
-            , selfMax( std::numeric_limits<int64_t>::min() )
-            , selfTotal( 0 )
-        {}
-
         Vector<ZoneThreadData> zones;
-        int64_t min;
-        int64_t max;
-        int64_t total;
-        int64_t selfMin;
-        int64_t selfMax;
-        int64_t selfTotal;
+        int64_t min = std::numeric_limits<int64_t>::max();
+        int64_t max = std::numeric_limits<int64_t>::min();
+        int64_t total = 0;
+        int64_t selfMin = std::numeric_limits<int64_t>::max();
+        int64_t selfMax = std::numeric_limits<int64_t>::min();
+        int64_t selfTotal = 0;
     };
 
     struct CallstackFrameIdHash

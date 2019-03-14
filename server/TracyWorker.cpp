@@ -1147,10 +1147,13 @@ finishLoading:
 
         for( auto& t : m_data.threads )
         {
-            // Don't touch thread compression cache in a thread.
-            auto it = m_data.threadMap.find( t->id );
-            assert( it != m_data.threadMap.end() );
-            ProcessTimeline( t->timeline, it->second );
+            if( !t->timeline.empty() )
+            {
+                // Don't touch thread compression cache in a thread.
+                auto it = m_data.threadMap.find( t->id );
+                assert( it != m_data.threadMap.end() );
+                ProcessTimeline( t->timeline, it->second );
+            }
         }
         for( auto& v : m_data.sourceLocationZones )
         {

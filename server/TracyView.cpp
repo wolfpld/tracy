@@ -6042,6 +6042,12 @@ void View::DrawFindZone()
 #else
                             TextFocused( "s:", TimeToString( sd ) );
 #endif
+                            if( ImGui::IsItemHovered() )
+                            {
+                                ImGui::BeginTooltip();
+                                ImGui::Text( "Standard deviation" );
+                                ImGui::EndTooltip();
+                            }
                         }
 
                         TextDisabledUnformatted( "Selection range:" );
@@ -7179,6 +7185,12 @@ void View::DrawCompare()
 #else
                         TextFocused( "s (this):", TimeToString( sd ) );
 #endif
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "Standard deviation" );
+                            ImGui::EndTooltip();
+                        }
                     }
 
 
@@ -7212,6 +7224,12 @@ void View::DrawCompare()
 #else
                         TextFocused( "s (ext.):", TimeToString( sd ) );
 #endif
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text( "Standard deviation" );
+                            ImGui::EndTooltip();
+                        }
                     }
 
 #ifdef TRACY_EXTENDED_FONT

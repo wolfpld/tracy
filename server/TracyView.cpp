@@ -7162,6 +7162,25 @@ void View::DrawCompare()
                     ImGui::SameLine();
 #endif
                     TextFocused( "Median time (this):", TimeToString( m_compare.median[0] ) );
+                    if( sorted[0].size() > 1 )
+                    {
+                        const auto sz = sorted[0].size();
+                        const auto avg = m_compare.average[0];
+                        const auto ss = zoneData0.sumSq - 2. * zoneData0.total * avg + avg * avg * sz;
+                        const auto sd = sqrt( ss / ( sz - 1 ) );
+
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                        ImGui::SameLine();
+                        TextFocused( "\xcf\x83 (this):", TimeToString( sd ) );
+#else
+                        TextFocused( "s (this):", TimeToString( sd ) );
+#endif
+                    }
+
 
 #ifdef TRACY_EXTENDED_FONT
                     ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
@@ -7176,6 +7195,24 @@ void View::DrawCompare()
                     ImGui::SameLine();
 #endif
                     TextFocused( "Median time (ext.):", TimeToString( m_compare.median[1] ) );
+                    if( sorted[1].size() > 1 )
+                    {
+                        const auto sz = sorted[1].size();
+                        const auto avg = m_compare.average[1];
+                        const auto ss = zoneData1.sumSq - 2. * zoneData1.total * avg + avg * avg * sz;
+                        const auto sd = sqrt( ss / ( sz - 1 ) );
+
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                        ImGui::SameLine();
+                        TextFocused( "\xcf\x83 (ext.):", TimeToString( sd ) );
+#else
+                        TextFocused( "s (ext.):", TimeToString( sd ) );
+#endif
+                    }
 
 #ifdef TRACY_EXTENDED_FONT
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );

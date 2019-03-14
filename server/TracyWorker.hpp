@@ -86,6 +86,7 @@ private:
         int64_t min = std::numeric_limits<int64_t>::max();
         int64_t max = std::numeric_limits<int64_t>::min();
         int64_t total = 0;
+        double sumSq = 0;
         int64_t selfMin = std::numeric_limits<int64_t>::max();
         int64_t selfMax = std::numeric_limits<int64_t>::min();
         int64_t selfTotal = 0;

@@ -6029,14 +6029,10 @@ void View::DrawFindZone()
                         TextFocused( "Median time:", TimeToString( m_findZone.median ) );
                         if( m_findZone.sorted.size() > 1 )
                         {
+                            const auto sz = m_findZone.sorted.size();
                             const auto avg = m_findZone.average;
-                            double ss = 0;
-                            for( auto& v : m_findZone.sorted )
-                            {
-                                const auto d = double( v ) - avg;
-                                ss += d*d;
-                            }
-                            const auto sd = sqrt( ss / ( m_findZone.sorted.size() - 1 ) );
+                            const auto ss = zoneData.sumSq - 2. * zoneData.total * avg + avg * avg * sz;
+                            const auto sd = sqrt( ss / ( sz - 1 ) );
 
                             ImGui::SameLine();
                             ImGui::Spacing();

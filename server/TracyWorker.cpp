@@ -2590,6 +2590,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         slz.min = std::min( slz.min, timeSpan );
         slz.max = std::max( slz.max, timeSpan );
         slz.total += timeSpan;
+        slz.sumSq += double( timeSpan ) * timeSpan;
         if( zone->child >= 0 )
         {
             for( auto& v : GetZoneChildren( zone->child ) )
@@ -3587,6 +3588,7 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
             slz.min = std::min( slz.min, timeSpan );
             slz.max = std::max( slz.max, timeSpan );
             slz.total += timeSpan;
+            slz.sumSq += double( timeSpan ) * timeSpan;
             if( zone->child >= 0 )
             {
                 for( auto& v : GetZoneChildren( zone->child ) )

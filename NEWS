@@ -51,6 +51,7 @@ v0.5 (xxxx-xx-xx)
   default.
 - Dimmed-out the timeline outside the profiling area.
 - Source file view can now be opened also from statistics menu.
+- Display standard deviation in find zone and compare traces menus.
 
 v0.4.1 (2018-12-30)
 -------------------

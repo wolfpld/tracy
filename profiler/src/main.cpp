@@ -188,6 +188,7 @@ int main( int argc, char** argv )
     static const ImWchar rangesBasic[] = {
         0x0020, 0x00FF, // Basic Latin + Latin Supplement
         0x03BC, 0x03BC, // micro
+        0x03C3, 0x03C3, // small sigma
         0,
     };
     static const ImWchar rangesIcons[] = {

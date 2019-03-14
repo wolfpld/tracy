@@ -6027,6 +6027,26 @@ void View::DrawFindZone()
                         ImGui::Spacing();
                         ImGui::SameLine();
                         TextFocused( "Median time:", TimeToString( m_findZone.median ) );
+                        if( m_findZone.sorted.size() > 1 )
+                        {
+                            const auto avg = m_findZone.average;
+                            double ss = 0;
+                            for( auto& v : m_findZone.sorted )
+                            {
+                                const auto d = double( v ) - avg;
+                                ss += d*d;
+                            }
+                            const auto sd = sqrt( ss / ( m_findZone.sorted.size() - 1 ) );
+
+                            ImGui::SameLine();
+                            ImGui::Spacing();
+                            ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                            TextFocused( "\xcf\x83:", TimeToString( sd ) );
+#else
+                            TextFocused( "s:", TimeToString( sd ) );
+#endif
+                        }
 
                         TextDisabledUnformatted( "Selection range:" );
                         ImGui::SameLine();

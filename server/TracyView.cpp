@@ -5668,7 +5668,7 @@ void View::DrawFindZone()
         ImGui::SetKeyboardFocusHere();
         m_shortcut = ShortcutAction::None;
     }
-    findClicked |= ImGui::InputText( "", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+    findClicked |= ImGui::InputTextWithHint( "", "Enter zone name to search for", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
@@ -6885,7 +6885,7 @@ void View::DrawCompare()
     bool findClicked = false;
 
     ImGui::PushItemWidth( -0.01f );
-    findClicked |= ImGui::InputText( "", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+    findClicked |= ImGui::InputTextWithHint( "", "Enter zone name to search for", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
@@ -8936,7 +8936,7 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Allocations" ) )
 #endif
     {
-        ImGui::InputText( "###address", m_memInfo.pattern, 1024 );
+        ImGui::InputTextWithHint( "###address", "Enter memory address to search for", m_memInfo.pattern, 1024 );
         ImGui::SameLine();
 
 #ifdef TRACY_EXTENDED_FONT

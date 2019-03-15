@@ -5610,7 +5610,7 @@ void View::DrawMessages()
             }
             if( m_msgToFocus == v )
             {
-                ImGui::SetScrollHere();
+                ImGui::SetScrollHereY();
                 m_msgToFocus = nullptr;
             }
             ImGui::PopID();

@@ -289,7 +289,7 @@ int main( int argc, char** argv )
             ImGui::Separator();
             ImGui::TextUnformatted( "Connect to client" );
             bool connectClicked = false;
-            connectClicked |= ImGui::InputTextWithHint( "", "Enter address", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+            connectClicked |= ImGui::InputTextWithHint( "###connectaddress", "Enter address", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
             if( !connHistVec.empty() )
             {
                 ImGui::SameLine();

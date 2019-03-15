@@ -5668,7 +5668,7 @@ void View::DrawFindZone()
         ImGui::SetKeyboardFocusHere();
         m_shortcut = ShortcutAction::None;
     }
-    findClicked |= ImGui::InputTextWithHint( "", "Enter zone name to search for", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+    findClicked |= ImGui::InputTextWithHint( "###findzone", "Enter zone name to search for", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT
@@ -6885,7 +6885,7 @@ void View::DrawCompare()
     bool findClicked = false;
 
     ImGui::PushItemWidth( -0.01f );
-    findClicked |= ImGui::InputTextWithHint( "", "Enter zone name to search for", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+    findClicked |= ImGui::InputTextWithHint( "###compare", "Enter zone name to search for", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 
 #ifdef TRACY_EXTENDED_FONT

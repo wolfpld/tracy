@@ -878,7 +878,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         for( uint64_t i=0; i<sz; i++ )
         {
-            f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) );
+            if( fileVer >= FileVersion( 0, 4, 5 ) )
+            {
+                f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) + sizeof( PlotData::type ) );
+            }
+            else
+            {
+                f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) );
+            }
             uint64_t psz;
             f.Read( psz );
             f.Skip( psz * sizeof( PlotItem ) );

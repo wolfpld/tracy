@@ -2008,6 +2008,10 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread 
         it = timeline.insert( it, lev );
         UpdateLockCount( lockmap, std::distance( timeline.begin(), it ) );
     }
+
+    auto& range = lockmap.range[it->second];
+    if( range.start > lt ) range.start = lt;
+    if( range.end < lt ) range.end = lt;
 }
 
 void Worker::CheckString( uint64_t ptr )

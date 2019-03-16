@@ -3204,9 +3204,19 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             double pxend = 0;
             for(;;)
             {
-                while( vbegin < vend && ( state == LockState::Nothing || ( m_onlyContendedLocks && state == LockState::HasLock ) ) )
+                if( m_onlyContendedLocks )
                 {
-                    vbegin = GetNextLockFunc( vbegin, vend, state, threadBit );
+                    while( vbegin < vend && ( state == LockState::Nothing || state == LockState::HasLock ) )
+                    {
+                        vbegin = GetNextLockFunc( vbegin, vend, state, threadBit );
+                    }
+                }
+                else
+                {
+                    while( vbegin < vend && state == LockState::Nothing )
+                    {
+                        vbegin = GetNextLockFunc( vbegin, vend, state, threadBit );
+                    }
                 }
                 if( vbegin >= vend ) break;
 
@@ -3223,31 +3233,63 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 double px1 = ( t1 - m_zvStart ) * pxns;
                 uint64_t condensed = 0;
 
-                for(;;)
+                if( m_onlyContendedLocks )
                 {
-                    if( next >= vend || px1 - tx0 > MinVisSize ) break;
-                    auto n = next;
-                    auto ns = state;
-                    while( n < vend && ( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) )
+                    for(;;)
                     {
-                        n = GetNextLockFunc( n, vend, ns, threadBit );
+                        if( next >= vend || px1 - tx0 > MinVisSize ) break;
+                        auto n = next;
+                        auto ns = state;
+                        while( n < vend && ( ns == LockState::Nothing || ns == LockState::HasLock ) )
+                        {
+                            n = GetNextLockFunc( n, vend, ns, threadBit );
+                        }
+                        if( n >= vend ) break;
+                        if( n == next )
+                        {
+                            n = GetNextLockFunc( n, vend, ns, threadBit );
+                        }
+                        drawState = CombineLockState( drawState, state );
+                        condensed++;
+                        const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->time;
+                        const auto px2 = ( t2 - m_zvStart ) * pxns;
+                        if( px2 - px1 > MinVisSize ) break;
+                        if( drawState != ns && px2 - px0 > MinVisSize && !( ns == LockState::Nothing || ns == LockState::HasLock ) ) break;
+                        t1 = t2;
+                        tx0 = px1;
+                        px1 = px2;
+                        next = n;
+                        state = ns;
                     }
-                    if( n >= vend ) break;
-                    if( n == next )
+                }
+                else
+                {
+                    for(;;)
                     {
-                        n = GetNextLockFunc( n, vend, ns, threadBit );
+                        if( next >= vend || px1 - tx0 > MinVisSize ) break;
+                        auto n = next;
+                        auto ns = state;
+                        while( n < vend && ns == LockState::Nothing )
+                        {
+                            n = GetNextLockFunc( n, vend, ns, threadBit );
+                        }
+                        if( n >= vend ) break;
+                        if( n == next )
+                        {
+                            n = GetNextLockFunc( n, vend, ns, threadBit );
+                        }
+                        drawState = CombineLockState( drawState, state );
+                        condensed++;
+                        const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->time;
+                        const auto px2 = ( t2 - m_zvStart ) * pxns;
+                        if( px2 - px1 > MinVisSize ) break;
+                        if( drawState != ns && px2 - px0 > MinVisSize && ns != LockState::Nothing ) break;
+                        t1 = t2;
+                        tx0 = px1;
+                        px1 = px2;
+                        next = n;
+                        state = ns;
                     }
-                    drawState = CombineLockState( drawState, state );
-                    condensed++;
-                    const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->time;
-                    const auto px2 = ( t2 - m_zvStart ) * pxns;
-                    if( px2 - px1 > MinVisSize ) break;
-                    if( drawState != ns && px2 - px0 > MinVisSize && !( ns == LockState::Nothing || ( m_onlyContendedLocks && ns == LockState::HasLock ) ) ) break;
-                    t1 = t2;
-                    tx0 = px1;
-                    px1 = px2;
-                    next = n;
-                    state = ns;
                 }
 
                 pxend = std::max( { px1, px0+MinVisSize, px0 + pxns * 0.5 } );

@@ -213,6 +213,14 @@ static tracy_force_inline int64_t ReadTimeOffset( FileRead& f, int64_t& refTime 
     return refTime;
 }
 
+static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEvent& ev )
+{
+    const auto lt = ev.time;
+    auto& range = lockmap.range[ev.thread];
+    if( range.start > lt ) range.start = lt;
+    if( range.end < lt ) range.end = lt;
+}
+
 LoadProgress Worker::s_loadProgress;
 
 Worker::Worker( const char* addr )
@@ -604,6 +612,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         lev->time = ReadTimeOffset( f, refTime );
                         f.Read( &lev->srcloc, sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = lev;
+                        UpdateLockRange( lockmap, *lev );
                     }
                 }
                 else
@@ -614,6 +623,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         lev->time = ReadTimeOffset( f, refTime );
                         f.Read( &lev->srcloc, sizeof( LockEventShared::srcloc ) + sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = lev;
+                        UpdateLockRange( lockmap, *lev );
                     }
                 }
             }
@@ -626,6 +636,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         auto lev = m_slab.Alloc<LockEvent>();
                         f.Read( lev, sizeof( LockEvent::time ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = lev;
+                        UpdateLockRange( lockmap, *lev );
                     }
                 }
                 else
@@ -635,6 +646,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         auto lev = m_slab.Alloc<LockEventShared>();
                         f.Read( lev, sizeof( LockEventShared::time ) + sizeof( LockEventShared::srcloc ) + sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = lev;
+                        UpdateLockRange( lockmap, *lev );
                     }
                 }
             }
@@ -650,6 +662,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         f.Read( lev->type );
                         f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) );
                         *ptr++ = lev;
+                        UpdateLockRange( lockmap, *lev );
                     }
                 }
                 else
@@ -662,6 +675,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                         f.Read( lev->type );
                         f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) * 3 );
                         *ptr++ = lev;
+                        UpdateLockRange( lockmap, *lev );
                     }
                 }
             }

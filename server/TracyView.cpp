@@ -3135,9 +3135,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
         const auto offset = _offset + ostep * cnt;
 
+        const auto& range = lockmap.range[it->second];
         const auto& tl = lockmap.timeline;
         assert( !tl.empty() );
-        if( tl.back()->time < m_zvStart )
+        if( range.start > m_zvEnd || range.end < m_zvStart )
         {
             if( m_lockInfoWindow == v.first )
             {

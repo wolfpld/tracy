@@ -3031,13 +3031,8 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
 
         if( ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, offset + ty ) ) )
         {
-            auto lptr = lockmap.timeline.data();
-            auto eptr = lptr + lockmap.timeline.size() - 1;
-            while( (*lptr)->thread != tid ) lptr++;
-            const auto first = (*lptr)->time;
-            while( (*eptr)->thread != tid ) eptr--;
-            const auto last = (*eptr)->time;
-            const auto activity = last - first;
+            const auto& range = lockmap.range[tid];
+            const auto activity = range.end - range.start;
             const auto traceLen = m_worker.GetLastTime() - m_worker.GetTimeBegin();
 
             int64_t timeAnnounce = lockmap.timeAnnounce;
@@ -3071,13 +3066,13 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
             ImGui::Separator();
 #ifdef TRACY_EXTENDED_FONT
-            TextFocused( ICON_FA_RANDOM " Appeared at", TimeToString( first - m_worker.GetTimeBegin() ) );
-            TextFocused( ICON_FA_RANDOM " Last event at", TimeToString( last - m_worker.GetTimeBegin() ) );
+            TextFocused( ICON_FA_RANDOM " Appeared at", TimeToString( range.start - m_worker.GetTimeBegin() ) );
+            TextFocused( ICON_FA_RANDOM " Last event at", TimeToString( range.end - m_worker.GetTimeBegin() ) );
             TextFocused( ICON_FA_RANDOM " Activity time:", TimeToString( activity ) );
 #else
             ImGui::TextUnformatted( "This thread" );
-            TextFocused( "Appeared at", TimeToString( first - m_worker.GetTimeBegin() ) );
-            TextFocused( "Last event at", TimeToString( last - m_worker.GetTimeBegin() ) );
+            TextFocused( "Appeared at", TimeToString( range.start - m_worker.GetTimeBegin() ) );
+            TextFocused( "Last event at", TimeToString( range.end - m_worker.GetTimeBegin() ) );
             TextFocused( "Activity time:", TimeToString( activity ) );
 #endif
             ImGui::SameLine();
@@ -3106,7 +3101,7 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             }
             if( ImGui::IsMouseClicked( 2 ) )
             {
-                ZoomToRange( first, last );
+                ZoomToRange( range.start, range.end );
             }
         }
     }

@@ -252,6 +252,12 @@ struct GpuCtxData
 
 struct LockMap
 {
+    struct TimeRange
+    {
+        int64_t start = std::numeric_limits<int64_t>::max();
+        int64_t end = std::numeric_limits<int64_t>::min();
+    };
+
     uint32_t srcloc;
     Vector<LockEvent*> timeline;
     flat_hash_map<uint64_t, uint8_t, nohash<uint64_t>> threadMap;
@@ -260,6 +266,8 @@ struct LockMap
     int64_t timeAnnounce;
     int64_t timeTerminate;
     bool valid;
+
+    TimeRange range[64];
 };
 
 struct LockHighlight

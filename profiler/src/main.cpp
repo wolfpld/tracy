@@ -258,7 +258,7 @@ int main( int argc, char** argv )
     ImGuiIO& io = ImGui::GetIO();
     std::string iniFileName = tracy::GetSavePath( "imgui.ini" );
     io.IniFilename = iniFileName.c_str();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_DockingEnable;
 
     ImGui_ImplGlfw_InitForOpenGL( window, true );
     ImGui_ImplOpenGL3_Init( "#version 150" );

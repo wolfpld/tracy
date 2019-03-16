@@ -3,7 +3,6 @@
 
 #include <atomic>
 #include <limits>
-#include <map>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -170,7 +169,7 @@ private:
         flat_hash_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameMap;
         flat_hash_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revFrameMap;
 
-        std::map<uint32_t, LockMap> lockMap;
+        flat_hash_map<uint32_t, LockMap*, nohash<uint32_t>> lockMap;
 
         flat_hash_map<uint64_t, uint16_t, nohash<uint64_t>> threadMap;
         Vector<uint64_t> threadExpand;
@@ -260,7 +259,7 @@ public:
     int64_t GetFrameEnd( const FrameData& fd, size_t idx ) const;
     std::pair <int, int> GetFrameRange( const FrameData& fd, int64_t from, int64_t to );
 
-    const std::map<uint32_t, LockMap>& GetLockMap() const { return m_data.lockMap; }
+    const flat_hash_map<uint32_t, LockMap*, nohash<uint32_t>>& GetLockMap() const { return m_data.lockMap; }
     const Vector<MessageData*>& GetMessages() const { return m_data.messages; }
     const Vector<GpuCtxData*>& GetGpuData() const { return m_data.gpuData; }
     const Vector<PlotData*>& GetPlots() const { return m_data.plots.Data(); }

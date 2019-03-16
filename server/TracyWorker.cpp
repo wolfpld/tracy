@@ -566,7 +566,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         for( uint64_t i=0; i<sz; i++ )
         {
             s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
-            LockMap lockmap;
+            auto lockmapPtr = m_slab.AllocInit<LockMap>();
+            auto& lockmap = *lockmapPtr;
             uint32_t id;
             uint64_t tsz;
             f.Read( id );
@@ -665,7 +666,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 }
             }
             UpdateLockCount( lockmap, 0 );
-            m_data.lockMap.emplace( id, std::move( lockmap ) );
+            m_data.lockMap.emplace( id, lockmapPtr );
         }
     }
     else
@@ -1214,6 +1215,10 @@ Worker::~Worker()
     {
         v->~FrameData();
     }
+    for( auto& v : m_data.lockMap )
+    {
+        v.second->~LockMap();
+    }
 }
 
 uint64_t Worker::GetLockCount() const
@@ -1221,7 +1226,7 @@ uint64_t Worker::GetLockCount() const
     uint64_t cnt = 0;
     for( auto& l : m_data.lockMap )
     {
-        cnt += l.second.timeline.size();
+        cnt += l.second->timeline.size();
     }
     return cnt;
 }
@@ -2763,20 +2768,20 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
     auto it = m_data.lockMap.find( ev.id );
     if( it == m_data.lockMap.end() )
     {
-        LockMap lm;
-        lm.srcloc = ShrinkSourceLocation( ev.lckloc );
-        lm.type = ev.type;
-        lm.timeAnnounce = TscTime( ev.time );
-        lm.timeTerminate = 0;
-        lm.valid = true;
-        m_data.lockMap.emplace( ev.id, std::move( lm ) );
+        auto lm = m_slab.AllocInit<LockMap>();
+        lm->srcloc = ShrinkSourceLocation( ev.lckloc );
+        lm->type = ev.type;
+        lm->timeAnnounce = TscTime( ev.time );
+        lm->timeTerminate = 0;
+        lm->valid = true;
+        m_data.lockMap.emplace( ev.id, lm );
     }
     else
     {
-        it->second.srcloc = ShrinkSourceLocation( ev.lckloc );
-        assert( it->second.type == ev.type );
-        it->second.timeAnnounce = TscTime( ev.time );
-        it->second.valid = true;
+        it->second->srcloc = ShrinkSourceLocation( ev.lckloc );
+        assert( it->second->type == ev.type );
+        it->second->timeAnnounce = TscTime( ev.time );
+        it->second->valid = true;
     }
     CheckSourceLocation( ev.lckloc );
 }
@@ -2786,17 +2791,17 @@ void Worker::ProcessLockTerminate( const QueueLockTerminate& ev )
     auto it = m_data.lockMap.find( ev.id );
     if( it == m_data.lockMap.end() )
     {
-        LockMap lm;
-        lm.type = ev.type;
-        lm.timeAnnounce = 0;
-        lm.timeTerminate = TscTime( ev.time );
-        lm.valid = false;
-        m_data.lockMap.emplace( ev.id, std::move( lm ) );
+        auto lm = m_slab.AllocInit<LockMap>();
+        lm->type = ev.type;
+        lm->timeAnnounce = 0;
+        lm->timeTerminate = TscTime( ev.time );
+        lm->valid = false;
+        m_data.lockMap.emplace( ev.id, lm );
     }
     else
     {
-        assert( it->second.type == ev.type );
-        it->second.timeTerminate = TscTime( ev.time );
+        assert( it->second->type == ev.type );
+        it->second->timeTerminate = TscTime( ev.time );
     }
 }
 
@@ -2805,12 +2810,12 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     auto it = m_data.lockMap.find( ev.id );
     if( it == m_data.lockMap.end() )
     {
-        LockMap lm;
-        lm.timeAnnounce = 0;
-        lm.timeTerminate = 0;
-        lm.valid = false;
-        lm.type = ev.type;
-        it = m_data.lockMap.emplace( ev.id, std::move( lm ) ).first;
+        auto lm = m_slab.AllocInit<LockMap>();
+        lm->timeAnnounce = 0;
+        lm->timeTerminate = 0;
+        lm->valid = false;
+        lm->type = ev.type;
+        it = m_data.lockMap.emplace( ev.id, lm ).first;
     }
 
     auto lev = ev.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
@@ -2818,13 +2823,14 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     lev->type = LockEvent::Type::Wait;
     lev->srcloc = 0;
 
-    InsertLockEvent( it->second, lev, ev.thread );
+    InsertLockEvent( *it->second, lev, ev.thread );
 }
 
 void Worker::ProcessLockObtain( const QueueLockObtain& ev )
 {
-    assert( m_data.lockMap.find( ev.id ) != m_data.lockMap.end() );
-    auto& lock = m_data.lockMap[ev.id];
+    auto it = m_data.lockMap.find( ev.id );
+    assert( it != m_data.lockMap.end() );
+    auto& lock = *it->second;
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     lev->time = TscTime( ev.time );
@@ -2836,8 +2842,9 @@ void Worker::ProcessLockObtain( const QueueLockObtain& ev )
 
 void Worker::ProcessLockRelease( const QueueLockRelease& ev )
 {
-    assert( m_data.lockMap.find( ev.id ) != m_data.lockMap.end() );
-    auto& lock = m_data.lockMap[ev.id];
+    auto it = m_data.lockMap.find( ev.id );
+    assert( it != m_data.lockMap.end() );
+    auto& lock = *it->second;
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     lev->time = TscTime( ev.time );
@@ -2852,10 +2859,10 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
     auto it = m_data.lockMap.find( ev.id );
     if( it == m_data.lockMap.end() )
     {
-        LockMap lm;
-        lm.valid = false;
-        lm.type = ev.type;
-        it = m_data.lockMap.emplace( ev.id, std::move( lm ) ).first;
+        auto lm = m_slab.AllocInit<LockMap>();
+        lm->valid = false;
+        lm->type = ev.type;
+        it = m_data.lockMap.emplace( ev.id, lm ).first;
     }
 
     assert( ev.type == LockType::SharedLockable );
@@ -2864,13 +2871,14 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
     lev->type = LockEvent::Type::WaitShared;
     lev->srcloc = 0;
 
-    InsertLockEvent( it->second, lev, ev.thread );
+    InsertLockEvent( *it->second, lev, ev.thread );
 }
 
 void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
 {
-    assert( m_data.lockMap.find( ev.id ) != m_data.lockMap.end() );
-    auto& lock = m_data.lockMap[ev.id];
+    auto it = m_data.lockMap.find( ev.id );
+    assert( it != m_data.lockMap.end() );
+    auto& lock = *it->second;
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
@@ -2883,8 +2891,9 @@ void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
 
 void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
 {
-    assert( m_data.lockMap.find( ev.id ) != m_data.lockMap.end() );
-    auto& lock = m_data.lockMap[ev.id];
+    auto it = m_data.lockMap.find( ev.id );
+    assert( it != m_data.lockMap.end() );
+    auto& lock = *it->second;
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
@@ -2900,7 +2909,7 @@ void Worker::ProcessLockMark( const QueueLockMark& ev )
     CheckSourceLocation( ev.srcloc );
     auto lit = m_data.lockMap.find( ev.id );
     assert( lit != m_data.lockMap.end() );
-    auto& lockmap = lit->second;
+    auto& lockmap = *lit->second;
     auto tid = lockmap.threadMap.find( ev.thread );
     assert( tid != lockmap.threadMap.end() );
     const auto thread = tid->second;
@@ -3906,21 +3915,21 @@ void Worker::Write( FileWrite& f )
     for( auto& v : m_data.lockMap )
     {
         f.Write( &v.first, sizeof( v.first ) );
-        f.Write( &v.second.srcloc, sizeof( v.second.srcloc ) );
-        f.Write( &v.second.type, sizeof( v.second.type ) );
-        f.Write( &v.second.valid, sizeof( v.second.valid ) );
-        f.Write( &v.second.timeAnnounce, sizeof( v.second.timeAnnounce ) );
-        f.Write( &v.second.timeTerminate, sizeof( v.second.timeTerminate ) );
-        sz = v.second.threadList.size();
+        f.Write( &v.second->srcloc, sizeof( v.second->srcloc ) );
+        f.Write( &v.second->type, sizeof( v.second->type ) );
+        f.Write( &v.second->valid, sizeof( v.second->valid ) );
+        f.Write( &v.second->timeAnnounce, sizeof( v.second->timeAnnounce ) );
+        f.Write( &v.second->timeTerminate, sizeof( v.second->timeTerminate ) );
+        sz = v.second->threadList.size();
         f.Write( &sz, sizeof( sz ) );
-        for( auto& t : v.second.threadList )
+        for( auto& t : v.second->threadList )
         {
             f.Write( &t, sizeof( t ) );
         }
-        int64_t refTime = v.second.timeAnnounce;
-        sz = v.second.timeline.size();
+        int64_t refTime = v.second->timeAnnounce;
+        sz = v.second->timeline.size();
         f.Write( &sz, sizeof( sz ) );
-        for( auto& lev : v.second.timeline )
+        for( auto& lev : v.second->timeline )
         {
             WriteTimeOffset( f, refTime, lev->time );
             f.Write( &lev->srcloc, sizeof( lev->srcloc ) );

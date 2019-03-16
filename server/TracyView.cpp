@@ -2171,7 +2171,7 @@ void View::DrawZones()
                 size_t lockCnt = 0;
                 for( const auto& lock : m_worker.GetLockMap() )
                 {
-                    const auto& lockmap = lock.second;
+                    const auto& lockmap = *lock.second;
                     if( !lockmap.valid ) continue;
                     auto it = lockmap.threadMap.find( v->id );
                     if( it == lockmap.threadMap.end() ) continue;
@@ -3126,7 +3126,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     int cnt = 0;
     for( const auto& v : m_worker.GetLockMap() )
     {
-        const auto& lockmap = v.second;
+        const auto& lockmap = *v.second;
         if( !lockmap.valid || !Vis( &lockmap ).visible ) continue;
         if( m_onlyContendedLocks && lockmap.threadList.size() == 1 && m_lockInfoWindow != v.first ) continue;
 
@@ -5196,10 +5196,10 @@ void View::DrawOptions()
         size_t multiCnt = 0;
         for( const auto& l : m_worker.GetLockMap() )
         {
-            if( l.second.valid && !l.second.timeline.empty() )
+            if( l.second->valid && !l.second->timeline.empty() )
             {
                 lockCnt++;
-                if( l.second.threadList.size() == 1 )
+                if( l.second->threadList.size() == 1 )
                 {
                     singleCnt++;
                 }
@@ -5233,7 +5233,7 @@ void View::DrawOptions()
             {
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    Vis( &l.second ).visible = true;
+                    Vis( l.second ).visible = true;
                 }
             }
             ImGui::SameLine();
@@ -5241,7 +5241,7 @@ void View::DrawOptions()
             {
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    Vis( &l.second ).visible = false;
+                    Vis( l.second ).visible = false;
                 }
             }
             ImGui::SameLine();
@@ -5256,7 +5256,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second.threadList.size() != 1 ) Vis( &l.second ).visible = true;
+                        if( l.second->threadList.size() != 1 ) Vis( l.second ).visible = true;
                     }
                 }
                 ImGui::SameLine();
@@ -5264,20 +5264,20 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second.threadList.size() != 1 ) Vis( &l.second ).visible = false;
+                        if( l.second->threadList.size() != 1 ) Vis( l.second ).visible = false;
                     }
                 }
 
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    if( l.second.valid && !l.second.timeline.empty() && l.second.threadList.size() != 1 )
+                    if( l.second->valid && !l.second->timeline.empty() && l.second->threadList.size() != 1 )
                     {
-                        auto& sl = m_worker.GetSourceLocation( l.second.srcloc );
+                        auto& sl = m_worker.GetSourceLocation( l.second->srcloc );
                         auto fileName = m_worker.GetString( sl.file );
 
                         char buf[1024];
-                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Vis( &l.second ).visible );
+                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                        ImGui::Checkbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5287,7 +5287,7 @@ void View::DrawOptions()
                                 m_lockInfoWindow = l.first;
                             }
                         }
-                        if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
+                        if( m_optionsLockBuzzAnim.Match( l.second->srcloc ) )
                         {
                             const auto time = m_optionsLockBuzzAnim.Time();
                             const auto indentVal = sin( time * 60.f ) * 10.f * time;
@@ -5297,7 +5297,7 @@ void View::DrawOptions()
                         {
                             ImGui::SameLine();
                         }
-                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second.timeline.size(), true ), fileName, sl.line );
+                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size(), true ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
                             if( FileExists( fileName ) )
@@ -5306,7 +5306,7 @@ void View::DrawOptions()
                             }
                             else
                             {
-                                m_optionsLockBuzzAnim.Enable( l.second.srcloc, 0.5f );
+                                m_optionsLockBuzzAnim.Enable( l.second->srcloc, 0.5f );
                             }
                         }
                     }
@@ -5322,7 +5322,7 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second.threadList.size() == 1 ) Vis( &l.second ).visible = true;
+                        if( l.second->threadList.size() == 1 ) Vis( l.second ).visible = true;
                     }
                 }
                 ImGui::SameLine();
@@ -5330,20 +5330,20 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second.threadList.size() == 1 ) Vis( &l.second ).visible = false;
+                        if( l.second->threadList.size() == 1 ) Vis( l.second ).visible = false;
                     }
                 }
 
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    if( l.second.valid && !l.second.timeline.empty() && l.second.threadList.size() == 1 )
+                    if( l.second->valid && !l.second->timeline.empty() && l.second->threadList.size() == 1 )
                     {
-                        auto& sl = m_worker.GetSourceLocation( l.second.srcloc );
+                        auto& sl = m_worker.GetSourceLocation( l.second->srcloc );
                         auto fileName = m_worker.GetString( sl.file );
 
                         char buf[1024];
-                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second.srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Vis( &l.second ).visible );
+                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                        ImGui::Checkbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5353,7 +5353,7 @@ void View::DrawOptions()
                                 m_lockInfoWindow = l.first;
                             }
                         }
-                        if( m_optionsLockBuzzAnim.Match( l.second.srcloc ) )
+                        if( m_optionsLockBuzzAnim.Match( l.second->srcloc ) )
                         {
                             const auto time = m_optionsLockBuzzAnim.Time();
                             const auto indentVal = sin( time * 60.f ) * 10.f * time;
@@ -5363,7 +5363,7 @@ void View::DrawOptions()
                         {
                             ImGui::SameLine();
                         }
-                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second.timeline.size(), true ), fileName, sl.line );
+                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size(), true ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
                             if( FileExists( fileName ) )
@@ -5372,7 +5372,7 @@ void View::DrawOptions()
                             }
                             else
                             {
-                                m_optionsLockBuzzAnim.Enable( l.second.srcloc, 0.5f );
+                                m_optionsLockBuzzAnim.Enable( l.second->srcloc, 0.5f );
                             }
                         }
                     }
@@ -8403,7 +8403,7 @@ void View::DrawLockInfoWindow()
 {
     auto it = m_worker.GetLockMap().find( m_lockInfoWindow );
     assert( it != m_worker.GetLockMap().end() );
-    const auto& lock = it->second;
+    const auto& lock = *it->second;
     const auto& srcloc = m_worker.GetSourceLocation( lock.srcloc );
     auto fileName = m_worker.GetString( srcloc.file );
 

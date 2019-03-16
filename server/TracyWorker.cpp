@@ -1977,7 +1977,8 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
 
 void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
 {
-    m_data.lastTime = std::max( m_data.lastTime, lev->time );
+    const auto lt = lev->time;
+    m_data.lastTime = std::max( m_data.lastTime, lt );
 
     NoticeThread( thread );
 
@@ -1996,14 +1997,14 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread 
         timeline.push_back( lev );
         UpdateLockCount( lockmap, timeline.size() - 1 );
     }
-    else if( timeline.back()->time < lev->time )
+    else if( timeline.back()->time < lt )
     {
         timeline.push_back_non_empty( lev );
         UpdateLockCount( lockmap, timeline.size() - 1 );
     }
     else
     {
-        auto it = std::lower_bound( timeline.begin(), timeline.end(), lev->time, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        auto it = std::lower_bound( timeline.begin(), timeline.end(), lt, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
         it = timeline.insert( it, lev );
         UpdateLockCount( lockmap, std::distance( timeline.begin(), it ) );
     }

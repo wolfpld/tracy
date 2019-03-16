@@ -3397,7 +3397,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 }
                                 if( vbegin->waitList != 0 )
                                 {
-                                    assert( !AreOtherWaiting( next->ptr->waitList, threadBit ) );
+                                    assert( !AreOtherWaiting( next->waitList, threadBit ) );
                                     ImGui::TextUnformatted( "Recursive lock acquire in thread." );
                                 }
                                 break;
@@ -3452,7 +3452,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             switch( drawState )
                             {
                             case LockState::HasLock:
-                                assert( ptr->waitList == 0 );
+                                assert( vbegin->waitList == 0 );
                                 if( ptr->sharedList == 0 )
                                 {
                                     assert( vbegin->lockCount == 1 );

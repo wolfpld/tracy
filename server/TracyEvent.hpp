@@ -106,11 +106,6 @@ struct LockEvent
     int32_t srcloc;
     uint8_t thread;
     Type type;
-    // All above is read/saved as-is.
-
-    uint8_t lockingThread;
-    uint8_t lockCount;
-    uint64_t waitList;
 };
 
 struct LockEventShared : public LockEvent
@@ -119,11 +114,20 @@ struct LockEventShared : public LockEvent
     uint64_t sharedList;
 };
 
+struct LockEventPtr
+{
+    LockEvent* ptr;
+    uint8_t lockingThread;
+    uint8_t lockCount;
+    uint64_t waitList;
+};
+
 enum { LockEventSize = sizeof( LockEvent ) };
 enum { LockEventSharedSize = sizeof( LockEventShared ) };
+enum { LockEventPtrSize = sizeof( LockEventPtr ) };
 
-enum { MaxLockThreads = sizeof( LockEvent::waitList ) * 8 };
-static_assert( std::numeric_limits<decltype(LockEvent::lockCount)>::max() >= MaxLockThreads, "Not enough space for lock count." );
+enum { MaxLockThreads = sizeof( LockEventPtr::waitList ) * 8 };
+static_assert( std::numeric_limits<decltype(LockEventPtr::lockCount)>::max() >= MaxLockThreads, "Not enough space for lock count." );
 
 
 struct GpuEvent
@@ -259,7 +263,7 @@ struct LockMap
     };
 
     uint32_t srcloc;
-    Vector<LockEvent*> timeline;
+    Vector<LockEventPtr> timeline;
     flat_hash_map<uint64_t, uint8_t, nohash<uint64_t>> threadMap;
     std::vector<uint64_t> threadList;
     LockType type;

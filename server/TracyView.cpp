@@ -4453,6 +4453,8 @@ void View::DrawZoneInfoWindow()
 
                     if( ImGui::TreeNode( "Allocations list" ) )
                     {
+                        SmallCheckbox( "Allocation times relative to zone start", &m_allocTimeRelativeToZone );
+
                         std::vector<const MemEvent*> v;
                         v.reserve( nAlloc + nFree );
 
@@ -4480,7 +4482,7 @@ void View::DrawZoneInfoWindow()
 
                         ListMemData<decltype( v.begin() )>( v.begin(), v.end(), []( auto& v ) {
                             ImGui::Text( "0x%" PRIx64, (*v)->ptr );
-                        } );
+                        }, nullptr, m_allocTimeRelativeToZone ? ev.start : -1 );
                         ImGui::TreePop();
                     }
                 }

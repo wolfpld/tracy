@@ -268,6 +268,7 @@ private:
     bool m_showCallstackFrameAddress = false;
     bool m_showUnknownFrames = true;
     bool m_groupChildrenLocations = false;
+    bool m_allocTimeRelativeToZone = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
     Namespace m_namespace = Namespace::Full;

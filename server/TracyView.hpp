@@ -162,6 +162,7 @@ private:
 
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
+    const ThreadData* GetZoneThreadData( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const GpuEvent& zone ) const;
     const GpuCtxData* GetZoneCtx( const GpuEvent& zone ) const;

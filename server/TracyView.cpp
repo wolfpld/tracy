@@ -9681,14 +9681,24 @@ void View::ZoomToPrevFrame()
 
 void View::ZoomToNextFrame()
 {
+    int64_t start;
+    if( m_zoomAnim.active )
+    {
+        start = m_zoomAnim.start1;
+    }
+    else
+    {
+        start = m_zvStart;
+    }
+
     int frame;
-    if( m_zvStart < m_worker.GetFrameBegin( *m_frames, 0 ) )
+    if( start < m_worker.GetFrameBegin( *m_frames, 0 ) )
     {
         frame = -1;
     }
     else
     {
-        frame = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).first;
+        frame = m_worker.GetFrameRange( *m_frames, start, start ).first;
     }
     frame++;
     if( frame >= m_worker.GetFrameCount( *m_frames ) ) return;

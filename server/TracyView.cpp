@@ -4335,7 +4335,9 @@ void View::DrawZoneInfoWindow()
 
     ImGui::Separator();
 
-    const auto tid = GetZoneThread( ev );
+    auto threadData = GetZoneThreadData( ev );
+    assert( threadData );
+    const auto tid = threadData->id;
     if( ev.name.active )
     {
         TextFocused( "Zone name:", m_worker.GetString( ev.name ) );
@@ -4481,6 +4483,68 @@ void View::DrawZoneInfoWindow()
                         } );
                         ImGui::TreePop();
                     }
+                }
+            }
+        }
+    }
+
+    ImGui::Separator();
+    {
+        if( threadData->messages.empty() )
+        {
+            TextDisabledUnformatted( "No messages" );
+        }
+        else
+        {
+            auto msgit = std::lower_bound( threadData->messages.begin(), threadData->messages.end(), ev.start, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+            auto msgend = std::lower_bound( msgit, threadData->messages.end(), end+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+
+            const auto dist = std::distance( msgit, msgend );
+            if( dist == 0 )
+            {
+                TextDisabledUnformatted( "No messages" );
+            }
+            else
+            {
+                bool expand = ImGui::TreeNode( "Messages" );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( dist, true ) );
+                if( expand )
+                {
+                    static bool widthSet = false;
+                    ImGui::Columns( 2 );
+                    if( !widthSet )
+                    {
+                        widthSet = true;
+                        const auto w = ImGui::GetWindowWidth();
+                        ImGui::SetColumnWidth( 0, w * 0.2f );
+                        ImGui::SetColumnWidth( 1, w * 0.8f );
+                    }
+                    TextDisabledUnformatted( "Time" );
+                    ImGui::NextColumn();
+                    TextDisabledUnformatted( "Message" );
+                    ImGui::NextColumn();
+                    ImGui::Separator();
+                    do
+                    {
+                        ImGui::PushID( *msgit );
+                        if( ImGui::Selectable( TimeToString( (*msgit)->time - ev.start ), m_msgHighlight == *msgit, ImGuiSelectableFlags_SpanAllColumns ) )
+                        {
+                            CenterAtTime( (*msgit)->time );
+                        }
+                        if( ImGui::IsItemHovered() )
+                        {
+                            m_msgHighlight = *msgit;
+                        }
+                        ImGui::PopID();
+                        ImGui::NextColumn();
+                        ImGui::TextWrapped( "%s", m_worker.GetString( (*msgit)->ref ) );
+                        ImGui::NextColumn();
+                    }
+                    while( ++msgit != msgend );
+                    ImGui::EndColumns();
+                    ImGui::TreePop();
+                    ImGui::Spacing();
                 }
             }
         }

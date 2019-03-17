@@ -51,6 +51,12 @@ public:
         int height = 0;
     };
 
+    struct PlotView
+    {
+        double min;
+        double max;
+    };
+
     using SetTitleCallback = void(*)( const char* );
 
     View( ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", fixedWidth, stcb ) {}
@@ -186,6 +192,7 @@ private:
     flat_hash_map<const void*, VisData, nohash<const void*>> m_visData;
     flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
     flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;
+    flat_hash_map<const PlotData*, PlotView, nohash<const PlotData*>> m_plotView;
 
     tracy_force_inline VisData& Vis( const void* ptr )
     {

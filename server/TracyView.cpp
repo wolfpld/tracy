@@ -3692,7 +3692,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
         float txtx = 0;
         const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
         const auto oldOffset = offset;
-        ImGui::PushClipRect( wpos, wpos + ImVec2( w, offset + vis.height ), true );
+        ImGui::PushClipRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + vis.height ), true );
         if( yPos + ty >= yMin && yPos <= yMax )
         {
             if( showFull )
@@ -3821,6 +3821,31 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         min = tmp[i].val < min ? tmp[i].val : min;
                         max = tmp[i].val > max ? tmp[i].val : max;
                     }
+                }
+
+                auto pvit = m_plotView.find( v );
+                if( pvit == m_plotView.end() )
+                {
+                    pvit = m_plotView.emplace( v, PlotView { min, max } ).first;
+                }
+                auto& pv = pvit->second;
+                if( pv.min != min || pv.max != max )
+                {
+                    const auto dt = ImGui::GetIO().DeltaTime;
+                    const auto minDiff = min - pv.min;
+                    const auto maxDiff = max - pv.max;
+
+                    pv.min += minDiff * 15.0 * dt;
+                    pv.max += maxDiff * 15.0 * dt;
+
+                    const auto minDiffNew = min - pv.min;
+                    const auto maxDiffNew = max - pv.max;
+
+                    if( minDiff * minDiffNew < 0 ) pv.min = min;
+                    if( maxDiff * maxDiffNew < 0 ) pv.max = max;
+
+                    min = pv.min;
+                    max = pv.max;
                 }
 
                 const auto revrange = 1.0 / ( max - min );

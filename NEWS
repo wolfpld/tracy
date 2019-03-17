@@ -44,8 +44,9 @@ v0.5 (xxxx-xx-xx)
 - User experience improvements in the graphical profiler.
   - Thread position and height is now animated, to eliminate flickering that
     was happening when depth of displayed zones was changing.
-  - Zooming in/out using the mouse wheel is not animated. Press the control
+  - Zooming in/out using the mouse wheel is now animated. Press the control
     key for old behavior.
+  - Plot range adjustment is now animated.
 - System CPU usage is now being monitored.
 - Threads that have nothing to display in the current view are now hidden by
   default.

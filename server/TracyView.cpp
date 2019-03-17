@@ -8653,8 +8653,10 @@ void View::DrawLockInfoWindow()
 }
 
 template<class T>
-void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id )
+void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id, int64_t startTime )
 {
+    if( startTime == -1 ) startTime = m_worker.GetTimeBegin();
+
     const auto& style = ImGui::GetStyle();
     const auto dist = std::distance( ptr, end ) + 1;
     const auto ty = ImGui::GetTextLineHeight() + style.ItemSpacing.y;
@@ -8724,7 +8726,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         ImGui::TextUnformatted( MemSizeToString( v->size ) );
         ImGui::NextColumn();
         ImGui::PushID( idx++ );
-        if( ImGui::Selectable( TimeToString( v->timeAlloc - m_worker.GetTimeBegin() ) ) )
+        if( ImGui::Selectable( TimeToString( v->timeAlloc - startTime ) ) )
         {
             CenterAtTime( v->timeAlloc );
         }

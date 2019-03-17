@@ -4398,7 +4398,7 @@ void View::DrawZoneInfoWindow()
             const auto fDist = std::distance( fit, fend );
             if( aDist == 0 && fDist == 0 )
             {
-                ImGui::TextUnformatted( "No memory events." );
+                TextDisabledUnformatted( "No memory events." );
             }
             else
             {
@@ -4431,7 +4431,7 @@ void View::DrawZoneInfoWindow()
 
                 if( nAlloc == 0 && nFree == 0 )
                 {
-                    ImGui::TextUnformatted( "No memory events." );
+                    TextDisabledUnformatted( "No memory events." );
                 }
                 else
                 {

@@ -9677,7 +9677,7 @@ void View::CenterAtTime( int64_t t )
 
 void View::ShowZoneInfo( const ZoneEvent& ev )
 {
-    if( m_zoneInfoWindow )
+    if( m_zoneInfoWindow && m_zoneInfoWindow != &ev )
     {
         m_zoneInfoStack.push_back( m_zoneInfoWindow );
     }
@@ -9692,7 +9692,7 @@ void View::ShowZoneInfo( const ZoneEvent& ev )
 
 void View::ShowZoneInfo( const GpuEvent& ev, uint64_t thread )
 {
-    if( m_gpuInfoWindow )
+    if( m_gpuInfoWindow && m_gpuInfoWindow != &ev )
     {
         m_gpuInfoStack.push_back( m_gpuInfoWindow );
     }

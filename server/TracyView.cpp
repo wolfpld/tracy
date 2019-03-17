@@ -7908,7 +7908,7 @@ void View::DrawCallstackWindow()
 void View::DrawMemoryAllocWindow()
 {
     bool show = true;
-    ImGui::Begin( "Memory allocation", &show );
+    ImGui::Begin( "Memory allocation", &show, ImGuiWindowFlags_AlwaysAutoResize );
 
     const auto& mem = m_worker.GetMemData();
     const auto& ev = mem.data[m_memoryAllocInfoWindow];

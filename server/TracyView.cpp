@@ -2616,20 +2616,22 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         const auto zsz = std::max( ( end - start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
-            int num = 1;
+            int num = 0;
             const auto px0 = ( start - m_zvStart ) * pxns;
             auto px1 = ( end - m_zvStart ) * pxns;
             auto rend = end;
             for(;;)
             {
-                ++it;
+                const auto prevIt = it;
+                it = std::lower_bound( it, zitend, std::max( rend + nspx, end + MinVisSize ), [] ( const auto& l, const auto& r ) { return (uint64_t)l->gpuEnd < (uint64_t)r; } );
+                if( it == prevIt ) ++it;
+                num += std::distance( prevIt, it );
                 if( it == zitend ) break;
                 const auto nend = AdjustGpuTime( m_worker.GetZoneEnd( **it ), begin, drift );
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
                 rend = nend;
-                num++;
             }
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
@@ -2781,14 +2783,18 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         if( zsz < MinVisSize )
         {
             auto px1 = ( end - m_zvStart ) * pxns;
+            auto rend = end;
             for(;;)
             {
-                ++it;
+                const auto prevIt = it;
+                it = std::lower_bound( it, zitend, std::max( rend + nspx, end + MinVisSize ), [] ( const auto& l, const auto& r ) { return (uint64_t)l->gpuEnd < (uint64_t)r; } );
+                if( it == prevIt ) ++it;
                 if( it == zitend ) break;
                 const auto nend = AdjustGpuTime( m_worker.GetZoneEnd( **it ), begin, drift );
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
+                rend = nend;
             }
         }
         else

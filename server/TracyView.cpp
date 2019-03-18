@@ -2350,7 +2350,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             for(;;)
             {
                 const auto prevIt = it;
-                it = std::lower_bound( it, zitend, rend + nspx, [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
+                it = std::lower_bound( it, zitend, std::max( rend + nspx, end + MinVisSize ), [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
                 if( it == prevIt ) ++it;
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;

@@ -2525,14 +2525,18 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         if( zsz < MinVisSize )
         {
             auto px1 = ( end - m_zvStart ) * pxns;
+            auto rend = end;
             for(;;)
             {
-                ++it;
+                const auto prevIt = it;
+                it = std::lower_bound( it, zitend, std::max( rend + nspx, end + MinVisSize ), [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
+                if( it == prevIt ) ++it;
                 if( it == zitend ) break;
                 const auto nend = m_worker.GetZoneEnd( **it );
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
+                rend = nend;
             }
         }
         else

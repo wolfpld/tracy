@@ -2330,6 +2330,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     auto draw = ImGui::GetWindowDrawList();
     const auto dsz = delay * pxns;
     const auto rsz = resolution * pxns;
+    const auto nspx = int64_t( 1.0 / pxns );
 
     depth++;
     int maxdepth = depth;
@@ -2342,20 +2343,22 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         const auto zsz = std::max( ( end - ev.start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
-            int num = 1;
+            int num = 0;
             const auto px0 = ( ev.start - m_zvStart ) * pxns;
             auto px1 = ( end - m_zvStart ) * pxns;
             auto rend = end;
             for(;;)
             {
-                ++it;
+                const auto prevIt = it;
+                it = std::lower_bound( it, zitend, rend + nspx, [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
+                if( it == prevIt ) ++it;
+                num += std::distance( prevIt, it );
                 if( it == zitend ) break;
                 const auto nend = m_worker.GetZoneEnd( **it );
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
                 rend = nend;
-                num++;
             }
             draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );

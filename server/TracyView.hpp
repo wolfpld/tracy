@@ -196,7 +196,12 @@ private:
 
     tracy_force_inline VisData& Vis( const void* ptr )
     {
-        return m_visData[ptr];
+        auto it = m_visData.find( ptr );
+        if( it == m_visData.end() )
+        {
+            it = m_visData.emplace( ptr, VisData {} ).first;
+        }
+        return it->second;
     }
 
     tracy_force_inline bool& VisibleMsgThread( uint64_t thread )

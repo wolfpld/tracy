@@ -8115,6 +8115,7 @@ void View::DrawInfo()
         {
             auto& vec = m_frameSortData.data;
             vec.reserve( fsz );
+            const auto midSz = vec.size();
             int64_t total = m_frameSortData.total;
             for( size_t i=m_frameSortData.frameNum; i<fsz; i++ )
             {
@@ -8125,12 +8126,13 @@ void View::DrawInfo()
                     total += t;
                 }
             }
-            auto mid = vec.begin() + m_frameSortData.frameNum;
+            auto mid = vec.begin() + midSz;
             pdqsort_branchless( mid, m_frameSortData.data.end() );
             std::inplace_merge( vec.begin(), mid, vec.end() );
 
-            m_frameSortData.average = float( total ) / fsz;
-            m_frameSortData.median = vec[fsz/2];
+            const auto vsz = vec.size();
+            m_frameSortData.average = float( total ) / vsz;
+            m_frameSortData.median = vec[vsz/2];
             m_frameSortData.total = total;
             m_frameSortData.frameNum = fsz;
         }

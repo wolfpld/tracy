@@ -2013,14 +2013,14 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread 
         timeline.push_back( { lev } );
         UpdateLockCount( lockmap, timeline.size() - 1 );
     }
-    else if( timeline.back().ptr->time < lt )
+    else if( timeline.back().ptr->time <= lt )
     {
         timeline.push_back_non_empty( { lev } );
         UpdateLockCount( lockmap, timeline.size() - 1 );
     }
     else
     {
-        auto it = std::lower_bound( timeline.begin(), timeline.end(), lt, [] ( const auto& lhs, const auto& rhs ) { return lhs.ptr->time < rhs; } );
+        auto it = std::upper_bound( timeline.begin(), timeline.end(), lt, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.ptr->time; } );
         it = timeline.insert( it, { lev } );
         UpdateLockCount( lockmap, std::distance( timeline.begin(), it ) );
     }
@@ -2700,7 +2700,7 @@ void Worker::ProcessFrameMark( const QueueFrameMark& ev )
 
     assert( fd->continuous == 1 );
     const auto time = TscTime( ev.time );
-    assert( fd->frames.empty() || fd->frames.back().start < time );
+    assert( fd->frames.empty() || fd->frames.back().start <= time );
     fd->frames.push_back( FrameEvent{ time, -1 } );
     m_data.lastTime = std::max( m_data.lastTime, time );
 }
@@ -2718,7 +2718,7 @@ void Worker::ProcessFrameMarkStart( const QueueFrameMark& ev )
 
     assert( fd->continuous == 0 );
     const auto time = TscTime( ev.time );
-    assert( fd->frames.empty() || ( fd->frames.back().end < time && fd->frames.back().end != -1 ) );
+    assert( fd->frames.empty() || ( fd->frames.back().end <= time && fd->frames.back().end != -1 ) );
     fd->frames.push_back( FrameEvent{ time, -1 } );
     m_data.lastTime = std::max( m_data.lastTime, time );
 }

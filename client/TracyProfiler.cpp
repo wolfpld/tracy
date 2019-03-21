@@ -204,7 +204,7 @@ static int64_t SetupHwTimer()
     sigaction( SIGILL, &oldact, nullptr );
     GetTimeImpl = GetTimeImplCntvct;
 
-    // Check if cntcvt is monotonic (there is faulty hw out there)
+    // Check if cntvct is monotonic (there is faulty hw out there)
     enum { NumProbes = 32 * 1024 };
     int64_t probe[NumProbes];
     for( int j=0; j<10; j++ )

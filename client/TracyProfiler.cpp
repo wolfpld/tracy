@@ -203,6 +203,26 @@ static int64_t SetupHwTimer()
 
     sigaction( SIGILL, &oldact, nullptr );
     GetTimeImpl = GetTimeImplCntvct;
+
+    // Check if cntcvt is monotonic (there is faulty hw out there)
+    enum { NumProbes = 32 * 1024 };
+    int64_t probe[NumProbes];
+    for( int j=0; j<10; j++ )
+    {
+        for( int i=0; i<NumProbes; i++ )
+        {
+            probe[i] = Profiler::GetTime();
+        }
+        for( int i=1; i<NumProbes; i++ )
+        {
+            if( probe[i] < probe[i-1] )
+            {
+                GetTimeImpl = GetTimeImplFallback;
+                return Profiler::GetTime();
+            }
+        }
+    }
+
     return Profiler::GetTime();
 }
 #else

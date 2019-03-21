@@ -148,7 +148,13 @@ int64_t (*GetTimeImpl)();
 
 int64_t GetTimeImplFallback()
 {
+#  ifdef CLOCK_MONOTONIC_RAW
+    struct timespec ts;
+    clock_gettime( CLOCK_MONOTONIC_RAW, &ts );
+    return int64_t( ts.tv_sec ) * 1000000000 + int64_t( ts.tv_nsec );
+#  else
     return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
+#  endif
 }
 
 int64_t GetTimeImplCntvct()

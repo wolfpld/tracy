@@ -750,6 +750,53 @@ To collect Lua call stacks (see section~\ref{collectingcallstacks}), replace \te
 
 Be aware that for Lua call stack retrieval to work, you need to be on a platform which supports collection of native call stacks.
 
+Cost of performing Lua call stack capture is presented in table~\ref{CallstackTimesLua} and figure~\ref{CallstackPlotLua}. Lua call stacks include native call stacks, which have a capture cost of their own (table~\ref{CallstackTimes}) and the \texttt{depth} parameter is applied for both captures. The presented data was captured with full Lua stack depth, but only 13 frames were available on the native call stack. Hence, to explain the non-linearity of the graph you need to consider what was really measured:
+
+\begin{displaymath}
+\text{Cost}_{\text{total}}(\text{depth}) =
+\begin{cases}
+\text{Cost}_{\text{Lua}}(\text{depth}) + \text{Cost}_{\text{native}}(\text{depth}) & \text{when depth} \leq 13 \\
+\text{Cost}_{\text{Lua}}(\text{depth}) + \text{Cost}_{\text{native}}(13) & \text{when depth} > 13
+\end{cases}
+\end{displaymath}
+
+\begin{table}[h]
+\centering
+\begin{tabular}[h]{c|c}
+\textbf{Depth} & \textbf{Time} \\ \hline
+1 & 707 \si{\nano\second} \\
+2 & 699 \si{\nano\second} \\
+3 & 624 \si{\nano\second} \\
+4 & 727 \si{\nano\second} \\
+5 & 836 \si{\nano\second} \\
+10 & 1.77 \si{\micro\second} \\
+15 & 2.44 \si{\micro\second} \\
+20 & 2.51 \si{\micro\second} \\
+25 & 2.98 \si{\micro\second} \\
+30 & 3.6 \si{\micro\second} \\
+35 & 4.33 \si{\micro\second} \\
+40 & 5.17 \si{\micro\second} \\
+45 & 6.01 \si{\micro\second} \\
+50 & 6.99 \si{\micro\second} \\
+55 & 8.11 \si{\micro\second} \\
+60 & 9.17 \si{\micro\second}
+\end{tabular}
+\caption{Median times of Lua zone capture with call stack (x64, 13 native frames)}
+\label{CallstackTimesLua}
+\end{table}
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\begin{axis}[xlabel=Call stack depth,ylabel=Time (\si{\nano\second}), legend pos=north west]
+\addplot[smooth, mark=o, red] plot coordinates {
+(1, 707) (2, 699) (3, 624) (4, 727) (5, 836) (10, 1770) (15, 2440) (20, 2510) (25, 2980) (30, 3600) (35, 4330) (40, 5170) (45, 6010) (50, 6990) (55, 8110) (60, 9170)
+};
+\end{axis}
+\end{tikzpicture}
+\caption{Plot of call Lua stack capture times (see table~\ref{CallstackTimesLua})}
+\label{CallstackPlotLua}
+\end{figure}
+
 \subsubsection{Instrumentation cleanup}
 
 Even if Tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the \texttt{tracy::LuaRemove(char* script)} function, which will replace instrumentation calls with white-space. This function does nothing if profiler is enabled.

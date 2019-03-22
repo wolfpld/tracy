@@ -787,9 +787,9 @@ Cost of performing Lua call stack capture is presented in table~\ref{CallstackTi
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\begin{axis}[xlabel=Call stack depth,ylabel=Time (\si{\nano\second}), legend pos=north west]
+\begin{axis}[xlabel=Call stack depth,ylabel=Time (\si{\micro\second}), legend pos=north west]
 \addplot[smooth, mark=o, red] plot coordinates {
-(1, 707) (2, 699) (3, 624) (4, 727) (5, 836) (10, 1770) (15, 2440) (20, 2510) (25, 2980) (30, 3600) (35, 4330) (40, 5170) (45, 6010) (50, 6990) (55, 8110) (60, 9170)
+(1, 0.707) (2, 0.699) (3, 0.624) (4, 0.727) (5, 0.836) (10, 1.770) (15, 2.440) (20, 2.510) (25, 2.980) (30, 3.600) (35, 4.330) (40, 5.170) (45, 6.010) (50, 6.990) (55, 8.110) (60, 9.170)
 };
 \end{axis}
 \end{tikzpicture}

@@ -3683,7 +3683,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 {
     const auto PlotHeight = 100 * ImGui::GetTextLineHeight() / 15.f;
 
-    enum { MaxPoints = 512 };
+    enum { MaxPoints = 128 };
     float tmpvec[MaxPoints*2];
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;

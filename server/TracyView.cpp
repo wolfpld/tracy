@@ -3925,6 +3925,18 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         if( rsz > MaxPoints )
                         {
                             draw->AddLine( wpos + ImVec2( x1, offset + PlotHeight - ( tmpvec[0] - min ) * revrange * PlotHeight ), wpos + ImVec2( x1, offset + PlotHeight - ( dst[-1] - min ) * revrange * PlotHeight ), 0xFF44DDDD, 4.f );
+
+                            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x1 - 2, offset ), wpos + ImVec2( x1 + 2, offset + PlotHeight ) ) )
+                            {
+                                ImGui::BeginTooltip();
+                                TextFocused( "Number of values:", RealToString( rsz, true ) );
+                                TextDisabledUnformatted( "Estimated range:" );
+                                ImGui::SameLine();
+                                ImGui::Text( "%s - %s", FormatPlotValue( tmpvec[0], v->type ), FormatPlotValue( dst[-1], v->type ) );
+                                ImGui::SameLine();
+                                ImGui::TextDisabled( "(%s)", FormatPlotValue( dst[-1] - tmpvec[0], v->type ) );
+                                ImGui::EndTooltip();
+                            }
                         }
                         else
                         {

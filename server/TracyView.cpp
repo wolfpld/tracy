@@ -5624,10 +5624,36 @@ void View::DrawOptions()
             }
         }
 
+        const auto th = 18.f * ImGui::GetTextLineHeight() / 15.f;
+        int idIdx = 0;
         int idx = 0;
+        int upIdx = -1;
+        int downIdx = -1;
         for( const auto& t : m_threadOrder )
         {
-            ImGui::PushID( idx++ );
+            ImGui::PushID( idIdx++ );
+#ifdef TRACY_EXTENDED_FONT
+            if( ImGui::Button( ICON_FA_CARET_UP, ImVec2( th, 0 ) ) )
+#else
+            if( ImGui::Button( "^", ImVec2( th, 0 ) ) )
+#endif
+            {
+                upIdx = idx;
+            }
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::PushID( idIdx++ );
+#ifdef TRACY_EXTENDED_FONT
+            if( ImGui::Button( ICON_FA_CARET_DOWN, ImVec2( th, 0 ) ) )
+#else
+            if( ImGui::Button( "v", ImVec2( th, 0 ) ) )
+#endif
+            {
+                downIdx = idx;
+            }
+            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::PushID( idIdx++ );
             ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Vis( t ).visible );
             ImGui::PopID();
             if( crash.thread == t->id )
@@ -5647,6 +5673,15 @@ void View::DrawOptions()
             }
             ImGui::SameLine();
             ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
+            idx++;
+        }
+        if( upIdx > 0 )
+        {
+            std::swap( m_threadOrder[upIdx], m_threadOrder[upIdx-1] );
+        }
+        if( downIdx >= 0 && downIdx < m_threadOrder.size() - 1 )
+        {
+            std::swap( m_threadOrder[downIdx], m_threadOrder[downIdx+1] );
         }
         ImGui::TreePop();
     }

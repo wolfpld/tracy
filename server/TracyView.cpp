@@ -2128,6 +2128,10 @@ void View::DrawZones()
                         {
                             m_showInfo = true;
                         }
+                        if( ImGui::IsMouseClicked( 2 ) )
+                        {
+                            CenterAtTime( crash.time );
+                        }
                     }
                 }
             }

@@ -5603,14 +5603,14 @@ void View::DrawOptions()
     auto expand = ImGui::TreeNode( "Visible threads:" );
 #endif
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%zu)", m_worker.GetThreadData().size() );
+    ImGui::TextDisabled( "(%zu)", m_threadOrder.size() );
     if( expand )
     {
         auto& crash = m_worker.GetCrashEvent();
 
         if( ImGui::SmallButton( "Select all" ) )
         {
-            for( const auto& t : m_worker.GetThreadData() )
+            for( const auto& t : m_threadOrder )
             {
                 Vis( t ).visible = true;
             }
@@ -5618,14 +5618,14 @@ void View::DrawOptions()
         ImGui::SameLine();
         if( ImGui::SmallButton( "Unselect all" ) )
         {
-            for( const auto& t : m_worker.GetThreadData() )
+            for( const auto& t : m_threadOrder )
             {
                 Vis( t ).visible = false;
             }
         }
 
         int idx = 0;
-        for( const auto& t : m_worker.GetThreadData() )
+        for( const auto& t : m_threadOrder )
         {
             ImGui::PushID( idx++ );
             ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Vis( t ).visible );

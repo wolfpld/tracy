@@ -8551,8 +8551,17 @@ void View::DrawInfo()
         TextDisabledUnformatted( "Reason:" );
         ImGui::SameLine();
         ImGui::TextWrapped( "%s", m_worker.GetString( crash.message ) );
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_MICROSCOPE " Focus" ) )
+#else
+        if( ImGui::Button( "Focus" ) )
+#endif
+        {
+            CenterAtTime( crash.time );
+        }
         if( crash.callstack != 0 )
         {
+            ImGui::SameLine();
             bool hilite = m_callstackInfoWindow == crash.callstack;
             if( hilite )
             {

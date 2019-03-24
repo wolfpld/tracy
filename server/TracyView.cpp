@@ -5697,7 +5697,7 @@ void View::DrawMessages()
     ImGui::Begin( "Messages", &m_showMessages );
 
     size_t tsz = 0;
-    for( const auto& t : m_worker.GetThreadData() ) if( !t->messages.empty() ) tsz++;
+    for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
 
 #ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
@@ -5712,7 +5712,7 @@ void View::DrawMessages()
 
         if( ImGui::SmallButton( "Select all" ) )
         {
-            for( const auto& t : m_worker.GetThreadData() )
+            for( const auto& t : m_threadOrder )
             {
                 VisibleMsgThread( t->id ) = true;
             }
@@ -5720,14 +5720,14 @@ void View::DrawMessages()
         ImGui::SameLine();
         if( ImGui::SmallButton( "Unselect all" ) )
         {
-            for( const auto& t : m_worker.GetThreadData() )
+            for( const auto& t : m_threadOrder )
             {
                 VisibleMsgThread( t->id ) = false;
             }
         }
 
         int idx = 0;
-        for( const auto& t : m_worker.GetThreadData() )
+        for( const auto& t : m_threadOrder )
         {
             if( t->messages.empty() ) continue;
             ImGui::PushID( idx++ );

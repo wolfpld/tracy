@@ -1979,10 +1979,20 @@ void View::DrawZones()
         }
     }
 
-    auto& crash = m_worker.GetCrashEvent();
     // zones
+    const auto& threadData = m_worker.GetThreadData();
+    if( threadData.size() != m_threadOrder.size() )
+    {
+        m_threadOrder.reserve( threadData.size() );
+        for( int i=m_threadOrder.size(); i<threadData.size(); i++ )
+        {
+            m_threadOrder.push_back( threadData[i] );
+        }
+    }
+
+    auto& crash = m_worker.GetCrashEvent();
     LockHighlight nextLockHighlight { -1 };
-    for( const auto& v : m_worker.GetThreadData() )
+    for( const auto& v : m_threadOrder )
     {
         auto& vis = Vis( v );
         if( !vis.visible )

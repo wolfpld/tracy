@@ -193,6 +193,7 @@ private:
     flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
     flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;
     flat_hash_map<const PlotData*, PlotView, nohash<const PlotData*>> m_plotView;
+    Vector<const ThreadData*> m_threadOrder;
 
     tracy_force_inline VisData& Vis( const void* ptr )
     {

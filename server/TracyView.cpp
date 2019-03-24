@@ -5670,6 +5670,14 @@ void View::DrawOptions()
                     ImGui::BeginTooltip();
                     ImGui::TextUnformatted( "Crashed" );
                     ImGui::EndTooltip();
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_showInfo = true;
+                    }
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        CenterAtTime( crash.time );
+                    }
                 }
 #else
                 ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );

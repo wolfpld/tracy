@@ -6567,9 +6567,7 @@ void View::DrawFindZone()
                             TextDisabledUnformatted( "Time range:" );
                             ImGui::SameLine();
                             ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
-                            TextDisabledUnformatted( "Count:" );
-                            ImGui::SameLine();
-                            ImGui::Text( "%" PRIu64, bins[bin] );
+                            TextFocused( "Count:", RealToString( bins[bin], true ) );
                             TextFocused( "Time spent in bin:", TimeToString( binTime[bin] ) );
                             TextFocused( "Time spent in the left bins:", TimeToString( tBefore ) );
                             TextFocused( "Time spent in the right bins:", TimeToString( tAfter ) );

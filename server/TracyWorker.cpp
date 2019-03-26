@@ -707,7 +707,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             }
             else
             {
-                f.Skip( tsz * ( type == LockType::Lockable ? sizeof( LockEvent ) : sizeof( LockEventShared ) ) );
+                f.Skip( tsz * ( type == LockType::Lockable ? 24 : 40 ) );
             }
         }
     }

@@ -1978,7 +1978,18 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
         if( back->child < 0 )
         {
             back->child = int32_t( m_data.zoneChildren.size() );
-            m_data.zoneChildren.push_back( Vector<ZoneEvent*>( zone ) );
+            if( m_data.zoneVectorCache.empty() )
+            {
+                m_data.zoneChildren.push_back( Vector<ZoneEvent*>( zone ) );
+            }
+            else
+            {
+                Vector<ZoneEvent*> vze = std::move( m_data.zoneVectorCache.back_and_pop() );
+                assert( !vze.empty() );
+                vze.clear();
+                vze.push_back_non_empty( zone );
+                m_data.zoneChildren.push_back( std::move( vze ) );
+            }
         }
         else
         {
@@ -2612,6 +2623,20 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     assert( zone->end >= zone->start );
 
     m_data.lastTime = std::max( m_data.lastTime, zone->end );
+
+    if( zone->child >= 0 )
+    {
+        auto& childVec = m_data.zoneChildren[zone->child];
+        const auto sz = childVec.size();
+        if( sz <= 8 * 1024 )
+        {
+            Vector<ZoneEvent*> fitVec;
+            fitVec.reserve_exact( sz, m_slab );
+            memcpy( fitVec.data(), childVec.data(), sz * sizeof( ZoneEvent* ) );
+            std::swap( fitVec, childVec );
+            m_data.zoneVectorCache.push_back( std::move( fitVec ) );
+        }
+    }
 
 #ifndef TRACY_NO_STATISTICS
     auto timeSpan = zone->end - zone->start;

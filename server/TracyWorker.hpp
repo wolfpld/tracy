@@ -178,6 +178,8 @@ private:
         Vector<Vector<ZoneEvent*>> zoneChildren;
         Vector<Vector<GpuEvent*>> gpuChildren;
 
+        Vector<Vector<ZoneEvent*>> zoneVectorCache;
+
         CrashEvent crashEvent;
     };
 

@@ -2633,7 +2633,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
             Vector<ZoneEvent*> fitVec;
             fitVec.reserve_exact( sz, m_slab );
             memcpy( fitVec.data(), childVec.data(), sz * sizeof( ZoneEvent* ) );
-            std::swap( fitVec, childVec );
+            fitVec.swap( childVec );
             m_data.zoneVectorCache.push_back( std::move( fitVec ) );
         }
     }

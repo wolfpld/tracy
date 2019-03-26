@@ -1,6 +1,7 @@
 #ifndef __TRACYVECTOR_HPP__
 #define __TRACYVECTOR_HPP__
 
+#include <algorithm>
 #include <assert.h>
 #include <limits>
 #include <stdint.h>
@@ -61,6 +62,13 @@ public:
         memcpy( this, &src, sizeof( Vector<T> ) );
         memset( &src, 0, sizeof( Vector<T> ) );
         return *this;
+    }
+
+    void swap( Vector& other )
+    {
+        std::swap( m_ptr, other.m_ptr );
+        std::swap( m_size, other.m_size );
+        std::swap( m_capacity, other.m_capacity );
     }
 
     tracy_force_inline bool empty() const { return m_size == 0; }

@@ -8519,9 +8519,7 @@ void View::DrawInfo()
                             ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
                             ImGui::SameLine();
                             ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( round( 1000000000.0 / t0 ), true ), RealToString( round( 1000000000.0 / t1 ), true ) );
-                            TextDisabledUnformatted( "Count:" );
-                            ImGui::SameLine();
-                            ImGui::Text( "%" PRIu64, bins[bin] );
+                            TextFocused( "Count:", RealToString( bins[bin], true ) );
                             ImGui::EndTooltip();
                         }
                     }

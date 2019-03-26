@@ -175,10 +175,10 @@ private:
         Vector<uint64_t> threadExpand;
         std::pair<uint64_t, uint16_t> threadLast;
 
-        Vector<Vector<ZoneEvent*>> m_zoneChildren;
-        Vector<Vector<GpuEvent*>> m_gpuChildren;
+        Vector<Vector<ZoneEvent*>> zoneChildren;
+        Vector<Vector<GpuEvent*>> gpuChildren;
 
-        CrashEvent m_crashEvent;
+        CrashEvent crashEvent;
     };
 
     struct MbpsBlock
@@ -270,7 +270,7 @@ public:
     const CallstackFrameData* GetCallstackFrame( const CallstackFrameId& ptr ) const;
     uint64_t GetCanonicalPointer( const CallstackFrameId& id ) const;
 
-    const CrashEvent& GetCrashEvent() const { return m_data.m_crashEvent; }
+    const CrashEvent& GetCrashEvent() const { return m_data.crashEvent; }
 
     // Some zones may have incomplete timing data (only start time is available, end hasn't arrived yet).
     // GetZoneEnd() will try to infer the end time by looking at child zones (parent zone can't end
@@ -293,8 +293,8 @@ public:
     const char* GetZoneName( const GpuEvent& ev ) const;
     const char* GetZoneName( const GpuEvent& ev, const SourceLocation& srcloc ) const;
 
-    tracy_force_inline const Vector<ZoneEvent*>& GetZoneChildren( int32_t idx ) const { return m_data.m_zoneChildren[idx]; }
-    tracy_force_inline const Vector<GpuEvent*>& GetGpuChildren( int32_t idx ) const { return m_data.m_gpuChildren[idx]; }
+    tracy_force_inline const Vector<ZoneEvent*>& GetZoneChildren( int32_t idx ) const { return m_data.zoneChildren[idx]; }
+    tracy_force_inline const Vector<GpuEvent*>& GetGpuChildren( int32_t idx ) const { return m_data.gpuChildren[idx]; }
 
     std::vector<int32_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
 

@@ -356,7 +356,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
     if( fileVer >= FileVersion( 0, 3, 204 ) )
     {
-        f.Read( &m_data.m_crashEvent, sizeof( m_data.m_crashEvent ) );
+        f.Read( &m_data.crashEvent, sizeof( m_data.crashEvent ) );
     }
 
     if( fileVer >= FileVersion( 0, 3, 202 ) )
@@ -1977,12 +1977,12 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
         auto back = td->stack.back();
         if( back->child < 0 )
         {
-            back->child = int32_t( m_data.m_zoneChildren.size() );
-            m_data.m_zoneChildren.push_back( Vector<ZoneEvent*>( zone ) );
+            back->child = int32_t( m_data.zoneChildren.size() );
+            m_data.zoneChildren.push_back( Vector<ZoneEvent*>( zone ) );
         }
         else
         {
-            m_data.m_zoneChildren[back->child].push_back( zone );
+            m_data.zoneChildren[back->child].push_back( zone );
         }
         td->stack.push_back_non_empty( zone );
     }
@@ -3069,10 +3069,10 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
         auto back = ctx->stack.back();
         if( back->child < 0 )
         {
-            back->child = int32_t( m_data.m_gpuChildren.size() );
-            m_data.m_gpuChildren.push_back( Vector<GpuEvent*>() );
+            back->child = int32_t( m_data.gpuChildren.size() );
+            m_data.gpuChildren.push_back( Vector<GpuEvent*>() );
         }
-        timeline = &m_data.m_gpuChildren[back->child];
+        timeline = &m_data.gpuChildren[back->child];
     }
 
     timeline->push_back( zone );
@@ -3276,7 +3276,7 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
         next.gpu->callstack = m_pendingCallstackId;
         break;
     case NextCallstackType::Crash:
-        m_data.m_crashEvent.callstack = m_pendingCallstackId;
+        m_data.crashEvent.callstack = m_pendingCallstackId;
         break;
     default:
         assert( false );
@@ -3302,7 +3302,7 @@ void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
         next.gpu->callstack = m_pendingCallstackId;
         break;
     case NextCallstackType::Crash:
-        m_data.m_crashEvent.callstack = m_pendingCallstackId;
+        m_data.crashEvent.callstack = m_pendingCallstackId;
         break;
     default:
         assert( false );
@@ -3370,10 +3370,10 @@ void Worker::ProcessCrashReport( const QueueCrashReport& ev )
     auto& next = m_nextCallstack[ev.thread];
     next.type = NextCallstackType::Crash;
 
-    m_data.m_crashEvent.thread = ev.thread;
-    m_data.m_crashEvent.time = TscTime( ev.time );
-    m_data.m_crashEvent.message = ev.text;
-    m_data.m_crashEvent.callstack = 0;
+    m_data.crashEvent.thread = ev.thread;
+    m_data.crashEvent.time = TscTime( ev.time );
+    m_data.crashEvent.message = ev.text;
+    m_data.crashEvent.callstack = 0;
 }
 
 void Worker::ProcessSysTime( const QueueSysTime& ev )
@@ -3542,14 +3542,14 @@ void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_
     }
     else
     {
-        zone->child = m_data.m_zoneChildren.size();
+        zone->child = m_data.zoneChildren.size();
         // Put placeholder to have proper size of zone children in nested calls
-        m_data.m_zoneChildren.push_back( Vector<ZoneEvent*>() );
+        m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         // Real data buffer. Can't use placeholder, as the vector can be reallocated
         // and the buffer address will change, but the reference won't.
         Vector<ZoneEvent*> tmp;
         ReadTimeline( f, tmp, thread, sz, refTime );
-        m_data.m_zoneChildren[zone->child] = std::move( tmp );
+        m_data.zoneChildren[zone->child] = std::move( tmp );
     }
 }
 
@@ -3563,11 +3563,11 @@ void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     }
     else
     {
-        zone->child = m_data.m_zoneChildren.size();
-        m_data.m_zoneChildren.push_back( Vector<ZoneEvent*>() );
+        zone->child = m_data.zoneChildren.size();
+        m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         Vector<ZoneEvent*> tmp;
         ReadTimelinePre042( f, tmp, thread, sz, fileVer );
-        m_data.m_zoneChildren[zone->child] = std::move( tmp );
+        m_data.zoneChildren[zone->child] = std::move( tmp );
     }
 }
 
@@ -3581,11 +3581,11 @@ void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_
     }
     else
     {
-        zone->child = m_data.m_gpuChildren.size();
-        m_data.m_gpuChildren.push_back( Vector<GpuEvent*>() );
+        zone->child = m_data.gpuChildren.size();
+        m_data.gpuChildren.push_back( Vector<GpuEvent*>() );
         Vector<GpuEvent*> tmp;
         ReadTimeline( f, tmp, sz, refTime, refGpuTime );
-        m_data.m_gpuChildren[zone->child] = std::move( tmp );
+        m_data.gpuChildren[zone->child] = std::move( tmp );
     }
 }
 
@@ -3599,11 +3599,11 @@ void Worker::ReadTimelinePre044( FileRead& f, GpuEvent* zone, int64_t& refTime, 
     }
     else
     {
-        zone->child = m_data.m_gpuChildren.size();
-        m_data.m_gpuChildren.push_back( Vector<GpuEvent*>() );
+        zone->child = m_data.gpuChildren.size();
+        m_data.gpuChildren.push_back( Vector<GpuEvent*>() );
         Vector<GpuEvent*> tmp;
         ReadTimelinePre044( f, tmp, sz, refTime, refGpuTime, fileVer );
-        m_data.m_gpuChildren[zone->child] = std::move( tmp );
+        m_data.gpuChildren[zone->child] = std::move( tmp );
     }
 }
 
@@ -3826,7 +3826,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_hostInfo.c_str(), sz );
 
-    f.Write( &m_data.m_crashEvent, sizeof( m_data.m_crashEvent ) );
+    f.Write( &m_data.crashEvent, sizeof( m_data.crashEvent ) );
 
     sz = m_data.frames.Data().size();
     f.Write( &sz, sizeof( sz ) );

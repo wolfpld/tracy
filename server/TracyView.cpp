@@ -7676,7 +7676,7 @@ void View::DrawCompare()
                         ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
                         TextDisabledUnformatted( "Count:" );
                         ImGui::SameLine();
-                        ImGui::Text( "%g / %g", floor( bins[bin].v0 ), floor( bins[bin].v1 ) );
+                        ImGui::Text( "%s / %s", RealToString( floor( bins[bin].v0 ), true ), RealToString( floor( bins[bin].v1 ), true ) );
                         TextDisabledUnformatted( "Time spent in bin:" );
                         ImGui::SameLine();
                         ImGui::Text( "%s / %s", TimeToString( binTime[bin].v0 ), TimeToString( binTime[bin].v1 ) );

@@ -761,6 +761,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
     s_loadProgress.progress.store( LoadProgress::Zones, std::memory_order_relaxed );
+    if( fileVer >= FileVersion( 0, 4, 7 ) )
+    {
+        f.Read( sz );
+        s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
+        s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
+    }
     f.Read( sz );
     m_data.threads.reserve_exact( sz, m_slab );
     for( uint64_t i=0; i<sz; i++ )
@@ -772,8 +778,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( td->count );
         uint64_t tsz;
         f.Read( tsz );
-        s_loadProgress.subTotal.store( td->count, std::memory_order_relaxed );
-        s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
+        if( fileVer < FileVersion( 0, 4, 7 ) )
+        {
+            s_loadProgress.subTotal.store( td->count, std::memory_order_relaxed );
+            s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
+        }
         if( tsz != 0 )
         {
             if( fileVer <= FileVersion( 0, 4, 1 ) )
@@ -808,6 +817,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
     s_loadProgress.progress.store( LoadProgress::GpuZones, std::memory_order_relaxed );
+    if( fileVer >= FileVersion( 0, 4, 7 ) )
+    {
+        f.Read( sz );
+        s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
+        s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
+    }
     f.Read( sz );
     m_data.gpuData.reserve_exact( sz, m_slab );
     for( uint64_t i=0; i<sz; i++ )
@@ -816,8 +831,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( ctx->thread );
         f.Read( ctx->accuracyBits );
         f.Read( ctx->count );
-        s_loadProgress.subTotal.store( ctx->count, std::memory_order_relaxed );
-        s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
+        if( fileVer < FileVersion( 0, 4, 7 ) )
+        {
+            s_loadProgress.subTotal.store( ctx->count, std::memory_order_relaxed );
+            s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
+        }
         int64_t refTime = 0;
         int64_t refGpuTime = 0;
         if( fileVer <= FileVersion( 0, 3, 1 ) )
@@ -3997,6 +4015,9 @@ void Worker::Write( FileWrite& f )
         }
     }
 
+    sz = 0;
+    for( auto& v : m_data.threads ) sz += v->count;
+    f.Write( &sz, sizeof( sz ) );
     sz = m_data.threads.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& thread : m_data.threads )
@@ -4014,6 +4035,9 @@ void Worker::Write( FileWrite& f )
         }
     }
 
+    sz = 0;
+    for( auto& v : m_data.gpuData ) sz += v->count;
+    f.Write( &sz, sizeof( sz ) );
     sz = m_data.gpuData.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& ctx : m_data.gpuData )

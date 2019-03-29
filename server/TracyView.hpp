@@ -188,6 +188,8 @@ private:
     int64_t GetZoneChildTime( const ZoneEvent& zone );
     int64_t GetZoneChildTime( const GpuEvent& zone );
     int64_t GetZoneChildTimeFast( const ZoneEvent& zone );
+    int64_t GetZoneSelfTime( const ZoneEvent& zone );
+    int64_t GetZoneSelfTime( const GpuEvent& zone );
 
     flat_hash_map<const void*, VisData, nohash<const void*>> m_visData;
     flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
@@ -472,6 +474,11 @@ private:
         std::unique_ptr<int64_t[]> bins;
         bool drawAvgMed = true;
     } m_frameSortData;
+
+    struct {
+        std::pair<const ZoneEvent*, int64_t> zoneSelfTime = { nullptr, 0 };
+        std::pair<const GpuEvent*, int64_t> gpuSelfTime = { nullptr, 0 };
+    } m_cache;
 };
 
 }

@@ -10265,18 +10265,28 @@ int64_t View::GetZoneChildTimeFast( const ZoneEvent& zone )
 int64_t View::GetZoneSelfTime( const ZoneEvent& zone )
 {
     if( m_cache.zoneSelfTime.first == &zone ) return m_cache.zoneSelfTime.second;
+    if( m_cache.zoneSelfTime2.first == &zone ) return m_cache.zoneSelfTime2.second;
     const auto ztime = m_worker.GetZoneEnd( zone ) - zone.start;
     const auto selftime = ztime - GetZoneChildTime( zone );
-    if( zone.end >= 0 ) m_cache.zoneSelfTime = std::make_pair( &zone, selftime );
+    if( zone.end >= 0 )
+    {
+        m_cache.zoneSelfTime2 = m_cache.zoneSelfTime;
+        m_cache.zoneSelfTime = std::make_pair( &zone, selftime );
+    }
     return selftime;
 }
 
 int64_t View::GetZoneSelfTime( const GpuEvent& zone )
 {
     if( m_cache.gpuSelfTime.first == &zone ) return m_cache.gpuSelfTime.second;
+    if( m_cache.gpuSelfTime2.first == &zone ) return m_cache.gpuSelfTime2.second;
     const auto ztime = m_worker.GetZoneEnd( zone ) - zone.gpuStart;
     const auto selftime = ztime - GetZoneChildTime( zone );
-    if( zone.gpuEnd >= 0 ) m_cache.gpuSelfTime = std::make_pair( &zone, selftime );
+    if( zone.gpuEnd >= 0 )
+    {
+        m_cache.gpuSelfTime2 = m_cache.gpuSelfTime;
+        m_cache.gpuSelfTime = std::make_pair( &zone, selftime );
+    }
     return selftime;
 }
 

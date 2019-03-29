@@ -477,7 +477,9 @@ private:
 
     struct {
         std::pair<const ZoneEvent*, int64_t> zoneSelfTime = { nullptr, 0 };
+        std::pair<const ZoneEvent*, int64_t> zoneSelfTime2 = { nullptr, 0 };
         std::pair<const GpuEvent*, int64_t> gpuSelfTime = { nullptr, 0 };
+        std::pair<const GpuEvent*, int64_t> gpuSelfTime2 = { nullptr, 0 };
     } m_cache;
 };
 

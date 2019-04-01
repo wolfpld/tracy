@@ -186,11 +186,12 @@ private:
 
     struct MbpsBlock
     {
-        MbpsBlock() : mbps( 64 ), compRatio( 1.0 ) {}
+        MbpsBlock() : mbps( 64 ), compRatio( 1.0 ), queue( 0 ) {}
 
         TracyMutex lock;
         std::vector<float> mbps;
         float compRatio;
+        size_t queue;
     };
 
     enum class NextCallstackType
@@ -317,6 +318,7 @@ public:
     TracyMutex& GetMbpsDataLock() { return m_mbpsData.lock; }
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }
     float GetCompRatio() const { return m_mbpsData.compRatio; }
+    size_t GetSendQueueSize() const { return m_mbpsData.queue; }
 
     bool HasData() const { return m_hasData.load( std::memory_order_acquire ); }
     bool IsConnected() const { return m_connected.load( std::memory_order_relaxed ); }

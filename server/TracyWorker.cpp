@@ -1784,6 +1784,7 @@ void Worker::Exec()
             m_mbpsData.mbps.erase( m_mbpsData.mbps.begin() );
             m_mbpsData.mbps.emplace_back( bytes / ( td * 125.f ) );
             m_mbpsData.compRatio = float( bytes ) / decBytes;
+            m_mbpsData.queue = m_serverQueryQueue.size();
             t0 = t1;
             bytes = 0;
             decBytes = 0;

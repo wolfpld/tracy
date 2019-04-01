@@ -12,6 +12,7 @@
 #include "../common/TracyForceInline.hpp"
 #include "../common/TracyMutex.hpp"
 #include "../common/TracyQueue.hpp"
+#include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "tracy_flat_hash_map.hpp"
 #include "TracyEvent.hpp"
@@ -513,6 +514,9 @@ private:
     FailureData m_failureData;
 
     PlotData* m_sysTimePlot = nullptr;
+
+    Vector<ServerQueryPacket> m_serverQueryQueue;
+    size_t m_serverQuerySpaceLeft;
 };
 
 }

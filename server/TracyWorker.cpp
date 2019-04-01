@@ -1728,6 +1728,7 @@ void Worker::Exec()
         }
     }
 
+    m_serverQuerySpaceLeft = m_sock.GetSendBufSize() / ServerQueryPacketSize;
     m_hasData.store( true, std::memory_order_release );
 
     LZ4_setStreamDecode( m_stream, nullptr, 0 );

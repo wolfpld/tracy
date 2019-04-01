@@ -1814,6 +1814,7 @@ close:
 void Worker::Query( ServerQuery type, uint64_t data )
 {
     ServerQueryPacket query = { type, data };
+    m_serverQuerySpaceLeft--;
     m_sock.Send( &query, ServerQueryPacketSize );
 }
 
@@ -1832,12 +1833,15 @@ bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
             break;
         case QueueType::StringData:
             AddString( ev.stringTransfer.ptr, ptr, sz );
+            m_serverQuerySpaceLeft++;
             break;
         case QueueType::ThreadName:
             AddThreadString( ev.stringTransfer.ptr, ptr, sz );
+            m_serverQuerySpaceLeft++;
             break;
         case QueueType::PlotName:
             HandlePlotName( ev.stringTransfer.ptr, ptr, sz );
+            m_serverQuerySpaceLeft++;
             break;
         case QueueType::SourceLocationPayload:
             AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
@@ -1847,6 +1851,7 @@ bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
             break;
         case QueueType::FrameName:
             HandleFrameName( ev.stringTransfer.ptr, ptr, sz );
+            m_serverQuerySpaceLeft++;
             break;
         case QueueType::CallstackAllocPayload:
             AddCallstackAllocPayload( ev.stringTransfer.ptr, ptr, sz );
@@ -2435,6 +2440,7 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::SourceLocation:
         AddSourceLocation( ev.srcloc );
+        m_serverQuerySpaceLeft++;
         break;
     case QueueType::ZoneText:
         ProcessZoneText( ev.zoneText );
@@ -2516,6 +2522,7 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::CallstackFrameSize:
         ProcessCallstackFrameSize( ev.callstackFrameSize );
+        m_serverQuerySpaceLeft++;
         break;
     case QueueType::CallstackFrame:
         ProcessCallstackFrame( ev.callstackFrame );

@@ -1765,6 +1765,14 @@ void Worker::Exec()
             if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
 
             HandlePostponedPlots();
+
+            while( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
+            {
+                m_serverQuerySpaceLeft--;
+                const auto& query = m_serverQueryQueue.back();
+                m_sock.Send( &query, ServerQueryPacketSize );
+                m_serverQueryQueue.pop_back();
+            }
         }
 
         auto t1 = std::chrono::high_resolution_clock::now();
@@ -1814,8 +1822,15 @@ close:
 void Worker::Query( ServerQuery type, uint64_t data )
 {
     ServerQueryPacket query = { type, data };
-    m_serverQuerySpaceLeft--;
-    m_sock.Send( &query, ServerQueryPacketSize );
+    if( m_serverQuerySpaceLeft > 0 )
+    {
+        m_serverQuerySpaceLeft--;
+        m_sock.Send( &query, ServerQueryPacketSize );
+    }
+    else
+    {
+        m_serverQueryQueue.insert( m_serverQueryQueue.begin(), query );
+    }
 }
 
 bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )

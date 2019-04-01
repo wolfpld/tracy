@@ -54,6 +54,7 @@ v0.5 (xxxx-xx-xx)
 - Display standard deviation in find zone and compare traces menus.
 - Display zone messages in zone information window.
 - Display order of threads can be changed in the options menu.
+- Prevent deadlocks by querying socket send buffer size.
 
 v0.4.1 (2018-12-30)
 -------------------

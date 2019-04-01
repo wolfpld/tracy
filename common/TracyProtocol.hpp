@@ -18,17 +18,6 @@ enum { LZ4Size = LZ4_COMPRESSBOUND( TargetFrameSize ) };
 static_assert( LZ4Size <= std::numeric_limits<lz4sz_t>::max(), "LZ4Size greater than lz4sz_t" );
 static_assert( TargetFrameSize * 2 >= 64 * 1024, "Not enough space for LZ4 stream buffer" );
 
-enum ServerQuery : uint8_t
-{
-    ServerQueryTerminate,
-    ServerQueryString,
-    ServerQueryThreadString,
-    ServerQuerySourceLocation,
-    ServerQueryPlotName,
-    ServerQueryCallstackFrame,
-    ServerQueryFrameName,
-};
-
 enum { HandshakeShibbolethSize = 8 };
 static const char HandshakeShibboleth[HandshakeShibbolethSize] = { 'T', 'r', 'a', 'c', 'y', 'P', 'r', 'f' };
 
@@ -45,6 +34,26 @@ enum { WelcomeMessageProgramNameSize = 64 };
 enum { WelcomeMessageHostInfoSize = 1024 };
 
 #pragma pack( 1 )
+
+enum ServerQuery : uint8_t
+{
+    ServerQueryTerminate,
+    ServerQueryString,
+    ServerQueryThreadString,
+    ServerQuerySourceLocation,
+    ServerQueryPlotName,
+    ServerQueryCallstackFrame,
+    ServerQueryFrameName,
+};
+
+struct ServerQueryPacket
+{
+    ServerQuery type;
+    uint64_t ptr;
+};
+
+enum { ServerQueryPacketSize = sizeof( ServerQueryPacket ) };
+
 
 struct WelcomeMessage
 {

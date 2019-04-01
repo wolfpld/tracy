@@ -337,7 +337,7 @@ public:
 
 private:
     void Exec();
-    void ServerQuery( uint8_t type, uint64_t data );
+    void Query( ServerQuery type, uint64_t data );
 
     tracy_force_inline bool DispatchProcess( const QueueItem& ev, char*& ptr );
     tracy_force_inline bool Process( const QueueItem& ev );

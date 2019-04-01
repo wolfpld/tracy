@@ -103,7 +103,7 @@ bool Socket::Connect( const char* addr, const char* port )
         if( ( sock = socket( ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol ) ) == -1 ) continue;
 #if defined __APPLE__
         int val = 1;
-        setsockopt( m_sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
+        setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
         if( connect( sock, ptr->ai_addr, ptr->ai_addrlen ) == -1 )
         {

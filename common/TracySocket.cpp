@@ -315,20 +315,16 @@ Socket* ListenSocket::Accept()
     if( poll( &fd, 1, 10 ) > 0 )
     {
         int sock = accept( m_sock, (sockaddr*)&remote, &sz);
+        if( sock == -1 ) return nullptr;
+
 #if defined __APPLE__
         int val = 1;
         setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
-        if( sock == -1 )
-        {
-            return nullptr;
-        }
-        else
-        {
-            auto ptr = (Socket*)tracy_malloc( sizeof( Socket ) );
-            new(ptr) Socket( sock );
-            return ptr;
-        }
+
+        auto ptr = (Socket*)tracy_malloc( sizeof( Socket ) );
+        new(ptr) Socket( sock );
+        return ptr;
     }
     else
     {

@@ -152,10 +152,11 @@ int Socket::Send( const void* _buf, int len )
 int Socket::GetSendBufSize()
 {
     int bufSize;
-    int sz = sizeof( bufSize );
 #if defined _WIN32 || defined __CYGWIN__
+    int sz = sizeof( bufSize );
     getsockopt( m_sock, SOL_SOCKET, SO_SNDBUF, (char*)&bufSize, &sz );
 #else
+    socklen_t sz = sizeof( bufSize );
     getsockopt( m_sock, SOL_SOCKET, SO_SNDBUF, &bufSize, &sz );
 #endif
     return bufSize;

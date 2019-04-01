@@ -23,6 +23,7 @@ public:
     void Close();
 
     int Send( const void* buf, int len );
+    int GetSendBufSize();
 
     bool Read( void* buf, int len, int timeout, std::function<bool()> exitCb );
     bool ReadRaw( void* buf, int len, int timeout );

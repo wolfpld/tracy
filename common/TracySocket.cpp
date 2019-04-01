@@ -149,6 +149,18 @@ int Socket::Send( const void* _buf, int len )
     return int( buf - start );
 }
 
+int Socket::GetSendBufSize()
+{
+    int bufSize;
+    int sz = sizeof( bufSize );
+#if defined _WIN32 || defined __CYGWIN__
+    getsockopt( m_sock, SOL_SOCKET, SO_SNDBUF, (char*)&bufSize, &sz );
+#else
+    getsockopt( m_sock, SOL_SOCKET, SO_SNDBUF, &bufSize, &sz );
+#endif
+    return bufSize;
+}
+
 int Socket::RecvBuffered( void* buf, int len, int timeout )
 {
     if( len <= m_bufLeft )

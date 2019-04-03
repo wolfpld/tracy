@@ -8961,34 +8961,28 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
     ImGui::EndChild();
 }
 
-static tracy_force_inline CallstackFrameTree* GetFrameTreeItem( std::vector<CallstackFrameTree>& tree, CallstackFrameId idx, const Worker& worker, bool groupByName )
+static tracy_force_inline CallstackFrameTree* GetFrameTreeItemNoGroup( flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, CallstackFrameId idx, const Worker& worker )
 {
-    std::vector<CallstackFrameTree>::iterator it;
-    if( groupByName )
-    {
-        auto& frameData = *worker.GetCallstackFrame( idx );
-        auto& frame = frameData.data[frameData.size-1];
-        auto fidx = frame.name.idx;
-
-        it = std::find_if( tree.begin(), tree.end(), [&worker, fidx] ( const auto& v ) {
-            auto& frameData = *worker.GetCallstackFrame( v.frame );
-            auto& frame = frameData.data[frameData.size-1];
-            return frame.name.idx == fidx;
-        } );
-    }
-    else
-    {
-        it = std::find_if( tree.begin(), tree.end(), [idx] ( const auto& v ) { return v.frame.data == idx.data; } );
-    }
+    auto it = tree.find( idx.data );
     if( it == tree.end() )
     {
-        tree.emplace_back( CallstackFrameTree { idx } );
-        return &tree.back();
+        it = tree.emplace( idx.data, CallstackFrameTree { idx } ).first;
     }
-    else
+    return &it->second;
+}
+
+static tracy_force_inline CallstackFrameTree* GetFrameTreeItemGroup( flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, CallstackFrameId idx, const Worker& worker )
+{
+    auto& frameData = *worker.GetCallstackFrame( idx );
+    auto& frame = frameData.data[frameData.size-1];
+    auto fidx = frame.name.idx;
+
+    auto it = tree.find( fidx );
+    if( it == tree.end() )
     {
-        return &*it;
+        it = tree.emplace( fidx, CallstackFrameTree { idx } ).first;
     }
+    return &it->second;
 }
 
 flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPaths( const MemData& mem ) const
@@ -9017,51 +9011,100 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
     return pathSum;
 }
 
-std::vector<CallstackFrameTree> View::GetCallstackFrameTreeBottomUp( const MemData& mem ) const
+flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstackFrameTreeBottomUp( const MemData& mem ) const
 {
-    std::vector<CallstackFrameTree> root;
+    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> root;
     auto pathSum = GetCallstackPaths( mem );
-    for( auto& path : pathSum )
+    if( m_groupCallstackTreeByNameBottomUp )
     {
-        auto& cs = m_worker.GetCallstack( path.first );
-
-        auto base = cs.back();
-        auto treePtr = GetFrameTreeItem( root, base, m_worker, m_groupCallstackTreeByNameBottomUp );
-        treePtr->count += path.second.cnt;
-        treePtr->alloc += path.second.mem;
-        treePtr->callstacks.emplace( path.first );
-
-        for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+        for( auto& path : pathSum )
         {
-            treePtr = GetFrameTreeItem( treePtr->children, cs[i], m_worker, m_groupCallstackTreeByNameBottomUp );
+            auto& cs = m_worker.GetCallstack( path.first );
+
+            auto base = cs.back();
+            auto treePtr = GetFrameTreeItemGroup( root, base, m_worker );
             treePtr->count += path.second.cnt;
             treePtr->alloc += path.second.mem;
             treePtr->callstacks.emplace( path.first );
+
+            for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+            {
+                treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
+                treePtr->count += path.second.cnt;
+                treePtr->alloc += path.second.mem;
+                treePtr->callstacks.emplace( path.first );
+            }
         }
     }
+    else
+    {
+        for( auto& path : pathSum )
+        {
+            auto& cs = m_worker.GetCallstack( path.first );
+
+            auto base = cs.back();
+            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            treePtr->count += path.second.cnt;
+            treePtr->alloc += path.second.mem;
+            treePtr->callstacks.emplace( path.first );
+
+            for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+            {
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr->count += path.second.cnt;
+                treePtr->alloc += path.second.mem;
+                treePtr->callstacks.emplace( path.first );
+            }
+        }
+    }
+
     return root;
 }
 
-std::vector<CallstackFrameTree> View::GetCallstackFrameTreeTopDown( const MemData& mem ) const
+flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstackFrameTreeTopDown( const MemData& mem ) const
 {
-    std::vector<CallstackFrameTree> root;
+    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> root;
     auto pathSum = GetCallstackPaths( mem );
-    for( auto& path : pathSum )
+    if( m_groupCallstackTreeByNameTopDown )
     {
-        auto& cs = m_worker.GetCallstack( path.first );
-
-        auto base = cs.front();
-        auto treePtr = GetFrameTreeItem( root, base, m_worker, m_groupCallstackTreeByNameTopDown );
-        treePtr->count += path.second.cnt;
-        treePtr->alloc += path.second.mem;
-        treePtr->callstacks.emplace( path.first );
-
-        for( int i = 1; i < cs.size(); i++ )
+        for( auto& path : pathSum )
         {
-            treePtr = GetFrameTreeItem( treePtr->children, cs[i], m_worker, m_groupCallstackTreeByNameTopDown );
+            auto& cs = m_worker.GetCallstack( path.first );
+
+            auto base = cs.front();
+            auto treePtr = GetFrameTreeItemGroup( root, base, m_worker );
             treePtr->count += path.second.cnt;
             treePtr->alloc += path.second.mem;
             treePtr->callstacks.emplace( path.first );
+
+            for( int i = 1; i < cs.size(); i++ )
+            {
+                treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
+                treePtr->count += path.second.cnt;
+                treePtr->alloc += path.second.mem;
+                treePtr->callstacks.emplace( path.first );
+            }
+        }
+    }
+    else
+    {
+        for( auto& path : pathSum )
+        {
+            auto& cs = m_worker.GetCallstack( path.first );
+
+            auto base = cs.front();
+            auto treePtr = GetFrameTreeItemNoGroup( root, base, m_worker );
+            treePtr->count += path.second.cnt;
+            treePtr->alloc += path.second.mem;
+            treePtr->callstacks.emplace( path.first );
+
+            for( int i = 1; i < cs.size(); i++ )
+            {
+                treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
+                treePtr->count += path.second.cnt;
+                treePtr->alloc += path.second.mem;
+                treePtr->callstacks.emplace( path.first );
+            }
         }
     }
     return root;
@@ -9389,14 +9432,22 @@ void View::DrawMemory()
     ImGui::End();
 }
 
-void View::DrawFrameTreeLevel( std::vector<CallstackFrameTree>& tree, int& idx )
+void View::DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, int& idx )
 {
     auto& io = ImGui::GetIO();
 
-    int lidx = 0;
-    pdqsort_branchless( tree.begin(), tree.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.alloc > rhs.alloc; } );
-    for( auto& v : tree )
+    std::vector<flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>::const_iterator> sorted;
+    sorted.reserve( tree.size() );
+    for( auto it = tree.begin(); it != tree.end(); ++it )
     {
+        sorted.emplace_back( it );
+    }
+    pdqsort_branchless( sorted.begin(), sorted.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs->second.alloc > rhs->second.alloc; } );
+
+    int lidx = 0;
+    for( auto& _v : sorted )
+    {
+        auto& v = _v->second;
         idx++;
         auto& frameData = *m_worker.GetCallstackFrame( v.frame );
         auto frame = frameData.data[frameData.size-1];

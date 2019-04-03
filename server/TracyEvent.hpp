@@ -204,7 +204,7 @@ struct CallstackFrameTree
     CallstackFrameId frame;
     uint64_t alloc;
     uint32_t count;
-    std::vector<CallstackFrameTree> children;
+    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> children;
     flat_hash_set<uint32_t, nohash<uint32_t>> callstacks;
 };
 

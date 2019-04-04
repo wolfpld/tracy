@@ -43,10 +43,12 @@ void SysTime::ReadTimes()
 {
     uint64_t user, nice, system;
     FILE* f = fopen( "/proc/stat", "r" );
-    assert( f );
-    fscanf( f, "cpu %" PRIu64 " %" PRIu64 " %" PRIu64" %" PRIu64, &user, &nice, &system, &idle );
-    fclose( f );
-    used = user + nice + system;
+    if( f )
+    {
+        fscanf( f, "cpu %" PRIu64 " %" PRIu64 " %" PRIu64" %" PRIu64, &user, &nice, &system, &idle );
+        fclose( f );
+        used = user + nice + system;
+    }
 }
 
 #  elif defined __APPLE__

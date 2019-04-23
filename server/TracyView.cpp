@@ -3815,7 +3815,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
                 double min = it->val;
                 double max = it->val;
-                if( std::distance( it, end ) > 1000000 )
+                const auto num = std::distance( it, end );
+                if( num > 1000000 )
                 {
                     min = v->min;
                     max = v->max;
@@ -3959,7 +3960,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 char tmp[64];
                 if( yPos + ty >= yMin && yPos <= yMax )
                 {
-                    sprintf( tmp, "(y-range: %s)", FormatPlotValue( max - min, v->type ) );
+                    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( max - min, v->type ), RealToString( num, true ) );
                     draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0x8844DDDD, tmp );
                 }
                 sprintf( tmp, "%s", FormatPlotValue( max, v->type ) );

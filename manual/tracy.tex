@@ -1263,13 +1263,13 @@ Hovering the \faMousePointer{}~mouse pointer over a lock timeline will highlight
 \subparagraph{Plots}
 \label{plots}
 
-The numerical data values (figure~\ref{plot}) are plotted right below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot. The discrete data points are indicated with little rectangles. Multiple data points are indicated by a filled rectangle.
+The numerical data values (figure~\ref{plot}) are plotted right below the zones and locks. Note that the minimum and maximum values currently displayed on the plot are visible on the screen, along with the y range of the plot and number of drawn data points. The discrete data points are indicated with little rectangles. Multiple data points are indicated by a filled rectangle.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
 [dot/.style={rectangle,draw,scale=0.5}];
 \draw(0, -0.15) -- (0.2, -0.15) -- (0.1, -0.35) -- (0, -0.15);
-\draw(0.25, 0) node[anchor=north west] {Queue size (y-range: 463)};
+\draw(0.25, 0) node[anchor=north west] {Queue size (y-range: 463, visible data points: 7)};
 \draw[densely dotted] (0, -0.5) -- +(15, 0);
 \draw(0, -0.5) node[anchor=north west] {731};
 \draw(0, -3) node[anchor=south west] {268};

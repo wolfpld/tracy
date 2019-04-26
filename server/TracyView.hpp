@@ -473,6 +473,8 @@ private:
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins;
         bool drawAvgMed = true;
+        bool limitToView = false;
+        std::pair<int, int> limitRange = { -1, 0 };
     } m_frameSortData;
 
     struct {

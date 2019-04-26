@@ -8158,41 +8158,6 @@ void View::DrawInfo()
     const auto fsz = m_worker.GetFullFrameCount( *m_frames );
     if( fsz != 0 )
     {
-        if( m_frameSortData.frameSet != m_frames )
-        {
-            m_frameSortData.frameSet = m_frames;
-            m_frameSortData.frameNum = 0;
-            m_frameSortData.data.clear();
-            m_frameSortData.total = 0;
-        }
-        if( m_frameSortData.frameNum != fsz )
-        {
-            auto& vec = m_frameSortData.data;
-            vec.reserve( fsz );
-            const auto midSz = vec.size();
-            int64_t total = m_frameSortData.total;
-            for( size_t i=m_frameSortData.frameNum; i<fsz; i++ )
-            {
-                const auto t = m_worker.GetFrameTime( *m_frames, i );
-                if( t > 0 )
-                {
-                    vec.emplace_back( t );
-                    total += t;
-                }
-            }
-            auto mid = vec.begin() + midSz;
-            pdqsort_branchless( mid, m_frameSortData.data.end() );
-            std::inplace_merge( vec.begin(), mid, vec.end() );
-
-            const auto vsz = vec.size();
-            m_frameSortData.average = float( total ) / vsz;
-            m_frameSortData.median = vec[vsz/2];
-            m_frameSortData.total = total;
-            m_frameSortData.frameNum = fsz;
-        }
-
-        const auto profileSpan = m_worker.GetLastTime() - m_worker.GetTimeBegin();
-
         ImGui::Separator();
         TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
         ImGui::SameLine();
@@ -8219,6 +8184,75 @@ void View::DrawInfo()
             ImGui::EndCombo();
         }
         ImGui::PopStyleVar();
+        ImGui::SameLine();
+        SmallCheckbox( "Limit to view", &m_frameSortData.limitToView );
+
+        const auto frameRange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
+        if( m_frameSortData.frameSet != m_frames || ( m_frameSortData.limitToView && m_frameSortData.limitRange != frameRange ) || ( !m_frameSortData.limitToView && m_frameSortData.limitRange.first == -1 ) )
+        {
+            m_frameSortData.frameSet = m_frames;
+            m_frameSortData.frameNum = 0;
+            m_frameSortData.data.clear();
+            m_frameSortData.total = 0;
+        }
+        bool recalc = false;
+        int64_t total = 0;
+        if( !m_frameSortData.limitToView )
+        {
+            if( m_frameSortData.frameNum != fsz || m_frameSortData.limitRange.first != -1 )
+            {
+                auto& vec = m_frameSortData.data;
+                vec.reserve( fsz );
+                const auto midSz = vec.size();
+                total = m_frameSortData.total;
+                for( size_t i=m_frameSortData.frameNum; i<fsz; i++ )
+                {
+                    const auto t = m_worker.GetFrameTime( *m_frames, i );
+                    if( t > 0 )
+                    {
+                        vec.emplace_back( t );
+                        total += t;
+                    }
+                }
+                auto mid = vec.begin() + midSz;
+                pdqsort_branchless( mid, vec.end() );
+                std::inplace_merge( vec.begin(), mid, vec.end() );
+                recalc = true;
+                m_frameSortData.limitRange.first = -1;
+            }
+        }
+        else
+        {
+            if( m_frameSortData.limitRange != frameRange )
+            {
+                auto& vec = m_frameSortData.data;
+                assert( vec.empty() );
+                vec.reserve( frameRange.second - frameRange.first );
+                for( int i=frameRange.first; i<frameRange.second; i++ )
+                {
+                    const auto t = m_worker.GetFrameTime( *m_frames, i );
+                    if( t > 0 )
+                    {
+                        vec.emplace_back( t );
+                        total += t;
+                    }
+                }
+                pdqsort_branchless( vec.begin(), vec.end() );
+                recalc = true;
+                m_frameSortData.limitRange = frameRange;
+            }
+        }
+        if( recalc )
+        {
+            auto& vec = m_frameSortData.data;
+            const auto vsz = vec.size();
+            m_frameSortData.average = float( total ) / vsz;
+            m_frameSortData.median = vec[vsz/2];
+            m_frameSortData.total = total;
+            m_frameSortData.frameNum = fsz;
+        }
+
+        const auto profileSpan = m_worker.GetLastTime() - m_worker.GetTimeBegin();
         TextFocused( "Count:", RealToString( fsz, true ) );
         TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
         ImGui::SameLine();

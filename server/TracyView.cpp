@@ -8197,6 +8197,28 @@ void View::DrawInfo()
         TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", m_frames->continuous ? "continuous" : "discontinuous" );
+        ImGui::SameLine();
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
+        {
+            auto& frames = m_worker.GetFrames();
+            for( auto& fd : frames )
+            {
+                bool isSelected = m_frames == fd;
+                if( ImGui::Selectable( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), isSelected ) )
+                {
+                    m_frames = fd;
+                }
+                if( isSelected )
+                {
+                    ImGui::SetItemDefaultFocus();
+                }
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size(), true ) );
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopStyleVar();
         TextFocused( "Count:", RealToString( fsz, true ) );
         TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
         ImGui::SameLine();

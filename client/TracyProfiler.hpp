@@ -11,7 +11,6 @@
 #include "TracyCallstack.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
-#include "../common/tracy_lz4.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
@@ -450,7 +449,7 @@ private:
     bool m_noExit;
     std::atomic<uint32_t> m_zoneId;
 
-    LZ4_stream_t* m_stream;
+    void* m_stream;     // LZ4_stream_t*
     char* m_buffer;
     int m_bufferOffset;
     int m_bufferStart;

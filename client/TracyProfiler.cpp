@@ -45,6 +45,7 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
+#include "../common/tracy_lz4.hpp"
 #include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
 #include "TracyScoped.hpp"
@@ -1031,7 +1032,7 @@ Profiler::~Profiler()
     tracy_free( m_lz4Buf );
     tracy_free( m_itemBuf );
     tracy_free( m_buffer );
-    LZ4_freeStream( m_stream );
+    LZ4_freeStream( (LZ4_stream_t*)m_stream );
 
     if( m_sock )
     {
@@ -1155,7 +1156,7 @@ void Profiler::Worker()
         HandshakeStatus handshake = HandshakeWelcome;
         m_sock->Send( &handshake, sizeof( handshake ) );
 
-        LZ4_resetStream( m_stream );
+        LZ4_resetStream( (LZ4_stream_t*)m_stream );
         m_sock->Send( &welcome, sizeof( welcome ) );
 
 #ifdef TRACY_ON_DEMAND
@@ -1540,7 +1541,7 @@ bool Profiler::NeedDataSize( size_t len )
 
 bool Profiler::SendData( const char* data, size_t len )
 {
-    const lz4sz_t lz4sz = LZ4_compress_fast_continue( m_stream, data, m_lz4Buf + sizeof( lz4sz_t ), (int)len, LZ4Size, 1 );
+    const lz4sz_t lz4sz = LZ4_compress_fast_continue( (LZ4_stream_t*)m_stream, data, m_lz4Buf + sizeof( lz4sz_t ), (int)len, LZ4Size, 1 );
     memcpy( m_lz4Buf, &lz4sz, sizeof( lz4sz ) );
     return m_sock->Send( m_lz4Buf, lz4sz + sizeof( lz4sz_t ) ) != -1;
 }

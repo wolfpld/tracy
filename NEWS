@@ -26,6 +26,7 @@ v0.5 (xxxx-xx-xx)
     - Add top-down variant to complement the previously available bottom-up
       one.
     - Add ability to group tree nodes by function name.
+    - Allow restricting tree to display only active allocations.
   - Added support for Lua call stack capture.
 - Self time of zones may be now displayed in the find zone menu.
 - Added ability to disconnect from a client (with some caveats).

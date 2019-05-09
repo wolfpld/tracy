@@ -9042,27 +9042,50 @@ static tracy_force_inline CallstackFrameTree* GetFrameTreeItemGroup( flat_hash_m
     return &it->second;
 }
 
-flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPaths( const MemData& mem ) const
+flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPaths( const MemData& mem, bool onlyActive ) const
 {
     flat_hash_map<uint32_t, PathData, nohash<uint32_t>> pathSum;
     pathSum.reserve( m_worker.GetCallstackPayloadCount() );
 
     const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
 
-    for( auto& ev : mem.data )
+    if( m_memInfo.restrictTime )
     {
-        if( ev.csAlloc == 0 ) continue;
-        if( m_memInfo.restrictTime && ev.timeAlloc >= zvMid ) continue;
+        for( auto& ev : mem.data )
+        {
+            if( ev.csAlloc == 0 ) continue;
+            if( ev.timeAlloc >= zvMid ) continue;
+            if( onlyActive && ev.timeFree >= 0 && ev.timeFree < zvMid ) continue;
 
-        auto it = pathSum.find( ev.csAlloc );
-        if( it == pathSum.end() )
-        {
-            pathSum.emplace( ev.csAlloc, PathData { 1, ev.size } );
+            auto it = pathSum.find( ev.csAlloc );
+            if( it == pathSum.end() )
+            {
+                pathSum.emplace( ev.csAlloc, PathData { 1, ev.size } );
+            }
+            else
+            {
+                it->second.cnt++;
+                it->second.mem += ev.size;
+            }
         }
-        else
+    }
+    else
+    {
+        for( auto& ev : mem.data )
         {
-            it->second.cnt++;
-            it->second.mem += ev.size;
+            if( ev.csAlloc == 0 ) continue;
+            if( onlyActive && ev.timeFree >= 0 ) continue;
+
+            auto it = pathSum.find( ev.csAlloc );
+            if( it == pathSum.end() )
+            {
+                pathSum.emplace( ev.csAlloc, PathData { 1, ev.size } );
+            }
+            else
+            {
+                it->second.cnt++;
+                it->second.mem += ev.size;
+            }
         }
     }
     return pathSum;
@@ -9071,7 +9094,7 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
 flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstackFrameTreeBottomUp( const MemData& mem ) const
 {
     flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> root;
-    auto pathSum = GetCallstackPaths( mem );
+    auto pathSum = GetCallstackPaths( mem, m_activeOnlyBottomUp );
     if( m_groupCallstackTreeByNameBottomUp )
     {
         for( auto& path : pathSum )
@@ -9121,7 +9144,7 @@ flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstack
 flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstackFrameTreeTopDown( const MemData& mem ) const
 {
     flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> root;
-    auto pathSum = GetCallstackPaths( mem );
+    auto pathSum = GetCallstackPaths( mem, m_activeOnlyTopDown );
     if( m_groupCallstackTreeByNameTopDown )
     {
         for( auto& path : pathSum )
@@ -9452,6 +9475,8 @@ void View::DrawMemory()
         ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameBottomUp );
         ImGui::SameLine();
         DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
+        ImGui::SameLine();
+        ImGui::Checkbox( "Only active allocations", &m_activeOnlyBottomUp );
         TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip." );
         TextDisabledUnformatted( "Right click on function name to display allocations list. Right click on file name to open source file." );
 
@@ -9474,6 +9499,8 @@ void View::DrawMemory()
         ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameTopDown );
         ImGui::SameLine();
         DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
+        ImGui::SameLine();
+        ImGui::Checkbox( "Only active allocations", &m_activeOnlyTopDown );
         TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip." );
         TextDisabledUnformatted( "Right click on function name to display allocations list. Right click on file name to open source file." );
 

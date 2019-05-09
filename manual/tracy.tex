@@ -1521,6 +1521,8 @@ Each tree node consists of three elements: the function name, the source file lo
 
 The \emph{Group by function name} option controls how tree nodes are grouped. If it is disabled, then the grouping is performed at a machine instruction level granularity. This may result in very verbose output, but the displayed source locations are precise. To make the tree more readable you may opt to perform grouping at the function name level, which will result in less valid source file locations, as multiple entries are collapsed into one.
 
+Enabling the \emph{Only active allocations} option will limit the call stack tree to only display active allocations.
+
 Clicking the \RMB{}~right mouse button on the function name will open allocations list window (see section \ref{alloclist}), which list all the allocations included at the current call stack tree level. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
 Some function names may be too long to be properly displayed, with the events count data at the end. In such cases, you may press the \emph{control} button, which will display events count tooltip.

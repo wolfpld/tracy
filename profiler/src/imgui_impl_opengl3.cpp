@@ -12,6 +12,9 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
+//  2019-04-30: OpenGL: Added support for special ImDrawCallback_ResetRenderState callback to reset render state.
+//  2019-03-29: OpenGL: Not calling glBindBuffer more than necessary in the render loop.
+//  2019-03-15: OpenGL: Added a dummy GL call + comments in ImGui_ImplOpenGL3_Init() to detect uninitialized GL function loaders early.
 //  2019-03-03: OpenGL: Fix support for ES 2.0 (WebGL 1.0).
 //  2019-02-20: OpenGL: Fix for OSX not supporting OpenGL 4.5, we don't try to read GL_CLIP_ORIGIN even if defined by the headers/loader.
 //  2019-02-11: OpenGL: Projecting clipping rectangles correctly using draw_data->FramebufferScale to allow multi-viewports for retina display.
@@ -89,11 +92,11 @@
 //  Helper libraries are often used for this purpose! Here we are supporting a few common ones (gl3w, glew, glad).
 //  You may use another loader/header of your choice (glext, glLoadGen, etc.), or chose to manually implement your own.
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-#include <GL/gl3w.h>
+#include <GL/gl3w.h>    // Needs to be initialized with gl3wInit() in user's code
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-#include <GL/glew.h>
+#include <GL/glew.h>    // Needs to be initialized with glewInit() in user's code
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-#include <glad/glad.h>
+#include <glad/glad.h>  // Needs to be initialized with gladLoadGL() in user's code
 #else
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #endif
@@ -103,8 +106,8 @@
 static char         g_GlslVersionString[32] = "";
 static GLuint       g_FontTexture = 0;
 static GLuint       g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
-static int          g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;
-static int          g_AttribLocationPosition = 0, g_AttribLocationUV = 0, g_AttribLocationColor = 0;
+static int          g_AttribLocationTex = 0, g_AttribLocationProjMtx = 0;                                // Uniforms location
+static int          g_AttribLocationVtxPos = 0, g_AttribLocationVtxUV = 0, g_AttribLocationVtxColor = 0; // Vertex attributes location
 static unsigned int g_VboHandle = 0, g_ElementsHandle = 0;
 
 // Functions
@@ -128,6 +131,12 @@ bool    ImGui_ImplOpenGL3_Init(const char* glsl_version)
     strcpy(g_GlslVersionString, glsl_version);
     strcat(g_GlslVersionString, "\n");
 
+    // Make a dummy GL call (we don't actually need the result)
+    // IF YOU GET A CRASH HERE: it probably means that you haven't initialized the OpenGL function loader used by this code.
+    // Desktop OpenGL 3/4 need a function loader. See the IMGUI_IMPL_OPENGL_LOADER_xxx explanation above.
+    GLint current_texture;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &current_texture);
+
     return true;
 }
 
@@ -142,51 +151,8 @@ void    ImGui_ImplOpenGL3_NewFrame()
         ImGui_ImplOpenGL3_CreateDeviceObjects();
 }
 
-// OpenGL3 Render function.
-// (this used to be set in io.RenderDrawListsFn and called by ImGui::Render(), but you can now call this directly from your main loop)
-// Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so.
-void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
+static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_width, int fb_height, GLuint vertex_array_object)
 {
-    // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
-    int fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
-    int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
-    if (fb_width <= 0 || fb_height <= 0)
-        return;
-
-    // Backup GL state
-    GLenum last_active_texture; glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
-    glActiveTexture(GL_TEXTURE0);
-    GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-#ifdef GL_SAMPLER_BINDING
-    GLint last_sampler; glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
-#endif
-    GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-#ifndef IMGUI_IMPL_OPENGL_ES2
-    GLint last_vertex_array; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-#endif
-#ifdef GL_POLYGON_MODE
-    GLint last_polygon_mode[2]; glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
-#endif
-    GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
-    GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
-    GLenum last_blend_src_rgb; glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
-    GLenum last_blend_dst_rgb; glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
-    GLenum last_blend_src_alpha; glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
-    GLenum last_blend_dst_alpha; glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
-    GLenum last_blend_equation_rgb; glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
-    GLenum last_blend_equation_alpha; glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
-    GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
-    GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
-    GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
-    GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
-    bool clip_origin_lower_left = true;
-#if defined(GL_CLIP_ORIGIN) && !defined(__APPLE__)
-    GLenum last_clip_origin = 0; glGetIntegerv(GL_CLIP_ORIGIN, (GLint*)&last_clip_origin); // Support for GL 4.5's glClipControl(GL_UPPER_LEFT)
-    if (last_clip_origin == GL_UPPER_LEFT)
-        clip_origin_lower_left = false;
-#endif
-
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, polygon fill
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
@@ -219,20 +185,75 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
     glBindSampler(0, 0); // We use combined texture/sampler state. Applications using GL 3.3 may set that otherwise.
 #endif
 
+    (void)vertex_array_object;
 #ifndef IMGUI_IMPL_OPENGL_ES2
-    // Recreate the VAO every time
-    // (This is to easily allow multiple GL contexts. VAO are not shared among GL contexts, and we don't track creation/deletion of windows so we don't have an obvious key to use to cache them.)
-    GLuint vao_handle = 0;
-    glGenVertexArrays(1, &vao_handle);
-    glBindVertexArray(vao_handle);
+    glBindVertexArray(vertex_array_object);
 #endif
+
+    // Bind vertex/index buffers and setup attributes for ImDrawVert
     glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
-    glEnableVertexAttribArray(g_AttribLocationPosition);
-    glEnableVertexAttribArray(g_AttribLocationUV);
-    glEnableVertexAttribArray(g_AttribLocationColor);
-    glVertexAttribPointer(g_AttribLocationPosition, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, pos));
-    glVertexAttribPointer(g_AttribLocationUV, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, uv));
-    glVertexAttribPointer(g_AttribLocationColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, col));
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ElementsHandle);
+    glEnableVertexAttribArray(g_AttribLocationVtxPos);
+    glEnableVertexAttribArray(g_AttribLocationVtxUV);
+    glEnableVertexAttribArray(g_AttribLocationVtxColor);
+    glVertexAttribPointer(g_AttribLocationVtxPos,   2, GL_FLOAT,         GL_FALSE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, pos));
+    glVertexAttribPointer(g_AttribLocationVtxUV,    2, GL_FLOAT,         GL_FALSE, sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, uv));
+    glVertexAttribPointer(g_AttribLocationVtxColor, 4, GL_UNSIGNED_BYTE, GL_TRUE,  sizeof(ImDrawVert), (GLvoid*)IM_OFFSETOF(ImDrawVert, col));
+}
+
+// OpenGL3 Render function.
+// (this used to be set in io.RenderDrawListsFn and called by ImGui::Render(), but you can now call this directly from your main loop)
+// Note that this implementation is little overcomplicated because we are saving/setting up/restoring every OpenGL state explicitly, in order to be able to run within any OpenGL engine that doesn't do so.
+void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
+{
+    // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
+    int fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
+    int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
+    if (fb_width <= 0 || fb_height <= 0)
+        return;
+
+    // Backup GL state
+    GLenum last_active_texture; glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture);
+    glActiveTexture(GL_TEXTURE0);
+    GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+    GLint last_texture; glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+#ifdef GL_SAMPLER_BINDING
+    GLint last_sampler; glGetIntegerv(GL_SAMPLER_BINDING, &last_sampler);
+#endif
+    GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
+#ifndef IMGUI_IMPL_OPENGL_ES2
+    GLint last_vertex_array_object; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array_object);
+#endif
+#ifdef GL_POLYGON_MODE
+    GLint last_polygon_mode[2]; glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode);
+#endif
+    GLint last_viewport[4]; glGetIntegerv(GL_VIEWPORT, last_viewport);
+    GLint last_scissor_box[4]; glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box);
+    GLenum last_blend_src_rgb; glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb);
+    GLenum last_blend_dst_rgb; glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb);
+    GLenum last_blend_src_alpha; glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha);
+    GLenum last_blend_dst_alpha; glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha);
+    GLenum last_blend_equation_rgb; glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb);
+    GLenum last_blend_equation_alpha; glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha);
+    GLboolean last_enable_blend = glIsEnabled(GL_BLEND);
+    GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
+    GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
+    GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
+    bool clip_origin_lower_left = true;
+#if defined(GL_CLIP_ORIGIN) && !defined(__APPLE__)
+    GLenum last_clip_origin = 0; glGetIntegerv(GL_CLIP_ORIGIN, (GLint*)&last_clip_origin); // Support for GL 4.5's glClipControl(GL_UPPER_LEFT)
+    if (last_clip_origin == GL_UPPER_LEFT)
+        clip_origin_lower_left = false;
+#endif
+
+    // Setup desired GL state
+    // Recreate the VAO every time (this is to easily allow multiple GL contexts to be rendered to. VAO are not shared among GL contexts)
+    // The renderer would actually work without any VAO bound, but then our VertexAttrib calls would overwrite the default one currently bound.
+    GLuint vertex_array_object = 0;
+#ifndef IMGUI_IMPL_OPENGL_ES2
+    glGenVertexArrays(1, &vertex_array_object);
+#endif
+    ImGui_ImplOpenGL3_SetupRenderState(draw_data, fb_width, fb_height, vertex_array_object);
 
     // Will project scissor/clipping rectangles into framebuffer space
     ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
@@ -244,19 +265,21 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
         size_t idx_buffer_offset = 0;
 
-        glBindBuffer(GL_ARRAY_BUFFER, g_VboHandle);
+        // Upload vertex/index buffers
         glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.Size * sizeof(ImDrawVert), (const GLvoid*)cmd_list->VtxBuffer.Data, GL_STREAM_DRAW);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ElementsHandle);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx), (const GLvoid*)cmd_list->IdxBuffer.Data, GL_STREAM_DRAW);
 
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
         {
             const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
-            if (pcmd->UserCallback)
+            if (pcmd->UserCallback != NULL)
             {
-                // User callback (registered via ImDrawList::AddCallback)
-                pcmd->UserCallback(cmd_list, pcmd);
+                // User callback, registered via ImDrawList::AddCallback()
+                // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
+                if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+                    ImGui_ImplOpenGL3_SetupRenderState(draw_data, fb_width, fb_height, vertex_array_object);
+                else
+                    pcmd->UserCallback(cmd_list, pcmd);
             }
             else
             {
@@ -273,7 +296,7 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
                     if (clip_origin_lower_left)
                         glScissor((int)clip_rect.x, (int)(fb_height - clip_rect.w), (int)(clip_rect.z - clip_rect.x), (int)(clip_rect.w - clip_rect.y));
                     else
-                        glScissor((int)clip_rect.x, (int)clip_rect.y, (int)clip_rect.z, (int)clip_rect.w); // Support for GL 4.5's glClipControl(GL_UPPER_LEFT)
+                        glScissor((int)clip_rect.x, (int)clip_rect.y, (int)clip_rect.z, (int)clip_rect.w); // Support for GL 4.5 rarely used glClipControl(GL_UPPER_LEFT)
 
                     // Bind texture, Draw
                     glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
@@ -283,8 +306,10 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
             idx_buffer_offset += pcmd->ElemCount * sizeof(ImDrawIdx);
         }
     }
+
+    // Destroy the temporary VAO
 #ifndef IMGUI_IMPL_OPENGL_ES2
-    glDeleteVertexArrays(1, &vao_handle);
+    glDeleteVertexArrays(1, &vertex_array_object);
 #endif
 
     // Restore modified GL state
@@ -295,7 +320,7 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
 #endif
     glActiveTexture(last_active_texture);
 #ifndef IMGUI_IMPL_OPENGL_ES2
-    glBindVertexArray(last_vertex_array);
+    glBindVertexArray(last_vertex_array_object);
 #endif
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
     glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha);
@@ -547,9 +572,9 @@ bool    ImGui_ImplOpenGL3_CreateDeviceObjects()
 
     g_AttribLocationTex = glGetUniformLocation(g_ShaderHandle, "Texture");
     g_AttribLocationProjMtx = glGetUniformLocation(g_ShaderHandle, "ProjMtx");
-    g_AttribLocationPosition = glGetAttribLocation(g_ShaderHandle, "Position");
-    g_AttribLocationUV = glGetAttribLocation(g_ShaderHandle, "UV");
-    g_AttribLocationColor = glGetAttribLocation(g_ShaderHandle, "Color");
+    g_AttribLocationVtxPos = glGetAttribLocation(g_ShaderHandle, "Position");
+    g_AttribLocationVtxUV = glGetAttribLocation(g_ShaderHandle, "UV");
+    g_AttribLocationVtxColor = glGetAttribLocation(g_ShaderHandle, "Color");
 
     // Create buffers
     glGenBuffers(1, &g_VboHandle);

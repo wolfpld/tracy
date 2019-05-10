@@ -719,7 +719,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     if( eventMask & EventType::Messages )
     {
         m_data.messages.reserve_exact( sz, m_slab );
-        if( fileVer >= FileVersion( 0, 4, 2 ) )
+        if( fileVer >= FileVersion( 0, 4, 8 ) )
         {
             int64_t refTime = 0;
             for( uint64_t i=0; i<sz; i++ )
@@ -729,6 +729,22 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 auto msgdata = m_slab.Alloc<MessageData>();
                 msgdata->time = ReadTimeOffset( f, refTime );
                 f.Read( msgdata->ref );
+                f.Read( msgdata->color );
+                m_data.messages[i] = msgdata;
+                msgMap.emplace( ptr, msgdata );
+            }
+        }
+        else if( fileVer >= FileVersion( 0, 4, 2 ) )
+        {
+            int64_t refTime = 0;
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint64_t ptr;
+                f.Read( ptr );
+                auto msgdata = m_slab.Alloc<MessageData>();
+                msgdata->time = ReadTimeOffset( f, refTime );
+                f.Read( msgdata->ref );
+                msgdata->color = 0xFFFFFFFF;
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
             }
@@ -742,6 +758,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 auto msgdata = m_slab.Alloc<MessageData>();
                 f.Read( msgdata, sizeof( MessageData::time ) + sizeof( MessageData::ref ) );
                 if( fileVer <= FileVersion( 0, 3, 0 ) ) f.Skip( 7 );
+                msgdata->color = 0xFFFFFFFF;
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
             }
@@ -754,9 +771,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             f.Skip( sz * ( sizeof( uint64_t ) + 24 ) );
         }
-        else
+        else if( fileVer <= FileVersion( 0, 4, 7 ) )
         {
             f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) ) );
+        }
+        else
+        {
+            f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) + sizeof( MessageData::color ) ) );
         }
     }
 
@@ -4067,6 +4088,7 @@ void Worker::Write( FileWrite& f )
             f.Write( &ptr, sizeof( ptr ) );
             WriteTimeOffset( f, refTime, v->time );
             f.Write( &v->ref, sizeof( v->ref ) );
+            f.Write( &v->color, sizeof( v->color ) );
         }
     }
 

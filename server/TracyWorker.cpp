@@ -2112,7 +2112,7 @@ void Worker::AddSourceLocation( const QueueSourceLocation& srcloc )
     CheckString( srcloc.name );
     CheckString( srcloc.file );
     CheckString( srcloc.function );
-    uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
+    const uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
     it->second = SourceLocation { srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color };
 }
 

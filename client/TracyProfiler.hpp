@@ -256,6 +256,47 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color )
+    {
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        Magic magic;
+        auto token = GetToken();
+        auto ptr = (char*)tracy_malloc( size+1 );
+        memcpy( ptr, txt, size );
+        ptr[size] = '\0';
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::MessageColor );
+        MemWrite( &item->messageColor.time, GetTime() );
+        MemWrite( &item->messageColor.thread, GetThreadHandle() );
+        MemWrite( &item->messageColor.text, (uint64_t)ptr );
+        MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
+        MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
+        MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    static tracy_force_inline void MessageColor( const char* txt, uint32_t color )
+    {
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        Magic magic;
+        auto token = GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::MessageLiteralColor );
+        MemWrite( &item->messageColor.time, GetTime() );
+        MemWrite( &item->messageColor.thread, GetThreadHandle() );
+        MemWrite( &item->messageColor.text, (uint64_t)txt );
+        MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
+        MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
+        MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
     {
 #ifdef TRACY_ON_DEMAND

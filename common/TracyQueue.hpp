@@ -11,6 +11,7 @@ enum class QueueType : uint8_t
     ZoneText,
     ZoneName,
     Message,
+    MessageColor,
     ZoneBeginAllocSrcLoc,
     ZoneBeginAllocSrcLocCallstack,
     CallstackMemory,
@@ -39,6 +40,7 @@ enum class QueueType : uint8_t
     LockMark,
     PlotData,
     MessageLiteral,
+    MessageLiteralColor,
     GpuNewContext,
     GpuZoneBegin,
     GpuZoneBeginCallstack,
@@ -190,6 +192,13 @@ struct QueueMessage
     uint64_t text;      // ptr
 };
 
+struct QueueMessageColor : public QueueMessage
+{
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+};
+
 struct QueueGpuNewContext
 {
     int64_t cpuTime;
@@ -311,6 +320,7 @@ struct QueueItem
         QueueLockMark lockMark;
         QueuePlotData plotData;
         QueueMessage message;
+        QueueMessageColor messageColor;
         QueueGpuNewContext gpuNewContext;
         QueueGpuZoneBegin gpuZoneBegin;
         QueueGpuZoneEnd gpuZoneEnd;
@@ -335,6 +345,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),        // zone name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
+    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location, callstack
     sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ),
@@ -364,6 +375,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
+    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // literal
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // callstack

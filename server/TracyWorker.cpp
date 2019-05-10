@@ -2500,6 +2500,12 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MessageLiteral:
         ProcessMessageLiteral( ev.message );
         break;
+    case QueueType::MessageColor:
+        ProcessMessageColor( ev.messageColor );
+        break;
+    case QueueType::MessageLiteralColor:
+        ProcessMessageLiteralColor( ev.messageColor );
+        break;
     case QueueType::GpuNewContext:
         ProcessGpuNewContext( ev.gpuNewContext );
         break;
@@ -3063,6 +3069,30 @@ void Worker::ProcessMessage( const QueueMessage& ev )
 }
 
 void Worker::ProcessMessageLiteral( const QueueMessage& ev )
+{
+    CheckString( ev.text );
+    auto msg = m_slab.Alloc<MessageData>();
+    msg->time = TscTime( ev.time );
+    msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
+    msg->thread = ev.thread;
+    m_data.lastTime = std::max( m_data.lastTime, msg->time );
+    InsertMessageData( msg, ev.thread );
+}
+
+void Worker::ProcessMessageColor( const QueueMessageColor& ev )
+{
+    auto it = m_pendingCustomStrings.find( ev.text );
+    assert( it != m_pendingCustomStrings.end() );
+    auto msg = m_slab.Alloc<MessageData>();
+    msg->time = TscTime( ev.time );
+    msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
+    msg->thread = ev.thread;
+    m_data.lastTime = std::max( m_data.lastTime, msg->time );
+    InsertMessageData( msg, ev.thread );
+    m_pendingCustomStrings.erase( it );
+}
+
+void Worker::ProcessMessageLiteralColor( const QueueMessageColor& ev )
 {
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();

@@ -57,6 +57,7 @@ v0.5 (xxxx-xx-xx)
 - Display order of threads can be changed in the options menu.
 - Prevent deadlocks by querying socket send buffer size.
 - Frame set statistics can be now limited to frames visible on the screen.
+- Messages can be now colored.
 
 v0.4.1 (2018-12-30)
 -------------------

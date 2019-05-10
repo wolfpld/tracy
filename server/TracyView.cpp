@@ -2059,10 +2059,10 @@ void View::DrawZones()
                         }
                         else
                         {
-                            ImGui::TextUnformatted( TimeToString( (*msgit)->time - m_worker.GetTimeBegin() ) );
-                            ImGui::Separator();
-                            ImGui::TextUnformatted( "Message text:" );
-                            ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( (*msgit)->ref ) );
+                            TextFocused( "Message at", TimeToString( (*msgit)->time - m_worker.GetTimeBegin() ) );
+                            ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
+                            ImGui::TextUnformatted( m_worker.GetString( (*msgit)->ref ) );
+                            ImGui::PopStyleColor();
                         }
                         ImGui::EndTooltip();
                         m_msgHighlight = *msgit;

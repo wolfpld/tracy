@@ -3063,6 +3063,7 @@ void Worker::ProcessMessage( const QueueMessage& ev )
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
     msg->thread = ev.thread;
+    msg->color = 0xFFFFFFFF;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
     m_pendingCustomStrings.erase( it );
@@ -3075,6 +3076,7 @@ void Worker::ProcessMessageLiteral( const QueueMessage& ev )
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = ev.thread;
+    msg->color = 0xFFFFFFFF;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
 }
@@ -3087,6 +3089,7 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
     msg->thread = ev.thread;
+    msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
     m_pendingCustomStrings.erase( it );
@@ -3099,6 +3102,7 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColor& ev )
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = ev.thread;
+    msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
 }

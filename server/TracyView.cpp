@@ -4599,7 +4599,9 @@ void View::DrawZoneInfoWindow()
                         }
                         ImGui::PopID();
                         ImGui::NextColumn();
+                        ImGui::PushStyleColor( ImGuiCol_Text, (*msgit)->color );
                         ImGui::TextWrapped( "%s", m_worker.GetString( (*msgit)->ref ) );
+                        ImGui::PopStyleColor();
                         ImGui::NextColumn();
                     }
                     while( ++msgit != msgend );
@@ -5825,7 +5827,9 @@ void View::DrawMessages()
             ImGui::SameLine();
             ImGui::TextDisabled( "(0x%" PRIX64 ")", v->thread );
             ImGui::NextColumn();
+            ImGui::PushStyleColor( ImGuiCol_Text, v->color );
             ImGui::TextWrapped( "%s", m_worker.GetString( v->ref ) );
+            ImGui::PopStyleColor();
             ImGui::NextColumn();
         }
     }

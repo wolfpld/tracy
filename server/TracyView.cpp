@@ -1606,7 +1606,8 @@ bool View::DrawZoneFrames( const FrameData& frames )
     const auto activeColor = GetColorMuted( 0xFFFFFF, activeFrameSet );
     const auto redColor = GetColorMuted( 0x4444FF, activeFrameSet );
 
-    for( int i = zrange.first; i < zrange.second; i++ )
+    int i = zrange.first;
+    while( i < zrange.second )
     {
         const auto ftime = m_worker.GetFrameTime( frames, i );
         const auto fbegin = m_worker.GetFrameBegin( frames, i );
@@ -1649,6 +1650,11 @@ bool View::DrawZoneFrames( const FrameData& frames )
                 prevEnd = std::max<int64_t>( fend, fbegin + MinFrameSize * nspx );
             }
 
+            const auto begin = frames.frames.begin() + i;
+            const auto end = frames.frames.begin() + zrange.second;
+            auto it = std::lower_bound( begin, end, int64_t( fbegin + MinVisSize * nspx ), [this, &frames] ( const auto& l, const auto& r ) { return m_worker.GetFrameEnd( frames, std::distance( frames.frames.begin(), &l ) ) < r; } );
+            if( it == begin ) ++it;
+            i += std::distance( begin, it );
             continue;
         }
 
@@ -1707,6 +1713,8 @@ bool View::DrawZoneFrames( const FrameData& frames )
         {
             draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
         }
+
+        i++;
     }
 
     if( prev != -1 )

@@ -62,6 +62,7 @@ static const int CurrentVersion = FileVersion( Version::Major, Version::Minor, V
 static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
 {
     auto& timeline = lockmap.timeline;
+    bool isContended = lockmap.isContended;
     uint8_t lockingThread;
     uint8_t lockCount;
     uint64_t waitList;
@@ -107,13 +108,17 @@ static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
         tl.lockingThread = lockingThread;
         tl.waitList = waitList;
         tl.lockCount = lockCount;
+        if( !isContended ) isContended = lockCount != 0 && waitList != 0;
         pos++;
     }
+
+    lockmap.isContended = isContended;
 }
 
 static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
 {
     auto& timeline = lockmap.timeline;
+    bool isContended = lockmap.isContended;
     uint8_t lockingThread;
     uint8_t lockCount;
     uint64_t waitShared;
@@ -184,8 +189,11 @@ static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
         tl.waitList = waitList;
         tlp->sharedList = sharedList;
         tl.lockCount = lockCount;
+        if( !isContended ) isContended = ( lockCount != 0 && ( waitList != 0 || waitShared != 0 ) ) || ( sharedList != 0 && waitList != 0 );
         pos++;
     }
+
+    lockmap.isContended = isContended;
 }
 
 static inline void UpdateLockCount( LockMap& lockmap, size_t pos )
@@ -584,6 +592,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( lockmap.srcloc );
             f.Read( lockmap.type );
             f.Read( lockmap.valid );
+            lockmap.isContended = false;
             if( fileVer >= FileVersion( 0, 4, 1 ) )
             {
                 f.Read2( lockmap.timeAnnounce, lockmap.timeTerminate );
@@ -2886,6 +2895,7 @@ void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
         lm->timeAnnounce = TscTime( ev.time );
         lm->timeTerminate = 0;
         lm->valid = true;
+        lm->isContended = false;
         m_data.lockMap.emplace( ev.id, lm );
     }
     else
@@ -2908,6 +2918,7 @@ void Worker::ProcessLockTerminate( const QueueLockTerminate& ev )
         lm->timeAnnounce = 0;
         lm->timeTerminate = TscTime( ev.time );
         lm->valid = false;
+        lm->isContended = false;
         m_data.lockMap.emplace( ev.id, lm );
     }
     else
@@ -2927,6 +2938,7 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
         lm->timeTerminate = 0;
         lm->valid = false;
         lm->type = ev.type;
+        lm->isContended = false;
         it = m_data.lockMap.emplace( ev.id, lm ).first;
     }
 
@@ -2974,6 +2986,7 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
         auto lm = m_slab.AllocInit<LockMap>();
         lm->valid = false;
         lm->type = ev.type;
+        lm->isContended = false;
         it = m_data.lockMap.emplace( ev.id, lm ).first;
     }
 

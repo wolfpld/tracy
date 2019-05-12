@@ -271,6 +271,7 @@ struct LockMap
     int64_t timeAnnounce;
     int64_t timeTerminate;
     bool valid;
+    bool isContended;
 
     TimeRange range[64];
 };

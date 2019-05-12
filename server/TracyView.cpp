@@ -8205,7 +8205,7 @@ void View::DrawInfo()
         SmallCheckbox( "Limit to view", &m_frameSortData.limitToView );
 
         const auto frameRange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
-        if( m_frameSortData.frameSet != m_frames || ( m_frameSortData.limitToView && m_frameSortData.limitRange != frameRange ) || ( !m_frameSortData.limitToView && m_frameSortData.limitRange.first == -1 ) )
+        if( m_frameSortData.frameSet != m_frames || ( m_frameSortData.limitToView && m_frameSortData.limitRange != frameRange ) || ( !m_frameSortData.limitToView && m_frameSortData.limitRange.first != -1 ) )
         {
             m_frameSortData.frameSet = m_frames;
             m_frameSortData.frameNum = 0;

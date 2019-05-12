@@ -141,7 +141,7 @@ static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
     const auto end = timeline.size();
 
     // ObtainShared and ReleaseShared should assert on lockCount == 0, but
-    // due to the async retrieval of data from threads that not possible.
+    // due to the async retrieval of data from threads that's not possible.
     while( pos != end )
     {
         auto& tl = timeline[pos];

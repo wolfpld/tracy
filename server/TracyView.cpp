@@ -5366,7 +5366,8 @@ void View::DrawOptions()
     {
         size_t lockCnt = 0;
         size_t singleCnt = 0;
-        size_t multiCnt = 0;
+        size_t multiCntCont = 0;
+        size_t multiCntUncont = 0;
         for( const auto& l : m_worker.GetLockMap() )
         {
             if( l.second->valid && !l.second->timeline.empty() )
@@ -5376,9 +5377,13 @@ void View::DrawOptions()
                 {
                     singleCnt++;
                 }
+                else if( l.second->isContended )
+                {
+                    multiCntCont++;
+                }
                 else
                 {
-                    multiCnt++;
+                    multiCntUncont++;
                 }
             }
         }
@@ -5420,16 +5425,16 @@ void View::DrawOptions()
             ImGui::SameLine();
             DrawHelpMarker( "Right click on lock name to open lock information window." );
 
-            const bool multiExpand = ImGui::TreeNodeEx( "Locks present in multiple threads", ImGuiTreeNodeFlags_DefaultOpen );
+            const bool multiExpand = ImGui::TreeNodeEx( "Contended locks present in multiple threads", ImGuiTreeNodeFlags_DefaultOpen );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%zu)", multiCnt );
+            ImGui::TextDisabled( "(%zu)", multiCntCont );
             if( multiExpand )
             {
                 if( ImGui::SmallButton( "Select all" ) )
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 ) Vis( l.second ).visible = true;
+                        if( l.second->threadList.size() != 1 && l.second->isContended ) Vis( l.second ).visible = true;
                     }
                 }
                 ImGui::SameLine();
@@ -5437,13 +5442,13 @@ void View::DrawOptions()
                 {
                     for( const auto& l : m_worker.GetLockMap() )
                     {
-                        if( l.second->threadList.size() != 1 ) Vis( l.second ).visible = false;
+                        if( l.second->threadList.size() != 1 && l.second->isContended ) Vis( l.second ).visible = false;
                     }
                 }
 
                 for( const auto& l : m_worker.GetLockMap() )
                 {
-                    if( l.second->valid && !l.second->timeline.empty() && l.second->threadList.size() != 1 )
+                    if( l.second->valid && !l.second->timeline.empty() && l.second->threadList.size() != 1 && l.second->isContended )
                     {
                         auto& sl = m_worker.GetSourceLocation( l.second->srcloc );
                         auto fileName = m_worker.GetString( sl.file );
@@ -5486,7 +5491,73 @@ void View::DrawOptions()
                 }
                 ImGui::TreePop();
             }
-            const auto singleExpand = ImGui::TreeNodeEx( "Locks present in a single thread", ImGuiTreeNodeFlags_DefaultOpen );
+            const bool multiUncontExpand = ImGui::TreeNodeEx( "Uncontended locks present in multiple threads", 0 );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%zu)", multiCntUncont );
+            if( multiUncontExpand )
+            {
+                if( ImGui::SmallButton( "Select all" ) )
+                {
+                    for( const auto& l : m_worker.GetLockMap() )
+                    {
+                        if( l.second->threadList.size() != 1 && !l.second->isContended ) Vis( l.second ).visible = true;
+                    }
+                }
+                ImGui::SameLine();
+                if( ImGui::SmallButton( "Unselect all" ) )
+                {
+                    for( const auto& l : m_worker.GetLockMap() )
+                    {
+                        if( l.second->threadList.size() != 1 && !l.second->isContended ) Vis( l.second ).visible = false;
+                    }
+                }
+
+                for( const auto& l : m_worker.GetLockMap() )
+                {
+                    if( l.second->valid && !l.second->timeline.empty() && l.second->threadList.size() != 1 && !l.second->isContended )
+                    {
+                        auto& sl = m_worker.GetSourceLocation( l.second->srcloc );
+                        auto fileName = m_worker.GetString( sl.file );
+
+                        char buf[1024];
+                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                        ImGui::Checkbox( buf, &Vis( l.second ).visible );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            m_lockHoverHighlight = l.first;
+
+                            if( ImGui::IsItemClicked( 1 ) )
+                            {
+                                m_lockInfoWindow = l.first;
+                            }
+                        }
+                        if( m_optionsLockBuzzAnim.Match( l.second->srcloc ) )
+                        {
+                            const auto time = m_optionsLockBuzzAnim.Time();
+                            const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
+                        }
+                        else
+                        {
+                            ImGui::SameLine();
+                        }
+                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size(), true ), fileName, sl.line );
+                        if( ImGui::IsItemClicked( 1 ) )
+                        {
+                            if( FileExists( fileName ) )
+                            {
+                                SetTextEditorFile( fileName, sl.line );
+                            }
+                            else
+                            {
+                                m_optionsLockBuzzAnim.Enable( l.second->srcloc, 0.5f );
+                            }
+                        }
+                    }
+                }
+                ImGui::TreePop();
+            }
+            const auto singleExpand = ImGui::TreeNodeEx( "Locks present in a single thread", 0 );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%zu)", singleCnt );
             if( singleExpand )

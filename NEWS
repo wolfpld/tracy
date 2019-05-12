@@ -38,8 +38,8 @@ v0.5 (xxxx-xx-xx)
 - Child zones displayed in zone info window can be now grouped by source
   location.
 - Selected or hovered lock is now highlighted on the timeline.
-- Locks are now grouped into single and multithreaded in the options menu
-  locks list.
+- Locks are now grouped into single and multithreaded (contended and
+  uncontended) in the options menu locks list.
 - On broken platforms the profiler can now be initialized as needed (and
   possible), taking a performance and functionality hit.
 - User experience improvements in the graphical profiler.

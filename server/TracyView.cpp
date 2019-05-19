@@ -9326,7 +9326,7 @@ struct MemoryPage
     int8_t data[PageSize];
 };
 
-static inline MemoryPage& GetPage( flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap, uint64_t page )
+static tracy_force_inline MemoryPage& GetPage( flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap, uint64_t page )
 {
     auto it = memmap.find( page );
     if( it == memmap.end() )

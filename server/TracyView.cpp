@@ -9388,9 +9388,10 @@ std::vector<MemoryPage> View::GetMemoryPages() const
     if( m_memInfo.restrictTime )
     {
         const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
-        for( auto& alloc : mem.data )
+        auto end = std::upper_bound( mem.data.begin(), mem.data.end(), zvMid, []( const auto& lhs, const auto& rhs ) { return lhs < rhs.timeAlloc; } );
+        for( auto it = mem.data.begin(); it != end; ++it )
         {
-            if( alloc.timeAlloc > zvMid ) break;
+            auto& alloc = *it;
 
             const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;

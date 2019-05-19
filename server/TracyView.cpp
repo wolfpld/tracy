@@ -9320,6 +9320,75 @@ uint32_t MemDecayColor[256] = {
     0xFF07078A, 0xFF070788, 0xFF070787, 0xFF070785, 0xFF070783, 0xFF070782, 0xFF070780, 0xFF07077F,
 };
 
+std::pair<int8_t*, size_t> View::GetMemoryPages() const
+{
+    const auto& mem = m_worker.GetMemData();
+    const auto span = mem.high - mem.low;
+    const auto pages = ( span / PageChunkSize ) + 1;
+
+    const auto datasz = pages * PageSize;
+    int8_t* data = new int8_t[datasz];
+    auto pgptr = data;
+    memset( pgptr, 0, pages * PageSize );
+
+    const auto memlow = mem.low;
+
+    if( m_memInfo.restrictTime )
+    {
+        const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
+        for( auto& alloc : mem.data )
+        {
+            if( m_memInfo.restrictTime && alloc.timeAlloc > zvMid ) break;
+
+            const auto a0 = alloc.ptr - memlow;
+            const auto a1 = a0 + alloc.size;
+            int8_t val = alloc.timeFree < 0 ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
+                ( alloc.timeFree > zvMid ?
+                    int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
+                    int8_t( -std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeFree ) >> 24 ) ) ) );
+
+            const auto c0 = a0 >> ChunkBits;
+            const auto c1 = a1 >> ChunkBits;
+
+            if( c0 == c1 )
+            {
+                pgptr[c0] = val;
+            }
+            else
+            {
+                memset( pgptr + c0, val, c1 - c0 + 1 );
+            }
+        }
+    }
+    else
+    {
+        const auto lastTime = m_worker.GetLastTime();
+        for( auto& alloc : mem.data )
+        {
+            const auto a0 = alloc.ptr - memlow;
+            const auto a1 = a0 + alloc.size;
+            const int8_t val = alloc.timeFree < 0 ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeAlloc ) ) >> 24 ) ) ) :
+                int8_t( -std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeFree ) ) >> 24 ) ) );
+
+            const auto c0 = a0 >> ChunkBits;
+            const auto c1 = a1 >> ChunkBits;
+
+            if( c0 == c1 )
+            {
+                pgptr[c0] = val;
+            }
+            else
+            {
+                memset( pgptr + c0, val, c1 - c0 + 1 );
+            }
+        }
+    }
+
+    return std::make_pair( data, datasz );
+}
+
 void View::DrawMemory()
 {
     auto& mem = m_worker.GetMemData();
@@ -9727,75 +9796,6 @@ void View::DrawAllocList()
         ImGui::Text( "0x%" PRIx64, (*v)->ptr );
     }, "##allocations" );
     ImGui::End();
-}
-
-std::pair<int8_t*, size_t> View::GetMemoryPages() const
-{
-    const auto& mem = m_worker.GetMemData();
-    const auto span = mem.high - mem.low;
-    const auto pages = ( span / PageChunkSize ) + 1;
-
-    const auto datasz = pages * PageSize;
-    int8_t* data = new int8_t[datasz];
-    auto pgptr = data;
-    memset( pgptr, 0, pages * PageSize );
-
-    const auto memlow = mem.low;
-
-    if( m_memInfo.restrictTime )
-    {
-        const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
-        for( auto& alloc : mem.data )
-        {
-            if( m_memInfo.restrictTime && alloc.timeAlloc > zvMid ) break;
-
-            const auto a0 = alloc.ptr - memlow;
-            const auto a1 = a0 + alloc.size;
-            int8_t val = alloc.timeFree < 0 ?
-                int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
-                ( alloc.timeFree > zvMid ?
-                    int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
-                    int8_t( -std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeFree ) >> 24 ) ) ) );
-
-            const auto c0 = a0 >> ChunkBits;
-            const auto c1 = a1 >> ChunkBits;
-
-            if( c0 == c1 )
-            {
-                pgptr[c0] = val;
-            }
-            else
-            {
-                memset( pgptr + c0, val, c1 - c0 + 1 );
-            }
-        }
-    }
-    else
-    {
-        const auto lastTime = m_worker.GetLastTime();
-        for( auto& alloc : mem.data )
-        {
-            const auto a0 = alloc.ptr - memlow;
-            const auto a1 = a0 + alloc.size;
-            const int8_t val = alloc.timeFree < 0 ?
-                int8_t( std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeAlloc ) ) >> 24 ) ) ) :
-                int8_t( -std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeFree ) ) >> 24 ) ) );
-
-            const auto c0 = a0 >> ChunkBits;
-            const auto c1 = a1 >> ChunkBits;
-
-            if( c0 == c1 )
-            {
-                pgptr[c0] = val;
-            }
-            else
-            {
-                memset( pgptr + c0, val, c1 - c0 + 1 );
-            }
-        }
-    }
-
-    return std::make_pair( data, datasz );
 }
 
 const char* View::GetPlotName( const PlotData* plot ) const

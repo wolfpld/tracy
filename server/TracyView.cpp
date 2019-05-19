@@ -9454,7 +9454,30 @@ std::vector<MemoryPage> View::GetMemoryPages()
         const auto sz = std::distance( mem.data.begin(), end );
         const auto snapSz = GetMemoryPagesSnapshot( sz, zvMid, memmap );
 
-        for( auto it = mem.data.begin() + snapSz; it != end; ++it )
+        const auto begin = mem.data.begin() + snapSz;
+        if( snapSz != 0 )
+        {
+            const auto tBegin = mem.data[snapSz-1].timeAlloc;
+            for( auto it = mem.data.begin(); it != begin; ++it )
+            {
+                if( it->timeFree < tBegin ) continue;
+
+                auto& alloc = *it;
+                const auto a0 = alloc.ptr - memlow;
+                const auto a1 = a0 + alloc.size;
+                int8_t val = alloc.timeFree < 0 ?
+                    int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
+                    ( alloc.timeFree > zvMid ?
+                        int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
+                        int8_t( -std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeFree ) >> 24 ) ) ) );
+
+                const auto c0 = a0 >> ChunkBits;
+                const auto c1 = a1 >> ChunkBits;
+
+                FillPages( memmap, c0, c1, val );
+            }
+        }
+        for( auto it = begin; it != end; ++it )
         {
             auto& alloc = *it;
             const auto a0 = alloc.ptr - memlow;
@@ -9478,7 +9501,28 @@ std::vector<MemoryPage> View::GetMemoryPages()
         const auto snapSz = GetMemoryPagesSnapshot( sz, lastTime, memmap );
         const auto end = mem.data.end();
 
-        for( auto it = mem.data.begin() + snapSz; it != end; ++it )
+        const auto begin = mem.data.begin() + snapSz;
+        if( snapSz != 0 )
+        {
+            const auto tBegin = mem.data[snapSz-1].timeAlloc;
+            for( auto it = mem.data.begin(); it != begin; ++it )
+            {
+                if( it->timeFree < tBegin ) continue;
+
+                auto& alloc = *it;
+                const auto a0 = alloc.ptr - memlow;
+                const auto a1 = a0 + alloc.size;
+                const int8_t val = alloc.timeFree < 0 ?
+                    int8_t( std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeAlloc ) ) >> 24 ) ) ) :
+                    int8_t( -std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeFree ) ) >> 24 ) ) );
+
+                const auto c0 = a0 >> ChunkBits;
+                const auto c1 = a1 >> ChunkBits;
+
+                FillPages( memmap, c0, c1, val );
+            }
+        }
+        for( auto it = begin; it != end; ++it )
         {
             auto& alloc = *it;
             const auto a0 = alloc.ptr - memlow;

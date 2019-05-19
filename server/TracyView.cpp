@@ -9388,7 +9388,8 @@ void View::CreateNextMemPageSnapshot()
     const auto beginAlloc = AllocsInSnap * snapSz;
     const auto endAlloc = AllocsInSnap * ( snapSz + 1 );
     assert( mem.size() >= endAlloc );
-    const auto t = mem[endAlloc-1].timeAlloc;
+    const auto tBegin = beginAlloc == 0 ? 0 : mem[beginAlloc-1].timeAlloc;
+    const auto tEnd = mem[endAlloc-1].timeAlloc;
 
     flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>> memmap;
     if( !m_memInfo.pageSnap.empty() )
@@ -9397,25 +9398,26 @@ void View::CreateNextMemPageSnapshot()
         for( auto& page : snap ) memmap.emplace( page.page, page );
     }
 
-    auto it = mem.begin() + beginAlloc;
+    const auto begin = mem.begin() + beginAlloc;
     const auto end = mem.begin() + endAlloc;
 
-    while( it != end )
+    for( auto it = mem.begin(); it != end; ++it )
     {
         auto& alloc = *it;
+        if( it < begin && ( alloc.timeFree < tBegin || alloc.timeFree > tEnd ) ) continue;
+
         const auto a0 = alloc.ptr - memlow;
         const auto a1 = a0 + alloc.size;
         int8_t val = alloc.timeFree < 0 ?
-            int8_t( std::max( int64_t( 1 ), 127 - ( ( t - alloc.timeAlloc ) >> 24 ) ) ) :
-            ( alloc.timeFree > t ?
-                int8_t( std::max( int64_t( 1 ), 127 - ( ( t - alloc.timeAlloc ) >> 24 ) ) ) :
-                int8_t( -std::max( int64_t( 1 ), 127 - ( ( t - alloc.timeFree ) >> 24 ) ) ) );
+            int8_t( std::max( int64_t( 1 ), 127 - ( ( tEnd - alloc.timeAlloc ) >> 24 ) ) ) :
+            ( alloc.timeFree > tEnd ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( tEnd - alloc.timeAlloc ) >> 24 ) ) ) :
+                int8_t( -std::max( int64_t( 1 ), 127 - ( ( tEnd - alloc.timeFree ) >> 24 ) ) ) );
 
         const auto c0 = a0 >> ChunkBits;
         const auto c1 = a1 >> ChunkBits;
 
         FillPages( memmap, c0, c1, val );
-        ++it;
     }
 
     std::vector<MemoryPage> snap;

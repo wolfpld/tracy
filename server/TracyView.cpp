@@ -9410,9 +9410,7 @@ void View::CreateNextMemPageSnapshot()
         const auto a1 = a0 + alloc.size;
         int8_t val = alloc.timeFree < 0 ?
             int8_t( std::max( int64_t( 1 ), 127 - ( ( tEnd - alloc.timeAlloc ) >> 24 ) ) ) :
-            ( alloc.timeFree > tEnd ?
-                int8_t( std::max( int64_t( 1 ), 127 - ( ( tEnd - alloc.timeAlloc ) >> 24 ) ) ) :
-                int8_t( -std::max( int64_t( 1 ), 127 - ( ( tEnd - alloc.timeFree ) >> 24 ) ) ) );
+            int8_t( -std::max( int64_t( 1 ), 127 - ( ( tEnd - alloc.timeFree ) >> 24 ) ) );
 
         const auto c0 = a0 >> ChunkBits;
         const auto c1 = a1 >> ChunkBits;

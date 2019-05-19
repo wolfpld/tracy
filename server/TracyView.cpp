@@ -9320,17 +9320,69 @@ uint32_t MemDecayColor[256] = {
     0xFF07078A, 0xFF070788, 0xFF070787, 0xFF070785, 0xFF070783, 0xFF070782, 0xFF070780, 0xFF07077F,
 };
 
-std::pair<int8_t*, size_t> View::GetMemoryPages() const
+struct MemoryPage
 {
+    uint64_t page;
+    int8_t data[PageSize];
+};
+
+static inline MemoryPage& GetPage( flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap, uint64_t page )
+{
+    auto it = memmap.find( page );
+    if( it == memmap.end() )
+    {
+        it = memmap.emplace( page, MemoryPage { page, {} } ).first;
+    }
+    return it->second;
+}
+
+static inline void FillPages( flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap, uint64_t c0, uint64_t c1, int8_t val )
+{
+    auto p0 = c0 >> PageBits;
+    const auto p1 = c1 >> PageBits;
+
+    if( p0 == p1 )
+    {
+        const auto a0 = c0 & ( PageSize - 1 );
+        const auto a1 = c1 & ( PageSize - 1 );
+
+        auto& page = GetPage( memmap, p0 );
+        if( a0 == a1 )
+        {
+            page.data[a0] = val;
+        }
+        else
+        {
+            memset( page.data + a0, val, a1 - a0 + 1 );
+        }
+    }
+    else
+    {
+        {
+            const auto a0 = c0 & ( PageSize - 1 );
+            auto& page = GetPage( memmap, p0 );
+            memset( page.data + a0, val, PageSize - a0 );
+        }
+        while( ++p0 < p1 )
+        {
+            auto& page = GetPage( memmap, p0 );
+            memset( page.data, val, PageSize );
+        }
+        {
+            const auto a1 = c1 & ( PageSize - 1 );
+            auto& page = GetPage( memmap, p1 );
+            memset( page.data, val, a1 + 1 );
+        }
+    }
+}
+
+std::vector<MemoryPage> View::GetMemoryPages() const
+{
+    std::vector<MemoryPage> ret;
+
+    static flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>> memmap;
+
     const auto& mem = m_worker.GetMemData();
-    const auto span = mem.high - mem.low;
-    const auto pages = ( span / PageChunkSize ) + 1;
-
-    const auto datasz = pages * PageSize;
-    int8_t* data = new int8_t[datasz];
-    auto pgptr = data;
-    memset( pgptr, 0, pages * PageSize );
-
     const auto memlow = mem.low;
 
     if( m_memInfo.restrictTime )
@@ -9351,14 +9403,7 @@ std::pair<int8_t*, size_t> View::GetMemoryPages() const
             const auto c0 = a0 >> ChunkBits;
             const auto c1 = a1 >> ChunkBits;
 
-            if( c0 == c1 )
-            {
-                pgptr[c0] = val;
-            }
-            else
-            {
-                memset( pgptr + c0, val, c1 - c0 + 1 );
-            }
+            FillPages( memmap, c0, c1, val );
         }
     }
     else
@@ -9375,18 +9420,19 @@ std::pair<int8_t*, size_t> View::GetMemoryPages() const
             const auto c0 = a0 >> ChunkBits;
             const auto c1 = a1 >> ChunkBits;
 
-            if( c0 == c1 )
-            {
-                pgptr[c0] = val;
-            }
-            else
-            {
-                memset( pgptr + c0, val, c1 - c0 + 1 );
-            }
+            FillPages( memmap, c0, c1, val );
         }
     }
 
-    return std::make_pair( data, datasz );
+    std::vector<flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>::const_iterator> itmap;
+    itmap.reserve( memmap.size() );
+    ret.reserve( memmap.size() );
+    for( auto it = memmap.begin(); it != memmap.end(); ++it ) itmap.emplace_back( it );
+    pdqsort_branchless( itmap.begin(), itmap.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.page < rhs->second.page; } );
+    for( auto& v : itmap ) ret.emplace_back( v->second );
+
+    memmap.clear();
+    return ret;
 }
 
 void View::DrawMemory()
@@ -9546,28 +9592,7 @@ void View::DrawMemory()
         ImGui::Text( "Single pixel: %s   Single line: %s", MemSizeToString( 1 << ChunkBits ), MemSizeToString( PageChunkSize ) );
 
         auto pages = GetMemoryPages();
-
-        const int8_t empty[PageSize] = {};
-        const auto sz = pages.second / PageSize;
-        auto pgptr = pages.first;
-        const auto end = pgptr + sz * PageSize;
-        size_t lines = sz;
-        while( pgptr != end )
-        {
-            if( memcmp( empty, pgptr, PageSize ) == 0 )
-            {
-                pgptr += PageSize;
-                while( pgptr != end && memcmp( empty, pgptr, PageSize ) == 0 )
-                {
-                    lines--;
-                    pgptr += PageSize;
-                }
-            }
-            else
-            {
-                pgptr += PageSize;
-            }
-        }
+        const size_t lines = pages.size();
 
         ImGui::BeginChild( "##memMap", ImVec2( PageSize + 2, lines + 2 ), false );
         auto draw = ImGui::GetWindowDrawList();
@@ -9576,47 +9601,33 @@ void View::DrawMemory()
         draw->AddRectFilled( wpos, wpos + ImVec2( PageSize, lines ), 0xFF444444 );
 
         size_t line = 0;
-        pgptr = pages.first;
-        while( pgptr != end )
+        for( auto& page : pages )
         {
-            if( memcmp( empty, pgptr, PageSize ) == 0 )
+            size_t idx = 0;
+            while( idx < PageSize )
             {
-                pgptr += PageSize;
-                draw->AddLine( wpos + ImVec2( 0, line ), wpos + ImVec2( PageSize, line ), 0x11000000 );
-                line++;
-                while( pgptr != end && memcmp( empty, pgptr, PageSize ) == 0 ) pgptr += PageSize;
-            }
-            else
-            {
-                size_t idx = 0;
-                while( idx < PageSize )
+                if( page.data[idx] == 0 )
                 {
-                    if( pgptr[idx] == 0 )
+                    do
                     {
-                        do
-                        {
-                            idx++;
-                        }
-                        while( idx < PageSize && pgptr[idx] == 0 );
+                        idx++;
                     }
-                    else
-                    {
-                        auto val = pgptr[idx];
-                        const auto i0 = idx;
-                        do
-                        {
-                            idx++;
-                        }
-                        while( idx < PageSize && pgptr[idx] == val );
-                        draw->AddLine( wpos + ImVec2( i0, line ), wpos + ImVec2( idx, line ), MemDecayColor[(uint8_t)val] );
-                    }
+                    while( idx < PageSize && page.data[idx] == 0 );
                 }
-                line++;
-                pgptr += PageSize;
+                else
+                {
+                    auto val = page.data[idx];
+                    const auto i0 = idx;
+                    do
+                    {
+                        idx++;
+                    }
+                    while( idx < PageSize && page.data[idx] == val );
+                    draw->AddLine( wpos + ImVec2( i0, line ), wpos + ImVec2( idx, line ), MemDecayColor[(uint8_t)val] );
+                }
             }
+            line++;
         }
-
-        delete[] pages.first;
 
         ImGui::EndChild();
         ImGui::TreePop();

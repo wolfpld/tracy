@@ -21,6 +21,7 @@ struct ImFont;
 namespace tracy
 {
 
+struct MemoryPage;
 struct QueueItem;
 class FileRead;
 class TextEditor;
@@ -180,7 +181,7 @@ private:
     void FindZonesCompare();
 #endif
 
-    std::pair<int8_t*, size_t> GetMemoryPages() const;
+    std::vector<MemoryPage> GetMemoryPages() const;
     const char* GetPlotName( const PlotData* plot ) const;
 
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx, bool tooltip = true );

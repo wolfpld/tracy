@@ -181,7 +181,10 @@ private:
     void FindZonesCompare();
 #endif
 
-    std::vector<MemoryPage> GetMemoryPages() const;
+    std::vector<MemoryPage> GetMemoryPages();
+    size_t GetMemoryPagesSnapshot( size_t allocNum, int64_t timeAdj, flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap );
+    void CreateNextMemPageSnapshot();
+
     const char* GetPlotName( const PlotData* plot ) const;
 
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx, bool tooltip = true );
@@ -462,6 +465,7 @@ private:
         bool restrictTime = false;
         bool showAllocList = false;
         std::vector<size_t> allocList;
+        std::vector<std::vector<MemoryPage>> pageSnap;
     } m_memInfo;
 
     struct {

@@ -9376,7 +9376,67 @@ static tracy_force_inline void FillPages( flat_hash_map<uint64_t, MemoryPage, no
     }
 }
 
-std::vector<MemoryPage> View::GetMemoryPages() const
+enum { AllocsInSnap = 1024 * 1024 };
+
+void View::CreateNextMemPageSnapshot()
+{
+    const auto& memData = m_worker.GetMemData();
+    const auto& mem = memData.data;
+    const auto memlow = memData.low;
+
+    const auto snapSz = m_memInfo.pageSnap.size();
+    const auto beginAlloc = AllocsInSnap * snapSz;
+    const auto endAlloc = AllocsInSnap * ( snapSz + 1 );
+    assert( mem.size() >= endAlloc );
+    const auto t = mem[endAlloc-1].timeAlloc;
+
+    flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>> memmap;
+    if( !m_memInfo.pageSnap.empty() )
+    {
+        const auto& snap = m_memInfo.pageSnap.back();
+        for( auto& page : snap ) memmap.emplace( page.page, page );
+    }
+
+    auto it = mem.begin() + beginAlloc;
+    const auto end = mem.begin() + endAlloc;
+
+    while( it != end )
+    {
+        auto& alloc = *it;
+        const auto a0 = alloc.ptr - memlow;
+        const auto a1 = a0 + alloc.size;
+        int8_t val = alloc.timeFree < 0 ?
+            int8_t( std::max( int64_t( 1 ), 127 - ( ( t - alloc.timeAlloc ) >> 24 ) ) ) :
+            ( alloc.timeFree > t ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( t - alloc.timeAlloc ) >> 24 ) ) ) :
+                int8_t( -std::max( int64_t( 1 ), 127 - ( ( t - alloc.timeFree ) >> 24 ) ) ) );
+
+        const auto c0 = a0 >> ChunkBits;
+        const auto c1 = a1 >> ChunkBits;
+
+        FillPages( memmap, c0, c1, val );
+        ++it;
+    }
+
+    std::vector<MemoryPage> snap;
+    for( auto& page : memmap )
+    {
+        snap.emplace_back( page.second );
+    }
+    m_memInfo.pageSnap.emplace_back( std::move( snap ) );
+}
+
+size_t View::GetMemoryPagesSnapshot( size_t allocNum, int64_t timeAdj, flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap )
+{
+    const auto snapNum = allocNum / AllocsInSnap;
+    if( snapNum == 0 ) return 0;
+    while( m_memInfo.pageSnap.size() < snapNum ) CreateNextMemPageSnapshot();
+    const auto& snap = m_memInfo.pageSnap[snapNum-1];
+    for( auto& page : snap ) memmap.emplace( page.page, page );
+    return snapNum * AllocsInSnap;
+}
+
+std::vector<MemoryPage> View::GetMemoryPages()
 {
     std::vector<MemoryPage> ret;
 
@@ -9388,11 +9448,13 @@ std::vector<MemoryPage> View::GetMemoryPages() const
     if( m_memInfo.restrictTime )
     {
         const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
-        auto end = std::upper_bound( mem.data.begin(), mem.data.end(), zvMid, []( const auto& lhs, const auto& rhs ) { return lhs < rhs.timeAlloc; } );
-        for( auto it = mem.data.begin(); it != end; ++it )
+        const auto end = std::upper_bound( mem.data.begin(), mem.data.end(), zvMid, []( const auto& lhs, const auto& rhs ) { return lhs < rhs.timeAlloc; } );
+        const auto sz = std::distance( mem.data.begin(), end );
+        const auto snapSz = GetMemoryPagesSnapshot( sz, zvMid, memmap );
+
+        for( auto it = mem.data.begin() + snapSz; it != end; ++it )
         {
             auto& alloc = *it;
-
             const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;
             int8_t val = alloc.timeFree < 0 ?
@@ -9410,8 +9472,13 @@ std::vector<MemoryPage> View::GetMemoryPages() const
     else
     {
         const auto lastTime = m_worker.GetLastTime();
-        for( auto& alloc : mem.data )
+        const auto sz = mem.data.size();
+        const auto snapSz = GetMemoryPagesSnapshot( sz, lastTime, memmap );
+        const auto end = mem.data.end();
+
+        for( auto it = mem.data.begin() + snapSz; it != end; ++it )
         {
+            auto& alloc = *it;
             const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;
             const int8_t val = alloc.timeFree < 0 ?

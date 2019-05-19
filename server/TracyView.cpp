@@ -9336,7 +9336,7 @@ static tracy_force_inline MemoryPage& GetPage( flat_hash_map<uint64_t, MemoryPag
     return it->second;
 }
 
-static inline void FillPages( flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap, uint64_t c0, uint64_t c1, int8_t val )
+static tracy_force_inline void FillPages( flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap, uint64_t c0, uint64_t c1, int8_t val )
 {
     auto p0 = c0 >> PageBits;
     const auto p1 = c1 >> PageBits;

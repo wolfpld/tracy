@@ -14,8 +14,11 @@
 #  ifdef _MSC_VER
 #    pragma warning( pop )
 #  endif
-#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4
+#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3
 #  include "../libbacktrace/backtrace.hpp"
+#  include <dlfcn.h>
+#  include <cxxabi.h>
+#elif TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 5
 #  include <dlfcn.h>
 #  include <cxxabi.h>
 #endif
@@ -471,6 +474,109 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
     assert( cb_num > 0 );
     return { cb_data, uint8_t( cb_num ) };
+}
+
+#elif TRACY_HAS_CALLSTACK == 5
+
+void InitCallstack()
+{
+}
+
+const char* DecodeCallstackPtrFast( uint64_t ptr )
+{
+    static char ret[1024];
+    auto vptr = (void*)ptr;
+    char** sym = nullptr;
+    const char* symname = nullptr;
+    Dl_info dlinfo;
+    if( dladdr( vptr, &dlinfo ) && dlinfo.dli_sname )
+    {
+        symname = dlinfo.dli_sname;
+    }
+    if( symname )
+    {
+        strcpy( ret, symname );
+    }
+    else
+    {
+        *ret = '\0';
+    }
+    return ret;
+}
+
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
+{
+    static CallstackEntry cb;
+    cb.line = 0;
+
+    char* demangled = nullptr;
+    const char* symname = nullptr;
+    const char* symloc = nullptr;
+    auto vptr = (void*)ptr;
+    char** sym = nullptr;
+    ptrdiff_t symoff = 0;
+
+    Dl_info dlinfo;
+    if( dladdr( vptr, &dlinfo ) )
+    {
+        symloc = dlinfo.dli_fname;
+        symname = dlinfo.dli_sname;
+        symoff = (char*)ptr - (char*)dlinfo.dli_saddr;
+
+        if( symname && symname[0] == '_' )
+        {
+            size_t len = 0;
+            int status;
+            demangled = abi::__cxa_demangle( symname, nullptr, &len, &status );
+            if( status == 0 )
+            {
+                symname = demangled;
+            }
+        }
+    }
+
+    if( !symname )
+    {
+        symname = "[unknown]";
+    }
+    if( !symloc )
+    {
+        symloc = "[unknown]";
+    }
+
+    if( symoff == 0 )
+    {
+        const auto namelen = strlen( symname );
+        auto name = (char*)tracy_malloc( namelen + 1 );
+        memcpy( name, symname, namelen );
+        name[namelen] = '\0';
+        cb.name = name;
+    }
+    else
+    {
+        char buf[32];
+        const auto offlen = sprintf( buf, " + %td", symoff );
+        const auto namelen = strlen( symname );
+        auto name = (char*)tracy_malloc( namelen + offlen + 1 );
+        memcpy( name, symname, namelen );
+        memcpy( name + namelen, buf, offlen );
+        name[namelen + offlen] = '\0';
+        cb.name = name;
+    }
+
+    char buf[32];
+    const auto addrlen = sprintf( buf, " [%p]", (void*)ptr );
+    const auto loclen = strlen( symloc );
+    auto loc = (char*)tracy_malloc( loclen + addrlen + 1 );
+    memcpy( loc, symloc, loclen );
+    memcpy( loc + loclen, buf, addrlen );
+    loc[loclen + addrlen] = '\0';
+    cb.file = loc;
+
+    if( sym ) free( sym );
+    if( demangled ) free( demangled );
+
+    return { &cb, 1 };
 }
 
 #endif

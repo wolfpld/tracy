@@ -22,7 +22,7 @@
 #include "common/TracySocket.cpp"
 #include "client/tracy_rpmalloc.cpp"
 
-#ifdef __linux
+#if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3
 #  include "libbacktrace/alloc.cpp"
 #  include "libbacktrace/dwarf.cpp"
 #  include "libbacktrace/elf.cpp"

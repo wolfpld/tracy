@@ -91,7 +91,7 @@ static tracy_force_inline void* Callstack( int depth )
     return trace;
 }
 
-#elif TRACY_HAS_CALLSTACK >= 3
+#elif TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4
 
 static tracy_force_inline void* Callstack( int depth )
 {

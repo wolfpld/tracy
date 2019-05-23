@@ -9,7 +9,7 @@ extern "C"
     typedef unsigned long (__stdcall *t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
     extern t_RtlWalkFrameChain RtlWalkFrameChain;
 }
-#elif TRACY_HAS_CALLSTACK == 2
+#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5
 #  include <unwind.h>
 #elif TRACY_HAS_CALLSTACK >= 3
 #  include <execinfo.h>
@@ -58,7 +58,7 @@ static tracy_force_inline void* Callstack( int depth )
     return trace;
 }
 
-#elif TRACY_HAS_CALLSTACK == 2
+#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5
 
 struct BacktraceState
 {
@@ -91,7 +91,7 @@ static tracy_force_inline void* Callstack( int depth )
     return trace;
 }
 
-#elif TRACY_HAS_CALLSTACK >= 3
+#elif TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4
 
 static tracy_force_inline void* Callstack( int depth )
 {

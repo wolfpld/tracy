@@ -9419,6 +9419,7 @@ void View::CreateNextMemPageSnapshot()
     }
 
     std::vector<MemoryPage> snap;
+    snap.reserve( memmap.size() );
     for( auto& page : memmap )
     {
         snap.emplace_back( page.second );

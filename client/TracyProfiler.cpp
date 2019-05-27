@@ -788,10 +788,10 @@ struct ProfilerData
     RPMallocInit rpmalloc_init;
     moodycamel::ConcurrentQueue<QueueItem> queue;
     Profiler profiler;
-    std::atomic<uint32_t> lockCounter = 0;
-    std::atomic<uint8_t> gpuCtxCounter = 0;
+    std::atomic<uint32_t> lockCounter { 0 };
+    std::atomic<uint8_t> gpuCtxCounter { 0 };
 #  ifdef TRACY_COLLECT_THREAD_NAMES
-    std::atomic<ThreadNameData*> threadNameData = nullptr;
+    std::atomic<ThreadNameData*> threadNameData { nullptr };
 #endif
 };
 

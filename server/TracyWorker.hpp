@@ -460,9 +460,9 @@ private:
     std::string m_addr;
 
     std::thread m_thread;
-    std::atomic<bool> m_connected = { false };
+    std::atomic<bool> m_connected { false };
     std::atomic<bool> m_hasData;
-    std::atomic<bool> m_shutdown = { false };
+    std::atomic<bool> m_shutdown { false };
 
     std::thread m_threadBackground;
 
@@ -509,7 +509,7 @@ private:
     MbpsBlock m_mbpsData;
 
     int m_traceVersion;
-    std::atomic<uint8_t> m_handshake = { 0 };
+    std::atomic<uint8_t> m_handshake { 0 };
 
     static LoadProgress s_loadProgress;
     int64_t m_loadTime;

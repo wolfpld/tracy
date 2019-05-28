@@ -1010,8 +1010,8 @@ bool View::DrawConnection()
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
 
-    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
     {
+        std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
         const auto sz = m_worker.GetFrameCount( *m_frames );
         if( sz > 1 )
         {
@@ -1066,6 +1066,7 @@ bool View::DrawConnection()
 #else
     const char* stopStr = "Stop";
 #endif
+    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
     if( m_worker.IsConnected() )
     {
         if( ImGui::Button( stopStr ) )

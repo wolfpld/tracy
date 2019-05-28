@@ -756,7 +756,7 @@ bool View::DrawImpl()
     ImGui::Begin( tmp, keepOpenPtr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus );
 #endif
 
-    std::lock_guard<TracyMutex> lock( m_worker.GetDataLock() );
+    std::lock_guard<std::shared_mutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
         if( m_worker.IsConnected() )
@@ -966,7 +966,7 @@ bool View::DrawConnection()
     const auto cs = ty * 0.9f;
 
     {
-        std::lock_guard<TracyMutex> lock( m_worker.GetMbpsDataLock() );
+        std::lock_guard<std::shared_mutex> lock( m_worker.GetMbpsDataLock() );
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
         ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
@@ -993,7 +993,7 @@ bool View::DrawConnection()
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
 
-    std::lock_guard<TracyMutex> lock( m_worker.GetDataLock() );
+    std::lock_guard<std::shared_mutex> lock( m_worker.GetDataLock() );
     {
         const auto sz = m_worker.GetFrameCount( *m_frames );
         if( sz > 1 )

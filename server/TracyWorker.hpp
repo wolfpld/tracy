@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <limits>
+#include <shared_mutex>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -10,7 +11,6 @@
 
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
-#include "../common/TracyMutex.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
@@ -137,7 +137,7 @@ private:
     {
         DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
 
-        TracyMutex lock;
+        std::shared_mutex lock;
         StringDiscovery<FrameData*> frames;
         FrameData* framesBase;
         Vector<GpuCtxData*> gpuData;
@@ -188,7 +188,7 @@ private:
     {
         MbpsBlock() : mbps( 64 ), compRatio( 1.0 ), queue( 0 ) {}
 
-        TracyMutex lock;
+        std::shared_mutex lock;
         std::vector<float> mbps;
         float compRatio;
         size_t queue;
@@ -243,7 +243,7 @@ public:
     int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }
 
-    TracyMutex& GetDataLock() { return m_data.lock; }
+    std::shared_mutex& GetDataLock() { return m_data.lock; }
     size_t GetFrameCount( const FrameData& fd ) const { return fd.frames.size(); }
     size_t GetFullFrameCount( const FrameData& fd ) const;
     int64_t GetTimeBegin() const { return GetFrameBegin( *m_data.framesBase, 0 ); }
@@ -315,7 +315,7 @@ public:
     }
     tracy_force_inline uint64_t DecompressThread( uint16_t thread ) const { assert( thread < m_data.threadExpand.size() ); return m_data.threadExpand[thread]; }
 
-    TracyMutex& GetMbpsDataLock() { return m_mbpsData.lock; }
+    std::shared_mutex& GetMbpsDataLock() { return m_mbpsData.lock; }
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }
     float GetCompRatio() const { return m_mbpsData.compRatio; }
     size_t GetSendQueueSize() const { return m_mbpsData.queue; }

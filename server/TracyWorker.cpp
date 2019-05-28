@@ -1237,7 +1237,7 @@ finishLoading:
 #endif
         }
         {
-            std::lock_guard<TracyMutex> lock( m_data.lock );
+            std::lock_guard<std::shared_mutex> lock( m_data.lock );
             m_data.sourceLocationZonesReady = true;
         }
         if( reconstructMemAllocPlot ) ReconstructMemAllocPlot();
@@ -1784,7 +1784,7 @@ void Worker::Exec()
         const char* end = buf + sz;
 
         {
-            std::lock_guard<TracyMutex> lock( m_data.lock );
+            std::lock_guard<std::shared_mutex> lock( m_data.lock );
             while( ptr < end )
             {
                 auto ev = (const QueueItem*)ptr;
@@ -1810,7 +1810,7 @@ void Worker::Exec()
         enum { MbpsUpdateTime = 200 };
         if( td > MbpsUpdateTime )
         {
-            std::lock_guard<TracyMutex> lock( m_mbpsData.lock );
+            std::lock_guard<std::shared_mutex> lock( m_mbpsData.lock );
             m_mbpsData.mbps.erase( m_mbpsData.mbps.begin() );
             m_mbpsData.mbps.emplace_back( bytes / ( td * 125.f ) );
             m_mbpsData.compRatio = float( bytes ) / decBytes;
@@ -3576,7 +3576,7 @@ void Worker::ReconstructMemAllocPlot()
 
     PlotData* plot;
     {
-        std::lock_guard<TracyMutex> lock( m_data.lock );
+        std::lock_guard<std::shared_mutex> lock( m_data.lock );
         plot = m_slab.AllocInit<PlotData>();
     }
 
@@ -3659,7 +3659,7 @@ void Worker::ReconstructMemAllocPlot()
     plot->min = 0;
     plot->max = max;
 
-    std::lock_guard<TracyMutex> lock( m_data.lock );
+    std::lock_guard<std::shared_mutex> lock( m_data.lock );
     m_data.plots.Data().insert( m_data.plots.Data().begin(), plot );
     m_data.memory.plot = plot;
 }

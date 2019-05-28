@@ -459,6 +459,7 @@ View::~View()
     m_worker.Shutdown();
 
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
+    if( m_saveThread.joinable() ) m_saveThread.join();
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
@@ -692,6 +693,12 @@ bool View::DrawImpl()
         return !wasCancelled;
     }
 
+    if( m_saveThreadState == SaveThreadState::NeedsJoin )
+    {
+        m_saveThread.join();
+        m_saveThreadState = SaveThreadState::Inert;
+    }
+
     const auto& io = ImGui::GetIO();
 
     assert( m_shortcut == ShortcutAction::None );
@@ -756,7 +763,7 @@ bool View::DrawImpl()
     ImGui::Begin( tmp, keepOpenPtr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus );
 #endif
 
-    std::lock_guard<std::shared_mutex> lock( m_worker.GetDataLock() );
+    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
         if( m_worker.IsConnected() )
@@ -903,7 +910,17 @@ bool View::DrawImpl()
 #else
     ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_zvEnd - m_zvStart ), TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
 #endif
-    if( m_notificationTime > 0 )
+    if( m_saveThreadState == SaveThreadState::Saving )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::TextUnformatted( ICON_FA_SAVE " Saving trace..." );
+#else
+        ImGui::TextUnformatted( "Saving trace..." );
+#endif
+        m_notificationTime = 0;
+    }
+    else if( m_notificationTime > 0 )
     {
         m_notificationTime -= io.DeltaTime;
         ImGui::SameLine();
@@ -966,7 +983,7 @@ bool View::DrawConnection()
     const auto cs = ty * 0.9f;
 
     {
-        std::lock_guard<std::shared_mutex> lock( m_worker.GetMbpsDataLock() );
+        std::shared_lock<std::shared_mutex> lock( m_worker.GetMbpsDataLock() );
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
         ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
@@ -993,7 +1010,7 @@ bool View::DrawConnection()
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
 
-    std::lock_guard<std::shared_mutex> lock( m_worker.GetDataLock() );
+    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
     {
         const auto sz = m_worker.GetFrameCount( *m_frames );
         if( sz > 1 )
@@ -1006,9 +1023,9 @@ bool View::DrawConnection()
     }
 
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SAVE " Save trace" ) )
+    if( ImGui::Button( ICON_FA_SAVE " Save trace" ) && m_saveThreadState == SaveThreadState::Inert )
 #else
-    if( ImGui::Button( "Save trace" ) )
+    if( ImGui::Button( "Save trace" ) && m_saveThreadState == SaveThreadState::Inert )
 #endif
     {
 #ifdef TRACY_FILESELECTOR
@@ -1033,7 +1050,12 @@ bool View::DrawConnection()
             }
             if( f )
             {
-                m_worker.Write( *f );
+                m_saveThreadState = SaveThreadState::Saving;
+                m_saveThread = std::thread( [this, f{std::move( f )}] {
+                    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
+                    m_worker.Write( *f );
+                    m_saveThreadState = SaveThreadState::NeedsJoin;
+                } );
             }
         }
     }

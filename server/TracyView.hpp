@@ -316,6 +316,16 @@ private:
     bool m_activeOnlyBottomUp = false;
     bool m_activeOnlyTopDown = false;
 
+    enum class SaveThreadState
+    {
+        Inert,
+        Saving,
+        NeedsJoin
+    };
+
+    SaveThreadState m_saveThreadState = SaveThreadState::Inert;
+    std::thread m_saveThread;
+
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
         enum class GroupBy : int { Thread, UserText, Callstack };

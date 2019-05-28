@@ -1,7 +1,9 @@
 #ifndef __TRACYPOPCNT_HPP__
 #define __TRACYPOPCNT_HPP__
 
-#ifdef _WIN32
+#include <limits.h>
+
+#if defined _WIN64 || ( defined __CYGWIN__ && __WORDSIZE == 64 )
 #  include <intrin.h>
 #  define TracyCountBits __popcnt64
 #else

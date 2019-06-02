@@ -3878,6 +3878,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         max = tmp[i].val > max ? tmp[i].val : max;
                     }
                 }
+                if( min == max )
+                {
+                    min--;
+                    max++;
+                }
 
                 auto pvit = m_plotView.find( v );
                 if( pvit == m_plotView.end() )

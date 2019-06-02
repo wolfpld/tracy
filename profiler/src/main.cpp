@@ -14,6 +14,7 @@
 #include <memory>
 #include "../nfd/nfd.h"
 #include <sys/stat.h>
+#include <locale.h>
 
 #ifdef _WIN32
 #  include <windows.h>
@@ -83,6 +84,8 @@ std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildCo
 
 int main( int argc, char** argv )
 {
+    setlocale( LC_NUMERIC, "C" );
+
     std::unique_ptr<tracy::View> view;
     int badVer = 0;
 

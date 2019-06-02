@@ -1858,6 +1858,7 @@ void View::DrawZones()
 
     ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
     bool hover = ImGui::IsItemHovered();
+    draw = ImGui::GetWindowDrawList();
 
     if( hover )
     {

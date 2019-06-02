@@ -1851,6 +1851,9 @@ void View::DrawZones()
         }
     }
 
+    const auto yMin = ImGui::GetCursorScreenPos().y;
+    const auto yMax = linepos.y + lineh;
+
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
     const auto wpos = ImGui::GetCursorScreenPos();
@@ -1873,9 +1876,6 @@ void View::DrawZones()
     int offset = 0;
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
-
-    const auto yMin = linepos.y;
-    const auto yMax = yMin + lineh;
 
     // gpu zones
     if( m_drawGpuZones )

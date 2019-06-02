@@ -910,6 +910,15 @@ bool View::DrawImpl()
 #else
     ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_zvEnd - m_zvStart ), TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
 #endif
+
+    const auto ty = ImGui::GetFontSize();
+    if( !m_worker.IsBackgroundDone() )
+    {
+        ImGui::SameLine();
+        const auto pos = ImGui::GetCursorPos();
+        ImGui::TextUnformatted( "  " );
+        ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.75f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
+    }
     if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Saving )
     {
         ImGui::SameLine();

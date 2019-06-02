@@ -62,6 +62,8 @@ v0.5 (xxxx-xx-xx)
 - Prevent deadlocks by querying socket send buffer size.
 - Frame set statistics can be now limited to frames visible on the screen.
 - Messages can be now colored.
+- Zone selection in compare traces menu can be now linked to the other
+  trace.
 
 v0.4.1 (2018-12-30)
 -------------------

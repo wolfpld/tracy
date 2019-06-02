@@ -167,7 +167,6 @@ int main( int argc, char** argv )
 
     {
         GLFWimage icon;
-        int comp;
         icon.pixels = stbi_load_from_memory( (const stbi_uc*)Icon_data, Icon_size, &icon.width, &icon.height, nullptr, 4 );
         glfwSetWindowIcon( window, 1, &icon );
         free( icon.pixels );

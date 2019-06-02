@@ -1486,6 +1486,8 @@ Now things start to get familiar. You search for a zone, similarly like in the f
 
 Note that the traces are color and symbol coded. The current trace is marked by a yellow \faLemon{} symbol, and the external one is marked by a red \faGem{} symbol.
 
+When searching for source locations it's not uncommon to match more than one zone (for example a search for \texttt{Draw} may result in \texttt{DrawCircle} and \texttt{DrawRectangle} matches). Typically you wouldn't want to compare execution profiles of two unrelated functions, which is prevented by the \emph{link selection} option, which ensures that when you choose a source location in one trace, the corresponding one is also selected in second trace. Be aware that this may still result in a mismatch, for example if you have overloaded functions. In such case you will need to manually select the appropriate function in the other trace.
+
 It may be difficult, if not impossible, to perform identical runs of a program. This means that the number of collected zones may differ in both traces, which would influence the displayed results. To fix this problem enable the \emph{Normalize values} option, which will adjust the displayed results as-if both traces had the same number of recorded zones.
 
 \subsection{Memory window}

@@ -424,6 +424,7 @@ private:
     struct {
         bool show = false;
         bool ignoreCase = false;
+        bool link = true;
         std::unique_ptr<Worker> second;
         std::thread loadThread;
         int badVer = 0;

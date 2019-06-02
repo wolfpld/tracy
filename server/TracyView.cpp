@@ -7241,6 +7241,9 @@ void View::DrawCompare()
 
     if( ImGui::TreeNodeEx( "Matched source locations", ImGuiTreeNodeFlags_DefaultOpen ) )
     {
+        ImGui::SameLine();
+        SmallCheckbox( "Link selection", &m_compare.link );
+
         ImGui::Separator();
         ImGui::Columns( 2 );
 #ifdef TRACY_EXTENDED_FONT
@@ -7294,6 +7297,49 @@ void View::DrawCompare()
         if( prev0 != m_compare.selMatch[0] || prev1 != m_compare.selMatch[1] )
         {
             m_compare.ResetSelection();
+
+            if( m_compare.link )
+            {
+                auto& srcloc0 = m_worker.GetSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
+                auto& srcloc1 = m_compare.second->GetSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
+                auto string0 = m_worker.GetString( srcloc0.name.active ? srcloc0.name : srcloc0.function );
+                auto string1 = m_compare.second->GetString( srcloc1.name.active ? srcloc1.name : srcloc1.function );
+
+                if( strcmp( string0, string1 ) != 0 )
+                {
+                    idx = 0;
+                    if( prev0 != m_compare.selMatch[0] )
+                    {
+                        for( auto& v : m_compare.match[1] )
+                        {
+                            auto& srcloc = m_compare.second->GetSourceLocation( v );
+                            auto string = m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                            if( strcmp( string0, string ) == 0 )
+                            {
+                                m_compare.selMatch[1] = idx;
+                                break;
+                            }
+                            idx++;
+                        }
+                    }
+                    else
+                    {
+                        assert( prev1 != m_compare.selMatch[1] );
+                        for( auto& v : m_compare.match[0] )
+                        {
+                            auto& srcloc = m_worker.GetSourceLocation( v );
+                            auto string = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                            if( strcmp( string1, string ) == 0 )
+                            {
+                                m_compare.selMatch[0] = idx;
+                                break;
+                            }
+                            idx++;
+                        }
+
+                    }
+                }
+            }
         }
     }
 

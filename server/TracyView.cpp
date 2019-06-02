@@ -2169,9 +2169,9 @@ void View::DrawZones()
                 {
                     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+                    TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
 #else
-                    ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+                    TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
 #endif
                 }
 
@@ -4753,7 +4753,7 @@ void View::DrawZoneInfoWindow()
                 pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
 
                 ImGui::Columns( 2 );
-                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+                TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
                 ImGui::NextColumn();
                 char buf[128];
                 sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -4879,7 +4879,7 @@ void View::DrawZoneInfoWindow()
                 pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
                 ImGui::Columns( 2 );
-                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+                TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
                 ImGui::NextColumn();
                 char buf[128];
                 sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -5155,7 +5155,7 @@ void View::DrawGpuInfoWindow()
                 pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
 
                 ImGui::Columns( 2 );
-                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+                TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
                 ImGui::NextColumn();
                 char buf[128];
                 sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -5282,7 +5282,7 @@ void View::DrawGpuInfoWindow()
 
                 const auto ty = ImGui::GetTextLineHeight();
                 ImGui::Columns( 2 );
-                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+                TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
                 ImGui::NextColumn();
                 char buf[128];
                 sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -5754,7 +5754,7 @@ void View::DrawOptions()
             {
                 ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL );
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL );
                 if( ImGui::IsItemHovered() )
                 {
                     ImGui::BeginTooltip();
@@ -5770,7 +5770,7 @@ void View::DrawOptions()
                     }
                 }
 #else
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
 #endif
             }
             ImGui::SameLine();
@@ -5876,9 +5876,9 @@ void View::DrawMessages()
             {
                 ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
 #else
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
 #endif
             }
         }
@@ -7166,7 +7166,7 @@ void View::DrawCompare()
     }
 
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
+    TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
     ImGui::SameLine();
 #endif
     TextDisabledUnformatted( "This trace:" );
@@ -7174,7 +7174,7 @@ void View::DrawCompare()
     ImGui::TextUnformatted( m_worker.GetCaptureName().c_str() );
 
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
+    TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
     ImGui::SameLine();
 #endif
     TextDisabledUnformatted( "External trace:" );
@@ -7238,7 +7238,7 @@ void View::DrawCompare()
         ImGui::Separator();
         ImGui::Columns( 2 );
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::TextColored( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
+        TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
         ImGui::SameLine();
 #endif
         ImGui::TextUnformatted( "This trace" );
@@ -7246,7 +7246,7 @@ void View::DrawCompare()
         ImGui::TextDisabled( "(%zu)", m_compare.match[0].size() );
         ImGui::NextColumn();
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::TextColored( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
+        TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
         ImGui::SameLine();
 #endif
         ImGui::TextUnformatted( "External trace" );
@@ -7495,7 +7495,7 @@ void View::DrawCompare()
                     }
 
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Total time (this):", TimeToString( zoneData0.total * adj0 ) );
@@ -7503,7 +7503,7 @@ void View::DrawCompare()
                     ImGui::Spacing();
                     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Total time (ext.):", TimeToString( zoneData1.total * adj1 ) );
@@ -7513,7 +7513,7 @@ void View::DrawCompare()
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
 
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Average time (this):", TimeToString( m_compare.average[0] ) );
@@ -7521,7 +7521,7 @@ void View::DrawCompare()
                     ImGui::Spacing();
                     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Median time (this):", TimeToString( m_compare.median[0] ) );
@@ -7536,7 +7536,7 @@ void View::DrawCompare()
                         ImGui::Spacing();
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                        TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (this):", TimeToString( sd ) );
 #else
@@ -7552,7 +7552,7 @@ void View::DrawCompare()
 
 
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Average time (ext.):", TimeToString( m_compare.average[1] ) );
@@ -7560,7 +7560,7 @@ void View::DrawCompare()
                     ImGui::Spacing();
                     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Median time (ext.):", TimeToString( m_compare.median[1] ) );
@@ -7575,7 +7575,7 @@ void View::DrawCompare()
                         ImGui::Spacing();
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                        TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (ext.):", TimeToString( sd ) );
 #else
@@ -7827,13 +7827,13 @@ void View::DrawCompare()
                         TextDisabledUnformatted( "(Data is displayed as:" );
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                        TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                         ImGui::SameLine();
 #endif
                         TextDisabledUnformatted( "[this trace] /" );
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                        TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
 #endif
                         TextDisabledUnformatted( "[external trace])" );
@@ -8730,9 +8730,9 @@ void View::DrawInfo()
     {
         ImGui::Separator();
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Application has crashed. " ICON_FA_SKULL );
+        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Application has crashed. " ICON_FA_SKULL );
 #else
-        ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Application has crashed." );
+        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Application has crashed." );
 #endif
         TextFocused( "Time of crash:", TimeToString( crash.time - m_worker.GetTimeBegin() ) );
         TextFocused( "Thread:", m_worker.GetThreadString( crash.thread ) );
@@ -8783,17 +8783,17 @@ void View::DrawTextEditor()
     bool show = true;
     ImGui::Begin( "Source view", &show );
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
 #else
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif
     ImGui::SameLine();
-    ImGui::TextColored( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+    TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
 #else
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif
     TextFocused( "File:", m_textEditorFile );
     if( m_textEditorFont ) ImGui::PushFont( m_textEditorFont );
@@ -9054,7 +9054,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         ImGui::NextColumn();
         if( v->timeFree < 0 )
         {
-            ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "%s", TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
+            TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
             ImGui::NextColumn();
             ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
         }
@@ -9107,7 +9107,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         ImGui::NextColumn();
         if( v->timeFree < 0 )
         {
-            ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "active" );
+            TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "active" );
         }
         else
         {
@@ -10172,7 +10172,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     if( ev.text.active )
     {
         ImGui::NewLine();
-        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( ev.text ) );
+        TextColoredUnformatted( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), m_worker.GetString( ev.text ) );
     }
     ImGui::EndTooltip();
 }

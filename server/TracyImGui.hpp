@@ -19,6 +19,13 @@ namespace tracy
         ImGui::TextUnformatted( text );
     }
 
+    static inline void TextColoredUnformatted( const ImVec4& col, const char* text )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, col );
+        ImGui::TextUnformatted( text );
+        ImGui::PopStyleColor();
+    }
+
     static inline void TextDisabledUnformatted( const char* begin, const char* end = nullptr )
     {
         ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );

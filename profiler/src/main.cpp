@@ -84,8 +84,6 @@ std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildCo
 
 int main( int argc, char** argv )
 {
-    setlocale( LC_NUMERIC, "C" );
-
     std::unique_ptr<tracy::View> view;
     int badVer = 0;
 
@@ -269,6 +267,7 @@ int main( int argc, char** argv )
                 glfwSetWindowTitle( window, title );
             }
 
+            setlocale( LC_NUMERIC, "C" );
             style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
             ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
             char buf[128];

@@ -287,7 +287,7 @@ private:
     bool m_allocTimeRelativeToZone = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
-    Namespace m_namespace = Namespace::Full;
+    Namespace m_namespace = Namespace::Short;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
     BuzzAnim<int> m_callstackTreeBuzzAnim;

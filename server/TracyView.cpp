@@ -693,10 +693,10 @@ bool View::DrawImpl()
         return !wasCancelled;
     }
 
-    if( m_saveThreadState == SaveThreadState::NeedsJoin )
+    if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::NeedsJoin )
     {
         m_saveThread.join();
-        m_saveThreadState = SaveThreadState::Inert;
+        m_saveThreadState.store( SaveThreadState::Inert, std::memory_order_relaxed );
     }
 
     const auto& io = ImGui::GetIO();
@@ -910,7 +910,7 @@ bool View::DrawImpl()
 #else
     ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_zvEnd - m_zvStart ), TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
 #endif
-    if( m_saveThreadState == SaveThreadState::Saving )
+    if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Saving )
     {
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -1023,9 +1023,9 @@ bool View::DrawConnection()
     }
 
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SAVE " Save trace" ) && m_saveThreadState == SaveThreadState::Inert )
+    if( ImGui::Button( ICON_FA_SAVE " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
 #else
-    if( ImGui::Button( "Save trace" ) && m_saveThreadState == SaveThreadState::Inert )
+    if( ImGui::Button( "Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
 #endif
     {
 #ifdef TRACY_FILESELECTOR
@@ -1050,11 +1050,11 @@ bool View::DrawConnection()
             }
             if( f )
             {
-                m_saveThreadState = SaveThreadState::Saving;
+                m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
                 m_saveThread = std::thread( [this, f{std::move( f )}] {
                     std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
                     m_worker.Write( *f );
-                    m_saveThreadState = SaveThreadState::NeedsJoin;
+                    m_saveThreadState.store( SaveThreadState::NeedsJoin, std::memory_order_relaxed );
                 } );
             }
         }

@@ -323,7 +323,7 @@ private:
         NeedsJoin
     };
 
-    SaveThreadState m_saveThreadState = SaveThreadState::Inert;
+    std::atomic<SaveThreadState> m_saveThreadState { SaveThreadState::Inert };
     std::thread m_saveThread;
 
     struct FindZone {

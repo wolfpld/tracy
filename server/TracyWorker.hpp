@@ -323,6 +323,7 @@ public:
     bool HasData() const { return m_hasData.load( std::memory_order_acquire ); }
     bool IsConnected() const { return m_connected.load( std::memory_order_relaxed ); }
     bool IsDataStatic() const { return !m_thread.joinable(); }
+    bool IsBackgroundDone() const { return m_backgroundDone.load( std::memory_order_relaxed ); }
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
     void Disconnect() { Shutdown(); }   // TODO: Needs proper implementation.
 
@@ -464,6 +465,7 @@ private:
     std::atomic<bool> m_hasData;
     std::atomic<bool> m_shutdown { false };
 
+    std::atomic<bool> m_backgroundDone { true };
     std::thread m_threadBackground;
 
     int64_t m_delay;

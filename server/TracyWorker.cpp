@@ -1202,6 +1202,7 @@ finishLoading:
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
+    m_backgroundDone.store( false, std::memory_order_relaxed );
 #ifndef TRACY_NO_STATISTICS
     m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
         std::function<void(const Vector<ZoneEvent*>&, uint16_t)> ProcessTimeline;
@@ -1241,11 +1242,12 @@ finishLoading:
             m_data.sourceLocationZonesReady = true;
         }
         if( reconstructMemAllocPlot ) ReconstructMemAllocPlot();
+        m_backgroundDone.store( true, std::memory_order_relaxed );
     } );
 #else
     if( reconstructMemAllocPlot )
     {
-        m_threadBackground = std::thread( [this] { ReconstructMemAllocPlot(); } );
+        m_threadBackground = std::thread( [this] { ReconstructMemAllocPlot(); m_backgroundDone.store( true, std::memory_order_relaxed ); } );
     }
 #endif
 }

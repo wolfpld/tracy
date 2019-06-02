@@ -20,6 +20,10 @@
 #  include <shellapi.h>
 #endif
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#include "stb_image.h"
+
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"

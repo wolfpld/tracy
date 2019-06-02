@@ -16,7 +16,7 @@ namespace tracy
     {
         const auto tw = ImGui::CalcTextSize( text ).x;
         ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - tw ) * 0.5f );
-        ImGui::Text( "%s", text );
+        ImGui::TextUnformatted( text );
     }
 
     static inline void DrawWaitingDots( double time )

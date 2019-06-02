@@ -10,8 +10,12 @@ v0.5 (xxxx-xx-xx)
 -----------------
 
 - Major decrease of trace dump file size.
+- Major optimizations across the board.
 - Display dump file size change in the update utility.
-- Display trace loading time.
+- Added notification area.
+  - Display trace loading time.
+  - Display background processing tasks after trace is loaded.
+  - Display trace save notification.
 - Added C API.
 - Profiling session may now gracefully terminate, due to incorrect
   instrumentation. A popup with termination reason will be displayed.

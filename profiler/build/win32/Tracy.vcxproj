@@ -177,6 +177,7 @@
     <ClInclude Include="..\..\src\Arimo.hpp" />
     <ClInclude Include="..\..\src\Cousine.hpp" />
     <ClInclude Include="..\..\src\FontAwesomeSolid.hpp" />
+    <ClInclude Include="..\..\src\icon.hpp" />
     <ClInclude Include="..\..\src\imgui_freetype.h" />
     <ClInclude Include="..\..\src\imgui_impl_glfw.h" />
     <ClInclude Include="..\..\src\imgui_impl_opengl3.h" />

@@ -19,6 +19,20 @@ namespace tracy
         ImGui::TextUnformatted( text );
     }
 
+    static inline void TextDisabledUnformatted( const char* begin, const char* end = nullptr )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+        ImGui::TextUnformatted( begin, end );
+        ImGui::PopStyleColor();
+    }
+
+    static inline void TextFocused( const char* label, const char* value )
+    {
+        TextDisabledUnformatted( label );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( value );
+    }
+
     static inline void DrawWaitingDots( double time )
     {
         ImGui::TextUnformatted( "" );

@@ -372,20 +372,6 @@ static const char* MemSizeToString( int64_t val )
     return buf;
 }
 
-static void TextDisabledUnformatted( const char* begin, const char* end = nullptr )
-{
-    ImGui::PushStyleColor(ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled]);
-    ImGui::TextUnformatted( begin, end );
-    ImGui::PopStyleColor();
-}
-
-static void TextFocused( const char* label, const char* value )
-{
-    TextDisabledUnformatted( label );
-    ImGui::SameLine();
-    ImGui::TextUnformatted( value );
-}
-
 static void SetButtonHighlightColor()
 {
     ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.35f, 0.6f, 0.6f ) );

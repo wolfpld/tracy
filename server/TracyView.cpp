@@ -1930,7 +1930,7 @@ void View::DrawZones()
                 {
                     sprintf( buf, "OpenGL context %zu", i );
                 }
-                draw->AddText( wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
+                DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
 
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, oldOffset + ty ) ) )
                 {
@@ -2121,7 +2121,7 @@ void View::DrawZones()
 #endif
 
                     auto ctw = ImGui::CalcTextSize( crashText ).x;
-                    draw->AddText( wpos + ImVec2( px - ctw * 0.5f, oldOffset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
+                    DrawTextContrast( draw, wpos + ImVec2( px - ctw * 0.5f, oldOffset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
 
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) ) )
                     {
@@ -2157,7 +2157,7 @@ void View::DrawZones()
                 draw->AddRectFilled( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x + 4, oldOffset + ty ), 0x4488DD88 );
                 draw->AddRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x + 4, oldOffset + ty ), 0x8888DD88 );
             }
-            draw->AddText( wpos + ImVec2( ty, oldOffset ), labelColor, txt );
+            DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), labelColor, txt );
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
             {
@@ -3746,7 +3746,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             }
             const auto txt = GetPlotName( v );
             txtx = ImGui::CalcTextSize( txt ).x;
-            draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFF44DDDD : 0xFF226E6E, txt );
+            DrawTextContrast( draw, wpos + ImVec2( ty, offset ), showFull ? 0xFF44DDDD : 0xFF226E6E, txt );
             draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )

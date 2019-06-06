@@ -11,6 +11,7 @@
 
 #include "TracyBuzzAnim.hpp"
 #include "TracyDecayValue.hpp"
+#include "TracyTexture.hpp"
 #include "TracyVector.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_flat_hash_map.hpp"
@@ -325,6 +326,9 @@ private:
 
     std::atomic<SaveThreadState> m_saveThreadState { SaveThreadState::Inert };
     std::thread m_saveThread;
+
+    void* m_frameTexture;
+    void* m_frameTexturePtr = nullptr;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

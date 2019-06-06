@@ -419,6 +419,8 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     assert( s_instance == nullptr );
     s_instance = this;
 
+    m_frameTexture = MakeTexture();
+
     InitTextEditor();
 }
 
@@ -436,6 +438,8 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     m_notificationTime = 4;
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
 
+    m_frameTexture = MakeTexture();
+
     InitTextEditor();
     SetViewToLastFrames();
 }
@@ -446,6 +450,8 @@ View::~View()
 
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();
+
+    FreeTexture( m_frameTexture );
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
@@ -1640,6 +1646,15 @@ bool View::DrawZoneFrames( const FrameData& frames )
             ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
             ImGui::Separator();
             TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( frames, i ) - m_worker.GetTimeBegin() ) );
+            auto fi = m_worker.GetFrameImage( frames, i );
+            if( fi )
+            {
+                if( fi != m_frameTexturePtr )
+                {
+                    UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
+                }
+                ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+            }
             ImGui::EndTooltip();
 
             if( ImGui::IsMouseClicked( 2 ) )

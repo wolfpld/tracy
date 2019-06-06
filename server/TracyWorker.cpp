@@ -2888,9 +2888,9 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     fi->ptr = (const char*)it->second;
     fi->w = ev.w;
     fi->h = ev.h;
-    m_data.frameImage.push_back( fi );
 
     const auto idx = m_data.frameImage.size();
+    m_data.frameImage.push_back( fi );
     m_data.framesBase->frames.back().frameImage = idx;
 
     m_pendingFrameImageData.erase( it );

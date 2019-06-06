@@ -93,6 +93,9 @@
     <ClCompile Include="..\..\..\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyTexture.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -256,6 +259,9 @@
     </ClInclude>
     <ClInclude Include="..\..\src\stb_image.h">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyTexture.hpp">
+      <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

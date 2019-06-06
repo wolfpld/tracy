@@ -114,6 +114,7 @@
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp" />
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
     <ClCompile Include="..\..\..\server\TracyStorage.cpp" />
+    <ClCompile Include="..\..\..\server\TracyTexture.cpp" />
     <ClCompile Include="..\..\..\server\TracyView.cpp" />
     <ClCompile Include="..\..\..\server\TracyWorker.cpp" />
     <ClCompile Include="..\..\libs\gl3w\GL\gl3w.c" />
@@ -165,6 +166,7 @@
     <ClInclude Include="..\..\..\server\TracySlab.hpp" />
     <ClInclude Include="..\..\..\server\TracyStorage.hpp" />
     <ClInclude Include="..\..\..\server\TracyStringDiscovery.hpp" />
+    <ClInclude Include="..\..\..\server\TracyTexture.hpp" />
     <ClInclude Include="..\..\..\server\TracyVarArray.hpp" />
     <ClInclude Include="..\..\..\server\TracyVector.hpp" />
     <ClInclude Include="..\..\..\server\TracyVersion.hpp" />

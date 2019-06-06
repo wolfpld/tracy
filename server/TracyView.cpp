@@ -1269,6 +1269,16 @@ void View::DrawFrames()
                     }
                 }
                 TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( *m_frames, sel ) - m_worker.GetTimeBegin() ) );
+                auto fi = m_worker.GetFrameImage( *m_frames, sel );
+                if( fi )
+                {
+                    if( fi != m_frameTexturePtr )
+                    {
+                        UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
+                    }
+                    ImGui::Separator();
+                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                }
                 ImGui::EndTooltip();
 
                 if( ImGui::IsMouseClicked( 0 ) )

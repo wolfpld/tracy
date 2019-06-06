@@ -441,7 +441,7 @@ private:
 
     bool SendData( const char* data, size_t len );
     void SendString( uint64_t ptr, const char* str, QueueType type );
-    void SendLongString( uint64_t ptr, const char* str, QueueType type );
+    void SendLongString( uint64_t ptr, const char* str, size_t len, QueueType type );
     void SendSourceLocation( uint64_t ptr );
     void SendSourceLocationPayload( uint64_t ptr );
     void SendCallstackPayload( uint64_t ptr );

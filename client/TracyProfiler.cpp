@@ -48,6 +48,7 @@
 #include "../common/tracy_lz4.hpp"
 #include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
+#include "TracyEtc1.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
@@ -1451,10 +1452,18 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     tracy_free( (void*)ptr );
                     break;
                 case QueueType::FrameImage:
+                {
                     ptr = MemRead<uint64_t>( &item->frameImage.image );
-                    SendLongString( ptr, (const char*)ptr, QueueType::FrameImageData );
+                    const auto w = MemRead<uint16_t>( &item->frameImage.w );
+                    const auto h = MemRead<uint16_t>( &item->frameImage.h );
+                    const auto csz = w * h / 2;
+                    auto c = (char*)tracy_malloc( csz );
+                    CompressImageEtc1( (const char*)ptr, c, w, h );
                     tracy_free( (void*)ptr );
+                    SendLongString( ptr, (const char*)c, csz, QueueType::FrameImageData );
+                    tracy_free( (void*)c );
                     break;
+                }
                 default:
                     assert( false );
                     break;
@@ -1576,7 +1585,7 @@ void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     AppendDataUnsafe( ptr, l16 );
 }
 
-void Profiler::SendLongString( uint64_t str, const char* ptr, QueueType type )
+void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueType type )
 {
     assert( type == QueueType::FrameImageData );
 
@@ -1584,7 +1593,6 @@ void Profiler::SendLongString( uint64_t str, const char* ptr, QueueType type )
     MemWrite( &item.hdr.type, type );
     MemWrite( &item.stringTransfer.ptr, str );
 
-    auto len = strlen( ptr );
     assert( len <= std::numeric_limits<uint32_t>::max() );
     assert( QueueDataSize[(int)type] + sizeof( uint32_t ) + len <= TargetFrameSize );
     auto l32 = uint32_t( len );

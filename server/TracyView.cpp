@@ -1644,7 +1644,6 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
-            ImGui::Separator();
             TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( frames, i ) - m_worker.GetTimeBegin() ) );
             auto fi = m_worker.GetFrameImage( frames, i );
             if( fi )
@@ -1653,6 +1652,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
                 {
                     UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
                 }
+                ImGui::Separator();
                 ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
             }
             ImGui::EndTooltip();

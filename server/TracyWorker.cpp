@@ -379,7 +379,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             uint64_t fsz;
             f.Read( &fsz, sizeof( fsz ) );
             ptr->frames.reserve_exact( fsz, m_slab );
-            if( fileVer >= FileVersion( 0, 4, 2 ) )
+            if( fileVer >= FileVersion( 0, 4, 9 ) )
             {
                 int64_t refTime = 0;
                 if( ptr->continuous )
@@ -388,6 +388,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         ptr->frames[j].start = ReadTimeOffset( f, refTime );
                         ptr->frames[j].end = -1;
+                        f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
                     }
                 }
                 else
@@ -396,6 +397,29 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         ptr->frames[j].start = ReadTimeOffset( f, refTime );
                         ptr->frames[j].end = ReadTimeOffset( f, refTime );
+                        f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
+                    }
+                }
+            }
+            else if( fileVer >= FileVersion( 0, 4, 2 ) )
+            {
+                int64_t refTime = 0;
+                if( ptr->continuous )
+                {
+                    for( uint64_t j=0; j<fsz; j++ )
+                    {
+                        ptr->frames[j].start = ReadTimeOffset( f, refTime );
+                        ptr->frames[j].end = -1;
+                        ptr->frames[j].frameImage = -1;
+                    }
+                }
+                else
+                {
+                    for( uint64_t j=0; j<fsz; j++ )
+                    {
+                        ptr->frames[j].start = ReadTimeOffset( f, refTime );
+                        ptr->frames[j].end = ReadTimeOffset( f, refTime );
+                        ptr->frames[j].frameImage = -1;
                     }
                 }
             }
@@ -407,11 +431,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
                         ptr->frames[j].end = -1;
+                        ptr->frames[j].frameImage = -1;
                     }
                 }
                 else
                 {
-                    f.Read( ptr->frames.data(), sizeof( FrameEvent ) * fsz );
+                    for( uint64_t j=0; j<fsz; j++ )
+                    {
+                        f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
+                        f.Read( &ptr->frames[j].end, sizeof( int64_t ) );
+                        ptr->frames[j].frameImage = -1;
+                    }
                 }
             }
             m_data.frames.Data()[i] = ptr;
@@ -431,6 +461,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             f.Read( &ptr->frames[i].start, sizeof( int64_t ) );
             ptr->frames[i].end = -1;
+            ptr->frames[i].frameImage = -1;
         }
         m_data.frames.Data().push_back( ptr );
         m_data.framesBase = ptr;
@@ -1195,6 +1226,29 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( frameData->data, sizeof( CallstackFrame ) );
 
             m_data.callstackFrameMap.emplace( PackPointer( ptr ), frameData );
+        }
+    }
+
+    if( fileVer >= FileVersion( 0, 4, 9 ) )
+    {
+        if( eventMask & EventType::FrameImages )
+        {
+            f.Read( sz );
+            m_data.frameImage.reserve_exact( sz, m_slab );
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                auto fi = m_slab.Alloc<FrameImage>();
+                f.Read2( fi->w, fi->h );
+                const auto sz = fi->w * fi->h * 4;
+                auto ptr = (char*)m_slab.AllocBig( sz );
+                f.Read( ptr, sz );
+                fi->ptr = ptr;
+                m_data.frameImage[i] = fi;
+            }
+        }
+        else
+        {
+            // Implement skip, if more data is added after frame image section
         }
     }
 
@@ -4024,6 +4078,7 @@ void Worker::Write( FileWrite& f )
             for( auto& fe : fd->frames )
             {
                 WriteTimeOffset( f, refTime, fe.start );
+                f.Write( &fe.frameImage, sizeof( fe.frameImage ) );
             }
         }
         else
@@ -4032,6 +4087,7 @@ void Worker::Write( FileWrite& f )
             {
                 WriteTimeOffset( f, refTime, fe.start );
                 WriteTimeOffset( f, refTime, fe.end );
+                f.Write( &fe.frameImage, sizeof( fe.frameImage ) );
             }
         }
     }
@@ -4253,6 +4309,15 @@ void Worker::Write( FileWrite& f )
         f.Write( &frame.first, sizeof( CallstackFrameId ) );
         f.Write( &frame.second->size, sizeof( frame.second->size ) );
         f.Write( frame.second->data, sizeof( CallstackFrame ) * frame.second->size );
+    }
+
+    sz = m_data.frameImage.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& fi : m_data.frameImage )
+    {
+        f.Write( &fi->w, sizeof( fi->w ) );
+        f.Write( &fi->h, sizeof( fi->h ) );
+        f.Write( fi->ptr, fi->w * fi->h * 4 );
     }
 }
 

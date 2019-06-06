@@ -34,6 +34,7 @@ namespace EventType
         Messages    = 1 << 1,
         Plots       = 1 << 2,
         Memory      = 1 << 3,
+        FrameImages = 1 << 4,
 
         None        = 0,
         All         = std::numeric_limits<uint32_t>::max()

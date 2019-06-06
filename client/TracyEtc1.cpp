@@ -16,7 +16,9 @@
 #else
 #  ifndef _MSC_VER
 #    include <byteswap.h>
-#    define _bswap(x) bswap_32(x)
+#    ifndef _bswap
+#      define _bswap(x) bswap_32(x)
+#    endif
 #  endif
 #endif
 

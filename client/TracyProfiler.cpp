@@ -959,6 +959,8 @@ Profiler::Profiler()
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
     , m_serialQueue( 1024*1024 )
     , m_serialDequeue( 1024*1024 )
+    , m_etc1Buf( nullptr )
+    , m_etc1BufSize( 0 )
 #ifdef TRACY_ON_DEMAND
     , m_isConnected( false )
     , m_frameCount( 0 )
@@ -1033,6 +1035,7 @@ Profiler::~Profiler()
     tracy_free( m_lz4Buf );
     tracy_free( m_itemBuf );
     tracy_free( m_buffer );
+    tracy_free( m_etc1Buf );
     LZ4_freeStream( (LZ4_stream_t*)m_stream );
 
     if( m_sock )
@@ -1457,11 +1460,14 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     const auto w = MemRead<uint16_t>( &item->frameImage.w );
                     const auto h = MemRead<uint16_t>( &item->frameImage.h );
                     const auto csz = w * h / 2;
-                    auto c = (char*)tracy_malloc( csz );
-                    CompressImageEtc1( (const char*)ptr, c, w, h );
+                    if( csz > m_etc1BufSize )
+                    {
+                        tracy_free( m_etc1Buf );
+                        m_etc1Buf = (char*)tracy_malloc( csz );
+                    }
+                    CompressImageEtc1( (const char*)ptr, m_etc1Buf, w, h );
                     tracy_free( (void*)ptr );
-                    SendLongString( ptr, (const char*)c, csz, QueueType::FrameImageData );
-                    tracy_free( (void*)c );
+                    SendLongString( ptr, m_etc1Buf, csz, QueueType::FrameImageData );
                     break;
                 }
                 default:

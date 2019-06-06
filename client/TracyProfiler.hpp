@@ -521,6 +521,9 @@ private:
     FastVector<QueueItem> m_serialQueue, m_serialDequeue;
     TracyMutex m_serialLock;
 
+    char* m_etc1Buf;
+    size_t m_etc1BufSize;
+
 #ifdef TRACY_ON_DEMAND
     std::atomic<bool> m_isConnected;
     std::atomic<uint64_t> m_frameCount;

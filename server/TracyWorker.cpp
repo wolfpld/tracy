@@ -1248,7 +1248,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 auto fi = m_slab.Alloc<FrameImage>();
                 f.Read2( fi->w, fi->h );
-                const auto sz = fi->w * fi->h * 4;
+                const auto sz = fi->w * fi->h / 2;
                 auto ptr = (char*)m_slab.AllocBig( sz );
                 f.Read( ptr, sz );
                 fi->ptr = ptr;
@@ -4326,7 +4326,7 @@ void Worker::Write( FileWrite& f )
     {
         f.Write( &fi->w, sizeof( fi->w ) );
         f.Write( &fi->h, sizeof( fi->h ) );
-        f.Write( fi->ptr, fi->w * fi->h * 4 );
+        f.Write( fi->ptr, fi->w * fi->h / 2 );
     }
 }
 

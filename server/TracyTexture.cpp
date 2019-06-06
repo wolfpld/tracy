@@ -25,7 +25,7 @@ void UpdateTexture( void* _tex, const char* data, int w, int h )
 {
     auto tex = (GLuint)_tex;
     glBindTexture( GL_TEXTURE_2D, tex );
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data );
+    glCompressedTexImage2D( GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, w, h, 0, w * h / 2, data );
 }
 
 }

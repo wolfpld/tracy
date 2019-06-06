@@ -327,7 +327,7 @@ private:
     std::atomic<SaveThreadState> m_saveThreadState { SaveThreadState::Inert };
     std::thread m_saveThread;
 
-    void* m_frameTexture;
+    void* m_frameTexture = nullptr;
     const void* m_frameTexturePtr = nullptr;
 
     struct FindZone {

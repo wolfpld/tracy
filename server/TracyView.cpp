@@ -419,8 +419,6 @@ View::View( const char* addr, ImFont* fixedWidth, SetTitleCallback stcb )
     assert( s_instance == nullptr );
     s_instance = this;
 
-    m_frameTexture = MakeTexture();
-
     InitTextEditor();
 }
 
@@ -438,8 +436,6 @@ View::View( FileRead& f, ImFont* fixedWidth, SetTitleCallback stcb )
     m_notificationTime = 4;
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
 
-    m_frameTexture = MakeTexture();
-
     InitTextEditor();
     SetViewToLastFrames();
 }
@@ -451,7 +447,7 @@ View::~View()
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();
 
-    FreeTexture( m_frameTexture );
+    if( m_frameTexture ) FreeTexture( m_frameTexture );
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
@@ -1274,6 +1270,7 @@ void View::DrawFrames()
                 {
                     if( fi != m_frameTexturePtr )
                     {
+                        if( !m_frameTexture ) m_frameTexture = MakeTexture();
                         UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
                         m_frameTexturePtr = fi;
                     }
@@ -1661,6 +1658,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
             {
                 if( fi != m_frameTexturePtr )
                 {
+                    if( !m_frameTexture ) m_frameTexture = MakeTexture();
                     UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
                     m_frameTexturePtr = fi;
                 }

@@ -1275,6 +1275,7 @@ void View::DrawFrames()
                     if( fi != m_frameTexturePtr )
                     {
                         UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
+                        m_frameTexturePtr = fi;
                     }
                     ImGui::Separator();
                     ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
@@ -1661,6 +1662,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
                 if( fi != m_frameTexturePtr )
                 {
                     UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
+                    m_frameTexturePtr = fi;
                 }
                 ImGui::Separator();
                 ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );

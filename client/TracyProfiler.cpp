@@ -1362,6 +1362,10 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.callstackAlloc.ptr );
         tracy_free( (void*)ptr );
         break;
+    case QueueType::FrameImage:
+        ptr = MemRead<uint64_t>( &item.frameImage.image );
+        tracy_free( (void*)ptr );
+        break;
     default:
         assert( false );
         break;
@@ -1444,6 +1448,11 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     tracy_free( (void*)ptr );
                     ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
                     SendCallstackAlloc( ptr );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::FrameImage:
+                    ptr = MemRead<uint64_t>( &item->frameImage.image );
+                    SendLongString( ptr, (const char*)ptr, QueueType::FrameImageData );
                     tracy_free( (void*)ptr );
                     break;
                 default:
@@ -1565,6 +1574,26 @@ void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     AppendDataUnsafe( &item, QueueDataSize[(int)type] );
     AppendDataUnsafe( &l16, sizeof( l16 ) );
     AppendDataUnsafe( ptr, l16 );
+}
+
+void Profiler::SendLongString( uint64_t str, const char* ptr, QueueType type )
+{
+    assert( type == QueueType::FrameImageData );
+
+    QueueItem item;
+    MemWrite( &item.hdr.type, type );
+    MemWrite( &item.stringTransfer.ptr, str );
+
+    auto len = strlen( ptr );
+    assert( len <= std::numeric_limits<uint32_t>::max() );
+    assert( QueueDataSize[(int)type] + sizeof( uint32_t ) + len <= TargetFrameSize );
+    auto l32 = uint32_t( len );
+
+    NeedDataSize( QueueDataSize[(int)type] + sizeof( l32 ) + l32 );
+
+    AppendDataUnsafe( &item, QueueDataSize[(int)type] );
+    AppendDataUnsafe( &l32, sizeof( l32 ) );
+    AppendDataUnsafe( ptr, l32 );
 }
 
 void Profiler::SendSourceLocation( uint64_t ptr )

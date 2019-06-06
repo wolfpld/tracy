@@ -181,6 +181,8 @@ private:
 
         Vector<Vector<ZoneEvent*>> zoneVectorCache;
 
+        Vector<FrameImage*> frameImage;
+
         CrashEvent crashEvent;
     };
 
@@ -354,6 +356,7 @@ private:
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkStart( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkEnd( const QueueFrameMark& ev );
+    tracy_force_inline void ProcessFrameImage( const QueueFrameImage& ev );
     tracy_force_inline void ProcessZoneText( const QueueZoneText& ev );
     tracy_force_inline void ProcessZoneName( const QueueZoneText& ev );
     tracy_force_inline void ProcessLockAnnounce( const QueueLockAnnounce& ev );
@@ -425,6 +428,7 @@ private:
     void AddString( uint64_t ptr, char* str, size_t sz );
     void AddThreadString( uint64_t id, char* str, size_t sz );
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
+    void AddFrameImageData( uint64_t ptr, char* data, size_t sz );
 
     tracy_force_inline void AddCallstackPayload( uint64_t ptr, char* data, size_t sz );
     tracy_force_inline void AddCallstackAllocPayload( uint64_t ptr, char* data, size_t sz );
@@ -491,6 +495,7 @@ private:
     flat_hash_map<uint64_t, uint32_t, nohash<uint64_t>> m_sourceLocationShrink;
     flat_hash_map<uint64_t, ThreadData*, nohash<uint64_t>> m_threadMap;
     flat_hash_map<uint64_t, NextCallstack, nohash<uint64_t>> m_nextCallstack;
+    flat_hash_map<uint64_t, void*, nohash<uint64_t>> m_pendingFrameImageData;
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;

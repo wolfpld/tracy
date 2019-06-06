@@ -170,6 +170,25 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
+    static tracy_force_inline void SendFrameImage( void* image, uint16_t w, uint16_t h )
+    {
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) return;
+#endif
+        const auto sz = size_t( w ) * size_t( h ) * 4;
+        Magic magic;
+        auto token = GetToken();
+        auto ptr = (char*)tracy_malloc( sz );
+        memcpy( ptr, image, sz );
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::FrameImage );
+        MemWrite( &item->frameImage.image, (uint64_t)ptr );
+        MemWrite( &item->frameImage.w, w );
+        MemWrite( &item->frameImage.h, h );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     static tracy_force_inline void PlotData( const char* name, int64_t val )
     {
 #ifdef TRACY_ON_DEMAND
@@ -422,6 +441,7 @@ private:
 
     bool SendData( const char* data, size_t len );
     void SendString( uint64_t ptr, const char* str, QueueType type );
+    void SendLongString( uint64_t ptr, const char* str, QueueType type );
     void SendSourceLocation( uint64_t ptr );
     void SendSourceLocationPayload( uint64_t ptr );
     void SendCallstackPayload( uint64_t ptr );

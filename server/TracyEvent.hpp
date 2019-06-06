@@ -356,6 +356,12 @@ struct SourceLocationComparator
     }
 };
 
+struct FrameImage
+{
+    const char* ptr;
+    uint16_t w, h;
+};
+
 }
 
 #endif

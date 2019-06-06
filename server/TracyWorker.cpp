@@ -1825,7 +1825,8 @@ void Worker::Exec()
         if( m_terminate )
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
-                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 || m_pendingCallstackSubframes != 0 )
+                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
+                m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() )
             {
                 continue;
             }
@@ -1871,44 +1872,55 @@ bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
     if( ev.hdr.idx >= (int)QueueType::StringData )
     {
         ptr += sizeof( QueueHeader ) + sizeof( QueueStringTransfer );
-        uint16_t sz;
-        memcpy( &sz, ptr, sizeof( sz ) );
-        ptr += sizeof( sz );
-        switch( ev.hdr.type )
+        if( ev.hdr.type == QueueType::FrameImageData )
         {
-        case QueueType::CustomStringData:
-            AddCustomString( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::StringData:
-            AddString( ev.stringTransfer.ptr, ptr, sz );
-            m_serverQuerySpaceLeft++;
-            break;
-        case QueueType::ThreadName:
-            AddThreadString( ev.stringTransfer.ptr, ptr, sz );
-            m_serverQuerySpaceLeft++;
-            break;
-        case QueueType::PlotName:
-            HandlePlotName( ev.stringTransfer.ptr, ptr, sz );
-            m_serverQuerySpaceLeft++;
-            break;
-        case QueueType::SourceLocationPayload:
-            AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::CallstackPayload:
-            AddCallstackPayload( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::FrameName:
-            HandleFrameName( ev.stringTransfer.ptr, ptr, sz );
-            m_serverQuerySpaceLeft++;
-            break;
-        case QueueType::CallstackAllocPayload:
-            AddCallstackAllocPayload( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        default:
-            assert( false );
-            break;
+            uint32_t sz;
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            AddFrameImageData( ev.stringTransfer.ptr, ptr, sz );
+            ptr += sz;
         }
-        ptr += sz;
+        else
+        {
+            uint16_t sz;
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            switch( ev.hdr.type )
+            {
+            case QueueType::CustomStringData:
+                AddCustomString( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            case QueueType::StringData:
+                AddString( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::ThreadName:
+                AddThreadString( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::PlotName:
+                HandlePlotName( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::SourceLocationPayload:
+                AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            case QueueType::CallstackPayload:
+                AddCallstackPayload( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            case QueueType::FrameName:
+                HandleFrameName( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::CallstackAllocPayload:
+                AddCallstackAllocPayload( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            default:
+                assert( false );
+                break;
+            }
+            ptr += sz;
+        }
         return true;
     }
     else
@@ -2223,6 +2235,14 @@ void Worker::AddCustomString( uint64_t ptr, char* str, size_t sz )
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
 }
 
+void Worker::AddFrameImageData( uint64_t ptr, char* data, size_t sz )
+{
+    assert( m_pendingFrameImageData.find( ptr ) == m_pendingFrameImageData.end() );
+    auto image = m_slab.AllocBig( sz );
+    memcpy( image, data, sz );
+    m_pendingFrameImageData.emplace( ptr, image );
+}
+
 uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
 {
     assert( id.sel == 0 );
@@ -2485,6 +2505,9 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::FrameMarkMsgEnd:
         ProcessFrameMarkEnd( ev.frameMark );
+        break;
+    case QueueType::FrameImage:
+        ProcessFrameImage( ev.frameImage );
         break;
     case QueueType::SourceLocation:
         AddSourceLocation( ev.srcloc );
@@ -2846,6 +2869,22 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     assert( fd->frames.back().end == -1 );
     fd->frames.back().end = time;
     m_data.lastTime = std::max( m_data.lastTime, time );
+}
+
+void Worker::ProcessFrameImage( const QueueFrameImage& ev )
+{
+    auto it = m_pendingFrameImageData.find( ev.image );
+    assert( it != m_pendingFrameImageData.end() );
+
+    auto fi = m_slab.Alloc<FrameImage>();
+    fi->ptr = (const char*)it->second;
+    fi->w = ev.w;
+    fi->h = ev.h;
+
+    const auto idx = m_data.frameImage.size();
+    m_data.frameImage.push_back( fi );
+
+    m_pendingFrameImageData.erase( it );
 }
 
 void Worker::ProcessZoneText( const QueueZoneText& ev )

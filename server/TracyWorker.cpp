@@ -1729,8 +1729,8 @@ void Worker::Exec()
         }
         m_timerMul = welcome.timerMul;
         const auto initEnd = TscTime( welcome.initEnd );
-        m_data.framesBase->frames.push_back( FrameEvent{ TscTime( welcome.initBegin ), -1 } );
-        m_data.framesBase->frames.push_back( FrameEvent{ initEnd, -1 } );
+        m_data.framesBase->frames.push_back( FrameEvent{ TscTime( welcome.initBegin ), -1, -1 } );
+        m_data.framesBase->frames.push_back( FrameEvent{ initEnd, -1, -1 } );
         m_data.lastTime = initEnd;
         m_delay = TscTime( welcome.delay );
         m_resolution = TscTime( welcome.resolution );
@@ -2826,7 +2826,7 @@ void Worker::ProcessFrameMark( const QueueFrameMark& ev )
     assert( fd->continuous == 1 );
     const auto time = TscTime( ev.time );
     assert( fd->frames.empty() || fd->frames.back().start <= time );
-    fd->frames.push_back( FrameEvent{ time, -1 } );
+    fd->frames.push_back( FrameEvent{ time, -1, -1 } );
     m_data.lastTime = std::max( m_data.lastTime, time );
 }
 
@@ -2844,7 +2844,7 @@ void Worker::ProcessFrameMarkStart( const QueueFrameMark& ev )
     assert( fd->continuous == 0 );
     const auto time = TscTime( ev.time );
     assert( fd->frames.empty() || ( fd->frames.back().end <= time && fd->frames.back().end != -1 ) );
-    fd->frames.push_back( FrameEvent{ time, -1 } );
+    fd->frames.push_back( FrameEvent{ time, -1, -1 } );
     m_data.lastTime = std::max( m_data.lastTime, time );
 }
 
@@ -2880,9 +2880,10 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     fi->ptr = (const char*)it->second;
     fi->w = ev.w;
     fi->h = ev.h;
+    m_data.frameImage.push_back( fi );
 
     const auto idx = m_data.frameImage.size();
-    m_data.frameImage.push_back( fi );
+    m_data.framesBase->frames.back().frameImage = idx;
 
     m_pendingFrameImageData.erase( it );
 }

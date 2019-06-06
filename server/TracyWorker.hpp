@@ -257,6 +257,7 @@ public:
     uint64_t GetSrcLocCount() const { return m_data.sourceLocationPayload.size() + m_data.sourceLocation.size(); }
     uint64_t GetCallstackPayloadCount() const { return m_data.callstackPayload.size() - 1; }
     uint64_t GetCallstackFrameCount() const { return m_data.callstackFrameMap.size(); }
+    uint64_t GetFrameImageCount() const { return m_data.frameImage.size(); }
     uint64_t GetFrameOffset() const { return m_data.frameOffset; }
     const FrameData* GetFramesBase() const { return m_data.framesBase; }
     const Vector<FrameData*>& GetFrames() const { return m_data.frames.Data(); }

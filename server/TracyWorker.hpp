@@ -58,7 +58,8 @@ struct LoadProgress
         GpuZones,
         Plots,
         Memory,
-        CallStacks
+        CallStacks,
+        FrameImages
     };
 
     LoadProgress() : total( 0 ), progress( 0 ), subTotal( 0 ), subProgress( 0 ) {}

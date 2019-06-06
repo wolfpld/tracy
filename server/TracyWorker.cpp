@@ -296,9 +296,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         s_loadProgress.total.store( 7, std::memory_order_relaxed );
     }
-    else
+    else if( fileVer <= FileVersion( 0, 4, 8 ) )
     {
         s_loadProgress.total.store( 8, std::memory_order_relaxed );
+    }
+    else
+    {
+        s_loadProgress.total.store( 9, std::memory_order_relaxed );
     }
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
@@ -1231,12 +1235,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
     if( fileVer >= FileVersion( 0, 4, 9 ) )
     {
+        s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
+        s_loadProgress.progress.store( LoadProgress::FrameImages, std::memory_order_relaxed );
+
         if( eventMask & EventType::FrameImages )
         {
             f.Read( sz );
             m_data.frameImage.reserve_exact( sz, m_slab );
+            s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
             for( uint64_t i=0; i<sz; i++ )
             {
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 auto fi = m_slab.Alloc<FrameImage>();
                 f.Read2( fi->w, fi->h );
                 const auto sz = fi->w * fi->h * 4;

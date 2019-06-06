@@ -446,6 +446,9 @@ int main( int argc, char** argv )
             case tracy::LoadProgress::CallStacks:
                 ImGui::TextUnformatted( "Call stacks..." );
                 break;
+            case tracy::LoadProgress::FrameImages:
+                ImGui::TextUnformatted( "Frame images..." );
+                break;
             default:
                 assert( false );
                 break;

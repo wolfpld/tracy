@@ -1653,7 +1653,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
                 {
                     UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
                 }
-                ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+                ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
             }
             ImGui::EndTooltip();
 

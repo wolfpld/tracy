@@ -1459,7 +1459,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     ptr = MemRead<uint64_t>( &item->frameImage.image );
                     const auto w = MemRead<uint16_t>( &item->frameImage.w );
                     const auto h = MemRead<uint16_t>( &item->frameImage.h );
-                    const auto csz = w * h / 2;
+                    const auto csz = size_t( w * h / 2 );
                     if( csz > m_etc1BufSize )
                     {
                         tracy_free( m_etc1Buf );

@@ -2954,7 +2954,12 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
     const auto idx = m_data.frameImage.size();
     m_data.frameImage.push_back( fi );
-    m_data.framesBase->frames.back().frameImage = idx;
+
+    auto& frames = m_data.framesBase->frames;
+    const auto fidx = (int64_t)frames.size() - 1 - ev.offset;
+    assert( fidx >= 0 );
+    assert( frames[fidx].frameImage == -1 );
+    frames[fidx].frameImage = idx;
 
     m_pendingFrameImageData.erase( it );
 }

@@ -5,6 +5,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#if defined __AVX__ && !defined __SSE4_1__
+#  define __SSE4_1__
+#endif
+
 #ifdef __SSE4_1__
 #  ifdef _MSC_VER
 #    include <intrin.h>

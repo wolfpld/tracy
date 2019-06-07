@@ -105,6 +105,7 @@ struct QueueFrameImage
     uint64_t image;     // ptr
     uint16_t w;
     uint16_t h;
+    uint8_t offset;
 };
 
 struct QueueSourceLocation

@@ -44,8 +44,8 @@ struct ThreadNameData
     const char* name;
     ThreadNameData* next;
 };
-std::atomic<ThreadNameData*>& GetThreadNameData();
-void InitRPMallocThread();
+TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData();
+TRACY_API void InitRPMallocThread();
 #endif
 
 void SetThreadName( std::thread& thread, const char* name )

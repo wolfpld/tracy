@@ -13,6 +13,8 @@
 
 #include <stddef.h>
 
+#include "../common/TracyApi.h"
+
 namespace tracy
 {
 
@@ -103,7 +105,7 @@ rpmalloc_config(void);
 extern void
 rpmalloc_finalize(void);
 
-extern void
+void
 rpmalloc_thread_initialize(void);
 
 extern void
@@ -121,10 +123,10 @@ rpmalloc_thread_statistics(rpmalloc_thread_statistics_t* stats);
 extern void
 rpmalloc_global_statistics(rpmalloc_global_statistics_t* stats);
 
-extern RPMALLOC_RESTRICT void*
+TRACY_API RPMALLOC_RESTRICT void*
 rpmalloc(size_t size) RPMALLOC_ATTRIBUTE;
 
-extern void
+TRACY_API void
 rpfree(void* ptr);
 
 extern RPMALLOC_RESTRICT void*

@@ -18,6 +18,8 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 #include <stdint.h>
 #include <thread>
 
+#include "TracyApi.h"
+
 namespace tracy
 {
 

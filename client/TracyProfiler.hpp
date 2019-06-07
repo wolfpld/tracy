@@ -53,11 +53,11 @@ struct GpuCtxWrapper
     GpuCtx* ptr;
 };
 
-moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
-Profiler& GetProfiler();
-std::atomic<uint32_t>& GetLockCounter();
-std::atomic<uint8_t>& GetGpuCtxCounter();
-GpuCtxWrapper& GetGpuCtx();
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
+TRACY_API Profiler& GetProfiler();
+TRACY_API std::atomic<uint32_t>& GetLockCounter();
+TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter();
+TRACY_API GpuCtxWrapper& GetGpuCtx();
 
 void InitRPMallocThread();
 

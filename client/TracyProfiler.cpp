@@ -772,12 +772,12 @@ static Thread* s_thread;
 
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
-moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
 
 struct RPMallocInit { RPMallocInit() { rpmalloc_initialize(); } };
 struct RPMallocThreadInit { RPMallocThreadInit() { rpmalloc_thread_initialize(); } };
 
-void InitRPMallocThread()
+TRACY_API void InitRPMallocThread()
 {
     rpmalloc_initialize();
     rpmalloc_thread_initialize();
@@ -834,24 +834,24 @@ static ProfilerThreadData& GetProfilerThreadData()
     return data;
 }
 
-moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetProfilerThreadData().token.ptr; }
-Profiler& GetProfiler() { return GetProfilerData().profiler; }
-moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return GetProfilerData().queue; }
-int64_t GetInitTime() { return GetProfilerData().initTime; }
-std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
-std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
-GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetProfilerThreadData().token.ptr; }
+TRACY_API Profiler& GetProfiler() { return GetProfilerData().profiler; }
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return GetProfilerData().queue; }
+TRACY_API int64_t GetInitTime() { return GetProfilerData().initTime; }
+TRACY_API std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
+TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
+TRACY_API GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
 
 #  ifdef TRACY_COLLECT_THREAD_NAMES
-std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
+TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
 #  endif
 
 #  ifdef TRACY_ON_DEMAND
-LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
+TRACY_API LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
 #  endif
 
 #else
-void InitRPMallocThread()
+TRACY_API void InitRPMallocThread()
 {
     rpmalloc_thread_initialize();
 }
@@ -893,50 +893,21 @@ thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 
 static Profiler init_order(105) s_profiler;
 
-moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
-Profiler& GetProfiler() { return s_profiler; }
-moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
-int64_t GetInitTime() { return s_initTime.val; }
-std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
-std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
-GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
+TRACY_API Profiler& GetProfiler() { return s_profiler; }
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
+TRACY_API int64_t GetInitTime() { return s_initTime.val; }
+TRACY_API std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
+TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
+TRACY_API GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
 
 #  ifdef TRACY_COLLECT_THREAD_NAMES
-std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
+TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
 #  endif
 
 #  ifdef TRACY_ON_DEMAND
-LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
+TRACY_API LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
 #  endif
-#endif
-
-// DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
-#ifdef _WIN32
-#  define DLL_EXPORT __declspec(dllexport)
-#else
-#  define DLL_EXPORT __attribute__((visibility("default")))
-#endif
-
-DLL_EXPORT void*(*get_rpmalloc())(size_t size) { return rpmalloc; }
-DLL_EXPORT void(*get_rpfree())(void* ptr) { return rpfree; }
-DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*get_token())() { return GetToken; }
-DLL_EXPORT Profiler&(*get_profiler())() { return GetProfiler; }
-DLL_EXPORT std::atomic<uint32_t>&(*get_getlockcounter())() { return GetLockCounter; }
-DLL_EXPORT std::atomic<uint8_t>&(*get_getgpuctxcounter())() { return GetGpuCtxCounter; }
-DLL_EXPORT GpuCtxWrapper&(*get_getgpuctx())() { return GetGpuCtx; }
-
-#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
-DLL_EXPORT int64_t(*get_GetTimeImpl())() { return GetTimeImpl; }
-#endif
-
-#ifdef TRACY_COLLECT_THREAD_NAMES
-DLL_EXPORT std::atomic<ThreadNameData*>&(*get_getthreadnamedata())() { return GetThreadNameData; }
-DLL_EXPORT void(*get_rpmalloc_thread_initialize())() { return rpmalloc_thread_initialize; }
-DLL_EXPORT void(*get_InitRPMallocThread())() { return InitRPMallocThread; }
-#endif
-
-#ifdef TRACY_ON_DEMAND
-DLL_EXPORT LuaZoneState&(*get_getluazonestate())() { return GetLuaZoneState; }
 #endif
 
 enum { BulkSize = TargetFrameSize / QueueItemSize };

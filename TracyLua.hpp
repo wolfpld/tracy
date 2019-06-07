@@ -136,7 +136,7 @@ namespace tracy
 {
 
 #ifdef TRACY_ON_DEMAND
-LuaZoneState& GetLuaZoneState();
+TRACY_API LuaZoneState& GetLuaZoneState();
 #endif
 
 namespace detail

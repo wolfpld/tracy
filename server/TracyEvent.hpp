@@ -360,6 +360,7 @@ struct SourceLocationComparator
 struct FrameImage
 {
     const char* ptr;
+    uint32_t csz;
     uint16_t w, h;
 };
 

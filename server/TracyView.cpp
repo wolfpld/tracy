@@ -1271,7 +1271,7 @@ void View::DrawFrames()
                     if( fi != m_frameTexturePtr )
                     {
                         if( !m_frameTexture ) m_frameTexture = MakeTexture();
-                        UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
+                        UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
                         m_frameTexturePtr = fi;
                     }
                     ImGui::Separator();
@@ -1659,7 +1659,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
                 if( fi != m_frameTexturePtr )
                 {
                     if( !m_frameTexture ) m_frameTexture = MakeTexture();
-                    UpdateTexture( m_frameTexture, fi->ptr, fi->w, fi->h );
+                    UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
                     m_frameTexturePtr = fi;
                 }
                 ImGui::Separator();

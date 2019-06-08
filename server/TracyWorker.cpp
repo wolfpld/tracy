@@ -1240,6 +1240,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
         if( eventMask & EventType::FrameImages )
         {
+            size_t tmpbufsz = 0;
+            char* tmpbuf = nullptr;
             f.Read( sz );
             m_data.frameImage.reserve_exact( sz, m_slab );
             s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
@@ -1249,11 +1251,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 auto fi = m_slab.Alloc<FrameImage>();
                 f.Read2( fi->w, fi->h );
                 const auto sz = fi->w * fi->h / 2;
-                auto ptr = (char*)m_slab.AllocBig( sz );
-                f.Read( ptr, sz );
-                fi->ptr = ptr;
+                if( tmpbufsz < sz )
+                {
+                    tmpbufsz = sz;
+                    delete[] tmpbuf;
+                    tmpbuf = new char[sz];
+                }
+                f.Read( tmpbuf, sz );
+                fi->ptr = PackFrameImage( tmpbuf, fi->w, fi->h, fi->csz );
                 m_data.frameImage[i] = fi;
             }
+            delete[] tmpbuf;
         }
         else
         {
@@ -1324,6 +1332,8 @@ Worker::~Worker()
 
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );
+
+    delete[] m_frameImageBuffer;
 
     for( auto& v : m_data.threads )
     {
@@ -2948,7 +2958,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     assert( it != m_pendingFrameImageData.end() );
 
     auto fi = m_slab.Alloc<FrameImage>();
-    fi->ptr = (const char*)it->second;
+    fi->ptr = PackFrameImage( (const char*)it->second, ev.w, ev.h, fi->csz );
     fi->w = ev.w;
     fi->h = ev.h;
 
@@ -4331,7 +4341,8 @@ void Worker::Write( FileWrite& f )
     {
         f.Write( &fi->w, sizeof( fi->w ) );
         f.Write( &fi->h, sizeof( fi->h ) );
-        f.Write( fi->ptr, fi->w * fi->h / 2 );
+        const auto image = UnpackFrameImage( *fi );
+        f.Write( image, fi->w * fi->h / 2 );
     }
 }
 
@@ -4407,6 +4418,36 @@ static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)
 const char* Worker::GetFailureString( Worker::Failure failure )
 {
     return s_failureReasons[(int)failure];
+}
+
+const char* Worker::PackFrameImage( const char* image, uint16_t w, uint16_t h, uint32_t& csz )
+{
+    const auto insz = size_t( w ) * size_t( h ) / 2;
+    const auto maxout = LZ4_COMPRESSBOUND( insz );
+    if( m_frameImageBufferSize < maxout )
+    {
+        m_frameImageBufferSize = maxout;
+        delete[] m_frameImageBuffer;
+        m_frameImageBuffer = new char[maxout];
+    }
+    const auto outsz = LZ4_compress_default( image, m_frameImageBuffer, insz, maxout );
+    csz = uint32_t( outsz );
+    auto ptr = (char*)m_slab.AllocBig( outsz );
+    memcpy( ptr, m_frameImageBuffer, outsz );
+    return ptr;
+}
+
+const char* Worker::UnpackFrameImage( const FrameImage& image )
+{
+    const auto outsz = size_t( image.w ) * size_t( image.h ) / 2;
+    if( m_frameImageBufferSize < outsz )
+    {
+        m_frameImageBufferSize = outsz;
+        delete[] m_frameImageBuffer;
+        m_frameImageBuffer = new char[outsz];
+    }
+    LZ4_decompress_safe( image.ptr, m_frameImageBuffer, image.csz, outsz );
+    return m_frameImageBuffer;
 }
 
 }

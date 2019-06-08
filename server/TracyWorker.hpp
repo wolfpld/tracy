@@ -345,6 +345,9 @@ public:
     const FailureData& GetFailureData() const { return m_failureData; }
     static const char* GetFailureString( Failure failure );
 
+    const char* PackFrameImage( const char* image, uint16_t w, uint16_t h, uint32_t& csz );
+    const char* UnpackFrameImage( const FrameImage& image );
+
 private:
     void Exec();
     void Query( ServerQuery type, uint64_t data );
@@ -532,6 +535,9 @@ private:
 
     Vector<ServerQueryPacket> m_serverQueryQueue;
     size_t m_serverQuerySpaceLeft;
+
+    char* m_frameImageBuffer = nullptr;
+    size_t m_frameImageBufferSize = 0;
 };
 
 }

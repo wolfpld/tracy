@@ -507,6 +507,7 @@ while(!m_fiQueue.empty())
     const auto fiIdx = m_fiQueue.front();
     assert(fiIdx != m_fiIdx);
     if(glClientWaitSync(m_fiFence[fiIdx], 0, 0) == GL_TIMEOUT_EXPIRED) break;
+    glDeleteSync(m_fiFence[fiIdx]);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, m_fiPbo[fiIdx]);
     auto ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 320*180*4, GL_MAP_READ_BIT);
     FrameImage(ptr, 320, 180, m_fiQueue.size());

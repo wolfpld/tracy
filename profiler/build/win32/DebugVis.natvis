@@ -19,4 +19,14 @@
       </ArrayItems>
     </Expand>
   </Type>
+  <Type Name="tracy::FastVector&lt;*&gt;">
+    <DisplayString>{{ size={m_write - m_ptr} }}</DisplayString>
+    <Expand>
+      <Item Name="[capacity]" ExcludeView="simple">m_end - m_ptr</Item>
+      <ArrayItems>
+        <Size>m_write - m_ptr</Size>
+        <ValuePointer>m_ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
 </AutoVisualizer>

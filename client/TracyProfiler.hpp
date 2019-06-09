@@ -407,7 +407,7 @@ public:
 #ifdef TRACY_ON_DEMAND
     tracy_force_inline bool IsConnected()
     {
-        return m_isConnected.load( std::memory_order_relaxed );
+        return m_isConnected.load( std::memory_order_acquire );
     }
 
     tracy_force_inline void DeferItem( const QueueItem& item )

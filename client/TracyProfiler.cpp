@@ -1162,7 +1162,7 @@ void Profiler::Worker()
 
 #ifdef TRACY_ON_DEMAND
         ClearQueues( token );
-        m_isConnected.store( true, std::memory_order_relaxed );
+        m_isConnected.store( true, std::memory_order_release );
 #endif
 
         HandshakeStatus handshake = HandshakeWelcome;
@@ -1232,7 +1232,7 @@ void Profiler::Worker()
         if( ShouldExit() ) break;
 
 #ifdef TRACY_ON_DEMAND
-        m_isConnected.store( false, std::memory_order_relaxed );
+        m_isConnected.store( false, std::memory_order_release );
 #endif
 
         m_sock->~Socket();

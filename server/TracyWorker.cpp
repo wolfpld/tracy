@@ -1340,6 +1340,7 @@ Worker::~Worker()
         v->timeline.~Vector();
         v->stack.~Vector();
         v->messages.~Vector();
+        v->zoneIdStack.~Vector();
     }
     for( auto& v : m_data.gpuData )
     {

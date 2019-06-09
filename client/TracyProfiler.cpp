@@ -1322,7 +1322,6 @@ void Profiler::Worker()
             {
                 if( !HandleServerQuery() )
                 {
-                    if( m_bufferOffset != m_bufferStart ) CommitData();
                     m_shutdownFinished.store( true, std::memory_order_relaxed );
                     return;
                 }

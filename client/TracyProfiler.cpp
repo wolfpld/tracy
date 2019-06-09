@@ -1224,10 +1224,12 @@ void Profiler::Worker()
                 keepAlive = 0;
             }
 
-            while( m_sock->HasData() )
+            bool connActive = true;
+            while( m_sock->HasData() && connActive )
             {
-                if( !HandleServerQuery() ) break;
+                connActive = HandleServerQuery();
             }
+            if( !connActive ) break;
         }
         if( ShouldExit() ) break;
 

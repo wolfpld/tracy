@@ -1291,7 +1291,8 @@ void Profiler::Worker()
         const auto serialStatus = DequeueSerial();
         if( status == DequeueStatus::ConnectionLost || serialStatus == DequeueStatus::ConnectionLost )
         {
-            break;
+            m_shutdownFinished.store( true, std::memory_order_relaxed );
+            return;
         }
         else if( status == DequeueStatus::QueueEmpty && serialStatus == DequeueStatus::QueueEmpty )
         {
@@ -1301,7 +1302,11 @@ void Profiler::Worker()
 
         while( m_sock->HasData() )
         {
-            if( !HandleServerQuery() ) break;
+            if( !HandleServerQuery() )
+            {
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
+            }
         }
     }
 

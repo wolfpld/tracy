@@ -428,9 +428,9 @@ It is possible to attach a screen capture of your application to any frame in th
 
 Images are sent using the \texttt{FrameImage(image, width, height, offset)} macro, where \texttt{image} is a pointer to BGRA\footnote{Alpha value is ignored, but leaving it out wouldn't map well to the way graphics hardware works.} pixel data, \texttt{width} and \texttt{height} are the image dimensions, which \emph{must be divisible by 4}, and \texttt{offset} specifies how much frame lag was there for the current image (see chapter~\ref{screenshotcode}).
 
-Handling image data requires a lot of memory and bandwidth\footnote{One uncompressed 1080p image takes 8 MB.}, To achieve sane memory usage you should scale down taken screen shots to a sensible size, e.g. $320\times180$.
+Handling image data requires a lot of memory and bandwidth\footnote{One uncompressed 1080p image takes 8 MB.}. To achieve sane memory usage you should scale down taken screen shots to a sensible size, e.g. $320\times180$.
 
-To further reduce image data size, frame images are internally compressed using the Ericsson Texture Compression (ETC1) technique, which significantly reduces data size\footnote{One pixel is stored in a nibble (4 bits) instead of 32 bits.}, at a small quality decrease. The compression algorithm is very fast and can be made even faster by enabling SIMD processing, as indicated in table~\ref{EtcSimd}.
+To further reduce image data size, frame images are internally compressed using the Ericsson Texture Compression (ETC1) technique\footnote{\url{https://en.wikipedia.org/wiki/Ericsson_Texture_Compression}}, which significantly reduces data size\footnote{One pixel is stored in a nibble (4 bits) instead of 32 bits.}, at a small quality decrease. The compression algorithm is very fast and can be made even faster by enabling SIMD processing, as indicated in table~\ref{EtcSimd}.
 
 \begin{table}[h]
 \centering
@@ -449,9 +449,9 @@ x86 AVX2 & \texttt{\_\_AVX2\_\_} & 228 \si{\micro\second} & 142 \si{\micro\secon
 
 There are many pitfalls associated with retrieving screen contents in an efficient way. For example, using \texttt{glReadPixels} and then resizing the image using some library (e.g. \emph{stb\_image\_resize}) is terrible for performance, as it forces synchronization of the GPU to CPU and performs the downscaling in software. To do things properly we need to scale the image using the graphics hardware and transfer data asynchronously, which allows the GPU to run independently of CPU.
 
-The following example shows how this can be achieved using OpenGL 3.2. More recent OpenGL versions allow to do things even better (for example by using persistent buffer mapping), but it won't be covered here.
+The following example shows how this can be achieved using OpenGL 3.2. More recent OpenGL versions allow doing things even better (for example by using persistent buffer mapping), but it won't be covered here.
 
-Let's begin by defining the required objects. We need a \emph{texture} to store the resized image, a \emph{framebuffer object} to be able to write to the texture, a \emph{pixel buffer object} to store the image data for access by the CPU and a \emph{fence} to know when the data are ready for retrieval. We need everything in \emph{at least} four copies, because the rendering, as we see it in program, may be ahead of the GPU by a couple frames. We need an index to access the appropriate data set in a ring-buffer manner. And finally, we need to store in a queue indices to data sets that we are still waiting for.
+Let's begin by defining the required objects. We need a \emph{texture} to store the resized image, a \emph{framebuffer object} to be able to write to the texture, a \emph{pixel buffer object} to store the image data for access by the CPU and a \emph{fence} to know when the data is ready for retrieval. We need everything in \emph{at least} three copies (we'll use four), because the rendering, as seen in program, may be ahead of the GPU by a couple frames. We need an index to access the appropriate data set in a ring-buffer manner. And finally, we need a queue to store indices to data sets that we are still waiting for.
 
 \begin{lstlisting}
 GLuint m_fiTexture[4];
@@ -484,9 +484,10 @@ for(int i=0; i<4; i++)
 }
 \end{lstlisting}
 
-We will now setup a screen capture, which will downscale the screen contents to $320\times180$ pixels and copy the resulting image to a buffer which will be accessible by the CPU when the operation is done. This should be done right before \emph{swap buffers} or \emph{present} call.
+We will now setup a screen capture, which will downscale the screen contents to $320\times180$ pixels and copy the resulting image to a buffer which will be accessible by the CPU when the operation is done. This should be placed right before \emph{swap buffers} or \emph{present} call.
 
 \begin{lstlisting}
+assert(m_fiQueue.empty() || m_fiQueue.front() != m_fiIdx);	// check for buffer overrun
 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fiFramebuffer[m_fiIdx]);
 glBlitFramebuffer(0, 0, res.x, res.y, 0, 0, 320, 180, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -499,13 +500,12 @@ m_fiQueue.emplace_back(m_fiIdx);
 m_fiIdx = (m_fiIdx + 1) % 4;
 \end{lstlisting}
 
-And lastly, just before the capture setup code\footnote{Yes, before. We are handling past screen captures here.} we need to have the image retrieval code. We are checking if the capture operation has finished and if it has, we map the \emph{pixel buffer object} to memory, inform the profiler that there's image data to be handled, unmap the buffer and go to check the next queue item. If a capture is still pending, we break out of the loop and wait until the next frame to check if the GPU has finished the capture.
+And lastly, just before the capture setup code that was just added\footnote{Yes, before. We are handling past screen captures here.} we need to have the image retrieval code. We are checking if the capture operation has finished and if it has, we map the \emph{pixel buffer object} to memory, inform the profiler that there's image data to be handled, unmap the buffer and go to check the next queue item. If a capture is still pending, we break out of the loop and wait until the next frame to check if the GPU has finished the capture.
 
 \begin{lstlisting}
 while(!m_fiQueue.empty())
 {
     const auto fiIdx = m_fiQueue.front();
-    assert(fiIdx != m_fiIdx);
     if(glClientWaitSync(m_fiFence[fiIdx], 0, 0) == GL_TIMEOUT_EXPIRED) break;
     glDeleteSync(m_fiFence[fiIdx]);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, m_fiPbo[fiIdx]);
@@ -516,7 +516,7 @@ while(!m_fiQueue.empty())
 }
 \end{lstlisting}
 
-Notice that in the call to \texttt{FrameImage} we are passing the remaining queue size as the \texttt{offset} parameter. Queue size represents how many frames ahead our program is relative to the GPU. Since we are sending past frames images we need to specify how many frames back we currently are. Of course if this would be a synchronous capture (without use of fences), we would set \texttt{offset} to zero, as there would be no frame lag.
+Notice that in the call to \texttt{FrameImage} we are passing the remaining queue size as the \texttt{offset} parameter. Queue size represents how many frames ahead our program is relative to the GPU. Since we are sending past frame images we need to specify how many frames behind the images are. Of course if this would be a synchronous capture (without use of fences and with retrieval code after the capture setup), we would set \texttt{offset} to zero, as there would be no frame lag.
 
 \subsection{Marking zones}
 \label{markingzones}

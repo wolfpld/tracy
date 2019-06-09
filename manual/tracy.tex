@@ -447,7 +447,7 @@ x86 AVX2 & \texttt{\_\_AVX2\_\_} & 228 \si{\micro\second} & 142 \si{\micro\secon
 \paragraph{OpenGL screen capture code example}
 \label{screenshotcode}
 
-There are many pitfalls associated with retrieving screen contents in an efficient way. For example, using \texttt{glReadPixels} and then resizing the image using some library (e.g. \emph{stb\_image\_resize}) is terrible for performance, as it forces synchronization of the GPU to CPU and performs the downscaling in software. To do things properly we need to scale the image using the graphics hardware and transfer data asynchronously, which allows the GPU to run independently of CPU.
+There are many pitfalls associated with retrieving screen contents in an efficient way. For example, using \texttt{glReadPixels} and then resizing the image using some library is terrible for performance, as it forces synchronization of the GPU to CPU and performs the downscaling in software. To do things properly we need to scale the image using the graphics hardware and transfer data asynchronously, which allows the GPU to run independently of CPU.
 
 The following example shows how this can be achieved using OpenGL 3.2. More recent OpenGL versions allow doing things even better (for example by using persistent buffer mapping), but it won't be covered here.
 
@@ -517,6 +517,19 @@ while(!m_fiQueue.empty())
 \end{lstlisting}
 
 Notice that in the call to \texttt{FrameImage} we are passing the remaining queue size as the \texttt{offset} parameter. Queue size represents how many frames ahead our program is relative to the GPU. Since we are sending past frame images we need to specify how many frames behind the images are. Of course if this would be a synchronous capture (without use of fences and with retrieval code after the capture setup), we would set \texttt{offset} to zero, as there would be no frame lag.
+
+You can see the performance boost you may expect in table~\ref{asynccapture}. The na\"ive capture performs synchronous retrieval of full screen image and resizes it using \emph{stb\_image\_resize}. The proper capture does things as described in this chapter.
+
+\begin{table}[h]
+\centering
+\begin{tabular}[h]{c|c|c}
+\textbf{Resolution} & \textbf{Na\"ive capture} & \textbf{Proper capture} \\ \hline
+$1280\times720$ & 80~FPS & 4200~FPS \\
+$2560\times1440$ & 23~FPS & 3300~FPS
+\end{tabular}
+\caption{Frame capture efficiency}
+\label{asynccapture}
+\end{table}
 
 \subsection{Marking zones}
 \label{markingzones}

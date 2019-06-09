@@ -426,7 +426,7 @@ logo=\bcbombe
 
 It is possible to attach a screen capture of your application to any frame in the main frame set. This can help you see the context of what's happening in various places in the trace. You need to implement retrieval of the image data from GPU by yourself.
 
-Images are sent using the \texttt{FrameImage(image, width, height, offset)} macro, where \texttt{image} is a pointer to BGRA\footnote{Alpha value is ignored, but leaving it out wouldn't map well to the way graphics hardware works.} pixel data, \texttt{width} and \texttt{height} are the image dimensions, which \emph{must be divisible by 4}, and \texttt{offset} specifies how much frame lag was there for the current image (see chapter~\ref{screenshotcode}).
+Images are sent using the \texttt{FrameImage(image, width, height, offset)} macro, where \texttt{image} is a pointer to BGRA\footnote{Alpha value is ignored, but leaving it out wouldn't map well to the way graphics hardware works.} pixel data, \texttt{width} and \texttt{height} are the image dimensions, which \emph{must be divisible by 4}, and \texttt{offset} specifies how much frame lag was there for the current image (see chapter~\ref{screenshotcode}). The image data is copied by the profiler and doesn't need to be retained.
 
 Handling image data requires a lot of memory and bandwidth\footnote{One uncompressed 1080p image takes 8 MB.}. To achieve sane memory usage you should scale down taken screen shots to a sensible size, e.g. $320\times180$.
 

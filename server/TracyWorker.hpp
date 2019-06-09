@@ -353,6 +353,7 @@ public:
 private:
     void Exec();
     void Query( ServerQuery type, uint64_t data );
+    void QueryTerminate();
 
     tracy_force_inline bool DispatchProcess( const QueueItem& ev, char*& ptr );
     tracy_force_inline bool Process( const QueueItem& ev );

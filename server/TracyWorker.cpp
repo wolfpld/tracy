@@ -1841,7 +1841,7 @@ void Worker::Exec()
         }
     }
 
-    m_serverQuerySpaceLeft = m_sock.GetSendBufSize() / ServerQueryPacketSize;
+    m_serverQuerySpaceLeft = ( m_sock.GetSendBufSize() / ServerQueryPacketSize ) - ServerQueryPacketSize;   // leave space for terminate request
     m_hasData.store( true, std::memory_order_release );
 
     LZ4_setStreamDecode( m_stream, nullptr, 0 );
@@ -1936,7 +1936,7 @@ close:
 
 void Worker::Query( ServerQuery type, uint64_t data )
 {
-    ServerQueryPacket query = { type, data };
+    ServerQueryPacket query { type, data };
     if( m_serverQuerySpaceLeft > 0 )
     {
         m_serverQuerySpaceLeft--;
@@ -1946,6 +1946,12 @@ void Worker::Query( ServerQuery type, uint64_t data )
     {
         m_serverQueryQueue.insert( m_serverQueryQueue.begin(), query );
     }
+}
+
+void Worker::QueryTerminate()
+{
+    ServerQueryPacket query { ServerQueryTerminate, 0 };
+    m_sock.Send( &query, ServerQueryPacketSize );
 }
 
 bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )

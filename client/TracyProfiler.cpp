@@ -1105,8 +1105,12 @@ void Profiler::Worker()
         }
     }
 
+    // Connections loop.
+    // Each iteration of the loop handles whole connection. Multiple iterations will only
+    // happen in the on-demand mode or when handshake fails.
     for(;;)
     {
+        // Wait for incoming connection
         for(;;)
         {
 #ifndef TRACY_NO_EXIT
@@ -1123,6 +1127,7 @@ void Profiler::Worker()
 #endif
         }
 
+        // Handshake
         {
             char shibboleth[HandshakeShibbolethSize];
             auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, 2000 );
@@ -1178,6 +1183,7 @@ void Profiler::Worker()
         m_deferredLock.unlock();
 #endif
 
+        // Main communications loop
         int keepAlive = 0;
         for(;;)
         {
@@ -1230,7 +1236,7 @@ void Profiler::Worker()
         tracy_free( m_sock );
 
 #ifndef TRACY_ON_DEMAND
-        // Client is no longer available here
+        // Client is no longer available here. Accept incoming connections, but reject handshake.
         for(;;)
         {
             if( ShouldExit() )
@@ -1270,7 +1276,9 @@ void Profiler::Worker()
         }
 #endif
     }
+    // End of connections loop
 
+    // Client is exiting. Send items remaining in queues.
     for(;;)
     {
         const auto status = Dequeue( token );
@@ -1291,6 +1299,7 @@ void Profiler::Worker()
         }
     }
 
+    // Send client termination notice to the server
     QueueItem terminate;
     MemWrite( &terminate.hdr.type, QueueType::Terminate );
     if( !SendData( (const char*)&terminate, 1 ) )
@@ -1298,6 +1307,7 @@ void Profiler::Worker()
         m_shutdownFinished.store( true, std::memory_order_relaxed );
         return;
     }
+    // Handle remaining server queries
     for(;;)
     {
         if( m_sock->HasData() )

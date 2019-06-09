@@ -1851,7 +1851,11 @@ void Worker::Exec()
 
     for(;;)
     {
-        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+        if( m_shutdown.load( std::memory_order_relaxed ) )
+        {
+            QueryTerminate();
+            return;
+        }
 
         auto buf = m_buffer + m_bufferOffset;
         lz4sz_t lz4sz;
@@ -1871,7 +1875,11 @@ void Worker::Exec()
             while( ptr < end )
             {
                 auto ev = (const QueueItem*)ptr;
-                if( !DispatchProcess( *ev, ptr ) ) goto close;
+                if( !DispatchProcess( *ev, ptr ) )
+                {
+                    QueryTerminate();
+                    goto close;
+                }
             }
 
             m_bufferOffset += sz;

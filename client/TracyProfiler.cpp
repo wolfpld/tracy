@@ -964,6 +964,7 @@ Profiler::Profiler()
 #ifdef TRACY_ON_DEMAND
     , m_isConnected( false )
     , m_frameCount( 0 )
+    , m_connectionId( 0 )
     , m_deferredQueue( 64*1024 )
 #endif
 {
@@ -1162,6 +1163,7 @@ void Profiler::Worker()
 
 #ifdef TRACY_ON_DEMAND
         ClearQueues( token );
+        m_connectionId.fetch_add( 1, std::memory_order_release );
         m_isConnected.store( true, std::memory_order_release );
 #endif
 

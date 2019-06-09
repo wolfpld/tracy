@@ -18,6 +18,7 @@ public:
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )
+        , m_connectionId( GetProfiler().ConnectionId() )
 #else
         : m_active( is_active )
 #endif
@@ -45,6 +46,7 @@ public:
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
         : m_active( is_active && GetProfiler().IsConnected() )
+        , m_connectionId( GetProfiler().ConnectionId() )
 #else
         : m_active( is_active )
 #endif
@@ -74,6 +76,9 @@ public:
     tracy_force_inline ~ScopedZone()
     {
         if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+        if( GetProfiler().ConnectionId() != m_connectionId ) return;
+#endif
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
@@ -93,6 +98,9 @@ public:
     tracy_force_inline void Text( const char* txt, size_t size )
     {
         if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+        if( GetProfiler().ConnectionId() != m_connectionId ) return;
+#endif
         Magic magic;
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
@@ -109,6 +117,9 @@ public:
     tracy_force_inline void Name( const char* txt, size_t size )
     {
         if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+        if( GetProfiler().ConnectionId() != m_connectionId ) return;
+#endif
         Magic magic;
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
@@ -125,6 +136,10 @@ public:
 private:
     uint64_t m_thread;
     const bool m_active;
+
+#ifdef TRACY_ON_DEMAND
+    uint64_t m_connectionId;
+#endif
 };
 
 }

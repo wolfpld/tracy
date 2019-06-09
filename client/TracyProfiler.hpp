@@ -405,9 +405,14 @@ public:
     static bool ShouldExit();
 
 #ifdef TRACY_ON_DEMAND
-    tracy_force_inline bool IsConnected()
+    tracy_force_inline bool IsConnected() const
     {
         return m_isConnected.load( std::memory_order_acquire );
+    }
+
+    tracy_force_inline uint64_t ConnectionId() const
+    {
+        return m_connectionId.load( std::memory_order_acquire );
     }
 
     tracy_force_inline void DeferItem( const QueueItem& item )
@@ -529,6 +534,7 @@ private:
 #ifdef TRACY_ON_DEMAND
     std::atomic<bool> m_isConnected;
     std::atomic<uint64_t> m_frameCount;
+    std::atomic<uint64_t> m_connectionId;
 
     TracyMutex m_deferredLock;
     FastVector<QueueItem> m_deferredQueue;

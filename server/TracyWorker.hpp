@@ -231,6 +231,8 @@ public:
         ZoneName,
         MemFree,
         FrameEnd,
+        FrameImageIndex,
+        FrameImageTwice,
 
         NUM_FAILURES
     };
@@ -407,6 +409,8 @@ private:
     void ZoneNameFailure( uint64_t thread );
     void MemFreeFailure( uint64_t thread );
     void FrameEndFailure();
+    void FrameImageIndexFailure();
+    void FrameImageTwiceFailure();
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );

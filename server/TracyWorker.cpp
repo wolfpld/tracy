@@ -2887,6 +2887,20 @@ void Worker::FrameEndFailure()
     m_failureData.srcloc = 0;
 }
 
+void Worker::FrameImageIndexFailure()
+{
+    m_failure = Failure::FrameImageIndex;
+    m_failureData.thread = 0;
+    m_failureData.srcloc = 0;
+}
+
+void Worker::FrameImageTwiceFailure()
+{
+    m_failure = Failure::FrameImageTwice;
+    m_failureData.thread = 0;
+    m_failureData.srcloc = 0;
+}
+
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
     auto td = NoticeThread( ev.thread );
@@ -2957,6 +2971,19 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     auto it = m_pendingFrameImageData.find( ev.image );
     assert( it != m_pendingFrameImageData.end() );
 
+    auto& frames = m_data.framesBase->frames;
+    const auto fidx = (int64_t)frames.size() - 1 - ev.offset;
+    if( fidx <= 0 )
+    {
+        FrameImageIndexFailure();
+        return;
+    }
+    if( frames[fidx].frameImage >= 0 )
+    {
+        FrameImageTwiceFailure();
+        return;
+    }
+
     auto fi = m_slab.Alloc<FrameImage>();
     fi->ptr = PackFrameImage( (const char*)it->second, ev.w, ev.h, fi->csz );
     fi->w = ev.w;
@@ -2964,11 +2991,6 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
     const auto idx = m_data.frameImage.size();
     m_data.frameImage.push_back( fi );
-
-    auto& frames = m_data.framesBase->frames;
-    const auto fidx = (int64_t)frames.size() - 1 - ev.offset;
-    assert( fidx >= 0 );
-    assert( frames[fidx].frameImage == -1 );
     frames[fidx].frameImage = idx;
 
     m_pendingFrameImageData.erase( it );
@@ -4411,6 +4433,8 @@ static const char* s_failureReasons[] = {
     "Zone name transfer destination doesn't match active zone.",
     "Memory free event without a matching allocation.",
     "Discontinuous frame begin/end mismatch.",
+    "Frame image offset is invalid.",
+    "Multiple frame images were sent for a single frame.",
 };
 
 static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)Worker::Failure::NUM_FAILURES, "Missing failure reason description." );

@@ -275,6 +275,7 @@ ListenSocket::ListenSocket()
 
 ListenSocket::~ListenSocket()
 {
+    if( m_sock != -1 ) Close();
 }
 
 bool ListenSocket::Listen( const char* port, int backlog )

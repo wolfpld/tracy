@@ -423,7 +423,7 @@ public:
     bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
 
 private:
-    enum DequeueStatus { Success, ConnectionLost, QueueEmpty };
+    enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };
 
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();

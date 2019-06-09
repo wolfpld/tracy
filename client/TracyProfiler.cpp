@@ -1193,11 +1193,11 @@ void Profiler::Worker()
             ProcessSysTime();
             const auto status = Dequeue( token );
             const auto serialStatus = DequeueSerial();
-            if( status == ConnectionLost || serialStatus == ConnectionLost )
+            if( status == DequeueStatus::ConnectionLost || serialStatus == DequeueStatus::ConnectionLost )
             {
                 break;
             }
-            else if( status == QueueEmpty && serialStatus == QueueEmpty )
+            else if( status == DequeueStatus::QueueEmpty && serialStatus == DequeueStatus::QueueEmpty )
             {
                 if( ShouldExit() ) break;
                 if( m_bufferOffset != m_bufferStart )
@@ -1289,11 +1289,11 @@ void Profiler::Worker()
     {
         const auto status = Dequeue( token );
         const auto serialStatus = DequeueSerial();
-        if( status == ConnectionLost || serialStatus == ConnectionLost )
+        if( status == DequeueStatus::ConnectionLost || serialStatus == DequeueStatus::ConnectionLost )
         {
             break;
         }
-        else if( status == QueueEmpty && serialStatus == QueueEmpty )
+        else if( status == DequeueStatus::QueueEmpty && serialStatus == DequeueStatus::QueueEmpty )
         {
             if( m_bufferOffset != m_bufferStart ) CommitData();
             break;
@@ -1327,8 +1327,8 @@ void Profiler::Worker()
                     return;
                 }
             }
-            while( Dequeue( token ) == Success ) {}
-            while( DequeueSerial() == Success ) {}
+            while( Dequeue( token ) == DequeueStatus::Success ) {}
+            while( DequeueSerial() == DequeueStatus::Success ) {}
             if( m_bufferOffset != m_bufferStart )
             {
                 if( !CommitData() )
@@ -1491,15 +1491,15 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     break;
                 }
             }
-            if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
+            if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
             item++;
         }
     }
     else
     {
-        return QueueEmpty;
+        return DequeueStatus::QueueEmpty;
     }
-    return Success;
+    return DequeueStatus::Success;
 }
 
 Profiler::DequeueStatus Profiler::DequeueSerial()
@@ -1544,16 +1544,16 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     break;
                 }
             }
-            if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
+            if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
             item++;
         }
         m_serialDequeue.clear();
     }
     else
     {
-        return QueueEmpty;
+        return DequeueStatus::QueueEmpty;
     }
-    return Success;
+    return DequeueStatus::Success;
 }
 
 bool Profiler::AppendData( const void* data, size_t len )

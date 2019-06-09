@@ -2063,6 +2063,7 @@ void View::DrawZones()
 
         if( !m_drawEmptyLabels && showFull && depth == 0 && msgit == msgend && crash.thread != v->id )
         {
+            auto& vis = Vis( v );
             vis.height = 0;
             vis.offset = 0;
             offset = oldOffset;
@@ -2269,7 +2270,7 @@ void View::DrawZones()
             }
         }
 
-        AdjustThreadHeight( vis, oldOffset, offset );
+        AdjustThreadHeight( Vis( v ), oldOffset, offset );
         ImGui::PopClipRect();
     }
     m_lockHighlight = nextLockHighlight;

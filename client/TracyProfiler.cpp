@@ -1135,6 +1135,7 @@ void Profiler::Worker()
             {
                 m_sock->~Socket();
                 tracy_free( m_sock );
+                m_sock = nullptr;
                 continue;
             }
 
@@ -1144,6 +1145,7 @@ void Profiler::Worker()
             {
                 m_sock->~Socket();
                 tracy_free( m_sock );
+                m_sock = nullptr;
                 continue;
             }
 
@@ -1153,6 +1155,7 @@ void Profiler::Worker()
                 m_sock->Send( &status, sizeof( status ) );
                 m_sock->~Socket();
                 tracy_free( m_sock );
+                m_sock = nullptr;
                 continue;
             }
         }
@@ -1234,6 +1237,7 @@ void Profiler::Worker()
 
         m_sock->~Socket();
         tracy_free( m_sock );
+        m_sock = nullptr;
 
 #ifndef TRACY_ON_DEMAND
         // Client is no longer available here. Accept incoming connections, but reject handshake.
@@ -1256,6 +1260,7 @@ void Profiler::Worker()
                 {
                     m_sock->~Socket();
                     tracy_free( m_sock );
+                    m_sock = nullptr;
                     continue;
                 }
 
@@ -1265,6 +1270,7 @@ void Profiler::Worker()
                 {
                     m_sock->~Socket();
                     tracy_free( m_sock );
+                    m_sock = nullptr;
                     continue;
                 }
 

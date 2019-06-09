@@ -143,6 +143,7 @@ public:
     static tracy_force_inline void SendFrameMark( const char* name )
     {
 #ifdef TRACY_ON_DEMAND
+        if( !name ) GetProfiler().m_frameCount.fetch_add( 1, std::memory_order_relaxed );
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;

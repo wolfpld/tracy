@@ -2032,7 +2032,7 @@ void View::DrawZones()
             vis.offset = 0;
             continue;
         }
-        bool& showFull = vis.showFull;
+        bool showFull = vis.showFull;
 
         const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
         const auto oldOffset = offset;
@@ -2260,7 +2260,7 @@ void View::DrawZones()
 
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
-                    showFull = !showFull;
+                    Vis( v ).showFull = !showFull;
                 }
                 if( last >= 0 && ImGui::IsMouseClicked( 2 ) )
                 {

@@ -2973,7 +2973,12 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
     auto& frames = m_data.framesBase->frames;
     const auto fidx = (int64_t)frames.size() - 1 - ev.offset;
-    if( fidx <= 0 )
+    if( m_onDemand && fidx <= 1 )
+    {
+        m_pendingFrameImageData.erase( it );
+        return;
+    }
+    else if( fidx <= 0 )
     {
         FrameImageIndexFailure();
         return;

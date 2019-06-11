@@ -1906,7 +1906,7 @@ _memory_guard_block(void* block) {
 
 // Extern interface
 
-RPMALLOC_RESTRICT void*
+TRACY_API RPMALLOC_RESTRICT void*
 rpmalloc(size_t size) {
 #if ENABLE_VALIDATE_ARGS
 	if (size >= MAX_ALLOC_SIZE) {
@@ -1920,7 +1920,7 @@ rpmalloc(size_t size) {
 	return block;
 }
 
-void
+TRACY_API void
 rpfree(void* ptr) {
 	_memory_guard_validate(ptr);
 	_memory_deallocate(ptr);

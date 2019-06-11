@@ -1679,6 +1679,8 @@ The information about the selected memory allocation is displayed in this window
 
 This window contains various bits of information about profiler and the current trace. For example, you can see the profiler memory usage, the number of captured zones, lock events, plot points, memory allocations, etc.
 
+If frame images were captured (section~\ref{frameimages}), you will have option to open frame image playback window, described in chapter~\ref{playback}.
+
 There's also a section containing the selected frame set timing statistics and histogram\footnote{See section~\ref{findzone} for a description of the histogram. Note that there are subtle differences in the available functionality.}. As a convenience you can switch the active frame set here and limit the displayed frame statistics to the frame range visible on the screen.
 
 In this window you can view the information about the machine on which the profiled application was running. This includes the operating system, the used compiler, CPU name, amount of total available RAM, etc.
@@ -1766,6 +1768,13 @@ Source file view works on the local files you have on your disk. The traces them
 \label{lockwindow}
 
 This window presents information and statistics about a lock. The lock events count represents the total number collected of wait, obtain and release events. The announce, termination and lock lifetime measure the time from the lockable construction until destruction.
+
+\subsection{Frame image playback window}
+\label{playback}
+
+You may view a live replay of the profiled application screen captures (see section~\ref{frameimages}) using this window. Playback is controlled by the \emph{\faPlay~Play} and \emph{\faPause~Pause} buttons and the \emph{Frame image} slider can be used to scrub to the desired time stamp. Alternatively you may use the \emph{\faCaretLeft} and \emph{\faCaretRight} buttons to change single frame back or forward.
+
+If the \emph{Sync view} option is selected, the timeline view will be focused on the frame corresponding to the currently displayed screen shot.
 
 \newpage
 \appendix

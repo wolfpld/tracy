@@ -448,6 +448,7 @@ View::~View()
     if( m_saveThread.joinable() ) m_saveThread.join();
 
     if( m_frameTexture ) FreeTexture( m_frameTexture );
+    if( m_playback.texture ) FreeTexture( m_playback.texture );
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
@@ -945,6 +946,7 @@ bool View::DrawImpl()
     if( m_textEditorFile ) DrawTextEditor();
     if( m_goToFrame ) DrawGoToFrame();
     if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
+    if( m_showPlayback ) DrawPlayback();
 
     if( m_zoomAnim.active )
     {
@@ -8338,7 +8340,19 @@ void View::DrawInfo()
     TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
     TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
     TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
-    TextFocused( "Frame images:", RealToString( m_worker.GetFrameImageCount(), true ) );
+    const auto ficnt = m_worker.GetFrameImageCount();
+    TextFocused( "Frame images:", RealToString( ficnt, true ) );
+    if( ficnt != 0 )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_PLAY " Playback" ) )
+#else
+        if( ImGui::Button( "Playback" ) )
+#endif
+        {
+            m_showPlayback = true;
+        }
+    }
 
     const auto fsz = m_worker.GetFullFrameCount( *m_frames );
     if( fsz != 0 )
@@ -8997,6 +9011,135 @@ void View::DrawLockInfoWindow()
     }
     ImGui::End();
     if( !visible ) m_lockInfoWindow = InvalidId;
+}
+
+static const char* PlaybackWindowButtons[] = {
+#ifdef TRACY_EXTENDED_FONT
+    ICON_FA_PLAY " Play",
+    ICON_FA_PAUSE " Pause",
+#else
+    "Play",
+    "Pause",
+#endif
+};
+
+enum { PlaybackWindowButtonsCount = sizeof( PlaybackWindowButtons ) / sizeof( *PlaybackWindowButtons ) };
+
+void View::DrawPlayback()
+{
+    const auto frameSet = m_worker.GetFramesBase();
+    const auto& frameImages = m_worker.GetFrameImages();
+    const auto fi = frameImages[m_playback.frame];
+    const auto ficnt = m_worker.GetFrameImageCount();
+
+    const auto tstart = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
+
+    if( !m_playback.texture )
+    {
+        m_playback.texture = MakeTexture();
+    }
+    if( m_playback.currFrame != m_playback.frame )
+    {
+        m_playback.currFrame = m_playback.frame;
+        UpdateTexture( m_playback.texture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
+
+        if( m_playback.frame < frameImages.size() - 1 )
+        {
+            const auto nfi = frameImages[m_playback.frame+1];
+            const auto t1 = m_worker.GetFrameBegin( *frameSet, nfi->frameRef );
+            m_playback.timeLeft = ( ( t1 - tstart ) / 1000000000.f ) / m_playback.speed;
+        }
+        if( m_playback.sync )
+        {
+            const auto end = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
+            ZoomToRange( tstart, end );
+        }
+    }
+
+    if( m_playback.frame == frameImages.size() - 1 )
+    {
+        m_playback.pause = true;
+    }
+    else if( !m_playback.pause )
+    {
+        m_playback.timeLeft -= ImGui::GetIO().DeltaTime;
+        if( m_playback.timeLeft <= 0 )
+        {
+            m_playback.frame++;
+        }
+    }
+
+    ImGui::Begin( "Playback", &m_showPlayback, ImGuiWindowFlags_AlwaysAutoResize );
+    ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+    int tmp = m_playback.frame + 1;
+    if( ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" ) )
+    {
+        if( tmp < 1 ) tmp = 1;
+        else if( tmp > ficnt ) tmp = ficnt;
+        m_playback.frame = tmp - 1;
+    }
+    ImGui::SliderFloat( "Playback speed", &m_playback.speed, 0.1f, 2, "%.2f" );
+
+    const auto th = ImGui::GetTextLineHeight();
+    float bw = 0;
+    for( int i=0; i<PlaybackWindowButtonsCount; i++ )
+    {
+        bw = std::max( bw, ImGui::CalcTextSize( PlaybackWindowButtons[i] ).x );
+    }
+    bw += th;
+
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( " " ICON_FA_CARET_LEFT " " ) )
+#else
+    if( ImGui::Button( "<" ) )
+#endif
+    {
+        if( m_playback.frame > 0 )
+        {
+            m_playback.frame--;
+            m_playback.pause = true;
+        }
+    }
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( " " ICON_FA_CARET_RIGHT " " ) )
+#else
+    if( ImGui::Button( ">" ) )
+#endif
+    {
+        if( m_playback.frame < ficnt - 1 )
+        {
+            m_playback.frame++;
+            m_playback.pause = true;
+        }
+    }
+    ImGui::SameLine();
+    if( m_playback.pause )
+    {
+        if( ImGui::Button( PlaybackWindowButtons[0], ImVec2( bw, 0 ) ) )
+        {
+            m_playback.pause = false;
+        }
+    }
+    else
+    {
+        if( ImGui::Button( PlaybackWindowButtons[1], ImVec2( bw, 0 ) ) )
+        {
+            m_playback.pause = true;
+        }
+    }
+    ImGui::SameLine();
+    if( ImGui::Checkbox( "Sync view", &m_playback.sync ) )
+    {
+        if( m_playback.sync )
+        {
+            const auto start = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
+            const auto end = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
+            ZoomToRange( start, end );
+        }
+    }
+    TextFocused( "Timestamp:", TimeToString( tstart - m_worker.GetTimeBegin() ) );
+    ImGui::End();
 }
 
 template<class T>

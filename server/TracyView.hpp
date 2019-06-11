@@ -131,6 +131,7 @@ private:
     void DrawTextEditor();
     void DrawGoToFrame();
     void DrawLockInfoWindow();
+    void DrawPlayback();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
@@ -272,6 +273,7 @@ private:
     bool m_showMessages = false;
     bool m_showStatistics = false;
     bool m_showInfo = false;
+    bool m_showPlayback = false;
     bool m_drawGpuZones = true;
     bool m_drawZones = true;
     bool m_drawLocks = true;
@@ -501,6 +503,16 @@ private:
         std::pair<const GpuEvent*, int64_t> gpuSelfTime = { nullptr, 0 };
         std::pair<const GpuEvent*, int64_t> gpuSelfTime2 = { nullptr, 0 };
     } m_cache;
+
+    struct {
+        void* texture = nullptr;
+        float timeLeft = 0;
+        float speed = 1;
+        uint32_t frame = 0;
+        uint32_t currFrame = -1;
+        bool pause = true;
+        bool sync = false;
+    } m_playback;
 };
 
 }

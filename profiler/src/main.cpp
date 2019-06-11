@@ -275,14 +275,19 @@ int main( int argc, char** argv )
             tracy::TextCentered( buf );
             ImGui::PopFont();
             ImGui::Spacing();
-            if( ImGui::Button( ICON_FA_BOOK " User manual" ) )
+            if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf" );
             }
             ImGui::SameLine();
-            if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Homepage" ) )
+            if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Web" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );
+            }
+            ImGui::SameLine();
+            if( ImGui::Button( ICON_FA_COMMENT " Chat" ) )
+            {
+                OpenWebpage( "https://discord.gg/pk78auc" );
             }
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_VIDEO " Tutorial" ) )

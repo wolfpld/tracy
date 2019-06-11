@@ -244,6 +244,16 @@ ETC2 + mip-maps & \num{5592822} & 1.034 \si{\second} & 1.119 \si{\second} & +0.0
 
 It should be noted that Tracy has a constant initialization cost, needed to perform timer calibration. This cost was subtracted from the profiling run times, as it is irrelevant to the single-zone capture time.
 
+\subsection{On the web}
+
+Tracy can be found at the following web addresses:
+
+\begin{itemize}
+\item Homepage -- \url{https://bitbucket.org/wolfpld/tracy}
+\item Bug tracker -- \url{https://bitbucket.org/wolfpld/tracy/issues?status=new&status=open}
+\item Discord chat -- \url{https://discord.gg/pk78auc}
+\end{itemize}
+
 \section{First steps}
 
 The following compilers are supported:
@@ -988,7 +998,7 @@ You can disconnect from the client\footnote{\label{disconnect}The disconnect fun
 \subsection{Interactive profiling}
 \label{interactiveprofiling}
 
-If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the \texttt{profiler} directory. After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faGlobeAmericas{}~\emph{Homepage} and \faVideo{}~\emph{Tutorial}).
+If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the \texttt{profiler} directory. After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faGlobeAmericas{}~\emph{Homepage}, \faComment~\emph{Join chat} and \faVideo{}~\emph{Tutorial}).
 
 The client \emph{address entry} field and the \faWifi{}~\emph{Connect} button are used to connect to a running client. You can use the connection history button~\faCaretDown{} to display a list of commonly used addresses, from which you can quickly select an address. You can remove entries from this list by hovering the \faMousePointer{}~mouse cursor over an entry and pressing the \keys{\del} button on the keyboard.
 
@@ -998,9 +1008,10 @@ If you want to open a trace that you have stored on the disk, you can do so by p
 \centering\begin{tikzpicture}
 \draw (0, 0) rectangle (4.95, -2.9);
 \draw[pattern=crosshatch dots] (0, 0) rectangle+(4.95, 0.3);
-\draw[rounded corners=5pt] (0.1, -0.1) rectangle+(1.47, -0.5) node [midway] {\faBook};
-\draw[rounded corners=5pt] (1.77, -0.1) rectangle+(1.47, -0.5) node [midway] {\faGlobeAmericas};
-\draw[rounded corners=5pt] (3.37, -0.1) rectangle+(1.47, -0.5) node [midway] {\faVideo};
+\draw[rounded corners=5pt] (0.1, -0.1) rectangle+(1.1, -0.5) node [midway] {\faBook};
+\draw[rounded corners=5pt] (1.3, -0.1) rectangle+(1.1, -0.5) node [midway] {\faGlobeAmericas};
+\draw[rounded corners=5pt] (2.5, -0.1) rectangle+(1.1, -0.5) node [midway] {\faComment};
+\draw[rounded corners=5pt] (3.7, -0.1) rectangle+(1.1, -0.5) node [midway] {\faVideo};
 
 \draw (0.1, -0.9) rectangle+(4.1, -0.5) node [midway] {Address entry};
 \draw[rounded corners=5pt] (4.33, -0.9) rectangle+(0.5, -0.5) node [midway] {\faCaretDown};

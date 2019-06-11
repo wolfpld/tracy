@@ -1262,6 +1262,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 m_data.frameImage[i] = fi;
             }
             delete[] tmpbuf;
+
+            const auto& frames = GetFramesBase()->frames;
+            const auto fsz = uint32_t( frames.size() );
+            for( uint32_t i=0; i<fsz; i++ )
+            {
+                const auto& f = frames[i];
+                if( f.frameImage != -1 )
+                {
+                    m_data.frameImage[f.frameImage]->frameRef = i;
+                }
+            }
         }
         else
         {
@@ -3008,6 +3019,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     fi->ptr = PackFrameImage( (const char*)it->second, ev.w, ev.h, fi->csz );
     fi->w = ev.w;
     fi->h = ev.h;
+    fi->frameRef = fidx;
 
     const auto idx = m_data.frameImage.size();
     m_data.frameImage.push_back( fi );

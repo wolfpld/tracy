@@ -362,6 +362,7 @@ struct FrameImage
     const char* ptr;
     uint32_t csz;
     uint16_t w, h;
+    uint32_t frameRef;
 };
 
 }

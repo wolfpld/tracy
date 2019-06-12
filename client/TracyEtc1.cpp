@@ -571,9 +571,16 @@ static uint64_t ProcessRGB( const uint8_t* src )
 #  endif
 #else
 #  ifndef _MSC_VER
-#    include <byteswap.h>
-#    ifndef _bswap
-#      define _bswap(x) bswap_32(x)
+#    ifdef __APPLE__
+#      include <libkern/OSByteOrder.h>
+#      ifndef _bswap
+#        define _bswap(x) OSSwapInt32(x)
+#      endif
+#    else
+#      include <byteswap.h>
+#      ifndef _bswap
+#        define _bswap(x) bswap_32(x)
+#      endif
 #    endif
 #  endif
 #endif

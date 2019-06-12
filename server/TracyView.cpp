@@ -9052,7 +9052,9 @@ void View::DrawPlayback()
         if( m_playback.sync )
         {
             const auto end = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
-            ZoomToRange( tstart, end );
+            m_zoomAnim.active = false;
+            m_zvStart = tstart;
+            m_zvEnd = end;
         }
     }
 

@@ -194,6 +194,8 @@ private:
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const GpuEvent& zone );
 
+    void SetPlaybackFrame( uint32_t idx );
+
     flat_hash_map<const void*, VisData, nohash<const void*>> m_visData;
     flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
     flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;

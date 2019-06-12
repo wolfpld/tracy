@@ -1685,7 +1685,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
                 {
                     m_showPlayback = true;
                     m_playback.pause = true;
-                    m_playback.frame = frames.frames[i].frameImage;
+                    SetPlaybackFrame( frames.frames[i].frameImage );
                 }
             }
             ImGui::EndTooltip();
@@ -9034,6 +9034,26 @@ void View::DrawLockInfoWindow()
     if( !visible ) m_lockInfoWindow = InvalidId;
 }
 
+void View::SetPlaybackFrame( uint32_t idx )
+{
+    const auto frameSet = m_worker.GetFramesBase();
+    const auto& frameImages = m_worker.GetFrameImages();
+    assert( idx < frameImages.size() );
+
+    m_playback.frame = idx;
+
+    if( idx == frameImages.size() - 1 )
+    {
+        m_playback.pause = true;
+    }
+    else
+    {
+        const auto t0 = m_worker.GetFrameBegin( *frameSet, frameImages[idx]->frameRef );
+        const auto t1 = m_worker.GetFrameBegin( *frameSet, frameImages[idx+1]->frameRef );
+        m_playback.timeLeft = ( t1 - t0 ) / 1000000000.f;
+    }
+}
+
 static const char* PlaybackWindowButtons[] = {
 #ifdef TRACY_EXTENDED_FONT
     ICON_FA_PLAY " Play",
@@ -9064,12 +9084,6 @@ void View::DrawPlayback()
         m_playback.currFrame = m_playback.frame;
         UpdateTexture( m_playback.texture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
 
-        if( m_playback.frame < frameImages.size() - 1 )
-        {
-            const auto nfi = frameImages[m_playback.frame+1];
-            const auto t1 = m_worker.GetFrameBegin( *frameSet, nfi->frameRef );
-            m_playback.timeLeft = ( ( t1 - tstart ) / 1000000000.f ) / m_playback.speed;
-        }
         if( m_playback.sync )
         {
             const auto end = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
@@ -9079,16 +9093,18 @@ void View::DrawPlayback()
         }
     }
 
-    if( m_playback.frame == frameImages.size() - 1 )
+    if( !m_playback.pause )
     {
-        m_playback.pause = true;
-    }
-    else if( !m_playback.pause )
-    {
-        m_playback.timeLeft -= ImGui::GetIO().DeltaTime;
-        if( m_playback.timeLeft <= 0 )
+        auto time = ImGui::GetIO().DeltaTime * m_playback.speed;
+        while( !m_playback.pause && time > 0 )
         {
-            m_playback.frame++;
+            const auto dt = std::min( time, m_playback.timeLeft );
+            time -= dt;
+            m_playback.timeLeft -= dt;
+            if( m_playback.timeLeft == 0 )
+            {
+                SetPlaybackFrame( m_playback.frame + 1 );
+            }
         }
     }
 
@@ -9106,9 +9122,9 @@ void View::DrawPlayback()
     {
         if( tmp < 1 ) tmp = 1;
         else if( tmp > ficnt ) tmp = ficnt;
-        m_playback.frame = tmp - 1;
+        SetPlaybackFrame( tmp - 1 );
     }
-    ImGui::SliderFloat( "Playback speed", &m_playback.speed, 0.1f, 2, "%.2f" );
+    ImGui::SliderFloat( "Playback speed", &m_playback.speed, 0.1f, 4, "%.2f" );
 
     const auto th = ImGui::GetTextLineHeight();
     float bw = 0;
@@ -9126,7 +9142,7 @@ void View::DrawPlayback()
     {
         if( m_playback.frame > 0 )
         {
-            m_playback.frame--;
+            SetPlaybackFrame( m_playback.frame - 1 );
             m_playback.pause = true;
         }
     }
@@ -9139,14 +9155,14 @@ void View::DrawPlayback()
     {
         if( m_playback.frame < ficnt - 1 )
         {
-            m_playback.frame++;
+            SetPlaybackFrame( m_playback.frame + 1 );
             m_playback.pause = true;
         }
     }
     ImGui::SameLine();
     if( m_playback.pause )
     {
-        if( ImGui::Button( PlaybackWindowButtons[0], ImVec2( bw, 0 ) ) )
+        if( ImGui::Button( PlaybackWindowButtons[0], ImVec2( bw, 0 ) ) && m_playback.frame != frameImages.size() - 1 )
         {
             m_playback.pause = false;
         }

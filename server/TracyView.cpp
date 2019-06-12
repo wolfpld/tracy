@@ -1277,7 +1277,14 @@ void View::DrawFrames()
                         m_frameTexturePtr = fi;
                     }
                     ImGui::Separator();
-                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                    if( fi->flip )
+                    {
+                        ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                    }
+                    else
+                    {
+                        ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+                    }
                 }
                 ImGui::EndTooltip();
 
@@ -1665,7 +1672,14 @@ bool View::DrawZoneFrames( const FrameData& frames )
                     m_frameTexturePtr = fi;
                 }
                 ImGui::Separator();
-                ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                if( fi->flip )
+                {
+                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                }
+                else
+                {
+                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+                }
             }
             ImGui::EndTooltip();
 
@@ -9072,7 +9086,14 @@ void View::DrawPlayback()
     }
 
     ImGui::Begin( "Playback", &m_showPlayback, ImGuiWindowFlags_AlwaysAutoResize );
-    ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+    if( fi->flip )
+    {
+        ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+    }
+    else
+    {
+        ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ) );
+    }
     int tmp = m_playback.frame + 1;
     if( ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" ) )
     {

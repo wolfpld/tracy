@@ -9159,7 +9159,7 @@ void View::DrawPlayback()
         }
     }
     ImGui::SameLine();
-    if( ImGui::Checkbox( "Sync view", &m_playback.sync ) )
+    if( ImGui::Checkbox( "Sync timeline", &m_playback.sync ) )
     {
         if( m_playback.sync )
         {

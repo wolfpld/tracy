@@ -363,6 +363,7 @@ struct FrameImage
     uint32_t csz;
     uint16_t w, h;
     uint32_t frameRef;
+    uint8_t flip;
 };
 
 }

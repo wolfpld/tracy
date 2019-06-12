@@ -1250,6 +1250,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 auto fi = m_slab.Alloc<FrameImage>();
                 f.Read2( fi->w, fi->h );
+                f.Read( fi->flip );
                 const auto sz = fi->w * fi->h / 2;
                 if( tmpbufsz < sz )
                 {
@@ -3020,6 +3021,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     fi->w = ev.w;
     fi->h = ev.h;
     fi->frameRef = fidx;
+    fi->flip = ev.flip;
 
     const auto idx = m_data.frameImage.size();
     m_data.frameImage.push_back( fi );
@@ -4395,6 +4397,7 @@ void Worker::Write( FileWrite& f )
     {
         f.Write( &fi->w, sizeof( fi->w ) );
         f.Write( &fi->h, sizeof( fi->h ) );
+        f.Write( &fi->flip, sizeof( fi->flip ) );
         const auto image = UnpackFrameImage( *fi );
         f.Write( image, fi->w * fi->h / 2 );
     }

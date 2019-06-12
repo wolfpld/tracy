@@ -171,7 +171,7 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void SendFrameImage( void* image, uint16_t w, uint16_t h, uint8_t offset )
+    static tracy_force_inline void SendFrameImage( void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -188,6 +188,8 @@ public:
         MemWrite( &item->frameImage.w, w );
         MemWrite( &item->frameImage.h, h );
         MemWrite( &item->frameImage.offset, offset );
+        uint8_t _flip = flip;
+        MemWrite( &item->frameImage.flip, _flip );
         tail.store( magic + 1, std::memory_order_release );
     }
 

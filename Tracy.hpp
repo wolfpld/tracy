@@ -24,7 +24,7 @@
 #define FrameMarkStart(x)
 #define FrameMarkEnd(x)
 
-#define FrameImage(x,y,z,w)
+#define FrameImage(x,y,z,w,a)
 
 #define TracyLockable( type, varname ) type varname;
 #define TracyLockableN( type, varname, desc ) type varname;
@@ -88,7 +88,7 @@
 #define FrameMarkStart( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgStart );
 #define FrameMarkEnd( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgEnd );
 
-#define FrameImage( image, width, height, offset ) tracy::Profiler::SendFrameImage( image, width, height, offset );
+#define FrameImage( image, width, height, offset, flip ) tracy::Profiler::SendFrameImage( image, width, height, offset, flip );
 
 #define TracyLockable( type, varname ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocationData* { static const tracy::SourceLocationData srcloc { nullptr, #type " " #varname, __FILE__, __LINE__, 0 }; return &srcloc; }() };
 #define TracyLockableN( type, varname, desc ) tracy::Lockable<type> varname { [] () -> const tracy::SourceLocationData* { static const tracy::SourceLocationData srcloc { nullptr, desc, __FILE__, __LINE__, 0 }; return &srcloc; }() };

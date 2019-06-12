@@ -1680,6 +1680,13 @@ bool View::DrawZoneFrames( const FrameData& frames )
                 {
                     ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
                 }
+
+                if( ImGui::IsMouseClicked( 1 ) )
+                {
+                    m_showPlayback = true;
+                    m_playback.pause = true;
+                    m_playback.frame = frames.frames[i].frameImage;
+                }
             }
             ImGui::EndTooltip();
 

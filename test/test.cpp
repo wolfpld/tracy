@@ -6,6 +6,10 @@
 #include "../Tracy.hpp"
 #include "../common/TracySystem.hpp"
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_JPEG
+#include "stb_image.h"
+
 struct static_init_test_t
 {
     static_init_test_t()
@@ -297,6 +301,9 @@ int main()
     tracy::SetThreadName( t21, "Deadlock test 1" );
     tracy::SetThreadName( t22, "Deadlock test 2" );
 
+    int x, y;
+    auto image = stbi_load( "image.jpg", &x, &y, nullptr, 4 );
+
     for(;;)
     {
         TracyMessageL( "Tick" );
@@ -305,6 +312,7 @@ int main()
             ZoneScoped;
             std::this_thread::sleep_for( std::chrono::milliseconds( 2 ) );
         }
+        FrameImage( image, x, y, 0, false );
         FrameMark;
     }
 }

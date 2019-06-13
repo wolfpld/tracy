@@ -9,7 +9,7 @@
 namespace tracy
 {
 
-enum : uint32_t { ProtocolVersion = 7 };
+enum : uint32_t { ProtocolVersion = 8 };
 
 using lz4sz_t = uint32_t;
 
@@ -64,6 +64,7 @@ struct WelcomeMessage
     uint64_t resolution;
     uint64_t epoch;
     uint8_t onDemand;
+    uint8_t isApple;
     char programName[WelcomeMessageProgramNameSize];
     char hostInfo[WelcomeMessageHostInfoSize];
 };

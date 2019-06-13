@@ -1047,6 +1047,12 @@ void Profiler::Worker()
     uint8_t onDemand = 0;
 #endif
 
+#ifdef __APPLE__
+    uint8_t isApple = 1;
+#else
+    uint8_t isApple = 0;
+#endif
+
     WelcomeMessage welcome;
     MemWrite( &welcome.timerMul, m_timerMul );
     MemWrite( &welcome.initBegin, GetInitTime() );
@@ -1055,6 +1061,7 @@ void Profiler::Worker()
     MemWrite( &welcome.resolution, m_resolution );
     MemWrite( &welcome.epoch, m_epoch );
     MemWrite( &welcome.onDemand, onDemand );
+    MemWrite( &welcome.isApple, isApple );
     memcpy( welcome.programName, procname, pnsz );
     memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
     memcpy( welcome.hostInfo, hostinfo, hisz );

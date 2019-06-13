@@ -561,6 +561,10 @@ static uint64_t ProcessRGB( const uint8_t* src )
 
 #else
 
+#ifdef __ARM_NEON
+#  include <arm_neon.h>
+#endif
+
 #ifdef __SSE4_1__
 #  ifdef _MSC_VER
 #    include <intrin.h>
@@ -642,6 +646,16 @@ const __m128i g_table256_SIMD[4] =
     _mm_setr_epi32(  8*256,  17*256,  29*256,  42*256),
     _mm_setr_epi32( 18*256,  24*256,  33*256,  47*256),
     _mm_setr_epi32( 60*256,  80*256, 106*256, 183*256)
+};
+#endif
+
+#ifdef __ARM_NEON
+const int32x4_t g_table256_NEON[4] =
+{
+    {  2*256,   5*256,   9*256,  13*256 },
+    {  8*256,  17*256,  29*256,  42*256 },
+    { 18*256,  24*256,  33*256,  47*256 },
+    { 60*256,  80*256, 106*256, 183*256 }
 };
 #endif
 
@@ -742,6 +756,44 @@ static void Average( const uint8_t* data, v4i* a )
 
     _mm_storeu_si128((__m128i*)&a[0], _mm_packus_epi32(_mm_shuffle_epi32(a0, _MM_SHUFFLE(3, 0, 1, 2)), _mm_shuffle_epi32(a1, _MM_SHUFFLE(3, 0, 1, 2))));
     _mm_storeu_si128((__m128i*)&a[2], _mm_packus_epi32(_mm_shuffle_epi32(a2, _MM_SHUFFLE(3, 0, 1, 2)), _mm_shuffle_epi32(a3, _MM_SHUFFLE(3, 0, 1, 2))));
+#elif defined __ARM_NEON
+    uint8x16x2_t t0 = vzipq_u8(vld1q_u8(data +  0), uint8x16_t());
+    uint8x16x2_t t1 = vzipq_u8(vld1q_u8(data + 16), uint8x16_t());
+    uint8x16x2_t t2 = vzipq_u8(vld1q_u8(data + 32), uint8x16_t());
+    uint8x16x2_t t3 = vzipq_u8(vld1q_u8(data + 48), uint8x16_t());
+
+    uint16x8x2_t d0 = { vreinterpretq_u16_u8(t0.val[0]), vreinterpretq_u16_u8(t0.val[1]) };
+    uint16x8x2_t d1 = { vreinterpretq_u16_u8(t1.val[0]), vreinterpretq_u16_u8(t1.val[1]) };
+    uint16x8x2_t d2 = { vreinterpretq_u16_u8(t2.val[0]), vreinterpretq_u16_u8(t2.val[1]) };
+    uint16x8x2_t d3 = { vreinterpretq_u16_u8(t3.val[0]), vreinterpretq_u16_u8(t3.val[1]) };
+
+    uint16x8x2_t s0 = vzipq_u16(vreinterpretq_u16_s16( vaddq_s16(vreinterpretq_s16_u16( d0.val[0] ), vreinterpretq_s16_u16( d1.val[0] ) ) ), uint16x8_t());
+    uint16x8x2_t s1 = vzipq_u16(vreinterpretq_u16_s16( vaddq_s16(vreinterpretq_s16_u16( d0.val[1] ), vreinterpretq_s16_u16( d1.val[1] ) ) ), uint16x8_t());
+    uint16x8x2_t s2 = vzipq_u16(vreinterpretq_u16_s16( vaddq_s16(vreinterpretq_s16_u16( d2.val[0] ), vreinterpretq_s16_u16( d3.val[0] ) ) ), uint16x8_t());
+    uint16x8x2_t s3 = vzipq_u16(vreinterpretq_u16_s16( vaddq_s16(vreinterpretq_s16_u16( d2.val[1] ), vreinterpretq_s16_u16( d3.val[1] ) ) ), uint16x8_t());
+
+    uint32x4x2_t sum0 = { vreinterpretq_u32_u16(s0.val[0]), vreinterpretq_u32_u16(s0.val[1]) };
+    uint32x4x2_t sum1 = { vreinterpretq_u32_u16(s1.val[0]), vreinterpretq_u32_u16(s1.val[1]) };
+    uint32x4x2_t sum2 = { vreinterpretq_u32_u16(s2.val[0]), vreinterpretq_u32_u16(s2.val[1]) };
+    uint32x4x2_t sum3 = { vreinterpretq_u32_u16(s3.val[0]), vreinterpretq_u32_u16(s3.val[1]) };
+
+    uint32x4_t b0 = vaddq_u32(sum0.val[0], sum0.val[1]);
+    uint32x4_t b1 = vaddq_u32(sum1.val[0], sum1.val[1]);
+    uint32x4_t b2 = vaddq_u32(sum2.val[0], sum2.val[1]);
+    uint32x4_t b3 = vaddq_u32(sum3.val[0], sum3.val[1]);
+
+    uint32x4_t a0 = vshrq_n_u32(vqaddq_u32(vqaddq_u32(b2, b3), vdupq_n_u32(4)), 3);
+    uint32x4_t a1 = vshrq_n_u32(vqaddq_u32(vqaddq_u32(b0, b1), vdupq_n_u32(4)), 3);
+    uint32x4_t a2 = vshrq_n_u32(vqaddq_u32(vqaddq_u32(b1, b3), vdupq_n_u32(4)), 3);
+    uint32x4_t a3 = vshrq_n_u32(vqaddq_u32(vqaddq_u32(b0, b2), vdupq_n_u32(4)), 3);
+
+    uint16x8_t o0 = vcombine_u16(vqmovun_s32(vreinterpretq_s32_u32( a0 )), vqmovun_s32(vreinterpretq_s32_u32( a1 )));
+    uint16x8_t o1 = vcombine_u16(vqmovun_s32(vreinterpretq_s32_u32( a2 )), vqmovun_s32(vreinterpretq_s32_u32( a3 )));
+
+    a[0] = v4i{o0[2], o0[1], o0[0], 0};
+    a[1] = v4i{o0[6], o0[5], o0[4], 0};
+    a[2] = v4i{o1[2], o1[1], o1[0], 0};
+    a[3] = v4i{o1[6], o1[5], o1[4], 0};
 #else
     uint32_t r[4];
     uint32_t g[4];
@@ -820,6 +872,41 @@ static void CalcErrorBlock( const uint8_t* data, unsigned int err[4][4] )
     _mm_storeu_si128((__m128i*)&err[1], a1);
     _mm_storeu_si128((__m128i*)&err[2], a2);
     _mm_storeu_si128((__m128i*)&err[3], a3);
+#elif defined __ARM_NEON
+    uint8x16x2_t t0 = vzipq_u8(vld1q_u8(data +  0), uint8x16_t());
+    uint8x16x2_t t1 = vzipq_u8(vld1q_u8(data + 16), uint8x16_t());
+    uint8x16x2_t t2 = vzipq_u8(vld1q_u8(data + 32), uint8x16_t());
+    uint8x16x2_t t3 = vzipq_u8(vld1q_u8(data + 48), uint8x16_t());
+
+    uint16x8x2_t d0 = { vreinterpretq_u16_u8(t0.val[0]), vreinterpretq_u16_u8(t0.val[1]) };
+    uint16x8x2_t d1 = { vreinterpretq_u16_u8(t1.val[0]), vreinterpretq_u16_u8(t1.val[1]) };
+    uint16x8x2_t d2 = { vreinterpretq_u16_u8(t2.val[0]), vreinterpretq_u16_u8(t2.val[1]) };
+    uint16x8x2_t d3 = { vreinterpretq_u16_u8(t3.val[0]), vreinterpretq_u16_u8(t3.val[1]) };
+
+    uint16x8x2_t s0 = vzipq_u16(vreinterpretq_u16_s16( vaddq_s16(vreinterpretq_s16_u16( d0.val[0] ), vreinterpretq_s16_u16( d1.val[0] ))), uint16x8_t());
+    uint16x8x2_t s1 = vzipq_u16(vreinterpretq_u16_s16( vaddq_s16(vreinterpretq_s16_u16( d0.val[1] ), vreinterpretq_s16_u16( d1.val[1] ))), uint16x8_t());
+    uint16x8x2_t s2 = vzipq_u16(vreinterpretq_u16_s16( vaddq_s16(vreinterpretq_s16_u16( d2.val[0] ), vreinterpretq_s16_u16( d3.val[0] ))), uint16x8_t());
+    uint16x8x2_t s3 = vzipq_u16(vreinterpretq_u16_s16( vaddq_s16(vreinterpretq_s16_u16( d2.val[1] ), vreinterpretq_s16_u16( d3.val[1] ))), uint16x8_t());
+
+    uint32x4x2_t sum0 = { vreinterpretq_u32_u16(s0.val[0]), vreinterpretq_u32_u16(s0.val[1]) };
+    uint32x4x2_t sum1 = { vreinterpretq_u32_u16(s1.val[0]), vreinterpretq_u32_u16(s1.val[1]) };
+    uint32x4x2_t sum2 = { vreinterpretq_u32_u16(s2.val[0]), vreinterpretq_u32_u16(s2.val[1]) };
+    uint32x4x2_t sum3 = { vreinterpretq_u32_u16(s3.val[0]), vreinterpretq_u32_u16(s3.val[1]) };
+
+    uint32x4_t b0 = vaddq_u32(sum0.val[0], sum0.val[1]);
+    uint32x4_t b1 = vaddq_u32(sum1.val[0], sum1.val[1]);
+    uint32x4_t b2 = vaddq_u32(sum2.val[0], sum2.val[1]);
+    uint32x4_t b3 = vaddq_u32(sum3.val[0], sum3.val[1]);
+
+    uint32x4_t a0 = vreinterpretq_u32_u8( vandq_u8(vreinterpretq_u8_u32( vqaddq_u32(b2, b3) ), vreinterpretq_u8_u32( vdupq_n_u32(0x00FFFFFF)) ) );
+    uint32x4_t a1 = vreinterpretq_u32_u8( vandq_u8(vreinterpretq_u8_u32( vqaddq_u32(b0, b1) ), vreinterpretq_u8_u32( vdupq_n_u32(0x00FFFFFF)) ) );
+    uint32x4_t a2 = vreinterpretq_u32_u8( vandq_u8(vreinterpretq_u8_u32( vqaddq_u32(b1, b3) ), vreinterpretq_u8_u32( vdupq_n_u32(0x00FFFFFF)) ) );
+    uint32x4_t a3 = vreinterpretq_u32_u8( vandq_u8(vreinterpretq_u8_u32( vqaddq_u32(b0, b2) ), vreinterpretq_u8_u32( vdupq_n_u32(0x00FFFFFF)) ) );
+
+    vst1q_u32(err[0], a0);
+    vst1q_u32(err[1], a1);
+    vst1q_u32(err[2], a2);
+    vst1q_u32(err[3], a3);
 #else
     unsigned int terr[4][4];
 
@@ -900,6 +987,38 @@ void ProcessAverages( v4i* a )
 
         _mm_storeu_si128((__m128i*)a[i*2].data(), t2);
     }
+#elif defined __ARM_NEON
+    for( int i=0; i<2; i++ )
+    {
+        int16x8_t d = vld1q_s16((int16_t*)&a[i*2]);
+        int16x8_t t = vaddq_s16(vmulq_s16(d, vdupq_n_s16(31)), vdupq_n_s16(128));
+        int16x8_t c = vshrq_n_s16(vaddq_s16(t, vshrq_n_s16(t, 8)), 8);
+
+        int16x8_t c1 = vcombine_s16(vget_high_s16(c), vget_high_s16(c));
+        int16x8_t diff = vsubq_s16(c, c1);
+        diff = vmaxq_s16(diff, vdupq_n_s16(-4));
+        diff = vminq_s16(diff, vdupq_n_s16(3));
+
+        int16x8_t co = vaddq_s16(c1, diff);
+
+        c = vcombine_s16(vget_low_s16(co), vget_high_s16(c));
+
+        int16x8_t a0 = vorrq_s16(vshlq_n_s16(c, 3), vshrq_n_s16(c, 2));
+
+        vst1q_s16((int16_t*)&a[4+i*2], a0);
+    }
+
+    for( int i=0; i<2; i++ )
+    {
+        int16x8_t d = vld1q_s16((int16_t*)&a[i*2]);
+
+        int16x8_t t0 = vaddq_s16(vmulq_s16(d, vdupq_n_s16(15)), vdupq_n_s16(128));
+        int16x8_t t1 = vshrq_n_s16(vaddq_s16(t0, vshrq_n_s16(t0, 8)), 8);
+
+        int16x8_t t2 = vorrq_s16(t1, vshlq_n_s16(t1, 4));
+
+        vst1q_s16((int16_t*)&a[i*2], t2);
+    }
 #else
     for( int i=0; i<2; i++ )
     {
@@ -978,6 +1097,27 @@ static uint64_t CheckSolid( const uint8_t* src )
     {
         return 0;
     }
+#elif defined __ARM_NEON
+    int32x4_t d0 = vld1q_s32((int32_t*)src +  0);
+    int32x4_t d1 = vld1q_s32((int32_t*)src +  4);
+    int32x4_t d2 = vld1q_s32((int32_t*)src +  8);
+    int32x4_t d3 = vld1q_s32((int32_t*)src + 12);
+
+    int32x4_t c = vdupq_n_s32(d0[0]);
+
+    int32x4_t c0 = vreinterpretq_s32_u32(vceqq_s32(d0, c));
+    int32x4_t c1 = vreinterpretq_s32_u32(vceqq_s32(d1, c));
+    int32x4_t c2 = vreinterpretq_s32_u32(vceqq_s32(d2, c));
+    int32x4_t c3 = vreinterpretq_s32_u32(vceqq_s32(d3, c));
+
+    int32x4_t m0 = vandq_s32(c0, c1);
+    int32x4_t m1 = vandq_s32(c2, c3);
+    int64x2_t m = vreinterpretq_s64_s32(vandq_s32(m0, m1));
+
+    if (m[0] != -1 || m[1] != -1)
+    {
+        return 0;
+    }
 #else
     const uint8_t* ptr = src + 4;
     for( int i=1; i<16; i++ )
@@ -1027,6 +1167,63 @@ static void FindBestFit( uint64_t terr[2][8], uint16_t tsel[16][8], v4i a[8], co
         int dg = a[bid][1] - g;
         int db = a[bid][2] - b;
 
+#ifdef __ARM_NEON
+        int32x4_t pix = vdupq_n_s32(dr * 77 + dg * 151 + db * 28);
+
+        // Taking the absolute value is way faster. The values are only used to sort, so the result will be the same.
+        uint32x4_t error0 = vreinterpretq_u32_s32(vabsq_s32(vaddq_s32(pix, g_table256_NEON[0])));
+        uint32x4_t error1 = vreinterpretq_u32_s32(vabsq_s32(vaddq_s32(pix, g_table256_NEON[1])));
+        uint32x4_t error2 = vreinterpretq_u32_s32(vabsq_s32(vsubq_s32(pix, g_table256_NEON[0])));
+        uint32x4_t error3 = vreinterpretq_u32_s32(vabsq_s32(vsubq_s32(pix, g_table256_NEON[1])));
+
+        uint32x4_t index0 = vandq_u32(vcltq_u32(error1, error0), vdupq_n_u32(1));
+        uint32x4_t minError0 = vminq_u32(error0, error1);
+
+        uint32x4_t index1 = vreinterpretq_u32_s32(vsubq_s32(vdupq_n_s32(2), vreinterpretq_s32_u32(vcltq_u32(error3, error2))));
+        uint32x4_t minError1 = vminq_u32(error2, error3);
+
+        uint32x4_t blendMask = vcltq_u32(minError1, minError0);
+        uint32x4_t minIndex0 = vorrq_u32(vbicq_u32(index0, blendMask), vandq_u32(index1, blendMask));
+        uint32x4_t minError = vminq_u32(minError0, minError1);
+
+        // Squaring the minimum error to produce correct values when adding
+        uint32x4_t squareErrorLow = vmulq_u32(minError, minError);
+        uint32x4_t squareErrorHigh = vshrq_n_u32(vreinterpretq_u32_s32(vqdmulhq_s32(vreinterpretq_s32_u32(minError), vreinterpretq_s32_u32(minError))), 1);
+        uint32x4x2_t squareErrorZip = vzipq_u32(squareErrorLow, squareErrorHigh);
+        uint64x2x2_t squareError = { vreinterpretq_u64_u32(squareErrorZip.val[0]), vreinterpretq_u64_u32(squareErrorZip.val[1]) };
+        squareError.val[0] = vaddq_u64(squareError.val[0], vld1q_u64(ter + 0));
+        squareError.val[1] = vaddq_u64(squareError.val[1], vld1q_u64(ter + 2));
+        vst1q_u64(ter + 0, squareError.val[0]);
+        vst1q_u64(ter + 2, squareError.val[1]);
+
+        // Taking the absolute value is way faster. The values are only used to sort, so the result will be the same.
+        error0 = vreinterpretq_u32_s32( vabsq_s32(vaddq_s32(pix, g_table256_NEON[2])));
+        error1 = vreinterpretq_u32_s32( vabsq_s32(vaddq_s32(pix, g_table256_NEON[3])));
+        error2 = vreinterpretq_u32_s32( vabsq_s32(vsubq_s32(pix, g_table256_NEON[2])));
+        error3 = vreinterpretq_u32_s32( vabsq_s32(vsubq_s32(pix, g_table256_NEON[3])));
+
+        index0 = vandq_u32(vcltq_u32(error1, error0), vdupq_n_u32(1));
+        minError0 = vminq_u32(error0, error1);
+
+        index1 = vreinterpretq_u32_s32( vsubq_s32(vdupq_n_s32(2), vreinterpretq_s32_u32(vcltq_u32(error3, error2))) );
+        minError1 = vminq_u32(error2, error3);
+
+        blendMask = vcltq_u32(minError1, minError0);
+        uint32x4_t minIndex1 = vorrq_u32(vbicq_u32(index0, blendMask), vandq_u32(index1, blendMask));
+        minError = vminq_u32(minError0, minError1);
+
+        // Squaring the minimum error to produce correct values when adding
+        squareErrorLow = vmulq_u32(minError, minError);
+        squareErrorHigh = vshrq_n_u32(vreinterpretq_u32_s32( vqdmulhq_s32(vreinterpretq_s32_u32(minError), vreinterpretq_s32_u32(minError)) ), 1 );
+        squareErrorZip = vzipq_u32(squareErrorLow, squareErrorHigh);
+        squareError.val[0] = vaddq_u64(vreinterpretq_u64_u32( squareErrorZip.val[0] ), vld1q_u64(ter + 4));
+        squareError.val[1] = vaddq_u64(vreinterpretq_u64_u32( squareErrorZip.val[1] ), vld1q_u64(ter + 6));
+        vst1q_u64(ter + 4, squareError.val[0]);
+        vst1q_u64(ter + 6, squareError.val[1]);
+
+        uint16x8_t minIndex = vcombine_u16(vqmovn_u32(minIndex0), vqmovn_u32(minIndex1));
+        vst1q_u16(sel, minIndex);
+#else
         int pix = dr * 77 + dg * 151 + db * 28;
 
         for( int t=0; t<8; t++ )
@@ -1046,6 +1243,7 @@ static void FindBestFit( uint64_t terr[2][8], uint16_t tsel[16][8], v4i a[8], co
             *sel++ = idx;
             *ter++ += err;
         }
+#endif
     }
 }
 

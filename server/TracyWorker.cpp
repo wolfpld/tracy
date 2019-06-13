@@ -1831,6 +1831,7 @@ void Worker::Exec()
         m_onDemand = welcome.onDemand;
         m_captureProgram = welcome.programName;
         m_captureTime = welcome.epoch;
+        m_ignoreMemFreeFaults = welcome.onDemand || welcome.isApple;
 
         char dtmp[64];
         time_t date = welcome.epoch;
@@ -3513,7 +3514,7 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
     auto it = m_data.memory.active.find( ev.ptr );
     if( it == m_data.memory.active.end() )
     {
-        if( !m_onDemand )
+        if( !m_ignoreMemFreeFaults )
         {
             MemFreeFailure( ev.thread );
         }

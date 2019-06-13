@@ -446,11 +446,13 @@ To further reduce image data size, frame images are internally compressed using 
 \centering
 \begin{tabular}[h]{c|c|c|c}
 \textbf{Implementation} & \textbf{Required define} & \textbf{V-sync on (cold cache)} & \textbf{V-sync off (hot cache)} \\ \hline
-Reference & --- & 1.45 \si{\milli\second} & 778 \si{\micro\second} \\
+x86 Reference & --- & 1.45 \si{\milli\second} & 778 \si{\micro\second} \\
 x86 SSE4.1 & \texttt{\_\_SSE4\_1\_\_} & 423 \si{\micro\second} & 245 \si{\micro\second} \\
-x86 AVX2 & \texttt{\_\_AVX2\_\_} & 228 \si{\micro\second} & 142 \si{\micro\second}
+x86 AVX2 & \texttt{\_\_AVX2\_\_} & 228 \si{\micro\second} & 142 \si{\micro\second} \\
+ARM Reference & --- & --- & 10.78 \si{\milli\second} \\
+ARM NEON & \texttt{\_\_ARM\_NEON} & --- & 4.6 \si{\milli\second}
 \end{tabular}
-\caption{Compression time of $320\times180$ image on i7 8700K}
+\caption{Compression time of $320\times180$ image. x86: i7 8700K; ARM: ODROID-C2}
 \label{EtcSimd}
 \end{table}
 

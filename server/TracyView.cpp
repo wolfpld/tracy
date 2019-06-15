@@ -6120,9 +6120,9 @@ void View::DrawFindZone()
             const auto ty = ImGui::GetFontSize();
 
             auto& zones = zoneData.zones;
-            const auto tmin = m_findZone.selfTime ? zoneData.selfMin : zoneData.min;
-            const auto tmax = m_findZone.selfTime ? zoneData.selfMax : zoneData.max;
-            const auto timeTotal = m_findZone.selfTime ? zoneData.selfTotal : zoneData.total;
+            auto tmin = m_findZone.selfTime ? zoneData.selfMin : zoneData.min;
+            auto tmax = m_findZone.selfTime ? zoneData.selfMax : zoneData.max;
+            auto timeTotal = m_findZone.selfTime ? zoneData.selfTotal : zoneData.total;
 
             const auto zsz = zones.size();
             if( m_findZone.sortedNum != zsz )
@@ -6237,10 +6237,9 @@ void View::DrawFindZone()
                 ImGui::InputInt( "##minBinVal", &m_findZone.minBinVal );
                 if( m_findZone.minBinVal < 1 ) m_findZone.minBinVal = 1;
 
-                const auto dt = double( tmax - tmin );
                 const auto cumulateTime = m_findZone.cumulateTime;
 
-                if( dt > 0 )
+                if( tmax - tmin > 0 )
                 {
                     const auto w = ImGui::GetContentRegionAvail().x;
 
@@ -6272,6 +6271,57 @@ void View::DrawFindZone()
                         auto sortedBegin = sorted.begin();
                         auto sortedEnd = sorted.end();
                         while( sortedBegin != sortedEnd && *sortedBegin == 0 ) ++sortedBegin;
+
+                        if( m_findZone.minBinVal > 1 )
+                        {
+                            if( m_findZone.logTime )
+                            {
+                                const auto tMinLog = log10( tmin );
+                                const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                                int64_t i;
+                                for( i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                    auto nit = std::lower_bound( sortedBegin, sortedEnd, nextBinVal );
+                                    const auto distance = std::distance( sortedBegin, nit );
+                                    if( distance >= m_findZone.minBinVal ) break;
+                                    sortedBegin = nit;
+                                }
+                                for( int64_t j=numBins-1; j>i; j-- )
+                                {
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( j-1 ) * zmax ) );
+                                    auto nit = std::lower_bound( sortedBegin, sortedEnd, nextBinVal );
+                                    const auto distance = std::distance( nit, sortedEnd );
+                                    if( distance >= m_findZone.minBinVal ) break;
+                                    sortedEnd = nit;
+                                }
+                            }
+                            else
+                            {
+                                const auto zmax = tmax - tmin;
+                                int64_t i;
+                                for( i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( sortedBegin, sortedEnd, nextBinVal );
+                                    const auto distance = std::distance( sortedBegin, nit );
+                                    if( distance >= m_findZone.minBinVal ) break;
+                                    sortedBegin = nit;
+                                }
+                                for( int64_t j=numBins-1; j>i; j-- )
+                                {
+                                    const auto nextBinVal = tmin + ( j-1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( sortedBegin, sortedEnd, nextBinVal );
+                                    const auto distance = std::distance( nit, sortedEnd );
+                                    if( distance >= m_findZone.minBinVal ) break;
+                                    sortedEnd = nit;
+                                }
+                            }
+
+                            tmin = *sortedBegin;
+                            tmax = *(sortedEnd-1);
+                            timeTotal = tmax - tmin;
+                        }
 
                         if( m_findZone.logTime )
                         {
@@ -6590,7 +6640,7 @@ void View::DrawFindZone()
                         }
                         else
                         {
-                            const auto pxns = numBins / dt;
+                            const auto pxns = numBins / double( tmax - tmin );
                             const auto nspx = 1.0 / pxns;
                             const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                             const auto step = pow( 10, scale );

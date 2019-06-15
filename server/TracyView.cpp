@@ -6231,9 +6231,11 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.2f%%)", 100.f * zoneData.selfTotal / zoneData.total );
 
-                TextDisabledUnformatted( "Time range:" );
+                TextDisabledUnformatted( "Minimum values in bin:" );
                 ImGui::SameLine();
-                ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
+                ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+                ImGui::InputInt( "##minBinVal", &m_findZone.minBinVal );
+                if( m_findZone.minBinVal < 1 ) m_findZone.minBinVal = 1;
 
                 const auto dt = double( tmax - tmin );
                 const auto cumulateTime = m_findZone.cumulateTime;
@@ -6381,6 +6383,9 @@ void View::DrawFindZone()
                             }
                         }
 
+                        TextDisabledUnformatted( "Time range:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
                         TextFocused( "Total time:", TimeToString( timeTotal ) );
                         ImGui::SameLine();
                         ImGui::Spacing();

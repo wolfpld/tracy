@@ -374,6 +374,7 @@ private:
         bool drawSelAvgMed = true;
         bool scheduleResetMatch = false;
         int selCs = 0;
+        int minBinVal = 1;
 
         void Reset()
         {

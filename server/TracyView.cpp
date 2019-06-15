@@ -6267,17 +6267,20 @@ void View::DrawFindZone()
 
                         const auto& sorted = m_findZone.sorted;
 
+                        auto sortedBegin = sorted.begin();
+                        auto sortedEnd = sorted.end();
+                        while( sortedBegin != sortedEnd && *sortedBegin == 0 ) ++sortedBegin;
+
                         if( m_findZone.logTime )
                         {
                             const auto tMinLog = log10( tmin );
                             const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
                             {
-                                auto zit = sorted.begin();
-                                while( zit != sorted.end() && *zit == 0 ) ++zit;
+                                auto zit = sortedBegin;
                                 for( int64_t i=0; i<numBins; i++ )
                                 {
                                     const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                                    auto nit = std::lower_bound( zit, sorted.end(), nextBinVal );
+                                    auto nit = std::lower_bound( zit, sortedEnd, nextBinVal );
                                     const auto distance = std::distance( zit, nit );
                                     const auto timeSum = std::accumulate( zit, nit, int64_t( 0 ) );
                                     bins[i] = distance;
@@ -6289,10 +6292,10 @@ void View::DrawFindZone()
                                     }
                                     zit = nit;
                                 }
-                                const auto timeSum = std::accumulate( zit, sorted.end(), int64_t( 0 ) );
-                                bins[numBins-1] += std::distance( zit, sorted.end() );
+                                const auto timeSum = std::accumulate( zit, sortedEnd, int64_t( 0 ) );
+                                bins[numBins-1] += std::distance( zit, sortedEnd );
                                 binTime[numBins-1] += timeSum;
-                                if( m_findZone.highlight.active && *zit >= s && *(sorted.end()-1) <= e ) selectionTime += timeSum;
+                                if( m_findZone.highlight.active && *zit >= s && *(sortedEnd-1) <= e ) selectionTime += timeSum;
                             }
 
                             if( m_findZone.selGroup != m_findZone.Unselected )
@@ -6318,12 +6321,11 @@ void View::DrawFindZone()
                         else
                         {
                             const auto zmax = tmax - tmin;
-                            auto zit = sorted.begin();
-                            while( zit != sorted.end() && *zit == 0 ) ++zit;
+                            auto zit = sortedBegin;
                             for( int64_t i=0; i<numBins; i++ )
                             {
                                 const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
-                                auto nit = std::lower_bound( zit, sorted.end(), nextBinVal );
+                                auto nit = std::lower_bound( zit, sortedEnd, nextBinVal );
                                 const auto distance = std::distance( zit, nit );
                                 const auto timeSum = std::accumulate( zit, nit, int64_t( 0 ) );
                                 bins[i] = distance;
@@ -6335,10 +6337,10 @@ void View::DrawFindZone()
                                 }
                                 zit = nit;
                             }
-                            const auto timeSum = std::accumulate( zit, sorted.end(), int64_t( 0 ) );
-                            bins[numBins-1] += std::distance( zit, sorted.end() );
+                            const auto timeSum = std::accumulate( zit, sortedEnd, int64_t( 0 ) );
+                            bins[numBins-1] += std::distance( zit, sortedEnd );
                             binTime[numBins-1] += timeSum;
-                            if( m_findZone.highlight.active && *zit >= s && *(sorted.end()-1) <= e ) selectionTime += timeSum;
+                            if( m_findZone.highlight.active && *zit >= s && *(sortedEnd-1) <= e ) selectionTime += timeSum;
 
                             if( m_findZone.selGroup != m_findZone.Unselected )
                             {

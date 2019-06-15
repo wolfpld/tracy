@@ -6245,7 +6245,7 @@ void View::DrawFindZone()
                     const auto numBins = int64_t( w - 4 );
                     if( numBins > 1 )
                     {
-                        if( numBins != m_findZone.numBins )
+                        if( numBins > m_findZone.numBins )
                         {
                             m_findZone.numBins = numBins;
                             m_findZone.bins = std::make_unique<int64_t[]>( numBins );
@@ -7461,7 +7461,7 @@ void View::DrawCompare()
                 const auto numBins = int64_t( w - 4 );
                 if( numBins > 1 )
                 {
-                    if( numBins != m_compare.numBins )
+                    if( numBins > m_compare.numBins )
                     {
                         m_compare.numBins = numBins;
                         m_compare.bins = std::make_unique<CompVal[]>( numBins );
@@ -8526,7 +8526,7 @@ void View::DrawInfo()
                     const auto numBins = int64_t( w - 4 );
                     if( numBins > 1 )
                     {
-                        if( numBins != m_frameSortData.numBins )
+                        if( numBins > m_frameSortData.numBins )
                         {
                             m_frameSortData.numBins = numBins;
                             m_frameSortData.bins = std::make_unique<int64_t[]>( numBins );

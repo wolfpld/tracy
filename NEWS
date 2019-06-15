@@ -65,6 +65,7 @@ v0.5 (xxxx-xx-xx)
 - Zone selection in compare traces menu can be now linked to the other
   trace.
 - Added support for frame image (screen shot) storage.
+- Implemented ability to cut off outliers on find zone histogram.
 
 v0.4.1 (2018-12-30)
 -------------------

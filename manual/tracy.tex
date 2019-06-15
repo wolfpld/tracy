@@ -440,17 +440,17 @@ Images are sent using the \texttt{FrameImage(image, width, height, offset, flip)
 
 Handling image data requires a lot of memory and bandwidth\footnote{One uncompressed 1080p image takes 8 MB.}. To achieve sane memory usage you should scale down taken screen shots to a sensible size, e.g. $320\times180$.
 
-To further reduce image data size, frame images are internally compressed using the Ericsson Texture Compression (ETC1) technique\footnote{\url{https://en.wikipedia.org/wiki/Ericsson_Texture_Compression}}, which significantly reduces data size\footnote{One pixel is stored in a nibble (4 bits) instead of 32 bits.}, at a small quality decrease. The compression algorithm is very fast and can be made even faster by enabling SIMD processing, as indicated in table~\ref{EtcSimd}.
+To further reduce image data size, frame images are internally compressed using the Ericsson Texture Compression (ETC1) technique\footnote{\url{https://en.wikipedia.org/wiki/Ericsson_Texture_Compression}}, which significantly reduces data size\footnote{One pixel is stored in a nibble (4 bits) instead of 32 bits.}, at a small quality decrease. The compression algorithm is very fast and can be made even faster by enabling SIMD processing, as indicated in table~\ref{EtcSimd}. Note that time measurements depend on the state of the cache and/or CPU frequency scaling. If V-sync is enabled, the compression function may be cold, or the CPU might be running in a power saving mode and need some time to restore full execution speed. If V-sync is disabled, there's a constant stream of images to compress and the compression function never leaves cache, nor the CPU frequency is lowered. This is reflected by giving time ranges instead of single time result.
 
 \begin{table}[h]
 \centering
-\begin{tabular}[h]{c|c|c|c}
-\textbf{Implementation} & \textbf{Required define} & \textbf{V-sync on (cold cache)} & \textbf{V-sync off (hot cache)} \\ \hline
-x86 Reference & --- & 1.45 \si{\milli\second} & 778 \si{\micro\second} \\
-x86 SSE4.1 & \texttt{\_\_SSE4\_1\_\_} & 423 \si{\micro\second} & 245 \si{\micro\second} \\
-x86 AVX2 & \texttt{\_\_AVX2\_\_} & 228 \si{\micro\second} & 142 \si{\micro\second} \\
-ARM Reference & --- & --- & 10.78 \si{\milli\second} \\
-ARM NEON & \texttt{\_\_ARM\_NEON} & --- & 3.37 \si{\milli\second}
+\begin{tabular}[h]{c|c|c}
+\textbf{Implementation} & \textbf{Required define} & \textbf{Time} \\ \hline
+x86 Reference & --- & 778 \si{\micro\second} -- 1.45 \si{\milli\second} \\
+x86 SSE4.1 & \texttt{\_\_SSE4\_1\_\_} & 245 \si{\micro\second} -- 423 \si{\micro\second} \\
+x86 AVX2 & \texttt{\_\_AVX2\_\_} & 142 \si{\micro\second} -- 228 \si{\micro\second} \\
+ARM Reference & --- & 10.78 \si{\milli\second} \\
+ARM NEON & \texttt{\_\_ARM\_NEON} & 3.37 \si{\milli\second}
 \end{tabular}
 \caption{Compression time of $320\times180$ image. x86: i7 8700K; ARM: ODROID-C2}
 \label{EtcSimd}

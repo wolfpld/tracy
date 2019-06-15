@@ -639,23 +639,13 @@ const __m128i g_table128_SIMD[2] =
     _mm_setr_epi16(   2*128,   5*128,   9*128,  13*128,  18*128,  24*128,  33*128,  47*128),
     _mm_setr_epi16(   8*128,  17*128,  29*128,  42*128,  60*128,  80*128, 106*128, 183*128)
 };
-
-const __m128i g_table256_SIMD[4] =
-{
-    _mm_setr_epi32(  2*256,   5*256,   9*256,  13*256),
-    _mm_setr_epi32(  8*256,  17*256,  29*256,  42*256),
-    _mm_setr_epi32( 18*256,  24*256,  33*256,  47*256),
-    _mm_setr_epi32( 60*256,  80*256, 106*256, 183*256)
-};
 #endif
 
 #ifdef __ARM_NEON
-const int32x4_t g_table256_NEON[4] =
+const int16x8_t g_table128_NEON[2] =
 {
-    {  2*256,   5*256,   9*256,  13*256 },
-    {  8*256,  17*256,  29*256,  42*256 },
-    { 18*256,  24*256,  33*256,  47*256 },
-    { 60*256,  80*256, 106*256, 183*256 }
+    { 2*128,   5*128,   9*128,  13*128,  18*128,  24*128,  33*128,  47*128 },
+    { 8*128,  17*128,  29*128,  42*128,  60*128,  80*128, 106*128, 183*128 }
 };
 #endif
 
@@ -1150,104 +1140,7 @@ static void PrepareAverages( v4i a[8], const uint8_t* src, unsigned int err[4] )
     }
 }
 
-static void FindBestFit( uint64_t terr[2][8], uint16_t tsel[16][8], v4i a[8], const uint32_t* id, const uint8_t* data )
-{
-    for( size_t i=0; i<16; i++ )
-    {
-        uint16_t* sel = tsel[i];
-        unsigned int bid = id[i];
-        uint64_t* ter = terr[bid%2];
-
-        uint8_t b = *data++;
-        uint8_t g = *data++;
-        uint8_t r = *data++;
-        data++;
-
-        int dr = a[bid][0] - r;
-        int dg = a[bid][1] - g;
-        int db = a[bid][2] - b;
-
-#ifdef __ARM_NEON
-        int32x4_t pix = vdupq_n_s32(dr * 77 + dg * 151 + db * 28);
-
-        // Taking the absolute value is way faster. The values are only used to sort, so the result will be the same.
-        uint32x4_t error0 = vreinterpretq_u32_s32(vabsq_s32(vaddq_s32(pix, g_table256_NEON[0])));
-        uint32x4_t error1 = vreinterpretq_u32_s32(vabsq_s32(vaddq_s32(pix, g_table256_NEON[1])));
-        uint32x4_t error2 = vreinterpretq_u32_s32(vabsq_s32(vsubq_s32(pix, g_table256_NEON[0])));
-        uint32x4_t error3 = vreinterpretq_u32_s32(vabsq_s32(vsubq_s32(pix, g_table256_NEON[1])));
-
-        uint32x4_t index0 = vandq_u32(vcltq_u32(error1, error0), vdupq_n_u32(1));
-        uint32x4_t minError0 = vminq_u32(error0, error1);
-
-        uint32x4_t index1 = vreinterpretq_u32_s32(vsubq_s32(vdupq_n_s32(2), vreinterpretq_s32_u32(vcltq_u32(error3, error2))));
-        uint32x4_t minError1 = vminq_u32(error2, error3);
-
-        uint32x4_t blendMask = vcltq_u32(minError1, minError0);
-        uint32x4_t minIndex0 = vorrq_u32(vbicq_u32(index0, blendMask), vandq_u32(index1, blendMask));
-        uint32x4_t minError = vminq_u32(minError0, minError1);
-
-        // Squaring the minimum error to produce correct values when adding
-        uint32x4_t squareErrorLow = vmulq_u32(minError, minError);
-        uint32x4_t squareErrorHigh = vshrq_n_u32(vreinterpretq_u32_s32(vqdmulhq_s32(vreinterpretq_s32_u32(minError), vreinterpretq_s32_u32(minError))), 1);
-        uint32x4x2_t squareErrorZip = vzipq_u32(squareErrorLow, squareErrorHigh);
-        uint64x2x2_t squareError = { vreinterpretq_u64_u32(squareErrorZip.val[0]), vreinterpretq_u64_u32(squareErrorZip.val[1]) };
-        squareError.val[0] = vaddq_u64(squareError.val[0], vld1q_u64(ter + 0));
-        squareError.val[1] = vaddq_u64(squareError.val[1], vld1q_u64(ter + 2));
-        vst1q_u64(ter + 0, squareError.val[0]);
-        vst1q_u64(ter + 2, squareError.val[1]);
-
-        // Taking the absolute value is way faster. The values are only used to sort, so the result will be the same.
-        error0 = vreinterpretq_u32_s32( vabsq_s32(vaddq_s32(pix, g_table256_NEON[2])));
-        error1 = vreinterpretq_u32_s32( vabsq_s32(vaddq_s32(pix, g_table256_NEON[3])));
-        error2 = vreinterpretq_u32_s32( vabsq_s32(vsubq_s32(pix, g_table256_NEON[2])));
-        error3 = vreinterpretq_u32_s32( vabsq_s32(vsubq_s32(pix, g_table256_NEON[3])));
-
-        index0 = vandq_u32(vcltq_u32(error1, error0), vdupq_n_u32(1));
-        minError0 = vminq_u32(error0, error1);
-
-        index1 = vreinterpretq_u32_s32( vsubq_s32(vdupq_n_s32(2), vreinterpretq_s32_u32(vcltq_u32(error3, error2))) );
-        minError1 = vminq_u32(error2, error3);
-
-        blendMask = vcltq_u32(minError1, minError0);
-        uint32x4_t minIndex1 = vorrq_u32(vbicq_u32(index0, blendMask), vandq_u32(index1, blendMask));
-        minError = vminq_u32(minError0, minError1);
-
-        // Squaring the minimum error to produce correct values when adding
-        squareErrorLow = vmulq_u32(minError, minError);
-        squareErrorHigh = vshrq_n_u32(vreinterpretq_u32_s32( vqdmulhq_s32(vreinterpretq_s32_u32(minError), vreinterpretq_s32_u32(minError)) ), 1 );
-        squareErrorZip = vzipq_u32(squareErrorLow, squareErrorHigh);
-        squareError.val[0] = vaddq_u64(vreinterpretq_u64_u32( squareErrorZip.val[0] ), vld1q_u64(ter + 4));
-        squareError.val[1] = vaddq_u64(vreinterpretq_u64_u32( squareErrorZip.val[1] ), vld1q_u64(ter + 6));
-        vst1q_u64(ter + 4, squareError.val[0]);
-        vst1q_u64(ter + 6, squareError.val[1]);
-
-        uint16x8_t minIndex = vcombine_u16(vqmovn_u32(minIndex0), vqmovn_u32(minIndex1));
-        vst1q_u16(sel, minIndex);
-#else
-        int pix = dr * 77 + dg * 151 + db * 28;
-
-        for( int t=0; t<8; t++ )
-        {
-            const int64_t* tab = g_table256[t];
-            unsigned int idx = 0;
-            uint64_t err = sq( tab[0] + pix );
-            for( int j=1; j<4; j++ )
-            {
-                uint64_t local = sq( tab[j] + pix );
-                if( local < err )
-                {
-                    err = local;
-                    idx = j;
-                }
-            }
-            *sel++ = idx;
-            *ter++ += err;
-        }
-#endif
-    }
-}
-
-#ifdef __SSE4_1__
+#if defined __SSE4_1__ || defined __ARM_NEON
 // Non-reference implementation, but faster. Produces same results as the AVX2 version
 static void FindBestFit( uint32_t terr[2][8], uint16_t tsel[16][8], v4i a[8], const uint32_t* id, const uint8_t* data )
 {
@@ -1266,6 +1159,7 @@ static void FindBestFit( uint32_t terr[2][8], uint16_t tsel[16][8], v4i a[8], co
         int dg = a[bid][1] - g;
         int db = a[bid][2] - b;
 
+#ifdef __SSE4_1__
         // The scaling values are divided by two and rounded, to allow the differences to be in the range of signed int16
         // This produces slightly different results, but is significant faster
         __m128i pixel = _mm_set1_epi16(dr * 38 + dg * 76 + db * 14);
@@ -1297,6 +1191,72 @@ static void FindBestFit( uint32_t terr[2][8], uint16_t tsel[16][8], v4i a[8], co
         _mm_storeu_si128(((__m128i*)ter) + 1, squareErrorHigh);
 
         _mm_storeu_si128((__m128i*)sel, minIndex);
+#else
+        int16x8_t pixel = vdupq_n_s16( dr * 38 + dg * 76 + db * 14 );
+        int16x8_t pix = vabsq_s16( pixel );
+
+        int16x8_t error0 = vabsq_s16( vsubq_s16( pix, g_table128_NEON[0] ) );
+        int16x8_t error1 = vabsq_s16( vsubq_s16( pix, g_table128_NEON[1] ) );
+
+        int16x8_t index = vandq_s16( vreinterpretq_s16_u16( vcltq_s16( error1, error0 ) ), vdupq_n_s16( 1 ) );
+        int16x8_t minError = vminq_s16( error0, error1 );
+
+        int16x8_t indexBit = vandq_s16( vmvnq_s16( vshrq_n_s16( pixel, 15 ) ), vdupq_n_s16( -1 ) );
+        int16x8_t minIndex = vorrq_s16( index, vaddq_s16( indexBit, indexBit ) );
+
+        int16x4_t minErrorLow = vget_low_s16( minError );
+        int16x4_t minErrorHigh = vget_high_s16( minError );
+
+        int32x4_t squareErrorLow = vmull_s16( minErrorLow, minErrorLow );
+        int32x4_t squareErrorHigh = vmull_s16( minErrorHigh, minErrorHigh );
+
+        int32x4_t squareErrorSumLow = vaddq_s32( squareErrorLow, vld1q_s32( (int32_t*)ter ) );
+        int32x4_t squareErrorSumHigh = vaddq_s32( squareErrorHigh, vld1q_s32( (int32_t*)ter + 4 ) );
+
+        vst1q_s32( (int32_t*)ter, squareErrorSumLow );
+        vst1q_s32( (int32_t*)ter + 4, squareErrorSumHigh );
+
+        vst1q_s16( (int16_t*)sel, minIndex );
+#endif
+    }
+}
+#else
+static void FindBestFit( uint64_t terr[2][8], uint16_t tsel[16][8], v4i a[8], const uint32_t* id, const uint8_t* data )
+{
+    for( size_t i=0; i<16; i++ )
+    {
+        uint16_t* sel = tsel[i];
+        unsigned int bid = id[i];
+        uint64_t* ter = terr[bid%2];
+
+        uint8_t b = *data++;
+        uint8_t g = *data++;
+        uint8_t r = *data++;
+        data++;
+
+        int dr = a[bid][0] - r;
+        int dg = a[bid][1] - g;
+        int db = a[bid][2] - b;
+
+        int pix = dr * 77 + dg * 151 + db * 28;
+
+        for( int t=0; t<8; t++ )
+        {
+            const int64_t* tab = g_table256[t];
+            unsigned int idx = 0;
+            uint64_t err = sq( tab[0] + pix );
+            for( int j=1; j<4; j++ )
+            {
+                uint64_t local = sq( tab[j] + pix );
+                if( local < err )
+                {
+                    err = local;
+                    idx = j;
+                }
+            }
+            *sel++ = idx;
+            *ter++ += err;
+        }
     }
 }
 #endif
@@ -1312,7 +1272,7 @@ static uint64_t ProcessRGB( const uint8_t* src )
     size_t idx = GetLeastError( err, 4 );
     EncodeAverages( d, a, idx );
 
-#if defined __SSE4_1__
+#if defined __SSE4_1__ || defined __ARM_NEON
     uint32_t terr[2][8] = {};
 #else
     uint64_t terr[2][8] = {};

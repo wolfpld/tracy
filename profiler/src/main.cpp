@@ -311,7 +311,7 @@ int main( int argc, char** argv )
                 ImGui::EndPopup();
             }
             ImGui::Separator();
-            ImGui::TextUnformatted( "Connect to client" );
+            ImGui::TextUnformatted( "Client address" );
             bool connectClicked = false;
             connectClicked |= ImGui::InputTextWithHint( "###connectaddress", "Enter address", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
             if( !connHistVec.empty() )
@@ -358,7 +358,7 @@ int main( int argc, char** argv )
 
                 view = std::make_unique<tracy::View>( addr, fixedWidth, SetWindowTitleCallback );
             }
-            ImGui::Separator();
+            ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
             if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
             {
                 nfdchar_t* fn;

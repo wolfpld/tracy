@@ -8608,14 +8608,20 @@ void View::DrawInfo()
             const auto ty = ImGui::GetFontSize();
 
             auto& frames = m_frameSortData.data;
-            const auto tmin = frames.front();
-            const auto tmax = frames.back();
+            auto tmin = frames.front();
+            auto tmax = frames.back();
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
                 ImGui::Checkbox( "Log values", &m_frameSortData.logVal );
                 ImGui::SameLine();
                 ImGui::Checkbox( "Log time", &m_frameSortData.logTime );
+
+                TextDisabledUnformatted( "Minimum values in bin:" );
+                ImGui::SameLine();
+                ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+                ImGui::InputInt( "##minBinVal", &m_frameSortData.minBinVal );
+                if( m_frameSortData.minBinVal < 1 ) m_frameSortData.minBinVal = 1;
 
                 TextDisabledUnformatted( "Time range:" );
                 ImGui::SameLine();
@@ -8625,8 +8631,7 @@ void View::DrawInfo()
                 ImGui::SameLine();
                 ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ), true ), RealToString( round( 1000000000.0 / tmax ), true ) );
 
-                const auto dt = double( tmax - tmin );
-                if( dt > 0 )
+                if( tmax - tmin > 0 )
                 {
                     const auto w = ImGui::GetContentRegionAvail().x;
 
@@ -8643,34 +8648,86 @@ void View::DrawInfo()
 
                         memset( bins.get(), 0, sizeof( int64_t ) * numBins );
 
+                        auto framesBegin = frames.begin();
+                        auto framesEnd = frames.end();
+                        while( framesBegin != framesEnd && *framesBegin == 0 ) ++framesBegin;
+
+                        if( m_frameSortData.minBinVal > 1 )
+                        {
+                            if( m_frameSortData.logTime )
+                            {
+                                const auto tMinLog = log10( tmin );
+                                const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                                int64_t i;
+                                for( i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                    const auto distance = std::distance( framesBegin, nit );
+                                    if( distance >= m_frameSortData.minBinVal ) break;
+                                    framesBegin = nit;
+                                }
+                                for( int64_t j=numBins-1; j>i; j-- )
+                                {
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( j-1 ) * zmax ) );
+                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                    const auto distance = std::distance( nit, framesEnd );
+                                    if( distance >= m_frameSortData.minBinVal ) break;
+                                    framesEnd = nit;
+                                }
+                            }
+                            else
+                            {
+                                const auto zmax = tmax - tmin;
+                                int64_t i;
+                                for( i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                    const auto distance = std::distance( framesBegin, nit );
+                                    if( distance >= m_frameSortData.minBinVal ) break;
+                                    framesBegin = nit;
+                                }
+                                for( int64_t j=numBins-1; j>i; j-- )
+                                {
+                                    const auto nextBinVal = tmin + ( j-1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                    const auto distance = std::distance( nit, framesEnd );
+                                    if( distance >= m_frameSortData.minBinVal ) break;
+                                    framesEnd = nit;
+                                }
+                            }
+
+                            tmin = *framesBegin;
+                            tmax = *(framesEnd-1);
+                        }
+
                         if( m_frameSortData.logTime )
                         {
                             const auto tMinLog = log10( tmin );
                             const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
-                            auto fit = frames.begin();
-                            while( fit != frames.end() && *fit == 0 ) ++fit;
+                            auto fit = framesBegin;
                             for( int64_t i=0; i<numBins; i++ )
                             {
                                 const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                                auto nit = std::lower_bound( fit, frames.end(), nextBinVal );
+                                auto nit = std::lower_bound( fit, framesEnd, nextBinVal );
                                 bins[i] = std::distance( fit, nit );
                                 fit = nit;
                             }
-                            bins[numBins-1] += std::distance( fit, frames.end() );
+                            bins[numBins-1] += std::distance( fit, framesEnd );
                         }
                         else
                         {
                             const auto zmax = tmax - tmin;
-                            auto fit = frames.begin();
-                            while( fit != frames.end() && *fit == 0 ) ++fit;
+                            auto fit = framesBegin;
                             for( int64_t i=0; i<numBins; i++ )
                             {
                                 const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
-                                auto nit = std::lower_bound( fit, frames.end(), nextBinVal );
+                                auto nit = std::lower_bound( fit, framesEnd, nextBinVal );
                                 bins[i] = std::distance( fit, nit );
                                 fit = nit;
                             }
-                            bins[numBins-1] += std::distance( fit, frames.end() );
+                            bins[numBins-1] += std::distance( fit, framesEnd );
                         }
 
                         int64_t maxVal = bins[0];
@@ -8778,7 +8835,7 @@ void View::DrawInfo()
                         }
                         else
                         {
-                            const auto pxns = numBins / dt;
+                            const auto pxns = numBins / ( tmax - tmin );
                             const auto nspx = 1.0 / pxns;
                             const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                             const auto step = pow( 10, scale );

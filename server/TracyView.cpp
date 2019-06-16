@@ -6243,7 +6243,10 @@ void View::DrawFindZone()
             {
                 ImGui::Checkbox( "Log values", &m_findZone.logVal );
                 ImGui::SameLine();
-                ImGui::Checkbox( "Log time", &m_findZone.logTime );
+                if( ImGui::Checkbox( "Log time", &m_findZone.logTime ) )
+                {
+                    m_findZone.binCache.numBins = -1;
+                }
                 ImGui::SameLine();
                 ImGui::Checkbox( "Cumulate time", &m_findZone.cumulateTime );
                 ImGui::SameLine();

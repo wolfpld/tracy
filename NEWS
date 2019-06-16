@@ -65,9 +65,9 @@ v0.5 (xxxx-xx-xx)
 - Zone selection in compare traces menu can be now linked to the other
   trace.
 - Added support for frame image (screen shot) storage.
-- Implemented ability to cut off outliers on find zone histogram.
-- Zone that is currently hovered by the mouse cursor will be highlighted on
-  the find zone menu histogram.
+- Implemented ability to cut off outliers on histograms.
+- Zone or frame that is currently hovered by the mouse cursor will be
+  highlighted on the histogram.
 
 v0.4.1 (2018-12-30)
 -------------------

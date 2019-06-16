@@ -6856,6 +6856,23 @@ void View::DrawFindZone()
                             draw->AddRect( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x44DD8888 );
                             draw->PopClipRect();
                         }
+
+                        if( m_zoneHover && m_findZone.match[m_findZone.selMatch] == m_zoneHover->srcloc )
+                        {
+                            const auto zoneTime = m_worker.GetZoneEnd( *m_zoneHover ) - m_zoneHover->start;
+                            float zonePos;
+                            if( m_findZone.logTime )
+                            {
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
+                                zonePos = round( ( log10( zoneTime ) - ltmin ) / float( ltmax - ltmin ) * numBins );
+                            }
+                            else
+                            {
+                                zonePos = round( ( zoneTime - tmin ) / float( tmax - tmin ) * numBins );
+                            }
+                            draw->AddLine( ImVec2( wpos.x + zonePos, wpos.y ), ImVec2( wpos.x + zonePos, wpos.y+Height-2 ), 0xFFFFFFFF );
+                        }
                     }
                 }
             }

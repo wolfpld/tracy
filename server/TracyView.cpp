@@ -8844,7 +8844,7 @@ void View::DrawInfo()
                         }
                         else
                         {
-                            const auto pxns = numBins / ( tmax - tmin );
+                            const auto pxns = numBins / double( tmax - tmin );
                             const auto nspx = 1.0 / pxns;
                             const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                             const auto step = pow( 10, scale );

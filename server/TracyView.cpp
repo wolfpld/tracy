@@ -2457,7 +2457,15 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                     }
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
-                        ShowZoneInfo( ev );
+                        if( ImGui::GetIO().KeyCtrl )
+                        {
+                            auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+                            m_findZone.ShowZone( ev.srcloc, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+                        }
+                        else
+                        {
+                            ShowZoneInfo( ev );
+                        }
                     }
 
                     m_zoneSrcLocHighlight = ev.srcloc;
@@ -2584,7 +2592,15 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 }
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
-                    ShowZoneInfo( ev );
+                    if( ImGui::GetIO().KeyCtrl )
+                    {
+                        auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+                        m_findZone.ShowZone( ev.srcloc, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+                    }
+                    else
+                    {
+                        ShowZoneInfo( ev );
+                    }
                 }
 
                 m_zoneSrcLocHighlight = ev.srcloc;

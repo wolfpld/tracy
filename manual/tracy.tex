@@ -1469,7 +1469,7 @@ Clicking the \LMB{} left mouse button on a zone will open the individual zone st
 
 The individual behavior of zones may be influenced by many factors, like CPU cache effects, access times amortized by the disk cache, thread context switching, etc. Sometimes the execution time depends on the internal data structures and their response to different inputs. In other words, it is hard to determine the true performance characteristics by looking at any single zone.
 
-Tracy gives you the ability to display an execution time histogram of all occurrences of a zone. On this view you can see how the function behaves in general, ignoring the outliers. You can inspect how various data inputs influence the execution time and you can filter the data to eventually drill down to the individual zone calls, so that you can see the environment in which they were called.
+Tracy gives you the ability to display an execution time histogram of all occurrences of a zone. On this view you can see how the function behaves in general. You can inspect how various data inputs influence the execution time and you can filter the data to eventually drill down to the individual zone calls, so that you can see the environment in which they were called.
 
 You start by entering a search query, which will be matched against known zone names (see section~\ref{markingzones} for information on the grouping of zone names). If the search found some results, you will be presented with a list of zones in the \emph{matched source locations} drop-down. The selected zone's graph is displayed on the \emph{histogram} drop-down and also the matching zones are highlighted on the timeline view. Clicking the \RMB{} right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
@@ -1505,13 +1505,14 @@ An example histogram is presented on figure~\ref{findzonehistogram}. Here you ca
 \label{findzonehistogram}
 \end{figure}
 
-The histogram is accompanied by various data statistics about displayed data, for example the \emph{total time} of the displayed samples, or the \emph{maximum number of counts} in histogram bins. There are four options that control how the data is presented:
+The histogram is accompanied by various data statistics about displayed data, for example the \emph{total time} of the displayed samples, or the \emph{maximum number of counts} in histogram bins. The following options control how the data is presented:
 
 \begin{itemize}
 \item \emph{Log values} -- Switches between linear and logarithmic scale on the y~axis of the graph, representing the call counts\footnote{Or time, if the \emph{cumulate time} option is enabled.}.
 \item \emph{Log time} -- Switches between linear and logarithmic scale on the x~axis of the graph, representing the time bins.
 \item \emph{Cumulate time} -- Changes how the histogram bin values are calculated. By default the vertical bars on the graph represent the \emph{call counts} of zones that fit in the given time bin. If this option is enabled, the bars represent the \emph{time spent} in the zones. For example, on graph presented on figure~\ref{findzonehistogram} the 10~\si{\micro\second} cluster is the dominating one, if we look at the time spent in zone, even if the 300~\si{\nano\second} cluster has greater number of call counts.
 \item \emph{Self time} -- Removes children time from the analysed zones, which results in displaying only the time spent in the zone itself (or in non-instrumented function calls).
+\item \emph{Minimum values in bin} -- Excludes display of bins which do not hold enough values at both ends of the time range. Increasing this parameter will eliminate outliers, allowing to concentrate on the interesting part of the graph.
 \end{itemize}
 
 You can drag the \LMB{} left mouse button over the histogram to select a time range that you want to closely look at. This will display the data in the histogram info section and it will also filter zones displayed in the \emph{found zones} section. This is quite useful, if you want to actually look at the outliers, i.e.\ where did they originate from, what the program was doing at the moment, etc\footnote{More often than not you will find out, that the application was just starting, or an access to a cold file was required and there's not much you can do to optimize that particular case.}. You can reset the selection range by pressing the \RMB{} right mouse button on the histogram.

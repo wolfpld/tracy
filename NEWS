@@ -66,6 +66,8 @@ v0.5 (xxxx-xx-xx)
   trace.
 - Added support for frame image (screen shot) storage.
 - Implemented ability to cut off outliers on find zone histogram.
+- Zone that is currently hovered by the mouse cursor will be highlighted on
+  the find zone menu histogram.
 
 v0.4.1 (2018-12-30)
 -------------------

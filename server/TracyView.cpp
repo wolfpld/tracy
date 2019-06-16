@@ -9070,7 +9070,11 @@ void View::DrawGoToFrame()
     ImGui::Begin( "Go to frame", &m_goToFrame, ImGuiWindowFlags_AlwaysAutoResize );
     ImGui::InputInt( "Frame", &frameNum );
     frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_CROSSHAIRS " Go to" ) )
+#else
     if( ImGui::Button( "Go to" ) )
+#endif
     {
         ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
     }

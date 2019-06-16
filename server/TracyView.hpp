@@ -264,6 +264,7 @@ private:
     const FrameData* m_frames;
     uint32_t m_lockInfoWindow = InvalidId;
     ZoneEvent* m_zoneHover = nullptr;
+    int m_frameHover = -1;
 
     Region m_highlight;
     Region m_highlightZoom;

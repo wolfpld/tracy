@@ -924,6 +924,9 @@ bool View::DrawImpl()
         ImGui::SameLine();
         TextDisabledUnformatted( m_notificationText.c_str() );
     }
+
+    m_frameHover = -1;
+
     DrawFrames();
     DrawZones();
     ImGui::End();
@@ -1225,6 +1228,7 @@ void View::DrawFrames()
                 }
                 else
                 {
+                    m_frameHover = sel;
                     if( m_frames->name == 0 )
                     {
                         const auto offset = m_worker.GetFrameOffset();
@@ -1694,6 +1698,8 @@ bool View::DrawZoneFrames( const FrameData& frames )
             {
                 ZoomToRange( fbegin, fend );
             }
+
+            if( activeFrameSet ) m_frameHover = i;
         }
 
         if( fsz < MinFrameSize )
@@ -8941,6 +8947,23 @@ void View::DrawInfo()
                             ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( round( 1000000000.0 / t0 ), true ), RealToString( round( 1000000000.0 / t1 ), true ) );
                             TextFocused( "Count:", RealToString( bins[bin], true ) );
                             ImGui::EndTooltip();
+                        }
+
+                        if( m_frameHover != -1 )
+                        {
+                            const auto frameTime = m_worker.GetFrameTime( *m_frames, m_frameHover );
+                            float framePos;
+                            if( m_frameSortData.logTime )
+                            {
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
+                                framePos = round( ( log10( frameTime ) - ltmin ) / float( ltmax - ltmin ) * numBins );
+                            }
+                            else
+                            {
+                                framePos = round( ( frameTime - tmin ) / float( tmax - tmin ) * numBins );
+                            }
+                            draw->AddLine( ImVec2( wpos.x + framePos, wpos.y ), ImVec2( wpos.x + framePos, wpos.y+Height-2 ), 0xFFFFFFFF );
                         }
                     }
                 }

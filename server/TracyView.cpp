@@ -6264,6 +6264,8 @@ void View::DrawFindZone()
                 ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
                 ImGui::InputInt( "##minBinVal", &m_findZone.minBinVal );
                 if( m_findZone.minBinVal < 1 ) m_findZone.minBinVal = 1;
+                ImGui::SameLine();
+                if( ImGui::Button( "Reset" ) ) m_findZone.minBinVal = 1;
 
                 const auto cumulateTime = m_findZone.cumulateTime;
 
@@ -8631,6 +8633,8 @@ void View::DrawInfo()
                 ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
                 ImGui::InputInt( "##minBinVal", &m_frameSortData.minBinVal );
                 if( m_frameSortData.minBinVal < 1 ) m_frameSortData.minBinVal = 1;
+                ImGui::SameLine();
+                if( ImGui::Button( "Reset" ) ) m_frameSortData.minBinVal = 1;
 
                 TextDisabledUnformatted( "Time range:" );
                 ImGui::SameLine();

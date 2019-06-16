@@ -1854,6 +1854,7 @@ void View::DrawZones()
     m_msgHighlight.Decay( nullptr );
     m_zoneSrcLocHighlight.Decay( 0 );
     m_lockHoverHighlight.Decay( InvalidId );
+    m_zoneHover = nullptr;
 
     if( m_zvStart == m_zvEnd ) return;
     assert( m_zvStart < m_zvEnd );
@@ -2469,6 +2470,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                     }
 
                     m_zoneSrcLocHighlight = ev.srcloc;
+                    m_zoneHover = &ev;
                 }
             }
             char tmp[64];
@@ -2604,6 +2606,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 }
 
                 m_zoneSrcLocHighlight = ev.srcloc;
+                m_zoneHover = &ev;
             }
 
             ++it;

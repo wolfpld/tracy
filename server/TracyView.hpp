@@ -263,6 +263,7 @@ private:
     int m_memoryAllocHoverWait = 0;
     const FrameData* m_frames;
     uint32_t m_lockInfoWindow = InvalidId;
+    ZoneEvent* m_zoneHover = nullptr;
 
     Region m_highlight;
     Region m_highlightZoom;

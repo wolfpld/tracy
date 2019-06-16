@@ -376,6 +376,13 @@ private:
         int selCs = 0;
         int minBinVal = 1;
 
+        struct
+        {
+            int numBins = -1;
+            ptrdiff_t distBegin;
+            ptrdiff_t distEnd;
+        } binCache;
+
         void Reset()
         {
             ResetMatch();
@@ -411,6 +418,7 @@ private:
             selAverage = 0;
             selMedian = 0;
             selTotal = 0;
+            binCache.numBins = -1;
         }
 
         void ShowZone( int32_t srcloc, const char* name )

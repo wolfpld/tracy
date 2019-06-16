@@ -6820,8 +6820,10 @@ void View::DrawFindZone()
                                 t1 = ( e - tmin ) / float( tmax - tmin ) * numBins;
                             }
 
+                            draw->PushClipRect( wpos, wpos + ImVec2( w, Height ), true );
                             draw->AddRectFilled( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x22DD8888 );
                             draw->AddRect( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x44DD8888 );
+                            draw->PopClipRect();
                         }
                     }
                 }

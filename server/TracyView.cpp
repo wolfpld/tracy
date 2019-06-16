@@ -6246,22 +6246,6 @@ void View::DrawFindZone()
                     const auto numBins = int64_t( w - 4 );
                     if( numBins > 1 )
                     {
-                        if( numBins > m_findZone.numBins )
-                        {
-                            m_findZone.numBins = numBins;
-                            m_findZone.bins = std::make_unique<int64_t[]>( numBins );
-                            m_findZone.binTime = std::make_unique<int64_t[]>( numBins );
-                            m_findZone.selBin = std::make_unique<int64_t[]>( numBins );
-                        }
-
-                        const auto& bins = m_findZone.bins;
-                        const auto& binTime = m_findZone.binTime;
-                        const auto& selBin = m_findZone.selBin;
-
-                        memset( bins.get(), 0, sizeof( int64_t ) * numBins );
-                        memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
-                        memset( selBin.get(), 0, sizeof( int64_t ) * numBins );
-
                         int64_t selectionTime = 0;
                         const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
                         const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
@@ -6322,6 +6306,22 @@ void View::DrawFindZone()
                             tmax = *(sortedEnd-1);
                             timeTotal = tmax - tmin;
                         }
+
+                        if( numBins > m_findZone.numBins )
+                        {
+                            m_findZone.numBins = numBins;
+                            m_findZone.bins = std::make_unique<int64_t[]>( numBins );
+                            m_findZone.binTime = std::make_unique<int64_t[]>( numBins );
+                            m_findZone.selBin = std::make_unique<int64_t[]>( numBins );
+                        }
+
+                        const auto& bins = m_findZone.bins;
+                        const auto& binTime = m_findZone.binTime;
+                        const auto& selBin = m_findZone.selBin;
+
+                        memset( bins.get(), 0, sizeof( int64_t ) * numBins );
+                        memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
+                        memset( selBin.get(), 0, sizeof( int64_t ) * numBins );
 
                         if( m_findZone.logTime )
                         {

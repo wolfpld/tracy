@@ -462,7 +462,7 @@ int main( int argc, char** argv )
             if( !clients.empty() )
             {
                 ImGui::Separator();
-                ImGui::TextUnformatted( "Available clients:" );
+                ImGui::TextUnformatted( "Discovered clients:" );
                 ImGui::Separator();
                 ImGui::Columns( 2 );
                 for( auto& v : clients )

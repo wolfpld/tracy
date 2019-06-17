@@ -422,6 +422,23 @@ static const char* GetHostInfo()
     return buf;
 }
 
+static const char* GetBroadcastMessage( const char* procname, int& len )
+{
+    static char buf[1024];
+    char* ptr = buf;
+
+    const uint32_t protoVer = ProtocolVersion;
+    memcpy( ptr, &protoVer, sizeof( protoVer ) );
+    ptr += sizeof( protoVer );
+
+    const auto pnsz = strlen( procname );
+    memcpy( ptr, procname, pnsz );
+    ptr += pnsz;
+
+    len = ptr - buf;
+    return buf;
+}
+
 #ifdef _WIN32
 static DWORD s_profilerThreadId = 0;
 static char s_crashText[1024];
@@ -1091,6 +1108,8 @@ void Profiler::Worker()
         }
     }
 
+    const char* broadcastMsg = nullptr;
+    int broadcastLen = 0;
 #ifndef TRACY_NO_BROADCAST
     m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
     new(m_broadcast) UdpBroadcast();
@@ -1099,6 +1118,10 @@ void Profiler::Worker()
         m_broadcast->~UdpBroadcast();
         tracy_free( m_broadcast );
         m_broadcast = nullptr;
+    }
+    else
+    {
+        broadcastMsg = GetBroadcastMessage( procname, broadcastLen );
     }
 #endif
 
@@ -1129,7 +1152,7 @@ void Profiler::Worker()
                 if( t - m_lastBroadcast > 5000000000 )  // 5s
                 {
                     m_lastBroadcast = t;
-                    m_broadcast->Send( "abc", 3 );
+                    m_broadcast->Send( broadcastMsg, broadcastLen );
                     auto err = WSAGetLastError();
                 }
             }

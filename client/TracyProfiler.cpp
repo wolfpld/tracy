@@ -1153,7 +1153,6 @@ void Profiler::Worker()
                 {
                     m_lastBroadcast = t;
                     m_broadcast->Send( 8087, broadcastMsg, broadcastLen );
-                    auto err = WSAGetLastError();
                 }
             }
         }

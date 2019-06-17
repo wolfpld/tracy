@@ -920,6 +920,7 @@ Profiler::Profiler()
     , m_shutdownManual( false )
     , m_shutdownFinished( false )
     , m_sock( nullptr )
+    , m_broadcast( nullptr )
     , m_noExit( false )
     , m_zoneId( 1 )
     , m_stream( LZ4_createStream() )
@@ -1016,6 +1017,12 @@ Profiler::~Profiler()
         tracy_free( m_sock );
     }
 
+    if( m_broadcast )
+    {
+        m_broadcast->~UdpBroadcast();
+        tracy_free( m_broadcast );
+    }
+
     assert( s_instance );
     s_instance = nullptr;
 }
@@ -1084,6 +1091,15 @@ void Profiler::Worker()
         }
     }
 
+    m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
+    new(m_broadcast) UdpBroadcast();
+    if( !m_broadcast->Open( "255.255.255.255", "8087" ) )
+    {
+        m_broadcast->~UdpBroadcast();
+        tracy_free( m_broadcast );
+        m_broadcast = nullptr;
+    }
+
     // Connections loop.
     // Each iteration of the loop handles whole connection. Multiple iterations will only
     // happen in the on-demand mode or when handshake fails.
@@ -1104,6 +1120,17 @@ void Profiler::Worker()
 #ifndef TRACY_ON_DEMAND
             ProcessSysTime();
 #endif
+
+            if( m_broadcast )
+            {
+                auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+                if( t - m_lastBroadcast > 5000000000 )  // 5s
+                {
+                    m_lastBroadcast = t;
+                    m_broadcast->Send( "abc", 3 );
+                    auto err = WSAGetLastError();
+                }
+            }
         }
 
         // Handshake

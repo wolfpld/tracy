@@ -47,6 +47,7 @@ namespace tracy
 class GpuCtx;
 class Profiler;
 class Socket;
+class UdpBroadcast;
 
 struct GpuCtxWrapper
 {
@@ -516,6 +517,7 @@ private:
     std::atomic<bool> m_shutdownManual;
     std::atomic<bool> m_shutdownFinished;
     Socket* m_sock;
+    UdpBroadcast* m_broadcast;
     bool m_noExit;
     std::atomic<uint32_t> m_zoneId;
 
@@ -550,6 +552,8 @@ private:
 #else
     void ProcessSysTime() {}
 #endif
+
+    uint64_t m_lastBroadcast = 0;
 };
 
 };

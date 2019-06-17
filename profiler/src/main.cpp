@@ -26,6 +26,7 @@
 #define STBI_ONLY_PNG
 #include "stb_image.h"
 
+#include "../../common/TracyProtocol.hpp"
 #include "../../server/tracy_flat_hash_map.hpp"
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/TracyBadVersion.hpp"
@@ -456,6 +457,33 @@ int main( int argc, char** argv )
             {
                 if( loadThread.joinable() ) { loadThread.join(); }
                 tracy::BadVersion( badVer );
+            }
+
+            if( !clients.empty() )
+            {
+                ImGui::Separator();
+                ImGui::TextUnformatted( "Available clients:" );
+                ImGui::Separator();
+                ImGui::Columns( 2 );
+                for( auto& v : clients )
+                {
+                    const bool badProto = v.second.protocolVersion != tracy::ProtocolVersion;
+                    bool sel = false;
+                    ImGuiSelectableFlags flags = ImGuiSelectableFlags_SpanAllColumns;
+                    if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
+                    ImGui::Selectable( v.second.address.c_str(), &sel, flags );
+                    ImGui::NextColumn();
+                    if( badProto )
+                    {
+                        tracy::TextDisabledUnformatted( v.second.procName.c_str() );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( v.second.procName.c_str() );
+                    }
+                    ImGui::NextColumn();
+                }
+                ImGui::EndColumns();
             }
 
             ImGui::End();

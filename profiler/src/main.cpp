@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <assert.h>
+#include <chrono>
 #include <inttypes.h>
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
@@ -25,6 +26,7 @@
 #define STBI_ONLY_PNG
 #include "stb_image.h"
 
+#include "../../server/tracy_flat_hash_map.hpp"
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
@@ -82,8 +84,17 @@ std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildCo
     return ret;
 }
 
+struct ClientData
+{
+    int64_t time;
+    uint32_t protocolVersion;
+    std::string procName;
+};
+
 int main( int argc, char** argv )
 {
+    tracy::flat_hash_map<uint32_t, ClientData> clients;
+
     std::unique_ptr<tracy::View> view;
     int badVer = 0;
 
@@ -236,6 +247,7 @@ int main( int argc, char** argv )
     char addr[1024] = { "127.0.0.1" };
 
     std::thread loadThread;
+    tracy::UdpListen* broadcastListen = nullptr;
 
     glfwShowWindow( window );
 
@@ -264,6 +276,54 @@ int main( int argc, char** argv )
             {
                 s_customTitle = false;
                 glfwSetWindowTitle( window, title );
+            }
+
+            if( !broadcastListen )
+            {
+                broadcastListen = new tracy::UdpListen();
+                if( !broadcastListen->Listen( 8087 ) )
+                {
+                    delete broadcastListen;
+                    broadcastListen = nullptr;
+                }
+            }
+            else
+            {
+                tracy::IpAddress addr;
+                int len;
+                auto msg = broadcastListen->Read( len, addr );
+                const auto t = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+                if( msg )
+                {
+                    uint32_t protoVer;
+                    memcpy( &protoVer, msg, sizeof( uint32_t ) );
+                    auto procname = msg + sizeof( uint32_t );
+
+                    auto it = clients.find( addr.GetNumber() );
+                    if( it == clients.end() )
+                    {
+                        clients.emplace( addr.GetNumber(), ClientData { t, protoVer, procname } );
+                    }
+                    else
+                    {
+                        it->second.time = t;
+                        if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
+                        if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
+                    }
+                }
+                auto it = clients.begin();
+                while( it != clients.end() )
+                {
+                    const auto diff = t - it->second.time;
+                    if( diff > 10000 )  // 10s
+                    {
+                        it = clients.erase( it );
+                    }
+                    else
+                    {
+                        ++it;
+                    }
+                }
             }
 
             setlocale( LC_NUMERIC, "C" );
@@ -399,6 +459,12 @@ int main( int argc, char** argv )
         }
         else
         {
+            if( broadcastListen )
+            {
+                delete broadcastListen;
+                broadcastListen = nullptr;
+                clients.clear();
+            }
             if( loadThread.joinable() ) loadThread.join();
             view->NotifyRootWindowSize( display_w, display_h );
             if( !view->Draw() )

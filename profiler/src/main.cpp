@@ -319,7 +319,7 @@ int main( int argc, char** argv )
                 while( it != clients.end() )
                 {
                     const auto diff = t - it->second.time;
-                    if( diff > 6000 )  // 6s
+                    if( diff > 4000 )  // 4s
                     {
                         it = clients.erase( it );
                     }

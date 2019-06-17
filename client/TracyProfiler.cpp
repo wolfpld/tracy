@@ -1149,7 +1149,7 @@ void Profiler::Worker()
             if( m_broadcast )
             {
                 auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-                if( t - m_lastBroadcast > 5000000000 )  // 5s
+                if( t - m_lastBroadcast > 3000000000 )  // 3s
                 {
                     m_lastBroadcast = t;
                     m_broadcast->Send( 8087, broadcastMsg, broadcastLen );

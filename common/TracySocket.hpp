@@ -72,7 +72,7 @@ public:
     bool Open( const char* addr, const char* port );
     void Close();
 
-    int Send( const void* data, int len );
+    int Send( int port, const void* data, int len );
 
     UdpBroadcast( const UdpBroadcast& ) = delete;
     UdpBroadcast( UdpBroadcast&& ) = delete;

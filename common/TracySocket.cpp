@@ -413,12 +413,12 @@ void UdpBroadcast::Close()
     m_sock = -1;
 }
 
-int UdpBroadcast::Send( const void* data, int len )
+int UdpBroadcast::Send( int port, const void* data, int len )
 {
     assert( m_sock != -1 );
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
-    addr.sin_port = htons( 8087 );
+    addr.sin_port = htons( port );
     addr.sin_addr.s_addr = INADDR_BROADCAST;
     return sendto( m_sock, (const char*)data, len, MSG_NOSIGNAL, (sockaddr*)&addr, sizeof( addr ) );
 }

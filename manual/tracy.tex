@@ -349,6 +349,7 @@ The following defines may be of interest:
 \item \texttt{TRACY\_NO\_STATISTICS} -- Tracy will perform statistical data collection on the fly, if this macro is \emph{not} defined. This allows extended analysis of the trace (for example, you can perform a live search for matching zones) at a small CPU processing cost and a considerable memory usage increase (at least 10 bytes per zone).
 \item \texttt{TRACY\_EXTENDED\_FONT} -- use this define, if you have loaded extra symbol ranges in your font and added icons\footnote{See the \texttt{profiler} utility source code for reference.}. Otherwise, some characters will be replaced with an ASCII compatible version. For example, the micro (\si\micro) symbol will be replaced with \texttt{u}, and \faExclamationTriangle{} icon will be replaced with \texttt{/!\textbackslash}.
 \item \texttt{TRACY\_ROOT\_WINDOW} -- the main profiler view will occupy whole window if this macro is defined. Additional setup is required for this to work. If you are embedding the server into your application you probably do \emph{not} want this.
+\item \texttt{TRACY\_NO\_BROADCAST} -- client will not broadcast its presence to the local network.
 \end{itemize}
 
 \subsection{Naming threads}
@@ -1006,9 +1007,11 @@ The client \emph{address entry} field and the \faWifi{}~\emph{Connect} button ar
 
 If you want to open a trace that you have stored on the disk, you can do so by pressing the \faFolderOpen{}~\emph{Open saved trace} button.
 
+The \emph{discovered clients} list is only displayed if there are clients broadcasting their presence on the local network. Each entry shows the IP address of the client and the name of the application that is profiled. Clicking on an entry will connect to the client. Incompatible clients are grayed-out and can't be connected to.
+
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw (0, 0) rectangle (4.95, -2.2);
+\draw (0, 0) rectangle (4.95, -3.2);
 \draw[pattern=crosshatch dots] (0, 0) rectangle+(4.95, 0.3);
 \draw[rounded corners=5pt] (0.1, -0.1) rectangle+(1.1, -0.5) node [midway] {\faBook};
 \draw[rounded corners=5pt] (1.3, -0.1) rectangle+(1.1, -0.5) node [midway] {\faGlobeAmericas};
@@ -1019,6 +1022,9 @@ If you want to open a trace that you have stored on the disk, you can do so by p
 \draw[rounded corners=5pt] (4.33, -0.9) rectangle+(0.5, -0.5) node [midway] {\faCaretDown};
 \draw[rounded corners=5pt] (0.1, -1.55) rectangle+(2, -0.5) node [midway] {\faWifi{}~Connect};
 \draw[rounded corners=5pt] (2.3, -1.55) rectangle+(2.5, -0.5) node [midway] {\faFolderOpen{}~Open trace};
+
+\draw (0.1, -2.1) node[anchor=north west] {Discovered clients:};
+\draw (0.1, -2.6) node[anchor=north west] {127.0.0.1   | Application name};
 \end{tikzpicture}
 \caption{Welcome dialog.}
 \label{welcomedialog}

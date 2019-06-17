@@ -89,6 +89,7 @@ struct ClientData
     int64_t time;
     uint32_t protocolVersion;
     std::string procName;
+    std::string address;
 };
 
 int main( int argc, char** argv )
@@ -298,17 +299,19 @@ int main( int argc, char** argv )
                     uint32_t protoVer;
                     memcpy( &protoVer, msg, sizeof( uint32_t ) );
                     auto procname = msg + sizeof( uint32_t );
+                    auto address = addr.GetText();
 
                     auto it = clients.find( addr.GetNumber() );
                     if( it == clients.end() )
                     {
-                        clients.emplace( addr.GetNumber(), ClientData { t, protoVer, procname } );
+                        clients.emplace( addr.GetNumber(), ClientData { t, protoVer, procname, address } );
                     }
                     else
                     {
                         it->second.time = t;
                         if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
                         if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
+                        if( strcmp( it->second.address.c_str(), address ) != 0 ) it->second.address = address;
                     }
                 }
                 auto it = clients.begin();

@@ -3,6 +3,8 @@
 
 #include <functional>
 
+struct sockaddr;
+
 namespace tracy
 {
 
@@ -78,6 +80,47 @@ public:
     UdpBroadcast( UdpBroadcast&& ) = delete;
     UdpBroadcast& operator=( const UdpBroadcast& ) = delete;
     UdpBroadcast& operator=( UdpBroadcast&& ) = delete;
+
+private:
+    int m_sock;
+};
+
+class IpAddress
+{
+public:
+    IpAddress();
+    ~IpAddress();
+
+    void Set( const struct sockaddr& addr );
+
+    uint32_t GetNumber() const { return m_number; }
+    const char* GetText() const { return m_text; }
+
+    IpAddress( const IpAddress& ) = delete;
+    IpAddress( IpAddress&& ) = delete;
+    IpAddress& operator=( const IpAddress& ) = delete;
+    IpAddress& operator=( IpAddress&& ) = delete;
+
+private:
+    uint32_t m_number;
+    char m_text[17];
+};
+
+class UdpListen
+{
+public:
+    UdpListen();
+    ~UdpListen();
+
+    bool Listen( int port );
+    void Close();
+
+    const char* Read( int& len, IpAddress& addr );
+
+    UdpListen( const UdpListen& ) = delete;
+    UdpListen( UdpListen&& ) = delete;
+    UdpListen& operator=( const UdpListen& ) = delete;
+    UdpListen& operator=( UdpListen&& ) = delete;
 
 private:
     int m_sock;

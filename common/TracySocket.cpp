@@ -423,4 +423,115 @@ int UdpBroadcast::Send( int port, const void* data, int len )
     return sendto( m_sock, (const char*)data, len, MSG_NOSIGNAL, (sockaddr*)&addr, sizeof( addr ) );
 }
 
+IpAddress::IpAddress()
+    : m_number( 0 )
+{
+    *m_text = '\0';
+}
+
+IpAddress::~IpAddress()
+{
+}
+
+void IpAddress::Set( const struct sockaddr& addr )
+{
+    auto ai = (const struct sockaddr_in*)&addr;
+    inet_ntop( AF_INET, &ai->sin_addr, m_text, 17 );
+    m_number = ai->sin_addr.s_addr;
+}
+
+UdpListen::UdpListen()
+    : m_sock( -1 )
+{
+#ifdef _WIN32
+    InitWinSock();
+#endif
+}
+
+UdpListen::~UdpListen()
+{
+    if( m_sock != -1 ) Close();
+}
+
+bool UdpListen::Listen( int port )
+{
+    assert( m_sock == -1 );
+
+    int sock;
+    if( ( sock = socket( AF_INET, SOCK_DGRAM, 0 ) ) == -1 ) return false;
+
+#if defined __APPLE__
+    int val = 1;
+    setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
+#endif
+#if defined _WIN32 || defined __CYGWIN__
+    unsigned long reuse = 1;
+    setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&reuse, sizeof( reuse ) );
+#else
+    int reuse = 1;
+    setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof( reuse ) );
+#endif
+#if defined _WIN32 || defined __CYGWIN__
+    unsigned long broadcast = 1;
+    if( setsockopt( sock, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof( broadcast ) ) == -1 )
+#else
+    int broadcast = 1;
+    if( setsockopt( sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof( broadcast ) ) == -1 )
+#endif
+    {
+#ifdef _WIN32
+        closesocket( sock );
+#else
+        close( sock );
+#endif
+        return false;
+    }
+
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons( port );
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if( bind( sock, (sockaddr*)&addr, sizeof( addr ) ) == -1 )
+    {
+#ifdef _WIN32
+        closesocket( sock );
+#else
+        close( sock );
+#endif
+        return false;
+    }
+
+    m_sock = sock;
+    return true;
+}
+
+void UdpListen::Close()
+{
+    assert( m_sock != -1 );
+#ifdef _WIN32
+    closesocket( m_sock );
+#else
+    close( m_sock );
+#endif
+    m_sock = -1;
+}
+
+const char* UdpListen::Read( int& len, IpAddress& addr )
+{
+    static char buf[2048];
+
+    struct pollfd fd;
+    fd.fd = (socket_t)m_sock;
+    fd.events = POLLIN;
+    if( poll( &fd, 1, 10 ) <= 0 ) return nullptr;
+
+    sockaddr sa;
+    socklen_t salen = sizeof( struct sockaddr );
+    len = recvfrom( m_sock, buf, 2048, 0, &sa, &salen );
+    addr.Set( sa );
+
+    return buf;
+}
+
 }

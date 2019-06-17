@@ -18,6 +18,7 @@
 #  endif
 #  define poll WSAPoll
 #else
+#  include <arpa/inet.h>
 #  include <sys/socket.h>
 #  include <netdb.h>
 #  include <unistd.h>

@@ -4409,6 +4409,7 @@ void View::DrawZoneInfoWindow()
 
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
 
+    ImGui::SetNextWindowSize( ImVec2( 500, 400 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Zone info", &show );
 
@@ -5006,6 +5007,7 @@ void View::DrawGpuInfoWindow()
     auto& ev = *m_gpuInfoWindow;
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
 
+    ImGui::SetNextWindowSize( ImVec2( 500, 400 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Zone info", &show );
 
@@ -6034,6 +6036,7 @@ void View::DrawFindZone()
 {
     if( m_shortcut == ShortcutAction::OpenFind ) ImGui::SetNextWindowFocus();
 
+    ImGui::SetNextWindowSize( ImVec2( 520, 800 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Find zone", &m_findZone.show );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -7273,6 +7276,7 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
 
 void View::DrawCompare()
 {
+    ImGui::SetNextWindowSize( ImVec2( 590, 800 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Compare traces", &m_compare.show );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -8458,6 +8462,7 @@ void View::DrawInfo()
 
     const auto& io = ImGui::GetIO();
 
+    ImGui::SetNextWindowSize( ImVec2( 400, 650 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo );
     TextFocused( "Profiler memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
     TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ), true ) );
@@ -9036,6 +9041,7 @@ void View::DrawInfo()
 
 void View::DrawTextEditor()
 {
+    ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show );
 #ifdef TRACY_EXTENDED_FONT
@@ -9924,6 +9930,7 @@ void View::DrawMemory()
 {
     auto& mem = m_worker.GetMemData();
 
+    ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Memory", &m_memInfo.show );
 
     if( mem.data.empty() )
@@ -10286,6 +10293,7 @@ void View::DrawAllocList()
         data.emplace_back( basePtr + idx );
     }
 
+    ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size(), true ) );
     ListMemData<decltype( data.begin() )>( data.begin(), data.end(), []( auto& v ) {

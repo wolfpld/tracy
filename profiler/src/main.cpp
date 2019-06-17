@@ -471,7 +471,10 @@ int main( int argc, char** argv )
                     bool sel = false;
                     ImGuiSelectableFlags flags = ImGuiSelectableFlags_SpanAllColumns;
                     if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
-                    ImGui::Selectable( v.second.address.c_str(), &sel, flags );
+                    if( ImGui::Selectable( v.second.address.c_str(), &sel, flags ) && !loadThread.joinable() )
+                    {
+                        view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, SetWindowTitleCallback );
+                    }
                     ImGui::NextColumn();
                     if( badProto )
                     {

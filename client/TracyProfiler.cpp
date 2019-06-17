@@ -1091,6 +1091,7 @@ void Profiler::Worker()
         }
     }
 
+#ifndef TRACY_NO_BROADCAST
     m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
     new(m_broadcast) UdpBroadcast();
     if( !m_broadcast->Open( "255.255.255.255", "8087" ) )
@@ -1099,6 +1100,7 @@ void Profiler::Worker()
         tracy_free( m_broadcast );
         m_broadcast = nullptr;
     }
+#endif
 
     // Connections loop.
     // Each iteration of the loop handles whole connection. Multiple iterations will only

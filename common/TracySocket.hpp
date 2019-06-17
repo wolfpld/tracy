@@ -63,6 +63,26 @@ private:
     int m_sock;
 };
 
+class UdpBroadcast
+{
+public:
+    UdpBroadcast();
+    ~UdpBroadcast();
+
+    bool Open( const char* addr, const char* port );
+    void Close();
+
+    int Send( const void* data, int len );
+
+    UdpBroadcast( const UdpBroadcast& ) = delete;
+    UdpBroadcast( UdpBroadcast&& ) = delete;
+    UdpBroadcast& operator=( const UdpBroadcast& ) = delete;
+    UdpBroadcast& operator=( UdpBroadcast&& ) = delete;
+
+private:
+    int m_sock;
+};
+
 }
 
 #endif

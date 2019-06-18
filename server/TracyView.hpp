@@ -453,7 +453,7 @@ private:
         bool logVal = false;
         bool logTime = true;
         bool cumulateTime = false;
-        bool normalize = false;
+        bool normalize = true;
         int64_t numBins = -1;
         std::unique_ptr<CompVal[]> bins, binTime;
         std::vector<int64_t> sorted[2];

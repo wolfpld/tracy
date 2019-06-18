@@ -422,21 +422,18 @@ static const char* GetHostInfo()
     return buf;
 }
 
-static const char* GetBroadcastMessage( const char* procname, int& len )
+static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz, int& len )
 {
-    static char buf[1024];
-    char* ptr = buf;
+    static BroadcastMessage msg;
 
-    const uint32_t protoVer = ProtocolVersion;
-    memcpy( ptr, &protoVer, sizeof( protoVer ) );
-    ptr += sizeof( protoVer );
+    msg.broadcastVersion = BroadcastVersion;
+    msg.protocolVersion = ProtocolVersion;
 
-    const auto pnsz = strlen( procname );
-    memcpy( ptr, procname, pnsz );
-    ptr += pnsz;
+    memcpy( msg.programName, procname, pnsz );
+    memset( msg.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
 
-    len = ptr - buf;
-    return buf;
+    len = offsetof( BroadcastMessage, programName ) + pnsz + 1;
+    return msg;
 }
 
 #ifdef _WIN32
@@ -1108,9 +1105,6 @@ void Profiler::Worker()
         }
     }
 
-    const char* broadcastMsg = nullptr;
-    int broadcastLen = 0;
-    uint64_t lastBroadcast = 0;
 #ifndef TRACY_NO_BROADCAST
     m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
     new(m_broadcast) UdpBroadcast();
@@ -1120,11 +1114,11 @@ void Profiler::Worker()
         tracy_free( m_broadcast );
         m_broadcast = nullptr;
     }
-    else
-    {
-        broadcastMsg = GetBroadcastMessage( procname, broadcastLen );
-    }
 #endif
+
+    int broadcastLen = 0;
+    auto& broadcastMsg = GetBroadcastMessage( procname, pnsz, broadcastLen );
+    uint64_t lastBroadcast = 0;
 
     // Connections loop.
     // Each iteration of the loop handles whole connection. Multiple iterations will only
@@ -1153,7 +1147,7 @@ void Profiler::Worker()
                 if( t - lastBroadcast > 3000000000 )  // 3s
                 {
                     lastBroadcast = t;
-                    m_broadcast->Send( 8087, broadcastMsg, broadcastLen );
+                    m_broadcast->Send( 8087, &broadcastMsg, broadcastLen );
                 }
             }
         }

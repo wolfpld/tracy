@@ -10,6 +10,7 @@ namespace tracy
 {
 
 enum : uint32_t { ProtocolVersion = 8 };
+enum : uint32_t { BroadcastVersion = 0 };
 
 using lz4sz_t = uint32_t;
 
@@ -78,6 +79,16 @@ struct OnDemandPayloadMessage
 };
 
 enum { OnDemandPayloadMessageSize = sizeof( OnDemandPayloadMessage ) };
+
+
+struct BroadcastMessage
+{
+    uint32_t broadcastVersion;
+    uint32_t protocolVersion;
+    char programName[WelcomeMessageProgramNameSize];
+};
+
+enum { BroadcastMessageSize = sizeof( BroadcastMessage ) };
 
 #pragma pack()
 

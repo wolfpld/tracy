@@ -297,22 +297,28 @@ int main( int argc, char** argv )
                 const auto t = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
                 if( msg )
                 {
-                    uint32_t protoVer;
-                    memcpy( &protoVer, msg, sizeof( uint32_t ) );
-                    auto procname = msg + sizeof( uint32_t );
-                    auto address = addr.GetText();
+                    assert( len <= sizeof( tracy::BroadcastMessage ) );
+                    tracy::BroadcastMessage bm;
+                    memcpy( &bm, msg, len );
 
-                    auto it = clients.find( addr.GetNumber() );
-                    if( it == clients.end() )
+                    if( bm.broadcastVersion == tracy::BroadcastVersion )
                     {
-                        clients.emplace( addr.GetNumber(), ClientData { t, protoVer, procname, address } );
-                    }
-                    else
-                    {
-                        it->second.time = t;
-                        if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
-                        if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
-                        if( strcmp( it->second.address.c_str(), address ) != 0 ) it->second.address = address;
+                        const uint32_t protoVer = bm.protocolVersion;
+                        const auto procname = bm.programName;
+                        auto address = addr.GetText();
+
+                        auto it = clients.find( addr.GetNumber() );
+                        if( it == clients.end() )
+                        {
+                            clients.emplace( addr.GetNumber(), ClientData { t, protoVer, procname, address } );
+                        }
+                        else
+                        {
+                            it->second.time = t;
+                            if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
+                            if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
+                            if( strcmp( it->second.address.c_str(), address ) != 0 ) it->second.address = address;
+                        }
                     }
                 }
                 auto it = clients.begin();

@@ -1108,7 +1108,7 @@ void Profiler::Worker()
 #ifndef TRACY_NO_BROADCAST
     m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
     new(m_broadcast) UdpBroadcast();
-    if( !m_broadcast->Open( "255.255.255.255", "8087" ) )
+    if( !m_broadcast->Open( "255.255.255.255", "8086" ) )
     {
         m_broadcast->~UdpBroadcast();
         tracy_free( m_broadcast );
@@ -1147,7 +1147,7 @@ void Profiler::Worker()
                 if( t - lastBroadcast > 3000000000 )  // 3s
                 {
                     lastBroadcast = t;
-                    m_broadcast->Send( 8087, &broadcastMsg, broadcastLen );
+                    m_broadcast->Send( 8086, &broadcastMsg, broadcastLen );
                 }
             }
         }

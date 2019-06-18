@@ -283,7 +283,7 @@ int main( int argc, char** argv )
             if( !broadcastListen )
             {
                 broadcastListen = new tracy::UdpListen();
-                if( !broadcastListen->Listen( 8087 ) )
+                if( !broadcastListen->Listen( 8086 ) )
                 {
                     delete broadcastListen;
                     broadcastListen = nullptr;

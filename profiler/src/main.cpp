@@ -32,6 +32,7 @@
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyImGui.hpp"
+#include "../../server/TracyPrint.hpp"
 #include "../../server/TracyStorage.hpp"
 #include "../../server/TracyView.hpp"
 #include "../../server/TracyWorker.hpp"
@@ -89,6 +90,7 @@ struct ClientData
 {
     int64_t time;
     uint32_t protocolVersion;
+    uint32_t activeTime;
     std::string procName;
     std::string address;
 };
@@ -305,16 +307,18 @@ int main( int argc, char** argv )
                     {
                         const uint32_t protoVer = bm.protocolVersion;
                         const auto procname = bm.programName;
+                        const auto activeTime = bm.activeTime;
                         auto address = addr.GetText();
 
                         auto it = clients.find( addr.GetNumber() );
                         if( it == clients.end() )
                         {
-                            clients.emplace( addr.GetNumber(), ClientData { t, protoVer, procname, address } );
+                            clients.emplace( addr.GetNumber(), ClientData { t, protoVer, activeTime, procname, address } );
                         }
                         else
                         {
                             it->second.time = t;
+                            it->second.activeTime = activeTime;
                             if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
                             if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
                             if( strcmp( it->second.address.c_str(), address ) != 0 ) it->second.address = address;
@@ -470,7 +474,16 @@ int main( int argc, char** argv )
                 ImGui::Separator();
                 ImGui::TextUnformatted( "Discovered clients:" );
                 ImGui::Separator();
-                ImGui::Columns( 2 );
+                static bool widthSet = false;
+                ImGui::Columns( 3 );
+                if( !widthSet )
+                {
+                    widthSet = true;
+                    const auto w = ImGui::GetWindowWidth();
+                    ImGui::SetColumnWidth( 0, w * 0.35f );
+                    ImGui::SetColumnWidth( 1, w * 0.175f );
+                    ImGui::SetColumnWidth( 2, w * 0.425f );
+                }
                 for( auto& v : clients )
                 {
                     const bool badProto = v.second.protocolVersion != tracy::ProtocolVersion;
@@ -480,6 +493,15 @@ int main( int argc, char** argv )
                     if( ImGui::Selectable( v.second.address.c_str(), &sel, flags ) && !loadThread.joinable() )
                     {
                         view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, SetWindowTitleCallback );
+                    }
+                    ImGui::NextColumn();
+                    if( badProto )
+                    {
+                        tracy::TextDisabledUnformatted( tracy::TimeToString( v.second.activeTime * 1000000000ll ) );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( tracy::TimeToString( v.second.activeTime * 1000000000ll ) );
                     }
                     ImGui::NextColumn();
                     if( badProto )

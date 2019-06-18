@@ -85,6 +85,7 @@ struct BroadcastMessage
 {
     uint32_t broadcastVersion;
     uint32_t protocolVersion;
+    uint32_t activeTime;        // in seconds
     char programName[WelcomeMessageProgramNameSize];
 };
 

@@ -1143,10 +1143,12 @@ void Profiler::Worker()
 
             if( m_broadcast )
             {
-                auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+                const auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
                 if( t - lastBroadcast > 3000000000 )  // 3s
                 {
                     lastBroadcast = t;
+                    const auto ts = std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+                    broadcastMsg.activeTime = ts - m_epoch;
                     m_broadcast->Send( 8086, &broadcastMsg, broadcastLen );
                 }
             }

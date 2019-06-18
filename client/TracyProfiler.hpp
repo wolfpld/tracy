@@ -552,8 +552,6 @@ private:
 #else
     void ProcessSysTime() {}
 #endif
-
-    uint64_t m_lastBroadcast = 0;
 };
 
 };

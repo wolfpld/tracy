@@ -1110,6 +1110,7 @@ void Profiler::Worker()
 
     const char* broadcastMsg = nullptr;
     int broadcastLen = 0;
+    uint64_t lastBroadcast = 0;
 #ifndef TRACY_NO_BROADCAST
     m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
     new(m_broadcast) UdpBroadcast();
@@ -1149,9 +1150,9 @@ void Profiler::Worker()
             if( m_broadcast )
             {
                 auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-                if( t - m_lastBroadcast > 3000000000 )  // 3s
+                if( t - lastBroadcast > 3000000000 )  // 3s
                 {
-                    m_lastBroadcast = t;
+                    lastBroadcast = t;
                     m_broadcast->Send( 8087, broadcastMsg, broadcastLen );
                 }
             }

@@ -7212,7 +7212,7 @@ void View::DrawCompare()
         auto& zones1 = zoneData1.zones;
 
         auto tmin = std::min( zoneData0.min, zoneData1.min );
-        auto tmax = std::max( zoneData0.max, zoneData1.max );;
+        auto tmax = std::max( zoneData0.max, zoneData1.max );
 
         const size_t zsz[2] = { zones0.size(), zones1.size() };
         for( int k=0; k<2; k++ )
@@ -7257,14 +7257,21 @@ void View::DrawCompare()
             ImGui::SameLine();
             DrawHelpMarker( "Normalization will fudge reported data values!" );
 
+            TextDisabledUnformatted( "Minimum values in bin:" );
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+            ImGui::InputInt( "##minBinVal", &m_compare.minBinVal );
+            if( m_compare.minBinVal < 1 ) m_compare.minBinVal = 1;
+            ImGui::SameLine();
+            if( ImGui::Button( "Reset" ) ) m_compare.minBinVal = 1;
+
             TextDisabledUnformatted( "Time range:" );
             ImGui::SameLine();
             ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
-            const auto dt = double( tmax - tmin );
             const auto cumulateTime = m_compare.cumulateTime;
 
-            if( dt > 0 )
+            if( tmax - tmin > 0 )
             {
                 const auto w = ImGui::GetContentRegionAvail().x;
 
@@ -7299,8 +7306,75 @@ void View::DrawCompare()
                     }
 
                     const auto& sorted = m_compare.sorted;
-                    auto zit0 = sorted[0].begin();
-                    auto zit1 = sorted[1].begin();
+                    auto sBegin0 = sorted[0].begin();
+                    auto sBegin1 = sorted[1].begin();
+                    auto sEnd0 = sorted[0].end();
+                    auto sEnd1 = sorted[1].end();
+
+                    if( m_compare.minBinVal > 1 )
+                    {
+                        if( m_compare.logTime )
+                        {
+                            const auto tMinLog = log10( tmin );
+                            const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                            int64_t i;
+                            for( i=0; i<numBins; i++ )
+                            {
+                                const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                auto nit0 = std::lower_bound( sBegin0, sEnd0, nextBinVal );
+                                auto nit1 = std::lower_bound( sBegin1, sEnd1, nextBinVal );
+                                const auto distance0 = std::distance( sBegin0, nit0 );
+                                const auto distance1 = std::distance( sBegin1, nit1 );
+                                if( distance0 >= m_compare.minBinVal || distance1 >= m_compare.minBinVal ) break;
+                                sBegin0 = nit0;
+                                sBegin1 = nit1;
+                            }
+                            for( int64_t j=numBins-1; j>i; j-- )
+                            {
+                                const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( j-1 ) * zmax ) );
+                                auto nit0 = std::lower_bound( sBegin0, sEnd0, nextBinVal );
+                                auto nit1 = std::lower_bound( sBegin1, sEnd1, nextBinVal );
+                                const auto distance0 = std::distance( nit0, sEnd0 );
+                                const auto distance1 = std::distance( nit1, sEnd1 );
+                                if( distance0 >= m_compare.minBinVal || distance1 >= m_compare.minBinVal ) break;
+                                sEnd0 = nit0;
+                                sEnd1 = nit1;
+                            }
+                        }
+                        else
+                        {
+                            const auto zmax = tmax - tmin;
+                            int64_t i;
+                            for( i=0; i<numBins; i++ )
+                            {
+                                const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                auto nit0 = std::lower_bound( sBegin0, sEnd0, nextBinVal );
+                                auto nit1 = std::lower_bound( sBegin1, sEnd1, nextBinVal );
+                                const auto distance0 = std::distance( sBegin0, nit0 );
+                                const auto distance1 = std::distance( sBegin1, nit1 );
+                                if( distance0 >= m_compare.minBinVal || distance1 >= m_compare.minBinVal ) break;
+                                sBegin0 = nit0;
+                                sBegin1 = nit1;
+                            }
+                            for( int64_t j=numBins-1; j>i; j-- )
+                            {
+                                const auto nextBinVal = tmin + ( j-1 ) * zmax / numBins;
+                                auto nit0 = std::lower_bound( sBegin0, sEnd0, nextBinVal );
+                                auto nit1 = std::lower_bound( sBegin1, sEnd1, nextBinVal );
+                                const auto distance0 = std::distance( nit0, sEnd0 );
+                                const auto distance1 = std::distance( nit1, sEnd1 );
+                                if( distance0 >= m_compare.minBinVal || distance1 >= m_compare.minBinVal ) break;
+                                sEnd0 = nit0;
+                                sEnd1 = nit1;
+                            }
+                        }
+
+                        tmin = std::min( *sBegin0, *sBegin1 );
+                        tmax = std::max( *(sEnd0-1), *(sEnd1-1) );
+                    }
+
+                    auto zit0 = sBegin0;
+                    auto zit1 = sBegin1;
                     if( m_compare.logTime )
                     {
                         const auto tMinLog = log10( tmin );
@@ -7308,8 +7382,8 @@ void View::DrawCompare()
                         for( int64_t i=0; i<numBins; i++ )
                         {
                             const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                            auto nit0 = std::lower_bound( zit0, sorted[0].end(), nextBinVal );
-                            auto nit1 = std::lower_bound( zit1, sorted[1].end(), nextBinVal );
+                            auto nit0 = std::lower_bound( zit0, sEnd0, nextBinVal );
+                            auto nit1 = std::lower_bound( zit1, sEnd1, nextBinVal );
                             bins[i].v0 += adj0 * std::distance( zit0, nit0 );
                             bins[i].v1 += adj1 * std::distance( zit1, nit1 );
                             binTime[i].v0 += adj0 * std::accumulate( zit0, nit0, int64_t( 0 ) );
@@ -7324,8 +7398,8 @@ void View::DrawCompare()
                         for( int64_t i=0; i<numBins; i++ )
                         {
                             const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
-                            auto nit0 = std::lower_bound( zit0, sorted[0].end(), nextBinVal );
-                            auto nit1 = std::lower_bound( zit1, sorted[1].end(), nextBinVal );
+                            auto nit0 = std::lower_bound( zit0, sEnd0, nextBinVal );
+                            auto nit1 = std::lower_bound( zit1, sEnd1, nextBinVal );
                             bins[i].v0 += adj0 * std::distance( zit0, nit0 );
                             bins[i].v1 += adj1 * std::distance( zit1, nit1 );
                             binTime[i].v0 += adj0 * std::accumulate( zit0, nit0, int64_t( 0 ) );
@@ -7595,7 +7669,7 @@ void View::DrawCompare()
                     }
                     else
                     {
-                        const auto pxns = numBins / dt;
+                        const auto pxns = numBins / double( tmax - tmin );
                         const auto nspx = 1.0 / pxns;
                         const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                         const auto step = pow( 10, scale );

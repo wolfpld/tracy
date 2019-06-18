@@ -282,6 +282,7 @@ int main( int argc, char** argv )
                 glfwSetWindowTitle( window, title );
             }
 
+            const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
             if( !broadcastListen )
             {
                 broadcastListen = new tracy::UdpListen();
@@ -296,7 +297,6 @@ int main( int argc, char** argv )
                 tracy::IpAddress addr;
                 int len;
                 auto msg = broadcastListen->Read( len, addr );
-                const auto t = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
                 if( msg )
                 {
                     assert( len <= sizeof( tracy::BroadcastMessage ) );
@@ -313,11 +313,11 @@ int main( int argc, char** argv )
                         auto it = clients.find( addr.GetNumber() );
                         if( it == clients.end() )
                         {
-                            clients.emplace( addr.GetNumber(), ClientData { t, protoVer, activeTime, procname, address } );
+                            clients.emplace( addr.GetNumber(), ClientData { time, protoVer, activeTime, procname, address } );
                         }
                         else
                         {
-                            it->second.time = t;
+                            it->second.time = time;
                             it->second.activeTime = activeTime;
                             if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
                             if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
@@ -328,7 +328,7 @@ int main( int argc, char** argv )
                 auto it = clients.begin();
                 while( it != clients.end() )
                 {
-                    const auto diff = t - it->second.time;
+                    const auto diff = time - it->second.time;
                     if( diff > 4000 )  // 4s
                     {
                         it = clients.erase( it );
@@ -495,13 +495,14 @@ int main( int argc, char** argv )
                         view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, SetWindowTitleCallback );
                     }
                     ImGui::NextColumn();
+                    const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;
                     if( badProto )
                     {
-                        tracy::TextDisabledUnformatted( tracy::TimeToString( v.second.activeTime * 1000000000ll ) );
+                        tracy::TextDisabledUnformatted( tracy::TimeToString( acttime ) );
                     }
                     else
                     {
-                        ImGui::TextUnformatted( tracy::TimeToString( v.second.activeTime * 1000000000ll ) );
+                        ImGui::TextUnformatted( tracy::TimeToString( acttime ) );
                     }
                     ImGui::NextColumn();
                     if( badProto )

@@ -913,17 +913,26 @@ struct ProfilerThreadData
 #  endif
 };
 
-static ProfilerData* profilerData;
+static std::atomic<int> profilerDataLock { 0 };
+static std::atomic<ProfilerData*> profilerData { nullptr };
 
 static ProfilerData& GetProfilerData()
 {
-    // Cannot use magic statics here.
-    if( !profilerData )
+    auto ptr = profilerData.load( std::memory_order_acquire );
+    if( !ptr )
     {
-        profilerData = (ProfilerData*)malloc( sizeof( ProfilerData ) );
-        new (profilerData) ProfilerData();
+        int expected = 0;
+        while( !profilerDataLock.compare_exchange_strong( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; }
+        ptr = profilerData.load( std::memory_order_acquire );
+        if( !ptr )
+        {
+            ptr = (ProfilerData*)malloc( sizeof( ProfilerData ) );
+            new (ptr) ProfilerData();
+            profilerData.store( ptr, std::memory_order_release );
+        }
+        profilerDataLock.store( 0, std::memory_order_release );
     }
-    return *profilerData;
+    return *ptr;
 }
 
 static ProfilerThreadData& GetProfilerThreadData()

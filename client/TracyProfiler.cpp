@@ -2375,6 +2375,20 @@ void Profiler::CalibrateTimer()
 void Profiler::CalibrateDelay()
 {
     enum { Iterations = 50000 };
+
+    auto mindiff = std::numeric_limits<int64_t>::max();
+    for( int i=0; i<Iterations * 10; i++ )
+    {
+        const auto t0i = GetTime();
+        const auto t1i = GetTime();
+        const auto dti = t1i - t0i;
+        if( dti > 0 && dti < mindiff ) mindiff = dti;
+    }
+    m_resolution = mindiff;
+
+#ifdef TRACY_DELAYED_INIT
+    m_delay = m_resolution;
+#else
     enum { Events = Iterations * 2 };   // start + end
     static_assert( Events < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
@@ -2406,17 +2420,6 @@ void Profiler::CalibrateDelay()
     const auto dt = t1 - t0;
     m_delay = dt / Events;
 
-    auto mindiff = std::numeric_limits<int64_t>::max();
-    for( int i=0; i<Iterations * 10; i++ )
-    {
-        const auto t0i = GetTime();
-        const auto t1i = GetTime();
-        const auto dti = t1i - t0i;
-        if( dti > 0 && dti < mindiff ) mindiff = dti;
-    }
-
-    m_resolution = mindiff;
-
     enum { Bulk = 1000 };
     moodycamel::ConsumerToken token( GetQueue() );
     int left = Events;
@@ -2428,6 +2431,7 @@ void Profiler::CalibrateDelay()
         left -= (int)sz;
     }
     assert( GetQueue().size_approx() == 0 );
+#endif
 }
 
 void Profiler::SendCallstack( int depth, const char* skipBefore )

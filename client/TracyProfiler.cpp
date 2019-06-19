@@ -466,6 +466,15 @@ static const char* GetHostInfo()
     {
         ptr += sprintf( ptr, "CPU: unknown\n" );
     }
+#elif defined __APPLE__ && TARGET_OS_IPHONE == 1
+    {
+        size_t sz;
+        sysctlbyname( "hw.machine", nullptr, &sz, nullptr, 0 );
+        auto str = (char*)tracy_malloc( sz );
+        sysctlbyname( "hw.machine", str, &sz, nullptr, 0 );
+        ptr += sprintf( ptr, "Device: %s\n", DecodeIosDevice( str ) );
+        tracy_free( str );
+    }
 #else
     ptr += sprintf( ptr, "CPU: unknown\n" );
 #endif

@@ -16,4 +16,5 @@ build_script:
   - sh: make -C update/build/unix debug release
   - sh: make -C profiler/build/unix debug release
   - sh: make -C capture/build/unix debug release
+  - sh: make -C test
 test: off

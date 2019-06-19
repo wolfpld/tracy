@@ -6573,7 +6573,9 @@ void View::DrawFindZone()
                             {
                                 zonePos = round( ( zoneTime - tmin ) / float( tmax - tmin ) * numBins );
                             }
-                            draw->AddLine( ImVec2( wpos.x + zonePos, wpos.y ), ImVec2( wpos.x + zonePos, wpos.y+Height-2 ), 0xFFFFFFFF );
+                            const auto c = uint32_t( ( sin( s_time * 10 ) * 0.25 + 0.75 ) * 255 );
+                            const auto color = 0xFF000000 | ( c << 16 ) | ( c << 8 ) | c;
+                            draw->AddLine( ImVec2( wpos.x + zonePos, wpos.y ), ImVec2( wpos.x + zonePos, wpos.y+Height-2 ), color );
                         }
                     }
                 }
@@ -8737,7 +8739,9 @@ void View::DrawInfo()
                             {
                                 framePos = round( ( frameTime - tmin ) / float( tmax - tmin ) * numBins );
                             }
-                            draw->AddLine( ImVec2( wpos.x + framePos, wpos.y ), ImVec2( wpos.x + framePos, wpos.y+Height-2 ), 0xFFFFFFFF );
+                            const auto c = uint32_t( ( sin( s_time * 10 ) * 0.25 + 0.75 ) * 255 );
+                            const auto color = 0xFF000000 | ( c << 16 ) | ( c << 8 ) | c;
+                            draw->AddLine( ImVec2( wpos.x + framePos, wpos.y ), ImVec2( wpos.x + framePos, wpos.y+Height-2 ), color );
                         }
                     }
                 }

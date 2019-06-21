@@ -5131,7 +5131,7 @@ void View::DrawOptions()
                 {
                     sprintf( buf, "OpenGL context %zu", i );
                 }
-                ImGui::Checkbox( buf, &Vis( gpuData[i] ).visible );
+                SmallCheckbox( buf, &Vis( gpuData[i] ).visible );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s top level zones", RealToString( gpuData[i]->timeline.size(), true ) );
                 ImGui::TreePush();
@@ -5245,7 +5245,7 @@ void View::DrawOptions()
 
                         char buf[1024];
                         sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Vis( l.second ).visible );
+                        SmallCheckbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5311,7 +5311,7 @@ void View::DrawOptions()
 
                         char buf[1024];
                         sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Vis( l.second ).visible );
+                        SmallCheckbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5377,7 +5377,7 @@ void View::DrawOptions()
 
                         char buf[1024];
                         sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Vis( l.second ).visible );
+                        SmallCheckbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5448,7 +5448,7 @@ void View::DrawOptions()
 
             for( const auto& p : m_worker.GetPlots() )
             {
-                ImGui::Checkbox( GetPlotName( p ), &Vis( p ).visible );
+                SmallCheckbox( GetPlotName( p ), &Vis( p ).visible );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s data points", RealToString( p->data.size(), true ) );
             }
@@ -5484,7 +5484,6 @@ void View::DrawOptions()
             }
         }
 
-        const auto th = 18.f * ImGui::GetTextLineHeight() / 15.f;
         int idIdx = 0;
         int idx = 0;
         int upIdx = -1;
@@ -5493,9 +5492,9 @@ void View::DrawOptions()
         {
             ImGui::PushID( idIdx++ );
 #ifdef TRACY_EXTENDED_FONT
-            if( ImGui::Button( ICON_FA_CARET_UP, ImVec2( th, 0 ) ) )
+            if( ImGui::SmallButton( ICON_FA_CARET_UP ) )
 #else
-            if( ImGui::Button( "^", ImVec2( th, 0 ) ) )
+            if( ImGui::SmallButton( "^" ) )
 #endif
             {
                 upIdx = idx;
@@ -5504,9 +5503,9 @@ void View::DrawOptions()
             ImGui::SameLine();
             ImGui::PushID( idIdx++ );
 #ifdef TRACY_EXTENDED_FONT
-            if( ImGui::Button( ICON_FA_CARET_DOWN, ImVec2( th, 0 ) ) )
+            if( ImGui::SmallButton( ICON_FA_CARET_DOWN ) )
 #else
-            if( ImGui::Button( "v", ImVec2( th, 0 ) ) )
+            if( ImGui::SmallButton( "v" ) )
 #endif
             {
                 downIdx = idx;
@@ -5514,7 +5513,7 @@ void View::DrawOptions()
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::PushID( idIdx++ );
-            ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Vis( t ).visible );
+            SmallCheckbox( m_worker.GetThreadString( t->id ), &Vis( t ).visible );
             ImGui::PopID();
             if( crash.thread == t->id )
             {
@@ -5584,7 +5583,7 @@ void View::DrawOptions()
         for( const auto& fd : m_worker.GetFrames() )
         {
             ImGui::PushID( idx++ );
-            ImGui::Checkbox( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), &Vis( fd ).visible );
+            SmallCheckbox( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), &Vis( fd ).visible );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "%s %sframes", RealToString( fd->frames.size(), true ), fd->continuous ? "" : "discontinuous " );
@@ -5634,7 +5633,7 @@ void View::DrawMessages()
         {
             if( t->messages.empty() ) continue;
             ImGui::PushID( idx++ );
-            ImGui::Checkbox( m_worker.GetThreadString( t->id ), &VisibleMsgThread( t->id ) );
+            SmallCheckbox( m_worker.GetThreadString( t->id ), &VisibleMsgThread( t->id ) );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", RealToString( t->messages.size(), true ) );
@@ -6245,6 +6244,7 @@ void View::DrawFindZone()
                             TextFocused( "Group median:", "none" );
                         }
 
+                        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                         ImGui::Checkbox( "###draw1", &m_findZone.drawAvgMed );
                         ImGui::SameLine();
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
@@ -6281,6 +6281,7 @@ void View::DrawFindZone()
                         {
                             TextDisabledUnformatted( "Group median" );
                         }
+                        ImGui::PopStyleVar();
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();
@@ -8522,6 +8523,7 @@ void View::DrawInfo()
 
                         TextFocused( "Max counts:", RealToString( maxVal, true ) );
 
+                        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                         ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );
                         ImGui::SameLine();
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
@@ -8533,6 +8535,7 @@ void View::DrawInfo()
                         ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
                         ImGui::TextUnformatted( "Median time" );
+                        ImGui::PopStyleVar();
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();

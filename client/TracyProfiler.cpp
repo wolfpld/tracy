@@ -1188,6 +1188,7 @@ void Profiler::Worker()
         }
 
 #ifdef TRACY_ON_DEMAND
+        const auto currentTime = GetTime();
         ClearQueues( token );
         m_connectionId.fetch_add( 1, std::memory_order_release );
         m_isConnected.store( true, std::memory_order_release );
@@ -1202,6 +1203,7 @@ void Profiler::Worker()
 #ifdef TRACY_ON_DEMAND
         OnDemandPayloadMessage onDemand;
         onDemand.frames = m_frameCount.load( std::memory_order_relaxed );
+        onDemand.currentTime = currentTime;
 
         m_sock->Send( &onDemand, sizeof( onDemand ) );
 

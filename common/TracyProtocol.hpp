@@ -9,7 +9,7 @@
 namespace tracy
 {
 
-enum : uint32_t { ProtocolVersion = 8 };
+enum : uint32_t { ProtocolVersion = 9 };
 enum : uint32_t { BroadcastVersion = 0 };
 
 using lz4sz_t = uint32_t;
@@ -76,6 +76,7 @@ enum { WelcomeMessageSize = sizeof( WelcomeMessage ) };
 struct OnDemandPayloadMessage
 {
     uint64_t frames;
+    uint64_t currentTime;
 };
 
 enum { OnDemandPayloadMessageSize = sizeof( OnDemandPayloadMessage ) };

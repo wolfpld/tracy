@@ -1852,6 +1852,7 @@ void Worker::Exec()
                 goto close;
             }
             m_data.frameOffset = onDemand.frames;
+            m_data.framesBase->frames.push_back( FrameEvent{ TscTime( onDemand.currentTime ), -1, -1 } );
         }
     }
 

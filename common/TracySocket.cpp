@@ -437,7 +437,7 @@ IpAddress::~IpAddress()
 void IpAddress::Set( const struct sockaddr& addr )
 {
     auto ai = (const struct sockaddr_in*)&addr;
-    inet_ntop( AF_INET, &ai->sin_addr, m_text, 17 );
+    getnameinfo( &addr, sizeof( sockaddr_in ), m_text, 64, nullptr, 0, NI_NOFQDN );
     m_number = ai->sin_addr.s_addr;
 }
 

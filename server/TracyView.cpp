@@ -1804,26 +1804,40 @@ void View::DrawZones()
                     const auto dist = std::distance( msgit, next );
 
                     const auto px = ( (*msgit)->time - m_zvStart ) * pxns;
+                    const bool isMsgHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) );
+
+                    unsigned int color = 0xFFDDDDDD;
+                    float animOff = 0;
                     if( dist > 1 )
                     {
-                        unsigned int color = 0xFFDDDDDD;
                         if( m_msgHighlight && m_msgHighlight->thread == v->id )
                         {
                             const auto hTime = m_msgHighlight->time;
                             if( (*msgit)->time <= hTime && ( next == v->messages.end() || (*next)->time > hTime ) )
                             {
                                 color = 0xFF4444FF;
+                                if( !isMsgHovered )
+                                {
+                                    animOff = -fabs( sin( s_time * 8 ) ) * th;
+                                }
                             }
                         }
-                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px, oldOffset + to + th ), color );
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px, oldOffset + to + th ), color, 2.0f );
+                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px, animOff + oldOffset + to + th ), color );
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px, animOff + oldOffset + to + th ), color, 2.0f );
                     }
                     else
                     {
-                        const auto color = ( m_msgHighlight == *msgit ) ? 0xFF4444FF : 0xFFDDDDDD;
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px, oldOffset + to + th ), color, 2.0f );
+                        if( m_msgHighlight == *msgit )
+                        {
+                            color = 0xFF4444FF;
+                            if( !isMsgHovered )
+                            {
+                                animOff = -fabs( sin( s_time * 8 ) ) * th;
+                            }
+                        }
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px, animOff + oldOffset + to + th ), color, 2.0f );
                     }
-                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) ) )
+                    if( isMsgHovered )
                     {
                         ImGui::BeginTooltip();
                         if( dist > 1 )

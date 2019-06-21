@@ -984,7 +984,7 @@ void View::DrawFrames()
                 {
                     m_pause = true;
                     m_zoomAnim.active = false;
-                    m_playback.pause = true;
+                    if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
                     m_zvStart = m_worker.GetFrameBegin( *m_frames, sel );
                     m_zvEnd = m_worker.GetFrameEnd( *m_frames, sel + group - 1 );
                     if( m_zvStart == m_zvEnd ) m_zvStart--;
@@ -1110,8 +1110,9 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
 
     if( ImGui::IsMouseDragging( 1, 0 ) )
     {
-        m_zoomAnim.active = false;
         m_pause = true;
+        m_zoomAnim.active = false;
+        if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
         const auto delta = ImGui::GetMouseDragDelta( 1, 0 );
         const auto dpx = int64_t( delta.x * nspx );
         if( dpx != 0 )
@@ -9150,9 +9151,8 @@ void View::DrawPlayback()
     {
         if( m_playback.sync )
         {
-            const auto start = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
-            const auto end = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
-            ZoomToRange( start, end );
+            m_zvStart = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
+            m_zvEnd = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
         }
     }
     TextFocused( "Timestamp:", TimeToString( tstart - m_worker.GetTimeBegin() ) );
@@ -10219,6 +10219,7 @@ void View::ZoomToRange( int64_t start, int64_t end )
 
     m_pause = true;
     m_highlightZoom.active = false;
+    if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
     m_zoomAnim.active = true;
     m_zoomAnim.start0 = m_zvStart;
     m_zoomAnim.start1 = start;

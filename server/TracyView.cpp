@@ -5564,7 +5564,7 @@ void View::DrawOptions()
         {
             std::swap( m_threadOrder[upIdx], m_threadOrder[upIdx-1] );
         }
-        if( downIdx >= 0 && downIdx < m_threadOrder.size() - 1 )
+        if( downIdx >= 0 && (size_t)downIdx < m_threadOrder.size() - 1 )
         {
             std::swap( m_threadOrder[downIdx], m_threadOrder[downIdx+1] );
         }
@@ -6719,7 +6719,7 @@ void View::DrawFindZone()
         idx = 0;
         if( groupBy == FindZone::GroupBy::Callstack )
         {
-            const auto gsz = groups.size();
+            const auto gsz = (int)groups.size();
             if( gsz > 0 )
             {
                 if( m_findZone.selCs > gsz ) m_findZone.selCs = gsz;
@@ -9114,8 +9114,8 @@ void View::DrawPlayback()
     if( ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" ) )
     {
         if( tmp < 1 ) tmp = 1;
-        else if( tmp > ficnt ) tmp = ficnt;
-        SetPlaybackFrame( tmp - 1 );
+        else if( (uint32_t)tmp > ficnt ) tmp = ficnt;
+        SetPlaybackFrame( uint32_t( tmp - 1 ) );
     }
     ImGui::SliderFloat( "Playback speed", &m_playback.speed, 0.1f, 4, "%.2f" );
 
@@ -10253,14 +10253,14 @@ void View::ZoomToPrevFrame()
 {
     if( m_zvStart >= m_worker.GetFrameBegin( *m_frames, 0 ) )
     {
-        int frame;
+        size_t frame;
         if( m_frames->continuous )
         {
-            frame = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).first;
+            frame = (size_t)m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).first;
         }
         else
         {
-            frame = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).second;
+            frame = (size_t)m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).second;
         }
 
         if( frame > 0 )
@@ -10285,7 +10285,7 @@ void View::ZoomToNextFrame()
         start = m_zvStart;
     }
 
-    int frame;
+    size_t frame;
     if( start < m_worker.GetFrameBegin( *m_frames, 0 ) )
     {
         frame = 0;

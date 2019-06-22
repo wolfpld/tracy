@@ -1,6 +1,10 @@
 #ifndef __TRACYFILEWRITE_HPP__
 #define __TRACYFILEWRITE_HPP__
 
+#ifdef _MSC_VER
+#  pragma warning( disable: 4267 )  // conversion from don't care to whatever, possible loss of data 
+#endif
+
 #include <algorithm>
 #include <assert.h>
 #include <stdio.h>

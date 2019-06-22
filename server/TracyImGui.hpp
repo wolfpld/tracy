@@ -1,6 +1,10 @@
 #ifndef __TRACYIMGUI_HPP__
 #define __TRACYIMGUI_HPP__
 
+#ifdef _MSC_VER
+#  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data 
+#endif
+
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_internal.h"
 

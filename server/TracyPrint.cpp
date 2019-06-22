@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data 
+#endif
+
 #include <assert.h>
 #include <inttypes.h>
 #include <math.h>

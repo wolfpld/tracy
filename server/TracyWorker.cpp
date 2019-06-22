@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#  pragma warning( disable: 4244 4267 )  // conversion from don't care to whatever, possible loss of data 
+#endif
+
 #ifdef _WIN32
 #  include <winsock2.h>
 #endif

@@ -456,7 +456,7 @@ int main( int argc, char** argv )
                             } );
                         }
                     }
-                    catch( const tracy::NotTracyDump& e )
+                    catch( const tracy::NotTracyDump& )
                     {
                         badVer = -1;
                     }

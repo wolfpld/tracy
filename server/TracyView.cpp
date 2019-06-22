@@ -7025,7 +7025,7 @@ void View::DrawCompare()
                         } );
                     }
                 }
-                catch( const tracy::NotTracyDump& e )
+                catch( const tracy::NotTracyDump& )
                 {
                     m_compare.badVer = -1;
                 }

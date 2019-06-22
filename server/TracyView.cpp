@@ -4256,8 +4256,11 @@ void View::DrawZoneInfoWindow()
     ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
 #endif
     TextFocused( "Self time:", TimeToString( selftime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    if( ztime != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    }
 
     auto& mem = m_worker.GetMemData();
     if( !mem.data.empty() )
@@ -4825,8 +4828,11 @@ void View::DrawGpuInfoWindow()
     TextFocused( "Time from start of program:", TimeToString( ev.gpuStart - m_worker.GetTimeBegin() ) );
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    if( ztime != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    }
     TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
@@ -10390,8 +10396,11 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
 #endif
     TextFocused( "Self time:", TimeToString( selftime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    if( ztime != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    }
     if( ev.cpu_start >= 0 )
     {
         TextDisabledUnformatted( "CPU:" );
@@ -10432,8 +10441,11 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::Separator();
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    if( ztime != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    }
     TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )

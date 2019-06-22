@@ -1218,7 +1218,9 @@ The frames visible on the timeline are marked with a violet box drawn over them 
 
 Moving the \faMousePointer{} mouse cursor over the frames displayed on the graph will display tooltip with information about frame number, frame time, frame image (if available, see chapter~\ref{frameimages}), etc. Such tooltips are common for many UI elements in the profiler and won't be mentioned later in the manual.
 
-The timeline view may be focused on the frames, by clicking or dragging the \LMB{} left mouse button on the graph. The graph may be scrolled left and right by dragging the \RMB{} right mouse button over the graph. The view may be zoomed in and out by using the \Scroll{} mouse scroll. If the view is zoomed out, so that multiple frames are merged into one column, the highest frame time will be used to represent the given column.
+The timeline view may be focused on the frames, by clicking or dragging the \LMB{}~left mouse button on the graph. The graph may be scrolled left and right by dragging the \RMB{}~right mouse button over the graph. The view may be zoomed in and out by using the \Scroll{}~mouse scroll. If the view is zoomed out, so that multiple frames are merged into one column, the highest frame time will be used to represent the given column.
+
+Clicking the \LMB{}~left mouse button on the graph while the \keys{\ctrl}~key is pressed will open the frame image playback window (section~\ref{playback}) and set the playback to the selected frame. See section~\ref{frameimages} for more information about frame images.
 
 \subsubsection{Timeline view}
 
@@ -1571,7 +1573,7 @@ The call stack grouping mode has a different way of listing groups. Here only on
 
 The average and median zone times are displayed on the histogram as a red (average) and blue (median) vertical bars. When a group is selected, additional bars will indicate the average group time (orange) and median group time (green). You can disable drawing of either set of markers by clicking on the check-box next to the color legend.
 
-Hovering the \faMousePointer{}~mouse cursor over a zone on the timeline, which is currently selected in the find zone window, will display a white vertical bar on the histogram, highlighting the bin to which the hovered zone has been assigned.
+Hovering the \faMousePointer{}~mouse cursor over a zone on the timeline, which is currently selected in the find zone window, will display a pulsing vertical bar on the histogram, highlighting the bin to which the hovered zone has been assigned.
 
 \begin{bclogo}[
 noborder=true,

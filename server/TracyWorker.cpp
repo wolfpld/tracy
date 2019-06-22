@@ -1255,7 +1255,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 auto fi = m_slab.Alloc<FrameImage>();
                 f.Read2( fi->w, fi->h );
                 f.Read( fi->flip );
-                const auto sz = fi->w * fi->h / 2;
+                const auto sz = size_t( fi->w * fi->h / 2 );
                 if( tmpbufsz < sz )
                 {
                     tmpbufsz = sz;

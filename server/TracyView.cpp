@@ -1050,8 +1050,7 @@ void View::DrawFrames()
         idx += group;
     }
 
-    const std::pair <int, int> zrange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
-
+    const auto zrange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
     if( zrange.second > m_frameStart && zrange.first < m_frameStart + onScreen * group )
     {
         auto x1 = std::min( onScreen * fwidth, ( zrange.second - m_frameStart ) * fwidth / group );

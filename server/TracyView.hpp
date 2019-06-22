@@ -310,6 +310,7 @@ private:
     std::unique_ptr<TextEditor> m_textEditor;
     const char* m_textEditorFile;
     ImFont* m_textEditorFont;
+    bool m_textEditorWhitespace = true;
 
     float m_rootWidth, m_rootHeight;
     SetTitleCallback m_stcb;

@@ -151,6 +151,7 @@ void View::InitTextEditor()
     m_textEditor = std::make_unique<TextEditor>();
     m_textEditor->SetReadOnly( true );
     m_textEditor->SetLanguageDefinition( TextEditor::LanguageDefinition::CPlusPlus() );
+    m_textEditor->SetShowWhitespaces( m_textEditorWhitespace );
 
     m_textEditorFile = nullptr;
 }
@@ -8847,6 +8848,10 @@ void View::DrawTextEditor()
     TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif
     TextFocused( "File:", m_textEditorFile );
+    if( SmallCheckbox( "Show whitespace", &m_textEditorWhitespace ) );
+    {
+        m_textEditor->SetShowWhitespaces( m_textEditorWhitespace );
+    }
     if( m_textEditorFont ) ImGui::PushFont( m_textEditorFont );
     m_textEditor->Render( m_textEditorFile, ImVec2(), true );
     if( m_textEditorFont ) ImGui::PopFont();

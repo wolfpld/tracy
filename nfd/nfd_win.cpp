@@ -366,6 +366,7 @@ nfdresult_t NFD_OpenDialog( const nfdchar_t *filterList,
                             const nfdchar_t *defaultPath,
                             nfdchar_t **outPath )
 {
+    HRESULT result;
     nfdresult_t nfdResult = NFD_ERROR;
     
     // Init COM library.
@@ -383,7 +384,7 @@ nfdresult_t NFD_OpenDialog( const nfdchar_t *filterList,
     }
 
     // Create dialog
-    HRESULT result = ::CoCreateInstance(::CLSID_FileOpenDialog, NULL,
+    result = ::CoCreateInstance(::CLSID_FileOpenDialog, NULL,
                                         CLSCTX_ALL, ::IID_IFileOpenDialog,
                                         reinterpret_cast<void**>(&fileOpenDialog) );
                                 

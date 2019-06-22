@@ -5224,6 +5224,7 @@ void View::DrawOptions()
         }
         if( expand )
         {
+            ImGui::SameLine();
             if( ImGui::SmallButton( "Select all" ) )
             {
                 for( const auto& l : m_worker.GetLockMap() )
@@ -5247,6 +5248,7 @@ void View::DrawOptions()
             ImGui::TextDisabled( "(%zu)", multiCntCont );
             if( multiExpand )
             {
+                ImGui::SameLine();
                 if( ImGui::SmallButton( "Select all" ) )
                 {
                     for( const auto& l : m_worker.GetLockMap() )
@@ -5313,6 +5315,7 @@ void View::DrawOptions()
             ImGui::TextDisabled( "(%zu)", multiCntUncont );
             if( multiUncontExpand )
             {
+                ImGui::SameLine();
                 if( ImGui::SmallButton( "Select all" ) )
                 {
                     for( const auto& l : m_worker.GetLockMap() )
@@ -5379,6 +5382,7 @@ void View::DrawOptions()
             ImGui::TextDisabled( "(%zu)", singleCnt );
             if( singleExpand )
             {
+                ImGui::SameLine();
                 if( ImGui::SmallButton( "Select all" ) )
                 {
                     for( const auto& l : m_worker.GetLockMap() )
@@ -5457,6 +5461,7 @@ void View::DrawOptions()
         ImGui::TextDisabled( "(%zu)", m_worker.GetPlots().size() );
         if( expand )
         {
+            ImGui::SameLine();
             if( ImGui::SmallButton( "Select all" ) )
             {
                 for( const auto& p : m_worker.GetPlots() )
@@ -5495,6 +5500,7 @@ void View::DrawOptions()
     {
         auto& crash = m_worker.GetCrashEvent();
 
+        ImGui::SameLine();
         if( ImGui::SmallButton( "Select all" ) )
         {
             for( const auto& t : m_threadOrder )
@@ -5590,6 +5596,7 @@ void View::DrawOptions()
     ImGui::TextDisabled( "(%zu)", m_worker.GetFrames().size() );
     if( expand )
     {
+        ImGui::SameLine();
         if( ImGui::SmallButton( "Select all" ) )
         {
             for( const auto& fd : m_worker.GetFrames() )
@@ -5639,6 +5646,7 @@ void View::DrawMessages()
     {
         auto& crash = m_worker.GetCrashEvent();
 
+        ImGui::SameLine();
         if( ImGui::SmallButton( "Select all" ) )
         {
             for( const auto& t : m_threadOrder )

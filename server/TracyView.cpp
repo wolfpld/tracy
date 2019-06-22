@@ -8864,7 +8864,7 @@ void View::DrawTextEditor()
     TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif
     TextFocused( "File:", m_textEditorFile );
-    if( SmallCheckbox( "Show whitespace", &m_textEditorWhitespace ) );
+    if( SmallCheckbox( "Show whitespace", &m_textEditorWhitespace ) )
     {
         m_textEditor->SetShowWhitespaces( m_textEditorWhitespace );
     }

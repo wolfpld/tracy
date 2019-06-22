@@ -249,7 +249,7 @@ private:
 
     const ZoneEvent* m_zoneInfoWindow = nullptr;
     const ZoneEvent* m_zoneHighlight;
-    DecayValue<uint64_t> m_zoneSrcLocHighlight = 0;
+    DecayValue<int32_t> m_zoneSrcLocHighlight = 0;
     LockHighlight m_lockHighlight { -1 };
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
     DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;

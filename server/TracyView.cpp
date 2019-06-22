@@ -994,20 +994,32 @@ void View::DrawFrames()
                 }
                 ImGui::EndTooltip();
 
-                if( ImGui::IsMouseClicked( 0 ) )
+                if( io.KeyCtrl )
                 {
-                    m_pause = true;
-                    m_zoomAnim.active = false;
-                    if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
-                    m_zvStart = m_worker.GetFrameBegin( *m_frames, sel );
-                    m_zvEnd = m_worker.GetFrameEnd( *m_frames, sel + group - 1 );
-                    if( m_zvStart == m_zvEnd ) m_zvStart--;
+                    if( fi && ImGui::IsMouseDown( 0 ) )
+                    {
+                        m_showPlayback = true;
+                        m_playback.pause = true;
+                        SetPlaybackFrame( m_frames->frames[sel].frameImage );
+                    }
                 }
-                else if( ImGui::IsMouseDragging( 0 ) )
+                else
                 {
-                    const auto t0 = std::min( m_zvStart, m_worker.GetFrameBegin( *m_frames, sel ) );
-                    const auto t1 = std::max( m_zvEnd, m_worker.GetFrameEnd( *m_frames, sel + group - 1 ) );
-                    ZoomToRange( t0, t1 );
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_pause = true;
+                        m_zoomAnim.active = false;
+                        if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
+                        m_zvStart = m_worker.GetFrameBegin( *m_frames, sel );
+                        m_zvEnd = m_worker.GetFrameEnd( *m_frames, sel + group - 1 );
+                        if( m_zvStart == m_zvEnd ) m_zvStart--;
+                    }
+                    else if( ImGui::IsMouseDragging( 0 ) )
+                    {
+                        const auto t0 = std::min( m_zvStart, m_worker.GetFrameBegin( *m_frames, sel ) );
+                        const auto t1 = std::max( m_zvEnd, m_worker.GetFrameEnd( *m_frames, sel + group - 1 ) );
+                        ZoomToRange( t0, t1 );
+                    }
                 }
             }
 

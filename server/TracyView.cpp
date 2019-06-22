@@ -4236,12 +4236,6 @@ void View::DrawZoneInfoWindow()
     const auto selftime = GetZoneSelfTime( ev );
     TextFocused( "Time from start of program:", TimeToString( ev.start - m_worker.GetTimeBegin() ) );
     TextFocused( "Execution time:", TimeToString( ztime ) );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        TextFocused( "Without profiling:", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
-        ImGui::EndTooltip();
-    }
     TextFocused( "Self time:", TimeToString( selftime ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );

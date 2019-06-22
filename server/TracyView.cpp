@@ -1740,7 +1740,7 @@ void View::DrawZones()
     if( threadData.size() != m_threadOrder.size() )
     {
         m_threadOrder.reserve( threadData.size() );
-        for( int i=m_threadOrder.size(); i<threadData.size(); i++ )
+        for( size_t i=m_threadOrder.size(); i<threadData.size(); i++ )
         {
             m_threadOrder.push_back( threadData[i] );
         }

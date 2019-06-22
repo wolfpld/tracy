@@ -269,7 +269,7 @@ public:
     int64_t GetFrameBegin( const FrameData& fd, size_t idx ) const;
     int64_t GetFrameEnd( const FrameData& fd, size_t idx ) const;
     const FrameImage* GetFrameImage( const FrameData& fd, size_t idx ) const;
-    std::pair <int, int> GetFrameRange( const FrameData& fd, int64_t from, int64_t to );
+    std::pair<int, int> GetFrameRange( const FrameData& fd, int64_t from, int64_t to );
 
     const flat_hash_map<uint32_t, LockMap*, nohash<uint32_t>>& GetLockMap() const { return m_data.lockMap; }
     const Vector<MessageData*>& GetMessages() const { return m_data.messages; }

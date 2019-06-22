@@ -1498,7 +1498,7 @@ const FrameImage* Worker::GetFrameImage( const FrameData& fd, size_t idx ) const
     return m_data.frameImage[v];
 }
 
-std::pair <int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, int64_t to )
+std::pair<int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, int64_t to )
 {
     auto zitbegin = std::lower_bound( fd.frames.begin(), fd.frames.end(), from, [] ( const auto& lhs, const auto& rhs ) { return lhs.start < rhs; } );
     if( zitbegin == fd.frames.end() ) zitbegin--;

@@ -404,6 +404,7 @@ bool View::DrawImpl()
 
     bool keepOpen = true;
     bool* keepOpenPtr = nullptr;
+    (void)keepOpenPtr;
     if( !m_staticView )
     {
         if( !DrawConnection() ) return false;

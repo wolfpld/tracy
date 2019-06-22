@@ -4236,6 +4236,11 @@ void View::DrawZoneInfoWindow()
     const auto selftime = GetZoneSelfTime( ev );
     TextFocused( "Time from start of program:", TimeToString( ev.start - m_worker.GetTimeBegin() ) );
     TextFocused( "Execution time:", TimeToString( ztime ) );
+#ifndef TRACY_NO_STATISTICS
+    auto& zoneData = m_worker.GetZonesForSourceLocation( ev.srcloc );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+#endif
     TextFocused( "Self time:", TimeToString( selftime ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
@@ -10354,6 +10359,11 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
+#ifndef TRACY_NO_STATISTICS
+    auto& zoneData = m_worker.GetZonesForSourceLocation( ev.srcloc );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+#endif
     TextFocused( "Self time:", TimeToString( selftime ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );

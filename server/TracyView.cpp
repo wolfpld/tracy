@@ -598,9 +598,17 @@ bool View::DrawImpl()
     if( !m_worker.IsBackgroundDone() )
     {
         ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextDisabledUnformatted( ICON_FA_TASKS );
+        ImGui::SameLine();
         const auto pos = ImGui::GetCursorPos();
         ImGui::TextUnformatted( "  " );
         ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.75f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
+#else
+        const auto pos = ImGui::GetCursorPos();
+        ImGui::TextUnformatted( "  " );
+        ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.75f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
+#endif
     }
     if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Saving )
     {

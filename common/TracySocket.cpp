@@ -518,7 +518,7 @@ void UdpListen::Close()
     m_sock = -1;
 }
 
-const char* UdpListen::Read( int& len, IpAddress& addr )
+const char* UdpListen::Read( size_t& len, IpAddress& addr )
 {
     static char buf[2048];
 
@@ -529,7 +529,7 @@ const char* UdpListen::Read( int& len, IpAddress& addr )
 
     sockaddr sa;
     socklen_t salen = sizeof( struct sockaddr );
-    len = recvfrom( m_sock, buf, 2048, 0, &sa, &salen );
+    len = (size_t)recvfrom( m_sock, buf, 2048, 0, &sa, &salen );
     addr.Set( sa );
 
     return buf;

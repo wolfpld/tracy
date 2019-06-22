@@ -115,7 +115,7 @@ public:
     bool Listen( int port );
     void Close();
 
-    const char* Read( int& len, IpAddress& addr );
+    const char* Read( size_t& len, IpAddress& addr );
 
     UdpListen( const UdpListen& ) = delete;
     UdpListen( UdpListen&& ) = delete;

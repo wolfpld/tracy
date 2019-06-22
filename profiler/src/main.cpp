@@ -295,7 +295,7 @@ int main( int argc, char** argv )
             else
             {
                 tracy::IpAddress addr;
-                int len;
+                size_t len;
                 auto msg = broadcastListen->Read( len, addr );
                 if( msg )
                 {

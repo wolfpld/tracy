@@ -202,7 +202,7 @@ private:
         if( fread( &sz, 1, sizeof( sz ), m_file ) == sizeof( sz ) )
         {
             fread( m_lz4buf, 1, sz, m_file );
-            m_lastBlock = LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_second, sz, BufSize );
+            m_lastBlock = (size_t)LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_second, sz, BufSize );
         }
         else
         {
@@ -219,7 +219,7 @@ private:
     char* m_buf;
     char* m_second;
     size_t m_offset;
-    int m_lastBlock;
+    size_t m_lastBlock;
 
     std::atomic<bool> m_signalSwitch;
     std::atomic<bool> m_signalAvailable;

@@ -1464,7 +1464,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
         auto tx = ImGui::CalcTextSize( buf ).x;
         uint32_t color = ( frames.name == 0 && i == 0 ) ? redColor : activeColor;
 
-        if( fsz - 5 <= tx )
+        if( fsz - 7 <= tx )
         {
             buf = TimeToString( ftime );
             tx = ImGui::CalcTextSize( buf ).x;
@@ -1478,12 +1478,28 @@ bool View::DrawZoneFrames( const FrameData& frames )
         {
             draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, ty - 1 ), color );
         }
-        if( fsz - 5 > tx )
+        if( fsz - 7 > tx )
         {
-            const auto part = ( fsz - 5 - tx ) / 2;
-            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fbegin - m_zvStart ) * pxns + part ), round( ty / 2 ) ), color );
-            draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), color, buf );
-            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 + part + tx ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
+            const auto f0 = ( fbegin - m_zvStart ) * pxns + 2;
+            const auto f1 = ( fend - m_zvStart ) * pxns - 2;
+            const auto x0 = f0 + 1;
+            const auto x1 = f1 - 1;
+            const auto te = x1 - tx;
+
+            auto tpos = ( x0 + te ) / 2;
+            if( tpos < 0 )
+            {
+                tpos = std::min( std::min( 0., te - tpos ), te );
+            }
+            else if( tpos > w - tx )
+            {
+                tpos = std::max( double( w - tx ), x0 );
+            }
+            tpos = round( tpos );
+
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, f0 ), round( ty / 2 ) ), wpos + ImVec2( tpos, round( ty / 2 ) ), color );
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, tpos + tx + 1 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, f1 ), round( ty / 2 ) ), color );
+            draw->AddText( wpos + ImVec2( tpos, 0 ), color, buf );
         }
         else
         {

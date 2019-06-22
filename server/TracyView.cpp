@@ -10288,13 +10288,12 @@ void View::ZoomToNextFrame()
     int frame;
     if( start < m_worker.GetFrameBegin( *m_frames, 0 ) )
     {
-        frame = -1;
+        frame = 0;
     }
     else
     {
-        frame = m_worker.GetFrameRange( *m_frames, start, start ).first;
+        frame = (size_t)m_worker.GetFrameRange( *m_frames, start, start ).first + 1;
     }
-    frame++;
     if( frame >= m_worker.GetFrameCount( *m_frames ) ) return;
 
     const auto fbegin = m_worker.GetFrameBegin( *m_frames, frame );

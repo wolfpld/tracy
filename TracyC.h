@@ -22,6 +22,9 @@ typedef const void* TracyCZoneCtx;
 #define TracyCZoneText(c,x,y)
 #define TracyCZoneName(c,x,y)
 
+#define TracyCAlloc(x,y)
+#define TracyCFree(x)
+
 #else
 
 #ifndef TracyConcat
@@ -70,6 +73,20 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size );
 
 #define TracyCZoneText( ctx, txt, size ) ___tracy_emit_zone_text( ctx, txt, size );
 #define TracyCZoneName( ctx, txt, size ) ___tracy_emit_zone_name( ctx, txt, size );
+
+
+void ___tracy_emit_memory_alloc( const void* ptr, size_t size );
+void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth );
+void ___tracy_emit_memory_free( const void* ptr );
+void ___tracy_emit_memory_free_callstack( const void* ptr, int depth );
+
+#if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
+#  define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc_callstack( ptr, size, TRACY_CALLSTACK )
+#  define TracyCFree( ptr ) ___tracy_emit_memory_alloc_free_callstack( ptr, TRACY_CALLSTACK )
+#else
+#  define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc( ptr, size );
+#  define TracyCFree( ptr ) ___tracy_emit_memory_free( ptr );
+#endif
 
 #endif
 

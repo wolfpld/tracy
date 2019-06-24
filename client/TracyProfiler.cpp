@@ -2244,6 +2244,26 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
     }
 }
 
+void ___tracy_emit_memory_alloc( const void* ptr, size_t size )
+{
+    tracy::Profiler::MemAlloc( ptr, size );
+}
+
+void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth )
+{
+    tracy::Profiler::MemAllocCallstack( ptr, size, depth );
+}
+
+void ___tracy_emit_memory_free( const void* ptr )
+{
+    tracy::Profiler::MemFree( ptr );
+}
+
+void ___tracy_emit_memory_free_callstack( const void* ptr, int depth )
+{
+    tracy::Profiler::MemFreeCallstack( ptr, depth );
+}
+
 #ifdef __cplusplus
 }
 #endif

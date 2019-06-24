@@ -676,6 +676,7 @@ Due to limits of internal bookkeeping in the profiler, each lock may be used in 
 \end{bclogo}
 
 \subsection{Plotting data}
+\label{plottingdata}
 
 Tracy is able to capture and draw numeric value changes over time. You may use it to analyze draw call counts, number of performed queries, etc. To report data, use the \texttt{TracyPlot(name, value)} macro.
 
@@ -931,6 +932,8 @@ Even if Tracy is disabled, you still have to pay the no-op function call cost. T
 
 In order to profile code written in C programming language, you will need to include the \texttt{tracy/TracyC.h} header file, which exposes the C API.
 
+At the moment there's no support for C API based markup of locks, OpenGL, Vulkan or Lua.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
@@ -946,6 +949,18 @@ logo=\bcattention
 ]{Caveats}
 If you are using MSVC, you will need to disable the \emph{Edit And Continue} feature, for the C API to work\footnote{There's no such requirement for C++ API.}. To do so, open the project properties and go to \emph{C/C++\textrightarrow General\textrightarrow Debug Information Format} and make sure \emph{Program Database for Edit And Continue (/ZI)} is \emph{not} selected.
 \end{bclogo}
+
+\subsubsection{Frame markup}
+
+To mark frames, as described in section~\ref{markingframes}, use the following macros:
+
+\begin{itemize}
+\item \texttt{TracyCFrameMark}
+\item \texttt{TracyCFrameMarkNamed(name)}
+\item \texttt{TracyCFrameMarkStart(name)}
+\item \texttt{TracyCFrameMarkEnd(name)}
+\item \texttt{TracyCFrameImage(image, width, height, offset, flip)}
+\end{itemize}
 
 \subsubsection{Zone markup}
 
@@ -964,16 +979,49 @@ Unlike C++, there's no automatic destruction mechanism in C, so you will need to
 
 Zone text and name may be set by using the \texttt{TracyCZoneText(ctx, txt, size)} and \texttt{TracyCZoneName(ctx, txt, size)} macros. Make sure you are following the zone stack rules, as described in section~\ref{multizone}!
 
-\subsubsection{Zone validation}
+\paragraph{Zone validation}
 
 Since all instrumentation using the C API has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section~\ref{instrumentationfailures} for more information.
 
 The validation comes with a performance cost though, which you may not want to pay. If you are \emph{completely sure} that the instrumentation is not broken in any way, you may use the \texttt{TRACY\_NO\_VERIFY} macro, which will disable the validation code.
 
+\subsubsection{Memory profiling}
+
+Use the following macros in your implementations of \texttt{malloc} and \texttt{free}:
+
+\begin{itemize}
+\item \texttt{TracyCAlloc(ptr, size)}
+\item \texttt{TracyCFree(ptr)}
+\end{itemize}
+
+Using this functionality in a proper way can be quite tricky, as you also will need to handle all the memory allocations made by external libraries (which typically allow usage of custom memory allocation functions), but also the allocations made by system functions. If such an allocation can't be tracked, you will need to make sure freeing is not reported\footnote{It's not uncommon to see a pattern where a system function returns some allocated memory, which you then need to free.}.
+
+There is no explicit support for \texttt{realloc} function. You will need to handle it by marking memory allocations and frees, according to the system manual describing behavior of this routine.
+
+For more information refer to section~\ref{memoryprofiling}.
+
+\subsubsection{Plots and messages}
+
+To send additional markup in form of plot data points or messages use the following macros:
+
+\begin{itemize}
+\item \texttt{TracyCPlot(name, val)}
+\item \texttt{TracyCMessage(txt, size)}
+\item \texttt{TracyCMessageL(txt)}
+\item \texttt{TracyCMessageC(txt, size, color)}
+\item \texttt{TracyCMessageLC(txt, color)}
+\end{itemize}
+
+Consult sections~\ref{plottingdata} and~\ref{messagelog} for more information.
+
+\subsubsection{Call stacks}
+
+You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using the following \texttt{S} postfixed macros: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}.
+
 \section{Capturing the data}
 \label{capturing}
 
-After the client application has been instrumented, you will want to connect to it using a server.
+After the client application has been instrumented, you will want to connect to it using a server, which is available either as a headless capture-only utility, or as a full-fledged graphical profiling interface.
 
 \subsection{Command line}
 

@@ -3,9 +3,11 @@
 
 #include <limits.h>
 
-#if defined _WIN64 || ( defined __CYGWIN__ && __WORDSIZE == 64 )
+#if defined _WIN64
 #  include <intrin.h>
 #  define TracyCountBits __popcnt64
+#elif defined __GNUC__ || defined __clang__
+#  define TracyCountBits __builtin_popcountll
 #else
 static inline int TracyCountBits( uint64_t i )
 {

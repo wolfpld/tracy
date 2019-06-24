@@ -23,6 +23,7 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 namespace tracy
 {
 
+#ifdef TRACY_ENABLE
 static inline uint64_t GetThreadHandle()
 {
 #ifdef _WIN32
@@ -37,6 +38,8 @@ static inline uint64_t GetThreadHandle()
     return uint64_t( pthread_self() );
 #endif
 }
+
+#endif
 
 void SetThreadName( std::thread& thread, const char* name );
 void SetThreadName( std::thread::native_handle_type handle, const char* name );

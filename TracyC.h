@@ -25,6 +25,12 @@ typedef const void* TracyCZoneCtx;
 #define TracyCAlloc(x,y)
 #define TracyCFree(x)
 
+#define TracyCFrameMark
+#define TracyCFrameMarkNamed(x)
+#define TracyCFrameMarkStart(x)
+#define TracyCFrameMarkEnd(x)
+#define TracyCFrameImage(x,y,z,w,a)
+
 #else
 
 #ifndef TracyConcat
@@ -87,6 +93,18 @@ void ___tracy_emit_memory_free_callstack( const void* ptr, int depth );
 #  define TracyCAlloc( ptr, size ) ___tracy_emit_memory_alloc( ptr, size );
 #  define TracyCFree( ptr ) ___tracy_emit_memory_free( ptr );
 #endif
+
+
+void ___tracy_emit_frame_mark( const char* name );
+void ___tracy_emit_frame_mark_start( const char* name );
+void ___tracy_emit_frame_mark_end( const char* name );
+void ___tracy_emit_frame_image( void* image, uint16_t w, uint16_t h, uint8_t offset, int flip );
+
+#define TracyCFrameMark ___tracy_emit_frame_mark( 0 );
+#define TracyCFrameMarkNamed( name ) ___tracy_emit_frame_mark( name );
+#define TracyCFrameMarkStart( name ) ___tracy_emit_frame_mark_start( name );
+#define TracyCFrameMarkEnd( name ) ___tracy_emit_frame_mark_end( name );
+#define TracyCFrameImage( image, width, height, offset, flip ) ___tracy_emit_frame_image( image, width, height, offset, flip );
 
 #endif
 

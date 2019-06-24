@@ -2264,6 +2264,26 @@ void ___tracy_emit_memory_free_callstack( const void* ptr, int depth )
     tracy::Profiler::MemFreeCallstack( ptr, depth );
 }
 
+void ___tracy_emit_frame_mark( const char* name )
+{
+    tracy::Profiler::SendFrameMark( name );
+}
+
+void ___tracy_emit_frame_mark_start( const char* name )
+{
+    tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgStart );
+}
+
+void ___tracy_emit_frame_mark_end( const char* name )
+{
+    tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgEnd );
+}
+
+void ___tracy_emit_frame_image( void* image, uint16_t w, uint16_t h, uint8_t offset, int flip )
+{
+    tracy::Profiler::SendFrameImage( image, w, h, offset, flip );
+}
+
 #ifdef __cplusplus
 }
 #endif

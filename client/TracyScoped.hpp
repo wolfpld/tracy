@@ -24,9 +24,8 @@ public:
 #endif
     {
         if( !m_active ) return;
-        const auto thread = GetThreadHandle();
-        m_thread = thread;
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -53,7 +52,6 @@ public:
     {
         if( !m_active ) return;
         const auto thread = GetThreadHandle();
-        m_thread = thread;
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
@@ -80,6 +78,7 @@ public:
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -91,7 +90,7 @@ public:
         MemWrite( &item->zoneEnd.time, Profiler::GetTime( cpu ) );
         MemWrite( &item->zoneEnd.cpu, cpu );
 #endif
-        MemWrite( &item->zoneEnd.thread, m_thread );
+        MemWrite( &item->zoneEnd.thread, thread );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -102,6 +101,7 @@ public:
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
@@ -109,7 +109,7 @@ public:
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneText );
-        MemWrite( &item->zoneText.thread, m_thread );
+        MemWrite( &item->zoneText.thread, thread );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -121,6 +121,7 @@ public:
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
@@ -128,13 +129,12 @@ public:
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneName );
-        MemWrite( &item->zoneText.thread, m_thread );
+        MemWrite( &item->zoneText.thread, thread );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }
 
 private:
-    uint64_t m_thread;
     const bool m_active;
 
 #ifdef TRACY_ON_DEMAND

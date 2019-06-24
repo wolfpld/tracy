@@ -24,7 +24,7 @@ namespace tracy
 {
 
 #ifdef TRACY_ENABLE
-static inline uint64_t GetThreadHandle()
+static inline uint64_t GetThreadHandleImpl()
 {
 #ifdef _WIN32
     static_assert( sizeof( decltype( GetCurrentThreadId() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
@@ -39,6 +39,12 @@ static inline uint64_t GetThreadHandle()
 #endif
 }
 
+const thread_local auto s_threadHandle = GetThreadHandleImpl();
+
+static inline uint64_t GetThreadHandle()
+{
+    return s_threadHandle;
+}
 #endif
 
 void SetThreadName( std::thread& thread, const char* name );

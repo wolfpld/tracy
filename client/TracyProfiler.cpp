@@ -2068,12 +2068,12 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    tracy::Magic magic;
     const auto thread = tracy::GetThreadHandle();
-    auto token = tracy::GetToken();
-    auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -2082,6 +2082,9 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBegin );
 #ifdef TRACY_RDTSCP_OPT
@@ -2110,12 +2113,12 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    tracy::Magic magic;
     const auto thread = tracy::GetThreadHandle();
-    auto token = tracy::GetToken();
-    auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -2124,6 +2127,9 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginCallstack );
 #ifdef TRACY_RDTSCP_OPT
@@ -2145,12 +2151,12 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
 void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 {
     if( !ctx.active ) return;
-    tracy::Magic magic;
     const auto thread = tracy::GetThreadHandle();
-    auto token = tracy::GetToken();
-    auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -2159,6 +2165,9 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneEnd );
 #ifdef TRACY_RDTSCP_OPT
@@ -2176,15 +2185,15 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
-    tracy::Magic magic;
     const auto thread = tracy::GetThreadHandle();
-    auto token = tracy::GetToken();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -2193,6 +2202,9 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneText );
         tracy::MemWrite( &item->zoneText.thread, thread );
@@ -2204,15 +2216,15 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
-    tracy::Magic magic;
     const auto thread = tracy::GetThreadHandle();
-    auto token = tracy::GetToken();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -2221,6 +2233,9 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneName );
         tracy::MemWrite( &item->zoneText.thread, thread );

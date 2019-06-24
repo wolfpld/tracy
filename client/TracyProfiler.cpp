@@ -928,7 +928,7 @@ enum { BulkSize = TargetFrameSize / QueueItemSize };
 
 Profiler::Profiler()
     : m_timeBegin( 0 )
-    , m_mainThread( GetThreadHandle() )
+    , m_mainThread( GetThreadHandleImpl() )
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
     , m_shutdownManual( false )

@@ -2284,6 +2284,31 @@ void ___tracy_emit_frame_image( void* image, uint16_t w, uint16_t h, uint8_t off
     tracy::Profiler::SendFrameImage( image, w, h, offset, flip );
 }
 
+void ___tracy_emit_plot( const char* name, double val )
+{
+    tracy::Profiler::PlotData( name, val );
+}
+
+void ___tracy_emit_message( const char* txt, size_t size )
+{
+    tracy::Profiler::Message( txt, size );
+}
+
+void ___tracy_emit_messageL( const char* txt )
+{
+    tracy::Profiler::Message( txt );
+}
+
+void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color )
+{
+    tracy::Profiler::MessageColor( txt, size, color );
+}
+
+void ___tracy_emit_messageLC( const char* txt, uint32_t color )
+{
+    tracy::Profiler::MessageColor( txt, color );
+}
+
 #ifdef __cplusplus
 }
 #endif

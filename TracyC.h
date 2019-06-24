@@ -31,6 +31,12 @@ typedef const void* TracyCZoneCtx;
 #define TracyCFrameMarkEnd(x)
 #define TracyCFrameImage(x,y,z,w,a)
 
+#define TracyCPlot(x,y)
+#define TracyCMessage(x,y)
+#define TracyCMessageL(x)
+#define TracyCMessageC(x,y,z)
+#define TracyCMessageLC(x,y)
+
 #else
 
 #ifndef TracyConcat
@@ -105,6 +111,19 @@ void ___tracy_emit_frame_image( void* image, uint16_t w, uint16_t h, uint8_t off
 #define TracyCFrameMarkStart( name ) ___tracy_emit_frame_mark_start( name );
 #define TracyCFrameMarkEnd( name ) ___tracy_emit_frame_mark_end( name );
 #define TracyCFrameImage( image, width, height, offset, flip ) ___tracy_emit_frame_image( image, width, height, offset, flip );
+
+
+void ___tracy_emit_plot( const char* name, double val );
+void ___tracy_emit_message( const char* txt, size_t size );
+void ___tracy_emit_messageL( const char* txt );
+void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color );
+void ___tracy_emit_messageLC( const char* txt, uint32_t color );
+
+#define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
+#define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size );
+#define TracyCMessageL( txt ) ___tracy_emit_messageL( txt );
+#define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color );
+#define TracyCMessageLC( txt, color ) ___tracy_emit_messageLC( txt, color );
 
 #endif
 

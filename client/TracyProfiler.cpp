@@ -492,8 +492,8 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     }
 
     {
-        const auto thread = GetThreadHandle();
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -730,8 +730,8 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     }
 
     {
-        const auto thread = GetThreadHandle();
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -2065,11 +2065,11 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
     ctx.active = active;
 #endif
     if( !ctx.active ) return ctx;
-    const auto thread = tracy::GetThreadHandle();
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
     tracy::Magic magic;
+    const auto thread = tracy::GetThreadHandle();
     auto token = tracy::GetToken();
     auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
@@ -2107,11 +2107,11 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
     ctx.active = active;
 #endif
     if( !ctx.active ) return ctx;
-    const auto thread = tracy::GetThreadHandle();
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
     tracy::Magic magic;
+    const auto thread = tracy::GetThreadHandle();
     auto token = tracy::GetToken();
     auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
@@ -2145,8 +2145,8 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
 void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 {
     if( !ctx.active ) return;
-    const auto thread = tracy::GetThreadHandle();
     tracy::Magic magic;
+    const auto thread = tracy::GetThreadHandle();
     auto token = tracy::GetToken();
     auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
@@ -2176,8 +2176,8 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
-    const auto thread = tracy::GetThreadHandle();
     tracy::Magic magic;
+    const auto thread = tracy::GetThreadHandle();
     auto token = tracy::GetToken();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
@@ -2204,8 +2204,8 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
-    const auto thread = tracy::GetThreadHandle();
     tracy::Magic magic;
+    const auto thread = tracy::GetThreadHandle();
     auto token = tracy::GetToken();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );

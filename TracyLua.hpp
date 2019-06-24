@@ -180,13 +180,14 @@ static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
     assert( dst - ptr == spaceNeeded + 4 );
 
     Magic magic;
+    const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
     MemWrite( &item->hdr.type, QueueType::CallstackAlloc );
     MemWrite( &item->callstackAlloc.ptr, (uint64_t)ptr );
     MemWrite( &item->callstackAlloc.nativePtr, (uint64_t)Callstack( depth ) );
-    MemWrite( &item->callstackAlloc.thread, GetThreadHandle() );
+    MemWrite( &item->callstackAlloc.thread, thread );
     tail.store( magic + 1, std::memory_order_release );
 }
 
@@ -227,6 +228,7 @@ static inline int LuaZoneBeginS( lua_State* L )
     memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
 
     Magic magic;
+    const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -238,7 +240,7 @@ static inline int LuaZoneBeginS( lua_State* L )
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
     MemWrite( &item->zoneBegin.cpu, cpu );
 #endif
-    MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
+    MemWrite( &item->zoneBegin.thread, thread );
     MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
 
@@ -293,6 +295,7 @@ static inline int LuaZoneBeginNS( lua_State* L )
     memcpy( ptr + 12 + fsz + 1 + ssz + 1, name, nsz );
 
     Magic magic;
+    const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -304,7 +307,7 @@ static inline int LuaZoneBeginNS( lua_State* L )
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
     MemWrite( &item->zoneBegin.cpu, cpu );
 #endif
-    MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
+    MemWrite( &item->zoneBegin.thread, thread );
     MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
 
@@ -359,6 +362,7 @@ static inline int LuaZoneBegin( lua_State* L )
     memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
 
     Magic magic;
+    const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -370,7 +374,7 @@ static inline int LuaZoneBegin( lua_State* L )
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
     MemWrite( &item->zoneBegin.cpu, cpu );
 #endif
-    MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
+    MemWrite( &item->zoneBegin.thread, thread );
     MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
@@ -421,6 +425,7 @@ static inline int LuaZoneBeginN( lua_State* L )
     memcpy( ptr + 12 + fsz + 1 + ssz + 1, name, nsz );
 
     Magic magic;
+    const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -432,7 +437,7 @@ static inline int LuaZoneBeginN( lua_State* L )
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
     MemWrite( &item->zoneBegin.cpu, cpu );
 #endif
-    MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
+    MemWrite( &item->zoneBegin.thread, thread );
     MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
@@ -453,6 +458,7 @@ static inline int LuaZoneEnd( lua_State* L )
 #endif
 
     Magic magic;
+    const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -464,7 +470,7 @@ static inline int LuaZoneEnd( lua_State* L )
     MemWrite( &item->zoneEnd.time, Profiler::GetTime( cpu ) );
     MemWrite( &item->zoneEnd.cpu, cpu );
 #endif
-    MemWrite( &item->zoneEnd.thread, GetThreadHandle() );
+    MemWrite( &item->zoneEnd.thread, thread );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
 }
@@ -484,6 +490,7 @@ static inline int LuaZoneText( lua_State* L )
     const auto size = strlen( txt );
 
     Magic magic;
+    const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
@@ -491,7 +498,7 @@ static inline int LuaZoneText( lua_State* L )
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneText );
-    MemWrite( &item->zoneText.thread, GetThreadHandle() );
+    MemWrite( &item->zoneText.thread, thread );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
@@ -512,6 +519,7 @@ static inline int LuaZoneName( lua_State* L )
     const auto size = strlen( txt );
 
     Magic magic;
+    const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
@@ -519,7 +527,7 @@ static inline int LuaZoneName( lua_State* L )
     auto& tail = token->get_tail_index();
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneName );
-    MemWrite( &item->zoneText.thread, GetThreadHandle() );
+    MemWrite( &item->zoneText.thread, thread );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
@@ -535,6 +543,7 @@ static inline int LuaMessage( lua_State* L )
     const auto size = strlen( txt );
 
     Magic magic;
+    const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
@@ -543,7 +552,7 @@ static inline int LuaMessage( lua_State* L )
     auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
     MemWrite( &item->hdr.type, QueueType::Message );
     MemWrite( &item->message.time, Profiler::GetTime() );
-    MemWrite( &item->message.thread, GetThreadHandle() );
+    MemWrite( &item->message.thread, thread );
     MemWrite( &item->message.text, (uint64_t)ptr );
     tail.store( magic + 1, std::memory_order_release );
     return 0;

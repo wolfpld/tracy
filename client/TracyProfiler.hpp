@@ -251,6 +251,7 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
@@ -259,7 +260,7 @@ public:
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::Message );
         MemWrite( &item->message.time, GetTime() );
-        MemWrite( &item->message.thread, GetThreadHandle() );
+        MemWrite( &item->message.thread, thread );
         MemWrite( &item->message.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -270,12 +271,13 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteral );
         MemWrite( &item->message.time, GetTime() );
-        MemWrite( &item->message.thread, GetThreadHandle() );
+        MemWrite( &item->message.thread, thread );
         MemWrite( &item->message.text, (uint64_t)txt );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -286,6 +288,7 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
@@ -294,7 +297,7 @@ public:
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::MessageColor );
         MemWrite( &item->messageColor.time, GetTime() );
-        MemWrite( &item->messageColor.thread, GetThreadHandle() );
+        MemWrite( &item->messageColor.thread, thread );
         MemWrite( &item->messageColor.text, (uint64_t)ptr );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
@@ -308,12 +311,13 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteralColor );
         MemWrite( &item->messageColor.time, GetTime() );
-        MemWrite( &item->messageColor.thread, GetThreadHandle() );
+        MemWrite( &item->messageColor.thread, thread );
         MemWrite( &item->messageColor.text, (uint64_t)txt );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );

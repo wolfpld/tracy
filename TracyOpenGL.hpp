@@ -102,13 +102,14 @@ public:
 
         const float period = 1.f;
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
-        MemWrite( &item->gpuNewContext.thread, GetThreadHandle() );
+        MemWrite( &item->gpuNewContext.thread, thread );
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, (uint8_t)bits );
@@ -238,9 +239,8 @@ public:
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
-        const auto thread = GetThreadHandle();
-
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );

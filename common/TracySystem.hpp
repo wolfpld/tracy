@@ -23,7 +23,8 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 namespace tracy
 {
 
-#ifdef TRACY_ENABLE
+namespace detail
+{
 static inline uint64_t GetThreadHandleImpl()
 {
 #ifdef _WIN32
@@ -38,12 +39,19 @@ static inline uint64_t GetThreadHandleImpl()
     return uint64_t( pthread_self() );
 #endif
 }
+}
 
-const thread_local auto s_threadHandle = GetThreadHandleImpl();
+#ifdef TRACY_ENABLE
+const thread_local auto s_threadHandle = detail::GetThreadHandleImpl();
 
 static inline uint64_t GetThreadHandle()
 {
     return s_threadHandle;
+}
+#else
+static inline uint64_t GetThreadHandle()
+{
+    return detail::GetThreadHandleImpl();
 }
 #endif
 

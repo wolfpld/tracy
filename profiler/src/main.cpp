@@ -321,7 +321,6 @@ int main( int argc, char** argv )
                             it->second.activeTime = activeTime;
                             if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
                             if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
-                            if( strcmp( it->second.address.c_str(), address ) != 0 ) it->second.address = address;
                         }
                     }
                 }

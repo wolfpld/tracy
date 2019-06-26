@@ -437,7 +437,7 @@ static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz,
     memcpy( msg.programName, procname, pnsz );
     memset( msg.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
 
-    len = offsetof( BroadcastMessage, programName ) + pnsz + 1;
+    len = int( offsetof( BroadcastMessage, programName ) + pnsz + 1 );
     return msg;
 }
 
@@ -1157,7 +1157,7 @@ void Profiler::Worker()
                 {
                     lastBroadcast = t;
                     const auto ts = std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
-                    broadcastMsg.activeTime = ts - m_epoch;
+                    broadcastMsg.activeTime = uint32_t( ts - m_epoch );
                     m_broadcast->Send( 8086, &broadcastMsg, broadcastLen );
                 }
             }

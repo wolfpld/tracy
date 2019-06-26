@@ -956,11 +956,9 @@ Profiler::Profiler()
     , m_serialDequeue( 1024*1024 )
     , m_fiQueue( 16 )
     , m_fiDequeue( 16 )
-    , m_etc1Buf( nullptr )
-    , m_etc1BufSize( 0 )
+    , m_frameCount( 0 )
 #ifdef TRACY_ON_DEMAND
     , m_isConnected( false )
-    , m_frameCount( 0 )
     , m_connectionId( 0 )
     , m_deferredQueue( 64*1024 )
 #endif
@@ -1040,7 +1038,6 @@ Profiler::~Profiler()
     tracy_free( m_lz4Buf );
     tracy_free( m_itemBuf );
     tracy_free( m_buffer );
-    tracy_free( m_etc1Buf );
     LZ4_freeStream( (LZ4_stream_t*)m_stream );
 
     if( m_sock )
@@ -1403,7 +1400,68 @@ void Profiler::Worker()
 
 void Profiler::CompressWorker()
 {
+    for(;;)
+    {
+        const auto shouldExit = ShouldExit();
 
+        {
+            bool lockHeld = true;
+            while( !m_fiLock.try_lock() )
+            {
+                if( m_shutdownManual.load( std::memory_order_relaxed ) )
+                {
+                    lockHeld = false;
+                    break;
+                }
+            }
+            m_fiQueue.swap( m_fiDequeue );
+            if( lockHeld )
+            {
+                m_fiLock.unlock();
+            }
+        }
+
+        const auto sz = m_fiDequeue.size();
+        if( sz > 0 )
+        {
+            auto fi = m_fiDequeue.data();
+            auto end = fi + sz;
+            while( fi != end )
+            {
+                const auto w = fi->w;
+                const auto h = fi->h;
+                const auto csz = size_t( w * h / 2 );
+                auto etc1buf = (char*)tracy_malloc( csz );
+                CompressImageEtc1( (const char*)fi->image, etc1buf, w, h );
+                tracy_free( fi->image );
+
+                Magic magic;
+                auto token = GetToken();
+                auto& tail = token->get_tail_index();
+                auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+                MemWrite( &item->hdr.type, QueueType::FrameImage );
+                MemWrite( &item->frameImage.image, (uint64_t)etc1buf );
+                MemWrite( &item->frameImage.frame, fi->frame );
+                MemWrite( &item->frameImage.w, w );
+                MemWrite( &item->frameImage.h, h );
+                uint8_t flip = fi->flip;
+                MemWrite( &item->frameImage.flip, flip );
+                tail.store( magic + 1, std::memory_order_release );
+
+                fi++;
+            }
+            m_fiDequeue.clear();
+        }
+        else
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+        }
+
+        if( shouldExit )
+        {
+            return;
+        }
+    }
 }
 
 static void FreeAssociatedMemory( const QueueItem& item )
@@ -1536,14 +1594,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     const auto w = MemRead<uint16_t>( &item->frameImage.w );
                     const auto h = MemRead<uint16_t>( &item->frameImage.h );
                     const auto csz = size_t( w * h / 2 );
-                    if( csz > m_etc1BufSize )
-                    {
-                        tracy_free( m_etc1Buf );
-                        m_etc1Buf = (char*)tracy_malloc( csz );
-                    }
-                    CompressImageEtc1( (const char*)ptr, m_etc1Buf, w, h );
+                    SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
                     tracy_free( (void*)ptr );
-                    SendLongString( ptr, m_etc1Buf, csz, QueueType::FrameImageData );
                     break;
                 }
                 default:

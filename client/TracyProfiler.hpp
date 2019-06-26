@@ -92,7 +92,7 @@ class Profiler
     struct FrameImageQueueItem
     {
         void* image;
-        int64_t time;
+        uint64_t frame;
         uint16_t w;
         uint16_t h;
         uint8_t offset;
@@ -154,8 +154,8 @@ public:
 
     static tracy_force_inline void SendFrameMark( const char* name )
     {
-#ifdef TRACY_ON_DEMAND
         if( !name ) GetProfiler().m_frameCount.fetch_add( 1, std::memory_order_relaxed );
+#ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
@@ -189,7 +189,6 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !profiler.IsConnected() ) return;
 #endif
-        const auto time = GetTime();
         const auto sz = size_t( w ) * size_t( h ) * 4;
         auto ptr = (char*)tracy_malloc( sz );
         memcpy( ptr, image, sz );
@@ -197,10 +196,9 @@ public:
         profiler.m_fiLock.lock();
         auto fi = profiler.m_fiQueue.prepare_next();
         fi->image = ptr;
-        fi->time = time;
+        fi->frame = profiler.m_frameCount.load( std::memory_order_relaxed ) - offset;
         fi->w = w;
         fi->h = h;
-        fi->offset = offset;
         fi->flip = flip;
         profiler.m_fiQueue.commit_next();
         profiler.m_fiLock.unlock();
@@ -554,12 +552,9 @@ private:
     FastVector<FrameImageQueueItem> m_fiQueue, m_fiDequeue;
     TracyMutex m_fiLock;
 
-    char* m_etc1Buf;
-    size_t m_etc1BufSize;
-
+    std::atomic<uint64_t> m_frameCount;
 #ifdef TRACY_ON_DEMAND
     std::atomic<bool> m_isConnected;
-    std::atomic<uint64_t> m_frameCount;
     std::atomic<uint64_t> m_connectionId;
 
     TracyMutex m_deferredLock;

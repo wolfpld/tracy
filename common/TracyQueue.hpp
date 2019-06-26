@@ -103,9 +103,9 @@ struct QueueFrameMark
 struct QueueFrameImage
 {
     uint64_t image;     // ptr
+    uint64_t frame;
     uint16_t w;
     uint16_t h;
-    uint8_t offset;
     uint8_t flip;
 };
 

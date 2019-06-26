@@ -3005,7 +3005,8 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     assert( it != m_pendingFrameImageData.end() );
 
     auto& frames = m_data.framesBase->frames;
-    const auto fidx = (int64_t)frames.size() - 1 - ev.offset;
+    const auto fidx = ev.frame - m_data.frameOffset + 1;
+    assert( fidx < frames.size() );
     if( m_onDemand && fidx <= 1 )
     {
         m_pendingFrameImageData.erase( it );

@@ -16,6 +16,7 @@ v0.5 (xxxx-xx-xx)
   - Display trace loading time.
   - Display background processing tasks after trace is loaded.
   - Display trace save notification.
+  - Show crash icon, if there was a crash.
 - Added C API.
 - Profiling session may now gracefully terminate, due to incorrect
   instrumentation. A popup with termination reason will be displayed.
@@ -51,6 +52,7 @@ v0.5 (xxxx-xx-xx)
     was happening when depth of displayed zones was changing.
   - Zooming in/out using the mouse wheel is now animated.
   - Plot range adjustment is now animated.
+  - Various other UI improvements.
 - System CPU usage is now being monitored.
 - Threads that have nothing to display in the current view are now hidden by
   default.

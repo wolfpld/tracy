@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include <mutex>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,6 +45,7 @@
 #include "Cousine.hpp"
 #include "FontAwesomeSolid.hpp"
 #include "icon.hpp"
+#include "ResolvService.hpp"
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -253,6 +255,10 @@ int main( int argc, char** argv )
     std::thread loadThread;
     tracy::UdpListen* broadcastListen = nullptr;
 
+    std::mutex resolvLock;
+    tracy::flat_hash_map<std::string, std::string> resolvMap;
+    ResolvService resolv;
+
     glfwShowWindow( window );
 
     double time = 0;
@@ -310,10 +316,24 @@ int main( int argc, char** argv )
                         const auto activeTime = bm.activeTime;
                         auto address = addr.GetText();
 
-                        auto it = clients.find( addr.GetNumber() );
+                        const auto ipNumerical = addr.GetNumber();
+                        auto it = clients.find( ipNumerical );
                         if( it == clients.end() )
                         {
-                            clients.emplace( addr.GetNumber(), ClientData { time, protoVer, activeTime, procname, address } );
+                            std::string ip( address );
+                            resolvLock.lock();
+                            if( resolvMap.find( ip ) == resolvMap.end() )
+                            {
+                                resolvMap.emplace( ip, ip );
+                                resolv.Query( ipNumerical, [&resolvMap, &resolvLock, ip] ( std::string&& name ) {
+                                    std::lock_guard<std::mutex> lock( resolvLock );
+                                    auto it = resolvMap.find( ip );
+                                    assert( it != resolvMap.end() );
+                                    std::swap( it->second, name );
+                                } );
+                            }
+                            resolvLock.unlock();
+                            clients.emplace( addr.GetNumber(), ClientData { time, protoVer, activeTime, procname, std::move( ip ) } );
                         }
                         else
                         {
@@ -483,13 +503,16 @@ int main( int argc, char** argv )
                     ImGui::SetColumnWidth( 1, w * 0.175f );
                     ImGui::SetColumnWidth( 2, w * 0.425f );
                 }
+                std::lock_guard<std::mutex> lock( resolvLock );
                 for( auto& v : clients )
                 {
                     const bool badProto = v.second.protocolVersion != tracy::ProtocolVersion;
                     bool sel = false;
+                    const auto& name = resolvMap.find( v.second.address );
+                    assert( name != resolvMap.end() );
                     ImGuiSelectableFlags flags = ImGuiSelectableFlags_SpanAllColumns;
                     if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
-                    if( ImGui::Selectable( v.second.address.c_str(), &sel, flags ) && !loadThread.joinable() )
+                    if( ImGui::Selectable( name->second.c_str(), &sel, flags ) && !loadThread.joinable() )
                     {
                         view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, SetWindowTitleCallback );
                     }

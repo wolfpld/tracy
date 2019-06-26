@@ -1926,11 +1926,7 @@ void View::DrawZones()
 
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) ) )
                     {
-                        ImGui::BeginTooltip();
-                        TextFocused( "Time:", TimeToString( crash.time - m_worker.GetTimeBegin() ) );
-                        TextFocused( "Reason:", m_worker.GetString( crash.message ) );
-                        ImGui::EndTooltip();
-
+                        CrashTooltip();
                         if( ImGui::IsMouseClicked( 0 ) )
                         {
                             m_showInfo = true;
@@ -10540,6 +10536,15 @@ void View::CallstackTooltip( uint32_t idx )
             }
         }
     }
+    ImGui::EndTooltip();
+}
+
+void View::CrashTooltip()
+{
+    auto& crash = m_worker.GetCrashEvent();
+    ImGui::BeginTooltip();
+    TextFocused( "Time:", TimeToString( crash.time - m_worker.GetTimeBegin() ) );
+    TextFocused( "Reason:", m_worker.GetString( crash.message ) );
     ImGui::EndTooltip();
 }
 

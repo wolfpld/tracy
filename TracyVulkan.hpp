@@ -61,7 +61,11 @@ public:
         poolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
         poolInfo.queryCount = m_queryCount;
         poolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
-        vkCreateQueryPool( device, &poolInfo, nullptr, &m_query );
+        while( vkCreateQueryPool( device, &poolInfo, nullptr, &m_query ) != VK_SUCCESS )
+        {
+            m_queryCount /= 2;
+            poolInfo.queryCount = m_queryCount;
+        }
 
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

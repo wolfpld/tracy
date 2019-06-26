@@ -150,7 +150,7 @@ private:
 
     uint32_t GetZoneColor( const ZoneEvent& ev );
     uint32_t GetZoneColor( const GpuEvent& ev );
-    uint32_t GetZoneHighlight( const ZoneEvent& ev, bool migration );
+    uint32_t GetZoneHighlight( const ZoneEvent& ev );
     uint32_t GetZoneHighlight( const GpuEvent& ev );
     float GetZoneThickness( const ZoneEvent& ev );
     float GetZoneThickness( const GpuEvent& ev );
@@ -242,8 +242,6 @@ private:
 
     int64_t m_zvStart = 0;
     int64_t m_zvEnd = 0;
-
-    int8_t m_lastCpu;
 
     int m_zvHeight = 0;
     int m_zvScroll = 0;

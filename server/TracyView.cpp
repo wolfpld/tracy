@@ -1825,7 +1825,6 @@ void View::DrawZones()
         offset += ostep;
         if( showFull )
         {
-            m_lastCpu = -1;
             if( m_drawZones )
             {
                 depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax );
@@ -2256,26 +2255,10 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             const char* zoneName = m_worker.GetZoneName( ev );
             int dmul = ev.text.active ? 2 : 1;
 
-            bool migration = false;
-            if( m_lastCpu != ev.cpu_start )
-            {
-                if( m_lastCpu >= 0 )
-                {
-                    migration = true;
-                }
-                m_lastCpu = ev.cpu_start;
-            }
-
             if( ev.child >= 0 )
             {
                 const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax );
                 if( d > maxdepth ) maxdepth = d;
-            }
-
-            if( ev.end >= 0 && m_lastCpu != ev.cpu_end )
-            {
-                m_lastCpu = ev.cpu_end;
-                migration = true;
             }
 
             auto tsz = ImGui::CalcTextSize( zoneName );
@@ -2290,7 +2273,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev, migration ), 0.f, -1, GetZoneThickness( ev ) );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev ), 0.f, -1, GetZoneThickness( ev ) );
             if( dsz * dmul > MinVisSize )
             {
                 const auto diff = dsz * dmul - MinVisSize;
@@ -2422,19 +2405,11 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         }
         else
         {
-            m_lastCpu = ev.cpu_start;
-
             if( ev.child >= 0 )
             {
                 const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax );
                 if( d > maxdepth ) maxdepth = d;
             }
-
-            if( ev.end >= 0 && m_lastCpu != ev.cpu_end )
-            {
-                m_lastCpu = ev.cpu_end;
-            }
-
             ++it;
         }
     }
@@ -10207,7 +10182,7 @@ uint32_t View::GetZoneColor( const GpuEvent& ev )
     return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
 }
 
-uint32_t View::GetZoneHighlight( const ZoneEvent& ev, bool migration )
+uint32_t View::GetZoneHighlight( const ZoneEvent& ev )
 {
     if( m_zoneInfoWindow == &ev )
     {
@@ -10220,10 +10195,6 @@ uint32_t View::GetZoneHighlight( const ZoneEvent& ev, bool migration )
     else if( m_zoneSrcLocHighlight == ev.srcloc )
     {
         return 0xFFEEEEEE;
-    }
-    else if( migration )
-    {
-        return 0xFFDD22DD;
     }
     else
     {

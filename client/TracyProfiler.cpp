@@ -953,6 +953,8 @@ Profiler::Profiler()
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
     , m_serialQueue( 1024*1024 )
     , m_serialDequeue( 1024*1024 )
+    , m_fiQueue( 16 )
+    , m_fiDequeue( 16 )
     , m_etc1Buf( nullptr )
     , m_etc1BufSize( 0 )
 #ifdef TRACY_ON_DEMAND

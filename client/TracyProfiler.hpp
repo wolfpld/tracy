@@ -89,6 +89,16 @@ extern int64_t (*GetTimeImpl)();
 
 class Profiler
 {
+    struct FrameImageQueueItem
+    {
+        void* image;
+        int64_t time;
+        uint16_t w;
+        uint16_t h;
+        uint8_t offset;
+        bool flip;
+    };
+
 public:
     Profiler();
     ~Profiler();
@@ -175,24 +185,25 @@ public:
 
     static tracy_force_inline void SendFrameImage( void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip )
     {
+        auto& profiler = GetProfiler();
 #ifdef TRACY_ON_DEMAND
-        if( !GetProfiler().IsConnected() ) return;
+        if( !profiler.IsConnected() ) return;
 #endif
+        const auto time = GetTime();
         const auto sz = size_t( w ) * size_t( h ) * 4;
-        Magic magic;
-        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( sz );
         memcpy( ptr, image, sz );
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
-        MemWrite( &item->hdr.type, QueueType::FrameImage );
-        MemWrite( &item->frameImage.image, (uint64_t)ptr );
-        MemWrite( &item->frameImage.w, w );
-        MemWrite( &item->frameImage.h, h );
-        MemWrite( &item->frameImage.offset, offset );
-        uint8_t _flip = flip;
-        MemWrite( &item->frameImage.flip, _flip );
-        tail.store( magic + 1, std::memory_order_release );
+
+        profiler.m_fiLock.lock();
+        auto fi = profiler.m_fiQueue.prepare_next();
+        fi->image = ptr;
+        fi->time = time;
+        fi->w = w;
+        fi->h = h;
+        fi->offset = offset;
+        fi->flip = flip;
+        profiler.m_fiQueue.commit_next();
+        profiler.m_fiLock.unlock();
     }
 
     static tracy_force_inline void PlotData( const char* name, int64_t val )
@@ -536,6 +547,9 @@ private:
 
     FastVector<QueueItem> m_serialQueue, m_serialDequeue;
     TracyMutex m_serialLock;
+
+    FastVector<FrameImageQueueItem> m_fiQueue, m_fiDequeue;
+    TracyMutex m_fiLock;
 
     char* m_etc1Buf;
     size_t m_etc1BufSize;

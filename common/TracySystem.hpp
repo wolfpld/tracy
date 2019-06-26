@@ -42,12 +42,7 @@ static inline uint64_t GetThreadHandleImpl()
 }
 
 #ifdef TRACY_ENABLE
-const thread_local auto s_threadHandle = detail::GetThreadHandleImpl();
-
-static inline uint64_t GetThreadHandle()
-{
-    return s_threadHandle;
-}
+TRACY_API uint64_t GetThreadHandle();
 #else
 static inline uint64_t GetThreadHandle()
 {

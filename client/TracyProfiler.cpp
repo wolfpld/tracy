@@ -142,6 +142,11 @@ struct ProducerWrapper
 {
     tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
 };
+
+struct ThreadHandleWrapper
+{
+    uint64_t val;
+};
 #endif
 
 
@@ -855,6 +860,7 @@ TRACY_API int64_t GetInitTime() { return GetProfilerData().initTime; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
+TRACY_API uint64_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
 
 #  ifdef TRACY_COLLECT_THREAD_NAMES
 TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
@@ -880,6 +886,7 @@ thread_local RPMallocThreadInit init_order(106) s_rpmalloc_thread_init;
 // 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
 thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
 thread_local ProducerWrapper init_order(108) s_token { s_queue.get_explicit_producer( s_token_detail ) };
+thread_local ThreadHandleWrapper init_order(104) s_threadHandle { detail::GetThreadHandleImpl() };
 
 #  ifdef _MSC_VER
 // 1. Initialize these static variables before all other variables.
@@ -914,6 +921,7 @@ TRACY_API int64_t GetInitTime() { return s_initTime.val; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
+TRACY_API uint64_t GetThreadHandle() { return s_threadHandle.val; }
 
 #  ifdef TRACY_COLLECT_THREAD_NAMES
 TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
@@ -962,6 +970,7 @@ Profiler::Profiler()
     // 3. But these variables need to be initialized in main thread within the .CRT$XCB section. Do it here.
     s_token_detail = moodycamel::ProducerToken( s_queue );
     s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
+    s_threadHandle = ThreadHandleWrapper { m_mainThread };
 #  endif
 #endif
 

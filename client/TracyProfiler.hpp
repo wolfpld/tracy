@@ -59,6 +59,7 @@ TRACY_API Profiler& GetProfiler();
 TRACY_API std::atomic<uint32_t>& GetLockCounter();
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter();
 TRACY_API GpuCtxWrapper& GetGpuCtx();
+TRACY_API uint64_t GetThreadHandle();
 
 TRACY_API void InitRPMallocThread();
 

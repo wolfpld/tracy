@@ -99,6 +99,9 @@
     <ClCompile Include="..\..\..\server\TracyPrint.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ResolvService.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -268,6 +271,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyPrint.hpp">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ResolvService.hpp">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

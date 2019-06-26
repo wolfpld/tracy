@@ -595,6 +595,28 @@ bool View::DrawImpl()
 #endif
 
     const auto ty = ImGui::GetFontSize();
+    auto& crash = m_worker.GetCrashEvent();
+    if( crash.thread != 0 )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_SKULL );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "crash" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            CrashTooltip();
+            if( ImGui::IsMouseClicked( 0 ) )
+            {
+                m_showInfo = true;
+            }
+            if( ImGui::IsMouseClicked( 2 ) )
+            {
+                CenterAtTime( crash.time );
+            }
+        }
+    }
     if( !m_worker.IsBackgroundDone() )
     {
         ImGui::SameLine();

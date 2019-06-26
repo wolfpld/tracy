@@ -452,6 +452,9 @@ private:
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();
 
+    static void LaunchCompressWorker( void* ptr ) { ((Profiler*)ptr)->CompressWorker(); }
+    void CompressWorker();
+
     void ClearQueues( tracy::moodycamel::ConsumerToken& token );
     DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
     DequeueStatus DequeueSerial();

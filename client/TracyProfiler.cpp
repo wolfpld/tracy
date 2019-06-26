@@ -788,6 +788,7 @@ enum { QueuePrealloc = 256 * 1024 };
 
 static Profiler* s_instance;
 static Thread* s_thread;
+static Thread* s_compressThread;
 
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
@@ -991,6 +992,10 @@ Profiler::Profiler()
     new(s_thread) Thread( LaunchWorker, this );
     SetThreadName( s_thread->Handle(), "Tracy Profiler" );
 
+    s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_compressThread) Thread( LaunchCompressWorker, this );
+    SetThreadName( s_compressThread->Handle(), "Tracy Profiler ETC1" );
+
 #if defined PTW32_VERSION
     s_profilerThreadId = pthread_getw32threadid_np( s_thread->Handle() );
 #elif defined __WINPTHREADS_VERSION
@@ -1027,6 +1032,8 @@ Profiler::Profiler()
 Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
+    s_compressThread->~Thread();
+    tracy_free( s_compressThread );
     s_thread->~Thread();
     tracy_free( s_thread );
 
@@ -1392,6 +1399,11 @@ void Profiler::Worker()
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
     }
+}
+
+void Profiler::CompressWorker()
+{
+
 }
 
 static void FreeAssociatedMemory( const QueueItem& item )

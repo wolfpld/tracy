@@ -103,7 +103,7 @@ public:
 
 private:
     uint32_t m_number;
-    char m_text[64];
+    char m_text[17];
 };
 
 class UdpListen

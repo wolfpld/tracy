@@ -30,6 +30,33 @@ static inline uint16_t to565( uint8_t r, uint8_t g, uint8_t b )
 
 static uint64_t CheckSolid( const uint8_t* src )
 {
+#ifdef __SSE4_1__
+    __m128i mask = _mm_set1_epi32( 0xF8FCF8 );
+    __m128i d0 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 0), mask );
+    __m128i d1 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 1), mask );
+    __m128i d2 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 2), mask );
+    __m128i d3 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 3), mask );
+
+    __m128i c = _mm_shuffle_epi32(d0, _MM_SHUFFLE(0, 0, 0, 0));
+
+    __m128i c0 = _mm_cmpeq_epi8(d0, c);
+    __m128i c1 = _mm_cmpeq_epi8(d1, c);
+    __m128i c2 = _mm_cmpeq_epi8(d2, c);
+    __m128i c3 = _mm_cmpeq_epi8(d3, c);
+
+    __m128i m0 = _mm_and_si128(c0, c1);
+    __m128i m1 = _mm_and_si128(c2, c3);
+    __m128i m = _mm_and_si128(m0, m1);
+
+    if (!_mm_testc_si128(m, _mm_set1_epi32(-1)))
+    {
+        return 0;
+    }
+    else
+    {
+        return to565( src[0], src[1], src[2] );
+    }
+#else
     const auto ref = to565( src[0], src[1], src[2] );
     src += 4;
     for( int i=1; i<16; i++ )
@@ -41,6 +68,7 @@ static uint64_t CheckSolid( const uint8_t* src )
         src += 4;
     }
     return uint64_t( ref );
+#endif
 }
 
 static const uint8_t IndexTable[4] = { 1, 3, 2, 0 };

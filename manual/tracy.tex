@@ -457,6 +457,14 @@ ARM NEON & \texttt{\_\_ARM\_NEON} & 3.37 \si{\milli\second}
 \label{EtcSimd}
 \end{table}
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveats}
+Frame images are compressed on a second profiler thread, to reduce memory usage of queued images. This might have impact on the performance of the profiled application.
+\end{bclogo}
+
 \paragraph{OpenGL screen capture code example}
 \label{screenshotcode}
 

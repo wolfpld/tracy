@@ -437,21 +437,19 @@ logo=\bcbombe
 
 It is possible to attach a screen capture of your application to any frame in the main frame set. This can help you see the context of what's happening in various places in the trace. You need to implement retrieval of the image data from GPU by yourself.
 
-Images are sent using the \texttt{FrameImage(image, width, height, offset, flip)} macro, where \texttt{image} is a pointer to BGRA\footnote{Alpha value is ignored, but leaving it out wouldn't map well to the way graphics hardware works.} pixel data, \texttt{width} and \texttt{height} are the image dimensions, which \emph{must be divisible by 4}, \texttt{offset} specifies how much frame lag was there for the current image (see chapter~\ref{screenshotcode}), and \texttt{flip} should be set, if the graphics API stores images upside-down\footnote{For example, OpenGL flips images, but Vulkan does not.}. The image data is copied by the profiler and doesn't need to be retained.
+Images are sent using the \texttt{FrameImage(image, width, height, offset, flip)} macro, where \texttt{image} is a pointer to RGBA\footnote{Alpha value is ignored, but leaving it out wouldn't map well to the way graphics hardware works.} pixel data, \texttt{width} and \texttt{height} are the image dimensions, which \emph{must be divisible by 4}, \texttt{offset} specifies how much frame lag was there for the current image (see chapter~\ref{screenshotcode}), and \texttt{flip} should be set, if the graphics API stores images upside-down\footnote{For example, OpenGL flips images, but Vulkan does not.}. The image data is copied by the profiler and doesn't need to be retained.
 
 Handling image data requires a lot of memory and bandwidth\footnote{One uncompressed 1080p image takes 8 MB.}. To achieve sane memory usage you should scale down taken screen shots to a sensible size, e.g. $320\times180$.
 
-To further reduce image data size, frame images are internally compressed using the Ericsson Texture Compression (ETC1) technique\footnote{\url{https://en.wikipedia.org/wiki/Ericsson_Texture_Compression}}, which significantly reduces data size\footnote{One pixel is stored in a nibble (4 bits) instead of 32 bits.}, at a small quality decrease. The compression algorithm is very fast and can be made even faster by enabling SIMD processing, as indicated in table~\ref{EtcSimd}. Note that time measurements depend on the state of the cache and/or CPU frequency scaling. If V-sync is enabled, the compression function may be cold, or the CPU might be running in a power saving mode and need some time to restore full execution speed. If V-sync is disabled, there's a constant stream of images to compress and the compression function never leaves cache, nor the CPU frequency is lowered. This is reflected by giving time ranges instead of single time result.
+To further reduce image data size, frame images are internally compressed using the DXT1 Texture Compression technique\footnote{\url{https://en.wikipedia.org/wiki/S3_Texture_Compression}}, which significantly reduces data size\footnote{One pixel is stored in a nibble (4 bits) instead of 32 bits.}, at a small quality decrease. The compression algorithm is very fast and can be made even faster by enabling SIMD processing, as indicated in table~\ref{EtcSimd}.
 
 \begin{table}[h]
 \centering
 \begin{tabular}[h]{c|c|c}
 \textbf{Implementation} & \textbf{Required define} & \textbf{Time} \\ \hline
-x86 Reference & --- & 778 \si{\micro\second} -- 1.45 \si{\milli\second} \\
-x86 SSE4.1 & \texttt{\_\_SSE4\_1\_\_} & 245 \si{\micro\second} -- 423 \si{\micro\second} \\
-x86 AVX2 & \texttt{\_\_AVX2\_\_} & 142 \si{\micro\second} -- 228 \si{\micro\second} \\
-ARM Reference & --- & 10.78 \si{\milli\second} \\
-ARM NEON & \texttt{\_\_ARM\_NEON} & 3.37 \si{\milli\second}
+x86 Reference & --- & 266 \si{\micro\second} \\
+x86 SSE4.1 & \texttt{\_\_SSE4\_1\_\_} & 97 \si{\micro\second} \\
+ARM Reference & --- & 1.29 \si{\milli\second}
 \end{tabular}
 \caption{Compression time of $320\times180$ image. x86: i7 8700K; ARM: ODROID-C2}
 \label{EtcSimd}
@@ -483,7 +481,7 @@ int m_fiIdx = 0;
 std::vector<int> m_fiQueue;
 \end{lstlisting}
 
-Everything needs to be properly initialized (the cleanup is left for the reader to figure out). Notice that we are making a BGRA texture, not RGBA.
+Everything needs to be properly initialized (the cleanup is left for the reader to figure out).
 
 \begin{lstlisting}
 glGenTextures(4, m_fiTexture);
@@ -494,7 +492,7 @@ for(int i=0; i<4; i++)
     glBindTexture(GL_TEXTURE_2D, m_fiTexture[i]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 320, 180, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 320, 180, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_fiFramebuffer[i]);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
@@ -514,7 +512,7 @@ glBlitFramebuffer(0, 0, res.x, res.y, 0, 0, 320, 180, GL_COLOR_BUFFER_BIT, GL_LI
 glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fiFramebuffer[m_fiIdx]);
 glBindBuffer(GL_PIXEL_PACK_BUFFER, m_fiPbo[m_fiIdx]);
-glReadPixels(0, 0, 320, 180, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+glReadPixels(0, 0, 320, 180, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 m_fiFence[m_fiIdx] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 m_fiQueue.emplace_back(m_fiIdx);
@@ -1870,7 +1868,6 @@ The following libraries are included with and used by the Tracy Profiler:
 \begin{itemize}
 \item getopt\_port -- \url{https://github.com/kimgr/getopt\_port}
 \item libbacktrace -- \url{https://github.com/ianlancetaylor/libbacktrace}
-\item etcpak -- \url{https://bitbucket.org/wolfpld/etcpak}
 \end{itemize}
 
 \item 2-clause BSD license

@@ -64,6 +64,32 @@ static uint64_t CheckSolid( const uint8_t* src )
     {
         return to565( src[0], src[1], src[2] );
     }
+#elif defined __ARM_NEON
+    uint32x4_t mask = vdupq_n_u32( 0xF8FCF8 );
+    uint32x4_t d0 = vandq_u32( mask, vld1q_u32( (uint32_t*)src ) );
+    uint32x4_t d1 = vandq_u32( mask, vld1q_u32( (uint32_t*)src + 4 ) );
+    uint32x4_t d2 = vandq_u32( mask, vld1q_u32( (uint32_t*)src + 8 ) );
+    uint32x4_t d3 = vandq_u32( mask, vld1q_u32( (uint32_t*)src + 12 ) );
+
+    uint32x4_t c = vdupq_n_u32( d0[0] );
+
+    uint32x4_t c0 = vceqq_u32( d0, c );
+    uint32x4_t c1 = vceqq_u32( d1, c );
+    uint32x4_t c2 = vceqq_u32( d2, c );
+    uint32x4_t c3 = vceqq_u32( d3, c );
+
+    uint32x4_t m0 = vandq_u32( c0, c1 );
+    uint32x4_t m1 = vandq_u32( c2, c3 );
+    int64x2_t m = vreinterpretq_s64_u32( vandq_u32( m0, m1 ) );
+
+    if( m[0] != -1 || m[1] != -1 )
+    {
+        return 0;
+    }
+    else
+    {
+        return to565( src[0], src[1], src[2] );
+    }
 #else
     const auto ref = to565( src[0], src[1], src[2] );
     src += 4;

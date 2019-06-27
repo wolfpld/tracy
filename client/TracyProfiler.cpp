@@ -1400,6 +1400,7 @@ void Profiler::Worker()
 
 void Profiler::CompressWorker()
 {
+    rpmalloc_thread_initialize();
     for(;;)
     {
         const auto shouldExit = ShouldExit();

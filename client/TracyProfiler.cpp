@@ -48,7 +48,7 @@
 #include "../common/tracy_lz4.hpp"
 #include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
-#include "TracyEtc1.hpp"
+#include "TracyDxt1.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
@@ -992,7 +992,7 @@ Profiler::Profiler()
 
     s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_compressThread) Thread( LaunchCompressWorker, this );
-    SetThreadName( s_compressThread->Handle(), "Tracy Profiler ETC1" );
+    SetThreadName( s_compressThread->Handle(), "Tracy Profiler DXT1" );
 
 #if defined PTW32_VERSION
     s_profilerThreadId = pthread_getw32threadid_np( s_thread->Handle() );
@@ -1432,7 +1432,7 @@ void Profiler::CompressWorker()
                 const auto h = fi->h;
                 const auto csz = size_t( w * h / 2 );
                 auto etc1buf = (char*)tracy_malloc( csz );
-                CompressImageEtc1( (const char*)fi->image, etc1buf, w, h );
+                CompressImageDxt1( (const char*)fi->image, etc1buf, w, h );
                 tracy_free( fi->image );
 
                 Magic magic;

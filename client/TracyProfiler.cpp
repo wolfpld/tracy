@@ -1414,7 +1414,7 @@ void Profiler::CompressWorker()
                     break;
                 }
             }
-            m_fiQueue.swap( m_fiDequeue );
+            if( !m_fiQueue.empty() ) m_fiQueue.swap( m_fiDequeue );
             if( lockHeld )
             {
                 m_fiLock.unlock();
@@ -1626,7 +1626,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 break;
             }
         }
-        m_serialQueue.swap( m_serialDequeue );
+        if( !m_serialQueue.empty() ) m_serialQueue.swap( m_serialDequeue );
         if( lockHeld )
         {
             m_serialLock.unlock();

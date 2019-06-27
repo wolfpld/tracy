@@ -2951,10 +2951,18 @@ void Worker::ProcessFrameMark( const QueueFrameMark& ev )
         Query( ServerQueryFrameName, name );
     } );
 
+    int32_t frameImage = -1;
+    auto fis = m_frameImageStaging.find( fd->frames.size() );
+    if( fis != m_frameImageStaging.end() )
+    {
+        frameImage = fis->second;
+        m_frameImageStaging.erase( fis );
+    }
+
     assert( fd->continuous == 1 );
     const auto time = TscTime( ev.time );
     assert( fd->frames.empty() || fd->frames.back().start <= time );
-    fd->frames.push_back( FrameEvent{ time, -1, -1 } );
+    fd->frames.push_back( FrameEvent{ time, -1, frameImage } );
     m_data.lastTime = std::max( m_data.lastTime, time );
 }
 
@@ -3006,7 +3014,6 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
     auto& frames = m_data.framesBase->frames;
     const auto fidx = ev.frame - m_data.frameOffset + 1;
-    assert( fidx < frames.size() );
     if( m_onDemand && fidx <= 1 )
     {
         m_pendingFrameImageData.erase( it );
@@ -3015,11 +3022,6 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     else if( fidx <= 0 )
     {
         FrameImageIndexFailure();
-        return;
-    }
-    if( frames[fidx].frameImage >= 0 )
-    {
-        FrameImageTwiceFailure();
         return;
     }
 
@@ -3032,9 +3034,25 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
     const auto idx = m_data.frameImage.size();
     m_data.frameImage.push_back( fi );
-    frames[fidx].frameImage = idx;
-
     m_pendingFrameImageData.erase( it );
+
+    if( fidx >= frames.size() )
+    {
+        if( m_frameImageStaging.find( fidx ) != m_frameImageStaging.end() )
+        {
+            FrameImageTwiceFailure();
+            return;
+        }
+        m_frameImageStaging.emplace( fidx, idx );
+    }
+    else if( frames[fidx].frameImage >= 0 )
+    {
+        FrameImageTwiceFailure();
+    }
+    else
+    {
+        frames[fidx].frameImage = idx;
+    }
 }
 
 void Worker::ProcessZoneText( const QueueZoneText& ev )

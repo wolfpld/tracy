@@ -543,6 +543,7 @@ private:
     Vector<ServerQueryPacket> m_serverQueryQueue;
     size_t m_serverQuerySpaceLeft;
 
+    flat_hash_map<uint64_t, int32_t> m_frameImageStaging;
     char* m_frameImageBuffer = nullptr;
     size_t m_frameImageBufferSize = 0;
 };

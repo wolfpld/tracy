@@ -4534,4 +4534,9 @@ const char* Worker::UnpackFrameImage( const FrameImage& image )
     return m_frameImageBuffer;
 }
 
+bool Worker::HasEtc1FrameImages() const
+{
+    return m_traceVersion <= FileVersion( 0, 4, 9 );
+}
+
 }

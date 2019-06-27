@@ -1001,7 +1001,7 @@ void View::DrawFrames()
                     if( fi != m_frameTexturePtr )
                     {
                         if( !m_frameTexture ) m_frameTexture = MakeTexture();
-                        UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
+                        UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h, m_worker.HasEtc1FrameImages() );
                         m_frameTexturePtr = fi;
                     }
                     ImGui::Separator();
@@ -1409,7 +1409,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
                 if( fi != m_frameTexturePtr )
                 {
                     if( !m_frameTexture ) m_frameTexture = MakeTexture();
-                    UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
+                    UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h, m_worker.HasEtc1FrameImages() );
                     m_frameTexturePtr = fi;
                 }
                 ImGui::Separator();
@@ -9122,7 +9122,7 @@ void View::DrawPlayback()
     if( m_playback.currFrame != m_playback.frame )
     {
         m_playback.currFrame = m_playback.frame;
-        UpdateTexture( m_playback.texture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
+        UpdateTexture( m_playback.texture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h, m_worker.HasEtc1FrameImages() );
 
         if( m_playback.sync )
         {

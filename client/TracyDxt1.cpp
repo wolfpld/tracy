@@ -292,29 +292,38 @@ static uint64_t ProcessRGB( const uint8_t* src )
     uint16x8_t m0 = vreinterpretq_u16_s16( vqdmulhq_s16( vreinterpretq_s16_u16( s0 ), vreinterpretq_s16_u16( range ) ) );
     uint16x8_t m1 = vreinterpretq_u16_s16( vqdmulhq_s16( vreinterpretq_s16_u16( s1 ), vreinterpretq_s16_u16( range ) ) );
 
-    uint8x8_t p0 = vmovn_u16( m0 );
-    uint8x8_t p1 = vmovn_u16( m1 );
-    uint8x16_t p2 = vcombine_u8( p0, p1 );
+    uint8x8_t p00 = vmovn_u16( m0 );
+    uint8x8_t p01 = vmovn_u16( m1 );
+    uint8x16_t p0 = vcombine_u8( p00, p01 );
 
-    uint32_t vmin, vmax;
+    uint32x4_t mask0 = vdupq_n_u32( 0x00000003 );
+    uint32x4_t mask1 = vdupq_n_u32( 0x00000300 );
+    uint32x4_t mask2 = vdupq_n_u32( 0x00030000 );
+    uint32x4_t mask3 = vdupq_n_u32( 0x03000000 );
+
+    uint32x4_t p1 = vandq_u32( vreinterpretq_u32_u8( p0 ), mask0 );
+    uint32x4_t p2 = vshrq_n_u32( vandq_u32( vreinterpretq_u32_u8( p0 ), mask1 ), 6 );
+    uint32x4_t p3 = vshrq_n_u32( vandq_u32( vreinterpretq_u32_u8( p0 ), mask2 ), 12 );
+    uint32x4_t p4 = vshrq_n_u32( vandq_u32( vreinterpretq_u32_u8( p0 ), mask3 ), 18 );
+
+    uint32x4_t p5 = vorrq_u32( p1, p2 );
+    uint32x4_t p6 = vorrq_u32( p3, p4 );
+    uint32x4_t p7 = vorrq_u32( p5, p6 );
+
+    uint16x4x2_t p8 = vuzp_u16( vget_low_u16( vreinterpretq_u16_u32( p7 ) ), vget_high_u16( vreinterpretq_u16_u32( p7 ) ) );
+    uint8x8x2_t p9 = vuzp_u8( vreinterpret_u8_u16( p8.val[0] ), vreinterpret_u8_u16( p8.val[0] ) );
+
+    uint32_t vmin, vmax, vp;
     vst1q_lane_u32( &vmin, vreinterpretq_u32_u8( min ), 0 );
     vst1q_lane_u32( &vmax, vreinterpretq_u32_u8( max ), 0 );
-
-    uint32_t vp[4];
-    vst1q_u8( (uint8_t*)vp, p2 );
+    vst1_lane_u32( &vp, vreinterpret_u32_u8( p9.val[0] ), 0 );
 
     uint32_t data = 0;
-    int k = 0;
     for( int i=0; i<4; i++ )
     {
-        uint32_t p = vp[i];
-        for( int j=0; j<4; j++ )
-        {
-            uint8_t idx = IndexTable[p & 0x3];
-            p >>= 8;
-            data |= idx << (k*2);
-            k++;
-        }
+        uint8_t idx = IndexTableSIMD[vp & 0xFF];
+        vp >>= 8;
+        data |= idx << (i*8);
     }
 
     return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( data ) << 32 ) );

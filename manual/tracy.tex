@@ -449,7 +449,8 @@ To further reduce image data size, frame images are internally compressed using 
 \textbf{Implementation} & \textbf{Required define} & \textbf{Time} \\ \hline
 x86 Reference & --- & 252 \si{\micro\second} \\
 x86 SSE4.1 & \texttt{\_\_SSE4\_1\_\_} & 97 \si{\micro\second} \\
-ARM Reference & --- & 1.25 \si{\milli\second}
+ARM Reference & --- & 1.25 \si{\milli\second} \\
+ARM NEON & \texttt{\_\_ARM\_NEON} & 608 \si{\micro\second}
 \end{tabular}
 \caption{Compression time of $320\times180$ image. x86: i7 8700K; ARM: ODROID-C2}
 \label{EtcSimd}

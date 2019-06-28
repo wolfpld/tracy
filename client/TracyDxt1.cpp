@@ -205,7 +205,7 @@ static uint64_t ProcessRGB( const uint8_t* src )
         tmp += 4;
     }
 
-    const uint32_t range = ( 4 << 13 ) / ( 1 + max[0] - min[0] + max[1] - min[1] + max[2] - min[2] );
+    const uint32_t range = ( 4 << 16 ) / ( 1 + max[0] - min[0] + max[1] - min[1] + max[2] - min[2] );
     const uint32_t rmin = min[0] + min[1] + min[2];
     for( int i=0; i<3; i++ )
     {
@@ -218,7 +218,7 @@ static uint64_t ProcessRGB( const uint8_t* src )
     for( int i=0; i<16; i++ )
     {
         const uint32_t c = src[0] + src[1] + src[2] - rmin;
-        const uint8_t idx = IndexTable[( c * range ) >> 13];
+        const uint8_t idx = IndexTable[( c * range ) >> 16];
         data |= idx << (i*2);
         src += 4;
     }

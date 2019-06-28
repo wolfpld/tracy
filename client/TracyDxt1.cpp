@@ -191,6 +191,106 @@ static uint64_t ProcessRGB( const uint8_t* src )
     }
 
     return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( data ) << 32 ) );
+#elif defined __ARM_NEON
+    uint32x4_t mask = vdupq_n_u32( 0xFFFFFF );
+    uint8x16_t l0 = vreinterpretq_u8_u32( vandq_u32( mask, vld1q_u32( (uint32_t*)src ) ) );
+    uint8x16_t l1 = vreinterpretq_u8_u32( vandq_u32( mask, vld1q_u32( (uint32_t*)src + 4 ) ) );
+    uint8x16_t l2 = vreinterpretq_u8_u32( vandq_u32( mask, vld1q_u32( (uint32_t*)src + 8 ) ) );
+    uint8x16_t l3 = vreinterpretq_u8_u32( vandq_u32( mask, vld1q_u32( (uint32_t*)src + 12 ) ) );
+
+    uint8x16_t min0 = vminq_u8( l0, l1 );
+    uint8x16_t min1 = vminq_u8( l2, l3 );
+    uint8x16_t min2 = vminq_u8( min0, min1 );
+
+    uint8x16_t max0 = vmaxq_u8( l0, l1 );
+    uint8x16_t max1 = vmaxq_u8( l2, l3 );
+    uint8x16_t max2 = vmaxq_u8( max0, max1 );
+
+    uint8x16_t min3 = vreinterpretq_u8_u32( vrev64q_u32( vreinterpretq_u32_u8( min2 ) ) );
+    uint8x16_t max3 = vreinterpretq_u8_u32( vrev64q_u32( vreinterpretq_u32_u8( max2 ) ) );
+
+    uint8x16_t min4 = vminq_u8( min2, min3 );
+    uint8x16_t max4 = vmaxq_u8( max2, max3 );
+
+    uint8x16_t min5 = vcombine_u8( vget_high_u8( min4 ), vget_low_u8( min4 ) );
+    uint8x16_t max5 = vcombine_u8( vget_high_u8( max4 ), vget_low_u8( max4 ) );
+
+    uint8x16_t rmin = vminq_u8( min4, min5 );
+    uint8x16_t rmax = vmaxq_u8( max4, max5 );
+
+    uint8x16_t range1 = vsubq_u8( rmax, rmin );
+    uint8x8_t range2 = vget_low_u8( range1 );
+    uint8x8x2_t range3 = vzip_u8( range2, vdup_n_u8( 0 ) );
+    uint16x4_t range4 = vreinterpret_u16_u8( range3.val[0] );
+
+    uint16_t vrange1;
+#ifndef __aarch64__
+    uint16x4_t range5 = vpadd_u16( range4, range4 );
+    uint16x4_t range6 = vpadd_u16( range5, range5 );
+    vst1_lane_u16( &vrange1, range6, 0 );
+#else
+    vrange1 = vaddv_s16( vreinterpret_s16_u16( range4 ) );
+#endif
+
+    uint32_t vrange2 = ( 2 << 16 ) / uint32_t( vrange1 + 1 );
+    uint16x8_t range = vdupq_n_u16( vrange2 );
+
+    uint8x16_t inset = vshrq_n_u8( range1, 4 );
+    uint8x16_t min = vaddq_u8( rmin, inset );
+    uint8x16_t max = vsubq_u8( rmax, inset );
+
+    uint8x16_t c0 = vsubq_u8( l0, rmin );
+    uint8x16_t c1 = vsubq_u8( l1, rmin );
+    uint8x16_t c2 = vsubq_u8( l2, rmin );
+    uint8x16_t c3 = vsubq_u8( l3, rmin );
+
+    uint16x8_t is0 = vpaddlq_u8( c0 );
+    uint16x8_t is1 = vpaddlq_u8( c1 );
+    uint16x8_t is2 = vpaddlq_u8( c2 );
+    uint16x8_t is3 = vpaddlq_u8( c3 );
+
+#ifndef __aarch64__
+    uint16x4_t is4 = vpadd_u16( vget_low_u16( is0 ), vget_high_u16( is0 ) );
+    uint16x4_t is5 = vpadd_u16( vget_low_u16( is1 ), vget_high_u16( is1 ) );
+    uint16x4_t is6 = vpadd_u16( vget_low_u16( is2 ), vget_high_u16( is2 ) );
+    uint16x4_t is7 = vpadd_u16( vget_low_u16( is3 ), vget_high_u16( is3 ) );
+
+    uint16x8_t s0 = vcombine_u16( is4, is5 );
+    uint16x8_t s1 = vcombine_u16( is6, is7 );
+#else
+    uint16x8_t s0 = vpaddq_u16( is0, is1 );
+    uint16x8_t s1 = vpaddq_u16( is2, is3 );
+#endif
+
+    uint16x8_t m0 = vreinterpretq_u16_s16( vqdmulhq_s16( vreinterpretq_s16_u16( s0 ), vreinterpretq_s16_u16( range ) ) );
+    uint16x8_t m1 = vreinterpretq_u16_s16( vqdmulhq_s16( vreinterpretq_s16_u16( s1 ), vreinterpretq_s16_u16( range ) ) );
+
+    uint8x8_t p0 = vmovn_u16( m0 );
+    uint8x8_t p1 = vmovn_u16( m1 );
+    uint8x16_t p2 = vcombine_u8( p0, p1 );
+
+    uint32_t vmin, vmax;
+    vst1q_lane_u32( &vmin, vreinterpretq_u32_u8( min ), 0 );
+    vst1q_lane_u32( &vmax, vreinterpretq_u32_u8( max ), 0 );
+
+    uint32_t vp[4];
+    vst1q_u8( (uint8_t*)vp, p2 );
+
+    uint32_t data = 0;
+    int k = 0;
+    for( int i=0; i<4; i++ )
+    {
+        uint32_t p = vp[i];
+        for( int j=0; j<4; j++ )
+        {
+            uint8_t idx = IndexTable[p & 0x3];
+            p >>= 8;
+            data |= idx << (k*2);
+            k++;
+        }
+    }
+
+    return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( data ) << 32 ) );
 #else
     uint8_t min[3] = { src[0], src[1], src[2] };
     uint8_t max[3] = { src[0], src[1], src[2] };

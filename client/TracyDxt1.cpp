@@ -36,75 +36,6 @@ static inline uint16_t to565( uint32_t c )
         ( ( c & 0x0000F8 ) << 8 );
 }
 
-static uint64_t CheckSolid( const uint8_t* src )
-{
-#ifdef __SSE4_1__
-    __m128i mask = _mm_set1_epi32( 0xF8FCF8 );
-    __m128i d0 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 0), mask );
-    __m128i d1 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 1), mask );
-    __m128i d2 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 2), mask );
-    __m128i d3 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 3), mask );
-
-    __m128i c = _mm_shuffle_epi32(d0, _MM_SHUFFLE(0, 0, 0, 0));
-
-    __m128i c0 = _mm_cmpeq_epi8(d0, c);
-    __m128i c1 = _mm_cmpeq_epi8(d1, c);
-    __m128i c2 = _mm_cmpeq_epi8(d2, c);
-    __m128i c3 = _mm_cmpeq_epi8(d3, c);
-
-    __m128i m0 = _mm_and_si128(c0, c1);
-    __m128i m1 = _mm_and_si128(c2, c3);
-    __m128i m = _mm_and_si128(m0, m1);
-
-    if (!_mm_testc_si128(m, _mm_set1_epi32(-1)))
-    {
-        return 0;
-    }
-    else
-    {
-        return to565( src[0], src[1], src[2] );
-    }
-#elif defined __ARM_NEON
-    uint32x4_t mask = vdupq_n_u32( 0xF8FCF8 );
-    uint32x4_t d0 = vandq_u32( mask, vld1q_u32( (uint32_t*)src ) );
-    uint32x4_t d1 = vandq_u32( mask, vld1q_u32( (uint32_t*)src + 4 ) );
-    uint32x4_t d2 = vandq_u32( mask, vld1q_u32( (uint32_t*)src + 8 ) );
-    uint32x4_t d3 = vandq_u32( mask, vld1q_u32( (uint32_t*)src + 12 ) );
-
-    uint32x4_t c = vdupq_n_u32( d0[0] );
-
-    uint32x4_t c0 = vceqq_u32( d0, c );
-    uint32x4_t c1 = vceqq_u32( d1, c );
-    uint32x4_t c2 = vceqq_u32( d2, c );
-    uint32x4_t c3 = vceqq_u32( d3, c );
-
-    uint32x4_t m0 = vandq_u32( c0, c1 );
-    uint32x4_t m1 = vandq_u32( c2, c3 );
-    int64x2_t m = vreinterpretq_s64_u32( vandq_u32( m0, m1 ) );
-
-    if( m[0] != -1 || m[1] != -1 )
-    {
-        return 0;
-    }
-    else
-    {
-        return to565( src[0], src[1], src[2] );
-    }
-#else
-    const auto ref = to565( src[0], src[1], src[2] );
-    src += 4;
-    for( int i=1; i<16; i++ )
-    {
-        if( to565( src[0], src[1], src[2] ) != ref )
-        {
-            return 0;
-        }
-        src += 4;
-    }
-    return uint64_t( ref );
-#endif
-}
-
 static const uint8_t IndexTable[4] = { 1, 3, 2, 0 };
 static const uint8_t IndexTableSIMD[256] = {
     85,     87,     86,     84,     93,     95,     94,     92,     89,     91,     90,     88,     81,     83,     82,     80,
@@ -127,15 +58,39 @@ static const uint8_t IndexTableSIMD[256] = {
 
 static uint64_t ProcessRGB( const uint8_t* src )
 {
-    const auto solid = CheckSolid( src );
-    if( solid != 0 ) return solid;
-
 #ifdef __SSE4_1__
+    __m128i px0 = _mm_loadu_si128(((__m128i*)src) + 0);
+    __m128i px1 = _mm_loadu_si128(((__m128i*)src) + 1);
+    __m128i px2 = _mm_loadu_si128(((__m128i*)src) + 2);
+    __m128i px3 = _mm_loadu_si128(((__m128i*)src) + 3);
+
+    __m128i smask = _mm_set1_epi32( 0xF8FCF8 );
+    __m128i sd0 = _mm_and_si128( px0, smask );
+    __m128i sd1 = _mm_and_si128( px1, smask );
+    __m128i sd2 = _mm_and_si128( px2, smask );
+    __m128i sd3 = _mm_and_si128( px3, smask );
+
+    __m128i sc = _mm_shuffle_epi32(sd0, _MM_SHUFFLE(0, 0, 0, 0));
+
+    __m128i sc0 = _mm_cmpeq_epi8(sd0, sc);
+    __m128i sc1 = _mm_cmpeq_epi8(sd1, sc);
+    __m128i sc2 = _mm_cmpeq_epi8(sd2, sc);
+    __m128i sc3 = _mm_cmpeq_epi8(sd3, sc);
+
+    __m128i sm0 = _mm_and_si128(sc0, sc1);
+    __m128i sm1 = _mm_and_si128(sc2, sc3);
+    __m128i sm = _mm_and_si128(sm0, sm1);
+
+    if( _mm_testc_si128(sm, _mm_set1_epi32(-1)) )
+    {
+        return to565( src[0], src[1], src[2] );
+    }
+
     __m128i mask = _mm_set1_epi32( 0xFFFFFF );
-    __m128i l0 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 0), mask );
-    __m128i l1 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 1), mask );
-    __m128i l2 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 2), mask );
-    __m128i l3 = _mm_and_si128( _mm_loadu_si128(((__m128i*)src) + 3), mask );
+    __m128i l0 = _mm_and_si128( px0, mask );
+    __m128i l1 = _mm_and_si128( px1, mask );
+    __m128i l2 = _mm_and_si128( px2, mask );
+    __m128i l3 = _mm_and_si128( px3, mask );
 
     __m128i min0 = _mm_min_epu8( l0, l1 );
     __m128i min1 = _mm_min_epu8( l2, l3 );
@@ -219,11 +174,38 @@ static uint64_t ProcessRGB( const uint8_t* src )
 
     return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( data ) << 32 ) );
 #elif defined __ARM_NEON
+    uint32x4_t px0 = vld1q_u32( (uint32_t*)src );
+    uint32x4_t px1 = vld1q_u32( (uint32_t*)src + 4 );
+    uint32x4_t px2 = vld1q_u32( (uint32_t*)src + 8 );
+    uint32x4_t px3 = vld1q_u32( (uint32_t*)src + 12 );
+
+    uint32x4_t smask = vdupq_n_u32( 0xF8FCF8 );
+    uint32x4_t sd0 = vandq_u32( smask, px0 );
+    uint32x4_t sd1 = vandq_u32( smask, px1 );
+    uint32x4_t sd2 = vandq_u32( smask, px2 );
+    uint32x4_t sd3 = vandq_u32( smask, px3 );
+
+    uint32x4_t sc = vdupq_n_u32( sd0[0] );
+
+    uint32x4_t sc0 = vceqq_u32( sd0, sc );
+    uint32x4_t sc1 = vceqq_u32( sd1, sc );
+    uint32x4_t sc2 = vceqq_u32( sd2, sc );
+    uint32x4_t sc3 = vceqq_u32( sd3, sc );
+
+    uint32x4_t sm0 = vandq_u32( sc0, sc1 );
+    uint32x4_t sm1 = vandq_u32( sc2, sc3 );
+    int64x2_t sm = vreinterpretq_s64_u32( vandq_u32( sm0, sm1 ) );
+
+    if( sm[0] == -1 && sm[1] == -1 )
+    {
+        return to565( src[0], src[1], src[2] );
+    }
+
     uint32x4_t mask = vdupq_n_u32( 0xFFFFFF );
-    uint8x16_t l0 = vreinterpretq_u8_u32( vandq_u32( mask, vld1q_u32( (uint32_t*)src ) ) );
-    uint8x16_t l1 = vreinterpretq_u8_u32( vandq_u32( mask, vld1q_u32( (uint32_t*)src + 4 ) ) );
-    uint8x16_t l2 = vreinterpretq_u8_u32( vandq_u32( mask, vld1q_u32( (uint32_t*)src + 8 ) ) );
-    uint8x16_t l3 = vreinterpretq_u8_u32( vandq_u32( mask, vld1q_u32( (uint32_t*)src + 12 ) ) );
+    uint8x16_t l0 = vreinterpretq_u8_u32( vandq_u32( mask, px0 ) );
+    uint8x16_t l1 = vreinterpretq_u8_u32( vandq_u32( mask, px1 ) );
+    uint8x16_t l2 = vreinterpretq_u8_u32( vandq_u32( mask, px2 ) );
+    uint8x16_t l3 = vreinterpretq_u8_u32( vandq_u32( mask, px3 ) );
 
     uint8x16_t min0 = vminq_u8( l0, l1 );
     uint8x16_t min1 = vminq_u8( l2, l3 );
@@ -328,6 +310,21 @@ static uint64_t ProcessRGB( const uint8_t* src )
 
     return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( data ) << 32 ) );
 #else
+    const auto ref = to565( src[0], src[1], src[2] );
+    auto stmp = src + 4;
+    for( int i=1; i<16; i++ )
+    {
+        if( to565( stmp[0], stmp[1], stmp[2] ) != ref )
+        {
+            break;
+        }
+        stmp += 4;
+    }
+    if( stmp == src + 64 )
+    {
+        return uint64_t( ref );
+    }
+
     uint8_t min[3] = { src[0], src[1], src[2] };
     uint8_t max[3] = { src[0], src[1], src[2] };
     auto tmp = src + 4;

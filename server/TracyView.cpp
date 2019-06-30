@@ -5994,31 +5994,33 @@ void View::DrawFindZone()
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
-                ImGui::Checkbox( "Log values", &m_findZone.logVal );
+                TextDisabledUnformatted( "Minimum values in bin:" );
                 ImGui::SameLine();
-                if( ImGui::Checkbox( "Log time", &m_findZone.logTime ) )
+                ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 1, 1 ) );
+                ImGui::InputInt( "##minBinVal", &m_findZone.minBinVal );
+                if( m_findZone.minBinVal < 1 ) m_findZone.minBinVal = 1;
+                ImGui::SameLine();
+                if( ImGui::Button( "Reset" ) ) m_findZone.minBinVal = 1;
+                ImGui::PopStyleVar();
+
+                SmallCheckbox( "Log values", &m_findZone.logVal );
+                ImGui::SameLine();
+                if( SmallCheckbox( "Log time", &m_findZone.logTime ) )
                 {
                     m_findZone.binCache.numBins = -1;
                 }
                 ImGui::SameLine();
-                ImGui::Checkbox( "Cumulate time", &m_findZone.cumulateTime );
+                SmallCheckbox( "Cumulate time", &m_findZone.cumulateTime );
                 ImGui::SameLine();
                 DrawHelpMarker( "Show total time taken by calls in each bin instead of call counts." );
                 ImGui::SameLine();
-                if( ImGui::Checkbox( "Self time", &m_findZone.selfTime ) )
+                if( SmallCheckbox( "Self time", &m_findZone.selfTime ) )
                 {
                     m_findZone.scheduleResetMatch = true;
                 }
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.2f%%)", 100.f * zoneData.selfTotal / zoneData.total );
-
-                TextDisabledUnformatted( "Minimum values in bin:" );
-                ImGui::SameLine();
-                ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
-                ImGui::InputInt( "##minBinVal", &m_findZone.minBinVal );
-                if( m_findZone.minBinVal < 1 ) m_findZone.minBinVal = 1;
-                ImGui::SameLine();
-                if( ImGui::Button( "Reset" ) ) m_findZone.minBinVal = 1;
 
                 const auto cumulateTime = m_findZone.cumulateTime;
 
@@ -7311,25 +7313,27 @@ void View::DrawCompare()
 
         if( tmin != std::numeric_limits<int64_t>::max() )
         {
-            ImGui::Checkbox( "Log values", &m_compare.logVal );
-            ImGui::SameLine();
-            ImGui::Checkbox( "Log time", &m_compare.logTime );
-            ImGui::SameLine();
-            ImGui::Checkbox( "Cumulate time", &m_compare.cumulateTime );
-            ImGui::SameLine();
-            DrawHelpMarker( "Show total time taken by calls in each bin instead of call counts." );
-            ImGui::SameLine();
-            ImGui::Checkbox( "Normalize values", &m_compare.normalize );
-            ImGui::SameLine();
-            DrawHelpMarker( "Normalization will fudge reported data values!" );
-
             TextDisabledUnformatted( "Minimum values in bin:" );
             ImGui::SameLine();
             ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 1, 1 ) );
             ImGui::InputInt( "##minBinVal", &m_compare.minBinVal );
             if( m_compare.minBinVal < 1 ) m_compare.minBinVal = 1;
             ImGui::SameLine();
             if( ImGui::Button( "Reset" ) ) m_compare.minBinVal = 1;
+            ImGui::PopStyleVar();
+
+            SmallCheckbox( "Log values", &m_compare.logVal );
+            ImGui::SameLine();
+            SmallCheckbox( "Log time", &m_compare.logTime );
+            ImGui::SameLine();
+            SmallCheckbox( "Cumulate time", &m_compare.cumulateTime );
+            ImGui::SameLine();
+            DrawHelpMarker( "Show total time taken by calls in each bin instead of call counts." );
+            ImGui::SameLine();
+            SmallCheckbox( "Normalize values", &m_compare.normalize );
+            ImGui::SameLine();
+            DrawHelpMarker( "Normalization will fudge reported data values!" );
 
             TextDisabledUnformatted( "Time range:" );
             ImGui::SameLine();
@@ -8457,17 +8461,19 @@ void View::DrawInfo()
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
-                ImGui::Checkbox( "Log values", &m_frameSortData.logVal );
-                ImGui::SameLine();
-                ImGui::Checkbox( "Log time", &m_frameSortData.logTime );
-
                 TextDisabledUnformatted( "Minimum values in bin:" );
                 ImGui::SameLine();
                 ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 1, 1 ) );
                 ImGui::InputInt( "##minBinVal", &m_frameSortData.minBinVal );
                 if( m_frameSortData.minBinVal < 1 ) m_frameSortData.minBinVal = 1;
                 ImGui::SameLine();
                 if( ImGui::Button( "Reset" ) ) m_frameSortData.minBinVal = 1;
+                ImGui::PopStyleVar();
+
+                SmallCheckbox( "Log values", &m_frameSortData.logVal );
+                ImGui::SameLine();
+                SmallCheckbox( "Log time", &m_frameSortData.logTime );
 
                 TextDisabledUnformatted( "Time range:" );
                 ImGui::SameLine();

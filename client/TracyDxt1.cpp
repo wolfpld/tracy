@@ -1,4 +1,5 @@
 #include "TracyDxt1.hpp"
+#include "../common/TracyForceInline.hpp"
 
 #include <assert.h>
 #include <stdint.h>
@@ -157,7 +158,7 @@ static const uint16_t DivTableAVX[255*3] = {
 };
 
 
-static uint64_t ProcessRGB( const uint8_t* src )
+static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
 {
 #ifdef __SSE4_1__
     __m128i px0 = _mm_loadu_si128(((__m128i*)src) + 0);
@@ -460,7 +461,7 @@ static uint64_t ProcessRGB( const uint8_t* src )
 }
 
 #ifdef __AVX2__
-static void ProcessRGB_AVX( const uint8_t* src, char*& dst )
+static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
 {
     __m256i px0 = _mm256_loadu_si256(((__m256i*)src) + 0);
     __m256i px1 = _mm256_loadu_si256(((__m256i*)src) + 1);

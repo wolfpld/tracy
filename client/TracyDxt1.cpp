@@ -577,10 +577,10 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
         data1 |= idx1 << (i*8);
     }
 
-    auto res0 = uint64_t( minmax0 | ( uint64_t( data0 ) << 32 ) );
-    memcpy( dst, &res0, 8 );
-    auto res1 = uint64_t( minmax1 | ( uint64_t( data1 ) << 32 ) );
-    memcpy( dst+8, &res1, 8 );
+    memcpy( dst, &minmax0, 4 );
+    memcpy( dst+4, &data0, 4 );
+    memcpy( dst+8, &minmax1, 4 );
+    memcpy( dst+12, &data1, 4 );
     dst += 16;
 }
 #endif

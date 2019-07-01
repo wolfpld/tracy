@@ -647,6 +647,10 @@ void Graphics::Render()
 }
 \end{lstlisting}
 
+\subsubsection{Manual management of zone scope}
+
+The zone markup macros automatically report when they end, through the RAII mechanism\footnote{\url{https://en.cppreference.com/w/cpp/language/raii}}. This is very helpful, but sometimes you may want to mark the zone start and end points yourself, for example if you want to have a zone that crosses the function's boundary. This can be achieved by using the C API, which is described in section~\ref{capi}.
+
 \subsection{Marking locks}
 
 Modern programs must use multi-threading to achieve full performance capability of the CPU. Correct execution requires claiming exclusive access to data shared between threads. When many threads want to enter the same critical section at once, the application's multi-threaded performance advantage is nullified. To help solve this problem, Tracy can collect and display lock interactions in threads.
@@ -937,6 +941,7 @@ Cost of performing Lua call stack capture is presented in table~\ref{CallstackTi
 Even if Tracy is disabled, you still have to pay the no-op function call cost. To prevent that you may want to use the \texttt{tracy::LuaRemove(char* script)} function, which will replace instrumentation calls with white-space. This function does nothing if profiler is enabled.
 
 \subsection{C API}
+\label{capi}
 
 In order to profile code written in C programming language, you will need to include the \texttt{tracy/TracyC.h} header file, which exposes the C API.
 
@@ -981,11 +986,22 @@ The following macros mark the beginning of a zone:
 \item \texttt{TracyCZoneNC(ctx, name, color, active)}
 \end{itemize}
 
-Refer to sections~\ref{markingzones} and~\ref{multizone} for description of macro variants and parameters. The \texttt{ctx} parameter specifies the name of a data structure, which will hold internal zone data.
+Refer to sections~\ref{markingzones} and~\ref{multizone} for description of macro variants and parameters. The \texttt{ctx} parameter specifies the name of a data structure, which will be created on stack to hold the internal zone data.
 
 Unlike C++, there's no automatic destruction mechanism in C, so you will need to manually mark where the zone ends. To do so use the \texttt{TracyCZoneEnd(ctx)} macro.
 
 Zone text and name may be set by using the \texttt{TracyCZoneText(ctx, txt, size)} and \texttt{TracyCZoneName(ctx, txt, size)} macros. Make sure you are following the zone stack rules, as described in section~\ref{multizone}!
+
+\paragraph{Zone context data structure}
+
+In typical use cases the zone context data structure is hidden from your view, requiring only to specify its name for the \texttt{TracyCZone} and \texttt{TracyCZoneEnd} macros. However, it is possible to use it in advanced scenarios, for example if you want to start a zone in one function, then end it in another one. To do so you will need to forward the data structure either through a function parameter, or as a return value. To accomplish this you need to keep in mind the following rules:
+
+\begin{itemize}
+\item The created variable name is exactly what you pass as the \texttt{ctx} parameter.
+\item The data structure is of an opaque, immutable type \texttt{TracyCZoneCtx}.
+\item Contents of the data structure can be copied by assignment.
+\item You \emph{must} use the data structure (or any of its copies) exactly \emph{once} to end a zone.
+\end{itemize}
 
 \paragraph{Zone validation}
 

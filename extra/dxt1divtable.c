@@ -3,7 +3,7 @@
 
 int main()
 {
-    for( int i=0; i<255*3; i++ )
+    for( int i=0; i<255*3+1; i++ )
     {
         // replace 4 with 2 for ARM NEON table
         uint32_t range = ( 4 << 16 ) / ( 1+i );

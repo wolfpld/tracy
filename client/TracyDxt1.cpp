@@ -13,8 +13,8 @@
 #  define __SSE4_1__
 #endif
 
-#ifdef _MSC_VER
-#  ifdef __SSE4_1__
+#if defined __SSE4_1__ || defined __AVX2__
+#  ifdef _MSC_VER
 #    include <intrin.h>
 #  else
 #    include <x86intrin.h>

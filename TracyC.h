@@ -61,7 +61,9 @@ struct ___tracy_c_zone_context
     int active;
 };
 
-typedef const struct ___tracy_c_zone_context TracyCZoneCtx;
+// Some containers don't support storing const types.
+// This struct, as visible to user, is immutable, so treat it as if const was declared here.
+typedef /*const*/ struct ___tracy_c_zone_context TracyCZoneCtx;
 
 TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_data* srcloc, int active );
 TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_location_data* srcloc, int depth, int active );

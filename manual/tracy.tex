@@ -313,7 +313,13 @@ For that you need a \emph{main DLL} to which your executable and the other DLLs 
 
 You should compile the main library with the \texttt{tracy/TracyClient.cpp} source file and then add the \texttt{tracy/TracyClientDLL.cpp} file to the source files lists of the executable and the other DLLs.
 
-\subsubsection{Apple woes}
+\subsubsection{Problematic platforms}
+
+Some OS vendors think that \emph{they} own and control the devices \emph{you} have paid for. This results in restricting usage of APIs that might 'confuse' you, or denying you access to information about what your computer is doing.
+
+This is a very sad state of things.
+
+\paragraph{Apple woes}
 
 Because Apple \emph{has} to be \emph{think different}, there are some problems when using Tracy on OSX and iOS. First, the performance hit due to profiling is higher than on other platforms. Second, some critical features are missing and won't be possible to achieve:
 
@@ -322,6 +328,12 @@ Because Apple \emph{has} to be \emph{think different}, there are some problems w
 \item Profiling is interrupted when the application exits. This will result in missing zones, memory allocations, or even source location names.
 \item OpenGL can't be profiled.
 \end{itemize}
+
+\paragraph{Android lunacy}
+
+Starting with Android 8.0 you are no longer allowed to use the \texttt{/proc} file system. One of the consequences of this change is inability to check system CPU usage.
+
+This is apparently a security enhancement. In its infinite wisdom Google has decided to not give you any option to bypass this restriction.
 
 \subsection{Running the server}
 

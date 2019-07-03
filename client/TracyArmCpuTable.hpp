@@ -3,6 +3,7 @@ namespace tracy
 
 static const char* DecodeArmImplementer( uint32_t v )
 {
+    static char buf[16];
     switch( v )
     {
     case 0x41: return "ARM";
@@ -22,12 +23,15 @@ static const char* DecodeArmImplementer( uint32_t v )
     case 0x66: return "Faraday";
     case 0x68: return "HXT";
     case 0x69: return "Intel";
-    default: return "unknown";
+    default: break;
     }
+    sprintf( buf, "0x%x", v );
+    return buf;
 }
 
 static const char* DecodeArmPart( uint32_t impl, uint32_t part )
 {
+    static char buf[16];
     switch( impl )
     {
     case 0x41:
@@ -84,7 +88,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xd20: return " Cortex-M23";
         case 0xd21: return " Cortex-M33";
         case 0xd4a: return " Neoverse E1";
-        default: return " unknown";
+        default: break;
         }
     case 0x42:
         switch( part )
@@ -92,7 +96,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xf: return " Brahma B15";
         case 0x100: return " Brahma B53";
         case 0x516: return " ThunderX2";
-        default: return " unknown";
+        default: break;
         }
     case 0x43:
         switch( part )
@@ -102,27 +106,27 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xa2: return " ThunderX 81XX";
         case 0xa3: return " ThunderX 83XX";
         case 0xaf: return " ThunderX2 99xx";
-        default: return " unknown";
+        default: break;
         }
     case 0x44:
         switch( part )
         {
         case 0xa10: return " SA110";
         case 0xa11: return " SA1100";
-        default: return " unknown";
+        default: break;
         }
     case 0x46:
         switch( part )
         {
         case 0x1: return " A64FX";
-        default: return " unknown";
+        default: break;
         }
     case 0x48:
         switch( part )
         {
         case 0xd01: return " TSV100";
         case 0xd40: return " Kirin 980";
-        default: return " unknown";
+        default: break;
         }
     case 0x4e:
         switch( part )
@@ -130,13 +134,13 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x0: return " Denver";
         case 0x3: return " Denver 2";
         case 0x4: return " Carmel";
-        default: return " unknown";
+        default: break;
         }
     case 0x50:
         switch( part )
         {
         case 0x0: return " X-Gene";
-        default: return " unknown";
+        default: break;
         }
     case 0x51:
         switch( part )
@@ -156,14 +160,14 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x804: return " Kryo 485 Gold";
         case 0xc00: return " Falkor";
         case 0xc01: return " Saphira";
-        default: return " unknown";
+        default: break;
         }
     case 0x53:
         switch( part )
         {
         case 0x1: return " Exynos M1/M2";
         case 0x2: return " Exynos M3";
-        default: return " unknown";
+        default: break;
         }
     case 0x56:
         switch( part )
@@ -171,7 +175,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x131: return " Feroceon 88FR131";
         case 0x581: return " PJ4 / PJ4B";
         case 0x584: return " PJ4B-MP / PJ4C";
-        default: return " unknown";
+        default: break;
         }
     case 0x61:
         switch( part )
@@ -183,23 +187,25 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0x5: return " Twister/Elba/Malta";
         case 0x6: return " Hurricane";
         case 0x7: return " Hurricane/Myst";
-        default: return " unknown";
+        default: break;
         }
     case 0x66:
         switch( part )
         {
         case 0x526: return " FA526";
         case 0x626: return " FA626";
-        default: return " unknown";
+        default: break;
         }
     case 0x68:
         switch( part )
         {
         case 0x0: return " Phecda";
-        default: return " unknown";
+        default: break;
         }
-    default: return " unknown";
+    default: break;
     }
+    sprintf( buf, " 0x%x", part );
+    return buf;
 }
 
 }

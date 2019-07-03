@@ -52,6 +52,7 @@
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
+#include "TracyArmCpuTable.hpp"
 #include "../TracyC.h"
 
 #ifdef __APPLE__
@@ -264,6 +265,24 @@ static const char* GetProcessName()
     return processName;
 }
 
+static uint32_t GetHex( char*& ptr, int skip )
+{
+    uint32_t ret;
+    ptr += skip;
+    char* end;
+    if( ptr[0] == '0' && ptr[1] == 'x' )
+    {
+        ptr += 2;
+        ret = strtol( ptr, &end, 16 );
+    }
+    else
+    {
+        ret = strtol( ptr, &end, 10 );
+    }
+    ptr = end;
+    return ret;
+}
+
 static const char* GetHostInfo()
 {
     static char buf[1024];
@@ -398,6 +417,55 @@ static const char* GetHostInfo()
     }
 
     ptr += sprintf( ptr, "CPU: %s\n", cpuModel );
+#elif defined __linux__ && defined __ARM_ARCH
+    bool cpuFound = false;
+    FILE* fcpuinfo = fopen( "/proc/cpuinfo", "rb" );
+    if( fcpuinfo )
+    {
+        enum { BufSize = 4*1024 };
+        char buf[BufSize];
+        const auto sz = fread( buf, 1, BufSize, fcpuinfo );
+        fclose( fcpuinfo );
+        const auto end = buf + sz;
+        auto cptr = buf;
+
+        uint32_t impl = 0;
+        uint32_t var = 0;
+        uint32_t part = 0;
+        uint32_t rev = 0;
+
+        while( end - cptr > 20 )
+        {
+            while( end - cptr > 20 && memcmp( cptr, "CPU ", 4 ) != 0 )
+            {
+                cptr += 4;
+                while( end - cptr > 20 && *cptr != '\n' ) cptr++;
+                cptr++;
+            }
+            if( end - cptr <= 20 ) break;
+            cptr += 4;
+            if( memcmp( cptr, "implementer\t: ", 14 ) == 0 )
+            {
+                if( impl != 0 ) break;
+                impl = GetHex( cptr, 14 );
+            }
+            else if( memcmp( cptr, "variant\t: ", 10 ) == 0 ) var = GetHex( cptr, 10 );
+            else if( memcmp( cptr, "part\t: ", 7 ) == 0 ) part = GetHex( cptr, 7 );
+            else if( memcmp( cptr, "revision\t: ", 11 ) == 0 ) rev = GetHex( cptr, 11 );
+            while( *cptr != '\n' && *cptr != '\0' ) cptr++;
+            cptr++;
+        }
+
+        if( impl != 0 || var != 0 || part != 0 || rev != 0 )
+        {
+            cpuFound = true;
+            ptr += sprintf( ptr, "CPU: %s%s r%ip%i\n", DecodeArmImplementer( impl ), DecodeArmPart( impl, part ), var, rev );
+        }
+    }
+    if( !cpuFound )
+    {
+        ptr += sprintf( ptr, "CPU: unknown\n" );
+    }
 #else
     ptr += sprintf( ptr, "CPU: unknown\n" );
 #endif

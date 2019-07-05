@@ -188,18 +188,12 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
         return to565( src[0], src[1], src[2] );
     }
 
-    __m128i mask = _mm_set1_epi32( 0xFFFFFF );
-    __m128i l0 = _mm_and_si128( px0, mask );
-    __m128i l1 = _mm_and_si128( px1, mask );
-    __m128i l2 = _mm_and_si128( px2, mask );
-    __m128i l3 = _mm_and_si128( px3, mask );
-
-    __m128i min0 = _mm_min_epu8( l0, l1 );
-    __m128i min1 = _mm_min_epu8( l2, l3 );
+    __m128i min0 = _mm_min_epu8( px0, px1 );
+    __m128i min1 = _mm_min_epu8( px2, px3 );
     __m128i min2 = _mm_min_epu8( min0, min1 );
 
-    __m128i max0 = _mm_max_epu8( l0, l1 );
-    __m128i max1 = _mm_max_epu8( l2, l3 );
+    __m128i max0 = _mm_max_epu8( px0, px1 );
+    __m128i max1 = _mm_max_epu8( px2, px3 );
     __m128i max2 = _mm_max_epu8( max0, max1 );
 
     __m128i min3 = _mm_shuffle_epi32( min2, _MM_SHUFFLE( 2, 3, 0, 1 ) );
@@ -225,10 +219,10 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     __m128i min = _mm_adds_epu8( rmin, inset );
     __m128i max = _mm_subs_epu8( rmax, inset );
 
-    __m128i c0 = _mm_subs_epu8( l0, rmin );
-    __m128i c1 = _mm_subs_epu8( l1, rmin );
-    __m128i c2 = _mm_subs_epu8( l2, rmin );
-    __m128i c3 = _mm_subs_epu8( l3, rmin );
+    __m128i c0 = _mm_subs_epu8( px0, rmin );
+    __m128i c1 = _mm_subs_epu8( px1, rmin );
+    __m128i c2 = _mm_subs_epu8( px2, rmin );
+    __m128i c3 = _mm_subs_epu8( px3, rmin );
 
     __m128i is0 = _mm_maddubs_epi16( c0, _mm_set1_epi8( 1 ) );
     __m128i is1 = _mm_maddubs_epi16( c1, _mm_set1_epi8( 1 ) );

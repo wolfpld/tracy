@@ -444,18 +444,12 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
     __m256i px2 = _mm256_loadu_si256(((__m256i*)src) + 2);
     __m256i px3 = _mm256_loadu_si256(((__m256i*)src) + 3);
 
-    __m256i mask = _mm256_set1_epi32( 0xFFFFFF );
-    __m256i l0 = _mm256_and_si256( px0, mask );
-    __m256i l1 = _mm256_and_si256( px1, mask );
-    __m256i l2 = _mm256_and_si256( px2, mask );
-    __m256i l3 = _mm256_and_si256( px3, mask );
-
-    __m256i min0 = _mm256_min_epu8( l0, l1 );
-    __m256i min1 = _mm256_min_epu8( l2, l3 );
+    __m256i min0 = _mm256_min_epu8( px0, px1 );
+    __m256i min1 = _mm256_min_epu8( px2, px3 );
     __m256i min2 = _mm256_min_epu8( min0, min1 );
 
-    __m256i max0 = _mm256_max_epu8( l0, l1 );
-    __m256i max1 = _mm256_max_epu8( l2, l3 );
+    __m256i max0 = _mm256_max_epu8( px0, px1 );
+    __m256i max1 = _mm256_max_epu8( px2, px3 );
     __m256i max2 = _mm256_max_epu8( max0, max1 );
 
     __m256i min3 = _mm256_shuffle_epi32( min2, _MM_SHUFFLE( 2, 3, 0, 1 ) );
@@ -483,10 +477,10 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
     __m256i min = _mm256_adds_epu8( rmin, inset );
     __m256i max = _mm256_subs_epu8( rmax, inset );
 
-    __m256i c0 = _mm256_subs_epu8( l0, rmin );
-    __m256i c1 = _mm256_subs_epu8( l1, rmin );
-    __m256i c2 = _mm256_subs_epu8( l2, rmin );
-    __m256i c3 = _mm256_subs_epu8( l3, rmin );
+    __m256i c0 = _mm256_subs_epu8( px0, rmin );
+    __m256i c1 = _mm256_subs_epu8( px1, rmin );
+    __m256i c2 = _mm256_subs_epu8( px2, rmin );
+    __m256i c3 = _mm256_subs_epu8( px3, rmin );
 
     __m256i is0 = _mm256_maddubs_epi16( c0, _mm256_set1_epi8( 1 ) );
     __m256i is1 = _mm256_maddubs_epi16( c1, _mm256_set1_epi8( 1 ) );

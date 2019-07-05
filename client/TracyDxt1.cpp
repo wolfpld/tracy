@@ -243,22 +243,13 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
 
     __m128i p0 = _mm_packus_epi16( m0, m1 );
 
-    __m128i mask0 = _mm_set1_epi32( 0x00000003 );
-    __m128i mask1 = _mm_set1_epi32( 0x00000300 );
-    __m128i mask2 = _mm_set1_epi32( 0x00030000 );
-    __m128i mask3 = _mm_set1_epi32( 0x03000000 );
+    __m128i p1 = _mm_or_si128( _mm_srai_epi32( p0, 6 ), _mm_srai_epi32( p0, 12 ) );
+    __m128i p2 = _mm_or_si128( _mm_srai_epi32( p0, 18 ), p0 );
+    __m128i p3 = _mm_or_si128( p1, p2 );
+    __m128i p4 = _mm_and_si128( p3, _mm_set1_epi32( 0xFF ) );
 
-    __m128i p1 = _mm_and_si128( p0, mask0 );
-    __m128i p2 = _mm_srai_epi32( _mm_and_si128( p0, mask1 ), 6 );
-    __m128i p3 = _mm_srai_epi32( _mm_and_si128( p0, mask2 ), 12 );
-    __m128i p4 = _mm_srai_epi32( _mm_and_si128( p0, mask3 ), 18 );
-
-    __m128i p5 = _mm_or_si128( p1, p2 );
-    __m128i p6 = _mm_or_si128( p3, p4 );
-    __m128i p7 = _mm_or_si128( p5, p6 );
-
-    __m128i p8 = _mm_packus_epi32( p7, p7 );
-    __m128i p = _mm_packus_epi16( p8, p8 );
+    __m128i p5 = _mm_packus_epi32( p4, p4 );
+    __m128i p = _mm_packus_epi16( p5, p5 );
 
     uint32_t vmin = _mm_cvtsi128_si32( min );
     uint32_t vmax = _mm_cvtsi128_si32( max );

@@ -207,7 +207,7 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     __m128i rmax = _mm_max_epu8( max4, max5 );
 
     __m128i range1 = _mm_subs_epu8( rmax, rmin );
-    __m128i range2 = _mm_sad_epu8( range1, _mm_setzero_si128() );
+    __m128i range2 = _mm_sad_epu8( rmax, rmin );
 
     uint32_t vrange = _mm_cvtsi128_si32( range2 ) >> 1;
     __m128i range = _mm_set1_epi16( DivTable[vrange] );
@@ -460,7 +460,7 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
     __m256i rmax = _mm256_max_epu8( max4, max5 );
 
     __m256i range1 = _mm256_subs_epu8( rmax, rmin );
-    __m256i range2 = _mm256_sad_epu8( range1, _mm256_setzero_si256() );
+    __m256i range2 = _mm256_sad_epu8( rmax, rmin );
 
     uint16_t vrange0 = DivTableAVX[_mm256_cvtsi256_si32( range2 ) >> 1];
     uint16_t vrange1 = DivTableAVX[_mm256_extract_epi16( range2, 8 ) >> 1];

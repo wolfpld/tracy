@@ -207,11 +207,9 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     __m128i rmax = _mm_max_epu8( max4, max5 );
 
     __m128i range1 = _mm_subs_epu8( rmax, rmin );
-    __m128i range2 = _mm_maddubs_epi16( range1, _mm_set1_epi8( 1 ) );
-    __m128i range3 = _mm_hadd_epi16( range2, range2 );
-    __m128i range4 = _mm_add_epi16( range3, _mm_set1_epi16( 1 ) );
+    __m128i range2 = _mm_sad_epu8( range1, _mm_setzero_si128() );
 
-    uint32_t vrange = _mm_cvtsi128_si32( range4 ) & 0xFFFF;
+    uint32_t vrange = _mm_cvtsi128_si32( range2 ) >> 1;
     __m128i range = _mm_set1_epi16( DivTable[vrange] );
 
     __m128i inset1 = _mm_srli_epi16( range1, 4 );
@@ -462,12 +460,10 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
     __m256i rmax = _mm256_max_epu8( max4, max5 );
 
     __m256i range1 = _mm256_subs_epu8( rmax, rmin );
-    __m256i range2 = _mm256_maddubs_epi16( range1, _mm256_set1_epi8( 1 ) );
-    __m256i range3 = _mm256_hadd_epi16( range2, range2 );
-    __m256i range4 = _mm256_add_epi16( range3, _mm256_set1_epi16( 1 ) );
+    __m256i range2 = _mm256_sad_epu8( range1, _mm256_setzero_si256() );
 
-    uint16_t vrange0 = DivTableAVX[( _mm256_cvtsi256_si32( range4 ) ) & 0xFFFF];
-    uint16_t vrange1 = DivTableAVX[_mm256_extract_epi16( range4, 8 )];
+    uint16_t vrange0 = DivTableAVX[_mm256_cvtsi256_si32( range2 ) >> 1];
+    uint16_t vrange1 = DivTableAVX[_mm256_extract_epi16( range2, 8 ) >> 1];
     __m256i range00 = _mm256_set1_epi16( vrange0 );
     __m256i range = _mm256_inserti128_si256( range00, _mm_set1_epi16( vrange1 ), 1 );
 

@@ -12,11 +12,11 @@ imgui.ini
 test/tracy_test
 test/tracy_test.exe
 */build/unix/*-*
-manual/tracy.aux
-manual/tracy.log
-manual/tracy.out
-manual/tracy.pdf
-manual/tracy.synctex.gz
-manual/tracy.toc
+manual/t*.aux
+manual/t*.log
+manual/t*.out
+manual/t*.pdf
+manual/t*.synctex.gz
+manual/t*.toc
 profiler/build/win32/packages
 profiler/build/win32/Tracy.aps

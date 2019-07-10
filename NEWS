@@ -72,6 +72,8 @@ v0.5 (xxxx-xx-xx)
   highlighted on the histogram.
 - Server now displays available clients in the local network.
 - Source code whitespace visibility can now be enabled or disabled.
+- Profiler will now check if proper timer readings can be performed on
+  x86/x64.
 
 v0.4.1 (2018-12-30)
 -------------------

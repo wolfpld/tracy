@@ -8,6 +8,7 @@
 #  include <windows.h>
 #  include <tlhelp32.h>
 #  include <inttypes.h>
+#  include <intrin.h>
 #else
 #  include <sys/time.h>
 #endif
@@ -230,6 +231,36 @@ static int64_t SetupHwTimer()
             }
         }
     }
+
+    return Profiler::GetTime();
+}
+#elif defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+static inline void CpuId( uint32_t* regs, uint32_t leaf )
+{
+#if defined _MSC_VER || defined __CYGWIN__
+    __cpuidex( (int*)regs, leaf, 0 );
+#else
+    __get_cpuid( leaf, regs, regs+1, regs+2, regs+3 );
+#endif
+}
+
+static void InitFailure( const char* msg )
+{
+#if defined _WIN32 || defined __CYGWIN__
+    MessageBoxA( nullptr, msg, "Tracy Profiler initialization failure", MB_ICONSTOP );
+#else
+    fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
+#endif
+    exit( 0 );
+}
+
+static int64_t SetupHwTimer()
+{
+    uint32_t regs[4];
+    CpuId( regs, 0x80000001 );
+    if( !( regs[3] & ( 1 << 27 ) ) ) InitFailure( "CPU doesn't support RDTSCP instruction." );
+    CpuId( regs, 0x80000007 );
+    if( !( regs[3] & ( 1 << 8 ) ) ) InitFailure( "CPU doesn't support invariant TSC." );
 
     return Profiler::GetTime();
 }

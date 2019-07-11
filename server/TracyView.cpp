@@ -5543,36 +5543,25 @@ void View::DrawOptions()
             }
         }
 
-        int idIdx = 0;
+        const auto wposx = ImGui::GetCursorScreenPos().x;
+        m_threadDnd.clear();
         int idx = 0;
-        int upIdx = -1;
-        int downIdx = -1;
         for( const auto& t : m_threadOrder )
         {
-            ImGui::PushID( idIdx++ );
-#ifdef TRACY_EXTENDED_FONT
-            if( ImGui::SmallButton( ICON_FA_CARET_UP ) )
-#else
-            if( ImGui::SmallButton( "^" ) )
-#endif
+            m_threadDnd.push_back( ImGui::GetCursorScreenPos().y );
+            ImGui::PushID( idx );
+            const auto threadName = m_worker.GetThreadString( t->id );
+            SmallCheckbox( threadName, &Vis( t ).visible );
+            if( ImGui::BeginDragDropSource( ImGuiDragDropFlags_SourceNoHoldToOpenOthers ) )
             {
-                upIdx = idx;
-            }
-            ImGui::PopID();
-            ImGui::SameLine();
-            ImGui::PushID( idIdx++ );
+                ImGui::SetDragDropPayload( "ThreadOrder", &idx, sizeof(int) );
 #ifdef TRACY_EXTENDED_FONT
-            if( ImGui::SmallButton( ICON_FA_CARET_DOWN ) )
-#else
-            if( ImGui::SmallButton( "v" ) )
+                ImGui::TextUnformatted( ICON_FA_RANDOM );
+                ImGui::SameLine();
 #endif
-            {
-                downIdx = idx;
+                ImGui::TextUnformatted( threadName );
+                ImGui::EndDragDropSource();
             }
-            ImGui::PopID();
-            ImGui::SameLine();
-            ImGui::PushID( idIdx++ );
-            SmallCheckbox( m_worker.GetThreadString( t->id ), &Vis( t ).visible );
             ImGui::PopID();
             if( crash.thread == t->id )
             {
@@ -5601,13 +5590,45 @@ void View::DrawOptions()
             ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
             idx++;
         }
-        if( upIdx > 0 )
+        if( m_threadDnd.size() > 1 )
         {
-            std::swap( m_threadOrder[upIdx], m_threadOrder[upIdx-1] );
-        }
-        if( downIdx >= 0 && (size_t)downIdx < m_threadOrder.size() - 1 )
-        {
-            std::swap( m_threadOrder[downIdx], m_threadOrder[downIdx+1] );
+            const auto w = ImGui::GetContentRegionAvail().x;
+            const auto dist = m_threadDnd[1] - m_threadDnd[0];
+            const auto half = dist * 0.5f;
+            m_threadDnd.push_back( m_threadDnd.back() + dist );
+
+            int target = -1;
+            int source;
+            for( size_t i=0; i<m_threadDnd.size(); i++ )
+            {
+                if( ImGui::BeginDragDropTargetCustom( ImRect( wposx, m_threadDnd[i] - half, wposx + w, m_threadDnd[i] + half ), i+1 ) )
+                {
+                    auto draw = ImGui::GetWindowDrawList();
+                    draw->AddLine( ImVec2( wposx, m_threadDnd[i] ), ImVec2( wposx + w, m_threadDnd[i] ), ImGui::GetColorU32(ImGuiCol_DragDropTarget), 2.f );
+                    if( auto payload = ImGui::AcceptDragDropPayload( "ThreadOrder", ImGuiDragDropFlags_AcceptNoDrawDefaultRect ) )
+                    {
+                        target = (int)i;
+                        source = *(int*)payload->Data;
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+            }
+            if( target >= 0 && target != source )
+            {
+                const auto srcval = m_threadOrder[source];
+                if( target < source )
+                {
+                    assert( source < m_threadOrder.size() );
+                    m_threadOrder.erase( m_threadOrder.begin() + source );
+                    m_threadOrder.insert( m_threadOrder.begin() + target, srcval );
+                }
+                else
+                {
+                    assert( target <= m_threadOrder.size() );
+                    m_threadOrder.insert( m_threadOrder.begin() + target, srcval );
+                    m_threadOrder.erase( m_threadOrder.begin() + source );
+                }
+            }
         }
         ImGui::TreePop();
     }

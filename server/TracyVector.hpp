@@ -176,7 +176,7 @@ public:
         assert( m_capacity != std::numeric_limits<uint8_t>::max() );
         assert( it >= m_ptr && it <= m_ptr + m_size );
         m_size--;
-        memmove( it, it+1, m_size * sizeof( T ) );
+        memmove( it, it+1, ( m_size - ( it - m_ptr ) ) * sizeof( T ) );
         return it;
     }
 

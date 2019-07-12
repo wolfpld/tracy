@@ -5686,6 +5686,8 @@ void View::DrawMessages()
     size_t tsz = 0;
     for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
 
+    m_messageFilter.Draw( "Filter messages", 200 );
+
 #ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
 #else
@@ -5758,52 +5760,61 @@ void View::DrawMessages()
     ImGui::NextColumn();
     ImGui::Separator();
 
+    const auto filterActive = m_messageFilter.IsActive();
     const auto& msgs = m_worker.GetMessages();
     for( const auto& v : msgs )
     {
         if( VisibleMsgThread( v->thread ) )
         {
-            ImGui::PushID( v );
-            if( ImGui::Selectable( TimeToString( v->time - m_worker.GetTimeBegin() ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns ) )
+            const auto text = m_worker.GetString( v->ref );
+            if( !filterActive || m_messageFilter.PassFilter( text ) )
             {
-                CenterAtTime( v->time );
+                ImGui::PushID( v );
+                if( ImGui::Selectable( TimeToString( v->time - m_worker.GetTimeBegin() ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns ) )
+                {
+                    CenterAtTime( v->time );
+                }
+                if( ImGui::IsItemHovered() )
+                {
+                    m_msgHighlight = v;
+                }
+                if( m_msgToFocus == v )
+                {
+                    ImGui::SetScrollHereY();
+                    m_msgToFocus = nullptr;
+                }
+                ImGui::PopID();
+                ImGui::NextColumn();
+                ImGui::TextUnformatted( m_worker.GetThreadString( v->thread ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(0x%" PRIX64 ")", v->thread );
+                ImGui::NextColumn();
+                ImGui::PushStyleColor( ImGuiCol_Text, v->color );
+                ImGui::TextWrapped( "%s", text );
+                ImGui::PopStyleColor();
+                ImGui::NextColumn();
             }
-            if( ImGui::IsItemHovered() )
-            {
-                m_msgHighlight = v;
-            }
-            if( m_msgToFocus == v )
-            {
-                ImGui::SetScrollHereY();
-                m_msgToFocus = nullptr;
-            }
-            ImGui::PopID();
-            ImGui::NextColumn();
-            ImGui::TextUnformatted( m_worker.GetThreadString( v->thread ) );
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(0x%" PRIX64 ")", v->thread );
-            ImGui::NextColumn();
-            ImGui::PushStyleColor( ImGuiCol_Text, v->color );
-            ImGui::TextWrapped( "%s", m_worker.GetString( v->ref ) );
-            ImGui::PopStyleColor();
-            ImGui::NextColumn();
         }
     }
 
-    const auto maxScroll = ImGui::GetScrollMaxY();
-    if( maxScroll != 0 )
+    if( !filterActive )
     {
-        const auto msgssize = msgs.size();
-        if( m_prevMessages == msgssize )
+        const auto maxScroll = ImGui::GetScrollMaxY();
+        if( maxScroll != 0 )
         {
-            m_messagesScrollBottom = ImGui::GetScrollY() == maxScroll;
-        }
-        else
-        {
-            m_prevMessages = msgssize;
-            if( m_messagesScrollBottom ) ImGui::SetScrollHereY();
+            const auto msgssize = msgs.size();
+            if( m_prevMessages == msgssize && !m_messageFilterWasActive )
+            {
+                m_messagesScrollBottom = ImGui::GetScrollY() == maxScroll;
+            }
+            else
+            {
+                m_prevMessages = msgssize;
+                if( m_messagesScrollBottom ) ImGui::SetScrollHereY();
+            }
         }
     }
+    m_messageFilterWasActive = filterActive;
 
     ImGui::EndColumns();
     ImGui::EndChild();

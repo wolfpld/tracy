@@ -267,6 +267,8 @@ private:
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
     size_t m_prevMessages = 0;
+    ImGuiTextFilter m_messageFilter;
+    bool m_messageFilterWasActive = false;
 
     Region m_highlight;
     Region m_highlightZoom;

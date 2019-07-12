@@ -8319,7 +8319,9 @@ void View::DrawInfo()
 
     ImGui::SetNextWindowSize( ImVec2( 400, 650 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo );
-    TextFocused( "Captured program:", m_worker.GetCaptureProgram().c_str() );
+    if( m_bigFont ) ImGui::PushFont( m_bigFont );
+    TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
+    if( m_bigFont ) ImGui::PopFont();
     TextFocused( "Capture time:", dtmp );
     ImGui::TextDisabled( "Trace version:" );
     ImGui::SameLine();

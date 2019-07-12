@@ -8317,9 +8317,6 @@ void View::DrawInfo()
 
     ImGui::SetNextWindowSize( ImVec2( 400, 650 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo );
-    TextFocused( "Profiler memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
-    TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ), true ) );
-    ImGui::Separator();
     TextFocused( "Captured program:", m_worker.GetCaptureProgram().c_str() );
     TextFocused( "Capture time:", dtmp );
     ImGui::TextDisabled( "Trace version:" );
@@ -8327,20 +8324,531 @@ void View::DrawInfo()
     const auto version = m_worker.GetTraceVersion();
     ImGui::Text( "%i.%i.%i", version >> 16, ( version >> 8 ) & 0xFF, version & 0xFF );
     ImGui::Separator();
-    TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
-    TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
-    ImGui::Separator();
-    TextFocused( "Zones:", RealToString( m_worker.GetZoneCount(), true ) );
-    TextFocused( "Lock events:", RealToString( m_worker.GetLockCount(), true ) );
-    TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount(), true ) );
-    TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size(), true ) );
-    TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
-    TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
-    TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
+
+    if( ImGui::TreeNode( "Profiler statistics" ) )
+    {
+        TextFocused( "Profiler memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
+        TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ), true ) );
+        ImGui::TreePop();
+    }
+
     const auto ficnt = m_worker.GetFrameImageCount();
-    TextFocused( "Frame images:", RealToString( ficnt, true ) );
+    if( ImGui::TreeNode( "Trace statistics" ) )
+    {
+        TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
+        TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
+        ImGui::Separator();
+        TextFocused( "Zones:", RealToString( m_worker.GetZoneCount(), true ) );
+        TextFocused( "Lock events:", RealToString( m_worker.GetLockCount(), true ) );
+        TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount(), true ) );
+        TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size(), true ) );
+        TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
+        TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
+        TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
+        TextFocused( "Frame images:", RealToString( ficnt, true ) );
+        ImGui::TreePop();
+    }
+
+    if( ImGui::TreeNode( "Frame statistics" ) )
+    {
+        const auto fsz = m_worker.GetFullFrameCount( *m_frames );
+        if( fsz != 0 )
+        {
+            ImGui::Separator();
+            TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", m_frames->continuous ? "continuous" : "discontinuous" );
+            ImGui::SameLine();
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+            if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
+            {
+                auto& frames = m_worker.GetFrames();
+                for( auto& fd : frames )
+                {
+                    bool isSelected = m_frames == fd;
+                    if( ImGui::Selectable( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), isSelected ) )
+                    {
+                        m_frames = fd;
+                    }
+                    if( isSelected )
+                    {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size(), true ) );
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::PopStyleVar();
+            ImGui::SameLine();
+            SmallCheckbox( "Limit to view", &m_frameSortData.limitToView );
+
+            const auto frameRange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
+            if( m_frameSortData.frameSet != m_frames || ( m_frameSortData.limitToView && m_frameSortData.limitRange != frameRange ) || ( !m_frameSortData.limitToView && m_frameSortData.limitRange.first != -1 ) )
+            {
+                m_frameSortData.frameSet = m_frames;
+                m_frameSortData.frameNum = 0;
+                m_frameSortData.data.clear();
+                m_frameSortData.total = 0;
+            }
+            bool recalc = false;
+            int64_t total = 0;
+            if( !m_frameSortData.limitToView )
+            {
+                if( m_frameSortData.frameNum != fsz || m_frameSortData.limitRange.first != -1 )
+                {
+                    auto& vec = m_frameSortData.data;
+                    vec.reserve( fsz );
+                    const auto midSz = vec.size();
+                    total = m_frameSortData.total;
+                    for( size_t i=m_frameSortData.frameNum; i<fsz; i++ )
+                    {
+                        const auto t = m_worker.GetFrameTime( *m_frames, i );
+                        if( t > 0 )
+                        {
+                            vec.emplace_back( t );
+                            total += t;
+                        }
+                    }
+                    auto mid = vec.begin() + midSz;
+                    pdqsort_branchless( mid, vec.end() );
+                    std::inplace_merge( vec.begin(), mid, vec.end() );
+                    recalc = true;
+                    m_frameSortData.limitRange.first = -1;
+                }
+            }
+            else
+            {
+                if( m_frameSortData.limitRange != frameRange )
+                {
+                    auto& vec = m_frameSortData.data;
+                    assert( vec.empty() );
+                    vec.reserve( frameRange.second - frameRange.first );
+                    for( int i=frameRange.first; i<frameRange.second; i++ )
+                    {
+                        const auto t = m_worker.GetFrameTime( *m_frames, i );
+                        if( t > 0 )
+                        {
+                            vec.emplace_back( t );
+                            total += t;
+                        }
+                    }
+                    pdqsort_branchless( vec.begin(), vec.end() );
+                    recalc = true;
+                    m_frameSortData.limitRange = frameRange;
+                }
+            }
+            if( recalc )
+            {
+                auto& vec = m_frameSortData.data;
+                const auto vsz = vec.size();
+                m_frameSortData.average = float( total ) / vsz;
+                m_frameSortData.median = vec[vsz/2];
+                m_frameSortData.total = total;
+                m_frameSortData.frameNum = fsz;
+            }
+
+            const auto profileSpan = m_worker.GetLastTime() - m_worker.GetTimeBegin();
+            TextFocused( "Count:", RealToString( fsz, true ) );
+            TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%.2f%% of profile time span)", m_frameSortData.total / float( profileSpan ) * 100.f );
+            TextFocused( "Average frame time:", TimeToString( m_frameSortData.average ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ), true ) );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.average, true ) );
+                ImGui::EndTooltip();
+            }
+            TextFocused( "Median frame time:", TimeToString( m_frameSortData.median ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.median ), true ) );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.median, true ) );
+                ImGui::EndTooltip();
+            }
+
+            if( ImGui::TreeNodeEx( "Histogram", ImGuiTreeNodeFlags_DefaultOpen ) )
+            {
+                const auto ty = ImGui::GetFontSize();
+
+                auto& frames = m_frameSortData.data;
+                auto tmin = frames.front();
+                auto tmax = frames.back();
+
+                if( tmin != std::numeric_limits<int64_t>::max() )
+                {
+                    TextDisabledUnformatted( "Minimum values in bin:" );
+                    ImGui::SameLine();
+                    ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+                    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 1, 1 ) );
+                    ImGui::InputInt( "##minBinVal", &m_frameSortData.minBinVal );
+                    if( m_frameSortData.minBinVal < 1 ) m_frameSortData.minBinVal = 1;
+                    ImGui::SameLine();
+                    if( ImGui::Button( "Reset" ) ) m_frameSortData.minBinVal = 1;
+                    ImGui::PopStyleVar();
+
+                    SmallCheckbox( "Log values", &m_frameSortData.logVal );
+                    ImGui::SameLine();
+                    SmallCheckbox( "Log time", &m_frameSortData.logTime );
+
+                    TextDisabledUnformatted( "Time range:" );
+                    ImGui::SameLine();
+                    ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
+
+                    TextDisabledUnformatted( "FPS range:" );
+                    ImGui::SameLine();
+                    ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ), true ), RealToString( round( 1000000000.0 / tmax ), true ) );
+
+                    if( tmax - tmin > 0 )
+                    {
+                        const auto w = ImGui::GetContentRegionAvail().x;
+
+                        const auto numBins = int64_t( w - 4 );
+                        if( numBins > 1 )
+                        {
+                            if( numBins > m_frameSortData.numBins )
+                            {
+                                m_frameSortData.numBins = numBins;
+                                m_frameSortData.bins = std::make_unique<int64_t[]>( numBins );
+                            }
+
+                            const auto& bins = m_frameSortData.bins;
+
+                            memset( bins.get(), 0, sizeof( int64_t ) * numBins );
+
+                            auto framesBegin = frames.begin();
+                            auto framesEnd = frames.end();
+                            while( framesBegin != framesEnd && *framesBegin == 0 ) ++framesBegin;
+
+                            if( m_frameSortData.minBinVal > 1 )
+                            {
+                                if( m_frameSortData.logTime )
+                                {
+                                    const auto tMinLog = log10( tmin );
+                                    const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                                    int64_t i;
+                                    for( i=0; i<numBins; i++ )
+                                    {
+                                        const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                        auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                        const auto distance = std::distance( framesBegin, nit );
+                                        if( distance >= m_frameSortData.minBinVal ) break;
+                                        framesBegin = nit;
+                                    }
+                                    for( int64_t j=numBins-1; j>i; j-- )
+                                    {
+                                        const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( j-1 ) * zmax ) );
+                                        auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                        const auto distance = std::distance( nit, framesEnd );
+                                        if( distance >= m_frameSortData.minBinVal ) break;
+                                        framesEnd = nit;
+                                    }
+                                }
+                                else
+                                {
+                                    const auto zmax = tmax - tmin;
+                                    int64_t i;
+                                    for( i=0; i<numBins; i++ )
+                                    {
+                                        const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                        auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                        const auto distance = std::distance( framesBegin, nit );
+                                        if( distance >= m_frameSortData.minBinVal ) break;
+                                        framesBegin = nit;
+                                    }
+                                    for( int64_t j=numBins-1; j>i; j-- )
+                                    {
+                                        const auto nextBinVal = tmin + ( j-1 ) * zmax / numBins;
+                                        auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                        const auto distance = std::distance( nit, framesEnd );
+                                        if( distance >= m_frameSortData.minBinVal ) break;
+                                        framesEnd = nit;
+                                    }
+                                }
+
+                                tmin = *framesBegin;
+                                tmax = *(framesEnd-1);
+                            }
+
+                            if( m_frameSortData.logTime )
+                            {
+                                const auto tMinLog = log10( tmin );
+                                const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                                auto fit = framesBegin;
+                                for( int64_t i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                    auto nit = std::lower_bound( fit, framesEnd, nextBinVal );
+                                    bins[i] = std::distance( fit, nit );
+                                    fit = nit;
+                                }
+                                bins[numBins-1] += std::distance( fit, framesEnd );
+                            }
+                            else
+                            {
+                                const auto zmax = tmax - tmin;
+                                auto fit = framesBegin;
+                                for( int64_t i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( fit, framesEnd, nextBinVal );
+                                    bins[i] = std::distance( fit, nit );
+                                    fit = nit;
+                                }
+                                bins[numBins-1] += std::distance( fit, framesEnd );
+                            }
+
+                            int64_t maxVal = bins[0];
+                            for( int i=1; i<numBins; i++ )
+                            {
+                                maxVal = std::max( maxVal, bins[i] );
+                            }
+
+                            TextFocused( "Max counts:", RealToString( maxVal, true ) );
+
+                            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+                            ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );
+                            ImGui::SameLine();
+                            ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                            ImGui::SameLine();
+                            ImGui::TextUnformatted( "Average time" );
+                            ImGui::SameLine();
+                            ImGui::Spacing();
+                            ImGui::SameLine();
+                            ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                            ImGui::SameLine();
+                            ImGui::TextUnformatted( "Median time" );
+                            ImGui::PopStyleVar();
+
+                            const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
+                            const auto wpos = ImGui::GetCursorScreenPos();
+
+                            ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
+                            const bool hover = ImGui::IsItemHovered();
+
+                            auto draw = ImGui::GetWindowDrawList();
+                            draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
+                            draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
+
+                            if( m_frameSortData.logVal )
+                            {
+                                const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
+                                for( int i=0; i<numBins; i++ )
+                                {
+                                    const auto val = bins[i];
+                                    if( val > 0 )
+                                    {
+                                        draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFF22DDDD );
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                const auto hAdj = double( Height - 4 ) / maxVal;
+                                for( int i=0; i<numBins; i++ )
+                                {
+                                    const auto val = bins[i];
+                                    if( val > 0 )
+                                    {
+                                        draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - val * hAdj ), 0xFF22DDDD );
+                                    }
+                                }
+                            }
+
+                            const auto xoff = 2;
+                            const auto yoff = Height + 1;
+
+                            if( m_frameSortData.logTime )
+                            {
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
+                                const auto start = int( floor( ltmin ) );
+                                const auto end = int( ceil( ltmax ) );
+
+                                const auto range = ltmax - ltmin;
+                                const auto step = w / range;
+                                auto offset = start - ltmin;
+                                int tw = 0;
+                                int tx = 0;
+
+                                auto tt = int64_t( pow( 10, start ) );
+
+                                static const double logticks[] = { log10( 2 ), log10( 3 ), log10( 4 ), log10( 5 ), log10( 6 ), log10( 7 ), log10( 8 ), log10( 9 ) };
+
+                                for( int i=start; i<=end; i++ )
+                                {
+                                    const auto x = ( i - start + offset ) * step;
+
+                                    if( x >= 0 )
+                                    {
+                                        draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF );
+                                        if( tw == 0 || x > tx + tw + ty * 1.1 )
+                                        {
+                                            tx = x;
+                                            auto txt = TimeToString( tt );
+                                            draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                            tw = ImGui::CalcTextSize( txt ).x;
+                                        }
+                                    }
+
+                                    for( int j=0; j<8; j++ )
+                                    {
+                                        const auto xoff = x + logticks[j] * step;
+                                        if( xoff >= 0 )
+                                        {
+                                            draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + round( ty * 0.25 ) ), 0x66FFFFFF );
+                                        }
+                                    }
+
+                                    tt *= 10;
+                                }
+                            }
+                            else
+                            {
+                                const auto pxns = numBins / double( tmax - tmin );
+                                const auto nspx = 1.0 / pxns;
+                                const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
+                                const auto step = pow( 10, scale );
+
+                                const auto dx = step * pxns;
+                                double x = 0;
+                                int tw = 0;
+                                int tx = 0;
+
+                                const auto sstep = step / 10.0;
+                                const auto sdx = dx / 10.0;
+
+                                static const double linelen[] = { 0.5, 0.25, 0.25, 0.25, 0.25, 0.375, 0.25, 0.25, 0.25, 0.25 };
+
+                                int64_t tt = int64_t( ceil( tmin / sstep ) * sstep );
+                                const auto diff = tmin / sstep - int64_t( tmin / sstep );
+                                const auto xo = ( diff == 0 ? 0 : ( ( 1 - diff ) * sstep * pxns ) ) + xoff;
+                                int iter = int( ceil( ( tmin - int64_t( tmin / step ) * step ) / sstep ) );
+
+                                while( x < numBins )
+                                {
+                                    draw->AddLine( wpos + ImVec2( xo + x, yoff ), wpos + ImVec2( xo + x, yoff + round( ty * linelen[iter] ) ), 0x66FFFFFF );
+                                    if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 1.1 ) )
+                                    {
+                                        tx = x;
+                                        auto txt = TimeToString( tt );
+                                        draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                        tw = ImGui::CalcTextSize( txt ).x;
+                                    }
+
+                                    iter = ( iter + 1 ) % 10;
+                                    x += sdx;
+                                    tt += sstep;
+                                }
+                            }
+
+                            if( m_frameSortData.drawAvgMed )
+                            {
+                                float ta, tm;
+                                if( m_frameSortData.logTime )
+                                {
+                                    const auto ltmin = log10( tmin );
+                                    const auto ltmax = log10( tmax );
+
+                                    ta = ( log10( m_frameSortData.average ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                                    tm = ( log10( m_frameSortData.median ) - ltmin ) / float( ltmax - ltmin ) * numBins;
+                                }
+                                else
+                                {
+                                    ta = ( m_frameSortData.average - tmin ) / float( tmax - tmin ) * numBins;
+                                    tm = ( m_frameSortData.median - tmin ) / float( tmax - tmin ) * numBins;
+                                }
+                                ta = round( ta );
+                                tm = round( tm );
+
+                                if( ta == tm )
+                                {
+                                    draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFFFF88FF );
+                                }
+                                else
+                                {
+                                    draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFF4444FF );
+                                    draw->AddLine( ImVec2( wpos.x + tm, wpos.y ), ImVec2( wpos.x + tm, wpos.y+Height-2 ), 0xFFFF8844 );
+                                }
+                            }
+
+                            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
+                            {
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
+
+                                auto& io = ImGui::GetIO();
+                                draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
+
+                                const auto bin = double( io.MousePos.x - wpos.x - 2 );
+                                int64_t t0, t1;
+                                if( m_frameSortData.logTime )
+                                {
+                                    t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
+
+                                    // Hackfix for inability to select data in last bin.
+                                    // A proper solution would be nice.
+                                    if( bin+1 == numBins )
+                                    {
+                                        t1 = tmax;
+                                    }
+                                    else
+                                    {
+                                        t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
+                                    }
+                                }
+                                else
+                                {
+                                    t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
+                                    t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
+                                }
+
+                                ImGui::BeginTooltip();
+                                TextDisabledUnformatted( "Time range:" );
+                                ImGui::SameLine();
+                                ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
+                                ImGui::SameLine();
+                                ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( round( 1000000000.0 / t0 ), true ), RealToString( round( 1000000000.0 / t1 ), true ) );
+                                TextFocused( "Count:", RealToString( bins[bin], true ) );
+                                ImGui::EndTooltip();
+                            }
+
+                            if( m_frameHover != -1 )
+                            {
+                                const auto frameTime = m_worker.GetFrameTime( *m_frames, m_frameHover );
+                                float framePos;
+                                if( m_frameSortData.logTime )
+                                {
+                                    const auto ltmin = log10( tmin );
+                                    const auto ltmax = log10( tmax );
+                                    framePos = round( ( log10( frameTime ) - ltmin ) / float( ltmax - ltmin ) * numBins );
+                                }
+                                else
+                                {
+                                    framePos = round( ( frameTime - tmin ) / float( tmax - tmin ) * numBins );
+                                }
+                                const auto c = uint32_t( ( sin( s_time * 10 ) * 0.25 + 0.75 ) * 255 );
+                                const auto color = 0xFF000000 | ( c << 16 ) | ( c << 8 ) | c;
+                                draw->AddLine( ImVec2( wpos.x + framePos, wpos.y ), ImVec2( wpos.x + framePos, wpos.y+Height-2 ), color );
+                            }
+                        }
+                    }
+                }
+
+                ImGui::TreePop();
+            }
+        }
+        ImGui::TreePop();
+    }
+
     if( ficnt != 0 )
     {
+        ImGui::Separator();
 #ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_PLAY " Playback" ) )
 #else
@@ -8351,500 +8859,20 @@ void View::DrawInfo()
         }
     }
 
-    const auto fsz = m_worker.GetFullFrameCount( *m_frames );
-    if( fsz != 0 )
-    {
-        ImGui::Separator();
-        TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", m_frames->continuous ? "continuous" : "discontinuous" );
-        ImGui::SameLine();
-        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
-        {
-            auto& frames = m_worker.GetFrames();
-            for( auto& fd : frames )
-            {
-                bool isSelected = m_frames == fd;
-                if( ImGui::Selectable( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), isSelected ) )
-                {
-                    m_frames = fd;
-                }
-                if( isSelected )
-                {
-                    ImGui::SetItemDefaultFocus();
-                }
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size(), true ) );
-            }
-            ImGui::EndCombo();
-        }
-        ImGui::PopStyleVar();
-        ImGui::SameLine();
-        SmallCheckbox( "Limit to view", &m_frameSortData.limitToView );
-
-        const auto frameRange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
-        if( m_frameSortData.frameSet != m_frames || ( m_frameSortData.limitToView && m_frameSortData.limitRange != frameRange ) || ( !m_frameSortData.limitToView && m_frameSortData.limitRange.first != -1 ) )
-        {
-            m_frameSortData.frameSet = m_frames;
-            m_frameSortData.frameNum = 0;
-            m_frameSortData.data.clear();
-            m_frameSortData.total = 0;
-        }
-        bool recalc = false;
-        int64_t total = 0;
-        if( !m_frameSortData.limitToView )
-        {
-            if( m_frameSortData.frameNum != fsz || m_frameSortData.limitRange.first != -1 )
-            {
-                auto& vec = m_frameSortData.data;
-                vec.reserve( fsz );
-                const auto midSz = vec.size();
-                total = m_frameSortData.total;
-                for( size_t i=m_frameSortData.frameNum; i<fsz; i++ )
-                {
-                    const auto t = m_worker.GetFrameTime( *m_frames, i );
-                    if( t > 0 )
-                    {
-                        vec.emplace_back( t );
-                        total += t;
-                    }
-                }
-                auto mid = vec.begin() + midSz;
-                pdqsort_branchless( mid, vec.end() );
-                std::inplace_merge( vec.begin(), mid, vec.end() );
-                recalc = true;
-                m_frameSortData.limitRange.first = -1;
-            }
-        }
-        else
-        {
-            if( m_frameSortData.limitRange != frameRange )
-            {
-                auto& vec = m_frameSortData.data;
-                assert( vec.empty() );
-                vec.reserve( frameRange.second - frameRange.first );
-                for( int i=frameRange.first; i<frameRange.second; i++ )
-                {
-                    const auto t = m_worker.GetFrameTime( *m_frames, i );
-                    if( t > 0 )
-                    {
-                        vec.emplace_back( t );
-                        total += t;
-                    }
-                }
-                pdqsort_branchless( vec.begin(), vec.end() );
-                recalc = true;
-                m_frameSortData.limitRange = frameRange;
-            }
-        }
-        if( recalc )
-        {
-            auto& vec = m_frameSortData.data;
-            const auto vsz = vec.size();
-            m_frameSortData.average = float( total ) / vsz;
-            m_frameSortData.median = vec[vsz/2];
-            m_frameSortData.total = total;
-            m_frameSortData.frameNum = fsz;
-        }
-
-        const auto profileSpan = m_worker.GetLastTime() - m_worker.GetTimeBegin();
-        TextFocused( "Count:", RealToString( fsz, true ) );
-        TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%.2f%% of profile time span)", m_frameSortData.total / float( profileSpan ) * 100.f );
-        TextFocused( "Average frame time:", TimeToString( m_frameSortData.average ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ), true ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.average, true ) );
-            ImGui::EndTooltip();
-        }
-        TextFocused( "Median frame time:", TimeToString( m_frameSortData.median ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.median ), true ) );
-        if( ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.median, true ) );
-            ImGui::EndTooltip();
-        }
-
-        if( ImGui::TreeNode( "Histogram" ) )
-        {
-            const auto ty = ImGui::GetFontSize();
-
-            auto& frames = m_frameSortData.data;
-            auto tmin = frames.front();
-            auto tmax = frames.back();
-
-            if( tmin != std::numeric_limits<int64_t>::max() )
-            {
-                TextDisabledUnformatted( "Minimum values in bin:" );
-                ImGui::SameLine();
-                ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
-                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 1, 1 ) );
-                ImGui::InputInt( "##minBinVal", &m_frameSortData.minBinVal );
-                if( m_frameSortData.minBinVal < 1 ) m_frameSortData.minBinVal = 1;
-                ImGui::SameLine();
-                if( ImGui::Button( "Reset" ) ) m_frameSortData.minBinVal = 1;
-                ImGui::PopStyleVar();
-
-                SmallCheckbox( "Log values", &m_frameSortData.logVal );
-                ImGui::SameLine();
-                SmallCheckbox( "Log time", &m_frameSortData.logTime );
-
-                TextDisabledUnformatted( "Time range:" );
-                ImGui::SameLine();
-                ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
-
-                TextDisabledUnformatted( "FPS range:" );
-                ImGui::SameLine();
-                ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ), true ), RealToString( round( 1000000000.0 / tmax ), true ) );
-
-                if( tmax - tmin > 0 )
-                {
-                    const auto w = ImGui::GetContentRegionAvail().x;
-
-                    const auto numBins = int64_t( w - 4 );
-                    if( numBins > 1 )
-                    {
-                        if( numBins > m_frameSortData.numBins )
-                        {
-                            m_frameSortData.numBins = numBins;
-                            m_frameSortData.bins = std::make_unique<int64_t[]>( numBins );
-                        }
-
-                        const auto& bins = m_frameSortData.bins;
-
-                        memset( bins.get(), 0, sizeof( int64_t ) * numBins );
-
-                        auto framesBegin = frames.begin();
-                        auto framesEnd = frames.end();
-                        while( framesBegin != framesEnd && *framesBegin == 0 ) ++framesBegin;
-
-                        if( m_frameSortData.minBinVal > 1 )
-                        {
-                            if( m_frameSortData.logTime )
-                            {
-                                const auto tMinLog = log10( tmin );
-                                const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
-                                int64_t i;
-                                for( i=0; i<numBins; i++ )
-                                {
-                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
-                                    const auto distance = std::distance( framesBegin, nit );
-                                    if( distance >= m_frameSortData.minBinVal ) break;
-                                    framesBegin = nit;
-                                }
-                                for( int64_t j=numBins-1; j>i; j-- )
-                                {
-                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( j-1 ) * zmax ) );
-                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
-                                    const auto distance = std::distance( nit, framesEnd );
-                                    if( distance >= m_frameSortData.minBinVal ) break;
-                                    framesEnd = nit;
-                                }
-                            }
-                            else
-                            {
-                                const auto zmax = tmax - tmin;
-                                int64_t i;
-                                for( i=0; i<numBins; i++ )
-                                {
-                                    const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
-                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
-                                    const auto distance = std::distance( framesBegin, nit );
-                                    if( distance >= m_frameSortData.minBinVal ) break;
-                                    framesBegin = nit;
-                                }
-                                for( int64_t j=numBins-1; j>i; j-- )
-                                {
-                                    const auto nextBinVal = tmin + ( j-1 ) * zmax / numBins;
-                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
-                                    const auto distance = std::distance( nit, framesEnd );
-                                    if( distance >= m_frameSortData.minBinVal ) break;
-                                    framesEnd = nit;
-                                }
-                            }
-
-                            tmin = *framesBegin;
-                            tmax = *(framesEnd-1);
-                        }
-
-                        if( m_frameSortData.logTime )
-                        {
-                            const auto tMinLog = log10( tmin );
-                            const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
-                            auto fit = framesBegin;
-                            for( int64_t i=0; i<numBins; i++ )
-                            {
-                                const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                                auto nit = std::lower_bound( fit, framesEnd, nextBinVal );
-                                bins[i] = std::distance( fit, nit );
-                                fit = nit;
-                            }
-                            bins[numBins-1] += std::distance( fit, framesEnd );
-                        }
-                        else
-                        {
-                            const auto zmax = tmax - tmin;
-                            auto fit = framesBegin;
-                            for( int64_t i=0; i<numBins; i++ )
-                            {
-                                const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
-                                auto nit = std::lower_bound( fit, framesEnd, nextBinVal );
-                                bins[i] = std::distance( fit, nit );
-                                fit = nit;
-                            }
-                            bins[numBins-1] += std::distance( fit, framesEnd );
-                        }
-
-                        int64_t maxVal = bins[0];
-                        for( int i=1; i<numBins; i++ )
-                        {
-                            maxVal = std::max( maxVal, bins[i] );
-                        }
-
-                        TextFocused( "Max counts:", RealToString( maxVal, true ) );
-
-                        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-                        ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );
-                        ImGui::SameLine();
-                        ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
-                        ImGui::SameLine();
-                        ImGui::TextUnformatted( "Average time" );
-                        ImGui::SameLine();
-                        ImGui::Spacing();
-                        ImGui::SameLine();
-                        ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
-                        ImGui::SameLine();
-                        ImGui::TextUnformatted( "Median time" );
-                        ImGui::PopStyleVar();
-
-                        const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
-                        const auto wpos = ImGui::GetCursorScreenPos();
-
-                        ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
-                        const bool hover = ImGui::IsItemHovered();
-
-                        auto draw = ImGui::GetWindowDrawList();
-                        draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x22FFFFFF );
-                        draw->AddRect( wpos, wpos + ImVec2( w, Height ), 0x88FFFFFF );
-
-                        if( m_frameSortData.logVal )
-                        {
-                            const auto hAdj = double( Height - 4 ) / log10( maxVal + 1 );
-                            for( int i=0; i<numBins; i++ )
-                            {
-                                const auto val = bins[i];
-                                if( val > 0 )
-                                {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - log10( val + 1 ) * hAdj ), 0xFF22DDDD );
-                                }
-                            }
-                        }
-                        else
-                        {
-                            const auto hAdj = double( Height - 4 ) / maxVal;
-                            for( int i=0; i<numBins; i++ )
-                            {
-                                const auto val = bins[i];
-                                if( val > 0 )
-                                {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - val * hAdj ), 0xFF22DDDD );
-                                }
-                            }
-                        }
-
-                        const auto xoff = 2;
-                        const auto yoff = Height + 1;
-
-                        if( m_frameSortData.logTime )
-                        {
-                            const auto ltmin = log10( tmin );
-                            const auto ltmax = log10( tmax );
-                            const auto start = int( floor( ltmin ) );
-                            const auto end = int( ceil( ltmax ) );
-
-                            const auto range = ltmax - ltmin;
-                            const auto step = w / range;
-                            auto offset = start - ltmin;
-                            int tw = 0;
-                            int tx = 0;
-
-                            auto tt = int64_t( pow( 10, start ) );
-
-                            static const double logticks[] = { log10( 2 ), log10( 3 ), log10( 4 ), log10( 5 ), log10( 6 ), log10( 7 ), log10( 8 ), log10( 9 ) };
-
-                            for( int i=start; i<=end; i++ )
-                            {
-                                const auto x = ( i - start + offset ) * step;
-
-                                if( x >= 0 )
-                                {
-                                    draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF );
-                                    if( tw == 0 || x > tx + tw + ty * 1.1 )
-                                    {
-                                        tx = x;
-                                        auto txt = TimeToString( tt );
-                                        draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
-                                        tw = ImGui::CalcTextSize( txt ).x;
-                                    }
-                                }
-
-                                for( int j=0; j<8; j++ )
-                                {
-                                    const auto xoff = x + logticks[j] * step;
-                                    if( xoff >= 0 )
-                                    {
-                                        draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + round( ty * 0.25 ) ), 0x66FFFFFF );
-                                    }
-                                }
-
-                                tt *= 10;
-                            }
-                        }
-                        else
-                        {
-                            const auto pxns = numBins / double( tmax - tmin );
-                            const auto nspx = 1.0 / pxns;
-                            const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
-                            const auto step = pow( 10, scale );
-
-                            const auto dx = step * pxns;
-                            double x = 0;
-                            int tw = 0;
-                            int tx = 0;
-
-                            const auto sstep = step / 10.0;
-                            const auto sdx = dx / 10.0;
-
-                            static const double linelen[] = { 0.5, 0.25, 0.25, 0.25, 0.25, 0.375, 0.25, 0.25, 0.25, 0.25 };
-
-                            int64_t tt = int64_t( ceil( tmin / sstep ) * sstep );
-                            const auto diff = tmin / sstep - int64_t( tmin / sstep );
-                            const auto xo = ( diff == 0 ? 0 : ( ( 1 - diff ) * sstep * pxns ) ) + xoff;
-                            int iter = int( ceil( ( tmin - int64_t( tmin / step ) * step ) / sstep ) );
-
-                            while( x < numBins )
-                            {
-                                draw->AddLine( wpos + ImVec2( xo + x, yoff ), wpos + ImVec2( xo + x, yoff + round( ty * linelen[iter] ) ), 0x66FFFFFF );
-                                if( iter == 0 && ( tw == 0 || x > tx + tw + ty * 1.1 ) )
-                                {
-                                    tx = x;
-                                    auto txt = TimeToString( tt );
-                                    draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
-                                    tw = ImGui::CalcTextSize( txt ).x;
-                                }
-
-                                iter = ( iter + 1 ) % 10;
-                                x += sdx;
-                                tt += sstep;
-                            }
-                        }
-
-                        if( m_frameSortData.drawAvgMed )
-                        {
-                            float ta, tm;
-                            if( m_frameSortData.logTime )
-                            {
-                                const auto ltmin = log10( tmin );
-                                const auto ltmax = log10( tmax );
-
-                                ta = ( log10( m_frameSortData.average ) - ltmin ) / float( ltmax - ltmin ) * numBins;
-                                tm = ( log10( m_frameSortData.median ) - ltmin ) / float( ltmax - ltmin ) * numBins;
-                            }
-                            else
-                            {
-                                ta = ( m_frameSortData.average - tmin ) / float( tmax - tmin ) * numBins;
-                                tm = ( m_frameSortData.median - tmin ) / float( tmax - tmin ) * numBins;
-                            }
-                            ta = round( ta );
-                            tm = round( tm );
-
-                            if( ta == tm )
-                            {
-                                draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFFFF88FF );
-                            }
-                            else
-                            {
-                                draw->AddLine( ImVec2( wpos.x + ta, wpos.y ), ImVec2( wpos.x + ta, wpos.y+Height-2 ), 0xFF4444FF );
-                                draw->AddLine( ImVec2( wpos.x + tm, wpos.y ), ImVec2( wpos.x + tm, wpos.y+Height-2 ), 0xFFFF8844 );
-                            }
-                        }
-
-                        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 2, 2 ), wpos + ImVec2( w-2, Height + round( ty * 1.5 ) ) ) )
-                        {
-                            const auto ltmin = log10( tmin );
-                            const auto ltmax = log10( tmax );
-
-                            auto& io = ImGui::GetIO();
-                            draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
-
-                            const auto bin = double( io.MousePos.x - wpos.x - 2 );
-                            int64_t t0, t1;
-                            if( m_frameSortData.logTime )
-                            {
-                                t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
-
-                                // Hackfix for inability to select data in last bin.
-                                // A proper solution would be nice.
-                                if( bin+1 == numBins )
-                                {
-                                    t1 = tmax;
-                                }
-                                else
-                                {
-                                    t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
-                                }
-                            }
-                            else
-                            {
-                                t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
-                                t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
-                            }
-
-                            ImGui::BeginTooltip();
-                            TextDisabledUnformatted( "Time range:" );
-                            ImGui::SameLine();
-                            ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
-                            ImGui::SameLine();
-                            ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( round( 1000000000.0 / t0 ), true ), RealToString( round( 1000000000.0 / t1 ), true ) );
-                            TextFocused( "Count:", RealToString( bins[bin], true ) );
-                            ImGui::EndTooltip();
-                        }
-
-                        if( m_frameHover != -1 )
-                        {
-                            const auto frameTime = m_worker.GetFrameTime( *m_frames, m_frameHover );
-                            float framePos;
-                            if( m_frameSortData.logTime )
-                            {
-                                const auto ltmin = log10( tmin );
-                                const auto ltmax = log10( tmax );
-                                framePos = round( ( log10( frameTime ) - ltmin ) / float( ltmax - ltmin ) * numBins );
-                            }
-                            else
-                            {
-                                framePos = round( ( frameTime - tmin ) / float( tmax - tmin ) * numBins );
-                            }
-                            const auto c = uint32_t( ( sin( s_time * 10 ) * 0.25 + 0.75 ) * 255 );
-                            const auto color = 0xFF000000 | ( c << 16 ) | ( c << 8 ) | c;
-                            draw->AddLine( ImVec2( wpos.x + framePos, wpos.y ), ImVec2( wpos.x + framePos, wpos.y+Height-2 ), color );
-                        }
-                    }
-                }
-            }
-
-            ImGui::TreePop();
-        }
-    }
     ImGui::Separator();
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );
+
+    auto& appInfo = m_worker.GetAppInfo();
+    if( !appInfo.empty() )
+    {
+        ImGui::Separator();
+        TextDisabledUnformatted( "Application info:" );
+        for( auto& v : appInfo )
+        {
+            ImGui::TextUnformatted( m_worker.GetString( v ) );
+        }
+    }
+
     auto& crash = m_worker.GetCrashEvent();
     if( crash.thread != 0 )
     {
@@ -8893,17 +8921,6 @@ void View::DrawInfo()
             {
                 CallstackTooltip( crash.callstack );
             }
-        }
-    }
-
-    auto& appInfo = m_worker.GetAppInfo();
-    if( !appInfo.empty() )
-    {
-        ImGui::Separator();
-        TextDisabledUnformatted( "Application info:" );
-        for( auto& v : appInfo )
-        {
-            ImGui::TextUnformatted( m_worker.GetString( v ) );
         }
     }
 

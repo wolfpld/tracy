@@ -36,6 +36,7 @@ typedef const void* TracyCZoneCtx;
 #define TracyCMessageL(x)
 #define TracyCMessageC(x,y,z)
 #define TracyCMessageLC(x,y)
+#define TracyCAppInfo(x,y)
 
 #else
 
@@ -120,12 +121,14 @@ void ___tracy_emit_message( const char* txt, size_t size );
 void ___tracy_emit_messageL( const char* txt );
 void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color );
 void ___tracy_emit_messageLC( const char* txt, uint32_t color );
+void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 #define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
 #define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size );
 #define TracyCMessageL( txt ) ___tracy_emit_messageL( txt );
 #define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color );
 #define TracyCMessageLC( txt, color ) ___tracy_emit_messageLC( txt, color );
+#define TracyCAppInfo( txt, color ) ___tracy_emit_message_appinfo( txt, color );
 
 
 #ifdef TRACY_HAS_CALLSTACK

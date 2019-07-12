@@ -1338,6 +1338,11 @@ void Profiler::Worker()
         for( auto& item : m_deferredQueue )
         {
             const auto idx = MemRead<uint8_t>( &item.hdr.idx );
+            if( (QueueType)idx == QueueType::MessageAppInfo )
+            {
+                uint64_t ptr = MemRead<uint64_t>( &item.message.text );
+                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+            }
             AppendData( &item, QueueDataSize[idx] );
         }
         m_deferredLock.unlock();
@@ -1591,6 +1596,9 @@ static void FreeAssociatedMemory( const QueueItem& item )
         break;
     case QueueType::Message:
     case QueueType::MessageColor:
+#ifndef TRACY_ON_DEMAND
+    case QueueType::MessageAppInfo:
+#endif
         ptr = MemRead<uint64_t>( &item.message.text );
         tracy_free( (void*)ptr );
         break;
@@ -1617,6 +1625,11 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.frameImage.image );
         tracy_free( (void*)ptr );
         break;
+#ifdef TRACY_ON_DEMAND
+    case QueueType::MessageAppInfo:
+        // Don't free memory associated with deferred messages.
+        break;
+#endif
     default:
         assert( false );
         break;
@@ -1680,6 +1693,13 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     ptr = MemRead<uint64_t>( &item->message.text );
                     SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                     tracy_free( (void*)ptr );
+                    break;
+                case QueueType::MessageAppInfo:
+                    ptr = MemRead<uint64_t>( &item->message.text );
+                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+#ifndef TRACY_ON_DEMAND
+                    tracy_free( (void*)ptr );
+#endif
                     break;
                 case QueueType::ZoneBeginAllocSrcLoc:
                 case QueueType::ZoneBeginAllocSrcLocCallstack:
@@ -2445,6 +2465,7 @@ void ___tracy_emit_message( const char* txt, size_t size ) { tracy::Profiler::Me
 void ___tracy_emit_messageL( const char* txt ) { tracy::Profiler::Message( txt ); }
 void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color ) { tracy::Profiler::MessageColor( txt, size, color ); }
 void ___tracy_emit_messageLC( const char* txt, uint32_t color ) { tracy::Profiler::MessageColor( txt, color ); }
+void ___tracy_emit_message_appinfo( const char* txt, size_t size ) { tracy::Profiler::MessageAppInfo( txt, size ); }
 
 #ifdef __cplusplus
 }

@@ -40,6 +40,7 @@
 #define TracyMessageL(x)
 #define TracyMessageC(x,y,z)
 #define TracyMessageLC(x,y)
+#define TracyAppInfo(x,y)
 
 #define TracyAlloc(x,y)
 #define TracyFree(x)
@@ -104,6 +105,7 @@
 #define TracyMessageL( txt ) tracy::Profiler::Message( txt );
 #define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color );
 #define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color );
+#define TracyAppInfo( txt, size ) tracy::Profiler::MessageAppInfo( txt, size );
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK );

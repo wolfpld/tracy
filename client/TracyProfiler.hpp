@@ -335,6 +335,28 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )
+    {
+        Magic magic;
+        const auto thread = GetThreadHandle();
+        auto token = GetToken();
+        auto ptr = (char*)tracy_malloc( size+1 );
+        memcpy( ptr, txt, size );
+        ptr[size] = '\0';
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        MemWrite( &item->hdr.type, QueueType::MessageAppInfo );
+        MemWrite( &item->message.time, GetTime() );
+        MemWrite( &item->message.thread, thread );
+        MemWrite( &item->message.text, (uint64_t)ptr );
+
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
     {
 #ifdef TRACY_ON_DEMAND

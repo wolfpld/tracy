@@ -8895,6 +8895,18 @@ void View::DrawInfo()
             }
         }
     }
+
+    auto& appInfo = m_worker.GetAppInfo();
+    if( !appInfo.empty() )
+    {
+        ImGui::Separator();
+        TextDisabledUnformatted( "Application info:" );
+        for( auto& v : appInfo )
+        {
+            ImGui::TextUnformatted( m_worker.GetString( v ) );
+        }
+    }
+
     ImGui::End();
 }
 

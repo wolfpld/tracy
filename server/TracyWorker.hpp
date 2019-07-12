@@ -279,6 +279,7 @@ public:
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
     const MemData& GetMemData() const { return m_data.memory; }
     const Vector<FrameImage*>& GetFrameImages() const { return m_data.frameImage; }
+    const Vector<StringRef>& GetAppInfo() const { return m_data.appInfo; }
 
     const VarArray<CallstackFrameId>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
     const CallstackFrameData* GetCallstackFrame( const CallstackFrameId& ptr ) const;

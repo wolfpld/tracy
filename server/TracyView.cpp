@@ -5679,7 +5679,7 @@ void View::DrawOptions()
 void View::DrawMessages()
 {
     ImGui::SetNextWindowSize( ImVec2( 1200, 600 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Messages", &m_showMessages );
+    ImGui::Begin( "Messages", &m_showMessages, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
     size_t tsz = 0;
     for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
@@ -5735,6 +5735,7 @@ void View::DrawMessages()
     }
 
     ImGui::Separator();
+    ImGui::BeginChild( "##messages" );
     const auto w = ImGui::GetWindowWidth();
     static bool widthSet = false;
     ImGui::Columns( 3 );
@@ -5786,6 +5787,7 @@ void View::DrawMessages()
         }
     }
     ImGui::EndColumns();
+    ImGui::EndChild();
     ImGui::End();
 }
 

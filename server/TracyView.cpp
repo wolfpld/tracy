@@ -105,6 +105,7 @@ View::View( const char* addr, ImFont* fixedWidth, ImFont* bigFont, SetTitleCallb
     , m_staticView( false )
     , m_pause( false )
     , m_frames( nullptr )
+    , m_messagesScrollBottom( true )
     , m_textEditorFont( fixedWidth )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
@@ -120,6 +121,7 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* bigFont, SetTitleCallback s
     , m_staticView( true )
     , m_pause( true )
     , m_frames( m_worker.GetFramesBase() )
+    , m_messagesScrollBottom( false )
     , m_textEditorFont( fixedWidth )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
@@ -5756,7 +5758,8 @@ void View::DrawMessages()
     ImGui::NextColumn();
     ImGui::Separator();
 
-    for( const auto& v : m_worker.GetMessages() )
+    const auto& msgs = m_worker.GetMessages();
+    for( const auto& v : msgs )
     {
         if( VisibleMsgThread( v->thread ) )
         {
@@ -5786,6 +5789,22 @@ void View::DrawMessages()
             ImGui::NextColumn();
         }
     }
+
+    const auto maxScroll = ImGui::GetScrollMaxY();
+    if( maxScroll != 0 )
+    {
+        const auto msgssize = msgs.size();
+        if( m_prevMessages == msgssize )
+        {
+            m_messagesScrollBottom = ImGui::GetScrollY() == maxScroll;
+        }
+        else
+        {
+            m_prevMessages = msgssize;
+            if( m_messagesScrollBottom ) ImGui::SetScrollHereY();
+        }
+    }
+
     ImGui::EndColumns();
     ImGui::EndChild();
     ImGui::End();

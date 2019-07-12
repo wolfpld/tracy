@@ -265,6 +265,8 @@ private:
     uint32_t m_lockInfoWindow = InvalidId;
     ZoneEvent* m_zoneHover = nullptr;
     int m_frameHover = -1;
+    bool m_messagesScrollBottom;
+    size_t m_prevMessages = 0;
 
     Region m_highlight;
     Region m_highlightZoom;

@@ -1237,6 +1237,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 4, 11 ) )
+    {
+        f.Read( sz );
+        if( sz > 0 )
+        {
+            m_data.appInfo.reserve_exact( sz, m_slab );
+            f.Read( m_data.appInfo.data(), sizeof( m_data.appInfo[0] ) * sz );
+        }
+    }
+
     if( fileVer >= FileVersion( 0, 4, 9 ) )
     {
         s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
@@ -4427,6 +4437,10 @@ void Worker::Write( FileWrite& f )
         f.Write( &frame.second->size, sizeof( frame.second->size ) );
         f.Write( frame.second->data, sizeof( CallstackFrame ) * frame.second->size );
     }
+
+    sz = m_data.appInfo.size();
+    f.Write( &sz, sizeof( sz ) );
+    f.Write( m_data.appInfo.data(), sizeof( m_data.appInfo[0] ) * sz );
 
     sz = m_data.frameImage.size();
     f.Write( &sz, sizeof( sz ) );

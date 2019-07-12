@@ -711,6 +711,13 @@ Fast navigation in large data sets and correlating zones with what was happening
 
 If you want to include color coding of the messages (for example to make critical messages easily visible), you can use \texttt{TracyMessageC(text, size, color)} or \texttt{TracyMessageLC(text, color)} macros.
 
+\subsubsection{Application information}
+\label{appinfo}
+
+Tracy can collect additional information about the profiled application, which will be available in the trace description. This can include data such as the source repository revision, the environment in which application is running (dev/prod), etc.
+
+Use the \texttt{TracyAppInfo(text, size)} macro to report the data.
+
 \subsection{Memory profiling}
 \label{memoryprofiling}
 
@@ -1046,6 +1053,7 @@ To send additional markup in form of plot data points or messages use the follow
 \item \texttt{TracyCMessageL(txt)}
 \item \texttt{TracyCMessageC(txt, size, color)}
 \item \texttt{TracyCMessageLC(txt, color)}
+\item \texttt{TracyCAppInfo(txt, size)}
 \end{itemize}
 
 Consult sections~\ref{plottingdata} and~\ref{messagelog} for more information.
@@ -1784,9 +1792,9 @@ If frame images were captured (section~\ref{frameimages}), you will have option 
 
 There's also a section containing the selected frame set timing statistics and histogram\footnote{See section~\ref{findzone} for a description of the histogram. Note that there are subtle differences in the available functionality.}. As a convenience you can switch the active frame set here and limit the displayed frame statistics to the frame range visible on the screen.
 
-In this window you can view the information about the machine on which the profiled application was running. This includes the operating system, the used compiler, CPU name, amount of total available RAM, etc.
+In this window you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, amount of total available RAM, etc. If application information was provided (see section~\ref{appinfo}), it will also be displayed here.
 
-Here you will also be able to see the tombstone generated during an application's crash (section~\ref{crashhandling}). It provides you with information about the thread that has crashed, the crash reason and the crash call stack (section~\ref{callstackwindow}).
+In this place you will also be able to see the tombstone generated during an application's crash (section~\ref{crashhandling}). It provides you with information about the thread that has crashed, the crash reason and the crash call stack (section~\ref{callstackwindow}).
 
 \subsection{Zone information window}
 \label{zoneinfo}

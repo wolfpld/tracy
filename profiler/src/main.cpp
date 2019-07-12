@@ -449,7 +449,7 @@ int main( int argc, char** argv )
                 }
                 connHistVec = RebuildConnectionHistory( connHistMap );
 
-                view = std::make_unique<tracy::View>( addr, fixedWidth, SetWindowTitleCallback );
+                view = std::make_unique<tracy::View>( addr, fixedWidth, bigFont, SetWindowTitleCallback );
             }
             ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
             if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
@@ -463,10 +463,10 @@ int main( int argc, char** argv )
                         auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
                         if( f )
                         {
-                            loadThread = std::thread( [&view, f, &badVer, fixedWidth] {
+                            loadThread = std::thread( [&view, f, &badVer, fixedWidth, bigFont] {
                                 try
                                 {
-                                    view = std::make_unique<tracy::View>( *f, fixedWidth, SetWindowTitleCallback );
+                                    view = std::make_unique<tracy::View>( *f, fixedWidth, bigFont, SetWindowTitleCallback );
                                 }
                                 catch( const tracy::UnsupportedVersion& e )
                                 {
@@ -514,7 +514,7 @@ int main( int argc, char** argv )
                     if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
                     if( ImGui::Selectable( name->second.c_str(), &sel, flags ) && !loadThread.joinable() )
                     {
-                        view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, SetWindowTitleCallback );
+                        view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, bigFont, SetWindowTitleCallback );
                     }
                     ImGui::NextColumn();
                     const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;

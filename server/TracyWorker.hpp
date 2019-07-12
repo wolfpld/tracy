@@ -184,6 +184,7 @@ private:
         Vector<Vector<ZoneEvent*>> zoneVectorCache;
 
         Vector<FrameImage*> frameImage;
+        Vector<StringRef> appInfo;
 
         CrashEvent crashEvent;
     };
@@ -385,6 +386,7 @@ private:
     tracy_force_inline void ProcessMessageLiteral( const QueueMessage& ev );
     tracy_force_inline void ProcessMessageColor( const QueueMessageColor& ev );
     tracy_force_inline void ProcessMessageLiteralColor( const QueueMessageColor& ev );
+    tracy_force_inline void ProcessMessageAppInfo( const QueueMessage& ev );
     tracy_force_inline void ProcessGpuNewContext( const QueueGpuNewContext& ev );
     tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev );

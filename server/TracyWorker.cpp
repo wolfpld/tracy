@@ -2675,6 +2675,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MessageLiteralColor:
         ProcessMessageLiteralColor( ev.messageColor );
         break;
+    case QueueType::MessageAppInfo:
+        ProcessMessageAppInfo( ev.message );
+        break;
     case QueueType::GpuNewContext:
         ProcessGpuNewContext( ev.gpuNewContext );
         break;
@@ -3348,6 +3351,15 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColor& ev )
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, ev.thread );
+}
+
+void Worker::ProcessMessageAppInfo( const QueueMessage& ev )
+{
+    auto it = m_pendingCustomStrings.find( ev.text );
+    assert( it != m_pendingCustomStrings.end() );
+    m_data.appInfo.push_back( StringRef( StringRef::Type::Idx, it->second.idx ) );
+    m_data.lastTime = std::max( m_data.lastTime, TscTime( ev.time ) );
+    m_pendingCustomStrings.erase( it );
 }
 
 void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )

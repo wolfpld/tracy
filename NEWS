@@ -79,6 +79,7 @@ v0.5 (xxxx-xx-xx)
 - Message list will automatically scroll down to the most recent message.
   - Feature will disable when the list is scrolled by user.
   - To re-enable, scroll to the bottom of the list.
+- Message list can be now filtered.
 
 v0.4.1 (2018-12-30)
 -------------------

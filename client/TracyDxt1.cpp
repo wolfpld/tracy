@@ -616,11 +616,10 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
     __m256i mmb = _mm256_srli_epi64( _mm256_and_si256( mm2, mmmb ), 43 );
     __m256i mm3 = _mm256_or_si256( mmr, mmg );
     __m256i mm4 = _mm256_or_si256( mm3, mmb );
-    __m256i mm5 = _mm256_packus_epi32( mm4, mm4 );
-    __m256i mm6 = _mm256_packus_epi32( mm5, mm5 );
+    __m256i mm5 = _mm256_shuffle_epi8( mm4, _mm256_set1_epi32( 0x09080100 ) );
 
-    uint32_t minmax0 = _mm256_cvtsi256_si32( mm6 );
-    uint32_t minmax1 = _mm256_extract_epi32( mm6, 4 );
+    uint32_t minmax0 = _mm256_cvtsi256_si32( mm5 );
+    uint32_t minmax1 = _mm256_extract_epi32( mm5, 4 );
     uint32_t vp0 = _mm256_cvtsi256_si32( p );
     uint32_t vp1 = _mm256_extract_epi32( p, 4 );
 

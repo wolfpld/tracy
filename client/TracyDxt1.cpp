@@ -288,10 +288,7 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     __m128i p1 = _mm_or_si128( _mm_srai_epi32( p0, 6 ), _mm_srai_epi32( p0, 12 ) );
     __m128i p2 = _mm_or_si128( _mm_srai_epi32( p0, 18 ), p0 );
     __m128i p3 = _mm_or_si128( p1, p2 );
-    __m128i p4 = _mm_and_si128( p3, _mm_set1_epi32( 0xFF ) );
-
-    __m128i p5 = _mm_packus_epi32( p4, p4 );
-    __m128i p = _mm_packus_epi16( p5, p5 );
+    __m128i p =_mm_shuffle_epi8( p3, _mm_set1_epi32( 0x0C080400 ) );
 
     uint32_t vmin = _mm_cvtsi128_si32( min );
     uint32_t vmax = _mm_cvtsi128_si32( max );
@@ -605,10 +602,7 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
     __m256i p1 = _mm256_or_si256( _mm256_srai_epi32( p0, 6 ), _mm256_srai_epi32( p0, 12 ) );
     __m256i p2 = _mm256_or_si256( _mm256_srai_epi32( p0, 18 ), p0 );
     __m256i p3 = _mm256_or_si256( p1, p2 );
-    __m256i p4 = _mm256_and_si256( p3, _mm256_set1_epi32( 0xFF ) );
-
-    __m256i p5 = _mm256_packus_epi32( p4, p4 );
-    __m256i p = _mm256_packus_epi16( p5, p5 );
+    __m256i p =_mm256_shuffle_epi8( p3, _mm256_set1_epi32( 0x0C080400 ) );
 
     __m256i mmmr = _mm256_set_epi16( 0x0000, 0x0000, 0x0000, 0xF800, 0x0000, 0x0000, 0x0000, 0xF800, 0x0000, 0x0000, 0x0000, 0xF800, 0x0000, 0x0000, 0x0000, 0xF800 );
     __m256i mmmg = _mm256_set_epi16( 0x0000, 0x0000, 0xFC00, 0x0000, 0x0000, 0x0000, 0xFC00, 0x0000, 0x0000, 0x0000, 0xFC00, 0x0000, 0x0000, 0x0000, 0xFC00, 0x0000 );

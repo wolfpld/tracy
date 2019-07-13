@@ -460,12 +460,16 @@ To further reduce image data size, frame images are internally compressed using 
 \begin{tabular}[h]{c|c|c}
 \textbf{Implementation} & \textbf{Required define} & \textbf{Time} \\ \hline
 x86 Reference & --- & 228 \si{\micro\second} \\
-x86 SSE4.1 & \texttt{\_\_SSE4\_1\_\_} & 35.8 \si{\micro\second} \\
+x86 SSE4.1\textsuperscript{a} & \texttt{\_\_SSE4\_1\_\_} & 35.8 \si{\micro\second} \\
 x86 AVX2 & \texttt{\_\_AVX2\_\_} & 26.5 \si{\micro\second} \\
 ARM Reference & --- & 1.23 \si{\milli\second} \\
-ARM NEON & \texttt{\_\_ARM\_NEON} & 551 \si{\micro\second}
+ARM32 NEON\textsuperscript{b} & \texttt{\_\_ARM\_NEON} & 561 \si{\micro\second} \\
+ARM64 NEON & \texttt{\_\_ARM\_NEON} & 473 \si{\micro\second}
 \end{tabular}
-\caption{Compression time of $320\times180$ image. x86: i7 8700K; ARM: ODROID-C2}
+
+\vspace{1em}
+\textsuperscript{a)} VEX encoding; \hspace{0.5em} \textsuperscript{b)} ARM32 NEON code compiled for ARM64
+\caption{Compression time of $320\times180$ image. x86: i7 8700K; ARM: ODROID-C2.}
 \label{EtcSimd}
 \end{table}
 

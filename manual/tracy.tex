@@ -336,6 +336,18 @@ Starting with Android 8.0 you are no longer allowed to use the \texttt{/proc} fi
 
 This is apparently a security enhancement. In its infinite wisdom Google has decided to not give you any option to bypass this restriction.
 
+\subsection{Check your environment}
+
+In order to get the most accurate profiling results you should minimize interference caused by other programs running on the same machine. Before starting a profile session close all web browsers, music players, instant messengers, and all other non-essential applications like Steam, Uplay, etc. Make sure you don't have the debugger hooked into the profiled program, as it also has impact on the timing results.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Debugger in Visual Studio}
+In MSVC you would typically run your program using the \emph{Start Debugging} menu option, which is conveniently available as a \keys{F5} shortcut. You should instead use the \emph{Start Without Debugging} option, available as \keys{\ctrl + F5} shortcut.
+\end{bclogo}
+
 \subsection{Running the server}
 
 The easiest way to get going is to build the data analyzer, available in the \texttt{profiler} directory. With it you can connect to localhost or remote clients and view the collected data right away.

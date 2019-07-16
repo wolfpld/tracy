@@ -135,33 +135,16 @@ public:
         }
 #endif
 
-        auto start = m_tail;
-        auto end = m_head + QueryCount;
-        auto cnt = ( end - start ) % QueryCount;
-        while( cnt > 1 )
-        {
-            auto mid = start + cnt / 2;
-            GLint available;
-            glGetQueryObjectiv( m_query[mid % QueryCount], GL_QUERY_RESULT_AVAILABLE, &available );
-            if( available )
-            {
-                start = mid;
-            }
-            else
-            {
-                end = mid;
-            }
-            cnt = ( end - start ) % QueryCount;
-        }
-
-        start %= QueryCount;
-
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
 
-        while( m_tail != start )
+        while( m_tail != m_head )
         {
+            GLint available;
+            glGetQueryObjectiv( m_query[m_tail], GL_QUERY_RESULT_AVAILABLE, &available );
+            if( !available ) return;
+
             uint64_t time;
             glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
 
@@ -171,6 +154,7 @@ public:
             MemWrite( &item->gpuTime.queryId, (uint16_t)m_tail );
             MemWrite( &item->gpuTime.context, m_context );
             tail.store( magic + 1, std::memory_order_release );
+
             m_tail = ( m_tail + 1 ) % QueryCount;
         }
     }

@@ -319,11 +319,11 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     uint8_t rming = vminvq_u8( lg );
     uint8_t rminb = vminvq_u8( lb );
 
-    uint8_t rr = rmaxr - rminr;
-    uint8_t rg = rmaxg - rming;
-    uint8_t rb = rmaxb - rminb;
+    int rr = rmaxr - rminr;
+    int rg = rmaxg - rming;
+    int rb = rmaxb - rminb;
 
-    uint16_t vrange1 = rr + rg + rb;
+    int vrange1 = rr + rg + rb;
     uint16_t vrange2 = DivTableNEON[vrange1];
 
     uint8_t insetr = rr >> 4;

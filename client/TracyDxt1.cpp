@@ -355,9 +355,9 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     uint8x8_t p01 = vmovn_u16( m1 );
     uint8x16_t p0 = vcombine_u8( p00, p01 );
 
-    uint32x4_t p1 = vorrq_u32( vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 6 ), vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 12 ) );
-    uint32x4_t p2 = vorrq_u32( vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 18 ), vreinterpretq_u32_u8( p0 ) );
-    uint32x4_t p3 = vorrq_u32( p1, p2 );
+    uint32x4_t p1 = vaddq_u32( vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 6 ), vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 12 ) );
+    uint32x4_t p2 = vaddq_u32( vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 18 ), vreinterpretq_u32_u8( p0 ) );
+    uint32x4_t p3 = vaddq_u32( p1, p2 );
 
     uint16x4x2_t p4 = vuzp_u16( vget_low_u16( vreinterpretq_u16_u32( p3 ) ), vget_high_u16( vreinterpretq_u16_u32( p3 ) ) );
     uint8x8x2_t p = vuzp_u8( vreinterpret_u8_u16( p4.val[0] ), vreinterpret_u8_u16( p4.val[0] ) );
@@ -469,9 +469,9 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     uint8x8_t p01 = vmovn_u16( m1 );
     uint8x16_t p0 = vcombine_u8( p00, p01 );
 
-    uint32x4_t p1 = vorrq_u32( vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 6 ), vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 12 ) );
-    uint32x4_t p2 = vorrq_u32( vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 18 ), vreinterpretq_u32_u8( p0 ) );
-    uint32x4_t p3 = vorrq_u32( p1, p2 );
+    uint32x4_t p1 = vaddq_u32( vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 6 ), vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 12 ) );
+    uint32x4_t p2 = vaddq_u32( vshrq_n_u32( vreinterpretq_u32_u8( p0 ), 18 ), vreinterpretq_u32_u8( p0 ) );
+    uint32x4_t p3 = vaddq_u32( p1, p2 );
 
     uint16x4x2_t p4 = vuzp_u16( vget_low_u16( vreinterpretq_u16_u32( p3 ) ), vget_high_u16( vreinterpretq_u16_u32( p3 ) ) );
     uint8x8x2_t p = vuzp_u8( vreinterpret_u8_u16( p4.val[0] ), vreinterpret_u8_u16( p4.val[0] ) );

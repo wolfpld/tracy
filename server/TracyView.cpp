@@ -9241,13 +9241,27 @@ void View::DrawPlayback()
     }
 
     ImGui::Begin( "Playback", &m_showPlayback, ImGuiWindowFlags_AlwaysAutoResize );
-    if( fi->flip )
+    if( m_playback.zoom )
     {
-        ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+        if( fi->flip )
+        {
+            ImGui::Image( m_playback.texture, ImVec2( fi->w * 2, fi->h * 2 ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+        }
+        else
+        {
+            ImGui::Image( m_playback.texture, ImVec2( fi->w * 2, fi->h * 2 ) );
+        }
     }
     else
     {
-        ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ) );
+        if( fi->flip )
+        {
+            ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+        }
+        else
+        {
+            ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ) );
+        }
     }
     int tmp = m_playback.frame + 1;
     if( ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" ) )
@@ -9315,6 +9329,8 @@ void View::DrawPlayback()
             m_zvEnd = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
         }
     }
+    ImGui::SameLine();
+    ImGui::Checkbox( "Zoom 2x", &m_playback.zoom );
     TextFocused( "Timestamp:", TimeToString( tstart - m_worker.GetTimeBegin() ) );
     ImGui::End();
 }

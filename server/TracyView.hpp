@@ -534,6 +534,7 @@ private:
         uint32_t currFrame = -1;
         bool pause = true;
         bool sync = false;
+        bool zoom = false;
     } m_playback;
 };
 

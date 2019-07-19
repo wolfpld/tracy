@@ -87,6 +87,7 @@ extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 #if defined __linux__
 #  include <sys/sysinfo.h>
 #  include <sys/utsname.h>
+#  define TRACY_USE_INIT_ONCE
 #endif
 
 #if !defined _WIN32 && !defined __CYGWIN__ && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
@@ -98,6 +99,7 @@ namespace tracy
 
 #ifndef TRACY_DELAYED_INIT
 #  if defined TRACY_USE_INIT_ONCE
+#    if defined _WIN32 || defined __CYGWIN__
 namespace
 {
     BOOL CALLBACK InitOnceCallback(
@@ -111,6 +113,17 @@ namespace
 
     INIT_ONCE InitOnce = INIT_ONCE_STATIC_INIT;
 }
+#    elif defined __linux__
+namespace
+{
+    void InitOnceCallback()
+    {
+        rpmalloc_initialize();
+    }
+
+    pthread_once_t once_control = PTHREAD_ONCE_INIT;
+}
+#    endif
 #  endif //if defined TRACY_USE_INIT_ONCE
 
 struct RPMallocInit
@@ -118,9 +131,13 @@ struct RPMallocInit
     RPMallocInit()
     {
 #  if defined TRACY_USE_INIT_ONCE
-        InitOnceExecuteOnce(&InitOnce, InitOnceCallback, nullptr, nullptr);
-        //We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might
-        //not be called on this thread if another thread has executed it earlier.
+#    if defined _WIN32 || defined __CYGWIN__
+        InitOnceExecuteOnce( &InitOnce, InitOnceCallback, nullptr, nullptr );
+#    elif defined __linux__
+        pthread_once( &once_control, InitOnceCallback );
+#    endif
+        // We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might
+        // not be called on this thread if another thread has executed it earlier.
         rpmalloc_thread_initialize();
 #  else
         rpmalloc_initialize();
@@ -133,7 +150,11 @@ struct RPMallocThreadInit
     RPMallocThreadInit()
     {
 #  if defined TRACY_USE_INIT_ONCE
-        InitOnceExecuteOnce(&InitOnce, InitOnceCallback, nullptr, nullptr);
+#    if defined _WIN32 || defined __CYGWIN__
+        InitOnceExecuteOnce( &InitOnce, InitOnceCallback, nullptr, nullptr );
+#    else
+        pthread_once( &once_control, InitOnceCallback );
+#    endif
 #  endif //if defined TRACY_USE_INIT_ONCE
         rpmalloc_thread_initialize();
     }

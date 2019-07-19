@@ -338,15 +338,7 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     uint32_t vp;
     vst1_lane_u32( &vp, vreinterpret_u32_u8( p.val[0] ), 0 );
 
-    uint32_t data = 0;
-    for( int i=0; i<4; i++ )
-    {
-        uint8_t idx = IndexTableSIMD[vp & 0xFF];
-        vp >>= 8;
-        data |= idx << (i*8);
-    }
-
-    return uint64_t( ( uint64_t( to565( minr, ming, minb ) ) << 16 ) | to565( maxr, maxg, maxb ) | ( uint64_t( data ) << 32 ) );
+    return uint64_t( ( uint64_t( to565( minr, ming, minb ) ) << 16 ) | to565( maxr, maxg, maxb ) | ( uint64_t( vp ) << 32 ) );
 #  else
     uint32x4_t px0 = vld1q_u32( (uint32_t*)src );
     uint32x4_t px1 = vld1q_u32( (uint32_t*)src + 4 );
@@ -372,7 +364,7 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
 
     if( sm[0] == -1 && sm[1] == -1 )
     {
-        return to565( src[0], src[1], src[2] );
+        return uint64_t( to565( src[0], src[1], src[2] ) ) << 16;
     }
 
     uint8x16_t l0 = vreinterpretq_u8_u32( px0 );
@@ -454,15 +446,7 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     vst1q_lane_u32( &vmax, vreinterpretq_u32_u8( max ), 0 );
     vst1_lane_u32( &vp, vreinterpret_u32_u8( p.val[0] ), 0 );
 
-    uint32_t data = 0;
-    for( int i=0; i<4; i++ )
-    {
-        uint8_t idx = IndexTableSIMD[vp & 0xFF];
-        vp >>= 8;
-        data |= idx << (i*8);
-    }
-
-    return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( data ) << 32 ) );
+    return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( vp ) << 32 ) );
 #  endif
 #else
     const auto ref = to565( src[0], src[1], src[2] );

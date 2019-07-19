@@ -1179,6 +1179,8 @@ void Profiler::Worker()
     s_profilerTid = syscall( SYS_gettid );
 #endif
 
+    while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+
     rpmalloc_thread_initialize();
 
     const auto procname = GetProcessName();
@@ -1186,8 +1188,6 @@ void Profiler::Worker()
 
     const auto hostinfo = GetHostInfo();
     const auto hisz = std::min<size_t>( strlen( hostinfo ), WelcomeMessageHostInfoSize - 1 );
-
-    while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
 #ifdef TRACY_ON_DEMAND
     uint8_t onDemand = 1;
@@ -1517,6 +1517,7 @@ void Profiler::Worker()
 
 void Profiler::CompressWorker()
 {
+    while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     rpmalloc_thread_initialize();
     for(;;)
     {

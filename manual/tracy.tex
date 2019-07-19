@@ -472,17 +472,17 @@ To further reduce image data size, frame images are internally compressed using 
 \centering
 \begin{tabular}[h]{c|c|c}
 \textbf{Implementation} & \textbf{Required define} & \textbf{Time} \\ \hline
-x86 Reference & --- & 218.7 \si{\micro\second} \\
-x86 SSE4.1\textsuperscript{a} & \texttt{\_\_SSE4\_1\_\_} & 33.9 \si{\micro\second} \\
-x86 AVX2 & \texttt{\_\_AVX2\_\_} & 23.8 \si{\micro\second} \\
-ARM Reference & --- & 1.23 \si{\milli\second} \\
-ARM32 NEON\textsuperscript{b} & \texttt{\_\_ARM\_NEON} & 561 \si{\micro\second} \\
-ARM64 NEON & \texttt{\_\_ARM\_NEON} & 469 \si{\micro\second}
+x86 Reference & --- & 217.4 \si{\micro\second} \\
+x86 SSE4.1\textsuperscript{a} & \texttt{\_\_SSE4\_1\_\_} & 32 \si{\micro\second} \\
+x86 AVX2 & \texttt{\_\_AVX2\_\_} & 21 \si{\micro\second} \\
+ARM Reference & --- & 1.19 \si{\milli\second} \\
+ARM32 NEON\textsuperscript{b} & \texttt{\_\_ARM\_NEON} & 529 \si{\micro\second} \\
+ARM64 NEON & \texttt{\_\_ARM\_NEON} & 438 \si{\micro\second}
 \end{tabular}
 
 \vspace{1em}
 \textsuperscript{a)} VEX encoding; \hspace{0.5em} \textsuperscript{b)} ARM32 NEON code compiled for ARM64
-\caption{Compression time of $320\times180$ image. x86: i7 8700K (MSVC); ARM: ODROID-C2 (gcc).}
+\caption{Client compression time of $320\times180$ image. x86: i7 8700K (MSVC); ARM: ODROID-C2 (gcc).}
 \label{EtcSimd}
 \end{table}
 
@@ -491,7 +491,7 @@ noborder=true,
 couleur=black!5,
 logo=\bcattention
 ]{Caveats}
-Frame images are compressed on a second profiler thread, to reduce memory usage of queued images. This might have impact on the performance of the profiled application.
+Frame images are compressed on a second client profiler thread\footnote{Small part of compression task is performed on the server.}, to reduce memory usage of queued images. This might have impact on the performance of the profiled application.
 \end{bclogo}
 
 \paragraph{OpenGL screen capture code example}

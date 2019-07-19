@@ -37,25 +37,6 @@ static inline uint16_t to565( uint32_t c )
         ( ( c & 0x0000F8 ) << 8 );
 }
 
-static const uint8_t IndexTable[4] = { 1, 3, 2, 0 };
-static const uint8_t IndexTableSIMD[256] = {
-    85,     87,     86,     84,     93,     95,     94,     92,     89,     91,     90,     88,     81,     83,     82,     80,
-    117,    119,    118,    116,    125,    127,    126,    124,    121,    123,    122,    120,    113,    115,    114,    112,
-    101,    103,    102,    100,    109,    111,    110,    108,    105,    107,    106,    104,    97,     99,     98,     96,
-    69,     71,     70,     68,     77,     79,     78,     76,     73,     75,     74,     72,     65,     67,     66,     64,
-    213,    215,    214,    212,    221,    223,    222,    220,    217,    219,    218,    216,    209,    211,    210,    208,
-    245,    247,    246,    244,    253,    255,    254,    252,    249,    251,    250,    248,    241,    243,    242,    240,
-    229,    231,    230,    228,    237,    239,    238,    236,    233,    235,    234,    232,    225,    227,    226,    224,
-    197,    199,    198,    196,    205,    207,    206,    204,    201,    203,    202,    200,    193,    195,    194,    192,
-    149,    151,    150,    148,    157,    159,    158,    156,    153,    155,    154,    152,    145,    147,    146,    144,
-    181,    183,    182,    180,    189,    191,    190,    188,    185,    187,    186,    184,    177,    179,    178,    176,
-    165,    167,    166,    164,    173,    175,    174,    172,    169,    171,    170,    168,    161,    163,    162,    160,
-    133,    135,    134,    132,    141,    143,    142,    140,    137,    139,    138,    136,    129,    131,    130,    128,
-    21,     23,     22,     20,     29,     31,     30,     28,     25,     27,     26,     24,     17,     19,     18,     16,
-    53,     55,     54,     52,     61,     63,     62,     60,     57,     59,     58,     56,     49,     51,     50,     48,
-    37,     39,     38,     36,     45,     47,     46,     44,     41,     43,     42,     40,     33,     35,     34,     32,
-    5,      7,      6,      4,      13,     15,     14,     12,     9,      11,     10,     8,      1,      3,      2,      0
-};
 static const uint16_t DivTable[255*3+1] = {
     0xffff, 0xffff, 0xffff, 0xffff, 0xcccc, 0xaaaa, 0x9249, 0x8000, 0x71c7, 0x6666, 0x5d17, 0x5555, 0x4ec4, 0x4924, 0x4444, 0x4000,
     0x3c3c, 0x38e3, 0x35e5, 0x3333, 0x30c3, 0x2e8b, 0x2c85, 0x2aaa, 0x28f5, 0x2762, 0x25ed, 0x2492, 0x234f, 0x2222, 0x2108, 0x2000,
@@ -235,7 +216,7 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
 
     if( _mm_testc_si128(sm, _mm_set1_epi32(-1)) )
     {
-        return to565( src[0], src[1], src[2] );
+        return uint64_t( to565( src[0], src[1], src[2] ) ) << 16;
     }
 
     __m128i min0 = _mm_min_epu8( px0, px1 );
@@ -294,15 +275,7 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     uint32_t vmax = _mm_cvtsi128_si32( max );
     uint32_t vp = _mm_cvtsi128_si32( p );
 
-    uint32_t data = 0;
-    for( int i=0; i<4; i++ )
-    {
-        uint8_t idx = IndexTableSIMD[vp & 0xFF];
-        vp >>= 8;
-        data |= idx << (i*8);
-    }
-
-    return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( data ) << 32 ) );
+    return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( vp ) << 32 ) );
 #elif defined __ARM_NEON
 #  ifdef __aarch64__
     uint8x16x4_t px = vld4q_u8( src );
@@ -504,7 +477,7 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     }
     if( stmp == src + 64 )
     {
-        return uint64_t( ref );
+        return uint64_t( ref ) << 16;
     }
 
     uint8_t min[3] = { src[0], src[1], src[2] };
@@ -533,7 +506,7 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     for( int i=0; i<16; i++ )
     {
         const uint32_t c = src[0] + src[1] + src[2] - rmin;
-        const uint8_t idx = IndexTable[( c * range ) >> 16];
+        const uint8_t idx = ( c * range ) >> 16;
         data |= idx << (i*2);
         src += 4;
     }
@@ -623,25 +596,10 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
     uint32_t vp0 = _mm256_cvtsi256_si32( p );
     uint32_t vp1 = _mm256_extract_epi32( p, 4 );
 
-    uint32_t data0 = 0;
-    for( int i=0; i<4; i++ )
-    {
-        uint8_t idx0 = IndexTableSIMD[vp0 & 0xFF];
-        vp0 >>= 8;
-        data0 |= idx0 << (i*8);
-    }
-    uint32_t data1 = 0;
-    for( int i=0; i<4; i++ )
-    {
-        uint8_t idx1 = IndexTableSIMD[vp1 & 0xFF];
-        vp1 >>= 8;
-        data1 |= idx1 << (i*8);
-    }
-
     memcpy( dst, &minmax0, 4 );
-    memcpy( dst+4, &data0, 4 );
+    memcpy( dst+4, &vp0, 4 );
     memcpy( dst+8, &minmax1, 4 );
-    memcpy( dst+12, &data1, 4 );
+    memcpy( dst+12, &vp1, 4 );
     dst += 16;
 }
 #endif

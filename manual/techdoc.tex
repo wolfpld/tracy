@@ -530,7 +530,7 @@ When Lua code is instrumented, the zone processing is done in a very similar way
 
 To reduce memory impact, frame images are compressed on a dedicated thread (\texttt{CompressWorker()}). What the user sees as sending a frame image, in reality only stores the necessary data in the \texttt{m\_fiQueue} queue. The compression thread dequeues frame images, compresses them and then queues frame image events. Since the compression is disjoint from the moment the frame image is issued by the user, an original frame index must be preserved.
 
-The DXT1 compression used to reduce size of the images is a from-scratch implementation of the Extreme DXT Compression\footnote{\url{http://www.cauldron.sk/files/extreme_dxt_compression.pdf}} algorithm.	
+The DXT1 compression used to reduce size of the images is a from-scratch implementation of the Extreme DXT Compression\footnote{\url{http://www.cauldron.sk/files/extreme_dxt_compression.pdf}} algorithm. The conversion of natural color index order to DXT1 order is performed on the server side, as it is an invariant operation, without dependencies on the input data.
 
 \subsection{Thread naming}
 

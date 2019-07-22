@@ -561,16 +561,12 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
     __m256i p3 = _mm256_or_si256( p1, p2 );
     __m256i p =_mm256_shuffle_epi8( p3, _mm256_set1_epi32( 0x0C080400 ) );
 
-    __m256i mmmr = _mm256_set_epi16( 0x0000, 0x0000, 0x0000, 0xF800, 0x0000, 0x0000, 0x0000, 0xF800, 0x0000, 0x0000, 0x0000, 0xF800, 0x0000, 0x0000, 0x0000, 0xF800 );
-    __m256i mmmg = _mm256_set_epi16( 0x0000, 0x0000, 0xFC00, 0x0000, 0x0000, 0x0000, 0xFC00, 0x0000, 0x0000, 0x0000, 0xFC00, 0x0000, 0x0000, 0x0000, 0xFC00, 0x0000 );
-    __m256i mmmb = _mm256_slli_epi64( mmmr, 32 );
-
     __m256i mm0 = _mm256_unpacklo_epi8( _mm256_setzero_si256(), min );
     __m256i mm1 = _mm256_unpacklo_epi8( _mm256_setzero_si256(), max );
     __m256i mm2 = _mm256_unpacklo_epi64( mm1, mm0 );
-    __m256i mmr = _mm256_and_si256( mm2, mmmr );
-    __m256i mmg = _mm256_srli_epi64( _mm256_and_si256( mm2, mmmg ), 21 );
-    __m256i mmb = _mm256_srli_epi64( _mm256_and_si256( mm2, mmmb ), 43 );
+    __m256i mmr = _mm256_slli_epi64( _mm256_srli_epi64( mm2, 11 ), 11 );
+    __m256i mmg = _mm256_slli_epi64( _mm256_srli_epi64( mm2, 26 ), 5 );
+    __m256i mmb = _mm256_srli_epi64( _mm256_slli_epi64( mm2, 16 ), 59 );
     __m256i mm3 = _mm256_or_si256( mmr, mmg );
     __m256i mm4 = _mm256_or_si256( mm3, mmb );
     __m256i mm5 = _mm256_shuffle_epi8( mm4, _mm256_set1_epi32( 0x09080100 ) );

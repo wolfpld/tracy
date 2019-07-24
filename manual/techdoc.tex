@@ -127,18 +127,6 @@ Tracy Profiler is split into the following parts:
 
 End user applications are using MSVC as a base for development. The project files are located in the \texttt{build/win32} directory. Unix build system, located in the \texttt{build/unix} directory is extracting source file list from the MSVC solution and optionally can filter-out some source files or add another. Refer to the build scripts of \texttt{profiler} utility for an example.
 
-\subsection{MSVC details}
-
-Some utilities may require retrieval of additional libraries using the NuGet system. This is an automated process, but it can be a bit wonky at times.
-
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bclampe
-]{Improvement opportunity}
-NuGet packages are often outdated and the system is unreliable. An improved solution for retrieval of large external libraries should be developed.
-\end{bclogo}
-
 \subsection{Unix details}
 
 A makefile based system is used. The main \texttt{Makefile} is used only to dispatch the build, supporting the following targets:

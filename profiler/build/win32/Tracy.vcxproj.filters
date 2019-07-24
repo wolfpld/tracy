@@ -280,9 +280,6 @@
     <Natvis Include="DebugVis.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="Tracy.rc" />
   </ItemGroup>
 </Project>

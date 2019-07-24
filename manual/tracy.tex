@@ -358,6 +358,33 @@ Note that ideally you should be using the same version of the Tracy profiler on 
 
 See section~\ref{capturing} for more information about performing captures.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Due to the memory requirements for data storage, Tracy server is only supposed to run on 64-bit platforms. While there is nothing preventing the program from building and executing in a 32-bit environment, there is no support for doing so.
+\end{bclogo}
+
+\subsubsection{Required libraries}
+
+To build the application contained in the \texttt{profiler} directory, you will need to install external libraries, which are not bundled with Tracy.
+
+\paragraph{Windows}
+
+On Windows you will need to use the \texttt{vcpkg} utility, which will automatically download and build the required files. If you are not familiar with this tool, please read the description at the following address: \url{https://docs.microsoft.com/en-us/cpp/build/vcpkg}. Please follow the installation instructions, then execute the following commands:
+
+\begin{lstlisting}[language=sh]
+vcpkg integrate install
+vcpkg install --triplet x64-windows-static freetype glfw3
+\end{lstlisting}
+
+\paragraph{Unix}
+
+On Unix systems you will need to install the \texttt{pkg-config} utility and the following libraries: \texttt{glfw}, \texttt{freetype}. Some Linux distributions will require you to add a \texttt{lib} prefix and a \texttt{-dev}, or \texttt{-devel} postfix to library names. You may also need to add a seemingly random number to the library name (for example: \texttt{freetype2}, or \texttt{freetype6}). How fun!
+
+Installation of the libraries on OSX can be facilitated using the \texttt{brew} package manager.
+
 \subsubsection{Embedding the server in profiled application}
 \label{embeddingserver}
 

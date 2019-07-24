@@ -2,12 +2,12 @@ version: '{build}'
 platform:
   - x64
 image:
-  - Visual Studio 2017
+  - Visual Studio 2019
   - Ubuntu1804
-before_build:
-  - cmd: cd profiler\build\win32
-  - cmd: nuget restore
-  - cmd: cd ..\..\..
+install:
+  - cmd: cd c:\tools\vcpkg
+  - cmd: vcpkg install freetype glfw3 --triplet x64-windows-static
+  - cmd: vcpkg integrate install
 build_script:
   - cmd: msbuild .\update\build\win32\update.vcxproj
   - cmd: msbuild .\profiler\build\win32\Tracy.vcxproj

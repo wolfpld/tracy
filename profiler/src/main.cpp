@@ -255,6 +255,9 @@ int main( int argc, char** argv )
     std::thread loadThread;
     tracy::UdpListen* broadcastListen = nullptr;
 
+    enum class ViewShutdown { False, True, Join };
+    ViewShutdown viewShutdown = ViewShutdown::False;
+
     std::mutex resolvLock;
     tracy::flat_hash_map<std::string, std::string> resolvMap;
     ResolvService resolv;
@@ -554,7 +557,11 @@ int main( int argc, char** argv )
             view->NotifyRootWindowSize( display_w, display_h );
             if( !view->Draw() )
             {
-                view.reset();
+                viewShutdown = ViewShutdown::True;
+                loadThread = std::thread( [&viewShutdown, view = std::move( view )] () mutable {
+                    view.reset();
+                    viewShutdown = ViewShutdown::Join;
+                } );
             }
         }
         auto& progress = tracy::Worker::GetLoadProgress();
@@ -622,6 +629,27 @@ int main( int argc, char** argv )
             {
                 ImGui::ProgressBar( float( subProgress ) / subTotal, ImVec2( 200 * dpiScale, 0 ) );
             }
+            ImGui::EndPopup();
+        }
+        switch( viewShutdown )
+        {
+        case ViewShutdown::True:
+            ImGui::OpenPopup( "Capture cleanup..." );
+            break;
+        case ViewShutdown::Join:
+            loadThread.join();
+            viewShutdown = ViewShutdown::False;
+            break;
+        default:
+            break;
+        }
+        if( ImGui::BeginPopupModal( "Capture cleanup...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+        {
+            if( viewShutdown != ViewShutdown::True ) ImGui::CloseCurrentPopup();
+            tracy::TextCentered( ICON_FA_BROOM );
+            time += io.DeltaTime;
+            tracy::DrawWaitingDots( time );
+            ImGui::Text( "Please wait, cleanup is in progress" );
             ImGui::EndPopup();
         }
 

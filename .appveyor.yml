@@ -8,6 +8,7 @@ install:
   - cmd: cd c:\tools\vcpkg
   - cmd: vcpkg install freetype glfw3 --triplet x64-windows-static
   - cmd: vcpkg integrate install
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%
 build_script:
   - cmd: msbuild .\update\build\win32\update.vcxproj
   - cmd: msbuild .\profiler\build\win32\Tracy.vcxproj

@@ -5782,6 +5782,7 @@ void View::DrawMessages()
                 {
                     ImGui::SetScrollHereY();
                     m_msgToFocus = nullptr;
+                    m_messagesScrollBottom = false;
                 }
                 ImGui::PopID();
                 ImGui::NextColumn();

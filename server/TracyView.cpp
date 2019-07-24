@@ -5781,7 +5781,7 @@ void View::DrawMessages()
                 if( m_msgToFocus == v )
                 {
                     ImGui::SetScrollHereY();
-                    m_msgToFocus = nullptr;
+                    m_msgToFocus.Decay( nullptr );
                     m_messagesScrollBottom = false;
                 }
                 ImGui::PopID();

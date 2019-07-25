@@ -3262,11 +3262,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             {
                                 if( vbegin->lockCount == 1 )
                                 {
-                                    ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", m_worker.GetThreadString( tid ), TracyCountBits( vbegin->waitList ) );
+                                    ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), TracyCountBits( vbegin->waitList ) );
                                 }
                                 else
                                 {
-                                    ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%i):", m_worker.GetThreadString( tid ), vbegin->lockCount, TracyCountBits( vbegin->waitList ) );
+                                    ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), vbegin->lockCount, TracyCountBits( vbegin->waitList ) );
                                 }
                                 auto waitList = vbegin->waitList;
                                 int t = 0;
@@ -3322,7 +3322,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 else
                                 {
                                     ImGui::Text( "Thread \"%s\" has shared lock. No other threads are waiting.", m_worker.GetThreadString( tid ) );
-                                    ImGui::Text( "Threads sharing the lock (%i):", TracyCountBits( ptr->sharedList ) - 1 );
+                                    ImGui::Text( "Threads sharing the lock (%" PRIu64 "):", TracyCountBits( ptr->sharedList ) - 1 );
                                     auto sharedList = ptr->sharedList;
                                     int t = 0;
                                     ImGui::Indent( ty );
@@ -3343,16 +3343,16 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 if( ptr->sharedList == 0 )
                                 {
                                     assert( vbegin->lockCount == 1 );
-                                    ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%i):", m_worker.GetThreadString( tid ), TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
+                                    ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
                                 }
                                 else if( TracyCountBits( ptr->sharedList ) == 1 )
                                 {
-                                    ImGui::Text( "Thread \"%s\" has a sole shared lock. Blocked threads (%i):", m_worker.GetThreadString( tid ), TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
+                                    ImGui::Text( "Thread \"%s\" has a sole shared lock. Blocked threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
                                 }
                                 else
                                 {
                                     ImGui::Text( "Thread \"%s\" has shared lock.", m_worker.GetThreadString( tid ) );
-                                    ImGui::Text( "Threads sharing the lock (%i):", TracyCountBits( ptr->sharedList ) - 1 );
+                                    ImGui::Text( "Threads sharing the lock (%" PRIu64 "):", TracyCountBits( ptr->sharedList ) - 1 );
                                     auto sharedList = ptr->sharedList;
                                     int t = 0;
                                     ImGui::Indent( ty );
@@ -3366,7 +3366,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                         t++;
                                     }
                                     ImGui::Unindent( ty );
-                                    ImGui::Text( "Blocked threads (%i):", TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
+                                    ImGui::Text( "Blocked threads (%" PRIu64 "):", TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
                                 }
 
                                 auto waitList = vbegin->waitList;
@@ -3400,7 +3400,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 assert( vbegin->lockCount == 0 || vbegin->lockCount == 1 );
                                 if( vbegin->lockCount != 0 || ptr->sharedList != 0 )
                                 {
-                                    ImGui::Text( "Thread \"%s\" is blocked by other threads (%i):", m_worker.GetThreadString( tid ), vbegin->lockCount + TracyCountBits( ptr->sharedList ) );
+                                    ImGui::Text( "Thread \"%s\" is blocked by other threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), vbegin->lockCount + TracyCountBits( ptr->sharedList ) );
                                 }
                                 else
                                 {

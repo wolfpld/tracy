@@ -4068,7 +4068,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                     }
                     if( ImGui::IsItemClicked( 1 ) )
                     {
-                        if( frame->line != 0 && FileExists( fileName ) )
+                        if( frame->line != 0 && SourceFileValid( fileName, worker.GetCaptureTime() ) )
                         {
                             view.SetTextEditorFile( fileName, frame->line );
                         }
@@ -4129,7 +4129,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             }
             if( ImGui::IsItemClicked( 1 ) )
             {
-                if( frame->line != 0 && FileExists( fileName ) )
+                if( frame->line != 0 && SourceFileValid( fileName, worker.GetCaptureTime() ) )
                 {
                     view.SetTextEditorFile( fileName, frame->line );
                 }
@@ -4207,7 +4207,7 @@ void View::DrawZoneInfoWindow()
         }
     }
     const auto fileName = m_worker.GetString( srcloc.file );
-    if( FileExists( fileName ) )
+    if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
     {
         ImGui::SameLine();
         bool hilite = m_textEditorFile == fileName;
@@ -4496,7 +4496,7 @@ void View::DrawZoneInfoWindow()
         ImGui::PopID();
         if( ImGui::IsItemClicked( 1 ) )
         {
-            if( FileExists( fileName ) )
+            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
             {
                 SetTextEditorFile( fileName, srcloc.line );
             }
@@ -4798,7 +4798,7 @@ void View::DrawGpuInfoWindow()
         }
     }
     const auto fileName = m_worker.GetString( srcloc.file );
-    if( FileExists( fileName ) )
+    if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
     {
         ImGui::SameLine();
         bool hilite = m_textEditorFile == fileName;
@@ -4902,7 +4902,7 @@ void View::DrawGpuInfoWindow()
         ImGui::PopID();
         if( ImGui::IsItemClicked( 1 ) )
         {
-            if( FileExists( fileName ) )
+            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
             {
                 SetTextEditorFile( fileName, srcloc.line );
             }
@@ -5327,7 +5327,7 @@ void View::DrawOptions()
                         ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size(), true ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
-                            if( FileExists( fileName ) )
+                            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                             {
                                 SetTextEditorFile( fileName, sl.line );
                             }
@@ -5394,7 +5394,7 @@ void View::DrawOptions()
                         ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size(), true ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
-                            if( FileExists( fileName ) )
+                            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                             {
                                 SetTextEditorFile( fileName, sl.line );
                             }
@@ -5461,7 +5461,7 @@ void View::DrawOptions()
                         ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size(), true ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
-                            if( FileExists( fileName ) )
+                            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                             {
                                 SetTextEditorFile( fileName, sl.line );
                             }
@@ -5922,7 +5922,7 @@ void View::DrawFindZone()
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), fileName, srcloc.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {
-                    if( FileExists( fileName ) )
+                    if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                     {
                         SetTextEditorFile( fileName, srcloc.line );
                     }
@@ -8023,7 +8023,7 @@ void View::DrawStatistics()
         ImGui::TextDisabled( "%s:%i", file, srcloc.line );
         if( ImGui::IsItemClicked( 1 ) )
         {
-            if( FileExists( file ) )
+            if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
             {
                 SetTextEditorFile( file, srcloc.line );
             }
@@ -8195,7 +8195,7 @@ void View::DrawCallstackWindow()
                 }
                 if( ImGui::IsItemClicked( 1 ) )
                 {
-                    if( FileExists( txt ) )
+                    if( SourceFileValid( txt, m_worker.GetCaptureTime() ) )
                     {
                         SetTextEditorFile( txt, frame.line );
                     }
@@ -9106,7 +9106,7 @@ void View::DrawLockInfoWindow()
     ImGui::Text( "%s:%i", fileName, srcloc.line );
     if( ImGui::IsItemClicked( 1 ) )
     {
-        if( FileExists( fileName ) )
+        if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
         {
             SetTextEditorFile( fileName, srcloc.line );
         }
@@ -10202,7 +10202,7 @@ void View::DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree,
         ImGui::TextDisabled( "%s:%i", fileName, frame.line );
         if( ImGui::IsItemClicked( 1 ) )
         {
-            if( FileExists( fileName ) )
+            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
             {
                 SetTextEditorFile( fileName, frame.line );
             }

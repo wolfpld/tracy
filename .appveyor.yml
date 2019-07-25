@@ -6,6 +6,8 @@ image:
   - Ubuntu1804
 install:
   - cmd: cd c:\tools\vcpkg
+  - cmd: git pull
+  - cmd: bootstrap-vcpkg.bat
   - cmd: vcpkg install freetype glfw3 --triplet x64-windows-static
   - cmd: vcpkg integrate install
   - cmd: cd %APPVEYOR_BUILD_FOLDER%

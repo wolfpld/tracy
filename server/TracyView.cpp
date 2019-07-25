@@ -5681,7 +5681,7 @@ void View::DrawOptions()
 void View::DrawMessages()
 {
     ImGui::SetNextWindowSize( ImVec2( 1200, 600 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Messages", &m_showMessages, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    ImGui::Begin( "Messages", &m_showMessages );
 
     size_t tsz = 0;
     for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;

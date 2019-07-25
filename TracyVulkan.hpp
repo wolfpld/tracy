@@ -44,7 +44,6 @@ class VkCtx
 public:
     VkCtx( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf )
         : m_device( device )
-        , m_queue( queue )
         , m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
         , m_head( 0 )
         , m_tail( 0 )
@@ -192,7 +191,6 @@ private:
     }
 
     VkDevice m_device;
-    VkQueue m_queue;
     VkQueryPool m_query;
     uint8_t m_context;
 

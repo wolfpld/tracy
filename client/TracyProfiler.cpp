@@ -1049,7 +1049,12 @@ TRACY_API int64_t GetInitTime() { return s_initTime.val; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
+#  ifdef __CYGWIN__
+// Hackfix for cygwin reporting memory frees without matching allocations. WTF?
+TRACY_API uint64_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
+#  else
 TRACY_API uint64_t GetThreadHandle() { return s_threadHandle.val; }
+#  endif
 
 #  ifdef TRACY_COLLECT_THREAD_NAMES
 TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }

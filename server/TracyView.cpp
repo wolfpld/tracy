@@ -7911,7 +7911,7 @@ void View::DrawCompare()
 void View::DrawStatistics()
 {
     ImGui::SetNextWindowSize( ImVec2( 1000, 600 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Statistics", &m_showStatistics );
+    ImGui::Begin( "Statistics", &m_showStatistics, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable statistics view." );
@@ -7973,6 +7973,8 @@ void View::DrawStatistics()
 
     TextFocused( "Recorded source locations:", RealToString( srcloc.size(), true ) );
 
+    ImGui::Separator();
+    ImGui::BeginChild( "##messages" );
     const auto w = ImGui::GetWindowWidth();
     static bool widthSet = false;
     ImGui::Columns( 5 );
@@ -7985,7 +7987,6 @@ void View::DrawStatistics()
         ImGui::SetColumnWidth( 3, w * 0.1f );
         ImGui::SetColumnWidth( 4, w * 0.1f );
     }
-    ImGui::Separator();
     ImGui::TextUnformatted( "Name" );
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Location" );
@@ -8046,6 +8047,7 @@ void View::DrawStatistics()
         ImGui::PopID();
     }
     ImGui::EndColumns();
+    ImGui::EndChild();
 #endif
     ImGui::End();
 }

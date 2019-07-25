@@ -5687,6 +5687,15 @@ void View::DrawMessages()
     for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
 
     m_messageFilter.Draw( "Filter messages", 200 );
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_BAN " Clear" ) )
+#else
+    if( ImGui::Button( "Clear" ) )
+#endif
+    {
+        m_messageFilter.Clear();
+    }
 
 #ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );

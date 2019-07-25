@@ -402,7 +402,11 @@ static const char* GetHostInfo()
 #endif
 
 #if defined _MSC_VER
+#  if defined __clang__
+    ptr += sprintf( ptr, "Compiler: MSVC clang-cl %i.%i.%i\n", __clang_major__, __clang_minor__, __clang_patchlevel__ );
+#  else
     ptr += sprintf( ptr, "Compiler: MSVC %i\n", _MSC_VER );
+#  endif
 #elif defined __clang__
     ptr += sprintf( ptr, "Compiler: clang %i.%i.%i\n", __clang_major__, __clang_minor__, __clang_patchlevel__ );
 #elif defined __GNUC__

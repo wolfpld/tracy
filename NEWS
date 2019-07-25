@@ -81,6 +81,8 @@ v0.5 (xxxx-xx-xx)
   - To re-enable, scroll to the bottom of the list.
 - Message list can be now filtered.
 - A notification popup will be displayed during trace cleanup.
+- Source file view won't be available if a source file is newer than the
+  capture.
 
 v0.4.1 (2018-12-30)
 -------------------

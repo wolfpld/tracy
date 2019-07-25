@@ -8056,7 +8056,7 @@ void View::DrawCallstackWindow()
 {
     bool show = true;
     ImGui::SetNextWindowSize( ImVec2( 1200, 500 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Call stack", &show );
+    ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
 #ifdef TRACY_EXTENDED_FONT
     ImGui::Checkbox( ICON_FA_AT " Show frame addresses", &m_showCallstackFrameAddress );
@@ -8066,6 +8066,8 @@ void View::DrawCallstackWindow()
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
 
+    ImGui::Separator();
+    ImGui::BeginChild( "##callstack" );
     const auto w = ImGui::GetWindowWidth();
     static bool widthSet = false;
     ImGui::Columns( 3 );
@@ -8213,6 +8215,7 @@ void View::DrawCallstackWindow()
     }
 
     ImGui::EndColumns();
+    ImGui::EndChild();
     ImGui::End();
 
     if( !show )

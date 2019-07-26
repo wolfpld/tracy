@@ -12,6 +12,7 @@
 #include "TracyBuzzAnim.hpp"
 #include "TracyDecayValue.hpp"
 #include "TracyTexture.hpp"
+#include "TracyUserData.hpp"
 #include "TracyVector.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_flat_hash_map.hpp"
@@ -342,6 +343,8 @@ private:
 
     void* m_frameTexture = nullptr;
     const void* m_frameTexturePtr = nullptr;
+
+    UserData m_userData;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

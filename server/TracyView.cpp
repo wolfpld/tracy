@@ -109,6 +109,7 @@ View::View( const char* addr, ImFont* fixedWidth, ImFont* bigFont, SetTitleCallb
     , m_textEditorFont( fixedWidth )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
+    , m_userData()
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -125,6 +126,7 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* bigFont, SetTitleCallback s
     , m_textEditorFont( fixedWidth )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
+    , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() )
 {
     assert( s_instance == nullptr );
     s_instance = this;
@@ -379,6 +381,7 @@ bool View::DrawImpl()
         return !wasCancelled;
     }
 
+    if( !m_userData.Valid() ) m_userData.Init( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() );
     if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::NeedsJoin )
     {
         m_saveThread.join();

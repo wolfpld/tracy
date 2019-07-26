@@ -5885,7 +5885,7 @@ void View::DrawFindZone()
     if( m_shortcut == ShortcutAction::OpenFind ) ImGui::SetNextWindowFocus();
 
     ImGui::SetNextWindowSize( ImVec2( 520, 800 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Find zone", &m_findZone.show );
+    ImGui::Begin( "Find zone", &m_findZone.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable zone search." );
@@ -5937,6 +5937,7 @@ void View::DrawFindZone()
     if( !m_findZone.match.empty() )
     {
         ImGui::Separator();
+        ImGui::BeginChild( "##findzone" );
         bool expand = ImGui::TreeNodeEx( "Matched source locations", ImGuiTreeNodeFlags_DefaultOpen );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_findZone.match.size() );
@@ -7032,6 +7033,7 @@ void View::DrawFindZone()
             m_findZone.selGroup = m_findZone.Unselected;
             m_findZone.ResetSelection();
         }
+        ImGui::EndChild();
     }
 #endif
 
@@ -7130,7 +7132,7 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
 void View::DrawCompare()
 {
     ImGui::SetNextWindowSize( ImVec2( 590, 800 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Compare traces", &m_compare.show );
+    ImGui::Begin( "Compare traces", &m_compare.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable trace comparison." );
@@ -7278,6 +7280,9 @@ void View::DrawCompare()
         ImGui::End();
         return;
     }
+
+    ImGui::Separator();
+    ImGui::BeginChild( "##compare" );
 
     if( ImGui::TreeNodeEx( "Matched source locations", ImGuiTreeNodeFlags_DefaultOpen ) )
     {
@@ -7968,6 +7973,7 @@ void View::DrawCompare()
         ImGui::TreePop();
     }
 
+    ImGui::EndChild();
 #endif
     ImGui::End();
 }

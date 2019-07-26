@@ -8404,8 +8404,20 @@ void View::DrawInfo()
     ImGui::SameLine();
     const auto version = m_worker.GetTraceVersion();
     ImGui::Text( "%i.%i.%i", version >> 16, ( version >> 8 ) & 0xFF, version & 0xFF );
-    ImGui::Separator();
 
+    {
+        const auto& desc = m_userData.GetDescription();
+        const auto descsz = std::min<size_t>( 255, desc.size() );
+        char buf[256];
+        buf[descsz] = '\0';
+        memcpy( buf, desc.c_str(), descsz );
+        if( ImGui::InputTextWithHint( "", "Enter description of the trace", buf, 256 ) )
+        {
+            m_userData.SetDescription( buf );
+        }
+    }
+
+    ImGui::Separator();
     if( ImGui::TreeNode( "Profiler statistics" ) )
     {
         TextFocused( "Profiler memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <inttypes.h>
 #include <string>
 #include <string.h>
 
@@ -101,6 +102,34 @@ const char* GetSavePath( const char* file )
 
     auto status = CreateDirStruct( buf );
     assert( status );
+
+    const auto fsz = strlen( file );
+    assert( sz + fsz < MaxPath );
+    memcpy( buf+sz, file, fsz+1 );
+
+    return buf;
+}
+
+const char* GetSavePath( const char* program, uint64_t time, const char* file, bool create )
+{
+    enum { Pool = 8 };
+    enum { MaxPath = 512 };
+    static char bufpool[Pool][MaxPath];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    size_t sz;
+    GetConfigDirectory( buf, sz );
+
+    // 604800 = 7 days
+    sz += sprintf( buf+sz, "/tracy/user/%c/%s/%" PRIu64 "/%" PRIu64 "/", program[0], program, uint64_t( time / 604800 ), time );
+
+    if( create )
+    {
+        auto status = CreateDirStruct( buf );
+        assert( status );
+    }
 
     const auto fsz = strlen( file );
     assert( sz + fsz < MaxPath );

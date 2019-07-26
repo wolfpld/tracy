@@ -5856,6 +5856,27 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
     }
 }
 
+static void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImVec2 wpos, float w, float ty )
+{
+    const auto mintxt = TimeToString( tmin );
+    const auto maxtxt = TimeToString( tmax );
+    const auto maxsz = ImGui::CalcTextSize( maxtxt ).x;
+    draw->AddLine( wpos, wpos + ImVec2( 0, round( ty * 1.5 ) ), 0x66FFFFFF );
+    draw->AddLine( wpos + ImVec2( w-1, 0 ), wpos + ImVec2( w-1, round( ty * 1.5 ) ), 0x66FFFFFF );
+    draw->AddText( wpos + ImVec2( 0, round( ty * 1.5 ) ), 0x66FFFFFF, mintxt );
+    draw->AddText( wpos + ImVec2( w-1-maxsz, round( ty * 1.5 ) ), 0x66FFFFFF, maxtxt );
+
+    char range[64];
+#ifdef TRACY_EXTENDED_FONT
+    sprintf( range, ICON_FA_LONG_ARROW_ALT_LEFT " %s " ICON_FA_LONG_ARROW_ALT_RIGHT, TimeToString( tmax - tmin ) );
+#else
+    sprintf( range, "<- %s ->", TimeToString( tmax - tmin ) );
+#endif
+
+    const auto rsz = ImGui::CalcTextSize( range ).x;
+    draw->AddText( wpos + ImVec2( round( (w-1-rsz) * 0.5 ), round( ty * 1.5 ) ), 0x66FFFFFF, range );
+}
+
 void View::DrawFindZone()
 {
     if( m_shortcut == ShortcutAction::OpenFind ) ImGui::SetNextWindowFocus();
@@ -6304,9 +6325,6 @@ void View::DrawFindZone()
                             }
                         }
 
-                        TextDisabledUnformatted( "Time range:" );
-                        ImGui::SameLine();
-                        ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
                         TextFocused( "Total time:", TimeToString( timeTotal ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
@@ -6423,7 +6441,7 @@ void View::DrawFindZone()
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();
 
-                        ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
+                        ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 2.5 ) ) );
                         const bool hover = ImGui::IsItemHovered();
 
                         auto draw = ImGui::GetWindowDrawList();
@@ -6465,6 +6483,8 @@ void View::DrawFindZone()
 
                         const auto xoff = 2;
                         const auto yoff = Height + 1;
+
+                        DrawHistogramMinMaxLabel( draw, tmin, tmax, wpos + ImVec2( 0, yoff ), w, ty );
 
                         if( m_findZone.logTime )
                         {
@@ -7409,10 +7429,6 @@ void View::DrawCompare()
             ImGui::SameLine();
             DrawHelpMarker( "Normalization will fudge reported data values!" );
 
-            TextDisabledUnformatted( "Time range:" );
-            ImGui::SameLine();
-            ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
-
             const auto cumulateTime = m_compare.cumulateTime;
 
             if( tmax - tmin > 0 )
@@ -7705,7 +7721,7 @@ void View::DrawCompare()
                     const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                     const auto wpos = ImGui::GetCursorScreenPos();
 
-                    ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
+                    ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 2.5 ) ) );
                     const bool hover = ImGui::IsItemHovered();
 
                     auto draw = ImGui::GetWindowDrawList();
@@ -7765,6 +7781,8 @@ void View::DrawCompare()
 
                     const auto xoff = 2;
                     const auto yoff = Height + 1;
+
+                    DrawHistogramMinMaxLabel( draw, tmin, tmax, wpos + ImVec2( 0, yoff ), w, ty );
 
                     if( m_compare.logTime )
                     {
@@ -8554,10 +8572,6 @@ void View::DrawInfo()
                     ImGui::SameLine();
                     SmallCheckbox( "Log time", &m_frameSortData.logTime );
 
-                    TextDisabledUnformatted( "Time range:" );
-                    ImGui::SameLine();
-                    ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
-
                     TextDisabledUnformatted( "FPS range:" );
                     ImGui::SameLine();
                     ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ), true ), RealToString( round( 1000000000.0 / tmax ), true ) );
@@ -8686,7 +8700,7 @@ void View::DrawInfo()
                             const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                             const auto wpos = ImGui::GetCursorScreenPos();
 
-                            ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 1.5 ) ) );
+                            ImGui::InvisibleButton( "##histogram", ImVec2( w, Height + round( ty * 2.5 ) ) );
                             const bool hover = ImGui::IsItemHovered();
 
                             auto draw = ImGui::GetWindowDrawList();
@@ -8720,6 +8734,8 @@ void View::DrawInfo()
 
                             const auto xoff = 2;
                             const auto yoff = Height + 1;
+
+                            DrawHistogramMinMaxLabel( draw, tmin, tmax, wpos + ImVec2( 0, yoff ), w, ty );
 
                             if( m_frameSortData.logTime )
                             {

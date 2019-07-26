@@ -455,6 +455,7 @@ private:
         bool ignoreCase = false;
         bool link = true;
         std::unique_ptr<Worker> second;
+        std::unique_ptr<UserData> userData;
         std::thread loadThread;
         int badVer = 0;
         char pattern[1024] = {};

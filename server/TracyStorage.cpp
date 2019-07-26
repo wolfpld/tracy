@@ -50,18 +50,11 @@ static bool CreateDirStruct( const std::string& path )
     return true;
 }
 
-const char* GetSavePath( const char* file )
+static void GetConfigDirectory( char* buf, size_t& sz )
 {
-    enum { Pool = 8 };
-    enum { MaxPath = 512 };
-    static char bufpool[Pool][MaxPath];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    bufsel = ( bufsel + 1 ) % Pool;
-
 #ifdef _WIN32
     auto path = getenv( "APPDATA" );
-    auto sz = strlen( path );
+    sz = strlen( path );
     memcpy( buf, path, sz );
 
     for( size_t i=0; i<sz; i++ )
@@ -73,7 +66,6 @@ const char* GetSavePath( const char* file )
     }
 #else
     auto path = getenv( "XDG_CONFIG_HOME" );
-    size_t sz;
     if( path && *path )
     {
         sz = strlen( path );
@@ -90,6 +82,19 @@ const char* GetSavePath( const char* file )
         sz += 8;
     }
 #endif
+}
+
+const char* GetSavePath( const char* file )
+{
+    enum { Pool = 8 };
+    enum { MaxPath = 512 };
+    static char bufpool[Pool][MaxPath];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    size_t sz;
+    GetConfigDirectory( buf, sz );
 
     memcpy( buf+sz, "/tracy/", 8 );
     sz += 7;

@@ -87,6 +87,8 @@ static void GetConfigDirectory( char* buf, size_t& sz )
 
 const char* GetSavePath( const char* file )
 {
+    assert( file && *file );
+
     enum { Pool = 8 };
     enum { MaxPath = 512 };
     static char bufpool[Pool][MaxPath];
@@ -112,6 +114,9 @@ const char* GetSavePath( const char* file )
 
 const char* GetSavePath( const char* program, uint64_t time, const char* file, bool create )
 {
+    assert( file && *file );
+    assert( program && *program );
+
     enum { Pool = 8 };
     enum { MaxPath = 512 };
     static char bufpool[Pool][MaxPath];

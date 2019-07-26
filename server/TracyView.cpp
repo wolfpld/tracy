@@ -7196,7 +7196,17 @@ void View::DrawCompare()
 #endif
     TextDisabledUnformatted( "This trace:" );
     ImGui::SameLine();
-    ImGui::TextUnformatted( m_worker.GetCaptureName().c_str() );
+    const auto& desc0 = m_userData.GetDescription();
+    if( desc0.empty() )
+    {
+        ImGui::TextUnformatted( m_worker.GetCaptureName().c_str() );
+    }
+    else
+    {
+        ImGui::TextUnformatted( desc0.c_str() );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", m_worker.GetCaptureName().c_str() );
+    }
 
 #ifdef TRACY_EXTENDED_FONT
     TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
@@ -7204,19 +7214,16 @@ void View::DrawCompare()
 #endif
     TextDisabledUnformatted( "External trace:" );
     ImGui::SameLine();
-    ImGui::TextUnformatted( m_compare.second->GetCaptureName().c_str() );
-    ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-    if( ImGui::SmallButton( ICON_FA_TRASH_ALT " Unload" ) )
-#else
-    if( ImGui::SmallButton( "Unload" ) )
-#endif
+    const auto& desc1 = m_compare.userData->GetDescription();
+    if( desc1.empty() )
     {
-        m_compare.Reset();
-        m_compare.second.reset();
-        m_compare.userData.reset();
-        ImGui::End();
-        return;
+        ImGui::TextUnformatted( m_compare.second->GetCaptureName().c_str() );
+    }
+    else
+    {
+        ImGui::TextUnformatted( desc1.c_str() );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", m_compare.second->GetCaptureName().c_str() );
     }
 
     bool findClicked = false;
@@ -7243,6 +7250,22 @@ void View::DrawCompare()
     ImGui::SameLine();
 
     ImGui::Checkbox( "Ignore case", &m_compare.ignoreCase );
+
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_TRASH_ALT " Unload" ) )
+#else
+    if( ImGui::Button( "Unload" ) )
+#endif
+    {
+        m_compare.Reset();
+        m_compare.second.reset();
+        m_compare.userData.reset();
+        ImGui::End();
+        return;
+    }
 
     if( findClicked )
     {

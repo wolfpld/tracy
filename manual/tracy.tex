@@ -451,6 +451,8 @@ Alternatively you may use named colors predefined in \texttt{common/TracyColor.h
 \subsection{Marking frames}
 \label{markingframes}
 
+To slice the program's execution recording into frame-sized chunks\footnote{Each frame starts immediately after the previous has ended.}, put the \texttt{FrameMark} macro after you have completed rendering the frame. Ideally that would be right after the swap buffers command.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
@@ -458,8 +460,6 @@ logo=\bclampe
 ]{Do I need this?}
 This step is optional, as some applications do not use the concept of a frame.
 \end{bclogo}
-
-To slice the program's execution recording into frame-sized chunks\footnote{Each frame starts immediately after the previous has ended.}, put the \texttt{FrameMark} macro after you have completed rendering the frame. Ideally that would be right after the swap buffers command.
 
 \subsubsection{Secondary frame sets}
 \label{secondaryframeset}
@@ -1238,8 +1238,6 @@ You have instrumented your application and you have captured a profiling trace. 
 
 The workflow is identical, whether you are viewing a previously saved trace, or if you're performing a live capture, as described in section~\ref{interactiveprofiling}.
 
-Note that loading a saved trace will display a progress window.
-
 \subsection{Main profiler window}
 
 The main profiler window is split into three sections, as seen on figure~\ref{mainwindow}: the control menu, the frame time graph and the timeline display.
@@ -1631,7 +1629,16 @@ An example histogram is presented on figure~\ref{findzonehistogram}. Here you ca
 \begin{figure}[h]
 \centering\begin{tikzpicture}
 \draw(0, 0) rectangle+(10, 3);
-\foreach \x in {0,2,4,6,8} {
+\draw (0, -0.1) -- +(0, -0.7);
+\draw (0.6, -0.1) -- +(0, -0.1);
+\draw (0.96, -0.1) -- +(0, -0.1);
+\draw (1.2, -0.1) -- +(0, -0.1);
+\draw (1.4, -0.1) -- +(0, -0.1);
+\draw (1.56, -0.1) -- +(0, -0.1);
+\draw (1.68, -0.1) -- +(0, -0.1);
+\draw (1.8, -0.1) -- +(0, -0.1);
+\draw (1.9, -0.1) -- +(0, -0.1);
+\foreach \x in {2,4,6,8} {
 \draw (\x+0, -0.1) -- +(0, -0.2);
 \draw (\x+0.6, -0.1) -- +(0, -0.1);
 \draw (\x+0.96, -0.1) -- +(0, -0.1);
@@ -1641,20 +1648,22 @@ An example histogram is presented on figure~\ref{findzonehistogram}. Here you ca
 \draw (\x+1.68, -0.1) -- +(0, -0.1);
 \draw (\x+1.8, -0.1) -- +(0, -0.1);
 \draw (\x+1.9, -0.1) -- +(0, -0.1); }
-\draw (10, -0.1) -- +(0, -0.2);
+\draw (10, -0.1) -- +(0, -0.7);
 
-\draw (-0.2, -0.3) node[anchor=north west] {100 \si{\nano\second}};
+\draw (-0.2, -0.8) node[anchor=north west] {100 \si{\nano\second}};
 \draw (1.8, -0.3) node[anchor=north west] {1 \si{\micro\second}};
 \draw (3.8, -0.3) node[anchor=north west] {10 \si{\micro\second}};
 \draw (5.8, -0.3) node[anchor=north west] {100 \si{\micro\second}};
 \draw (7.8, -0.3) node[anchor=north west] {1 \si{\milli\second}};
-\draw (9.8, -0.3) node[anchor=north west] {10 \si{\milli\second}};
+\draw (10.1, -0.8) node[anchor=north east] {10 \si{\milli\second}};
+
+\draw (4.8, -0.81) node[anchor=north] {\faLongArrowAltLeft~10~\si{\milli\second}~\faLongArrowAltRight};
 
 \draw[pattern=north east lines] (0,0) -- (0.5, 0.3) -- (1, 2.95) -- (1.4, 0.6) -- (2, 0.15) -- (3, 0.2) -- (3.7, 0.5) -- (4, 2.1) -- (4.3, 0.7) -- (5, 0.2) -- (6, 0);
 \draw[pattern=north east lines] (7.8,0) -- (8, 0.15) -- (8.2, 0);
 \draw[pattern=north east lines] (9.8,0) -- (9.9, 0.1) -- (10, 0);
 \end{tikzpicture}
-\caption{Zone execution time histogram.}
+\caption{Zone execution time histogram. Note that the extreme time labels and time range indicator (middle time value) are displayed in a separate line.}
 \label{findzonehistogram}
 \end{figure}
 
@@ -1774,6 +1783,14 @@ When searching for source locations it's not uncommon to match more than one zon
 
 It may be difficult, if not impossible, to perform identical runs of a program. This means that the number of collected zones may differ in both traces, which would influence the displayed results. To fix this problem enable the \emph{Normalize values} option, which will adjust the displayed results as-if both traces had the same number of recorded zones.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Trace descriptions}
+Set custom trace descriptions (see section~\ref{traceinfo}) to easily differentiate the two loaded traces. If no trace description is set, a name of the profiled program will be displayed along with the capture time.
+\end{bclogo}
+
 \subsection{Memory window}
 \label{memorywindow}
 
@@ -1837,11 +1854,15 @@ The information about the selected memory allocation is displayed in this window
 \subsection{Trace information window}
 \label{traceinfo}
 
-This window contains various bits of information about profiler and the current trace. For example, you can see the profiler memory usage, the number of captured zones, lock events, plot points, memory allocations, etc.
+This window contains information about the current trace: captured program name, time of the capture, profiler version which performed the capture and a custom trace description, which you can fill in.
 
-If frame images were captured (section~\ref{frameimages}), you will have option to open frame image playback window, described in chapter~\ref{playback}.
+The \emph{Profiler statistics} section displays profiler health information, such as memory usage, or number of frames per second.
+
+Open the \emph{Trace statistics} section to see information about the trace, such as achieved timer resolution, number of captured zones, lock events, plot data points, memory allocations, etc.
 
 There's also a section containing the selected frame set timing statistics and histogram\footnote{See section~\ref{findzone} for a description of the histogram. Note that there are subtle differences in the available functionality.}. As a convenience you can switch the active frame set here and limit the displayed frame statistics to the frame range visible on the screen.
+
+If frame images were captured (section~\ref{frameimages}), you will have option to open frame image playback window, described in chapter~\ref{playback}.
 
 In this window you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, amount of total available RAM, etc. If application information was provided (see section~\ref{appinfo}), it will also be displayed here.
 
@@ -1935,6 +1956,24 @@ This window presents information and statistics about a lock. The lock events co
 You may view a live replay of the profiled application screen captures (see section~\ref{frameimages}) using this window. Playback is controlled by the \emph{\faPlay~Play} and \emph{\faPause~Pause} buttons and the \emph{Frame image} slider can be used to scrub to the desired time stamp. Alternatively you may use the \emph{\faCaretLeft} and \emph{\faCaretRight} buttons to change single frame back or forward.
 
 If the \emph{Sync timeline} option is selected, the timeline view will be focused on the frame corresponding to the currently displayed screen shot.
+
+\section{Configuration files}
+
+While the client part doesn't read or write anything to the disk (with the exception of accessing the \texttt{/proc} filesystem on Linux), the server part has to keep some persistent state. The naming conventions or internal data format of the files are not meant to be known by profiler users, but you may want to do a backup of the configuration, or move it to another machine.
+
+On Windows settings are stored in the \texttt{\%APPDATA\%/tracy} directory. All other platforms use the \texttt{\$XDG\_CONFIG\_HOME/tracy} directory, or \texttt{\$HOME/.config/tracy} if the \texttt{XDG\_CONFIG\_HOME} environment variable is not set.
+
+\subsection{Root directory}
+
+Various files at the root configuration directory store common profiler state such as UI windows position, connections history, etc.
+
+\subsection{Trace specific settings}
+
+Trace files saved on disk are immutable and can't be changed, but it may be desirable to add additional trace information to be displayed by the profiler, for example a custom description of the trace.
+
+This external data is stored in the \texttt{user/[letter]/[program]/[week]/[epoch]} directory, relative to the configuration's root directory. The \texttt{program} part is the name of the profiled application (for example \texttt{program.exe}). The \texttt{letter} part is a first letter of the profiled application's name. The \texttt{week} part is a number of weeks since the unix epoch, and the \texttt{epoch} part is a number of seconds since unix epoch. This rather unusual convention prevents creation of directories with hundreds of entries.
+
+User settings are never pruned by the profiler.
 
 \newpage
 \appendix

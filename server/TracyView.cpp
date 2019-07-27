@@ -10160,13 +10160,12 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Bottom-up call stack tree" ) )
 #endif
     {
-        ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameBottomUp );
+        SmallCheckbox( "Group by function name", &m_groupCallstackTreeByNameBottomUp );
         ImGui::SameLine();
         DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
         ImGui::SameLine();
-        ImGui::Checkbox( "Only active allocations", &m_activeOnlyBottomUp );
-        TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip." );
-        TextDisabledUnformatted( "Right click on function name to display allocations list. Right click on file name to open source file." );
+        SmallCheckbox( "Only active allocations", &m_activeOnlyBottomUp );
+        TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
 
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeBottomUp( mem );
@@ -10184,13 +10183,12 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Top-down call stack tree" ) )
 #endif
     {
-        ImGui::Checkbox( "Group by function name", &m_groupCallstackTreeByNameTopDown );
+        SmallCheckbox( "Group by function name", &m_groupCallstackTreeByNameTopDown );
         ImGui::SameLine();
         DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
         ImGui::SameLine();
-        ImGui::Checkbox( "Only active allocations", &m_activeOnlyTopDown );
-        TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip." );
-        TextDisabledUnformatted( "Right click on function name to display allocations list. Right click on file name to open source file." );
+        SmallCheckbox( "Only active allocations", &m_activeOnlyTopDown );
+        TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
 
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeTopDown( mem );

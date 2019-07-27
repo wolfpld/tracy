@@ -4260,13 +4260,29 @@ void View::DrawZoneInfoWindow()
     const auto tid = threadData->id;
     if( ev.name.active )
     {
+        if( m_bigFont ) ImGui::PushFont( m_bigFont );
         TextFocused( "Zone name:", m_worker.GetString( ev.name ) );
+        if( m_bigFont ) ImGui::PopFont();
+        if( srcloc.name.active )
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", m_worker.GetString( srcloc.name ) );
+        }
+        TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
     }
-    if( srcloc.name.active )
+    else if( srcloc.name.active )
     {
+        if( m_bigFont ) ImGui::PushFont( m_bigFont );
         TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
+        if( m_bigFont ) ImGui::PopFont();
+        TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
     }
-    TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+    else
+    {
+        if( m_bigFont ) ImGui::PushFont( m_bigFont );
+        TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+        if( m_bigFont ) ImGui::PopFont();
+    }
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
@@ -4847,7 +4863,9 @@ void View::DrawGpuInfoWindow()
     ImGui::Separator();
 
     const auto tid = GetZoneThread( ev );
+    if( m_bigFont ) ImGui::PushFont( m_bigFont );
     TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
+    if( m_bigFont ) ImGui::PopFont();
     TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();

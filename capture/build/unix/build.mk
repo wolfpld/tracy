@@ -14,6 +14,11 @@ BASE2 := $(shell egrep 'ClCompile.*c"' ../win32/$(PROJECT).vcxproj | sed -e 's/.
 SRC := $(filter-out $(FILTER),$(BASE))
 SRC2 := $(filter-out $(FILTER),$(BASE2))
 
+TBB := $(shell ld -ltbb -o /dev/null 2>/dev/null; echo $$?)
+ifeq ($(TBB),0)
+	LIBS += -ltbb
+endif
+
 OBJDIRBASE := obj/$(BUILD)
 OBJDIR := $(OBJDIRBASE)/o/o/o
 

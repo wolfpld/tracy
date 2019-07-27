@@ -25,6 +25,11 @@ else
 	LIBS += $(shell pkg-config --libs gtk+-2.0) -lGL
 endif
 
+TBB := $(shell ld -ltbb -o /dev/null 2>/dev/null; echo $$?)
+ifeq ($(TBB),0)
+	LIBS += -ltbb
+endif
+
 OBJDIRBASE := obj/$(BUILD)
 OBJDIR := $(OBJDIRBASE)/o/o/o
 

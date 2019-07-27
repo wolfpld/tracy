@@ -4165,7 +4165,7 @@ void View::DrawZoneInfoWindow()
 
     ImGui::SetNextWindowSize( ImVec2( 500, 400 ), ImGuiCond_FirstUseEver );
     bool show = true;
-    ImGui::Begin( "Zone info", &show );
+    ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
 #ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
@@ -4296,6 +4296,7 @@ void View::DrawZoneInfoWindow()
     }
 
     ImGui::Separator();
+    ImGui::BeginChild( "##zoneinfo" );
 
     const auto end = m_worker.GetZoneEnd( ev );
     const auto ztime = end - ev.start;
@@ -4765,6 +4766,7 @@ void View::DrawZoneInfoWindow()
         }
     }
 
+    ImGui::EndChild();
     ImGui::End();
 
     if( !show )
@@ -4781,7 +4783,7 @@ void View::DrawGpuInfoWindow()
 
     ImGui::SetNextWindowSize( ImVec2( 500, 400 ), ImGuiCond_FirstUseEver );
     bool show = true;
-    ImGui::Begin( "Zone info", &show );
+    ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
 #ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
@@ -4875,6 +4877,7 @@ void View::DrawGpuInfoWindow()
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
 
     ImGui::Separator();
+    ImGui::BeginChild( "##gpuinfo" );
 
     const auto end = m_worker.GetZoneEnd( ev );
     const auto ztime = end - ev.gpuStart;
@@ -5173,6 +5176,7 @@ void View::DrawGpuInfoWindow()
         }
     }
 
+    ImGui::EndChild();
     ImGui::End();
 
     if( !show )

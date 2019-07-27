@@ -8431,11 +8431,6 @@ void View::DrawInfo()
     TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
     if( m_bigFont ) ImGui::PopFont();
     TextFocused( "Capture time:", dtmp );
-    ImGui::TextDisabled( "Trace version:" );
-    ImGui::SameLine();
-    const auto version = m_worker.GetTraceVersion();
-    ImGui::Text( "%i.%i.%i", version >> 16, ( version >> 8 ) & 0xFF, version & 0xFF );
-
     {
         const auto& desc = m_userData.GetDescription();
         const auto descsz = std::min<size_t>( 255, desc.size() );
@@ -8461,6 +8456,10 @@ void View::DrawInfo()
     const auto ficnt = m_worker.GetFrameImageCount();
     if( ImGui::TreeNode( "Trace statistics" ) )
     {
+        ImGui::TextDisabled( "Trace version:" );
+        ImGui::SameLine();
+        const auto version = m_worker.GetTraceVersion();
+        ImGui::Text( "%i.%i.%i", version >> 16, ( version >> 8 ) & 0xFF, version & 0xFF );
         TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
         TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
         TextFocused( "Zones:", RealToString( m_worker.GetZoneCount(), true ) );

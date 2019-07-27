@@ -9958,7 +9958,7 @@ void View::DrawMemory()
     auto& mem = m_worker.GetMemData();
 
     ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Memory", &m_memInfo.show );
+    ImGui::Begin( "Memory", &m_memInfo.show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
     if( mem.data.empty() )
     {
@@ -9984,6 +9984,7 @@ void View::DrawMemory()
     const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
 
     ImGui::Separator();
+    ImGui::BeginChild( "##memory" );
 #ifdef TRACY_EXTENDED_FONT
     if( ImGui::TreeNode( ICON_FA_AT " Allocations" ) )
 #else
@@ -10200,6 +10201,7 @@ void View::DrawMemory()
         ImGui::TreePop();
     }
 
+    ImGui::EndChild();
     ImGui::End();
 }
 

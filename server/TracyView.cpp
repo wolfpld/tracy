@@ -9173,7 +9173,9 @@ void View::DrawLockInfoWindow()
 
     bool visible = true;
     ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
+    if( m_bigFont ) ImGui::PushFont( m_bigFont );
     ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
+    if( m_bigFont ) ImGui::PopFont();
     TextDisabledUnformatted( "Location:" );
     if( m_lockInfoAnim.Match( m_lockInfoWindow ) )
     {

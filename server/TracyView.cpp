@@ -8426,7 +8426,7 @@ void View::DrawInfo()
     const auto& io = ImGui::GetIO();
 
     ImGui::SetNextWindowSize( ImVec2( 400, 650 ), ImGuiCond_FirstUseEver );
-    ImGui::Begin( "Trace information", &m_showInfo );
+    ImGui::Begin( "Trace information", &m_showInfo, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     if( m_bigFont ) ImGui::PushFont( m_bigFont );
     TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
     if( m_bigFont ) ImGui::PopFont();
@@ -8449,6 +8449,8 @@ void View::DrawInfo()
     }
 
     ImGui::Separator();
+    ImGui::BeginChild( "##info" );
+
     if( ImGui::TreeNode( "Profiler statistics" ) )
     {
         TextFocused( "Profiler memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
@@ -9044,6 +9046,7 @@ void View::DrawInfo()
         }
     }
 
+    ImGui::EndChild();
     ImGui::End();
 }
 

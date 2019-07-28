@@ -9351,6 +9351,10 @@ void View::DrawPlayback()
     }
 
     ImGui::Begin( "Playback", &m_showPlayback, ImGuiWindowFlags_AlwaysAutoResize );
+    if( !m_showPlayback )
+    {
+        m_playback.pause = true;
+    }
     if( m_playback.zoom )
     {
         if( fi->flip )

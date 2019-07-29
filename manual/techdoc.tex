@@ -411,7 +411,7 @@ The client then awaits for a termination confirmation query from the server and 
 \subsubsection{Dequeue process}
 \label{dequeue}
 
-Events are dequeued in the \texttt{Dequeue()} function for the asynchronous queue and in the \texttt{DequeueSerial()} function for the synchronous queue. Both procedures have the same structure: get items from the queue, optionally process the auxiliary data, then send the event to the server.
+Events are dequeued in the \texttt{Dequeue()} function for the asynchronous queue (which also sets the thread identifiers, see section~\ref{threadid}) and in the \texttt{DequeueSerial()} function for the synchronous queue. Both procedures have the same structure: get items from the queue, optionally process the auxiliary data, then send the event to the server.
 
 You may remember that not all 32 bytes of the \texttt{QueueItem} structure might be used by the event (section~\ref{queueitems}). This is of course taken into account when sending data over the network. Only the used bytes are transmitted.
 
@@ -449,6 +449,13 @@ When looking at the \texttt{Queue*} family of structs, you can see some common p
 \item Thread identifiers are sent as 64-bit unsigned integers.
 \item Pointers are sent as 64-bit unsigned integers. This is true even on 32-bit systems, as it greatly simplifies further processing.
 \end{itemize}
+
+\subsubsection{Thread identifiers}
+\label{threadid}
+
+When events are added to the asynchronous queue, thread identifiers should not be assigned. Since each thread has its own internal queue, the originating thread id can be recovered and filled in during the dequeue process. There may be some exceptions, for example the GPU events may want to send a null thread identifier.
+
+Items added to the synchronous queue must not have an unset thread identifier, as there is no way to recover it during dequeue.
 
 \subsubsection{Source locations}
 

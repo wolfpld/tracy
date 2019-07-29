@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "concurrentqueue.h"
+#include "tracy_concurrentqueue.h"
 #include "TracyCallstack.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"

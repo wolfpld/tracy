@@ -76,7 +76,6 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 namespace moodycamel { namespace details {
 	static_assert(sizeof(unsigned long) == sizeof(std::uint32_t), "Expected size of unsigned long to be 32 bits on Windows");
 	typedef std::uint32_t thread_id_t;
-	static const thread_id_t invalid_thread_id  = 0;			// See http://blogs.msdn.com/b/oldnewthing/archive/2004/02/23/78395.aspx
 	static inline thread_id_t thread_id() { return static_cast<thread_id_t>(::GetCurrentThreadId()); }
 } }
 #elif defined(__arm__) || defined(_M_ARM) || defined(__aarch64__) || (defined(__APPLE__) && TARGET_OS_IPHONE)
@@ -84,7 +83,6 @@ namespace moodycamel { namespace details {
 	static_assert(sizeof(std::thread::id) == 4 || sizeof(std::thread::id) == 8, "std::thread::id is expected to be either 4 or 8 bytes");
 	
 	typedef std::thread::id thread_id_t;
-	static const thread_id_t invalid_thread_id;         // Default ctor creates invalid ID
 
 	static inline thread_id_t thread_id() { return std::this_thread::get_id(); }
 
@@ -124,7 +122,6 @@ namespace moodycamel { namespace details {
 #endif
 namespace moodycamel { namespace details {
 	typedef std::uintptr_t thread_id_t;
-	static const thread_id_t invalid_thread_id  = 0;		// Address can't be nullptr
 	static inline thread_id_t thread_id() { static MOODYCAMEL_THREADLOCAL int x; return reinterpret_cast<thread_id_t>(&x); }
 } }
 #endif

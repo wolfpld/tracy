@@ -242,7 +242,6 @@ struct ProducerToken;
 struct ConsumerToken;
 
 template<typename T, typename Traits> class ConcurrentQueue;
-template<typename T, typename Traits> class BlockingConcurrentQueue;
 class ConcurrentQueueTests;
 
 
@@ -362,9 +361,6 @@ struct ProducerToken
 	template<typename T, typename Traits>
 	explicit ProducerToken(ConcurrentQueue<T, Traits>& queue);
 	
-	template<typename T, typename Traits>
-	explicit ProducerToken(BlockingConcurrentQueue<T, Traits>& queue);
-	
 	ProducerToken(ProducerToken&& other) MOODYCAMEL_NOEXCEPT
 		: producer(other.producer)
 	{
@@ -426,9 +422,6 @@ struct ConsumerToken
 {
 	template<typename T, typename Traits>
 	explicit ConsumerToken(ConcurrentQueue<T, Traits>& q);
-	
-	template<typename T, typename Traits>
-	explicit ConsumerToken(BlockingConcurrentQueue<T, Traits>& q);
 	
 	ConsumerToken(ConsumerToken&& other) MOODYCAMEL_NOEXCEPT
 		: initialOffset(other.initialOffset), lastKnownGlobalOffset(other.lastKnownGlobalOffset), itemsConsumedFromCurrent(other.itemsConsumedFromCurrent), currentProducer(other.currentProducer), desiredProducer(other.desiredProducer)
@@ -2123,27 +2116,10 @@ ProducerToken::ProducerToken(ConcurrentQueue<T, Traits>& queue)
 }
 
 template<typename T, typename Traits>
-ProducerToken::ProducerToken(BlockingConcurrentQueue<T, Traits>& queue)
-	: producer(reinterpret_cast<ConcurrentQueue<T, Traits>*>(&queue)->recycle_or_create_producer(true))
-{
-	if (producer != nullptr) {
-		producer->token = this;
-	}
-}
-
-template<typename T, typename Traits>
 ConsumerToken::ConsumerToken(ConcurrentQueue<T, Traits>& queue)
 	: itemsConsumedFromCurrent(0), currentProducer(nullptr), desiredProducer(nullptr)
 {
 	initialOffset = queue.nextExplicitConsumerId.fetch_add(1, std::memory_order_release);
-	lastKnownGlobalOffset = static_cast<std::uint32_t>(-1);
-}
-
-template<typename T, typename Traits>
-ConsumerToken::ConsumerToken(BlockingConcurrentQueue<T, Traits>& queue)
-	: itemsConsumedFromCurrent(0), currentProducer(nullptr), desiredProducer(nullptr)
-{
-	initialOffset = reinterpret_cast<ConcurrentQueue<T, Traits>*>(&queue)->nextExplicitConsumerId.fetch_add(1, std::memory_order_release);
 	lastKnownGlobalOffset = static_cast<std::uint32_t>(-1);
 }
 

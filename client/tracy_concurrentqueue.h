@@ -1504,7 +1504,7 @@ private:
             if (this->tailBlock != nullptr && this->tailBlock->next->ConcurrentQueue::Block::is_empty()) {
                 // We can re-use the block ahead of us, it's empty!					
                 this->tailBlock = this->tailBlock->next;
-                this->tailBlock->ConcurrentQueue::Block::template reset_empty();
+                this->tailBlock->ConcurrentQueue::Block::reset_empty();
 
                 // We'll put the block on the block index (guaranteed to be room since we're conceptually removing the
                 // last block from it first -- except instead of removing then adding, we can just overwrite).

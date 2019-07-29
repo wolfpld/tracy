@@ -32,6 +32,7 @@
 
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyForceInline.hpp"
+#include "../common/TracySystem.hpp"
 
 #if defined(__GNUC__)
 // Disable -Wconversion warnings (spuriously triggered when Traits::size_t and
@@ -252,9 +253,10 @@ namespace details
 		ConcurrentQueueProducerTypelessBase* next;
 		std::atomic<bool> inactive;
 		ProducerToken* token;
+        uint64_t threadId;
 		
 		ConcurrentQueueProducerTypelessBase()
-			: next(nullptr), inactive(false), token(nullptr)
+			: next(nullptr), inactive(false), token(nullptr), threadId(0)
 		{
 		}
 	};
@@ -2112,6 +2114,7 @@ ProducerToken::ProducerToken(ConcurrentQueue<T, Traits>& queue)
 {
 	if (producer != nullptr) {
 		producer->token = this;
+        producer->threadId = detail::GetThreadHandleImpl();
 	}
 }
 

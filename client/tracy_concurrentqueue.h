@@ -77,7 +77,6 @@ namespace moodycamel { namespace details {
 	static_assert(sizeof(unsigned long) == sizeof(std::uint32_t), "Expected size of unsigned long to be 32 bits on Windows");
 	typedef std::uint32_t thread_id_t;
 	static const thread_id_t invalid_thread_id  = 0;			// See http://blogs.msdn.com/b/oldnewthing/archive/2004/02/23/78395.aspx
-	static const thread_id_t invalid_thread_id2 = 0xFFFFFFFFU;	// Not technically guaranteed to be invalid, but is never used in practice. Note that all Win32 thread IDs are presently multiples of 4.
 	static inline thread_id_t thread_id() { return static_cast<thread_id_t>(::GetCurrentThreadId()); }
 } }
 #elif defined(__arm__) || defined(_M_ARM) || defined(__aarch64__) || (defined(__APPLE__) && TARGET_OS_IPHONE)
@@ -87,9 +86,6 @@ namespace moodycamel { namespace details {
 	typedef std::thread::id thread_id_t;
 	static const thread_id_t invalid_thread_id;         // Default ctor creates invalid ID
 
-	// Note we don't define a invalid_thread_id2 since std::thread::id doesn't have one; it's
-	// only used if MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED is defined anyway, which it won't
-	// be.
 	static inline thread_id_t thread_id() { return std::this_thread::get_id(); }
 
 	template<std::size_t> struct thread_id_size { };
@@ -129,7 +125,6 @@ namespace moodycamel { namespace details {
 namespace moodycamel { namespace details {
 	typedef std::uintptr_t thread_id_t;
 	static const thread_id_t invalid_thread_id  = 0;		// Address can't be nullptr
-	static const thread_id_t invalid_thread_id2 = 1;		// Member accesses off a null pointer are also generally invalid. Plus it's not aligned.
 	static inline thread_id_t thread_id() { static MOODYCAMEL_THREADLOCAL int x; return reinterpret_cast<thread_id_t>(&x); }
 } }
 #endif
@@ -171,16 +166,6 @@ namespace moodycamel { namespace details {
 #define MOODYCAMEL_NOEXCEPT noexcept
 #define MOODYCAMEL_NOEXCEPT_CTOR(type, valueType, expr) noexcept(expr)
 #define MOODYCAMEL_NOEXCEPT_ASSIGN(type, valueType, expr) noexcept(expr)
-#endif
-#endif
-
-#ifndef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
-// VS2013 doesn't support `thread_local`, and MinGW-w64 w/ POSIX threading has a crippling bug: http://sourceforge.net/p/mingw-w64/bugs/445
-// g++ <=4.7 doesn't support thread_local either.
-// Finally, iOS/ARM doesn't have support for it either, and g++/ARM allows it to compile but it's unconfirmed to actually work
-#if (!defined(_MSC_VER) || _MSC_VER >= 1900) && (!defined(__MINGW32__) && !defined(__MINGW64__) || !defined(__WINPTHREADS_VERSION)) && (!defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)) && (!defined(__APPLE__) || !TARGET_OS_IPHONE) && !defined(__arm__) && !defined(_M_ARM) && !defined(__aarch64__)
-// Assume `thread_local` is fully supported in all other C++11 compilers/platforms
-//#define MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED    // always disabled for now since several users report having problems with it on
 #endif
 #endif
 
@@ -459,66 +444,6 @@ namespace details
 	template<typename T> struct is_trivially_destructible : std::is_trivially_destructible<T> { };
 #else
 	template<typename T> struct is_trivially_destructible : std::has_trivial_destructor<T> { };
-#endif
-	
-#ifdef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
-	struct ThreadExitListener
-	{
-		typedef void (*callback_t)(void*);
-		callback_t callback;
-		void* userData;
-		
-		ThreadExitListener* next;		// reserved for use by the ThreadExitNotifier
-	};
-	
-	
-	class ThreadExitNotifier
-	{
-	public:
-		static void subscribe(ThreadExitListener* listener)
-		{
-			auto& tlsInst = instance();
-			listener->next = tlsInst.tail;
-			tlsInst.tail = listener;
-		}
-		
-		static void unsubscribe(ThreadExitListener* listener)
-		{
-			auto& tlsInst = instance();
-			ThreadExitListener** prev = &tlsInst.tail;
-			for (auto ptr = tlsInst.tail; ptr != nullptr; ptr = ptr->next) {
-				if (ptr == listener) {
-					*prev = ptr->next;
-					break;
-				}
-				prev = &ptr->next;
-			}
-		}
-		
-	private:
-		ThreadExitNotifier() : tail(nullptr) { }
-		ThreadExitNotifier(ThreadExitNotifier const&) MOODYCAMEL_DELETE_FUNCTION;
-		ThreadExitNotifier& operator=(ThreadExitNotifier const&) MOODYCAMEL_DELETE_FUNCTION;
-		
-		~ThreadExitNotifier()
-		{
-			// This thread is about to exit, let everyone know!
-			assert(this == &instance() && "If this assert fails, you likely have a buggy compiler! Change the preprocessor conditions such that MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED is no longer defined.");
-			for (auto ptr = tail; ptr != nullptr; ptr = ptr->next) {
-				ptr->callback(ptr->userData);
-			}
-		}
-		
-		// Thread-local
-		static inline ThreadExitNotifier& instance()
-		{
-			static thread_local ThreadExitNotifier notifier;
-			return notifier;
-		}
-		
-	private:
-		ThreadExitListener* tail;
-	};
 #endif
 	
 	template<typename T> struct static_is_lock_free_num { enum { value = 0 }; };

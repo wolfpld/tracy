@@ -957,18 +957,18 @@ private:
 	template<typename U>
 	inline bool inner_enqueue(producer_token_t const& token, U&& element)
 	{
-		return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue(std::forward<U>(element));
+		return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::enqueue(std::forward<U>(element));
 	}
 
     tracy_force_inline T* inner_enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
     {
-        return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_begin(currentTailIndex);
+        return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::enqueue_begin(currentTailIndex);
     }
 	
 	template<typename It>
 	inline bool inner_enqueue_bulk(producer_token_t const& token, It itemFirst, size_t count)
 	{
-		return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_bulk(itemFirst, count);
+		return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::enqueue_bulk(itemFirst, count);
 	}
 	
 	inline bool update_current_producer_after_rotation(consumer_token_t& token)
@@ -1407,10 +1407,10 @@ private:
 				// We reached the end of a block, start a new one
 				auto startBlock = this->tailBlock;
 				auto originalBlockIndexSlotsUsed = pr_blockIndexSlotsUsed;
-				if (this->tailBlock != nullptr && this->tailBlock->next->ConcurrentQueue::Block::template is_empty()) {
+				if (this->tailBlock != nullptr && this->tailBlock->next->ConcurrentQueue::Block::is_empty()) {
 					// We can re-use the block ahead of us, it's empty!					
 					this->tailBlock = this->tailBlock->next;
-					this->tailBlock->ConcurrentQueue::Block::template reset_empty();
+					this->tailBlock->ConcurrentQueue::Block::reset_empty();
 					
 					// We'll put the block on the block index (guaranteed to be room since we're conceptually removing the
 					// last block from it first -- except instead of removing then adding, we can just overwrite).
@@ -1443,11 +1443,11 @@ private:
 					}
 					
 					// Insert a new block in the circular linked list
-					auto newBlock = this->parent->ConcurrentQueue::template requisition_block();
+					auto newBlock = this->parent->ConcurrentQueue::requisition_block();
 					if (newBlock == nullptr) {
 						return false;
 					}
-					newBlock->ConcurrentQueue::Block::template reset_empty();
+					newBlock->ConcurrentQueue::Block::reset_empty();
 					if (this->tailBlock == nullptr) {
 						newBlock->next = newBlock;
 					}
@@ -1522,8 +1522,8 @@ private:
                 }
 
                 // Insert a new block in the circular linked list
-                auto newBlock = this->parent->ConcurrentQueue::template requisition_block();
-                newBlock->ConcurrentQueue::Block::template reset_empty();
+                auto newBlock = this->parent->ConcurrentQueue::requisition_block();
+                newBlock->ConcurrentQueue::Block::reset_empty();
                 if (this->tailBlock == nullptr) {
                     newBlock->next = newBlock;
                 }
@@ -1633,7 +1633,7 @@ private:
 							~Guard()
 							{
 								(*block)[index]->~T();
-								block->ConcurrentQueue::Block::template set_empty(index);
+								block->ConcurrentQueue::Block::set_empty(index);
 							}
 						} guard = { block, index };
 						
@@ -1642,7 +1642,7 @@ private:
 					else {
 						element = std::move(el);
 						el.~T();
-						block->ConcurrentQueue::Block::template set_empty(index);
+						block->ConcurrentQueue::Block::set_empty(index);
 					}
 					
 					return true;
@@ -1674,7 +1674,7 @@ private:
 			index_t currentTailIndex = (startTailIndex - 1) & ~static_cast<index_t>(BLOCK_SIZE - 1);
 			if (blockBaseDiff > 0) {
 				// Allocate as many blocks as possible from ahead
-				while (blockBaseDiff > 0 && this->tailBlock != nullptr && this->tailBlock->next != firstAllocatedBlock && this->tailBlock->next->ConcurrentQueue::Block::template is_empty()) {
+				while (blockBaseDiff > 0 && this->tailBlock != nullptr && this->tailBlock->next != firstAllocatedBlock && this->tailBlock->next->ConcurrentQueue::Block::is_empty()) {
 					blockBaseDiff -= static_cast<index_t>(BLOCK_SIZE);
 					currentTailIndex += static_cast<index_t>(BLOCK_SIZE);
 					
@@ -1711,7 +1711,7 @@ private:
 					}
 					
 					// Insert a new block in the circular linked list
-					auto newBlock = this->parent->ConcurrentQueue::template requisition_block();
+					auto newBlock = this->parent->ConcurrentQueue::requisition_block();
 					if (newBlock == nullptr) {
 						pr_blockIndexFront = originalBlockIndexFront;
 						pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
@@ -1719,7 +1719,7 @@ private:
 						return false;
 					}
 					
-					newBlock->ConcurrentQueue::Block::template set_all_empty();
+					newBlock->ConcurrentQueue::Block::set_all_empty();
 					if (this->tailBlock == nullptr) {
 						newBlock->next = newBlock;
 					}
@@ -1742,7 +1742,7 @@ private:
 				// publish the new block index front
 				auto block = firstAllocatedBlock;
 				while (true) {
-					block->ConcurrentQueue::Block::template reset_empty();
+					block->ConcurrentQueue::Block::reset_empty();
 					if (block == this->tailBlock) {
 						break;
 					}

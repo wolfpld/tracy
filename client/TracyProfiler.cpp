@@ -129,23 +129,6 @@ struct RPMallocInit
 #  else
         std::call_once( once_flag, InitOnceCallback );
 #  endif
-        // We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might
-        // not be called on this thread if another thread has executed it earlier.
-        rpmalloc_thread_initialize();
-    }
-};
-
-struct RPMallocThreadInit
-{
-    RPMallocThreadInit()
-    {
-#  if ( defined _WIN32 || defined __CYGWIN__ ) && _WIN32_WINNT >= _WIN32_WINNT_VISTA
-        InitOnceExecuteOnce( &InitOnce, InitOnceCallback, nullptr, nullptr );
-#  elif defined __linux__
-        pthread_once( &once_control, InitOnceCallback );
-#  else
-        std::call_once( once_flag, InitOnceCallback );
-#  endif
         rpmalloc_thread_initialize();
     }
 };
@@ -918,7 +901,6 @@ struct ThreadNameData;
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
 
 struct RPMallocInit { RPMallocInit() { rpmalloc_initialize(); } };
-struct RPMallocThreadInit { RPMallocThreadInit() { rpmalloc_thread_initialize(); } };
 
 TRACY_API void InitRPMallocThread()
 {
@@ -950,7 +932,6 @@ struct ProfilerThreadData
 {
     ProfilerThreadData( ProfilerData& data ) : token( data ), gpuCtx( { nullptr } ) {}
     RPMallocInit rpmalloc_init;
-    RPMallocThreadInit rpmalloc_thread_init;
     ProducerWrapper token;
     GpuCtxWrapper gpuCtx;
 #  ifdef TRACY_ON_DEMAND
@@ -1005,7 +986,7 @@ TRACY_API void InitRPMallocThread()
 // 1a. But s_queue is needed for initialization of variables in point 2.
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
 
-thread_local RPMallocThreadInit init_order(106) s_rpmalloc_thread_init;
+thread_local RPMallocInit init_order(106) s_rpmalloc_thread_init;
 
 // 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
 thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );

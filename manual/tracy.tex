@@ -518,7 +518,10 @@ noborder=true,
 couleur=black!5,
 logo=\bcattention
 ]{Caveats}
-Frame images are compressed on a second client profiler thread\footnote{Small part of compression task is performed on the server.}, to reduce memory usage of queued images. This might have impact on the performance of the profiled application.
+\begin{itemize}
+\item Frame images are compressed on a second client profiler thread\footnote{Small part of compression task is performed on the server.}, to reduce memory usage of queued images. This might have impact on the performance of the profiled application.
+\item Due to implementation details of the network buffer, single frame image cannot be greater than 256 KB after compression. Note that $\frac{960\times540}{2} \approx 253$ KB.
+\end{itemize}
 \end{bclogo}
 
 \paragraph{OpenGL screen capture code example}

@@ -39,29 +39,14 @@
 // upon assigning any computed values)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
-
-#ifdef MCDBGQ_USE_RELACY
-#pragma GCC diagnostic ignored "-Wint-to-pointer-cast"
-#endif
 #endif
 
 #if defined(__APPLE__)
 #include "TargetConditionals.h"
 #endif
 
-#ifdef MCDBGQ_USE_RELACY
-#include "relacy/relacy_std.hpp"
-#include "relacy_shims.h"
-// We only use malloc/free anyway, and the delete macro messes up `= delete` method declarations.
-// We'll override the default trait malloc ourselves without a macro.
-#undef new
-#undef delete
-#undef malloc
-#undef free
-#else
 #include <atomic>		// Requires C++11. Sorry VS2010.
 #include <cassert>
-#endif
 #include <cstddef>              // for max_align_t
 #include <cstdint>
 #include <cstdlib>
@@ -84,14 +69,7 @@ namespace moodycamel { namespace details {
 		static thread_id_hash_t prehash(thread_id_t const& x) { return x; }
 	};
 } }
-#if defined(MCDBGQ_USE_RELACY)
-namespace moodycamel { namespace details {
-	typedef std::uint32_t thread_id_t;
-	static const thread_id_t invalid_thread_id  = 0xFFFFFFFFU;
-	static const thread_id_t invalid_thread_id2 = 0xFFFFFFFEU;
-	static inline thread_id_t thread_id() { return rl::thread_index(); }
-} }
-#elif defined(_WIN32) || defined(__WINDOWS__) || defined(__WIN32__)
+#if defined(_WIN32) || defined(__WINDOWS__) || defined(__WIN32__)
 // No sense pulling in windows.h in a header, we'll manually declare the function
 // we use and rely on backwards-compatibility for this not to break
 extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
@@ -197,16 +175,12 @@ namespace moodycamel { namespace details {
 #endif
 
 #ifndef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
-#ifdef MCDBGQ_USE_RELACY
-#define MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
-#else
 // VS2013 doesn't support `thread_local`, and MinGW-w64 w/ POSIX threading has a crippling bug: http://sourceforge.net/p/mingw-w64/bugs/445
 // g++ <=4.7 doesn't support thread_local either.
 // Finally, iOS/ARM doesn't have support for it either, and g++/ARM allows it to compile but it's unconfirmed to actually work
 #if (!defined(_MSC_VER) || _MSC_VER >= 1900) && (!defined(__MINGW32__) && !defined(__MINGW64__) || !defined(__WINPTHREADS_VERSION)) && (!defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)) && (!defined(__APPLE__) || !TARGET_OS_IPHONE) && !defined(__arm__) && !defined(_M_ARM) && !defined(__aarch64__)
 // Assume `thread_local` is fully supported in all other C++11 compilers/platforms
 //#define MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED    // always disabled for now since several users report having problems with it on
-#endif
 #endif
 #endif
 
@@ -336,7 +310,6 @@ struct ConcurrentQueueDefaultTraits
 	static const size_t MAX_SUBQUEUE_SIZE = details::const_numeric_max<size_t>::value;
 	
 	
-#ifndef MCDBGQ_USE_RELACY
 	// Memory allocation can be customized if needed.
 	// malloc should return nullptr on failure, and handle alignment like std::malloc.
 #if defined(malloc) || defined(free)
@@ -349,12 +322,6 @@ struct ConcurrentQueueDefaultTraits
 #else
 	static inline void* malloc(size_t size) { return tracy::tracy_malloc(size); }
 	static inline void free(void* ptr) { return tracy::tracy_free(ptr); }
-#endif
-#else
-	// Debug versions when running under the Relacy race detector (ignore
-	// these in user code)
-	static inline void* malloc(size_t size) { return rl::rl_malloc(size, $); }
-	static inline void free(void* ptr) { return rl::rl_free(ptr, $); }
 #endif
 };
 
@@ -507,10 +474,6 @@ namespace details
 #endif
 	
 #ifdef MOODYCAMEL_CPP11_THREAD_LOCAL_SUPPORTED
-#ifdef MCDBGQ_USE_RELACY
-	typedef RelacyThreadExitListener ThreadExitListener;
-	typedef RelacyThreadExitNotifier ThreadExitNotifier;
-#else
 	struct ThreadExitListener
 	{
 		typedef void (*callback_t)(void*);
@@ -568,7 +531,6 @@ namespace details
 	private:
 		ThreadExitListener* tail;
 	};
-#endif
 #endif
 	
 	template<typename T> struct static_is_lock_free_num { enum { value = 0 }; };
@@ -1378,9 +1340,6 @@ private:
 		
 		inline void add(N* node)
 		{
-#if MCDBGQ_NOLOCKFREE_FREELIST
-			debug::DebugLock lock(mutex);
-#endif		
 			// We know that the should-be-on-freelist bit is 0 at this point, so it's safe to
 			// set it using a fetch_add
 			if (node->freeListRefs.fetch_add(SHOULD_BE_ON_FREELIST, std::memory_order_acq_rel) == 0) {
@@ -1392,9 +1351,6 @@ private:
 		
 		inline N* try_get()
 		{
-#if MCDBGQ_NOLOCKFREE_FREELIST
-			debug::DebugLock lock(mutex);
-#endif		
 			auto head = freeListHead.load(std::memory_order_acquire);
 			while (head != nullptr) {
 				auto prevHead = head;
@@ -1463,10 +1419,6 @@ private:
 	
 	static const std::uint32_t REFS_MASK = 0x7FFFFFFF;
 	static const std::uint32_t SHOULD_BE_ON_FREELIST = 0x80000000;
-		
-#if MCDBGQ_NOLOCKFREE_FREELIST
-		debug::DebugMutex mutex;
-#endif
 	};
 	
 	
@@ -2988,9 +2940,6 @@ private:
 	
 	ProducerBase* recycle_or_create_producer(bool isExplicit, bool& recycled)
 	{
-#if MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
-		debug::DebugLock lock(implicitProdMutex);
-#endif
 		// Try to re-use one first
 		for (auto ptr = producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
 			if (ptr->inactive.load(std::memory_order_relaxed) && ptr->isExplicit == isExplicit) {
@@ -3140,10 +3089,6 @@ private:
 		
 		// Code and algorithm adapted from http://preshing.com/20130605/the-worlds-simplest-lock-free-hash-table
 		
-#if MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
-		debug::DebugLock lock(implicitProdMutex);
-#endif
-		
 		auto id = details::thread_id();
 		auto hashedId = details::hash_thread_id(id);
 		
@@ -3285,9 +3230,6 @@ private:
 		details::ThreadExitNotifier::unsubscribe(&producer->threadExitListener);
 		
 		// Remove from hash
-#if MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
-		debug::DebugLock lock(implicitProdMutex);
-#endif
 		auto hash = implicitProducerHash.load(std::memory_order_acquire);
 		assert(hash != nullptr);		// The thread exit listener is only registered if we were added to a hash in the first place
 		auto id = details::thread_id();
@@ -3373,11 +3315,7 @@ private:
 	Block* initialBlockPool;
 	size_t initialBlockPoolSize;
 	
-#if !MCDBGQ_USEDEBUGFREELIST
 	FreeList<Block> freeList;
-#else
-	debug::DebugFreeList<Block> freeList;
-#endif
 	
 	std::atomic<ImplicitProducerHash*> implicitProducerHash;
 	std::atomic<size_t> implicitProducerHashCount;		// Number of slots logically used
@@ -3387,10 +3325,6 @@ private:
 	
 	std::atomic<std::uint32_t> nextExplicitConsumerId;
 	std::atomic<std::uint32_t> globalExplicitConsumerOffset;
-	
-#if MCDBGQ_NOLOCKFREE_IMPLICITPRODHASH
-	debug::DebugMutex implicitProdMutex;
-#endif
 };
 
 

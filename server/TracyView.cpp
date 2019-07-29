@@ -17,6 +17,14 @@
 #include <stdlib.h>
 #include <time.h>
 
+#ifdef __AVX2__
+#  ifdef _MSC_VER
+#    include <intrin.h>
+#  else
+#    include <x86intrin.h>
+#  endif
+#endif
+
 #include "../common/TracyMutex.hpp"
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
@@ -3686,11 +3694,42 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     auto tmp = it;
                     ++tmp;
                     const auto sz = end - tmp;
+#ifdef __AVX2__
+                    __m256d vmin = _mm256_set1_pd( min );
+                    __m256d vmax = vmin;
+                    const auto ssz = sz / 4;
+                    for( ptrdiff_t i=0; i<ssz; i++ )
+                    {
+                        __m256d v0 = _mm256_loadu_pd( (const double*)(tmp+0) );
+                        __m256d v1 = _mm256_loadu_pd( (const double*)(tmp+2) );
+                        __m256d v = _mm256_unpackhi_pd( v0, v1 );
+                        vmin = _mm256_min_pd( vmin, v );
+                        vmax = _mm256_max_pd( vmax, v );
+                        tmp += 4;
+                    }
+                    __m256d min0 = _mm256_shuffle_pd( vmin, vmin, 5 );
+                    __m256d max0 = _mm256_shuffle_pd( vmax, vmax, 5 );
+                    __m256d min1 = _mm256_min_pd( vmin, min0 );
+                    __m256d max1 = _mm256_max_pd( vmax, max0 );
+                    __m256d min2 = _mm256_permute4x64_pd( min1, _MM_SHUFFLE( 0, 0, 2, 2 ) );
+                    __m256d max2 = _mm256_permute4x64_pd( max1, _MM_SHUFFLE( 0, 0, 2, 2 ) );
+                    __m256d min3 = _mm256_min_pd( min1, min2 );
+                    __m256d max3 = _mm256_max_pd( max1, max2 );
+                    min = _mm256_cvtsd_f64( min3 );
+                    max = _mm256_cvtsd_f64( max3 );
+                    const auto lsz = sz % 4;
+                    for( ptrdiff_t i=0; i<lsz; i++ )
+                    {
+                        min = tmp[i].val < min ? tmp[i].val : min;
+                        max = tmp[i].val > max ? tmp[i].val : max;
+                    }
+#else
                     for( ptrdiff_t i=0; i<sz; i++ )
                     {
                         min = tmp[i].val < min ? tmp[i].val : min;
                         max = tmp[i].val > max ? tmp[i].val : max;
                     }
+#endif
                 }
                 if( min == max )
                 {

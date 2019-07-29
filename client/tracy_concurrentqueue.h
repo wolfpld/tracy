@@ -1511,9 +1511,6 @@ private:
 		Block()
 			: next(nullptr), elementsCompletelyDequeued(0), freeListRefs(0), freeListNext(nullptr), shouldBeOnFreeList(false), dynamicallyAllocated(true)
 		{
-#if MCDBGQ_TRACKMEM
-			owner = nullptr;
-#endif
 		}
 		
 		template<InnerQueueContext context>
@@ -1640,20 +1637,10 @@ private:
 		std::atomic<Block*> freeListNext;
 		std::atomic<bool> shouldBeOnFreeList;
 		bool dynamicallyAllocated;		// Perhaps a better name for this would be 'isNotPartOfInitialBlockPool'
-		
-#if MCDBGQ_TRACKMEM
-		void* owner;
-#endif
 	};
 	static_assert(std::alignment_of<Block>::value >= std::alignment_of<details::max_align_t>::value, "Internal error: Blocks must be at least as aligned as the type they are wrapping");
 
 
-#if MCDBGQ_TRACKMEM
-public:
-	struct MemStats;
-private:
-#endif
-	
 	///////////////////////////
 	// Producer base
 	///////////////////////////
@@ -1717,11 +1704,6 @@ private:
 	public:
 		bool isExplicit;
 		ConcurrentQueue* parent;
-		
-	protected:
-#if MCDBGQ_TRACKMEM
-		friend struct MemStats;
-#endif
 	};
 	
 	
@@ -1862,9 +1844,6 @@ private:
 					if (newBlock == nullptr) {
 						return false;
 					}
-#if MCDBGQ_TRACKMEM
-					newBlock->owner = this;
-#endif
 					newBlock->ConcurrentQueue::Block::template reset_empty<explicit_context>();
 					if (this->tailBlock == nullptr) {
 						newBlock->next = newBlock;
@@ -1942,9 +1921,6 @@ private:
 
                 // Insert a new block in the circular linked list
                 auto newBlock = this->parent->ConcurrentQueue::template requisition_block<allocMode>();
-#if MCDBGQ_TRACKMEM
-                newBlock->owner = this;
-#endif
                 newBlock->ConcurrentQueue::Block::template reset_empty<explicit_context>();
                 if (this->tailBlock == nullptr) {
                     newBlock->next = newBlock;
@@ -2142,9 +2118,6 @@ private:
 						return false;
 					}
 					
-#if MCDBGQ_TRACKMEM
-					newBlock->owner = this;
-#endif
 					newBlock->ConcurrentQueue::Block::template set_all_empty<explicit_context>();
 					if (this->tailBlock == nullptr) {
 						newBlock->next = newBlock;
@@ -2396,10 +2369,6 @@ private:
 		ExplicitProducer* nextExplicitProducer;
 	private:
 #endif
-		
-#if MCDBGQ_TRACKMEM
-		friend struct MemStats;
-#endif
 	};
 	
     ExplicitProducer* get_explicit_producer(producer_token_t const& token)
@@ -2506,9 +2475,6 @@ private:
 					idxEntry->value.store(nullptr, std::memory_order_relaxed);
 					return false;
 				}
-#if MCDBGQ_TRACKMEM
-				newBlock->owner = this;
-#endif
 				newBlock->ConcurrentQueue::Block::template reset_empty<implicit_context>();
 				
 				if (!MOODYCAMEL_NOEXCEPT_CTOR(T, U, new (nullptr) T(std::forward<U>(element)))) {
@@ -2669,9 +2635,6 @@ private:
 						return false;
 					}
 					
-#if MCDBGQ_TRACKMEM
-					newBlock->owner = this;
-#endif
 					newBlock->ConcurrentQueue::Block::template reset_empty<implicit_context>();
 					newBlock->next = nullptr;
 					
@@ -3010,9 +2973,6 @@ private:
 #if MCDBGQ_NOLOCKFREE_IMPLICITPRODBLOCKINDEX
 		mutable debug::DebugMutex mutex;
 #endif
-#if MCDBGQ_TRACKMEM
-		friend struct MemStats;
-#endif
 	};
 	
 	
@@ -3050,9 +3010,6 @@ private:
 	
 	inline void add_block_to_free_list(Block* block)
 	{
-#if MCDBGQ_TRACKMEM
-		block->owner = nullptr;
-#endif
 		freeList.add(block);
 	}
 	
@@ -3086,112 +3043,6 @@ private:
 		
 		return create<Block>();
 	}
-	
-
-#if MCDBGQ_TRACKMEM
-	public:
-		struct MemStats {
-			size_t allocatedBlocks;
-			size_t usedBlocks;
-			size_t freeBlocks;
-			size_t ownedBlocksExplicit;
-			size_t ownedBlocksImplicit;
-			size_t implicitProducers;
-			size_t explicitProducers;
-			size_t elementsEnqueued;
-			size_t blockClassBytes;
-			size_t queueClassBytes;
-			size_t implicitBlockIndexBytes;
-			size_t explicitBlockIndexBytes;
-			
-			friend class ConcurrentQueue;
-			
-		private:
-			static MemStats getFor(ConcurrentQueue* q)
-			{
-				MemStats stats = { 0 };
-				
-				stats.elementsEnqueued = q->size_approx();
-			
-				auto block = q->freeList.head_unsafe();
-				while (block != nullptr) {
-					++stats.allocatedBlocks;
-					++stats.freeBlocks;
-					block = block->freeListNext.load(std::memory_order_relaxed);
-				}
-				
-				for (auto ptr = q->producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
-					bool implicit = dynamic_cast<ImplicitProducer*>(ptr) != nullptr;
-					stats.implicitProducers += implicit ? 1 : 0;
-					stats.explicitProducers += implicit ? 0 : 1;
-					
-					if (implicit) {
-						auto prod = static_cast<ImplicitProducer*>(ptr);
-						stats.queueClassBytes += sizeof(ImplicitProducer);
-						auto head = prod->headIndex.load(std::memory_order_relaxed);
-						auto tail = prod->tailIndex.load(std::memory_order_relaxed);
-						auto hash = prod->blockIndex.load(std::memory_order_relaxed);
-						if (hash != nullptr) {
-							for (size_t i = 0; i != hash->capacity; ++i) {
-								if (hash->index[i]->key.load(std::memory_order_relaxed) != ImplicitProducer::INVALID_BLOCK_BASE && hash->index[i]->value.load(std::memory_order_relaxed) != nullptr) {
-									++stats.allocatedBlocks;
-									++stats.ownedBlocksImplicit;
-								}
-							}
-							stats.implicitBlockIndexBytes += hash->capacity * sizeof(typename ImplicitProducer::BlockIndexEntry);
-							for (; hash != nullptr; hash = hash->prev) {
-								stats.implicitBlockIndexBytes += sizeof(typename ImplicitProducer::BlockIndexHeader) + hash->capacity * sizeof(typename ImplicitProducer::BlockIndexEntry*);
-							}
-						}
-						for (; details::circular_less_than<index_t>(head, tail); head += BLOCK_SIZE) {
-							//auto block = prod->get_block_index_entry_for_index(head);
-							++stats.usedBlocks;
-						}
-					}
-					else {
-						auto prod = static_cast<ExplicitProducer*>(ptr);
-						stats.queueClassBytes += sizeof(ExplicitProducer);
-						auto tailBlock = prod->tailBlock;
-						bool wasNonEmpty = false;
-						if (tailBlock != nullptr) {
-							auto block = tailBlock;
-							do {
-								++stats.allocatedBlocks;
-								if (!block->ConcurrentQueue::Block::template is_empty<explicit_context>() || wasNonEmpty) {
-									++stats.usedBlocks;
-									wasNonEmpty = wasNonEmpty || block != tailBlock;
-								}
-								++stats.ownedBlocksExplicit;
-								block = block->next;
-							} while (block != tailBlock);
-						}
-						auto index = prod->blockIndex.load(std::memory_order_relaxed);
-						while (index != nullptr) {
-							stats.explicitBlockIndexBytes += sizeof(typename ExplicitProducer::BlockIndexHeader) + index->size * sizeof(typename ExplicitProducer::BlockIndexEntry);
-							index = static_cast<typename ExplicitProducer::BlockIndexHeader*>(index->prev);
-						}
-					}
-				}
-				
-				auto freeOnInitialPool = q->initialBlockPoolIndex.load(std::memory_order_relaxed) >= q->initialBlockPoolSize ? 0 : q->initialBlockPoolSize - q->initialBlockPoolIndex.load(std::memory_order_relaxed);
-				stats.allocatedBlocks += freeOnInitialPool;
-				stats.freeBlocks += freeOnInitialPool;
-				
-				stats.blockClassBytes = sizeof(Block) * stats.allocatedBlocks;
-				stats.queueClassBytes += sizeof(ConcurrentQueue);
-				
-				return stats;
-			}
-		};
-		
-		// For debugging only. Not thread-safe.
-		MemStats getMemStats()
-		{
-			return MemStats::getFor(this);
-		}
-	private:
-		friend struct MemStats;
-#endif
 	
 	
 	//////////////////////////////////

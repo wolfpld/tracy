@@ -1690,7 +1690,8 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 
 Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 {
-    const auto sz = GetQueue().try_dequeue_bulk( token, m_itemBuf, BulkSize );
+    uint64_t threadId;
+    const auto sz = GetQueue().try_dequeue_bulk_single( token, m_itemBuf, BulkSize, threadId );
     if( sz > 0 )
     {
         auto end = m_itemBuf + sz;

@@ -236,7 +236,7 @@ public:
         MemWrite( &item->gpuZoneBegin.context, GetGpuCtx().ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
 
-        GetProfiler().SendCallstack( depth, thread );
+        GetProfiler().SendCallstack( depth );
     }
 
     tracy_force_inline ~GpuCtxScope()

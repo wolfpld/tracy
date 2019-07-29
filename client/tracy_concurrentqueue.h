@@ -1356,7 +1356,7 @@ private:
 				auto block = this->tailBlock;
 				do {
 					block = block->next;
-					if (block->ConcurrentQueue::Block::template is_empty()) {
+					if (block->ConcurrentQueue::Block::is_empty()) {
 						continue;
 					}
 					
@@ -1501,7 +1501,7 @@ private:
         inline void enqueue_begin_alloc(index_t currentTailIndex)
         {
             // We reached the end of a block, start a new one
-            if (this->tailBlock != nullptr && this->tailBlock->next->ConcurrentQueue::Block::template is_empty()) {
+            if (this->tailBlock != nullptr && this->tailBlock->next->ConcurrentQueue::Block::is_empty()) {
                 // We can re-use the block ahead of us, it's empty!					
                 this->tailBlock = this->tailBlock->next;
                 this->tailBlock->ConcurrentQueue::Block::template reset_empty();
@@ -1885,7 +1885,7 @@ private:
                         index += sz;
                         itemFirst += sz;
 
-						block->ConcurrentQueue::Block::template set_many_empty(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
+						block->ConcurrentQueue::Block::set_many_empty(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
 						indexIndex = (indexIndex + 1) & (localBlockIndex->size - 1);
 					} while (index != firstIndex + actualCount);
 					

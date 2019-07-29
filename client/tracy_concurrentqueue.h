@@ -61,71 +61,6 @@
 namespace tracy
 {
 
-// Platform-specific definitions of a numeric thread ID type and an invalid value
-namespace moodycamel { namespace details {
-	template<typename thread_id_t> struct thread_id_converter {
-		typedef thread_id_t thread_id_numeric_size_t;
-		typedef thread_id_t thread_id_hash_t;
-		static thread_id_hash_t prehash(thread_id_t const& x) { return x; }
-	};
-} }
-#if defined(_WIN32) || defined(__WINDOWS__) || defined(__WIN32__)
-// No sense pulling in windows.h in a header, we'll manually declare the function
-// we use and rely on backwards-compatibility for this not to break
-extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
-namespace moodycamel { namespace details {
-	static_assert(sizeof(unsigned long) == sizeof(std::uint32_t), "Expected size of unsigned long to be 32 bits on Windows");
-	typedef std::uint32_t thread_id_t;
-	static inline thread_id_t thread_id() { return static_cast<thread_id_t>(::GetCurrentThreadId()); }
-} }
-#elif defined(__arm__) || defined(_M_ARM) || defined(__aarch64__) || (defined(__APPLE__) && TARGET_OS_IPHONE)
-namespace moodycamel { namespace details {
-	static_assert(sizeof(std::thread::id) == 4 || sizeof(std::thread::id) == 8, "std::thread::id is expected to be either 4 or 8 bytes");
-	
-	typedef std::thread::id thread_id_t;
-
-	static inline thread_id_t thread_id() { return std::this_thread::get_id(); }
-
-	template<std::size_t> struct thread_id_size { };
-	template<> struct thread_id_size<4> { typedef std::uint32_t numeric_t; };
-	template<> struct thread_id_size<8> { typedef std::uint64_t numeric_t; };
-
-	template<> struct thread_id_converter<thread_id_t> {
-		typedef thread_id_size<sizeof(thread_id_t)>::numeric_t thread_id_numeric_size_t;
-#ifndef __APPLE__
-		typedef std::size_t thread_id_hash_t;
-#else
-		typedef thread_id_numeric_size_t thread_id_hash_t;
-#endif
-
-		static thread_id_hash_t prehash(thread_id_t const& x)
-		{
-#ifndef __APPLE__
-			return std::hash<std::thread::id>()(x);
-#else
-			return *reinterpret_cast<thread_id_hash_t const*>(&x);
-#endif
-		}
-	};
-} }
-#else
-// Use a nice trick from this answer: http://stackoverflow.com/a/8438730/21475
-// In order to get a numeric thread ID in a platform-independent way, we use a thread-local
-// static variable's address as a thread identifier :-)
-#if defined(__GNUC__) || defined(__INTEL_COMPILER)
-#define MOODYCAMEL_THREADLOCAL __thread
-#elif defined(_MSC_VER)
-#define MOODYCAMEL_THREADLOCAL __declspec(thread)
-#else
-// Assume C++11 compliant compiler
-#define MOODYCAMEL_THREADLOCAL thread_local
-#endif
-namespace moodycamel { namespace details {
-	typedef std::uintptr_t thread_id_t;
-	static inline thread_id_t thread_id() { static MOODYCAMEL_THREADLOCAL int x; return reinterpret_cast<thread_id_t>(&x); }
-} }
-#endif
-
 // Exceptions
 #ifndef MOODYCAMEL_EXCEPTIONS_ENABLED
 #if (defined(_MSC_VER) && defined(_CPPUNWIND)) || (defined(__GNUC__) && defined(__EXCEPTIONS)) || (!defined(_MSC_VER) && !defined(__GNUC__))
@@ -324,39 +259,6 @@ namespace details
 		{
 		}
 	};
-	
-	template<bool use32> struct _hash_32_or_64 {
-		static inline std::uint32_t hash(std::uint32_t h)
-		{
-			// MurmurHash3 finalizer -- see https://code.google.com/p/smhasher/source/browse/trunk/MurmurHash3.cpp
-			// Since the thread ID is already unique, all we really want to do is propagate that
-			// uniqueness evenly across all the bits, so that we can use a subset of the bits while
-			// reducing collisions significantly
-			h ^= h >> 16;
-			h *= 0x85ebca6b;
-			h ^= h >> 13;
-			h *= 0xc2b2ae35;
-			return h ^ (h >> 16);
-		}
-	};
-	template<> struct _hash_32_or_64<1> {
-		static inline std::uint64_t hash(std::uint64_t h)
-		{
-			h ^= h >> 33;
-			h *= 0xff51afd7ed558ccd;
-			h ^= h >> 33;
-			h *= 0xc4ceb9fe1a85ec53;
-			return h ^ (h >> 33);
-		}
-	};
-	template<std::size_t size> struct hash_32_or_64 : public _hash_32_or_64<(size > 4)> {  };
-	
-	static inline size_t hash_thread_id(thread_id_t id)
-	{
-		static_assert(sizeof(thread_id_t) <= 8, "Expected a platform where thread IDs are at most 64-bit values");
-		return static_cast<size_t>(hash_32_or_64<sizeof(thread_id_converter<thread_id_t>::thread_id_hash_t)>::hash(
-			thread_id_converter<thread_id_t>::prehash(id)));
-	}
 	
 	template<typename T>
 	static inline bool circular_less_than(T a, T b)
@@ -993,8 +895,7 @@ public:
 			details::static_is_lock_free<size_t>::value == 2 &&
 			details::static_is_lock_free<std::uint32_t>::value == 2 &&
 			details::static_is_lock_free<index_t>::value == 2 &&
-			details::static_is_lock_free<void*>::value == 2 &&
-			details::static_is_lock_free<typename details::thread_id_converter<details::thread_id_t>::thread_id_numeric_size_t>::value == 2;
+			details::static_is_lock_free<void*>::value == 2;
 	}
 
 

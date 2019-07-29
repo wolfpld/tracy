@@ -771,33 +771,6 @@ public:
 		return inner_enqueue_bulk(token, itemFirst, count);
 	}
 	
-	// Enqueues a single item (by copying it) using an explicit producer token.
-	// Does not allocate memory. Fails if not enough room to enqueue.
-	// Thread-safe.
-	inline bool try_enqueue(producer_token_t const& token, T const& item)
-	{
-		return inner_enqueue<CannotAlloc>(token, item);
-	}
-	
-	// Enqueues a single item (by moving it, if possible) using an explicit producer token.
-	// Does not allocate memory. Fails if not enough room to enqueue.
-	// Thread-safe.
-	inline bool try_enqueue(producer_token_t const& token, T&& item)
-	{
-		return inner_enqueue<CannotAlloc>(token, std::move(item));
-	}
-	
-	// Enqueues several items using an explicit producer token.
-	// Does not allocate memory. Fails if not enough room to enqueue.
-	// Note: Use std::make_move_iterator if the elements should be moved
-	// instead of copied.
-	// Thread-safe.
-	template<typename It>
-	bool try_enqueue_bulk(producer_token_t const& token, It itemFirst, size_t count)
-	{
-		return inner_enqueue_bulk<CannotAlloc>(token, itemFirst, count);
-	}
-	
 	// Attempts to dequeue from the queue.
 	// Returns false if all producer streams appeared empty at the time they
 	// were checked (so, the queue is likely but not guaranteed to be empty).

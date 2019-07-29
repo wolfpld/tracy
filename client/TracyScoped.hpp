@@ -28,7 +28,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBegin );
 #ifdef TRACY_RDTSCP_OPT
         MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -55,7 +55,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBeginCallstack );
 #ifdef TRACY_RDTSCP_OPT
         MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -81,7 +81,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneEnd );
 #ifdef TRACY_RDTSCP_OPT
         MemWrite( &item->zoneEnd.time, Profiler::GetTime( item->zoneEnd.cpu ) );
@@ -107,7 +107,7 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneText );
         MemWrite( &item->zoneText.thread, thread );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
@@ -127,7 +127,7 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneName );
         MemWrite( &item->zoneText.thread, thread );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );

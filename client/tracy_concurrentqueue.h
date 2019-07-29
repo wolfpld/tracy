@@ -245,8 +245,6 @@ namespace details {
 	} max_align_t;
 }
 
-enum AllocationMode { CanAlloc, CannotAlloc };
-
 // Default traits for the ConcurrentQueue. To change some of the
 // traits without re-implementing all of them, inherit from this
 // struct and shadow the declarations you wish to be different;
@@ -870,7 +868,7 @@ public:
 	inline bool enqueue(T const& item)
 	{
 		if (INITIAL_IMPLICIT_PRODUCER_HASH_SIZE == 0) return false;
-		return inner_enqueue<CanAlloc>(item);
+		return inner_enqueue(item);
 	}
 	
 	// Enqueues a single item (by moving it, if possible).
@@ -881,7 +879,7 @@ public:
 	inline bool enqueue(T&& item)
 	{
 		if (INITIAL_IMPLICIT_PRODUCER_HASH_SIZE == 0) return false;
-		return inner_enqueue<CanAlloc>(std::move(item));
+		return inner_enqueue(std::move(item));
 	}
 	
 	// Enqueues a single item (by copying it) using an explicit producer token.
@@ -890,7 +888,7 @@ public:
 	// Thread-safe.
 	inline bool enqueue(producer_token_t const& token, T const& item)
 	{
-		return inner_enqueue<CanAlloc>(token, item);
+		return inner_enqueue(token, item);
 	}
 	
 	// Enqueues a single item (by moving it, if possible) using an explicit producer token.
@@ -899,12 +897,12 @@ public:
 	// Thread-safe.
 	inline bool enqueue(producer_token_t const& token, T&& item)
 	{
-		return inner_enqueue<CanAlloc>(token, std::move(item));
+		return inner_enqueue(token, std::move(item));
 	}
 
     tracy_force_inline T* enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
     {
-        return inner_enqueue_begin<CanAlloc>(token, currentTailIndex);
+        return inner_enqueue_begin(token, currentTailIndex);
     }
 
 	// Enqueues several items.
@@ -917,7 +915,7 @@ public:
 	bool enqueue_bulk(It itemFirst, size_t count)
 	{
 		if (INITIAL_IMPLICIT_PRODUCER_HASH_SIZE == 0) return false;
-		return inner_enqueue_bulk<CanAlloc>(itemFirst, count);
+		return inner_enqueue_bulk(itemFirst, count);
 	}
 	
 	// Enqueues several items using an explicit producer token.
@@ -929,7 +927,7 @@ public:
 	template<typename It>
 	bool enqueue_bulk(producer_token_t const& token, It itemFirst, size_t count)
 	{
-		return inner_enqueue_bulk<CanAlloc>(token, itemFirst, count);
+		return inner_enqueue_bulk(token, itemFirst, count);
 	}
 	
 	// Enqueues a single item (by copying it).
@@ -1239,36 +1237,35 @@ private:
 	// Queue methods
 	///////////////////////////////
 	
-	template<AllocationMode canAlloc, typename U>
+	template<typename U>
 	inline bool inner_enqueue(producer_token_t const& token, U&& element)
 	{
-		return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue<canAlloc>(std::forward<U>(element));
+		return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue(std::forward<U>(element));
 	}
 
-    template<AllocationMode canAlloc>
     tracy_force_inline T* inner_enqueue_begin(producer_token_t const& token, index_t& currentTailIndex)
     {
-        return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_begin<canAlloc>(currentTailIndex);
+        return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_begin(currentTailIndex);
     }
 
-	template<AllocationMode canAlloc, typename U>
+	template<typename U>
 	inline bool inner_enqueue(U&& element)
 	{
 		auto producer = get_or_add_implicit_producer();
-		return producer == nullptr ? false : producer->ConcurrentQueue::ImplicitProducer::template enqueue<canAlloc>(std::forward<U>(element));
+		return producer == nullptr ? false : producer->ConcurrentQueue::ImplicitProducer::template enqueue(std::forward<U>(element));
 	}
 	
-	template<AllocationMode canAlloc, typename It>
+	template<typename It>
 	inline bool inner_enqueue_bulk(producer_token_t const& token, It itemFirst, size_t count)
 	{
-		return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_bulk<canAlloc>(itemFirst, count);
+		return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::template enqueue_bulk(itemFirst, count);
 	}
 	
-	template<AllocationMode canAlloc, typename It>
+	template<typename It>
 	inline bool inner_enqueue_bulk(It itemFirst, size_t count)
 	{
 		auto producer = get_or_add_implicit_producer();
-		return producer == nullptr ? false : producer->ConcurrentQueue::ImplicitProducer::template enqueue_bulk<canAlloc>(itemFirst, count);
+		return producer == nullptr ? false : producer->ConcurrentQueue::ImplicitProducer::template enqueue_bulk(itemFirst, count);
 	}
 	
 	inline bool update_current_producer_after_rotation(consumer_token_t& token)
@@ -1717,7 +1714,7 @@ private:
 			}
 		}
 		
-		template<AllocationMode allocMode, typename U>
+		template<typename U>
 		inline bool enqueue(U&& element)
 		{
 			index_t currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
@@ -1756,13 +1753,13 @@ private:
 						// to allocate a new index. Note pr_blockIndexRaw can only be nullptr if
 						// the initial allocation failed in the constructor.
 						
-						if (allocMode == CannotAlloc || !new_block_index(pr_blockIndexSlotsUsed)) {
+						if (!new_block_index(pr_blockIndexSlotsUsed)) {
 							return false;
 						}
 					}
 					
 					// Insert a new block in the circular linked list
-					auto newBlock = this->parent->ConcurrentQueue::template requisition_block<allocMode>();
+					auto newBlock = this->parent->ConcurrentQueue::template requisition_block();
 					if (newBlock == nullptr) {
 						return false;
 					}
@@ -1817,7 +1814,6 @@ private:
 			return true;
 		}
 
-        template<AllocationMode allocMode>
         inline void enqueue_begin_alloc(index_t currentTailIndex)
         {
             // We reached the end of a block, start a new one
@@ -1842,7 +1838,7 @@ private:
                 }
 
                 // Insert a new block in the circular linked list
-                auto newBlock = this->parent->ConcurrentQueue::template requisition_block<allocMode>();
+                auto newBlock = this->parent->ConcurrentQueue::template requisition_block();
                 newBlock->ConcurrentQueue::Block::template reset_empty<explicit_context>();
                 if (this->tailBlock == nullptr) {
                     newBlock->next = newBlock;
@@ -1863,12 +1859,11 @@ private:
             pr_blockIndexFront = (pr_blockIndexFront + 1) & (pr_blockIndexSize - 1);
         }
 
-        template<AllocationMode allocMode>
         tracy_force_inline T* enqueue_begin(index_t& currentTailIndex)
         {
             currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
             if (details::cqUnlikely((currentTailIndex & static_cast<index_t>(BLOCK_SIZE - 1)) == 0)) {
-                this->enqueue_begin_alloc<allocMode>(currentTailIndex);
+                this->enqueue_begin_alloc(currentTailIndex);
             }
             return (*this->tailBlock)[currentTailIndex];
         }
@@ -1977,7 +1972,7 @@ private:
 			return false;
 		}
 		
-		template<AllocationMode allocMode, typename It>
+		template<typename It>
 		bool enqueue_bulk(It itemFirst, size_t count)
 		{
 			// First, we need to make sure we have enough room to enqueue all of the elements;
@@ -2017,7 +2012,7 @@ private:
 					assert(!details::circular_less_than<index_t>(currentTailIndex, head));
 					bool full = !details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE) || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head));
 					if (pr_blockIndexRaw == nullptr || pr_blockIndexSlotsUsed == pr_blockIndexSize || full) {
-						if (allocMode == CannotAlloc || full || !new_block_index(originalBlockIndexSlotsUsed)) {
+						if (full || !new_block_index(originalBlockIndexSlotsUsed)) {
 							// Failed to allocate, undo changes (but keep injected blocks)
 							pr_blockIndexFront = originalBlockIndexFront;
 							pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
@@ -2032,7 +2027,7 @@ private:
 					}
 					
 					// Insert a new block in the circular linked list
-					auto newBlock = this->parent->ConcurrentQueue::template requisition_block<allocMode>();
+					auto newBlock = this->parent->ConcurrentQueue::template requisition_block();
 					if (newBlock == nullptr) {
 						pr_blockIndexFront = originalBlockIndexFront;
 						pr_blockIndexSlotsUsed = originalBlockIndexSlotsUsed;
@@ -2363,7 +2358,7 @@ private:
 			}
 		}
 		
-		template<AllocationMode allocMode, typename U>
+		template<typename U>
 		inline bool enqueue(U&& element)
 		{
 			index_t currentTailIndex = this->tailIndex.load(std::memory_order_relaxed);
@@ -2377,12 +2372,12 @@ private:
 				}
 				// Find out where we'll be inserting this block in the block index
 				BlockIndexEntry* idxEntry;
-				if (!insert_block_index_entry<allocMode>(idxEntry, currentTailIndex)) {
+				if (!insert_block_index_entry(idxEntry, currentTailIndex)) {
 					return false;
 				}
 				
 				// Get ahold of a new block
-				auto newBlock = this->parent->ConcurrentQueue::template requisition_block<allocMode>();
+				auto newBlock = this->parent->ConcurrentQueue::template requisition_block();
 				if (newBlock == nullptr) {
 					rewind_block_index_tail();
 					idxEntry->value.store(nullptr, std::memory_order_relaxed);
@@ -2485,7 +2480,7 @@ private:
 			return false;
 		}
 		
-		template<AllocationMode allocMode, typename It>
+		template<typename It>
 		bool enqueue_bulk(It itemFirst, size_t count)
 		{
 			// First, we need to make sure we have enough room to enqueue all of the elements;
@@ -2517,7 +2512,7 @@ private:
 					auto head = this->headIndex.load(std::memory_order_relaxed);
 					assert(!details::circular_less_than<index_t>(currentTailIndex, head));
 					bool full = !details::circular_less_than<index_t>(head, currentTailIndex + BLOCK_SIZE) || (MAX_SUBQUEUE_SIZE != details::const_numeric_max<size_t>::value && (MAX_SUBQUEUE_SIZE == 0 || MAX_SUBQUEUE_SIZE - BLOCK_SIZE < currentTailIndex - head));
-					if (full || !(indexInserted = insert_block_index_entry<allocMode>(idxEntry, currentTailIndex)) || (newBlock = this->parent->ConcurrentQueue::template requisition_block<allocMode>()) == nullptr) {
+					if (full || !(indexInserted = insert_block_index_entry(idxEntry, currentTailIndex)) || (newBlock = this->parent->ConcurrentQueue::template requisition_block()) == nullptr) {
 						// Index allocation or block allocation failed; revert any other allocations
 						// and index insertions done so far for this operation
 						if (indexInserted) {
@@ -2745,7 +2740,6 @@ private:
 			BlockIndexHeader* prev;
 		};
 		
-		template<AllocationMode allocMode>
 		inline bool insert_block_index_entry(BlockIndexEntry*& idxEntry, index_t blockStartIndex)
 		{
 			auto localBlockIndex = blockIndex.load(std::memory_order_relaxed);		// We're the only writer thread, relaxed is OK
@@ -2763,7 +2757,7 @@ private:
 			}
 			
 			// No room in the old block index, try to allocate another one!
-			if (allocMode == CannotAlloc || !new_block_index()) {
+			if (!new_block_index()) {
 				return false;
 			}
 			localBlockIndex = blockIndex.load(std::memory_order_relaxed);
@@ -2911,7 +2905,6 @@ private:
 	}
 	
 	// Gets a free block from one of the memory pools, or allocates a new one (if applicable)
-	template<AllocationMode canAlloc>
 	Block* requisition_block()
 	{
 		auto block = try_get_block_from_initial_pool();

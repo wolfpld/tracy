@@ -183,7 +183,7 @@ static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
     const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::CallstackAlloc );
     MemWrite( &item->callstackAlloc.ptr, (uint64_t)ptr );
     MemWrite( &item->callstackAlloc.nativePtr, (uint64_t)Callstack( depth ) );
@@ -231,7 +231,7 @@ static inline int LuaZoneBeginS( lua_State* L )
     const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLocCallstack );
 #ifdef TRACY_RDTSCP_OPT
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -298,7 +298,7 @@ static inline int LuaZoneBeginNS( lua_State* L )
     const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLocCallstack );
 #ifdef TRACY_RDTSCP_OPT
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -365,7 +365,7 @@ static inline int LuaZoneBegin( lua_State* L )
     const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
 #ifdef TRACY_RDTSCP_OPT
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -428,7 +428,7 @@ static inline int LuaZoneBeginN( lua_State* L )
     const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
 #ifdef TRACY_RDTSCP_OPT
     MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -461,7 +461,7 @@ static inline int LuaZoneEnd( lua_State* L )
     const auto thread = GetThreadHandle();
     auto token = GetToken();
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneEnd );
 #ifdef TRACY_RDTSCP_OPT
     MemWrite( &item->zoneEnd.time, Profiler::GetTime( item->zoneEnd.cpu ) );
@@ -496,7 +496,7 @@ static inline int LuaZoneText( lua_State* L )
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneText );
     MemWrite( &item->zoneText.thread, thread );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
@@ -525,7 +525,7 @@ static inline int LuaZoneName( lua_State* L )
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneName );
     MemWrite( &item->zoneText.thread, thread );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
@@ -549,7 +549,7 @@ static inline int LuaMessage( lua_State* L )
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::Message );
     MemWrite( &item->message.time, Profiler::GetTime() );
     MemWrite( &item->message.thread, thread );

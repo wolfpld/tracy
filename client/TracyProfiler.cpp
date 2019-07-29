@@ -628,7 +628,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.thread = thread;
@@ -670,7 +670,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::Crash );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -866,7 +866,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.thread = thread;
@@ -897,7 +897,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::Crash );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -1577,7 +1577,7 @@ void Profiler::CompressWorker()
                 Magic magic;
                 auto token = GetToken();
                 auto& tail = token->get_tail_index();
-                auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+                auto item = token->enqueue_begin( magic );
                 MemWrite( &item->hdr.type, QueueType::FrameImage );
                 MemWrite( &item->frameImage.image, (uint64_t)etc1buf );
                 MemWrite( &item->frameImage.frame, fi->frame );
@@ -2114,7 +2114,7 @@ void Profiler::CalibrateDelay()
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = ptoken->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneBegin );
             MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
 #ifdef TRACY_RDTSCP_OPT
@@ -2130,7 +2130,7 @@ void Profiler::CalibrateDelay()
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = ptoken->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneEnd );
             MemWrite( &item->zoneEnd.thread, uint64_t( 0 ) );
 #ifdef TRACY_RDTSCP_OPT
@@ -2156,7 +2156,7 @@ void Profiler::CalibrateDelay()
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = ptoken->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneBegin );
             MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
 #ifdef TRACY_RDTSCP_OPT
@@ -2172,7 +2172,7 @@ void Profiler::CalibrateDelay()
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = ptoken->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneEnd );
             MemWrite( &item->zoneEnd.thread, uint64_t( 0 ) );
 #ifdef TRACY_RDTSCP_OPT
@@ -2222,7 +2222,7 @@ void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore
     Magic magic;
     auto token = GetToken();
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::Callstack );
     MemWrite( &item->callstack.ptr, ptr );
     MemWrite( &item->callstack.thread, thread );
@@ -2269,7 +2269,7 @@ void Profiler::ProcessSysTime()
             Magic magic;
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::SysTimeReport );
             MemWrite( &item->sysTime.time, GetTime() );
             MemWrite( &item->sysTime.sysTime, sysTime );
@@ -2303,7 +2303,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, id );
@@ -2314,7 +2314,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBegin );
 #ifdef TRACY_RDTSCP_OPT
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -2348,7 +2348,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, id );
@@ -2359,7 +2359,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginCallstack );
 #ifdef TRACY_RDTSCP_OPT
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -2386,7 +2386,7 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
@@ -2397,7 +2397,7 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneEnd );
 #ifdef TRACY_RDTSCP_OPT
         tracy::MemWrite( &item->zoneEnd.time, tracy::Profiler::GetTime( item->zoneEnd.cpu ) );
@@ -2423,7 +2423,7 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
@@ -2434,7 +2434,7 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneText );
         tracy::MemWrite( &item->zoneText.thread, thread );
         tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
@@ -2454,7 +2454,7 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
@@ -2465,7 +2465,7 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneName );
         tracy::MemWrite( &item->zoneText.thread, thread );
         tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );

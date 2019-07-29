@@ -161,7 +161,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         MemWrite( &item->frameMark.name, uint64_t( name ) );
@@ -212,7 +212,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -229,7 +229,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -246,7 +246,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -267,7 +267,7 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::Message );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.thread, thread );
@@ -284,7 +284,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteral );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.thread, thread );
@@ -304,7 +304,7 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::MessageColor );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.thread, thread );
@@ -324,7 +324,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteralColor );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.thread, thread );
@@ -344,7 +344,7 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::MessageAppInfo );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.thread, thread );
@@ -430,7 +430,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::Callstack );
         MemWrite( &item->callstack.ptr, ptr );
         MemWrite( &item->callstack.thread, thread );

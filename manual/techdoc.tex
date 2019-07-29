@@ -306,7 +306,7 @@ To add an item to the queue a specific code pattern is required:
 Magic magic;
 auto token = GetToken();
 auto& tail = token->get_tail_index();
-auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>(magic);
+auto item = token->enqueue_begin(magic);
 // Fill item
 tail.store(magic+1, std::memory_order_release);
 \end{lstlisting}

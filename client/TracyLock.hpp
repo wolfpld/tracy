@@ -27,7 +27,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::LockAnnounce );
         MemWrite( &item->lockAnnounce.id, m_id );
         MemWrite( &item->lockAnnounce.time, Profiler::GetTime() );
@@ -49,7 +49,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::LockTerminate );
         MemWrite( &item->lockTerminate.id, m_id );
         MemWrite( &item->lockTerminate.time, Profiler::GetTime() );
@@ -85,7 +85,7 @@ public:
             Magic magic;
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::LockWait );
             MemWrite( &item->lockWait.id, m_id );
             MemWrite( &item->lockWait.thread, thread );
@@ -100,7 +100,7 @@ public:
             Magic magic;
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, thread );
@@ -127,7 +127,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::LockRelease );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.thread, thread );
@@ -160,7 +160,7 @@ public:
             const auto thread = GetThreadHandle();
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, thread );
@@ -188,7 +188,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::LockMark );
         MemWrite( &item->lockMark.id, m_id );
         MemWrite( &item->lockMark.thread, thread );
@@ -223,7 +223,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::LockAnnounce );
         MemWrite( &item->lockAnnounce.id, m_id );
         MemWrite( &item->lockAnnounce.time, Profiler::GetTime() );
@@ -245,7 +245,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::LockTerminate );
         MemWrite( &item->lockTerminate.id, m_id );
         MemWrite( &item->lockTerminate.time, Profiler::GetTime() );
@@ -281,7 +281,7 @@ public:
             Magic magic;
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::LockWait );
             MemWrite( &item->lockWait.id, m_id );
             MemWrite( &item->lockWait.thread, thread );
@@ -296,7 +296,7 @@ public:
             Magic magic;
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, thread );
@@ -323,7 +323,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::LockRelease );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.thread, thread );
@@ -356,7 +356,7 @@ public:
             const auto thread = GetThreadHandle();
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::LockObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, thread );
@@ -390,7 +390,7 @@ public:
             Magic magic;
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::LockSharedWait );
             MemWrite( &item->lockWait.id, m_id );
             MemWrite( &item->lockWait.thread, thread );
@@ -405,7 +405,7 @@ public:
             Magic magic;
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::LockSharedObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, thread );
@@ -432,7 +432,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::LockSharedRelease );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.thread, thread );
@@ -465,7 +465,7 @@ public:
             const auto thread = GetThreadHandle();
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::LockSharedObtain );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.thread, thread );
@@ -493,7 +493,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::LockMark );
         MemWrite( &item->lockMark.id, m_id );
         MemWrite( &item->lockMark.thread, thread );

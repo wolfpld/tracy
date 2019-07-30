@@ -129,23 +129,6 @@ struct RPMallocInit
 #  else
         std::call_once( once_flag, InitOnceCallback );
 #  endif
-        // We must call rpmalloc_thread_initialize() explicitly here since the InitOnceCallback might
-        // not be called on this thread if another thread has executed it earlier.
-        rpmalloc_thread_initialize();
-    }
-};
-
-struct RPMallocThreadInit
-{
-    RPMallocThreadInit()
-    {
-#  if ( defined _WIN32 || defined __CYGWIN__ ) && _WIN32_WINNT >= _WIN32_WINNT_VISTA
-        InitOnceExecuteOnce( &InitOnce, InitOnceCallback, nullptr, nullptr );
-#  elif defined __linux__
-        pthread_once( &once_control, InitOnceCallback );
-#  else
-        std::call_once( once_flag, InitOnceCallback );
-#  endif
         rpmalloc_thread_initialize();
     }
 };
@@ -625,17 +608,15 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 
     {
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
-        item->crashReport.thread = thread;
         item->crashReport.text = (uint64_t)s_crashText;
         tail.store( magic + 1, std::memory_order_release );
 
-        GetProfiler().SendCallstack( 60, thread, "KiUserExceptionDispatcher" );
+        GetProfiler().SendCallstack( 60, "KiUserExceptionDispatcher" );
     }
 
     HANDLE h = CreateToolhelp32Snapshot( TH32CS_SNAPTHREAD, 0 );
@@ -670,7 +651,7 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::Crash );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -863,17 +844,15 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 
     {
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
-        item->crashReport.thread = thread;
         item->crashReport.text = (uint64_t)s_crashText;
         tail.store( magic + 1, std::memory_order_release );
 
-        GetProfiler().SendCallstack( 60, thread, "__kernel_rt_sigreturn" );
+        GetProfiler().SendCallstack( 60, "__kernel_rt_sigreturn" );
     }
 
     DIR* dp = opendir( "/proc/self/task" );
@@ -897,7 +876,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::Crash );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -922,7 +901,6 @@ struct ThreadNameData;
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
 
 struct RPMallocInit { RPMallocInit() { rpmalloc_initialize(); } };
-struct RPMallocThreadInit { RPMallocThreadInit() { rpmalloc_thread_initialize(); } };
 
 TRACY_API void InitRPMallocThread()
 {
@@ -954,7 +932,6 @@ struct ProfilerThreadData
 {
     ProfilerThreadData( ProfilerData& data ) : token( data ), gpuCtx( { nullptr } ) {}
     RPMallocInit rpmalloc_init;
-    RPMallocThreadInit rpmalloc_thread_init;
     ProducerWrapper token;
     GpuCtxWrapper gpuCtx;
 #  ifdef TRACY_ON_DEMAND
@@ -1009,7 +986,7 @@ TRACY_API void InitRPMallocThread()
 // 1a. But s_queue is needed for initialization of variables in point 2.
 extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
 
-thread_local RPMallocThreadInit init_order(106) s_rpmalloc_thread_init;
+thread_local RPMallocInit init_order(106) s_rpmalloc_thread_init;
 
 // 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
 thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
@@ -1577,7 +1554,7 @@ void Profiler::CompressWorker()
                 Magic magic;
                 auto token = GetToken();
                 auto& tail = token->get_tail_index();
-                auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+                auto item = token->enqueue_begin( magic );
                 MemWrite( &item->hdr.type, QueueType::FrameImage );
                 MemWrite( &item->frameImage.image, (uint64_t)etc1buf );
                 MemWrite( &item->frameImage.frame, fi->frame );
@@ -1690,7 +1667,8 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 
 Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 {
-    const auto sz = GetQueue().try_dequeue_bulk( token, m_itemBuf, BulkSize );
+    uint64_t threadId;
+    const auto sz = GetQueue().try_dequeue_bulk_single( token, m_itemBuf, BulkSize, threadId );
     if( sz > 0 )
     {
         auto end = m_itemBuf + sz;
@@ -1699,63 +1677,97 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
         {
             uint64_t ptr;
             const auto idx = MemRead<uint8_t>( &item->hdr.idx );
-            if( idx < (int)QueueType::Terminate )
+            switch( (QueueType)idx )
             {
-                switch( (QueueType)idx )
-                {
-                case QueueType::ZoneText:
-                case QueueType::ZoneName:
-                    ptr = MemRead<uint64_t>( &item->zoneText.text );
-                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-                    tracy_free( (void*)ptr );
-                    break;
-                case QueueType::Message:
-                case QueueType::MessageColor:
-                    ptr = MemRead<uint64_t>( &item->message.text );
-                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-                    tracy_free( (void*)ptr );
-                    break;
-                case QueueType::MessageAppInfo:
-                    ptr = MemRead<uint64_t>( &item->message.text );
-                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+            case QueueType::ZoneText:
+            case QueueType::ZoneName:
+                MemWrite( &item->zoneText.thread, threadId );
+                ptr = MemRead<uint64_t>( &item->zoneText.text );
+                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                tracy_free( (void*)ptr );
+                break;
+            case QueueType::Message:
+            case QueueType::MessageColor:
+                MemWrite( &item->message.thread, threadId );
+                ptr = MemRead<uint64_t>( &item->message.text );
+                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                tracy_free( (void*)ptr );
+                break;
+            case QueueType::MessageAppInfo:
+                MemWrite( &item->message.thread, threadId );
+                ptr = MemRead<uint64_t>( &item->message.text );
+                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
 #ifndef TRACY_ON_DEMAND
-                    tracy_free( (void*)ptr );
+                tracy_free( (void*)ptr );
 #endif
-                    break;
-                case QueueType::ZoneBeginAllocSrcLoc:
-                case QueueType::ZoneBeginAllocSrcLocCallstack:
-                    ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
-                    SendSourceLocationPayload( ptr );
-                    tracy_free( (void*)ptr );
-                    break;
-                case QueueType::Callstack:
-                    ptr = MemRead<uint64_t>( &item->callstack.ptr );
-                    SendCallstackPayload( ptr );
-                    tracy_free( (void*)ptr );
-                    break;
-                case QueueType::CallstackAlloc:
-                    ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );
-                    CutCallstack( (void*)ptr, "lua_pcall" );
-                    SendCallstackPayload( ptr );
-                    tracy_free( (void*)ptr );
-                    ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
-                    SendCallstackAlloc( ptr );
-                    tracy_free( (void*)ptr );
-                    break;
-                case QueueType::FrameImage:
-                {
-                    ptr = MemRead<uint64_t>( &item->frameImage.image );
-                    const auto w = MemRead<uint16_t>( &item->frameImage.w );
-                    const auto h = MemRead<uint16_t>( &item->frameImage.h );
-                    const auto csz = size_t( w * h / 2 );
-                    SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
-                    tracy_free( (void*)ptr );
-                    break;
-                }
-                default:
-                    assert( false );
-                    break;
-                }
+                break;
+            case QueueType::ZoneBeginAllocSrcLoc:
+            case QueueType::ZoneBeginAllocSrcLocCallstack:
+                MemWrite( &item->zoneBegin.thread, threadId );
+                ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
+                SendSourceLocationPayload( ptr );
+                tracy_free( (void*)ptr );
+                break;
+            case QueueType::Callstack:
+                MemWrite( &item->callstack.thread, threadId );
+                ptr = MemRead<uint64_t>( &item->callstack.ptr );
+                SendCallstackPayload( ptr );
+                tracy_free( (void*)ptr );
+                break;
+            case QueueType::CallstackAlloc:
+                MemWrite( &item->callstackAlloc.thread, threadId );
+                ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );
+                CutCallstack( (void*)ptr, "lua_pcall" );
+                SendCallstackPayload( ptr );
+                tracy_free( (void*)ptr );
+                ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
+                SendCallstackAlloc( ptr );
+                tracy_free( (void*)ptr );
+                break;
+            case QueueType::FrameImage:
+            {
+                ptr = MemRead<uint64_t>( &item->frameImage.image );
+                const auto w = MemRead<uint16_t>( &item->frameImage.w );
+                const auto h = MemRead<uint16_t>( &item->frameImage.h );
+                const auto csz = size_t( w * h / 2 );
+                SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
+                tracy_free( (void*)ptr );
+                break;
+            }
+            case QueueType::CrashReport:
+                MemWrite( &item->crashReport.thread, threadId );
+                break;
+            case QueueType::ZoneBegin:
+            case QueueType::ZoneBeginCallstack:
+                MemWrite( &item->zoneBegin.thread, threadId );
+                break;
+            case QueueType::ZoneEnd:
+                MemWrite( &item->zoneEnd.thread, threadId );
+                break;
+            case QueueType::ZoneValidation:
+                MemWrite( &item->zoneValidation.thread, threadId );
+                break;
+            case QueueType::LockWait:
+            case QueueType::LockSharedWait:
+                MemWrite( &item->lockWait.thread, threadId );
+                break;
+            case QueueType::LockObtain:
+            case QueueType::LockSharedObtain:
+                MemWrite( &item->lockObtain.thread, threadId );
+                break;
+            case QueueType::LockRelease:
+            case QueueType::LockSharedRelease:
+                MemWrite( &item->lockRelease.thread, threadId );
+                break;
+            case QueueType::LockMark:
+                MemWrite( &item->lockMark.thread, threadId );
+                break;
+            case QueueType::MessageLiteral:
+            case QueueType::MessageLiteralColor:
+                MemWrite( &item->message.thread, threadId );
+                break;
+            default:
+                break;
             }
             if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
             item++;
@@ -2114,9 +2126,8 @@ void Profiler::CalibrateDelay()
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = ptoken->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneBegin );
-            MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
 #ifdef TRACY_RDTSCP_OPT
             MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
 #else
@@ -2130,9 +2141,8 @@ void Profiler::CalibrateDelay()
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = ptoken->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneEnd );
-            MemWrite( &item->zoneEnd.thread, uint64_t( 0 ) );
 #ifdef TRACY_RDTSCP_OPT
             MemWrite( &item->zoneEnd.time, GetTime( item->zoneEnd.cpu ) );
 #else
@@ -2156,9 +2166,8 @@ void Profiler::CalibrateDelay()
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = ptoken->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneBegin );
-            MemWrite( &item->zoneBegin.thread, GetThreadHandle() );
 #ifdef TRACY_RDTSCP_OPT
             MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
 #else
@@ -2172,9 +2181,8 @@ void Profiler::CalibrateDelay()
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin<moodycamel::CanAlloc>( magic );
+            auto item = ptoken->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::ZoneEnd );
-            MemWrite( &item->zoneEnd.thread, uint64_t( 0 ) );
 #ifdef TRACY_RDTSCP_OPT
             MemWrite( &item->zoneEnd.time, GetTime( item->zoneEnd.cpu ) );
 #else
@@ -2213,7 +2221,7 @@ void Profiler::CalibrateDelay()
     }
 }
 
-void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore )
+void Profiler::SendCallstack( int depth, const char* skipBefore )
 {
 #ifdef TRACY_HAS_CALLSTACK
     auto ptr = Callstack( depth );
@@ -2222,10 +2230,9 @@ void Profiler::SendCallstack( int depth, uint64_t thread, const char* skipBefore
     Magic magic;
     auto token = GetToken();
     auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+    auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::Callstack );
     MemWrite( &item->callstack.ptr, ptr );
-    MemWrite( &item->callstack.thread, thread );
     tail.store( magic + 1, std::memory_order_release );
 #endif
 }
@@ -2269,7 +2276,7 @@ void Profiler::ProcessSysTime()
             Magic magic;
             auto token = GetToken();
             auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::SysTimeReport );
             MemWrite( &item->sysTime.time, GetTime() );
             MemWrite( &item->sysTime.sysTime, sysTime );
@@ -2297,15 +2304,13 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    const auto thread = tracy::GetThreadHandle();
 #ifndef TRACY_NO_VERIFY
     {
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
-        tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, id );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -2314,7 +2319,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBegin );
 #ifdef TRACY_RDTSCP_OPT
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -2323,7 +2328,6 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( cpu ) );
         tracy::MemWrite( &item->zoneBegin.cpu, cpu );
 #endif
-        tracy::MemWrite( &item->zoneBegin.thread, thread );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -2342,15 +2346,13 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    const auto thread = tracy::GetThreadHandle();
 #ifndef TRACY_NO_VERIFY
     {
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
-        tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, id );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -2359,7 +2361,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginCallstack );
 #ifdef TRACY_RDTSCP_OPT
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -2368,27 +2370,24 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime( cpu ) );
         tracy::MemWrite( &item->zoneBegin.cpu, cpu );
 #endif
-        tracy::MemWrite( &item->zoneBegin.thread, thread );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
     }
 
-    tracy::GetProfiler().SendCallstack( depth, thread );
+    tracy::GetProfiler().SendCallstack( depth );
     return ctx;
 }
 
 void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 {
     if( !ctx.active ) return;
-    const auto thread = tracy::GetThreadHandle();
 #ifndef TRACY_NO_VERIFY
     {
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
-        tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -2397,7 +2396,7 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneEnd );
 #ifdef TRACY_RDTSCP_OPT
         tracy::MemWrite( &item->zoneEnd.time, tracy::Profiler::GetTime( item->zoneEnd.cpu ) );
@@ -2406,7 +2405,6 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
         tracy::MemWrite( &item->zoneEnd.time, tracy::Profiler::GetTime( cpu ) );
         tracy::MemWrite( &item->zoneEnd.cpu, cpu );
 #endif
-        tracy::MemWrite( &item->zoneEnd.thread, thread );
         tail.store( magic + 1, std::memory_order_release );
     }
 }
@@ -2414,7 +2412,6 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
-    const auto thread = tracy::GetThreadHandle();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
@@ -2423,9 +2420,8 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
-        tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -2434,9 +2430,8 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneText );
-        tracy::MemWrite( &item->zoneText.thread, thread );
         tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -2445,7 +2440,6 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
-    const auto thread = tracy::GetThreadHandle();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
@@ -2454,9 +2448,8 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
-        tracy::MemWrite( &item->zoneValidation.thread, thread );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -2465,9 +2458,8 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
         tracy::Magic magic;
         auto token = tracy::GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneName );
-        tracy::MemWrite( &item->zoneText.thread, thread );
         tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }

@@ -25,10 +25,9 @@ public:
     {
         if( !m_active ) return;
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBegin );
 #ifdef TRACY_RDTSCP_OPT
         MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -37,7 +36,6 @@ public:
         MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
         MemWrite( &item->zoneBegin.cpu, cpu );
 #endif
-        MemWrite( &item->zoneBegin.thread, thread );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -51,11 +49,10 @@ public:
 #endif
     {
         if( !m_active ) return;
-        const auto thread = GetThreadHandle();
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBeginCallstack );
 #ifdef TRACY_RDTSCP_OPT
         MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
@@ -64,11 +61,10 @@ public:
         MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
         MemWrite( &item->zoneBegin.cpu, cpu );
 #endif
-        MemWrite( &item->zoneBegin.thread, thread );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
 
-        GetProfiler().SendCallstack( depth, thread );
+        GetProfiler().SendCallstack( depth );
     }
 
     tracy_force_inline ~ScopedZone()
@@ -78,10 +74,9 @@ public:
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneEnd );
 #ifdef TRACY_RDTSCP_OPT
         MemWrite( &item->zoneEnd.time, Profiler::GetTime( item->zoneEnd.cpu ) );
@@ -90,7 +85,6 @@ public:
         MemWrite( &item->zoneEnd.time, Profiler::GetTime( cpu ) );
         MemWrite( &item->zoneEnd.cpu, cpu );
 #endif
-        MemWrite( &item->zoneEnd.thread, thread );
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -101,15 +95,13 @@ public:
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneText );
-        MemWrite( &item->zoneText.thread, thread );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -121,15 +113,13 @@ public:
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneName );
-        MemWrite( &item->zoneText.thread, thread );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }

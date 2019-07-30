@@ -384,9 +384,9 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
-    sizeof( QueueHeader ) + sizeof( QueueLockWait ),
-    sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
-    sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
+    sizeof( QueueHeader ) + sizeof( QueueLockWait ),        // shared
+    sizeof( QueueHeader ) + sizeof( QueueLockObtain ),      // shared
+    sizeof( QueueHeader ) + sizeof( QueueLockRelease ),     // shared
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal

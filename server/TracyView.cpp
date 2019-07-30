@@ -5753,6 +5753,8 @@ void View::DrawOptions()
 
 void View::DrawMessages()
 {
+    const auto& msgs = m_worker.GetMessages();
+
     ImGui::SetNextWindowSize( ImVec2( 1200, 600 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Messages", &m_showMessages );
 
@@ -5769,6 +5771,10 @@ void View::DrawMessages()
     {
         m_messageFilter.Clear();
     }
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextFocused( "Total message count:", RealToString( msgs.size(), true ) );
 
 #ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
@@ -5843,7 +5849,6 @@ void View::DrawMessages()
     ImGui::Separator();
 
     const auto filterActive = m_messageFilter.IsActive();
-    const auto& msgs = m_worker.GetMessages();
     for( const auto& v : msgs )
     {
         if( VisibleMsgThread( v->thread ) )

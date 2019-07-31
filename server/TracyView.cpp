@@ -10041,11 +10041,19 @@ void View::DrawMemory()
         return;
     }
 
-    ImGui::Text( "Total allocations: %-15s Active allocations: %-15s Memory usage: %-15s Memory span: %s",
-        RealToString( mem.data.size(), true ),
-        RealToString( mem.active.size(), true ),
-        MemSizeToString( mem.usage ),
-        MemSizeToString( mem.high - mem.low ) );
+    TextDisabledUnformatted( "Total allocations:" );
+    ImGui::SameLine();
+    ImGui::Text( "%-15s", RealToString( mem.data.size(), true ) );
+    ImGui::SameLine();
+    TextDisabledUnformatted( "Active allocations:" );
+    ImGui::SameLine();
+    ImGui::Text( "%-15s", RealToString( mem.active.size(), true ) );
+    ImGui::SameLine();
+    TextDisabledUnformatted( "Memory usage:" );
+    ImGui::SameLine();
+    ImGui::Text( "%-15s", MemSizeToString( mem.usage ) );
+    ImGui::SameLine();
+    TextFocused( "Memory span:", MemSizeToString( mem.high - mem.low ) );
 
 #ifdef TRACY_EXTENDED_FONT
     ImGui::Checkbox( ICON_FA_HISTORY " Restrict time", &m_memInfo.restrictTime );
@@ -10168,7 +10176,7 @@ void View::DrawMemory()
 
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( items.size(), true ) );
-        ImGui::Text( "Memory usage: %s", MemSizeToString( total ) );
+        TextFocused( "Memory usage:", MemSizeToString( total ) );
 
         ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
             ImGui::Text( "0x%" PRIx64, (*v)->ptr );
@@ -10183,7 +10191,11 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Memory map" ) )
 #endif
     {
-        ImGui::Text( "Single pixel: %s   Single line: %s", MemSizeToString( 1 << ChunkBits ), MemSizeToString( PageChunkSize ) );
+        TextFocused( "Single pixel:", MemSizeToString( 1 << ChunkBits ) );
+        ImGui::SameLine();
+        ImGui::Separator();
+        ImGui::SameLine();
+        TextFocused( "Single line:", MemSizeToString( PageChunkSize ) );
 
         auto pages = GetMemoryPages();
         const size_t lines = pages.size();

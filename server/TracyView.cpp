@@ -3806,17 +3806,12 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         assert( sz <= MaxPoints*2 );
 
                         auto dst = tmpvec;
-                        for(;;)
+                        const auto rsz = std::distance( it, range );
+                        const auto ssz = rsz / skip1;
+                        for( int64_t i=0; i<ssz; i++ )
                         {
                             *dst++ = float( it->val );
-                            if( std::distance( it, range ) > skip1 )
-                            {
-                                it += skip1;
-                            }
-                            else
-                            {
-                                break;
-                            }
+                            it += skip1;
                         }
                         pdqsort_branchless( tmpvec, dst );
 

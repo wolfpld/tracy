@@ -270,6 +270,7 @@ private:
     size_t m_prevMessages = 0;
     ImGuiTextFilter m_messageFilter;
     bool m_messageFilterWasActive = false;
+    int m_visibleMessages = 0;
 
     Region m_highlight;
     Region m_highlightZoom;

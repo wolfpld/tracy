@@ -5775,6 +5775,10 @@ void View::DrawMessages()
     ImGui::Spacing();
     ImGui::SameLine();
     TextFocused( "Total message count:", RealToString( msgs.size(), true ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextFocused( "Visible messages:", RealToString( m_visibleMessages, true ) );
 
 #ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
@@ -5848,6 +5852,7 @@ void View::DrawMessages()
     ImGui::NextColumn();
     ImGui::Separator();
 
+    int msgcnt = 0;
     const auto filterActive = m_messageFilter.IsActive();
     for( const auto& v : msgs )
     {
@@ -5881,9 +5886,11 @@ void View::DrawMessages()
                 ImGui::TextWrapped( "%s", text );
                 ImGui::PopStyleColor();
                 ImGui::NextColumn();
+                msgcnt++;
             }
         }
     }
+    m_visibleMessages = msgcnt;
 
     if( !filterActive )
     {

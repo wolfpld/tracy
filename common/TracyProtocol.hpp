@@ -9,7 +9,7 @@
 namespace tracy
 {
 
-enum : uint32_t { ProtocolVersion = 12 };
+enum : uint32_t { ProtocolVersion = 13 };
 enum : uint32_t { BroadcastVersion = 0 };
 
 using lz4sz_t = uint32_t;
@@ -45,6 +45,7 @@ enum ServerQuery : uint8_t
     ServerQueryPlotName,
     ServerQueryCallstackFrame,
     ServerQueryFrameName,
+    ServerQueryDisconnect
 };
 
 struct ServerQueryPacket

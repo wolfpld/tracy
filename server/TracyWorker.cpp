@@ -1948,7 +1948,7 @@ void Worker::Exec()
             {
                 continue;
             }
-            if( !m_crashed )
+            if( !m_crashed && !m_disconnect )
             {
                 bool done = true;
                 for( auto& v : m_data.threads )
@@ -4191,6 +4191,12 @@ void Worker::ReadTimelinePre044( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
             zone->gpuEnd = ReadTimeOffset( f, refGpuTime );
         }
     }
+}
+
+void Worker::Disconnect()
+{
+    Query( ServerQueryDisconnect, 0 );
+    m_disconnect = true;
 }
 
 void Worker::Write( FileWrite& f )

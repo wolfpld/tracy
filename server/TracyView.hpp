@@ -271,6 +271,7 @@ private:
     ImGuiTextFilter m_messageFilter;
     bool m_messageFilterWasActive = false;
     int m_visibleMessages = 0;
+    bool m_disconnectIssued = false;
 
     Region m_highlight;
     Region m_highlightZoom;

@@ -487,6 +487,7 @@ private:
     void SendCallstackFrame( uint64_t ptr );
 
     bool HandleServerQuery();
+    void HandleDisconnect();
 
     void CalibrateTimer();
     void CalibrateDelay();

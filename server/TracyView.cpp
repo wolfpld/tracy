@@ -817,11 +817,12 @@ bool View::DrawConnection()
     const char* stopStr = "Stop";
 #endif
     std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
-    if( m_worker.IsConnected() )
+    if( !m_disconnectIssued && m_worker.IsConnected() )
     {
         if( ImGui::Button( stopStr ) )
         {
             m_worker.Disconnect();
+            m_disconnectIssued = true;
         }
     }
     else

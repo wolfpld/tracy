@@ -336,7 +336,7 @@ public:
     bool IsDataStatic() const { return !m_thread.joinable(); }
     bool IsBackgroundDone() const { return m_backgroundDone.load( std::memory_order_relaxed ); }
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
-    void Disconnect() { Shutdown(); }   // TODO: Needs proper implementation.
+    void Disconnect();
 
     void Write( FileWrite& f );
     int GetTraceVersion() const { return m_traceVersion; }
@@ -498,6 +498,7 @@ private:
     std::string m_hostInfo;
     bool m_terminate = false;
     bool m_crashed = false;
+    bool m_disconnect = false;
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;

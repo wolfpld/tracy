@@ -2064,12 +2064,44 @@ bool Profiler::HandleServerQuery()
     case ServerQueryFrameName:
         SendString( ptr, (const char*)ptr, QueueType::FrameName );
         break;
+    case ServerQueryDisconnect:
+        HandleDisconnect();
+        return false;
     default:
         assert( false );
         break;
     }
 
     return true;
+}
+
+void Profiler::HandleDisconnect()
+{
+    QueueItem terminate;
+    MemWrite( &terminate.hdr.type, QueueType::Terminate );
+    if( !SendData( (const char*)&terminate, 1 ) ) return;
+    for(;;)
+    {
+        if( m_sock->HasData() )
+        {
+            while( m_sock->HasData() )
+            {
+                if( !HandleServerQuery() ) return;
+            }
+            if( m_bufferOffset != m_bufferStart )
+            {
+                if( !CommitData() ) return;
+            }
+        }
+        else
+        {
+            if( m_bufferOffset != m_bufferStart )
+            {
+                if( !CommitData() ) return;
+            }
+            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        }
+    }
 }
 
 void Profiler::CalibrateTimer()

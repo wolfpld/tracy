@@ -34,7 +34,7 @@ v0.5 (xxxx-xx-xx)
     - Allow restricting tree to display only active allocations.
   - Added support for Lua call stack capture.
 - Self time of zones may be now displayed in the find zone menu.
-- Added ability to disconnect from a client (with some caveats).
+- Added ability to disconnect from a client.
 - Find zone groups can now be sorted by mean time per call.
 - Zones displayed in the find zone menu can be now grouped by order of
   appearance, execution time or name.

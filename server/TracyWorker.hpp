@@ -361,6 +361,7 @@ private:
 
     tracy_force_inline bool DispatchProcess( const QueueItem& ev, char*& ptr );
     tracy_force_inline bool Process( const QueueItem& ev );
+    tracy_force_inline void ProcessThreadContext( const QueueThreadContext& ev );
     tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginCallstack( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
@@ -551,6 +552,8 @@ private:
     flat_hash_map<uint64_t, int32_t> m_frameImageStaging;
     char* m_frameImageBuffer = nullptr;
     size_t m_frameImageBufferSize = 0;
+
+    uint64_t m_threadCtx = 0;
 };
 
 }

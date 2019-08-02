@@ -1324,6 +1324,8 @@ void Profiler::Worker()
         LZ4_resetStream( (LZ4_stream_t*)m_stream );
         m_sock->Send( &welcome, sizeof( welcome ) );
 
+        m_threadCtx = 0;
+
 #ifdef TRACY_ON_DEMAND
         OnDemandPayloadMessage onDemand;
         onDemand.frames = m_frameCount.load( std::memory_order_relaxed );
@@ -1671,103 +1673,78 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
     const auto sz = GetQueue().try_dequeue_bulk_single( token, m_itemBuf, BulkSize, threadId );
     if( sz > 0 )
     {
+        if( threadId != m_threadCtx )
+        {
+            QueueItem item;
+            MemWrite( &item.hdr.type, QueueType::ThreadContext );
+            MemWrite( &item.threadCtx.thread, threadId );
+            if( !AppendData( &item, QueueDataSize[(int)QueueType::ThreadContext] ) ) return DequeueStatus::ConnectionLost;
+            m_threadCtx = threadId;
+        }
+
         auto end = m_itemBuf + sz;
         auto item = m_itemBuf;
         while( item != end )
         {
             uint64_t ptr;
             const auto idx = MemRead<uint8_t>( &item->hdr.idx );
-            switch( (QueueType)idx )
+            if( idx < (int)QueueType::Terminate )
             {
-            case QueueType::ZoneText:
-            case QueueType::ZoneName:
-                MemWrite( &item->zoneText.thread, threadId );
-                ptr = MemRead<uint64_t>( &item->zoneText.text );
-                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-                tracy_free( (void*)ptr );
-                break;
-            case QueueType::Message:
-            case QueueType::MessageColor:
-                MemWrite( &item->message.thread, threadId );
-                ptr = MemRead<uint64_t>( &item->message.text );
-                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-                tracy_free( (void*)ptr );
-                break;
-            case QueueType::MessageAppInfo:
-                MemWrite( &item->message.thread, threadId );
-                ptr = MemRead<uint64_t>( &item->message.text );
-                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-#ifndef TRACY_ON_DEMAND
-                tracy_free( (void*)ptr );
-#endif
-                break;
-            case QueueType::ZoneBeginAllocSrcLoc:
-            case QueueType::ZoneBeginAllocSrcLocCallstack:
-                MemWrite( &item->zoneBegin.thread, threadId );
-                ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
-                SendSourceLocationPayload( ptr );
-                tracy_free( (void*)ptr );
-                break;
-            case QueueType::Callstack:
-                MemWrite( &item->callstack.thread, threadId );
-                ptr = MemRead<uint64_t>( &item->callstack.ptr );
-                SendCallstackPayload( ptr );
-                tracy_free( (void*)ptr );
-                break;
-            case QueueType::CallstackAlloc:
-                MemWrite( &item->callstackAlloc.thread, threadId );
-                ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );
-                CutCallstack( (void*)ptr, "lua_pcall" );
-                SendCallstackPayload( ptr );
-                tracy_free( (void*)ptr );
-                ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
-                SendCallstackAlloc( ptr );
-                tracy_free( (void*)ptr );
-                break;
-            case QueueType::FrameImage:
-            {
-                ptr = MemRead<uint64_t>( &item->frameImage.image );
-                const auto w = MemRead<uint16_t>( &item->frameImage.w );
-                const auto h = MemRead<uint16_t>( &item->frameImage.h );
-                const auto csz = size_t( w * h / 2 );
-                SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
-                tracy_free( (void*)ptr );
-                break;
-            }
-            case QueueType::CrashReport:
-                MemWrite( &item->crashReport.thread, threadId );
-                break;
-            case QueueType::ZoneBegin:
-            case QueueType::ZoneBeginCallstack:
-                MemWrite( &item->zoneBegin.thread, threadId );
-                break;
-            case QueueType::ZoneEnd:
-                MemWrite( &item->zoneEnd.thread, threadId );
-                break;
-            case QueueType::ZoneValidation:
-                MemWrite( &item->zoneValidation.thread, threadId );
-                break;
-            case QueueType::LockWait:
-            case QueueType::LockSharedWait:
-                MemWrite( &item->lockWait.thread, threadId );
-                break;
-            case QueueType::LockObtain:
-            case QueueType::LockSharedObtain:
-                MemWrite( &item->lockObtain.thread, threadId );
-                break;
-            case QueueType::LockRelease:
-            case QueueType::LockSharedRelease:
-                MemWrite( &item->lockRelease.thread, threadId );
-                break;
-            case QueueType::LockMark:
-                MemWrite( &item->lockMark.thread, threadId );
-                break;
-            case QueueType::MessageLiteral:
-            case QueueType::MessageLiteralColor:
-                MemWrite( &item->message.thread, threadId );
-                break;
-            default:
-                break;
+                switch( (QueueType)idx )
+                {
+                case QueueType::ZoneText:
+                case QueueType::ZoneName:
+                    ptr = MemRead<uint64_t>( &item->zoneText.text );
+                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::Message:
+                case QueueType::MessageColor:
+                    ptr = MemRead<uint64_t>( &item->message.text );
+                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::MessageAppInfo:
+                    ptr = MemRead<uint64_t>( &item->message.text );
+                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+    #ifndef TRACY_ON_DEMAND
+                    tracy_free( (void*)ptr );
+    #endif
+                    break;
+                case QueueType::ZoneBeginAllocSrcLoc:
+                case QueueType::ZoneBeginAllocSrcLocCallstack:
+                    ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
+                    SendSourceLocationPayload( ptr );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::Callstack:
+                    ptr = MemRead<uint64_t>( &item->callstack.ptr );
+                    SendCallstackPayload( ptr );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::CallstackAlloc:
+                    ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );
+                    CutCallstack( (void*)ptr, "lua_pcall" );
+                    SendCallstackPayload( ptr );
+                    tracy_free( (void*)ptr );
+                    ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
+                    SendCallstackAlloc( ptr );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::FrameImage:
+                {
+                    ptr = MemRead<uint64_t>( &item->frameImage.image );
+                    const auto w = MemRead<uint16_t>( &item->frameImage.w );
+                    const auto h = MemRead<uint16_t>( &item->frameImage.h );
+                    const auto csz = size_t( w * h / 2 );
+                    SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
+                    tracy_free( (void*)ptr );
+                    break;
+                }
+                default:
+                    assert( false );
+                    break;
+                }
             }
             if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
             item++;

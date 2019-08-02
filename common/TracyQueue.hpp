@@ -21,6 +21,7 @@ enum class QueueType : uint8_t
     FrameImage,
     Terminate,
     KeepAlive,
+    ThreadContext,
     Crash,
     CrashReport,
     ZoneBegin,
@@ -69,10 +70,14 @@ enum class QueueType : uint8_t
 
 #pragma pack( 1 )
 
+struct QueueThreadContext
+{
+    uint64_t thread;
+};
+
 struct QueueZoneBegin
 {
     int64_t time;
-    uint64_t thread;
     uint64_t srcloc;    // ptr
     uint32_t cpu;
 };
@@ -80,13 +85,11 @@ struct QueueZoneBegin
 struct QueueZoneEnd
 {
     int64_t time;
-    uint64_t thread;
     uint32_t cpu;
 };
 
 struct QueueZoneValidation
 {
-    uint64_t thread;
     uint32_t id;
 };
 
@@ -123,7 +126,6 @@ struct QueueSourceLocation
 
 struct QueueZoneText
 {
-    uint64_t thread;
     uint64_t text;      // ptr
 };
 
@@ -152,7 +154,6 @@ struct QueueLockWait
 {
     uint32_t id;
     int64_t time;
-    uint64_t thread;
     LockType type;
 };
 
@@ -160,20 +161,17 @@ struct QueueLockObtain
 {
     uint32_t id;
     int64_t time;
-    uint64_t thread;
 };
 
 struct QueueLockRelease
 {
     uint32_t id;
     int64_t time;
-    uint64_t thread;
 };
 
 struct QueueLockMark
 {
     uint32_t id;
-    uint64_t thread;
     uint64_t srcloc;    // ptr
 };
 
@@ -200,7 +198,6 @@ struct QueuePlotData
 struct QueueMessage
 {
     int64_t time;
-    uint64_t thread;
     uint64_t text;      // ptr
 };
 
@@ -267,14 +264,12 @@ struct QueueCallstackMemory
 struct QueueCallstack
 {
     uint64_t ptr;
-    uint64_t thread;
 };
 
 struct QueueCallstackAlloc
 {
     uint64_t ptr;
     uint64_t nativePtr;
-    uint64_t thread;
 };
 
 struct QueueCallstackFrameSize
@@ -293,7 +288,6 @@ struct QueueCallstackFrame
 struct QueueCrashReport
 {
     int64_t time;
-    uint64_t thread;
     uint64_t text;      // ptr
 };
 
@@ -317,6 +311,7 @@ struct QueueItem
     QueueHeader hdr;
     union
     {
+        QueueThreadContext threadCtx;
         QueueZoneBegin zoneBegin;
         QueueZoneEnd zoneEnd;
         QueueZoneValidation zoneValidation;
@@ -369,6 +364,7 @@ static const size_t QueueDataSize[] = {
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
+    sizeof( QueueHeader ) + sizeof( QueueThreadContext ),
     sizeof( QueueHeader ),                                  // crash
     sizeof( QueueHeader ) + sizeof( QueueCrashReport ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),

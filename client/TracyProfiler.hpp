@@ -550,6 +550,8 @@ private:
     bool m_noExit;
     std::atomic<uint32_t> m_zoneId;
 
+    uint64_t m_threadCtx;
+
     void* m_stream;     // LZ4_stream_t*
     char* m_buffer;
     int m_bufferOffset;

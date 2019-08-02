@@ -11,6 +11,7 @@ v0.5 (xxxx-xx-xx)
 
 - Major decrease of trace dump file size.
 - Major optimizations across the board.
+- Vcpkg is now used for library management on Windows.
 - Display dump file size change in the update utility.
 - Added notification area.
   - Display trace loading time.

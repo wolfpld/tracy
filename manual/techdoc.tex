@@ -215,7 +215,9 @@ Tracy has basic support for being used in libraries, but there are many cases wh
 
 \subsubsection{Parallel initialization of DLLs}
 
-Recent versions of the NT loader (somewhere in the Windows 10 timeline) have introduced parallel loading of libraries\footnote{\url{https://threatvector.cylance.com/en_us/home/windows-10-parallel-loading-breakdown.html}}. In specific scenarios this caused problems with initialization order of variables (objects in DLLs could be created before objects in the main executable). To fix this issue, when compiled with MSVC, the profiler uses the \texttt{TRACY\_USE\_INIT\_ONCE} code path, which makes sure rpmalloc is always properly initialized.
+Recent versions of the NT loader (somewhere in the Windows 10 timeline) have introduced parallel loading of libraries\footnote{\url{https://threatvector.cylance.com/en_us/home/windows-10-parallel-loading-breakdown.html}}. In specific scenarios this caused problems with initialization order of variables (objects in DLLs could be created before objects in the main executable). Similar problems were observed on other operating systems.
+
+To fix this issue, rpmalloc is initialized using the 'init once' mechanism, which is implemented using \texttt{InitOnceExecuteOnce()} on Windows, \texttt{pthread\_once()} on Linux and \texttt{std::call\_once()} on other platforms.
 
 \subsubsection{Thread local initialization}
 
@@ -411,7 +413,7 @@ The client then awaits for a termination confirmation query from the server and 
 \subsubsection{Dequeue process}
 \label{dequeue}
 
-Events are dequeued in the \texttt{Dequeue()} function for the asynchronous queue (which also sets the thread identifiers, see section~\ref{threadid}) and in the \texttt{DequeueSerial()} function for the synchronous queue. Both procedures have the same structure: get items from the queue, optionally process the auxiliary data, then send the event to the server.
+Events are dequeued in the \texttt{Dequeue()} function for the asynchronous queue and in the \texttt{DequeueSerial()} function for the synchronous queue. Both procedures have the same structure: get items from the queue, optionally process the auxiliary data, then send the event to the server.
 
 You may remember that not all 32 bytes of the \texttt{QueueItem} structure might be used by the event (section~\ref{queueitems}). This is of course taken into account when sending data over the network. Only the used bytes are transmitted.
 
@@ -451,11 +453,10 @@ When looking at the \texttt{Queue*} family of structs, you can see some common p
 \end{itemize}
 
 \subsubsection{Thread identifiers}
-\label{threadid}
 
-When events are added to the asynchronous queue, thread identifiers should not be assigned. Since each thread has its own internal queue, the originating thread id can be recovered and filled in during the dequeue process. There may be some exceptions, for example the GPU events may want to send a null thread identifier.
+Events are dequeued from the asynchronous queue in thread-specific batches (all events from a single batch dequeue operation originate from one thread). This is exploited by sending a single message containing the thread identifier, which is then used as a thread context for following events. These events do not need to store any thread information. There may be some exceptions, for example the GPU events may want to send a null thread identifier, which is used to indicate some internal state.
 
-Items added to the synchronous queue must not have an unset thread identifier, as there is no way to recover it during dequeue.
+Items added to the synchronous queue must store information about the originating thread, as there is no way to recover it during dequeue.
 
 \subsubsection{Source locations}
 

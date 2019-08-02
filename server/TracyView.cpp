@@ -6692,11 +6692,11 @@ void View::DrawFindZone()
                             auto& io = ImGui::GetIO();
                             draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
 
-                            const auto bin = double( io.MousePos.x - wpos.x - 2 );
+                            const auto bin = int64_t( io.MousePos.x - wpos.x - 2 );
                             int64_t t0, t1;
                             if( m_findZone.logTime )
                             {
-                                t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
+                                t0 = int64_t( pow( 10, ltmin + double( bin ) / numBins * ( ltmax - ltmin ) ) );
 
                                 // Hackfix for inability to select data in last bin.
                                 // A proper solution would be nice.
@@ -6706,13 +6706,13 @@ void View::DrawFindZone()
                                 }
                                 else
                                 {
-                                    t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
+                                    t1 = int64_t( pow( 10, ltmin + double( bin+1 ) / numBins * ( ltmax - ltmin ) ) );
                                 }
                             }
                             else
                             {
-                                t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
-                                t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
+                                t0 = int64_t( tmin + double( bin )   / numBins * ( tmax - tmin ) );
+                                t1 = int64_t( tmin + double( bin+1 ) / numBins * ( tmax - tmin ) );
                             }
 
                             int64_t tBefore = 0;
@@ -7978,17 +7978,17 @@ void View::DrawCompare()
                         auto& io = ImGui::GetIO();
                         draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
 
-                        const auto bin = double( io.MousePos.x - wpos.x - 2 );
+                        const auto bin = int64_t( io.MousePos.x - wpos.x - 2 );
                         int64_t t0, t1;
                         if( m_compare.logTime )
                         {
-                            t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
-                            t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
+                            t0 = int64_t( pow( 10, ltmin + double( bin )   / numBins * ( ltmax - ltmin ) ) );
+                            t1 = int64_t( pow( 10, ltmin + double( bin+1 ) / numBins * ( ltmax - ltmin ) ) );
                         }
                         else
                         {
-                            t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
-                            t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
+                            t0 = int64_t( tmin + double( bin )   / numBins * ( tmax - tmin ) );
+                            t1 = int64_t( tmin + double( bin+1 ) / numBins * ( tmax - tmin ) );
                         }
 
                         int64_t tBefore[2] = { 0, 0 };
@@ -8975,11 +8975,11 @@ void View::DrawInfo()
                                 auto& io = ImGui::GetIO();
                                 draw->AddLine( ImVec2( io.MousePos.x, wpos.y ), ImVec2( io.MousePos.x, wpos.y+Height-2 ), 0x33FFFFFF );
 
-                                const auto bin = double( io.MousePos.x - wpos.x - 2 );
+                                const auto bin = int64_t( io.MousePos.x - wpos.x - 2 );
                                 int64_t t0, t1;
                                 if( m_frameSortData.logTime )
                                 {
-                                    t0 = int64_t( pow( 10, ltmin +  bin    / numBins * ( ltmax - ltmin ) ) );
+                                    t0 = int64_t( pow( 10, ltmin + double( bin ) / numBins * ( ltmax - ltmin ) ) );
 
                                     // Hackfix for inability to select data in last bin.
                                     // A proper solution would be nice.
@@ -8989,13 +8989,13 @@ void View::DrawInfo()
                                     }
                                     else
                                     {
-                                        t1 = int64_t( pow( 10, ltmin + (bin+1) / numBins * ( ltmax - ltmin ) ) );
+                                        t1 = int64_t( pow( 10, ltmin + double( bin+1 ) / numBins * ( ltmax - ltmin ) ) );
                                     }
                                 }
                                 else
                                 {
-                                    t0 = int64_t( tmin +  bin    / numBins * ( tmax - tmin ) );
-                                    t1 = int64_t( tmin + (bin+1) / numBins * ( tmax - tmin ) );
+                                    t0 = int64_t( tmin + double( bin )   / numBins * ( tmax - tmin ) );
+                                    t1 = int64_t( tmin + double( bin+1 ) / numBins * ( tmax - tmin ) );
                                 }
 
                                 ImGui::BeginTooltip();

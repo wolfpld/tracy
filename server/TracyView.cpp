@@ -869,12 +869,12 @@ bool View::DrawConnection()
     return true;
 }
 
+enum { BestTime = 1000 * 1000 * 1000 / 143 };
+enum { GoodTime = 1000 * 1000 * 1000 / 59 };
+enum { BadTime = 1000 * 1000 * 1000 / 29 };
+
 static ImU32 GetFrameColor( uint64_t frameTime )
 {
-    enum { BestTime = 1000 * 1000 * 1000 / 143 };
-    enum { GoodTime = 1000 * 1000 * 1000 / 59 };
-    enum { BadTime = 1000 * 1000 * 1000 / 29 };
-
     return frameTime > BadTime  ? 0xFF2222DD :
            frameTime > GoodTime ? 0xFF22DDDD :
            frameTime > BestTime ? 0xFF22DD22 : 0xFFDD9900;
@@ -1119,6 +1119,10 @@ void View::DrawFrames()
 
         draw->AddRectFilled( wpos + ImVec2( 1+x0, 0 ), wpos + ImVec2( 1+x1, Height ), 0x55DD22DD );
     }
+
+    draw->AddLine( wpos + ImVec2( 0, round( Height - Height * BadTime / MaxFrameTime ) ),  wpos + ImVec2( w, round( Height - Height * BadTime / MaxFrameTime ) ),  0x4422DDDD );
+    draw->AddLine( wpos + ImVec2( 0, round( Height - Height * GoodTime / MaxFrameTime ) ), wpos + ImVec2( w, round( Height - Height * GoodTime / MaxFrameTime ) ), 0x4422DD22 );
+    draw->AddLine( wpos + ImVec2( 0, round( Height - Height * BestTime / MaxFrameTime ) ), wpos + ImVec2( w, round( Height - Height * BestTime / MaxFrameTime ) ), 0x44DD9900 );
 }
 
 void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns )

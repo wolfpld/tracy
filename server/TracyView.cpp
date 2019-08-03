@@ -13,6 +13,7 @@
 #include <math.h>
 #include <mutex>
 #include <numeric>
+#include <random>
 #include <stddef.h>
 #include <stdlib.h>
 #include <time.h>
@@ -5294,31 +5295,34 @@ void View::DrawOptions()
                     if( ImGui::Button( "Auto" ) )
 #endif
                     {
-                        double gsum = 0;
                         size_t lastidx = 0;
-                        for( size_t j=0; j<timeline.size(); j++ )
+                        for( size_t j=timeline.size()-1; j > 0; j-- )
                         {
                             if( timeline[j]->gpuEnd >= 0 )
                             {
                                 lastidx = j;
-                                gsum += timeline[j]->gpuStart - timeline[j]->cpuStart;
+                                break;
                             }
                         }
-                        if( lastidx > 0 )
+
+                        enum { NumSlopes = 10000 };
+                        std::random_device rd;
+                        std::default_random_engine gen( rd() );
+                        std::uniform_int_distribution<size_t> dist( 0, lastidx - 1 );
+                        float slopes[NumSlopes];
+                        size_t idx = 0;
+                        do
                         {
-                            const double cavg = ( timeline[lastidx]->cpuStart + timeline.front()->cpuStart ) * 0.5;
-                            const double gavg = gsum / double( lastidx );
-                            double cov = 0;
-                            double var = 0;
-                            for( size_t j=0; j<lastidx; j++ )
+                            const auto p0 = dist( gen );
+                            const auto p1 = dist( gen );
+                            if( p0 != p1 )
                             {
-                                const auto csub = timeline[j]->cpuStart - cavg;
-                                cov += csub * ( timeline[j]->gpuStart - timeline[j]->cpuStart - gavg );
-                                var += csub * csub;
+                                slopes[idx++] = float( 1.0 - double( timeline[p1]->gpuStart - timeline[p0]->gpuStart ) / double( timeline[p1]->cpuStart - timeline[p0]->cpuStart ) );
                             }
-                            const double beta = cov / var;
-                            drift = int( 1000000000 * -beta );
                         }
+                        while( idx < NumSlopes );
+                        std::sort( slopes, slopes+NumSlopes );
+                        drift = int( 1000000000 * -slopes[NumSlopes/2] );
                     }
                 }
                 ImGui::TreePop();

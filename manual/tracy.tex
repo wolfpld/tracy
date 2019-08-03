@@ -1339,6 +1339,10 @@ The graph of currently selected frame set (figure~\ref{frametime}) provides an o
 \draw[pattern=north east lines] (8.8, 0.1) rectangle+(0.2, 0.2);
 
 \draw[pattern=dots] (2.15, 0.05) rectangle+(1.2, 0.9);
+
+\draw[dotted] (0, 0.325) -- +(10, 0);
+\draw[dotted] (0, 0.6) -- +(10, 0);
+\draw[dotted] (0, 0.8) -- +(10, 0);
 \end{tikzpicture}
 \caption{Frame time graph.}
 \label{frametime}
@@ -1347,9 +1351,9 @@ The graph of currently selected frame set (figure~\ref{frametime}) provides an o
 Each bar displayed on the graph represents an unique frame in the current frame set\footnote{Unless the view is zoomed out and multiple frames are merged into one column.}. The progress of time is in the right direction. The height of the bar indicates the time spent in frame, complemented with the color information:
 
 \begin{itemize}
-\item If the bar is \emph{blue}, then the frame met the \emph{best} time of 143 FPS, or 6.99 \si{\milli\second}\footnote{The actual target is 144 FPS, but one frame leeway is allowed to account for timing inaccuracies.}.
-\item If the bar is \emph{green}, then the frame met the \emph{good} time of 59 FPS, or 16.94 \si{\milli\second}.
-\item If the bar is \emph{yellow}, then the frame met the \emph{bad} time of 29 FPS, or 34.48 \si{\milli\second}.
+\item If the bar is \emph{blue}, then the frame met the \emph{best} time of 143 FPS, or 6.99 \si{\milli\second}\footnote{The actual target is 144 FPS, but one frame leeway is allowed to account for timing inaccuracies.} (represented by blue target line).
+\item If the bar is \emph{green}, then the frame met the \emph{good} time of 59 FPS, or 16.94 \si{\milli\second} (represented by green target line).
+\item If the bar is \emph{yellow}, then the frame met the \emph{bad} time of 29 FPS, or 34.48 \si{\milli\second} (represented by yellow target line).
 \item If the bar is \emph{red}, then the frame didn't met any time limits.
 \end{itemize}
 

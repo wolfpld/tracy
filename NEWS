@@ -86,6 +86,7 @@ v0.5 (xxxx-xx-xx)
   capture.
 - Added ability to set custom trace descriptions.
 - Added frame time target lines.
+- FPS counts are now displayed next to frame times.
 
 v0.4.1 (2018-12-30)
 -------------------

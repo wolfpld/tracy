@@ -5264,6 +5264,7 @@ void View::DrawOptions()
         {
             for( size_t i=0; i<gpuData.size(); i++ )
             {
+                const auto& timeline = gpuData[i]->timeline;
                 const bool isVulkan = gpuData[i]->thread == 0;
                 char buf[1024];
                 if( isVulkan )
@@ -5276,10 +5277,47 @@ void View::DrawOptions()
                 }
                 SmallCheckbox( buf, &Vis( gpuData[i] ).visible );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "%s top level zones", RealToString( gpuData[i]->timeline.size(), true ) );
+                ImGui::TextDisabled( "%s top level zones", RealToString( timeline.size(), true ) );
                 ImGui::TreePush();
                 auto& drift = GpuDrift( gpuData[i] );
+                ImGui::SetNextItemWidth( 120 );
                 ImGui::InputInt( "Drift (ns/s)", &drift );
+                if( timeline.size() > 1 )
+                {
+                    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                    if( ImGui::Button( ICON_FA_ROBOT " Auto" ) )
+#else
+                    if( ImGui::Button( "Auto" ) )
+#endif
+                    {
+                        double gsum = 0;
+                        size_t lastidx = 0;
+                        for( size_t j=0; j<timeline.size(); j++ )
+                        {
+                            if( timeline[j]->gpuEnd >= 0 )
+                            {
+                                lastidx = j;
+                                gsum += timeline[j]->gpuStart - timeline[j]->cpuStart;
+                            }
+                        }
+                        if( lastidx > 0 )
+                        {
+                            const double cavg = ( timeline[lastidx]->cpuStart + timeline.front()->cpuStart ) * 0.5;
+                            const double gavg = gsum / double( lastidx );
+                            double cov = 0;
+                            double var = 0;
+                            for( size_t j=0; j<lastidx; j++ )
+                            {
+                                const auto csub = timeline[j]->cpuStart - cavg;
+                                cov += csub * ( timeline[j]->gpuStart - timeline[j]->cpuStart - gavg );
+                                var += csub * csub;
+                            }
+                            const double beta = cov / var;
+                            drift = int( 1000000000 * -beta );
+                        }
+                    }
+                }
                 ImGui::TreePop();
             }
             ImGui::TreePop();

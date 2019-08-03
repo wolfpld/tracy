@@ -5281,7 +5281,9 @@ void View::DrawOptions()
                 ImGui::TreePush();
                 auto& drift = GpuDrift( gpuData[i] );
                 ImGui::SetNextItemWidth( 120 );
+                ImGui::PushID( i );
                 ImGui::InputInt( "Drift (ns/s)", &drift );
+                ImGui::PopID();
                 if( timeline.size() > 1 )
                 {
                     ImGui::SameLine();

@@ -894,7 +894,7 @@ void View::DrawFrames()
 {
     assert( m_worker.GetFrameCount( *m_frames ) != 0 );
 
-    const auto Height = 40 * ImGui::GetTextLineHeight() / 15.f;
+    const auto Height = 50 * ImGui::GetTextLineHeight() / 15.f;
 
     enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
 

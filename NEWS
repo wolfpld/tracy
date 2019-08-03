@@ -87,6 +87,7 @@ v0.5 (xxxx-xx-xx)
 - Added ability to set custom trace descriptions.
 - Added frame time target lines.
 - FPS counts are now displayed next to frame times.
+- GPU drift value can be now automatically measured.
 
 v0.4.1 (2018-12-30)
 -------------------

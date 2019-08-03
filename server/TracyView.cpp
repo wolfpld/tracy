@@ -974,6 +974,8 @@ void View::DrawFrames()
                     ImGui::Text( "%s - %s (%s)", RealToString( sel, true ), RealToString( sel + g - 1, true ), RealToString( g, true ) );
                     ImGui::Separator();
                     TextFocused( "Max frame time:", TimeToString( f ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / f );
                 }
                 else
                 {
@@ -993,7 +995,10 @@ void View::DrawFrames()
                             ImGui::SameLine();
                             ImGui::TextUnformatted( RealToString( sel, true ) );
                             ImGui::Separator();
-                            TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( *m_frames, sel ) ) );
+                            const auto frameTime = m_worker.GetFrameTime( *m_frames, sel );
+                            TextFocused( "Frame time:", TimeToString( frameTime ) );
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / frameTime );
                         }
                         else if( sel == 1 )
                         {
@@ -1007,7 +1012,10 @@ void View::DrawFrames()
                             ImGui::SameLine();
                             ImGui::TextUnformatted( RealToString( sel + offset - 1, true ) );
                             ImGui::Separator();
-                            TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( *m_frames, sel ) ) );
+                            const auto frameTime = m_worker.GetFrameTime( *m_frames, sel );
+                            TextFocused( "Frame time:", TimeToString( frameTime ) );
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / frameTime );
                         }
                     }
                     else
@@ -1016,7 +1024,10 @@ void View::DrawFrames()
                         ImGui::SameLine();
                         ImGui::TextUnformatted( RealToString( sel + 1, true ) );
                         ImGui::Separator();
-                        TextFocused( "Frame time:", TimeToString( m_worker.GetFrameTime( *m_frames, sel ) ) );
+                        const auto frameTime = m_worker.GetFrameTime( *m_frames, sel );
+                        TextFocused( "Frame time:", TimeToString( frameTime ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / frameTime );
                     }
                 }
                 TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( *m_frames, sel ) - m_worker.GetTimeBegin() ) );
@@ -1431,6 +1442,8 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / ftime );
             TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( frames, i ) - m_worker.GetTimeBegin() ) );
             auto fi = m_worker.GetFrameImage( frames, i );
             if( fi )

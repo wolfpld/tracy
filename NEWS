@@ -85,6 +85,7 @@ v0.5 (xxxx-xx-xx)
 - Source file view won't be available if a source file is newer than the
   capture.
 - Added ability to set custom trace descriptions.
+- Added frame time target lines.
 
 v0.4.1 (2018-12-30)
 -------------------

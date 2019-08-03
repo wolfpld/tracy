@@ -2131,11 +2131,13 @@ void Worker::InsertMessageData( MessageData* msg, uint64_t thread )
     }
 }
 
-ThreadData* Worker::NoticeThread( uint64_t thread )
+ThreadData* Worker::NoticeThreadReal( uint64_t thread )
 {
     auto it = m_threadMap.find( thread );
     if( it != m_threadMap.end() )
     {
+        m_data.threadDataLast.first = thread;
+        m_data.threadDataLast.second = it->second;
         return it->second;
     }
     else
@@ -2153,6 +2155,8 @@ ThreadData* Worker::NewThread( uint64_t thread )
     td->nextZoneId = 0;
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
+    m_data.threadDataLast.first = thread;
+    m_data.threadDataLast.second = td;
     return td;
 }
 

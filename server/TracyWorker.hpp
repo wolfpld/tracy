@@ -137,7 +137,7 @@ private:
 
     struct DataBlock
     {
-        DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
+        DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ), threadDataLast( std::numeric_limits<uint64_t>::max(), nullptr ) {}
 
         std::shared_mutex lock;
         StringDiscovery<FrameData*> frames;
@@ -177,6 +177,7 @@ private:
         flat_hash_map<uint64_t, uint16_t, nohash<uint64_t>> threadMap;
         Vector<uint64_t> threadExpand;
         std::pair<uint64_t, uint16_t> threadLast;
+        std::pair<uint64_t, ThreadData*> threadDataLast;
 
         Vector<Vector<ZoneEvent*>> zoneChildren;
         Vector<Vector<GpuEvent*>> gpuChildren;
@@ -430,8 +431,13 @@ private:
 
     void InsertMessageData( MessageData* msg, uint64_t thread );
 
+    ThreadData* NoticeThreadReal( uint64_t thread );
     ThreadData* NewThread( uint64_t thread );
-    ThreadData* NoticeThread( uint64_t thread );
+    ThreadData* NoticeThread( uint64_t thread )
+    {
+        if( m_data.threadDataLast.first == thread ) return m_data.threadDataLast.second;
+        return NoticeThreadReal( thread );
+    }
 
     tracy_force_inline void NewZone( ZoneEvent* zone, uint64_t thread );
 

@@ -235,7 +235,7 @@ static int64_t SetupHwTimer()
 #elif defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
 static inline void CpuId( uint32_t* regs, uint32_t leaf )
 {
-#if defined _MSC_VER || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__
     __cpuidex( (int*)regs, leaf, 0 );
 #else
     __get_cpuid( leaf, regs, regs+1, regs+2, regs+3 );

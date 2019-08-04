@@ -35,6 +35,19 @@ CallstackEntry cb_data[MaxCbTrace];
 
 extern "C" { t_RtlWalkFrameChain RtlWalkFrameChain = 0; }
 
+#if defined __MINGW32__ && API_VERSION_NUMBER < 12
+extern "C" {
+// Actual required API_VERSION_NUMBER is unknown because it is undocumented. These functions are not present in at least v11.
+DWORD IMAGEAPI SymAddrIncludeInlineTrace(HANDLE hProcess, DWORD64 Address);
+BOOL IMAGEAPI SymQueryInlineTrace(HANDLE hProcess, DWORD64 StartAddress, DWORD StartContext, DWORD64 StartRetAddress,
+    DWORD64 CurAddress, LPDWORD CurContext, LPDWORD CurFrameIndex);
+BOOL IMAGEAPI SymFromInlineContext(HANDLE hProcess, DWORD64 Address, ULONG InlineContext, PDWORD64 Displacement,
+    PSYMBOL_INFO Symbol);
+BOOL IMAGEAPI SymGetLineFromInlineContext(HANDLE hProcess, DWORD64 qwAddr, ULONG InlineContext,
+    DWORD64 qwModuleBaseAddress, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line64);
+};
+#endif
+
 void InitCallstack()
 {
 #ifdef UNICODE

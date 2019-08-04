@@ -1,12 +1,16 @@
 #ifdef _MSC_VER
 #  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data 
 #endif
+#ifdef __MINGW32__
+#  define __STDC_FORMAT_MACROS
+#endif
 
 #include <assert.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h> // llabs()
 #include <string.h>
 
 #include "TracyPrint.hpp"

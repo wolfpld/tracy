@@ -1,3 +1,6 @@
+#ifdef __MINGW32__
+#  define __STDC_FORMAT_MACROS
+#endif
 #include <assert.h>
 #include <inttypes.h>
 #include <string>

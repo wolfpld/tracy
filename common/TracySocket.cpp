@@ -436,7 +436,11 @@ IpAddress::~IpAddress()
 
 void IpAddress::Set( const struct sockaddr& addr )
 {
+#if __MINGW32__
+    auto ai = (struct sockaddr_in*)&addr;
+#else
     auto ai = (const struct sockaddr_in*)&addr;
+#endif
     inet_ntop( AF_INET, &ai->sin_addr, m_text, 17 );
     m_number = ai->sin_addr.s_addr;
 }

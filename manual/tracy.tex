@@ -1171,14 +1171,17 @@ The \emph{discovered clients} list is only displayed if there are clients broadc
 
 Both connecting to a client and opening a saved trace will present you with the main profiler view, which you can use to analyze the data (see section~\ref{analyzingdata}).
 
-If this is a real-time capture, you will also see the connection window (figure~\ref{connectioninfo}), with the capture status similar to the one displayed by the command line utility. This dialog also displays the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The \emph{Query backlog} represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. While this number drains down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
+\subsubsection{Connection information pop-up}
+\label{connectionpopup}
+
+If this is a real-time capture, you will also have access to the connection information pop-up (figure~\ref{connectioninfo}) through the \emph{\faWifi{}~Connection} button, with the capture status similar to the one displayed by the command line utility. This dialog also displays the connection speed graphed over time and the profiled application's current frames per second and frame time measurements. The \emph{Query backlog} represents the number of queries that were held back due to the bandwidth volume overwhelming the available network send buffer. While this number drains down to zero, the performance of real time profiling may be temporarily compromised. The circle displayed next to the bandwidth graph signals the connection status. If it's red, the connection is active. If it's gray, the client has disconnected.
 
 You can use the \faSave{}~\emph{Save trace} button to save the current profile data to a file\footnote{This should be taken literally. If a live capture is in progress and a save is performed, some data may be missing from the capture and won't be saved.}. Use the \faPlug{}~\emph{Stop} button to disconnect from the client\footnote{While requesting disconnect stops retrieval of any new events, the profiler will wait for any data that is still pending for the current set of events.}. The \faExclamationTriangle{}~\emph{Discard} button is used to discard current trace.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw (0, 0) rectangle (6.1, -3.2);
-\draw[pattern=crosshatch dots] (0, 0) rectangle+(6.1, 0.3);
+\draw (0, 0.5) rectangle (6.1, -3.2);
+\draw (0, 0.5) node[anchor=north west] {Connected to: 127.0.0.1};
 \draw[pattern=north east lines] (0.35, -0.35) circle(0.2);
 \draw (0.7, -0.1) rectangle+(3.5, -0.5) node[midway] {Bandwidth graph};
 \draw (4.3, -0.1) node[anchor=north west] {1.9 Mbps};
@@ -1190,7 +1193,7 @@ You can use the \faSave{}~\emph{Save trace} button to save the current profile d
 \draw[rounded corners=5pt] (2.6, -2.6) rectangle+(1.3, -0.5) node [midway] {\faPlug{}~Stop};
 \draw[rounded corners=5pt] (4.0, -2.6) rectangle+(2, -0.5) node [midway] {\faExclamationTriangle{}~Discard};
 \end{tikzpicture}
-\caption{Connection information window.}
+\caption{Connection information pop-up.}
 \label{connectioninfo}
 \end{figure}
 
@@ -1278,6 +1281,7 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 The control menu (top row of buttons) provides access to various features of the profiler. The buttons perform the following actions:
 
 \begin{itemize}
+\item \emph{\faWifi{}~Connection} -- Opens the connection information popup (see section~\ref{connectionpopup}). Only available when live capture is in progress.
 \item \emph{\faPowerOff{} Close} -- This button unloads the current profiling trace and returns to the welcome menu, where another trace can be loaded. In live captures it is replaced by \emph{\faPause{}~Pause}, \emph{\faPlay{}~Resume} and \emph{\faSquare{}~Stopped} buttons.
 \item \emph{\faPause{} Pause} -- While a live capture is in progress, the profiler will display the last three fully captured frames, so that you can see the current behavior of the program. Use this button\footnote{Or perform any action on the timeline view.} to stop the automatic updates of the timeline view (the capture will be still progressing).
 \item \emph{\faPlay{} Resume} -- Use this button to resume following the most recent three frames in a live capture.

@@ -458,15 +458,28 @@ bool View::DrawImpl()
     ImGui::Begin( tmp, keepOpenPtr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus );
 #endif
 
-    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
+    if( !m_staticView )
+    {
 #if defined TRACY_EXTENDED_FONT
-    const char* buttonTitle = ICON_FA_WIFI;
+        if( ImGui::Button( ICON_FA_WIFI ) )
 #else
-    const char* buttonTitle = "Connection";
+        if( ImGui::Button( "Connection" ) )
 #endif
-    if ( ImGui::Button( buttonTitle ) )
-        ImGui::OpenPopup( "TracyConnectionPopup" );
-    ImGui::SameLine();
+        {
+            ImGui::OpenPopup( "TracyConnectionPopup" );
+        }
+        ImGui::SameLine();
+        if( ImGui::BeginPopup( "TracyConnectionPopup" ) )
+        {
+            const bool wasDisconnectIssued = m_disconnectIssued;
+            const bool discardData = !DrawConnection();
+            const bool disconnectIssuedJustNow = m_disconnectIssued != wasDisconnectIssued;
+            if( discardData ) keepOpen = false;
+            if( disconnectIssuedJustNow || discardData ) ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+    }
+    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
         if( m_worker.IsConnected() )
@@ -682,18 +695,6 @@ bool View::DrawImpl()
 
     DrawFrames();
     DrawZones();
-
-    if( ImGui::BeginPopup( "TracyConnectionPopup" ) )
-    {
-        bool wasDisconnectIssued = m_disconnectIssued;
-        bool discardData = !DrawConnection();
-        bool disconnectIssuedJustNow = m_disconnectIssued != wasDisconnectIssued;
-        if( discardData )
-            keepOpen = false;
-        if( disconnectIssuedJustNow || discardData )
-            ImGui::CloseCurrentPopup();
-        ImGui::EndPopup();
-    }
 
     ImGui::End();
 

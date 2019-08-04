@@ -1397,6 +1397,7 @@ void Profiler::Worker()
 #ifdef TRACY_ON_DEMAND
         m_isConnected.store( false, std::memory_order_release );
         m_bufferOffset = 0;
+        m_bufferStart = 0;
 #endif
 
         m_sock->~Socket();

@@ -422,11 +422,7 @@ bool View::DrawImpl()
     bool keepOpen = true;
     bool* keepOpenPtr = nullptr;
     (void)keepOpenPtr;
-    if( !m_staticView )
-    {
-        if( !DrawConnection() ) return false;
-    }
-    else
+    if( m_staticView )
     {
         keepOpenPtr = &keepOpen;
     }
@@ -462,6 +458,27 @@ bool View::DrawImpl()
     ImGui::Begin( tmp, keepOpenPtr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus );
 #endif
 
+    if( !m_staticView )
+    {
+#if defined TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_WIFI ) )
+#else
+        if( ImGui::Button( "Connection" ) )
+#endif
+        {
+            ImGui::OpenPopup( "TracyConnectionPopup" );
+        }
+        ImGui::SameLine();
+        if( ImGui::BeginPopup( "TracyConnectionPopup" ) )
+        {
+            const bool wasDisconnectIssued = m_disconnectIssued;
+            const bool discardData = !DrawConnection();
+            const bool disconnectIssuedJustNow = m_disconnectIssued != wasDisconnectIssued;
+            if( discardData ) keepOpen = false;
+            if( disconnectIssuedJustNow || discardData ) ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+    }
     std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
@@ -678,6 +695,7 @@ bool View::DrawImpl()
 
     DrawFrames();
     DrawZones();
+
     ImGui::End();
 
     m_zoneHighlight = nullptr;
@@ -735,9 +753,7 @@ bool View::DrawConnection()
 
     {
         std::shared_lock<std::shared_mutex> lock( m_worker.GetMbpsDataLock() );
-        char tmp[2048];
-        sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
-        ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+        TextFocused( "Connected to:", m_worker.GetAddr().c_str() );
         const auto& mbpsVector = m_worker.GetMbpsData();
         const auto mbps = mbpsVector.back();
         char buf[64];
@@ -759,7 +775,7 @@ bool View::DrawConnection()
     ImGui::Text( "Memory usage: %s", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
 
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
-    ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
+    ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 1.75 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
 
     {
         std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
@@ -855,7 +871,6 @@ bool View::DrawConnection()
         {
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
-            ImGui::End();
             return false;
         }
         ImGui::SameLine( 0, ty * 2 );
@@ -866,7 +881,6 @@ bool View::DrawConnection()
         ImGui::EndPopup();
     }
 
-    ImGui::End();
     return true;
 }
 

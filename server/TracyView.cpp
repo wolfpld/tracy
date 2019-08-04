@@ -422,11 +422,7 @@ bool View::DrawImpl()
     bool keepOpen = true;
     bool* keepOpenPtr = nullptr;
     (void)keepOpenPtr;
-    if( !m_staticView )
-    {
-        if( !DrawConnection() ) return false;
-    }
-    else
+    if( m_staticView )
     {
         keepOpenPtr = &keepOpen;
     }
@@ -463,6 +459,14 @@ bool View::DrawImpl()
 #endif
 
     std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
+#if defined TRACY_EXTENDED_FONT
+    const char* buttonTitle = ICON_FA_WIFI;
+#else
+    const char* buttonTitle = "Connection";
+#endif
+    if ( ImGui::Button( buttonTitle ) )
+        ImGui::OpenPopup( "TracyConnectionPopup" );
+    ImGui::SameLine();
     if( !m_worker.IsDataStatic() )
     {
         if( m_worker.IsConnected() )
@@ -678,6 +682,19 @@ bool View::DrawImpl()
 
     DrawFrames();
     DrawZones();
+
+    if( ImGui::BeginPopup( "TracyConnectionPopup" ) )
+    {
+        bool wasDisconnectIssued = m_disconnectIssued;
+        bool discardData = !DrawConnection();
+        bool disconnectIssuedJustNow = m_disconnectIssued != wasDisconnectIssued;
+        if( discardData )
+            keepOpen = false;
+        if( disconnectIssuedJustNow || discardData )
+            ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
     ImGui::End();
 
     m_zoneHighlight = nullptr;
@@ -737,7 +754,6 @@ bool View::DrawConnection()
         std::shared_lock<std::shared_mutex> lock( m_worker.GetMbpsDataLock() );
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
-        ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
         const auto& mbpsVector = m_worker.GetMbpsData();
         const auto mbps = mbpsVector.back();
         char buf[64];
@@ -855,7 +871,6 @@ bool View::DrawConnection()
         {
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
-            ImGui::End();
             return false;
         }
         ImGui::SameLine( 0, ty * 2 );
@@ -866,7 +881,6 @@ bool View::DrawConnection()
         ImGui::EndPopup();
     }
 
-    ImGui::End();
     return true;
 }
 

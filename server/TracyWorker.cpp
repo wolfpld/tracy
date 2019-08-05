@@ -2780,6 +2780,12 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::SysTimeReport:
         ProcessSysTime( ev.sysTime );
         break;
+    case QueueType::MeshEnd:
+        ProcessMeshEnd();
+        break;
+    case QueueType::MeshTri:
+        ProcessMeshTri( ev.meshTri );
+        break;
     default:
         assert( false );
         break;
@@ -3802,6 +3808,22 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
         else if( m_sysTimePlot->max < val ) m_sysTimePlot->max = val;
         m_sysTimePlot->data.push_back_non_empty( { time, val } );
     }
+}
+
+void Worker::ProcessMeshEnd()
+{
+    m_data.meshStaging.clear();
+}
+
+void Worker::ProcessMeshTri( const QueueMeshTri& ev )
+{
+    auto& tri = m_data.meshStaging.push_next();
+    tri.x0 = ev.x0;
+    tri.y0 = ev.y0;
+    tri.x1 = ev.x1;
+    tri.y1 = ev.y1;
+    tri.x2 = ev.x2;
+    tri.y2 = ev.y2;
 }
 
 void Worker::MemAllocChanged( int64_t time )

@@ -188,6 +188,8 @@ private:
         Vector<StringRef> appInfo;
 
         CrashEvent crashEvent;
+
+        Vector<MeshTriangle> meshStaging;
     };
 
     struct MbpsBlock
@@ -406,6 +408,8 @@ private:
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
     tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
+    tracy_force_inline void ProcessMeshEnd();
+    tracy_force_inline void ProcessMeshTri( const QueueMeshTri& ev );
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBegin& ev );

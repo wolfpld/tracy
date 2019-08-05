@@ -221,6 +221,16 @@ struct CrashEvent
 
 enum { CrashEventSize = sizeof( CrashEvent ) };
 
+
+struct MeshTriangle
+{
+    float x0, y0;
+    float x1, y1;
+    float x2, y2;
+};
+
+enum { MeshTriangleSize = sizeof( MeshTriangle ) };
+
 #pragma pack()
 
 

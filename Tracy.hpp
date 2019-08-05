@@ -58,11 +58,15 @@
 #define TracyAllocS(x,y,z)
 #define TracyFreeS(x,y)
 
+#define TracyMeshTri(v0,v1,v2,v3,v4,v5)
+#define TracyMeshEnd
+
 #else
 
 #include "client/TracyLock.hpp"
 #include "client/TracyProfiler.hpp"
 #include "client/TracyScoped.hpp"
+#include "client/TracyMesh.hpp"
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define ZoneNamed( varname, active ) static const tracy::SourceLocationData TracyConcat(__tracy_source_location,__LINE__) { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,__LINE__), TRACY_CALLSTACK, active );
@@ -142,6 +146,9 @@
 #  define TracyAllocS( ptr, size, depth ) TracyAlloc( ptr, size )
 #  define TracyFreeS( ptr, depth ) TracyFree( ptr )
 #endif
+
+#define TracyMeshTri( x0, y0, x1, y1, x2, y2 ) tracy::mesh::MeshTri( x0, y0, x1, y1, x2, y2 )
+#define TracyMeshEnd tracy::mesh::MeshEnd();
 
 #endif
 

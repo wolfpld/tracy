@@ -56,6 +56,8 @@ enum class QueueType : uint8_t
     CallstackFrameSize,
     CallstackFrame,
     SysTimeReport,
+    MeshTri,
+    MeshEnd,
     StringData,
     ThreadName,
     CustomStringData,
@@ -297,6 +299,13 @@ struct QueueSysTime
     float sysTime;
 };
 
+struct QueueMeshTri
+{
+    float x0, y0;
+    float x1, y1;
+    float x2, y2;
+};
+
 struct QueueHeader
 {
     union
@@ -342,6 +351,7 @@ struct QueueItem
         QueueCallstackFrame callstackFrame;
         QueueCrashReport crashReport;
         QueueSysTime sysTime;
+        QueueMeshTri meshTri;
     };
 };
 #pragma pack()
@@ -399,6 +409,8 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
+    sizeof( QueueHeader ) + sizeof( QueueMeshTri ),
+    sizeof( QueueHeader ),                                  // mesh end
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

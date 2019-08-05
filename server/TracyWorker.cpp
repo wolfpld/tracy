@@ -3812,6 +3812,10 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
 
 void Worker::ProcessMeshEnd()
 {
+    auto& mesh = m_data.framesBase->frames.back().mesh.push_next();
+    const auto sz = m_data.meshStaging.size();
+    mesh.reserve_exact( sz, m_slab );
+    memcpy( mesh.data(), m_data.meshStaging.data(), sizeof( MeshTriangle ) * sz );
     m_data.meshStaging.clear();
 }
 

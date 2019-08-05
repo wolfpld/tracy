@@ -335,6 +335,7 @@ struct FrameEvent
     int64_t start;
     int64_t end;
     int32_t frameImage;
+    Vector<Vector<MeshTriangle>> mesh;
 };
 
 struct FrameData

@@ -9606,9 +9606,10 @@ void View::DrawMeshDebug()
 
     bool show = true;
     ImGui::Begin( "Mesh debug", &show );
+
+    ImGui::Columns( 2 );
     TextFocused( "Mesh debug frame", RealToString( m_meshDebug, true ) );
     TextFocused( "X range", RealToString( m_meshx1 - m_meshx0, true ) );
-    ImGui::SameLine();
     TextFocused( "Y range", RealToString( m_meshy1 - m_meshy0, true ) );
 
     const auto& meshList = m_worker.GetFramesBase()->frames[m_meshDebug].mesh;
@@ -9656,6 +9657,8 @@ void View::DrawMeshDebug()
         m_meshy0 = ay - dd;
         m_meshy1 = ay + dd;
     }
+
+    ImGui::NextColumn();
 
     auto& io = ImGui::GetIO();
     auto draw = ImGui::GetWindowDrawList();
@@ -9734,6 +9737,9 @@ void View::DrawMeshDebug()
     }
 
     draw->PopClipRect();
+
+    ImGui::NextColumn();
+    ImGui::EndColumns();
     ImGui::End();
     if( !show ) m_meshDebug = -1;
 }

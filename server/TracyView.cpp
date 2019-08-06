@@ -717,6 +717,7 @@ bool View::DrawImpl()
     if( m_goToFrame ) DrawGoToFrame();
     if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
     if( m_showPlayback ) DrawPlayback();
+    if( m_meshDebug >= 0 ) DrawMeshDebug();
 
     if( m_zoomAnim.active )
     {
@@ -9569,7 +9570,172 @@ void View::DrawPlayback()
     ImGui::SameLine();
     ImGui::Checkbox( "Zoom 2x", &m_playback.zoom );
     TextFocused( "Timestamp:", TimeToString( tstart - m_worker.GetTimeBegin() ) );
+
+    const auto& frame = m_worker.GetFramesBase()->frames[fi->frameRef];
+    if( !frame.mesh.empty() )
+    {
+        if( ImGui::Button( "Mesh debug" ) )
+        {
+            m_meshDebug = fi->frameRef;
+            m_meshDrawList = ~0;
+        }
+    }
+
     ImGui::End();
+}
+
+const uint32_t MeshColors[6] = {
+    0xFFFF8888,
+    0xFF88FF88,
+    0xFF8888FF,
+    0xFFAAAAAA,
+    0xFFFFFF44,
+    0xFFFF44FF
+};
+
+static ImVec2 GetRegionRect()
+{
+    const auto region = ImGui::GetContentRegionAvail();
+    const auto v = std::min( region.x, region.y );
+    return ImVec2( v, v );
+}
+
+void View::DrawMeshDebug()
+{
+    assert( m_meshDebug >= 0 );
+
+    bool show = true;
+    ImGui::Begin( "Mesh debug", &show );
+    TextFocused( "Mesh debug frame", RealToString( m_meshDebug, true ) );
+    TextFocused( "X range", RealToString( m_meshx1 - m_meshx0, true ) );
+    ImGui::SameLine();
+    TextFocused( "Y range", RealToString( m_meshy1 - m_meshy0, true ) );
+
+    const auto& meshList = m_worker.GetFramesBase()->frames[m_meshDebug].mesh;
+    assert( !meshList.empty() );
+
+    const auto msz = meshList.size();
+    for( size_t i=0; i<msz; i++ )
+    {
+        const auto bit = 1 << i;
+        bool enabled = m_meshDrawList & bit;
+        char buf[128];
+        sprintf( buf, "Mesh %llu (%llu tris)", i, meshList[i].size() );
+        SmallCheckbox( buf, &enabled );
+        if( enabled ) { m_meshDrawList |= bit; } else { m_meshDrawList &= ~bit; }
+    }
+
+    if( ImGui::SmallButton( "Auto fit" ) )
+    {
+        float minx = std::numeric_limits<float>::max();
+        float miny = std::numeric_limits<float>::max();
+        float maxx = std::numeric_limits<float>::min();
+        float maxy = std::numeric_limits<float>::min();
+        int bit = 1;
+        for( auto& mesh : meshList )
+        {
+            if( m_meshDrawList & bit )
+            {
+                for( auto& tri : mesh )
+                {
+                    minx = std::min( { minx, tri.x0, tri.x1, tri.x2 } );
+                    maxx = std::max( { maxx, tri.x0, tri.x1, tri.x2 } );
+                    miny = std::min( { miny, tri.y0, tri.y1, tri.y2 } );
+                    maxy = std::max( { maxy, tri.y0, tri.y1, tri.y2 } );
+                }
+            }
+            bit <<= 1;
+        }
+        const auto dx = maxx - minx;
+        const auto dy = maxy - miny;
+        const auto dd = std::max( dx, dy ) * 0.5f;
+        const auto ax = ( minx + maxx ) * 0.5f;
+        const auto ay = ( miny + maxy ) * 0.5f;
+        m_meshx0 = ax - dd;
+        m_meshx1 = ax + dd;
+        m_meshy0 = ay - dd;
+        m_meshy1 = ay + dd;
+    }
+
+    auto& io = ImGui::GetIO();
+    auto draw = ImGui::GetWindowDrawList();
+    const auto wpos = ImGui::GetWindowPos() + ImGui::GetCursorPos();
+    const auto region = GetRegionRect();
+    draw->AddRectFilled( wpos, wpos + region, 0xFF444444 );
+    draw->PushClipRect( wpos, wpos + region, true );
+
+    if( ImGui::IsMouseHoveringRect( wpos, wpos + region ) )
+    {
+        const auto px = ( m_meshx1 - m_meshx0 ) / region.x;
+        if( ImGui::IsMouseDragging( 1, 0 ) )
+        {
+            auto delta = ImGui::GetMouseDragDelta( 1, 0 );
+            m_meshx0 -= delta.x * px;
+            m_meshx1 -= delta.x * px;
+            m_meshy0 -= delta.y * px;
+            m_meshy1 -= delta.y * px;
+            io.MouseClickedPos[1] = io.MousePos;
+        }
+
+        const auto wheel = io.MouseWheel;
+        if( wheel != 0 )
+        {
+            const auto mouse = io.MousePos - wpos;
+            const auto p = ImVec2( mouse.x / region.x, mouse.y / region.y );
+
+            const auto xZoomSpan = m_meshx1 - m_meshx0;
+            const auto yZoomSpan = m_meshy1 - m_meshy0;
+            const auto p1x = xZoomSpan * p.x;
+            const auto p2x = xZoomSpan - p1x;
+            const auto p1y = yZoomSpan * p.y;
+            const auto p2y = yZoomSpan - p1y;
+
+            if( wheel > 0 )
+            {
+                m_meshx0 += p1x * 0.25;
+                m_meshx1 -= p2x * 0.25;
+                m_meshy0 += p1y * 0.25;
+                m_meshy1 -= p2y * 0.25;
+            }
+            else
+            {
+                m_meshx0 -= p1x * 0.25;
+                m_meshx1 += p2x * 0.25;
+                m_meshy0 -= p1y * 0.25;
+                m_meshy1 += p2y * 0.25;
+            }
+        }
+    }
+
+    const auto mulx = region.x / ( m_meshx1 - m_meshx0 );
+    const auto muly = region.y / ( m_meshy1 - m_meshy0 );
+    int idx = 0;
+    for( auto& mesh : meshList )
+    {
+        if( m_meshDrawList & ( 1 << idx ) )
+        {
+            for( auto& tri : mesh )
+            {
+                const auto x0 = ( tri.x0 - m_meshx0 ) * mulx;
+                const auto x1 = ( tri.x1 - m_meshx0 ) * mulx;
+                const auto x2 = ( tri.x2 - m_meshx0 ) * mulx;
+                const auto y0 = ( tri.y0 - m_meshy0 ) * muly;
+                const auto y1 = ( tri.y1 - m_meshy0 ) * muly;
+                const auto y2 = ( tri.y2 - m_meshy0 ) * muly;
+
+                const auto col = MeshColors[idx%6];
+
+                draw->AddLine( wpos + ImVec2( x0, y0 ), wpos + ImVec2( x1, y1 ), col );
+                draw->AddLine( wpos + ImVec2( x1, y1 ), wpos + ImVec2( x2, y2 ), col );
+                draw->AddLine( wpos + ImVec2( x2, y2 ), wpos + ImVec2( x0, y0 ), col );
+            }
+        }
+        idx++;
+    }
+
+    draw->PopClipRect();
+    ImGui::End();
+    if( !show ) m_meshDebug = -1;
 }
 
 template<class T>

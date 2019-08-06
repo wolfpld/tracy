@@ -133,6 +133,7 @@ private:
     void DrawGoToFrame();
     void DrawLockInfoWindow();
     void DrawPlayback();
+    void DrawMeshDebug();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
@@ -542,6 +543,13 @@ private:
         bool sync = false;
         bool zoom = false;
     } m_playback;
+
+    int m_meshDebug = -1;
+    uint64_t m_meshDrawList;
+    double m_meshx0 = -1;
+    double m_meshy0 = -1;
+    double m_meshx1 = 1;
+    double m_meshy1 = 1;
 };
 
 }

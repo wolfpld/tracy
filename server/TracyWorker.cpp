@@ -394,15 +394,28 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 {
                     for( uint64_t j=0; j<fsz; j++ )
                     {
+                        new(&ptr->frames[j].mesh) Vector<Vector<MeshTriangle>>();
                         ptr->frames[j].start = ReadTimeOffset( f, refTime );
                         ptr->frames[j].end = -1;
                         f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
+                        uint64_t msz;
+                        f.Read( &msz, sizeof( msz ) );
+                        for( uint64_t k=0; k<msz; k++ )
+                        {
+                            Vector<MeshTriangle> mesh;
+                            uint64_t dsz;
+                            f.Read( &dsz, sizeof( dsz ) );
+                            mesh.reserve_exact( dsz, m_slab );
+                            f.Read( mesh.data(), sizeof( MeshTriangle ) * dsz );
+                            ptr->frames[j].mesh.push_back( std::move( mesh ) );
+                        }
                     }
                 }
                 else
                 {
                     for( uint64_t j=0; j<fsz; j++ )
                     {
+                        new(&ptr->frames[j].mesh) Vector<Vector<MeshTriangle>>();
                         ptr->frames[j].start = ReadTimeOffset( f, refTime );
                         ptr->frames[j].end = ReadTimeOffset( f, refTime );
                         f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
@@ -4278,6 +4291,14 @@ void Worker::Write( FileWrite& f )
             {
                 WriteTimeOffset( f, refTime, fe.start );
                 f.Write( &fe.frameImage, sizeof( fe.frameImage ) );
+                sz = fe.mesh.size();
+                f.Write( &sz, sizeof( sz ) );
+                for( auto& mesh : fe.mesh )
+                {
+                    sz = mesh.size();
+                    f.Write( &sz, sizeof( sz ) );
+                    f.Write( mesh.data(), sizeof( MeshTriangle ) * sz );
+                }
             }
         }
         else

@@ -9712,12 +9712,11 @@ void View::DrawMeshDebug()
 
     const auto mulx = region.x / ( m_meshx1 - m_meshx0 );
     const auto muly = region.y / ( m_meshy1 - m_meshy0 );
-    int idx = 0;
-    for( auto& mesh : meshList )
+    for( int idx=meshList.size()-1; idx>=0; idx-- )
     {
         if( m_meshDrawList & ( 1 << idx ) )
         {
-            for( auto& tri : mesh )
+            for( auto& tri : meshList[idx] )
             {
                 const auto x0 = ( tri.x0 - m_meshx0 ) * mulx;
                 const auto x1 = ( tri.x1 - m_meshx0 ) * mulx;
@@ -9733,7 +9732,6 @@ void View::DrawMeshDebug()
                 draw->AddLine( wpos + ImVec2( x2, y2 ), wpos + ImVec2( x0, y0 ), col );
             }
         }
-        idx++;
     }
 
     draw->PopClipRect();

@@ -286,7 +286,14 @@ static int64_t SetupHwTimer()
     CpuId( regs, 0x80000001 );
     if( !( regs[3] & ( 1 << 27 ) ) ) InitFailure( "CPU doesn't support RDTSCP instruction." );
     CpuId( regs, 0x80000007 );
-    if( !( regs[3] & ( 1 << 8 ) ) ) InitFailure( "CPU doesn't support invariant TSC." );
+    if( !( regs[3] & ( 1 << 8 ) ) )
+    {
+        const char* noCheck = getenv( "TRACY_NO_INVARIANT_CHECK" );
+        if( !noCheck || noCheck[0] != '1' )
+        {
+            InitFailure( "CPU doesn't support invariant TSC.\nDefine TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*." );
+        }
+    }
 
     return Profiler::GetTime();
 }

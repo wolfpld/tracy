@@ -188,7 +188,7 @@ The Microsoft compiler is very insistent on writing the CPU core identifier to t
 
 \subsubsection{Misinformation about \texttt{rdtscp}}
 
-In various internet sources you can find warnings that the \texttt{rdtscp} readings are not reliable, can vary between CPU cores, or can be affected by the CPU frequency adjustments. While this was a sound advice a long time ago, it is no longer valid since the Intel Sandy Bridge microarchitecture (released in 2011) introduced \emph{invariant TSC}. Tracy will check for this feature and refuse to run, if it is not found.
+In various internet sources you can find warnings that the \texttt{rdtscp} readings are not reliable, can vary between CPU cores, or can be affected by the CPU frequency adjustments. While this was a sound advice a long time ago, it is no longer valid since the Intel Sandy Bridge microarchitecture (released in 2011) introduced \emph{invariant TSC}. Tracy will check for this feature and refuse to run, if it is not found\footnote{Invariant TSC might be not available in specific scenarios, e.g. in some virtual environments. You may set the environment variable \texttt{TRACY\_NO\_INVARIANT\_CHECK=1} to skip this check, \emph{only if you know what you are doing}.}.
 
 While there could be a timer dispatch function, similar to the one on ARM CPUs, it would incur additional cost, which would be paid by everyone, while benefiting (almost) no one. If need be, an optional macro should be added to enable such dispatch.
 

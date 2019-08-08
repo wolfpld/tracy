@@ -245,7 +245,35 @@ static inline void CpuId( uint32_t* regs, uint32_t leaf )
 static void InitFailure( const char* msg )
 {
 #if defined _WIN32 || defined __CYGWIN__
-    MessageBoxA( nullptr, msg, "Tracy Profiler initialization failure", MB_ICONSTOP );
+    bool hasConsole = false;
+    bool reopen = false;
+    const auto attached = AttachConsole( ATTACH_PARENT_PROCESS );
+    if( attached )
+    {
+        hasConsole = true;
+        reopen = true;
+    }
+    else
+    {
+        const auto err = GetLastError();
+        if( err == ERROR_ACCESS_DENIED )
+        {
+            hasConsole = true;
+        }
+    }
+    if( hasConsole )
+    {
+        fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
+        if( reopen )
+        {
+            freopen( "CONOUT$", "w", stderr );
+            fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
+        }
+    }
+    else
+    {
+        MessageBoxA( nullptr, msg, "Tracy Profiler initialization failure", MB_ICONSTOP );
+    }
 #else
     fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
 #endif

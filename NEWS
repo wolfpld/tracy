@@ -6,8 +6,11 @@ Note: Release numbers are nothing more than numbers. There are some
 "missing" versions due to trace file changes during development. This is not
 a mistake.
 
-v0.5 (xxxx-xx-xx)
+v0.5 (2019-08-10)
 -----------------
+
+This is the last release which will be able to load pre-v0.4 traces. Use the
+update utility to convert your old traces now!
 
 - Major decrease of trace dump file size.
 - Major optimizations across the board.

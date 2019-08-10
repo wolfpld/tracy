@@ -267,9 +267,7 @@ private:
     ZoneEvent* m_zoneHover = nullptr;
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
-    size_t m_prevMessages = 0;
     ImGuiTextFilter m_messageFilter;
-    bool m_messageFilterWasActive = false;
     int m_visibleMessages = 0;
     bool m_disconnectIssued = false;
 

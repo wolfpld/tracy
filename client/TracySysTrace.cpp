@@ -20,6 +20,7 @@ namespace tracy
 
 TRACEHANDLE s_traceHandle;
 TRACEHANDLE s_traceHandle2;
+EVENT_TRACE_PROPERTIES* s_prop;
 
 struct CSwitch
 {
@@ -87,33 +88,36 @@ bool SysTraceStart()
     if( status != ERROR_SUCCESS ) return false;
 
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + sizeof( KERNEL_LOGGER_NAME );
-    auto prop = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
-    memset( prop, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
-    prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH;
-    prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
-    prop->Wnode.BufferSize = psz;
-    prop->Wnode.Flags = WNODE_FLAG_TRACED_GUID;
-    prop->Wnode.ClientContext = 3;
-    prop->Wnode.Guid = SystemTraceControlGuid;
-    prop->LoggerNameOffset = sizeof( EVENT_TRACE_PROPERTIES );
-    memcpy( ((char*)prop) + sizeof( EVENT_TRACE_PROPERTIES ), KERNEL_LOGGER_NAME, sizeof( KERNEL_LOGGER_NAME ) );
+    s_prop = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
+    memset( s_prop, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
+    s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH;
+    s_prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
+    s_prop->Wnode.BufferSize = psz;
+    s_prop->Wnode.Flags = WNODE_FLAG_TRACED_GUID;
+    s_prop->Wnode.ClientContext = 3;
+    s_prop->Wnode.Guid = SystemTraceControlGuid;
+    s_prop->LoggerNameOffset = sizeof( EVENT_TRACE_PROPERTIES );
+    memcpy( ((char*)s_prop) + sizeof( EVENT_TRACE_PROPERTIES ), KERNEL_LOGGER_NAME, sizeof( KERNEL_LOGGER_NAME ) );
 
     auto backup = tracy_malloc( psz );
-    memcpy( backup, prop, psz );
+    memcpy( backup, s_prop, psz );
 
-    const auto controlStatus = ControlTrace( 0, KERNEL_LOGGER_NAME, prop, EVENT_TRACE_CONTROL_STOP );
+    const auto controlStatus = ControlTrace( 0, KERNEL_LOGGER_NAME, s_prop, EVENT_TRACE_CONTROL_STOP );
     if( controlStatus != ERROR_SUCCESS && controlStatus != ERROR_WMI_INSTANCE_NOT_FOUND )
     {
-        tracy_free( prop );
+        tracy_free( s_prop );
         return false;
     }
 
-    memcpy( prop, backup, psz );
+    memcpy( s_prop, backup, psz );
     tracy_free( backup );
 
-    const auto startStatus = StartTrace( &s_traceHandle, KERNEL_LOGGER_NAME, prop );
-    tracy_free( prop );
-    if( startStatus != ERROR_SUCCESS ) return false;
+    const auto startStatus = StartTrace( &s_traceHandle, KERNEL_LOGGER_NAME, s_prop );
+    if( startStatus != ERROR_SUCCESS )
+    {
+        tracy_free( s_prop );
+        return false;
+    }
 
     EVENT_TRACE_LOGFILE log = {};
     log.LoggerName = KERNEL_LOGGER_NAME;
@@ -124,6 +128,7 @@ bool SysTraceStart()
     if( s_traceHandle2 == (TRACEHANDLE)INVALID_HANDLE_VALUE )
     {
         CloseTrace( s_traceHandle );
+        tracy_free( s_prop );
         return false;
     }
 
@@ -139,6 +144,8 @@ void SysTraceStop()
 void SysTraceWorker( void* ptr )
 {
     ProcessTrace( &s_traceHandle2, 1, 0, 0 );
+    ControlTrace( 0, KERNEL_LOGGER_NAME, s_prop, EVENT_TRACE_CONTROL_STOP );
+    tracy_free( s_prop );
 }
 
 }

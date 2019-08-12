@@ -622,6 +622,9 @@ int main( int argc, char** argv )
             case tracy::LoadProgress::FrameImages:
                 ImGui::TextUnformatted( "Frame images..." );
                 break;
+            case tracy::LoadProgress::ContextSwitches:
+                ImGui::TextUnformatted( "Context switches..." );
+                break;
             default:
                 assert( false );
                 break;

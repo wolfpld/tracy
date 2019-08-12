@@ -30,14 +30,15 @@ namespace EventType
 {
     enum Type : uint32_t
     {
-        Locks       = 1 << 0,
-        Messages    = 1 << 1,
-        Plots       = 1 << 2,
-        Memory      = 1 << 3,
-        FrameImages = 1 << 4,
+        Locks           = 1 << 0,
+        Messages        = 1 << 1,
+        Plots           = 1 << 2,
+        Memory          = 1 << 3,
+        FrameImages     = 1 << 4,
+        ContextSwitches = 1 << 5,
 
-        None        = 0,
-        All         = std::numeric_limits<uint32_t>::max()
+        None            = 0,
+        All             = std::numeric_limits<uint32_t>::max()
     };
 }
 
@@ -65,7 +66,8 @@ struct LoadProgress
         Plots,
         Memory,
         CallStacks,
-        FrameImages
+        FrameImages,
+        ContextSwitches
     };
 
     LoadProgress() : total( 0 ), progress( 0 ), subTotal( 0 ), subProgress( 0 ) {}

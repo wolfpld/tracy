@@ -304,9 +304,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         s_loadProgress.total.store( 8, std::memory_order_relaxed );
     }
-    else
+    else if( fileVer <= FileVersion( 0, 5, 0 ) )
     {
         s_loadProgress.total.store( 9, std::memory_order_relaxed );
+    }
+    else
+    {
+        s_loadProgress.total.store( 10, std::memory_order_relaxed );
     }
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
@@ -1137,6 +1141,50 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 f.Read2( w, h );
                 const auto sz = w * h / 2;
                 f.Skip( sz + 1 );
+            }
+        }
+    }
+
+    if( fileVer >= FileVersion( 0, 5, 1 ) )
+    {
+        s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
+        s_loadProgress.progress.store( LoadProgress::ContextSwitches, std::memory_order_relaxed );
+
+        if( eventMask & EventType::ContextSwitches )
+        {
+            f.Read( sz );
+            s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
+            m_data.ctxSwitch.reserve( sz );
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                uint64_t thread, csz;
+                f.Read2( thread, csz );
+                auto data = m_slab.AllocInit<ContextSwitch>();
+                data->v.reserve_exact( csz, m_slab );
+                int64_t refTime = 0;
+                auto ptr = data->v.data();
+                for( uint64_t j=0; j<csz; j++ )
+                {
+                    ptr->start = ReadTimeOffset( f, refTime );
+                    ptr->end = ReadTimeOffset( f, refTime );
+                    f.Read( &ptr->cpu, sizeof( ptr->cpu ) + sizeof( ptr->reason ) + sizeof( ptr->state ) );
+                    ptr++;
+                }
+                m_data.ctxSwitch.emplace( thread, data );
+            }
+        }
+        else
+        {
+            f.Read( sz );
+            s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                f.Skip( sizeof( uint64_t ) );
+                uint64_t csz;
+                f.Read( csz );
+                f.Skip( csz * sizeof( ContextSwitchData ) );
             }
         }
     }
@@ -4425,6 +4473,32 @@ void Worker::Write( FileWrite& f )
         f.Write( &fi->flip, sizeof( fi->flip ) );
         const auto image = UnpackFrameImage( *fi );
         f.Write( image, fi->w * fi->h / 2 );
+    }
+
+    // Only save context switches relevant to active threads.
+    std::vector<flat_hash_map<uint64_t, ContextSwitch*, nohash<uint64_t>>::const_iterator> ctxValid;
+    ctxValid.reserve( m_data.ctxSwitch.size() );
+    for( auto it = m_data.ctxSwitch.begin(); it != m_data.ctxSwitch.end(); ++it )
+    {
+        if( m_data.threadMap.find( it->first ) != m_data.threadMap.end() )
+        {
+            ctxValid.emplace_back( it );
+        }
+    }
+    sz = ctxValid.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& ctx : ctxValid )
+    {
+        f.Write( &ctx->first, sizeof( ctx->first ) );
+        sz = ctx->second->v.size();
+        f.Write( &sz, sizeof( sz ) );
+        int64_t refTime = 0;
+        for( auto& cs : ctx->second->v )
+        {
+            WriteTimeOffset( f, refTime, cs.start );
+            WriteTimeOffset( f, refTime, cs.end );
+            f.Write( &cs.cpu, sizeof( cs.cpu ) + sizeof( cs.reason ) + sizeof( cs.state ) );
+        }
     }
 }
 

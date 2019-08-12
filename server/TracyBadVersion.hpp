@@ -6,12 +6,25 @@
 namespace tracy
 {
 
+struct BadVersionState
+{
+    enum State
+    {
+        Ok,
+        BadFile,
+        UnsupportedVersion
+    };
+
+    State state = Ok;
+    int version = 0;
+};
+
 namespace detail
 {
-void BadVersionImpl( int& badVer );
+void BadVersionImpl( BadVersionState& badVer );
 }
 
-tracy_force_inline void BadVersion( int& badVer ) { if( badVer != 0 ) detail::BadVersionImpl( badVer ); }
+tracy_force_inline void BadVersion( BadVersionState& badVer ) { if( badVer.state != BadVersionState::Ok ) detail::BadVersionImpl( badVer ); }
 
 }
 

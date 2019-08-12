@@ -102,7 +102,7 @@ int main( int argc, char** argv )
     tracy::flat_hash_map<uint32_t, ClientData> clients;
 
     std::unique_ptr<tracy::View> view;
-    int badVer = 0;
+    tracy::BadVersionState badVer;
 
     if( argc == 2 )
     {
@@ -477,19 +477,20 @@ int main( int argc, char** argv )
                                 }
                                 catch( const tracy::UnsupportedVersion& e )
                                 {
-                                    badVer = e.version;
+                                    badVer.state = tracy::BadVersionState::UnsupportedVersion;
+                                    badVer.version = e.version;
                                 }
                             } );
                         }
                     }
                     catch( const tracy::NotTracyDump& )
                     {
-                        badVer = -1;
+                        badVer.state = tracy::BadVersionState::BadFile;
                     }
                 }
             }
 
-            if( badVer != 0 )
+            if( badVer.state != tracy::BadVersionState::Ok )
             {
                 if( loadThread.joinable() ) { loadThread.join(); }
                 tracy::BadVersion( badVer );

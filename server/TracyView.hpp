@@ -457,7 +457,7 @@ private:
         std::unique_ptr<Worker> second;
         std::unique_ptr<UserData> userData;
         std::thread loadThread;
-        int badVer = 0;
+        BadVersionState badVer;
         char pattern[1024] = {};
         std::vector<int32_t> match[2];
         int selMatch[2] = { 0, 0 };

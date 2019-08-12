@@ -7297,14 +7297,15 @@ void View::DrawCompare()
                             }
                             catch( const tracy::UnsupportedVersion& e )
                             {
-                                m_compare.badVer = e.version;
+                                m_compare.badVer.state = BadVersionState::UnsupportedVersion;
+                                m_compare.badVer.version = e.version;
                             }
                         } );
                     }
                 }
                 catch( const tracy::NotTracyDump& )
                 {
-                    m_compare.badVer = -1;
+                    m_compare.badVer.state = BadVersionState::BadFile;
                 }
             }
         }

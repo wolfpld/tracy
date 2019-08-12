@@ -1882,6 +1882,13 @@ void View::DrawZones()
         offset += ostep;
         if( showFull )
         {
+            auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
+            if( ctxSwitch )
+            {
+                DrawContextSwitches( ctxSwitch, pxns, wpos, offset );
+                offset += ostep;
+            }
+
             if( m_drawZones )
             {
                 depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax );
@@ -2186,6 +2193,30 @@ void View::DrawZones()
     {
         const auto zvMid = ( m_zvEnd - m_zvStart ) / 2;
         draw->AddLine( ImVec2( wpos.x + zvMid * pxns, linepos.y ), ImVec2( wpos.x + zvMid * pxns, linepos.y + lineh ), 0x88FF44FF );
+    }
+}
+
+void View::DrawContextSwitches( const ContextSwitch* ctx, double pxns, const ImVec2& wpos, int offset )
+{
+    auto& vec = ctx->v;
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+    if( it == vec.end() ) return;
+
+    const auto citend = std::lower_bound( it, vec.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l.start < r; } );
+    if( it == citend ) return;
+
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto ty = ImGui::GetFontSize();
+    auto draw = ImGui::GetWindowDrawList();
+
+    while( it < citend )
+    {
+        auto& ev = *it;
+        const auto end = ev.end >= 0 ? ev.end : m_worker.GetLastTime();
+        const auto px0 = std::max( ( ev.start - m_zvStart ) * pxns, -10.0 );
+        const auto px1 = std::min( ( end - m_zvStart ) * pxns, w + 10.0 );
+        draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) ), 0xFF00FF00 );
+        ++it;
     }
 }
 

@@ -2611,6 +2611,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::SysTimeReport:
         ProcessSysTime( ev.sysTime );
         break;
+    case QueueType::ContextSwitch:
+        ProcessContextSwitch( ev.contextSwitch );
+        break;
     default:
         assert( false );
         break;
@@ -3626,6 +3629,44 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
         if( m_sysTimePlot->min > val ) m_sysTimePlot->min = val;
         else if( m_sysTimePlot->max < val ) m_sysTimePlot->max = val;
         m_sysTimePlot->data.push_back_non_empty( { time, val } );
+    }
+}
+
+void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
+{
+    const auto time = TscTime( ev.time );
+    m_data.lastTime = std::max( m_data.lastTime, time );
+
+    if( ev.oldThread != 0 )
+    {
+        auto it = m_data.ctxSwitch.find( ev.oldThread );
+        if( it != m_data.ctxSwitch.end() )
+        {
+            auto& data = it->second->v;
+            assert( !data.empty() );
+            auto& item = data.back();
+            assert( item.start <= time );
+            item.end = time;
+            item.reason = ev.reason;
+            item.state = ev.state;
+        }
+    }
+    if( ev.newThread != 0 )
+    {
+        auto it = m_data.ctxSwitch.find( ev.newThread );
+        if( it == m_data.ctxSwitch.end() )
+        {
+            auto ctx = m_slab.AllocInit<ContextSwitch>();
+            it = m_data.ctxSwitch.emplace( ev.newThread, ctx ).first;
+        }
+        auto& data = it->second->v;
+        assert( data.empty() || (uint64_t)data.back().end <= time );
+        auto& item = data.push_next();
+        item.start = time;
+        item.end = -1;
+        item.cpu = ev.cpu;
+        item.reason = -1;
+        item.state = -1;
     }
 }
 

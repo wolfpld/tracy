@@ -219,6 +219,18 @@ struct CrashEvent
 
 enum { CrashEventSize = sizeof( CrashEvent ) };
 
+
+struct ContextSwitchData
+{
+    int64_t start;
+    int64_t end;
+    uint8_t cpu;
+    int8_t reason;
+    int8_t state;
+};
+
+enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
+
 #pragma pack()
 
 
@@ -362,6 +374,11 @@ struct FrameImage
     uint16_t w, h;
     uint32_t frameRef;
     uint8_t flip;
+};
+
+struct ContextSwitch
+{
+    Vector<ContextSwitchData> v;
 };
 
 }

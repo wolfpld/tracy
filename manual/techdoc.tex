@@ -329,6 +329,8 @@ queue.commit_next();
 lock.unlock();
 \end{lstlisting}
 
+It is important to update the item count in the queue (\texttt{commit\_next()}) only after an item has been fully filled. Otherwise, for example if the \texttt{push\_next()} method is used instead of \texttt{prepare\_next()}, it is possible that a thread will be freezed mid-write during crash handling (see section~\ref{crashhandler}). Since the dequeue in crash handler doesn't lock the queue, as it may already be locked by a freezed thread and otherwise there are no threads left to compete for access, the non-ready items must not be marked as available.
+
 \paragraph{FastVector class}
 
 This custom vector class was designed to minimize the time spent holding a lock: adding items is performed only in-place and swapping two vectors is a matter of exchanging three pointers. The next item write position is always known and doesn't need to be calculated.

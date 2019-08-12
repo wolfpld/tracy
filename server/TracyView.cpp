@@ -8602,6 +8602,7 @@ void View::DrawInfo()
         TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
         TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
         TextFocused( "Frame images:", RealToString( ficnt, true ) );
+        TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount(), true ) );
         ImGui::TreePop();
     }
 

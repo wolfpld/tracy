@@ -1246,6 +1246,16 @@ uint64_t Worker::GetPlotCount() const
     return cnt;
 }
 
+uint64_t Worker::GetContextSwitchCount() const
+{
+    uint64_t cnt = 0;
+    for( auto& v : m_data.ctxSwitch )
+    {
+        cnt += v.second->v.size();
+    }
+    return cnt;
+}
+
 const ContextSwitch* const Worker::GetContextSwitchData( uint64_t thread ) const
 {
     auto it = m_data.ctxSwitch.find( thread );

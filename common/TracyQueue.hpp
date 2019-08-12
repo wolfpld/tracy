@@ -56,6 +56,7 @@ enum class QueueType : uint8_t
     CallstackFrameSize,
     CallstackFrame,
     SysTimeReport,
+    ContextSwitch,
     StringData,
     ThreadName,
     CustomStringData,
@@ -299,6 +300,16 @@ struct QueueSysTime
     float sysTime;
 };
 
+struct QueueContextSwitch
+{
+    int64_t time;
+    uint64_t oldThread;
+    uint64_t newThread;
+    uint8_t cpu;
+    uint8_t reason;
+    uint8_t state;
+};
+
 struct QueueHeader
 {
     union
@@ -344,6 +355,7 @@ struct QueueItem
         QueueCallstackFrame callstackFrame;
         QueueCrashReport crashReport;
         QueueSysTime sysTime;
+        QueueContextSwitch contextSwitch;
     };
 };
 #pragma pack()
@@ -401,6 +413,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
+    sizeof( QueueHeader ) + sizeof( QueueContextSwitch ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

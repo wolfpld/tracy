@@ -6,6 +6,11 @@ Note: Release numbers are nothing more than numbers. There are some
 "missing" versions due to trace file changes during development. This is not
 a mistake.
 
+v0.6 (xxxx-xx-xx)
+-----------------
+
+- Dropped support for pre-v0.4 traces.
+
 v0.5 (2019-08-10)
 -----------------
 

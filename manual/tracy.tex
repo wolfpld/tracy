@@ -741,6 +741,14 @@ Similarly, you can use \texttt{TracySharedLockable}, \texttt{TracySharedLockable
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
+logo=\bclampe
+]{Condition variables}
+The standard \texttt{std::condition\_variable} is only able to accept \texttt{std::mutex} locks. To be able to use Tracy lock wrapper, use \texttt{std::condition\_variable\_any} instead.
+\end{bclogo}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
 logo=\bcattention
 ]{Caveats}
 Due to limits of internal bookkeeping in the profiler, each lock may be used in no more than 64 unique threads. If you have many short lived temporary threads, consider using a thread pool to limit the numbers of created threads.

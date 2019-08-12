@@ -2064,16 +2064,11 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread 
         timeline.push_back( { lev } );
         UpdateLockCount( lockmap, timeline.size() - 1 );
     }
-    else if( timeline.back().ptr->time <= lt )
-    {
-        timeline.push_back_non_empty( { lev } );
-        UpdateLockCount( lockmap, timeline.size() - 1 );
-    }
     else
     {
-        auto it = std::upper_bound( timeline.begin(), timeline.end(), lt, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.ptr->time; } );
-        it = timeline.insert( it, { lev } );
-        UpdateLockCount( lockmap, std::distance( timeline.begin(), it ) );
+        assert( timeline.back().ptr->time <= lt );
+        timeline.push_back_non_empty( { lev } );
+        UpdateLockCount( lockmap, timeline.size() - 1 );
     }
 
     auto& range = lockmap.range[it->second];
@@ -3040,7 +3035,7 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     lev->type = LockEvent::Type::Wait;
     lev->srcloc = 0;
 
-    InsertLockEvent( *it->second, lev, m_threadCtx );
+    InsertLockEvent( *it->second, lev, ev.thread );
 }
 
 void Worker::ProcessLockObtain( const QueueLockObtain& ev )
@@ -3054,7 +3049,7 @@ void Worker::ProcessLockObtain( const QueueLockObtain& ev )
     lev->type = LockEvent::Type::Obtain;
     lev->srcloc = 0;
 
-    InsertLockEvent( lock, lev, m_threadCtx );
+    InsertLockEvent( lock, lev, ev.thread );
 }
 
 void Worker::ProcessLockRelease( const QueueLockRelease& ev )
@@ -3068,7 +3063,7 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
     lev->type = LockEvent::Type::Release;
     lev->srcloc = 0;
 
-    InsertLockEvent( lock, lev, m_threadCtx );
+    InsertLockEvent( lock, lev, ev.thread );
 }
 
 void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
@@ -3089,7 +3084,7 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
     lev->type = LockEvent::Type::WaitShared;
     lev->srcloc = 0;
 
-    InsertLockEvent( *it->second, lev, m_threadCtx );
+    InsertLockEvent( *it->second, lev, ev.thread );
 }
 
 void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
@@ -3104,7 +3099,7 @@ void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
     lev->type = LockEvent::Type::ObtainShared;
     lev->srcloc = 0;
 
-    InsertLockEvent( lock, lev, m_threadCtx );
+    InsertLockEvent( lock, lev, ev.thread );
 }
 
 void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
@@ -3119,7 +3114,7 @@ void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
     lev->type = LockEvent::Type::ReleaseShared;
     lev->srcloc = 0;
 
-    InsertLockEvent( lock, lev, m_threadCtx );
+    InsertLockEvent( lock, lev, ev.thread );
 }
 
 void Worker::ProcessLockMark( const QueueLockMark& ev )
@@ -3128,7 +3123,7 @@ void Worker::ProcessLockMark( const QueueLockMark& ev )
     auto lit = m_data.lockMap.find( ev.id );
     assert( lit != m_data.lockMap.end() );
     auto& lockmap = *lit->second;
-    auto tid = lockmap.threadMap.find( m_threadCtx );
+    auto tid = lockmap.threadMap.find( ev.thread );
     assert( tid != lockmap.threadMap.end() );
     const auto thread = tid->second;
     auto it = lockmap.timeline.end();

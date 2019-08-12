@@ -80,29 +80,27 @@ public:
             return;
         }
 #endif
+        const auto thread = GetThreadHandle();
+
         {
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::LockWait );
+            MemWrite( &item->lockWait.thread, thread );
             MemWrite( &item->lockWait.id, m_id );
             MemWrite( &item->lockWait.time, Profiler::GetTime() );
             MemWrite( &item->lockWait.type, LockType::Lockable );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
 
         m_lockable.lock();
 
         {
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::LockObtain );
+            MemWrite( &item->lockObtain.thread, thread );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
     }
 
@@ -120,14 +118,12 @@ public:
         }
 #endif
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
+        auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockRelease );
+        MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );
-        tail.store( magic + 1, std::memory_order_release );
+        Profiler::QueueSerialFinish();
     }
 
     tracy_force_inline bool try_lock()
@@ -151,14 +147,12 @@ public:
 
         if( ret )
         {
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::LockObtain );
+            MemWrite( &item->lockObtain.thread, GetThreadHandle() );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
 
         return ret;
@@ -177,14 +171,12 @@ public:
         }
 #endif
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
+        auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockMark );
+        MemWrite( &item->lockMark.thread, GetThreadHandle() );
         MemWrite( &item->lockMark.id, m_id );
         MemWrite( &item->lockMark.srcloc, (uint64_t)srcloc );
-        tail.store( magic + 1, std::memory_order_release );
+        Profiler::QueueSerialFinish();
     }
 
 private:
@@ -267,29 +259,27 @@ public:
             return;
         }
 #endif
+        const auto thread = GetThreadHandle();
+
         {
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::LockWait );
+            MemWrite( &item->lockWait.thread, thread );
             MemWrite( &item->lockWait.id, m_id );
             MemWrite( &item->lockWait.time, Profiler::GetTime() );
             MemWrite( &item->lockWait.type, LockType::SharedLockable );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
 
         m_lockable.lock();
 
         {
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::LockObtain );
+            MemWrite( &item->lockObtain.thread, thread );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
     }
 
@@ -307,14 +297,12 @@ public:
         }
 #endif
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
+        auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockRelease );
+        MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );
-        tail.store( magic + 1, std::memory_order_release );
+        Profiler::QueueSerialFinish();
     }
 
     tracy_force_inline bool try_lock()
@@ -338,14 +326,12 @@ public:
 
         if( ret )
         {
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::LockObtain );
+            MemWrite( &item->lockObtain.thread, GetThreadHandle() );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
 
         return ret;
@@ -369,29 +355,27 @@ public:
             return;
         }
 #endif
+        const auto thread = GetThreadHandle();
+
         {
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::LockSharedWait );
+            MemWrite( &item->lockWait.thread, thread );
             MemWrite( &item->lockWait.id, m_id );
             MemWrite( &item->lockWait.time, Profiler::GetTime() );
             MemWrite( &item->lockWait.type, LockType::SharedLockable );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
 
         m_lockable.lock_shared();
 
         {
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::LockSharedObtain );
+            MemWrite( &item->lockObtain.thread, thread );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
     }
 
@@ -409,14 +393,12 @@ public:
         }
 #endif
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
+        auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockSharedRelease );
+        MemWrite( &item->lockRelease.thread, GetThreadHandle() );
         MemWrite( &item->lockRelease.id, m_id );
         MemWrite( &item->lockRelease.time, Profiler::GetTime() );
-        tail.store( magic + 1, std::memory_order_release );
+        Profiler::QueueSerialFinish();
     }
 
     tracy_force_inline bool try_lock_shared()
@@ -440,14 +422,12 @@ public:
 
         if( ret )
         {
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::LockSharedObtain );
+            MemWrite( &item->lockObtain.thread, GetThreadHandle() );
             MemWrite( &item->lockObtain.id, m_id );
             MemWrite( &item->lockObtain.time, Profiler::GetTime() );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
 
         return ret;
@@ -466,14 +446,12 @@ public:
         }
 #endif
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
+        auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::LockMark );
+        MemWrite( &item->lockMark.thread, GetThreadHandle() );
         MemWrite( &item->lockMark.id, m_id );
         MemWrite( &item->lockMark.srcloc, (uint64_t)srcloc );
-        tail.store( magic + 1, std::memory_order_release );
+        Profiler::QueueSerialFinish();
     }
 
 private:

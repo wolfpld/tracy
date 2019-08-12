@@ -152,6 +152,7 @@ struct QueueLockTerminate
 
 struct QueueLockWait
 {
+    uint64_t thread;
     uint32_t id;
     int64_t time;
     LockType type;
@@ -159,18 +160,21 @@ struct QueueLockWait
 
 struct QueueLockObtain
 {
+    uint64_t thread;
     uint32_t id;
     int64_t time;
 };
 
 struct QueueLockRelease
 {
+    uint64_t thread;
     uint32_t id;
     int64_t time;
 };
 
 struct QueueLockMark
 {
+    uint64_t thread;
     uint32_t id;
     uint64_t srcloc;    // ptr
 };

@@ -152,6 +152,20 @@ public:
         return m_zoneId.fetch_add( 1, std::memory_order_relaxed );
     }
 
+    static tracy_force_inline QueueItem* QueueSerial()
+    {
+        auto& p = GetProfiler();
+        p.m_serialLock.lock();
+        return p.m_serialQueue.prepare_next();
+    }
+
+    static tracy_force_inline void QueueSerialFinish()
+    {
+        auto& p = GetProfiler();
+        p.m_serialQueue.commit_next();
+        p.m_serialLock.unlock();
+    }
+
     static tracy_force_inline void SendFrameMark( const char* name )
     {
         if( !name ) GetProfiler().m_frameCount.fetch_add( 1, std::memory_order_relaxed );
@@ -174,13 +188,11 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        GetProfiler().m_serialLock.lock();
-        auto item = GetProfiler().m_serialQueue.prepare_next();
+        auto item = QueueSerial();
         MemWrite( &item->hdr.type, type );
         MemWrite( &item->frameMark.time, GetTime() );
         MemWrite( &item->frameMark.name, uint64_t( name ) );
-        GetProfiler().m_serialQueue.commit_next();
-        GetProfiler().m_serialLock.unlock();
+        QueueSerialFinish();
     }
 
     static tracy_force_inline void SendFrameImage( const void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip )

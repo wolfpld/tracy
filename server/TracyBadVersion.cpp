@@ -22,9 +22,26 @@ void BadVersionImpl( BadVersionState& badVer )
     case BadVersionState::UnsupportedVersion:
         ImGui::OpenPopup( "Unsupported file version" );
         break;
+    case BadVersionState::LegacyVersion:
+        ImGui::OpenPopup( "Legacy file version" );
+        break;
     default:
         assert( false );
         break;
+    }
+    if( ImGui::BeginPopupModal( "Bad file", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+#endif
+        ImGui::Text( "The file you are trying to open is not a tracy dump." );
+        ImGui::Separator();
+        if( ImGui::Button( "Oops" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            badVer.state = BadVersionState::Ok;
+        }
+        ImGui::EndPopup();
     }
     if( ImGui::BeginPopupModal( "Unsupported file version", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
@@ -40,14 +57,14 @@ void BadVersionImpl( BadVersionState& badVer )
         }
         ImGui::EndPopup();
     }
-    if( ImGui::BeginPopupModal( "Bad file", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    if( ImGui::BeginPopupModal( "Legacy file version", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
 #ifdef TRACY_EXTENDED_FONT
-        TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
+        TextCentered( ICON_FA_GHOST );
 #endif
-        ImGui::Text( "The file you are trying to open is not a tracy dump." );
+        ImGui::Text( "You are trying to open a file which was created by legacy version %i.%i.%i.\nUse the update utility from an older version of the profiler to convert the file to a supported version.", badVer.version >> 16, ( badVer.version >> 8 ) & 0xFF, badVer.version & 0xFF );
         ImGui::Separator();
-        if( ImGui::Button( "Oops" ) )
+        if( ImGui::Button( "Maybe I don't need it" ) )
         {
             ImGui::CloseCurrentPopup();
             badVer.state = BadVersionState::Ok;

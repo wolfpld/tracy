@@ -91,6 +91,11 @@ int main( int argc, char** argv )
         fprintf( stderr, "The file you are trying to open is not a tracy dump.\n" );
         exit( 1 );
     }
+    catch( const tracy::LegacyVersion& e )
+    {
+        fprintf( stderr, "The file you are trying to open is from a legacy version.\n" );
+        exit( 1 );
+    }
 
     return 0;
 }

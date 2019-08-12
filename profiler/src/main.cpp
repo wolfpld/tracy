@@ -480,6 +480,11 @@ int main( int argc, char** argv )
                                     badVer.state = tracy::BadVersionState::UnsupportedVersion;
                                     badVer.version = e.version;
                                 }
+                                catch( const tracy::LegacyVersion& e )
+                                {
+                                    badVer.state = tracy::BadVersionState::LegacyVersion;
+                                    badVer.version = e.version;
+                                }
                             } );
                         }
                     }

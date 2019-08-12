@@ -47,6 +47,12 @@ struct UnsupportedVersion : public std::exception
     int version;
 };
 
+struct LegacyVersion : public std::exception
+{
+    LegacyVersion( int version ) : version ( version ) {}
+    int version;
+};
+
 struct LoadProgress
 {
     enum Stage

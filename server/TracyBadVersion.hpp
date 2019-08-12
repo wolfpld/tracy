@@ -12,7 +12,8 @@ struct BadVersionState
     {
         Ok,
         BadFile,
-        UnsupportedVersion
+        UnsupportedVersion,
+        LegacyVersion
     };
 
     State state = Ok;

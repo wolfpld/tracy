@@ -1246,6 +1246,19 @@ uint64_t Worker::GetPlotCount() const
     return cnt;
 }
 
+const ContextSwitch* const Worker::GetContextSwitchData( uint64_t thread ) const
+{
+    auto it = m_data.ctxSwitch.find( thread );
+    if( it != m_data.ctxSwitch.end() )
+    {
+        return it->second;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
 size_t Worker::GetFullFrameCount( const FrameData& fd ) const
 {
     const auto sz = fd.frames.size();

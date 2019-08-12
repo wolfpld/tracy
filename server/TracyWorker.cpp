@@ -1128,7 +1128,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
         else
         {
-            // Implement skip, if more data is added after frame image section
+            f.Read( sz );
+            s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                uint16_t w, h;
+                f.Read2( w, h );
+                const auto sz = w * h / 2;
+                f.Skip( sz + 1 );
+            }
         }
     }
 

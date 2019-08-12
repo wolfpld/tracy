@@ -61,6 +61,7 @@ static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
 static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', Version::Major, Version::Minor, Version::Patch };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( Version::Major, Version::Minor, Version::Patch );
+static const int MinSupportedVersion = FileVersion( 0, 4, 0 );
 
 
 static void UpdateLockCountLockable( LockMap& lockmap, size_t pos )
@@ -286,21 +287,20 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             throw UnsupportedVersion( fileVer );
         }
+        if( fileVer < MinSupportedVersion )
+        {
+            throw LegacyVersion( fileVer );
+        }
 
         f.Read( m_delay );
     }
     else
     {
-        static_assert( sizeof( m_delay ) == sizeof( hdr ), "Size mismatch" );
-        memcpy( &m_delay, hdr, sizeof( m_delay ) );
+        throw LegacyVersion( FileVersion( 0, 2, 0 ) );
     }
     m_traceVersion = fileVer;
 
-    if( fileVer <= FileVersion( 0, 3, 1 ) )
-    {
-        s_loadProgress.total.store( 7, std::memory_order_relaxed );
-    }
-    else if( fileVer <= FileVersion( 0, 4, 8 ) )
+    if( fileVer <= FileVersion( 0, 4, 8 ) )
     {
         s_loadProgress.total.store( 8, std::memory_order_relaxed );
     }
@@ -314,11 +314,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( m_resolution );
     f.Read( m_timerMul );
     f.Read( m_data.lastTime );
-
-    if( fileVer >= FileVersion( 0, 3, 200 ) )
-    {
-        f.Read( m_data.frameOffset );
-    }
+    f.Read( m_data.frameOffset );
 
     uint64_t sz;
     {
@@ -328,40 +324,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( tmp, sz );
         m_captureName = std::string( tmp, tmp+sz );
     }
-
-    if( fileVer >= FileVersion( 0, 3, 205 ) )
     {
         f.Read( sz );
         assert( sz < 1024 );
         char tmp[1024];
         f.Read( tmp, sz );
         m_captureProgram = std::string( tmp, tmp+sz );
-
         f.Read( m_captureTime );
     }
-    else
-    {
-        const auto sz = m_captureName.size();
-        char tmp[1024];
-        memcpy( tmp, m_captureName.c_str(), sz );
-        tmp[sz] = '\0';
-        auto ptr = tmp + sz - 1;
-        while( *ptr != '@' )
-        {
-            if( *ptr == '#' ) *ptr = '\0';
-            ptr--;
-        }
-
-        m_captureProgram = std::string( tmp, ptr-1 );
-
-        tm epoch = {};
-        sscanf( ptr+1, "%d-%d-%d %d:%d:%d", &epoch.tm_year, &epoch.tm_mon, &epoch.tm_mday, &epoch.tm_hour, &epoch.tm_min, &epoch.tm_sec );
-        epoch.tm_year -= 1900;
-        epoch.tm_mon--;
-        m_captureTime = (uint64_t)mktime( &epoch );
-    }
-
-    if( fileVer >= FileVersion( 0, 3, 203 ) )
     {
         f.Read( sz );
         assert( sz < 1024 );
@@ -370,110 +340,87 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_hostInfo = std::string( tmp, tmp+sz );
     }
 
-    if( fileVer >= FileVersion( 0, 3, 204 ) )
-    {
-        f.Read( &m_data.crashEvent, sizeof( m_data.crashEvent ) );
-    }
+    f.Read( &m_data.crashEvent, sizeof( m_data.crashEvent ) );
 
-    if( fileVer >= FileVersion( 0, 3, 202 ) )
+    f.Read( sz );
+    m_data.frames.Data().reserve_exact( sz, m_slab );
+    for( uint64_t i=0; i<sz; i++ )
     {
-        f.Read( sz );
-        m_data.frames.Data().reserve_exact( sz, m_slab );
-        for( uint64_t i=0; i<sz; i++ )
+        auto ptr = m_slab.AllocInit<FrameData>();
+        f.Read( &ptr->name, sizeof( ptr->name ) );
+        f.Read( &ptr->continuous, sizeof( ptr->continuous ) );
+        uint64_t fsz;
+        f.Read( &fsz, sizeof( fsz ) );
+        ptr->frames.reserve_exact( fsz, m_slab );
+        if( fileVer >= FileVersion( 0, 4, 9 ) )
         {
-            auto ptr = m_slab.AllocInit<FrameData>();
-            f.Read( &ptr->name, sizeof( ptr->name ) );
-            f.Read( &ptr->continuous, sizeof( ptr->continuous ) );
-            uint64_t fsz;
-            f.Read( &fsz, sizeof( fsz ) );
-            ptr->frames.reserve_exact( fsz, m_slab );
-            if( fileVer >= FileVersion( 0, 4, 9 ) )
+            int64_t refTime = 0;
+            if( ptr->continuous )
             {
-                int64_t refTime = 0;
-                if( ptr->continuous )
+                for( uint64_t j=0; j<fsz; j++ )
                 {
-                    for( uint64_t j=0; j<fsz; j++ )
-                    {
-                        ptr->frames[j].start = ReadTimeOffset( f, refTime );
-                        ptr->frames[j].end = -1;
-                        f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
-                    }
-                }
-                else
-                {
-                    for( uint64_t j=0; j<fsz; j++ )
-                    {
-                        ptr->frames[j].start = ReadTimeOffset( f, refTime );
-                        ptr->frames[j].end = ReadTimeOffset( f, refTime );
-                        f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
-                    }
-                }
-            }
-            else if( fileVer >= FileVersion( 0, 4, 2 ) )
-            {
-                int64_t refTime = 0;
-                if( ptr->continuous )
-                {
-                    for( uint64_t j=0; j<fsz; j++ )
-                    {
-                        ptr->frames[j].start = ReadTimeOffset( f, refTime );
-                        ptr->frames[j].end = -1;
-                        ptr->frames[j].frameImage = -1;
-                    }
-                }
-                else
-                {
-                    for( uint64_t j=0; j<fsz; j++ )
-                    {
-                        ptr->frames[j].start = ReadTimeOffset( f, refTime );
-                        ptr->frames[j].end = ReadTimeOffset( f, refTime );
-                        ptr->frames[j].frameImage = -1;
-                    }
+                    ptr->frames[j].start = ReadTimeOffset( f, refTime );
+                    ptr->frames[j].end = -1;
+                    f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
                 }
             }
             else
             {
-                if( ptr->continuous )
+                for( uint64_t j=0; j<fsz; j++ )
                 {
-                    for( uint64_t j=0; j<fsz; j++ )
-                    {
-                        f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
-                        ptr->frames[j].end = -1;
-                        ptr->frames[j].frameImage = -1;
-                    }
-                }
-                else
-                {
-                    for( uint64_t j=0; j<fsz; j++ )
-                    {
-                        f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
-                        f.Read( &ptr->frames[j].end, sizeof( int64_t ) );
-                        ptr->frames[j].frameImage = -1;
-                    }
+                    ptr->frames[j].start = ReadTimeOffset( f, refTime );
+                    ptr->frames[j].end = ReadTimeOffset( f, refTime );
+                    f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
                 }
             }
-            m_data.frames.Data()[i] = ptr;
         }
-
-        m_data.framesBase = m_data.frames.Data()[0];
-        assert( m_data.framesBase->name == 0 );
-    }
-    else
-    {
-        auto ptr = m_slab.AllocInit<FrameData>();
-        ptr->name = 0;
-        ptr->continuous = 1;
-        f.Read( sz );
-        ptr->frames.reserve_exact( sz, m_slab );
-        for( uint64_t i=0; i<sz; i++ )
+        else if( fileVer >= FileVersion( 0, 4, 2 ) )
         {
-            f.Read( &ptr->frames[i].start, sizeof( int64_t ) );
-            ptr->frames[i].end = -1;
-            ptr->frames[i].frameImage = -1;
+            int64_t refTime = 0;
+            if( ptr->continuous )
+            {
+                for( uint64_t j=0; j<fsz; j++ )
+                {
+                    ptr->frames[j].start = ReadTimeOffset( f, refTime );
+                    ptr->frames[j].end = -1;
+                    ptr->frames[j].frameImage = -1;
+                }
+            }
+            else
+            {
+                for( uint64_t j=0; j<fsz; j++ )
+                {
+                    ptr->frames[j].start = ReadTimeOffset( f, refTime );
+                    ptr->frames[j].end = ReadTimeOffset( f, refTime );
+                    ptr->frames[j].frameImage = -1;
+                }
+            }
         }
-        m_data.frames.Data().push_back( ptr );
-        m_data.framesBase = ptr;
+        else
+        {
+            if( ptr->continuous )
+            {
+                for( uint64_t j=0; j<fsz; j++ )
+                {
+                    f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
+                    ptr->frames[j].end = -1;
+                    ptr->frames[j].frameImage = -1;
+                }
+            }
+            else
+            {
+                for( uint64_t j=0; j<fsz; j++ )
+                {
+                    f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
+                    f.Read( &ptr->frames[j].end, sizeof( int64_t ) );
+                    ptr->frames[j].frameImage = -1;
+                }
+            }
+        }
+        m_data.frames.Data()[i] = ptr;
     }
+    m_data.framesBase = m_data.frames.Data()[0];
+    assert( m_data.framesBase->name == 0 );
 
     flat_hash_map<uint64_t, const char*, nohash<uint64_t>> pointerMap;
 
@@ -525,14 +472,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             m_data.threadMap.emplace( m_data.threadExpand[i], i );
         }
     }
-    else if( fileVer >= FileVersion( 0, 3, 201 ) )
+    else
     {
         f.Read( sz );
         m_data.threadExpand.reserve( sz );
-        m_data.threadExpand.push_back( 0 );
-    }
-    else
-    {
         m_data.threadExpand.push_back( 0 );
     }
 
@@ -565,53 +508,25 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     m_data.sourceLocationZonesReady = false;
     m_data.sourceLocationZones.reserve( sle + sz );
 
-    if( fileVer >= FileVersion( 0, 3, 201 ) )
+    f.Read( sz );
+    for( uint64_t i=0; i<sz; i++ )
     {
-        f.Read( sz );
-        for( uint64_t i=0; i<sz; i++ )
-        {
-            int32_t id;
-            uint64_t cnt;
-            f.Read( id );
-            f.Read( cnt );
-            auto status = m_data.sourceLocationZones.emplace( id, SourceLocationZones() );
-            assert( status.second );
-            status.first->second.zones.reserve( cnt );
-        }
-    }
-    else
-    {
-        for( uint64_t i=1; i<sle; i++ )
-        {
-            m_data.sourceLocationZones.emplace( int32_t( i ), SourceLocationZones() );
-        }
-        for( uint64_t i=0; i<sz; i++ )
-        {
-            m_data.sourceLocationZones.emplace( -int32_t( i + 1 ), SourceLocationZones() );
-        }
+        int32_t id;
+        uint64_t cnt;
+        f.Read( id );
+        f.Read( cnt );
+        auto status = m_data.sourceLocationZones.emplace( id, SourceLocationZones() );
+        assert( status.second );
+        status.first->second.zones.reserve( cnt );
     }
 #else
-    if( fileVer >= FileVersion( 0, 3, 201 ) )
+    f.Read( sz );
+    for( uint64_t i=0; i<sz; i++ )
     {
-        f.Read( sz );
-        for( uint64_t i=0; i<sz; i++ )
-        {
-            int32_t id;
-            f.Read( id );
-            f.Skip( sizeof( uint64_t ) );
-            m_data.sourceLocationZonesCnt.emplace( id, 0 );
-        }
-    }
-    else
-    {
-        for( uint64_t i=1; i<sle; i++ )
-        {
-            m_data.sourceLocationZonesCnt.emplace( int32_t( i ), 0 );
-        }
-        for( uint64_t i=0; i<sz; i++ )
-        {
-            m_data.sourceLocationZonesCnt.emplace( -int32_t( i + 1 ), 0 );
-        }
+        int32_t id;
+        f.Read( id );
+        f.Skip( sizeof( uint64_t ) );
+        m_data.sourceLocationZonesCnt.emplace( id, 0 );
     }
 #endif
 
@@ -677,7 +592,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     }
                 }
             }
-            else if( fileVer >= FileVersion( 0, 3, 0 ) )
+            else
             {
                 if( lockmap.type == LockType::Lockable )
                 {
@@ -695,35 +610,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
                         f.Read( lev, sizeof( LockEventShared::time ) + sizeof( LockEventShared::srcloc ) + sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
-                        *ptr++ = { lev };
-                        UpdateLockRange( lockmap, *lev );
-                    }
-                }
-            }
-            else
-            {
-                if( lockmap.type == LockType::Lockable )
-                {
-                    for( uint64_t i=0; i<tsz; i++ )
-                    {
-                        auto lev = m_slab.Alloc<LockEvent>();
-                        f.Read( lev, sizeof( LockEvent::time ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) );
-                        f.Skip( sizeof( uint8_t ) );
-                        f.Read( lev->type );
-                        f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) );
-                        *ptr++ = { lev };
-                        UpdateLockRange( lockmap, *lev );
-                    }
-                }
-                else
-                {
-                    for( uint64_t i=0; i<tsz; i++ )
-                    {
-                        auto lev = m_slab.Alloc<LockEventShared>();
-                        f.Read( lev, sizeof( LockEventShared::time ) + sizeof( LockEventShared::srcloc ) + sizeof( LockEventShared::thread ) );
-                        f.Skip( sizeof( uint8_t ) );
-                        f.Read( lev->type );
-                        f.Skip( sizeof( uint8_t ) + sizeof( uint64_t ) * 3 );
                         *ptr++ = { lev };
                         UpdateLockRange( lockmap, *lev );
                     }
@@ -749,14 +635,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( tsz );
             f.Skip( tsz * sizeof( uint64_t ) );
             f.Read( tsz );
-            if( fileVer >= FileVersion( 0, 3, 0 ) )
-            {
-                f.Skip( tsz * ( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) ) );
-            }
-            else
-            {
-                f.Skip( tsz * ( type == LockType::Lockable ? 24 : 40 ) );
-            }
+            f.Skip( tsz * ( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) ) );
         }
     }
 
@@ -805,7 +684,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 f.Read( ptr );
                 auto msgdata = m_slab.Alloc<MessageData>();
                 f.Read( msgdata, sizeof( MessageData::time ) + sizeof( MessageData::ref ) );
-                if( fileVer <= FileVersion( 0, 3, 0 ) ) f.Skip( 7 );
                 msgdata->color = 0xFFFFFFFF;
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
@@ -814,12 +692,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
     else
     {
-        // Prior to 0.3.1 MessageData was saved with padding.
-        if( fileVer <= FileVersion( 0, 3, 0 ) )
-        {
-            f.Skip( sz * ( sizeof( uint64_t ) + 24 ) );
-        }
-        else if( fileVer <= FileVersion( 0, 4, 7 ) )
+        if( fileVer <= FileVersion( 0, 4, 7 ) )
         {
             f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) ) );
         }
@@ -907,32 +780,19 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
         int64_t refTime = 0;
         int64_t refGpuTime = 0;
-        if( fileVer <= FileVersion( 0, 3, 1 ) )
+        f.Read( ctx->period );
+        uint64_t tsz;
+        f.Read( tsz );
+        if( tsz != 0 )
         {
-            ctx->period = 1.f;
-            uint64_t tsz;
-            f.Read( tsz );
-            if( tsz != 0 )
+            if( fileVer <= FileVersion( 0, 4, 3 ) )
             {
                 ReadTimelinePre044( f, ctx->timeline, tsz, refTime, refGpuTime, fileVer );
             }
-        }
-        else
-        {
-            f.Read( ctx->period );
-            uint64_t tsz;
-            f.Read( tsz );
-            if( tsz != 0 )
+            else
             {
-                if( fileVer <= FileVersion( 0, 4, 3 ) )
-                {
-                    ReadTimelinePre044( f, ctx->timeline, tsz, refTime, refGpuTime, fileVer );
-                }
-                else
-                {
 
-                    ReadTimeline( f, ctx->timeline, tsz, refTime, refGpuTime );
-                }
+                ReadTimeline( f, ctx->timeline, tsz, refTime, refGpuTime );
             }
         }
         m_data.gpuData[i] = ctx;
@@ -998,22 +858,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
     bool reconstructMemAllocPlot = false;
 
-    // Support pre-0.3 traces
-    if( fileVer == 0 && f.IsEOF() ) goto finishLoading;
-
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( LoadProgress::Memory, std::memory_order_relaxed );
     f.Read( sz );
     if( eventMask & EventType::Memory )
     {
         m_data.memory.data.reserve_exact( sz, m_slab );
-        if( fileVer >= FileVersion( 0, 3, 201 ) )
-        {
-            uint64_t activeSz, freesSz;
-            f.Read2( activeSz, freesSz );
-            m_data.memory.active.reserve( activeSz );
-            m_data.memory.frees.reserve_exact( freesSz, m_slab );
-        }
+        uint64_t activeSz, freesSz;
+        f.Read2( activeSz, freesSz );
+        m_data.memory.active.reserve( activeSz );
+        m_data.memory.frees.reserve_exact( freesSz, m_slab );
         auto mem = m_data.memory.data.data();
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
         size_t fidx = 0;
@@ -1053,15 +907,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     mem->timeAlloc = refTime;
                     if( mem->timeFree >= 0 ) mem->timeFree += refTime;
                 }
-                else if( fileVer > FileVersion( 0, 3, 1 ) )
-                {
-                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
-                }
                 else
                 {
-                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) );
-                    mem->csAlloc = 0;
-                    mem->csFree = 0;
+                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
                 }
 
                 uint64_t t0, t1;
@@ -1082,14 +930,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 }
                 else
                 {
-                    if( fileVer >= FileVersion( 0, 3, 201 ) )
-                    {
-                        m_data.memory.frees[fidx++] = i;
-                    }
-                    else
-                    {
-                        m_data.memory.frees.push_back( i );
-                    }
+                    m_data.memory.frees[fidx++] = i;
                 }
 
                 mem++;
@@ -1107,10 +948,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
     else
     {
-        if( fileVer >= FileVersion( 0, 3, 201 ) )
-        {
-            f.Skip( 2 * sizeof( uint64_t ) );
-        }
+        f.Skip( 2 * sizeof( uint64_t ) );
 
         if( fileVer >= FileVersion( 0, 4, 4 ) )
         {
@@ -1120,19 +958,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + 2 * sizeof( uint64_t ) ) );
         }
-        else if( fileVer > FileVersion( 0, 3, 1 ) )
-        {
-            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + 2 * sizeof( uint64_t ) ) );
-        }
         else
         {
-            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + 2 * sizeof( uint64_t ) ) );
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + 2 * sizeof( uint64_t ) ) );
         }
 
         f.Skip( sizeof( MemData::high ) + sizeof( MemData::low ) + sizeof( MemData::usage ) );
     }
-
-    if( fileVer <= FileVersion( 0, 3, 1 ) ) goto finishLoading;
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( LoadProgress::CallStacks, std::memory_order_relaxed );
@@ -1295,7 +1127,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
-finishLoading:
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
@@ -4079,6 +3910,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
 
 void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer )
 {
+    assert( fileVer <= FileVersion( 0, 4, 1 ) );
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
     m_data.zonesCnt += size;
@@ -4088,23 +3920,7 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec[i] = zone;
-
-        if( fileVer <= FileVersion( 0, 3, 1 ) )
-        {
-            f.Read( zone, 26 );
-            zone->callstack = 0;
-            zone->name.__data = 0;
-        }
-        else if( fileVer <= FileVersion( 0, 3, 2 ) )
-        {
-            f.Read( zone, 30 );
-            zone->name.__data = 0;
-        }
-        else
-        {
-            assert( fileVer <= FileVersion( 0, 4, 1 ) );
-            f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
-        }
+        f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
         ReadTimelinePre042( f, zone, thread, fileVer );
 #ifdef TRACY_NO_STATISTICS
         ReadTimelineUpdateStatistics( zone, thread );
@@ -4154,13 +3970,7 @@ void Worker::ReadTimelinePre044( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
         auto zone = m_slab.Alloc<GpuEvent>();
         vec[i] = zone;
 
-        if( fileVer <= FileVersion( 0, 3, 1 ) )
-        {
-            f.Read( zone, 36 );
-            zone->thread = 0;
-            zone->callstack = 0;
-        }
-        else if( fileVer <= FileVersion( 0, 4, 1 ) )
+        if( fileVer <= FileVersion( 0, 4, 1 ) )
         {
             f.Read( zone, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) + sizeof( GpuEvent::callstack ) );
             uint64_t thread;

@@ -10761,19 +10761,6 @@ void View::ZoneTooltip( const ZoneEvent& ev )
         ImGui::SameLine();
         ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
     }
-    if( ev.cpu_start >= 0 )
-    {
-        TextDisabledUnformatted( "CPU:" );
-        ImGui::SameLine();
-        if( ev.end < 0 || ev.cpu_start == ev.cpu_end )
-        {
-            ImGui::Text( "%i", ev.cpu_start );
-        }
-        else
-        {
-            ImGui::Text( "%i -> %i", ev.cpu_start, ev.cpu_end );
-        }
-    }
     if( ev.text.active )
     {
         ImGui::NewLine();

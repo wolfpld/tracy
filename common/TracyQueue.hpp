@@ -79,13 +79,11 @@ struct QueueZoneBegin
 {
     int64_t time;
     uint64_t srcloc;    // ptr
-    uint32_t cpu;
 };
 
 struct QueueZoneEnd
 {
     int64_t time;
-    uint32_t cpu;
 };
 
 struct QueueZoneValidation

@@ -167,25 +167,6 @@ Tracy tries to achieve maximum possible timer resolution, to make measurements a
 
 Time values read from the registers are specified in indeterminate units. This is corrected by making two separate measurements of \texttt{GetTime()} and \texttt{std::high\_resolution\_clock} readings, which can be then used to calculate correction multiplier (\texttt{Profiler::CalibrateTimer()}). To save cycles, client sends raw readings to the server, which then can apply the correction.
 
-\subsubsection{CPU core queries}
-
-One of the curiosities of the \texttt{rdtscp} instruction is that it returns the identifier of the CPU core (\texttt{IA32\_TSC\_AUX} signature) on which it is executed. This is exposed through the \texttt{GetTime(uint32\_t\& cpu)} function. If CPU query is not available, the \texttt{cpu} value will be set to $0xFFFFFFFF$.
-
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bclampe
-]{Improvement opportunity}
-\begin{itemize}
-\item The CPU core readings are currently very underused by the profiler. It might be profitable to figure out how this information can be used and how to present it to the user.
-\item Current implementation doesn't handle the CPU identifier correctly, as it is assumed that only a single CPU is present in the system and the value is cast to 8 bits. In reality the format of the identifier is OS-specific and can include NUMA node identifier in the higher bits, for example: \url{https://elixir.bootlin.com/linux/v3.13/source/arch/x86/kernel/vsyscall_64.c#L330}.
-\end{itemize}
-\end{bclogo}
-
-\paragraph{MSVC codegen issues}
-
-The Microsoft compiler is very insistent on writing the CPU core identifier to the memory address which was specified in the intrinsic call, even if the value should be kept in a register. To fix this issue a separate code path is used, which is enabled by the \texttt{TRACY\_RDTSCP\_OPT} macro. In its case the value will be stored at the required address, omitting the store-load-store, but at the cost of breaking alignment requirements, described in section~\ref{accessingdata}, which technically introduce undefined behavior.
-
 \subsubsection{Misinformation about \texttt{rdtscp}}
 
 In various internet sources you can find warnings that the \texttt{rdtscp} readings are not reliable, can vary between CPU cores, or can be affected by the CPU frequency adjustments. While this was a sound advice a long time ago, it is no longer valid since the Intel Sandy Bridge microarchitecture (released in 2011) introduced \emph{invariant TSC}. Tracy will check for this feature and refuse to run, if it is not found\footnote{Invariant TSC might be not available in specific scenarios, e.g. in some virtual environments. You may set the environment variable \texttt{TRACY\_NO\_INVARIANT\_CHECK=1} to skip this check, \emph{only if you know what you are doing}.}.

@@ -29,13 +29,7 @@ public:
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBegin );
-#ifdef TRACY_RDTSCP_OPT
-        MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
-#else
-        uint32_t cpu;
-        MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
-        MemWrite( &item->zoneBegin.cpu, cpu );
-#endif
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -54,13 +48,7 @@ public:
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBeginCallstack );
-#ifdef TRACY_RDTSCP_OPT
-        MemWrite( &item->zoneBegin.time, Profiler::GetTime( item->zoneBegin.cpu ) );
-#else
-        uint32_t cpu;
-        MemWrite( &item->zoneBegin.time, Profiler::GetTime( cpu ) );
-        MemWrite( &item->zoneBegin.cpu, cpu );
-#endif
+        MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
 
@@ -78,13 +66,7 @@ public:
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneEnd );
-#ifdef TRACY_RDTSCP_OPT
-        MemWrite( &item->zoneEnd.time, Profiler::GetTime( item->zoneEnd.cpu ) );
-#else
-        uint32_t cpu;
-        MemWrite( &item->zoneEnd.time, Profiler::GetTime( cpu ) );
-        MemWrite( &item->zoneEnd.cpu, cpu );
-#endif
+        MemWrite( &item->zoneEnd.time, Profiler::GetTime() );
         tail.store( magic + 1, std::memory_order_release );
     }
 

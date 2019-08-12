@@ -731,6 +731,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             {
                 ReadTimelinePre042( f, td->timeline, CompressThread( tid ), tsz, fileVer );
             }
+            else if( fileVer <= FileVersion( 0, 5, 0 ) )
+            {
+                int64_t refTime = 0;
+                ReadTimelinePre051( f, td->timeline, CompressThread( tid ), tsz, refTime, fileVer );
+            }
             else
             {
                 int64_t refTime = 0;
@@ -2626,8 +2631,6 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
     zone->start = TscTime( ev.time );
     zone->end = -1;
     zone->srcloc = ShrinkSourceLocation( ev.srcloc );
-    assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
-    zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->callstack = 0;
     zone->child = -1;
 
@@ -2660,8 +2663,6 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
     zone->start = TscTime( ev.time );
     zone->end = -1;
     zone->srcloc = it->second;
-    assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
-    zone->cpu_start = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     zone->callstack = 0;
     zone->child = -1;
 
@@ -2711,8 +2712,6 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto zone = stack.back_and_pop();
     assert( zone->end == -1 );
     zone->end = TscTime( ev.time );
-    assert( ev.cpu == 0xFFFFFFFF || ev.cpu <= std::numeric_limits<int8_t>::max() );
-    zone->cpu_end = ev.cpu == 0xFFFFFFFF ? -1 : (int8_t)ev.cpu;
     assert( zone->end >= zone->start );
 
     m_data.lastTime = std::max( m_data.lastTime, zone->end );
@@ -3800,6 +3799,24 @@ void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     }
 }
 
+void Worker::ReadTimelinePre051( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer )
+{
+    uint64_t sz;
+    f.Read( sz );
+    if( sz == 0 )
+    {
+        zone->child = -1;
+    }
+    else
+    {
+        zone->child = m_data.zoneChildren.size();
+        m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
+        Vector<ZoneEvent*> tmp;
+        ReadTimelinePre051( f, tmp, thread, sz, refTime, fileVer );
+        m_data.zoneChildren[zone->child] = std::move( tmp );
+    }
+}
+
 void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime )
 {
     uint64_t sz;
@@ -3891,7 +3908,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         // Use zone->end as scratch buffer for zone start time offset.
-        f.Read( &zone->end, sizeof( zone->end ) + sizeof( zone->srcloc ) + sizeof( zone->cpu_start ) + sizeof( zone->cpu_end ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
+        f.Read( &zone->end, sizeof( zone->end ) + sizeof( zone->srcloc ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         refTime += zone->end;
         zone->start = refTime;
         ReadTimeline( f, zone, thread, refTime );
@@ -3915,12 +3932,45 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec[i] = zone;
-        f.Read( zone, sizeof( ZoneEvent ) - sizeof( ZoneEvent::child ) );
+        f.Read( &zone->start, sizeof( zone->start ) + sizeof( zone->end ) + sizeof( zone->srcloc ) );
+        f.Skip( 2 );
+        f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         ReadTimelinePre042( f, zone, thread, fileVer );
 #ifdef TRACY_NO_STATISTICS
         ReadTimelineUpdateStatistics( zone, thread );
 #endif
     }
+}
+
+void Worker::ReadTimelinePre051( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer )
+{
+    assert( fileVer <= FileVersion( 0, 5, 0 ) );
+    assert( size != 0 );
+    vec.reserve_exact( size, m_slab );
+    m_data.zonesCnt += size;
+    auto zone = (ZoneEvent*)m_slab.AllocBig( sizeof( ZoneEvent ) * size );
+    auto zptr = zone;
+    auto vptr = vec.data();
+    for( uint64_t i=0; i<size; i++ )
+    {
+        *vptr++ = zptr++;
+    }
+    do
+    {
+        s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
+        // Use zone->end as scratch buffer for zone start time offset.
+        f.Read( &zone->end, sizeof( zone->end ) + sizeof( zone->srcloc ) );
+        f.Skip( 2 );
+        f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
+        refTime += zone->end;
+        zone->start = refTime;
+        ReadTimelinePre051( f, zone, thread, refTime, fileVer );
+        zone->end = ReadTimeOffset( f, refTime );
+#ifdef TRACY_NO_STATISTICS
+        ReadTimelineUpdateStatistics( zone, thread );
+#endif
+    }
+    while( ++zone != zptr );
 }
 
 void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime )
@@ -4314,8 +4364,6 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t
     {
         WriteTimeOffset( f, refTime, v->start );
         f.Write( &v->srcloc, sizeof( v->srcloc ) );
-        f.Write( &v->cpu_start, sizeof( v->cpu_start ) );
-        f.Write( &v->cpu_end, sizeof( v->cpu_end ) );
         f.Write( &v->text, sizeof( v->text ) );
         f.Write( &v->callstack, sizeof( v->callstack ) );
         f.Write( &v->name, sizeof( v->name ) );

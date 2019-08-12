@@ -27,11 +27,6 @@
 
 #if defined _WIN32 || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __ANDROID__ ) || __ARM_ARCH >= 6
 #  define TRACY_HW_TIMER
-#  if defined _WIN32 || defined __CYGWIN__
-     // Enable optimization for MSVC __rdtscp() intrin, saving one LHS of a cpu value on the stack.
-     // This comes at the cost of an unaligned memory write.
-#    define TRACY_RDTSCP_OPT
-#  endif
 #endif
 
 #ifndef TracyConcat
@@ -102,29 +97,6 @@ class Profiler
 public:
     Profiler();
     ~Profiler();
-
-    static tracy_force_inline int64_t GetTime( uint32_t& cpu )
-    {
-#ifdef TRACY_HW_TIMER
-#  if TARGET_OS_IOS == 1
-        cpu = 0xFFFFFFFF;
-        return mach_absolute_time();
-#  elif __ARM_ARCH >= 6
-        cpu = 0xFFFFFFFF;
-        return GetTimeImpl();
-#  elif defined _WIN32 || defined __CYGWIN__
-        const auto t = int64_t( __rdtscp( &cpu ) );
-        return t;
-#  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
-        uint32_t eax, edx;
-        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx), "=c" (cpu) :: );
-        return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
-#  endif
-#else
-        cpu = 0xFFFFFFFF;
-        return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-#endif
-    }
 
     static tracy_force_inline int64_t GetTime()
     {

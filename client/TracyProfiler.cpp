@@ -931,6 +931,10 @@ static Profiler* s_instance;
 static Thread* s_thread;
 static Thread* s_compressThread;
 
+#ifdef TRACY_HAS_SYSTEM_TRACING
+static Thread* s_sysTraceThread = nullptr;
+#endif
+
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
@@ -1138,6 +1142,15 @@ Profiler::Profiler()
     new(s_compressThread) Thread( LaunchCompressWorker, this );
     SetThreadName( s_compressThread->Handle(), "Tracy Profiler DXT1" );
 
+#ifdef TRACY_HAS_SYSTEM_TRACING
+    if( SysTraceStart() )
+    {
+        s_sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
+        new(s_sysTraceThread) Thread( SysTraceWorker, nullptr );
+        SetThreadName( s_sysTraceThread->Handle(), "Tracy Profiler system trace" );
+    }
+#endif
+
 #if defined PTW32_VERSION
     s_profilerThreadId = pthread_getw32threadid_np( s_thread->Handle() );
 #elif defined __WINPTHREADS_VERSION
@@ -1174,6 +1187,16 @@ Profiler::Profiler()
 Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
+
+#ifdef TRACY_HAS_SYSTEM_TRACING
+    if( s_sysTraceThread )
+    {
+        SysTraceStop();
+        s_sysTraceThread->~Thread();
+        tracy_free( s_sysTraceThread );
+    }
+#endif
+
     s_compressThread->~Thread();
     tracy_free( s_compressThread );
     s_thread->~Thread();

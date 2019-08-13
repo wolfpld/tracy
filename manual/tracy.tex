@@ -428,7 +428,7 @@ On MSVC the debugger has priority over the application in handling exceptions. I
 \section{Client markup}
 \label{client}
 
-With the aforementioned steps you will be able to connect to the profiled program, but there won't be any data collection performed\footnote{With some small exceptions. For example, the profiler performs CPU usage measurement by itself (see section~\ref{plots}).}. In order to begin profiling, Tracy requires that you manually instrument the application\footnote{Automatic tracing of every entered function is not feasible due to the amount of data that would generate.}. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
+With the aforementioned steps you will be able to connect to the profiled program, but there won't be any data collection performed\footnote{With some small exceptions, see section~\ref{automated}.}. In order to begin profiling, Tracy requires that you manually instrument the application\footnote{Automatic tracing of every entered function is not feasible due to the amount of data that would generate.}. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
 
 The best way to start is to add markup to the main loop of the application, along with a few function that are called there. This will give you a rough outline of the function's time cost, which you may then further refine by instrumenting functions deeper in the call stack.
 
@@ -1117,6 +1117,32 @@ Consult sections~\ref{plottingdata} and~\ref{messagelog} for more information.
 
 You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using the following \texttt{S} postfixed macros: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}.
 
+\subsection{Automated data collection}
+\label{automated}
+
+Tracy will perform automatic collection of system data without user intervention. This behavior is platform specific and may not be available everywhere.
+
+\subsubsection{CPU usage}
+
+System-wide CPU load is gathered with relatively high granularity (one reading every 100 \si{\milli\second}). The readings are available as a plot (see section~\ref{plots}). Note that this parameter takes into account all applications running on the system, not only the profiled program.
+
+\subsubsection{Context switches}
+\label{contextswitches}
+
+Since the profiled program is executing simultaneously with other applications, you can't have exclusive access to the CPU. The multitasking operating system's scheduler is giving threads waiting to execute short time slices, where part of the work can be done. Afterwards threads are preempted to give other threads a chance to run. This ensures that each program running in the system has a fair environment and no program can hog the system resources for itself.
+
+As a corollary, it is often not enough to know how long it took to execute a zone. The thread in which a zone was running might have been suspended by the system, which artificially increases the time readings.
+
+To solve this problem, Tracy collects context switch\footnote{A context switch happens when any given CPU core stops executing one thread and starts running another one.} information. This data can be then used to see when a zone was in the executing state and where it was waiting to be resumed.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveats}
+Context switch data is retrieved using the kernel profiling facilities, which are not available to users with normal privilege level. To collect context switches you will need to elevate your rights to admin level, either by running the profiled program from the \texttt{root} account on Unix, or through the \emph{Run as administrator} option on Windows.
+\end{bclogo}
+
 \section{Capturing the data}
 \label{capturing}
 
@@ -1469,9 +1495,17 @@ On this combined view you will find the zones with locks and their associated th
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw(0, -0.15) -- (0.2, -0.15) -- (0.1, -0.35) -- (0, -0.15);
-\draw(0.25, 0) node[anchor=north west] {Main thread};
-\draw[densely dotted] (0, -0.5) -- +(15, 0);
+\draw(0, 0.35) -- (0.2, 0.35) -- (0.1, 0.15) -- (0, 0.35);
+\draw(0.25, 0.5) node[anchor=north west] {Main thread};
+\draw[densely dotted] (0, 0) -- +(15, 0);
+
+\draw[dotted, thick] (0, -0.25) -- (1, -0.25);
+\draw[thick] (1, -0.25) -- (3.8, -0.25);
+\draw[dotted, thick] (3.8, -0.25) -- (4.8, -0.25 );
+\draw[thick] (4.8, -0.25) -- (10.5, -0.25);
+\draw[dotted, thick] (10.5, -0.25) -- (11, -0.25);
+\draw[thick] (11, -0.25) -- (14.2, -0.25);
+\draw[dotted, thick] (14.2, -0.25) -- (15, -0.25);
 
 \draw(1.5, -0.5) rectangle+(5, -0.5) node[midway] {Update};
 \draw(2, -1) rectangle+(0.75, -0.5) node[midway] {6};
@@ -1515,6 +1549,16 @@ Labels accompanied by the \faCaretDown{}~symbol can be collapsed out of the view
 \subparagraph{Zones}
 
 In an example on figure~\ref{zoneslocks} you can see that there are two threads: \emph{Main thread} and \emph{Streaming thread}\footnote{By clicking on a thread name you can temporarily disable display of the zones in this thread.}. We can see that the \emph{Main thread} has two root level zones visible: \emph{Update} and \emph{Render}. The \emph{Update} zone is split into further sub-zones, some of which are too small to be displayed at the current zoom level. This is indicated by drawing a zig-zag pattern over the merged zones box (section~\ref{collapseditems}), with the number of collapsed zones printed in place of zone name. We can also see that the \emph{Physics} zone acquires the \emph{Physics lock} mutex for the most of its run time.
+
+The thick line between the \emph{Main thread} label and zones represents the context switch data (see section~\ref{contextswitches}). We can see that the thread, as displayed, starts in the suspended state, represented by the dotted region. Then it is woken up and starts execution of the \texttt{Update} zone. In midst of the physics processing it is preempted, which explains why there is an empty space between child zones. Then it is resumed again and continues execution into the \texttt{Render} zone, where it is preempted again, but for a shorter time. After rendering is done, the thread sleeps again, presumably waiting for the next frame.
+
+Context switch regions are using the following color key:
+
+\begin{itemize}
+\item \emph{Green} -- Thread is running.
+\item \emph{Red} -- Thread is waiting to be resumed by the scheduler. There are many reasons why a thread may be in the waiting state. Hovering the \faMousePointer{}~mouse pointer over the region will display more information.
+\item \emph{Blue} -- Thread is waiting to be resumed and is migrating to another CPU core. This might have visible performance effects, because low level CPU caches are not shared between cores, which may result in additional cache misses. To avoid this problem, you may pin a thread to a specific core, by setting its affinity.
+\end{itemize}
 
 Meanwhile the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}), which in addition to being listed in the message log is being indicated by the triangle over the thread separator. When there are multiple messages in one place, the triangle outline changes to a filled triangle.
 

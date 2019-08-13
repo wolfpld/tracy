@@ -1883,11 +1883,14 @@ void View::DrawZones()
         offset += ostep;
         if( showFull )
         {
-            auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
-            if( ctxSwitch )
+            if( m_drawContextSwitches )
             {
-                DrawContextSwitches( ctxSwitch, pxns, int64_t( nspx ), wpos, offset );
-                offset += round( ostep * 0.75f );
+                auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
+                if( ctxSwitch )
+                {
+                    DrawContextSwitches( ctxSwitch, pxns, int64_t( nspx ), wpos, offset );
+                    offset += round( ostep * 0.75f );
+                }
             }
 
             if( m_drawZones )
@@ -5344,6 +5347,11 @@ void View::DrawOptions()
     ImGui::Checkbox( ICON_FA_EXPAND " Draw empty labels", &m_drawEmptyLabels );
 #else
     ImGui::Checkbox( "Draw empty labels", &m_drawEmptyLabels );
+#endif
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_HIKING " Draw context switches", &m_drawContextSwitches );
+#else
+    ImGui::Checkbox( "Draw context switches", &m_drawContextSwitches );
 #endif
     ImGui::Separator();
 

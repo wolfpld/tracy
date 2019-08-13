@@ -291,6 +291,7 @@ private:
     bool m_onlyContendedLocks = true;
     bool m_goToFrame = false;
     bool m_drawEmptyLabels = false;
+    bool m_drawContextSwitches = true;
 
     int m_statSort = 0;
     bool m_statSelf = false;

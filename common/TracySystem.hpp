@@ -15,6 +15,13 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 #  include <pthread.h>
 #endif
 
+#ifdef __ANDROID__
+#  include <sys/types.h>
+#elif defined __linux__
+#  include <unistd.h>
+#  include <sys/syscall.h>
+#endif
+
 #include <stdint.h>
 #include <thread>
 
@@ -34,6 +41,10 @@ static inline uint64_t GetThreadHandleImpl()
     uint64_t id;
     pthread_threadid_np( pthread_self(), &id );
     return id;
+#elif defined __ANDROID__
+    return (uint64_t)gettid();
+#elif defined __linux__
+    return (uint64_t)syscall( SYS_gettid );
 #else
     static_assert( sizeof( decltype( pthread_self() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
     return uint64_t( pthread_self() );

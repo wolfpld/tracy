@@ -15,10 +15,10 @@
 #endif
 
 #ifdef __linux__
-#   ifndef __ANDROID__
-#       include <syscall.h>
-#   endif
-#   include <fcntl.h>
+#  ifndef __ANDROID__
+#    include <syscall.h>
+#  endif
+#  include <fcntl.h>
 #endif
 
 #ifdef __MINGW32__
@@ -137,7 +137,6 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
 #  elif defined __APPLE__
         pthread_threadid_np( handle, &data->id );
 #  elif defined __CYGWIN__
-
         data->id = GetThreadId( ((stub2*)handle)->hnd );
 #  else
         data->id = (uint64_t)handle;

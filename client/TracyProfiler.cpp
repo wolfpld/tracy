@@ -15,6 +15,7 @@
 
 #ifdef __CYGWIN__
 #  include <windows.h>
+#  include <unistd.h>
 #endif
 
 #ifdef _GNU_SOURCE

@@ -6,7 +6,7 @@
 #  define NOMINMAX
 # endif
 #endif
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 #  include <windows.h>
 #else
 #  include <pthread.h>
@@ -32,6 +32,21 @@
 #ifdef TRACY_COLLECT_THREAD_NAMES
 #  include <atomic>
 #  include "TracyAlloc.hpp"
+#endif
+
+#ifdef __CYGWIN__
+class stub1                     // verifyable_object
+{
+public:
+    uint32_t x;
+    virtual ~stub1();
+};
+class stub2 : public stub1      // pthread
+{
+public:
+    HANDLE hnd;
+    virtual ~stub2();
+};
 #endif
 
 namespace tracy
@@ -87,7 +102,7 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
     {
     }
 #  endif
-#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__
+#elif defined _GNU_SOURCE && !defined __EMSCRIPTEN__ && !defined __CYGWIN__
     {
         const auto sz = strlen( name );
         if( sz <= 15 )
@@ -121,6 +136,9 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
 #    endif
 #  elif defined __APPLE__
         pthread_threadid_np( handle, &data->id );
+#  elif defined __CYGWIN__
+
+        data->id = GetThreadId( ((stub2*)handle)->hnd );
 #  else
         data->id = (uint64_t)handle;
 #  endif
@@ -160,7 +178,7 @@ const char* GetThreadName( uint64_t id )
         }
     }
 #    endif
-#  elif defined __GLIBC__ && !defined __ANDROID__ && !defined __EMSCRIPTEN__
+#  elif defined __GLIBC__ && !defined __ANDROID__ && !defined __EMSCRIPTEN__ && !defined __CYGWIN__
     if( pthread_getname_np( (pthread_t)id, buf, 256 ) == 0 )
     {
         return buf;

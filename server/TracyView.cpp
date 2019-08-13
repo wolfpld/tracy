@@ -105,6 +105,7 @@ static inline bool AreOtherWaiting( uint64_t bitlist, uint64_t threadBit )
 
 
 enum { MinVisSize = 3 };
+enum { MinCtxSize = 4 };
 enum { MinFrameSize = 5 };
 
 static View* s_instance = nullptr;
@@ -1372,7 +1373,7 @@ static uint32_t DarkenColor( uint32_t color )
         ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) * 2 / 3 ) )       );
 }
 
-static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color )
+static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color, float thickness = 1.f )
 {
     int mode = 0;
     while( start < end )
@@ -1381,15 +1382,15 @@ static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, doub
         switch( mode )
         {
         case 0:
-            draw->AddLine( wpos + ImVec2( start, 0 ), wpos + ImVec2( start + step, round( -step ) ), color );
+            draw->AddLine( wpos + ImVec2( start, 0 ), wpos + ImVec2( start + step, round( -step ) ), color, thickness );
             mode = 1;
             break;
         case 1:
-            draw->AddLine( wpos + ImVec2( start, round( -h/2 ) ), wpos + ImVec2( start + step, round( step - h/2 ) ), color );
+            draw->AddLine( wpos + ImVec2( start, round( -h/2 ) ), wpos + ImVec2( start + step, round( step - h/2 ) ), color, thickness );
             mode = 2;
             break;
         case 2:
-            draw->AddLine( wpos + ImVec2( start, round( h/2 ) ), wpos + ImVec2( start + step, round( h/2 - step ) ), color );
+            draw->AddLine( wpos + ImVec2( start, round( h/2 ) ), wpos + ImVec2( start + step, round( h/2 - step ) ), color, thickness );
             mode = 1;
             break;
         default:
@@ -1885,8 +1886,8 @@ void View::DrawZones()
             auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
             if( ctxSwitch )
             {
-                DrawContextSwitches( ctxSwitch, pxns, wpos, offset );
-                offset += ostep;
+                DrawContextSwitches( ctxSwitch, pxns, int64_t( nspx ), wpos, offset );
+                offset += round( ostep * 0.75f );
             }
 
             if( m_drawZones )
@@ -2196,27 +2197,77 @@ void View::DrawZones()
     }
 }
 
-void View::DrawContextSwitches( const ContextSwitch* ctx, double pxns, const ImVec2& wpos, int offset )
+void View::DrawContextSwitches( const ContextSwitch* ctx, double pxns, int64_t nspx, const ImVec2& wpos, int offset )
 {
     auto& vec = ctx->v;
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
     if( it == vec.end() ) return;
+    if( it != vec.begin() ) --it;
 
-    const auto citend = std::lower_bound( it, vec.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l.start < r; } );
+    auto citend = std::lower_bound( it, vec.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l.start < r; } );
     if( it == citend ) return;
+    if( citend != vec.end() ) ++citend;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
-    const auto ty = ImGui::GetFontSize();
+    const auto ty = round( ImGui::GetFontSize() * 0.75 );
     auto draw = ImGui::GetWindowDrawList();
+
+    auto pit = citend;
+    double minpx = -10.0;
 
     while( it < citend )
     {
         auto& ev = *it;
+        if( pit != citend )
+        {
+            const auto px0 = std::max( { ( pit->end - m_zvStart ) * pxns, -10.0, minpx } );
+            const auto px1 = std::min( ( ev.start - m_zvStart ) * pxns, w + 10.0 );
+            const auto color = pit->cpu != ev.cpu ? 0xFFEE7711 : 0xFF2222AA;
+            draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
+        }
+
         const auto end = ev.end >= 0 ? ev.end : m_worker.GetLastTime();
-        const auto px0 = std::max( ( ev.start - m_zvStart ) * pxns, -10.0 );
-        const auto px1 = std::min( ( end - m_zvStart ) * pxns, w + 10.0 );
-        draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) ), 0xFF00FF00 );
-        ++it;
+        const auto zsz = std::max( ( end - ev.start ) * pxns, pxns * 0.5 );
+        if( zsz < MinCtxSize )
+        {
+            int num = 0;
+            const auto px0 = std::max( ( ev.start - m_zvStart ) * pxns, -10.0 );
+            auto px1 = ( end - m_zvStart ) * pxns;
+            auto rend = end;
+            auto nextTime = end + MinCtxSize;
+            for(;;)
+            {
+                const auto prevIt = it;
+                it = std::lower_bound( it, citend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+                if( it == prevIt ) ++it;
+                num += std::distance( prevIt, it );
+                if( it == citend ) break;
+                const auto nend = it->end >= 0 ? it->end : m_worker.GetLastTime();
+                const auto pxnext = ( nend - m_zvStart ) * pxns;
+                if( pxnext - px1 >= MinCtxSize * 2 ) break;
+                px1 = pxnext;
+                rend = nend;
+                nextTime = nend + nspx;
+            }
+            minpx = std::min( std::max( px1, px0+MinCtxSize ), double( w + 10 ) );
+            if( num == 1 )
+            {
+                draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( minpx, round( offset + ty * 0.5 ) - 0.5 ), 0xFF22DD22, 2 );
+            }
+            else
+            {
+                DrawZigZag( draw, wpos + ImVec2( 0, offset + round( ty/2 ) ), px0, minpx, ty/4, 0xFF888888, 1.5 );
+            }
+            pit = it-1;
+        }
+        else
+        {
+            const auto px0 = std::max( { ( ev.start - m_zvStart ) * pxns, -10.0, minpx } );
+            const auto px1 = std::min( ( end - m_zvStart ) * pxns, w + 10.0 );
+            draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), 0xFF22DD22, 2 );
+            pit = it;
+            ++it;
+        }
     }
 }
 

@@ -108,7 +108,7 @@ private:
     bool DrawZoneFramesHeader();
     bool DrawZoneFrames( const FrameData& frames );
     void DrawZones();
-    void DrawContextSwitches( const ContextSwitch* ctx, double pxns, const ImVec2& wpos, int offset );
+    void DrawContextSwitches( const ContextSwitch* ctx, double pxns, int64_t nspx, const ImVec2& wpos, int offset );
     int DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
     int DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
     int SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );

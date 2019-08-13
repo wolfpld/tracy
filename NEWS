@@ -10,6 +10,7 @@ v0.6 (xxxx-xx-xx)
 -----------------
 
 - Dropped support for pre-v0.4 traces.
+- Implemented context switch capture on selected platforms.
 
 v0.5 (2019-08-10)
 -----------------

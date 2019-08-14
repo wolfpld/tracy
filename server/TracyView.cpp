@@ -4690,25 +4690,32 @@ void View::DrawZoneInfoWindow()
             const auto end = m_worker.GetZoneEnd( ev );
             auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.start; } );
             uint64_t cnt = std::distance( it, eit );
-            auto bit = it;
-            int64_t running = 0;
-            while( it < eit )
+            if( cnt == 1 )
             {
-                const auto t0 = std::max( ev.start, it->start );
-                const auto t1 = (int64_t)std::min<uint64_t>( end, it->end );
-                running += t1 - t0;
-                ++it;
-            }
-            TextFocused( "Running state time:", TimeToString( running ) );
-            if( ztime != 0 )
-            {
+                TextFocused( "Running state time:", TimeToString( ztime ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%.2f%%)", 100.f * running / ztime );
+                TextDisabledUnformatted( "(100%)" );
+                TextFocused( "Running state regions:", "1" );
             }
-            TextFocused( "Running state regions:", RealToString( cnt, true ) );
-
-            if( cnt > 1 )
+            else
             {
+                auto bit = it;
+                int64_t running = it->end - ev.start;
+                ++it;
+                for( int64_t i=0; i<cnt-2; i++ )
+                {
+                    running += it->end - it->start;
+                    ++it;
+                }
+                running += end - it->start;
+                TextFocused( "Running state time:", TimeToString( running ) );
+                if( ztime != 0 )
+                {
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%.2f%%)", 100.f * running / ztime );
+                }
+                TextFocused( "Running state regions:", RealToString( cnt, true ) );
+
                 --eit;
                 if( ImGui::TreeNode( "Wait regions" ) )
                 {
@@ -11610,15 +11617,22 @@ bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, in
     const auto end = m_worker.GetZoneEnd( ev );
     const auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.start; } );
     cnt = std::distance( it, eit );
-    int64_t running = 0;
-    while( it < eit )
+    if( cnt == 1 )
     {
-        const auto t0 = std::max( ev.start, it->start );
-        const auto t1 = (int64_t)std::min<uint64_t>( end, it->end );
-        running += t1 - t0;
-        ++it;
+        time = end - ev.start;
     }
-    time = running;
+    else
+    {
+        int64_t running = it->end - ev.start;
+        ++it;
+        for( int64_t i=0; i<cnt-2; i++ )
+        {
+            running += it->end - it->start;
+            ++it;
+        }
+        running += end - it->start;
+        time = running;
+    }
     return true;
 }
 

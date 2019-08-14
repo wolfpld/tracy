@@ -4684,17 +4684,105 @@ void View::DrawZoneInfoWindow()
     const auto ctx = m_worker.GetContextSwitchData( tid );
     if( ctx )
     {
-        int64_t time;
-        uint64_t cnt;
-        if( GetZoneRunningTime( ctx, ev, time, cnt ) )
+        auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), ev.start, [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+        if( it != ctx->v.end() )
         {
-            TextFocused( "Running state time:", TimeToString( time ) );
+            const auto end = m_worker.GetZoneEnd( ev );
+            auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.start; } );
+            uint64_t cnt = std::distance( it, eit );
+            auto bit = it;
+            int64_t running = 0;
+            while( it < eit )
+            {
+                const auto t0 = std::max( ev.start, it->start );
+                const auto t1 = (int64_t)std::min<uint64_t>( end, it->end );
+                running += t1 - t0;
+                ++it;
+            }
+            TextFocused( "Running state time:", TimeToString( running ) );
             if( ztime != 0 )
             {
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%.2f%%)", 100.f * time / ztime );
+                ImGui::TextDisabled( "(%.2f%%)", 100.f * running / ztime );
             }
             TextFocused( "Running state regions:", RealToString( cnt, true ) );
+
+            if( cnt > 1 )
+            {
+                --eit;
+                if( ImGui::TreeNode( "Wait regions" ) )
+                {
+                    SmallCheckbox( "Time relative to zone start", &m_ctxSwitchTimeRelativeToZone );
+                    const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.start : m_worker.GetTimeBegin();
+
+                    ImGui::Columns( 5 );
+                    ImGui::Text( "Begin" );
+                    ImGui::NextColumn();
+                    ImGui::Text( "End" );
+                    ImGui::NextColumn();
+                    ImGui::Text( "Time" );
+                    ImGui::NextColumn();
+                    ImGui::Text( "CPU" );
+                    ImGui::NextColumn();
+                    ImGui::Text( "State" );
+                    ImGui::NextColumn();
+                    ImGui::Separator();
+                    while( bit < eit )
+                    {
+                        const auto cend = bit->end;
+                        const auto state = bit->state;
+                        const auto reason = bit->reason;
+                        const auto cpu0 = bit->cpu;
+                        ++bit;
+                        const auto cstart = bit->start;
+                        const auto cpu1 = bit->cpu;
+
+                        ImGui::TextUnformatted( TimeToString( cend - adjust ) );
+                        if( ImGui::IsMouseClicked( 0 ) && ImGui::IsItemHovered() ) CenterAtTime( cend );
+                        ImGui::NextColumn();
+                        ImGui::TextUnformatted( TimeToString( cstart - adjust ) );
+                        if( ImGui::IsMouseClicked( 0 ) && ImGui::IsItemHovered() ) CenterAtTime( cstart );
+                        ImGui::NextColumn();
+                        ImGui::TextUnformatted( TimeToString( cstart - cend ) );
+                        if( ImGui::IsMouseClicked( 0 ) && ImGui::IsItemHovered() ) ZoomToRange( cend, cstart );
+                        ImGui::NextColumn();
+                        if( cpu0 == cpu1 )
+                        {
+                            ImGui::TextUnformatted( RealToString( cpu0, true ) );
+                        }
+                        else
+                        {
+#ifdef TRACY_EXTENDED_FONT
+                            ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
+#else
+                            ImGui::Text( "%i -> %i", cpu0, cpu1 );
+#endif
+                        }
+                        ImGui::NextColumn();
+                        const char* desc;
+                        if( reason == 100 )
+                        {
+                            ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
+                            desc = DecodeContextSwitchState( state );
+                        }
+                        else
+                        {
+                            ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
+                            desc = DecodeContextSwitchReason( reason );
+                        }
+                        if( *desc && ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::TextUnformatted( desc );
+                            ImGui::EndTooltip();
+                        }
+                        ImGui::NextColumn();
+                    }
+                    ImGui::EndColumns();
+
+                    ImGui::TreePop();
+                }
+            }
         }
     }
 

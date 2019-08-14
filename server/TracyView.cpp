@@ -2109,6 +2109,13 @@ void View::DrawZones()
                     TextFocused( "Lifetime:", TimeToString( lifetime ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.2f%%)", lifetime / double( traceLen ) * 100 );
+
+                    if( ctx )
+                    {
+                        TextFocused( "Time in running state:", TimeToString( ctx->runningTime ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%.2f%%)", ctx->runningTime / double( lifetime ) * 100 );
+                    }
                 }
 
                 ImGui::Separator();

@@ -2260,7 +2260,10 @@ static const char* DecodeContextSwitchReasonCode( uint8_t reason )
     case 34: return "WrFastMutex";
     case 35: return "WrGuardedMutex";
     case 36: return "WrRundown";
-    case 37: return "MaximumWaitReason";
+    case 37: return "WrAlertByThreadId";
+    case 38: return "WrDeferredPreempt";
+    case 39: return "WrPhysicalFault";
+    case 40: return "MaximumWaitReason";
     default: return "unknown";
     }
 }

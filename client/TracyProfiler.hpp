@@ -440,6 +440,8 @@ public:
     void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); m_shutdownManual.store( true, std::memory_order_relaxed ); }
     bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
 
+    static bool IsTimerMonotonicRaw();
+
 private:
     enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };
 

@@ -2141,16 +2141,23 @@ void Profiler::HandleDisconnect()
     }
 }
 
+bool Profiler::IsTimerMonotonicRaw()
+{
+#if defined TRACY_HW_TIMER && !defined TARGET_OS_IOS && __ARM_ARCH >= 6
+    return GetTimeImpl == GetTimeImplFallback;
+#else
+    return false;
+#endif
+}
+
 void Profiler::CalibrateTimer()
 {
 #ifdef TRACY_HW_TIMER
-#  if __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
-    if( GetTimeImpl == GetTimeImplFallback )
+    if( IsTimerMonotonicRaw() )
     {
         m_timerMul = 1.;
         return;
     }
-#  endif
 
     std::atomic_signal_fence( std::memory_order_acq_rel );
     const auto t0 = std::chrono::high_resolution_clock::now();

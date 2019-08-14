@@ -379,6 +379,7 @@ struct FrameImage
 struct ContextSwitch
 {
     Vector<ContextSwitchData> v;
+    int64_t runningTime = 0;
 };
 
 }

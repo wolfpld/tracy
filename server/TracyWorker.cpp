@@ -1161,15 +1161,21 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 f.Read2( thread, csz );
                 auto data = m_slab.AllocInit<ContextSwitch>();
                 data->v.reserve_exact( csz, m_slab );
+                int64_t runningTime = 0;
                 int64_t refTime = 0;
                 auto ptr = data->v.data();
                 for( uint64_t j=0; j<csz; j++ )
                 {
                     ptr->start = ReadTimeOffset( f, refTime );
-                    ptr->end = ReadTimeOffset( f, refTime );
+                    int64_t diff;
+                    f.Read( diff );
+                    if( diff > 0 ) runningTime += diff;
+                    refTime += diff;
+                    ptr->end = refTime;
                     f.Read( &ptr->cpu, sizeof( ptr->cpu ) + sizeof( ptr->reason ) + sizeof( ptr->state ) );
                     ptr++;
                 }
+                data->runningTime = runningTime;
                 m_data.ctxSwitch.emplace( thread, data );
             }
         }
@@ -3728,6 +3734,8 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             item.end = time;
             item.reason = ev.reason;
             item.state = ev.state;
+
+            it->second->runningTime += time - item.start;
         }
     }
     if( ev.newThread != 0 )

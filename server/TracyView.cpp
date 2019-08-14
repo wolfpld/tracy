@@ -11483,4 +11483,23 @@ int64_t View::GetZoneSelfTime( const GpuEvent& zone )
     return selftime;
 }
 
+bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt )
+{
+    auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), ev.start, [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+    if( it == ctx->v.end() ) return false;
+    const auto end = m_worker.GetZoneEnd( ev );
+    const auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.start; } );
+    cnt = std::distance( it, eit );
+    int64_t running = 0;
+    while( it < eit )
+    {
+        const auto t0 = std::max( ev.start, it->start );
+        const auto t1 = (int64_t)std::min<uint64_t>( end, it->end );
+        running += t1 - t0;
+        ++it;
+    }
+    time = running;
+    return true;
+}
+
 }

@@ -196,6 +196,7 @@ private:
     int64_t GetZoneChildTimeFast( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const GpuEvent& zone );
+    bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
 
     void SetPlaybackFrame( uint32_t idx );
 

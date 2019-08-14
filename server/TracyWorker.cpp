@@ -1318,11 +1318,13 @@ uint64_t Worker::GetContextSwitchCount() const
     return cnt;
 }
 
-const ContextSwitch* const Worker::GetContextSwitchData( uint64_t thread ) const
+const ContextSwitch* const Worker::GetContextSwitchDataImpl( uint64_t thread )
 {
     auto it = m_data.ctxSwitch.find( thread );
     if( it != m_data.ctxSwitch.end() )
     {
+        m_data.ctxSwitchLast.first = thread;
+        m_data.ctxSwitchLast.second = it->second;
         return it->second;
     }
     else

@@ -145,7 +145,14 @@ private:
 
     struct DataBlock
     {
-        DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ), threadDataLast( std::numeric_limits<uint64_t>::max(), nullptr ) {}
+        DataBlock()
+            : zonesCnt( 0 )
+            , lastTime( 0 )
+            , frameOffset( 0 )
+            , threadLast( std::numeric_limits<uint64_t>::max(), 0 )
+            , threadDataLast( std::numeric_limits<uint64_t>::max(), nullptr )
+            , ctxSwitchLast( std::numeric_limits<uint64_t>::max(), nullptr )
+        {}
 
         std::shared_mutex lock;
         StringDiscovery<FrameData*> frames;
@@ -198,6 +205,7 @@ private:
         CrashEvent crashEvent;
 
         flat_hash_map<uint64_t, ContextSwitch*, nohash<uint64_t>> ctxSwitch;
+        std::pair<uint64_t, ContextSwitch*> ctxSwitchLast;
     };
 
     struct MbpsBlock
@@ -277,7 +285,11 @@ public:
     uint64_t GetFrameOffset() const { return m_data.frameOffset; }
     const FrameData* GetFramesBase() const { return m_data.framesBase; }
     const Vector<FrameData*>& GetFrames() const { return m_data.frames.Data(); }
-    const ContextSwitch* const GetContextSwitchData( uint64_t thread ) const;
+    const ContextSwitch* const GetContextSwitchData( uint64_t thread )
+    {
+        if( m_data.ctxSwitchLast.first == thread ) return m_data.ctxSwitchLast.second;
+        return GetContextSwitchDataImpl( thread );
+    }
 
     int64_t GetFrameTime( const FrameData& fd, size_t idx ) const;
     int64_t GetFrameBegin( const FrameData& fd, size_t idx ) const;
@@ -479,6 +491,7 @@ private:
     StringLocation StoreString( char* str, size_t sz );
     uint16_t CompressThreadReal( uint64_t thread );
     uint16_t CompressThreadNew( uint64_t thread );
+    const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
     tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime );
     tracy_force_inline void ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer );

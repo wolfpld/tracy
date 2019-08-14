@@ -154,13 +154,15 @@ void SysTraceWorker( void* ptr )
 
 #  elif defined __linux__
 
-#  include <sys/types.h>
-#  include <sys/stat.h>
-#  include <fcntl.h>
-#  include <stdint.h>
-#  include <stdio.h>
-#  include <string.h>
-#  include <unistd.h>
+#    include <sys/types.h>
+#    include <sys/stat.h>
+#    include <fcntl.h>
+#    include <stdint.h>
+#    include <stdio.h>
+#    include <string.h>
+#    include <unistd.h>
+
+#    include "TracyProfiler.hpp"
 
 namespace tracy
 {
@@ -269,6 +271,10 @@ void SysTraceWorker( void* ptr )
     {
         auto rd = getline( &line, &lsz, f );
         if( rd < 0 ) break;
+
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) continue;
+#endif
 
         const char* ptr = line + 24;
         const auto cpu = (uint8_t)ReadNumber( ptr );

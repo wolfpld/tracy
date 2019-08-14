@@ -874,9 +874,7 @@ struct ProfilerData
     Profiler profiler;
     std::atomic<uint32_t> lockCounter { 0 };
     std::atomic<uint8_t> gpuCtxCounter { 0 };
-#  ifdef TRACY_COLLECT_THREAD_NAMES
     std::atomic<ThreadNameData*> threadNameData { nullptr };
-#endif
 };
 
 struct ProducerWrapper
@@ -924,10 +922,7 @@ TRACY_API std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().loc
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
 TRACY_API uint64_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
-
-#  ifdef TRACY_COLLECT_THREAD_NAMES
 TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
-#  endif
 
 #  ifdef TRACY_ON_DEMAND
 TRACY_API LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
@@ -965,11 +960,9 @@ std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );
 
 thread_local GpuCtxWrapper init_order(104) s_gpuCtx { nullptr };
 
-#  ifdef TRACY_COLLECT_THREAD_NAMES
 struct ThreadNameData;
 static std::atomic<ThreadNameData*> init_order(104) s_threadNameDataInstance( nullptr );
 std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
-#  endif
 
 #  ifdef TRACY_ON_DEMAND
 thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
@@ -991,9 +984,7 @@ TRACY_API uint64_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
 TRACY_API uint64_t GetThreadHandle() { return s_threadHandle.val; }
 #  endif
 
-#  ifdef TRACY_COLLECT_THREAD_NAMES
 TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
-#  endif
 
 #  ifdef TRACY_ON_DEMAND
 TRACY_API LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }

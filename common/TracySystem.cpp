@@ -30,7 +30,7 @@
 
 #include "TracySystem.hpp"
 
-#ifdef TRACY_COLLECT_THREAD_NAMES
+#ifdef TRACY_ENABLE
 #  include <atomic>
 #  include "TracyAlloc.hpp"
 #endif
@@ -38,7 +38,7 @@
 namespace tracy
 {
 
-#ifdef TRACY_COLLECT_THREAD_NAMES
+#ifdef TRACY_ENABLE
 struct ThreadNameData
 {
     uint64_t id;
@@ -99,7 +99,7 @@ void SetThreadName( const char* name )
         }
     }
 #endif
-#ifdef TRACY_COLLECT_THREAD_NAMES
+#ifdef TRACY_ENABLE
     {
         InitRPMallocThread();
         const auto sz = strlen( name );
@@ -118,7 +118,7 @@ void SetThreadName( const char* name )
 const char* GetThreadName( uint64_t id )
 {
     static char buf[256];
-#ifdef TRACY_COLLECT_THREAD_NAMES
+#ifdef TRACY_ENABLE
     auto ptr = GetThreadNameData().load( std::memory_order_relaxed );
     while( ptr )
     {

@@ -1736,7 +1736,8 @@ The histogram is accompanied by various data statistics about displayed data, fo
 \item \emph{Log values} -- Switches between linear and logarithmic scale on the y~axis of the graph, representing the call counts\footnote{Or time, if the \emph{cumulate time} option is enabled.}.
 \item \emph{Log time} -- Switches between linear and logarithmic scale on the x~axis of the graph, representing the time bins.
 \item \emph{Cumulate time} -- Changes how the histogram bin values are calculated. By default the vertical bars on the graph represent the \emph{call counts} of zones that fit in the given time bin. If this option is enabled, the bars represent the \emph{time spent} in the zones. For example, on graph presented on figure~\ref{findzonehistogram} the 10~\si{\micro\second} cluster is the dominating one, if we look at the time spent in zone, even if the 300~\si{\nano\second} cluster has greater number of call counts.
-\item \emph{Self time} -- Removes children time from the analysed zones, which results in displaying only the time spent in the zone itself (or in non-instrumented function calls).
+\item \emph{Self time} -- Removes children time from the analysed zones, which results in displaying only the time spent in the zone itself (or in non-instrumented function calls). Cannot be selected when \emph{Running time} is active.
+\item \emph{Running time} -- Removes time when zone's thread execution was suspended by the operating system due to preemption by other threads, waiting for system resources, lock contention, etc. Available only when context switch capture was performed (section~\ref{contextswitches}). Cannot be selected when \emph{Self time} is active.
 \item \emph{Minimum values in bin} -- Excludes display of bins which do not hold enough values at both ends of the time range. Increasing this parameter will eliminate outliers, allowing to concentrate on the interesting part of the graph.
 \end{itemize}
 

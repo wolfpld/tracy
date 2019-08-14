@@ -2281,6 +2281,15 @@ static const char* DecodeContextSwitchStateCode( uint8_t state )
     case 5: return "Waiting";
     case 6: return "Transition";
     case 7: return "DeferredReady";
+    case 101: return "D";
+    case 102: return "I";
+    case 103: return "R";
+    case 104: return "S";
+    case 105: return "T";
+    case 106: return "t";
+    case 107: return "W";
+    case 108: return "X";
+    case 109: return "Z";
     default: return "unknown";
     }
 }
@@ -2297,6 +2306,15 @@ static const char* DecodeContextSwitchState( uint8_t state )
     case 5: return "(Thread is not ready to use the processor because it is waiting for a peripheral operation to complete or a resource to become free)";
     case 6: return "(Thread is waiting for a resource, other than the processor, before it can execute)";
     case 7: return "(Thread has beed selected to run on a specific processor but have not yet beed scheduled)";
+    case 101: return "(Uninterruptible sleep, usually IO)";
+    case 102: return "(Idle kernel thread)";
+    case 103: return "(Running or on run queue)";
+    case 104: return "(Interruptible sleep, waiting for an event to complete)";
+    case 105: return "(Stopped by job control signal)";
+    case 106: return "(Stopped by debugger during the tracing)";
+    case 107: return "(Paging)";
+    case 108: return "(Dead)";
+    case 109: return "(Zombie process)";
     default: return "";
     }
 }
@@ -2349,9 +2367,12 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 {
                     TextFocused( "CPU:", RealToString( ev.cpu, true ) );
                 }
-                TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->reason ) );
-                ImGui::SameLine();
-                TextDisabledUnformatted( DecodeContextSwitchReason( pit->reason ) );
+                if( pit->reason != 100 )
+                {
+                    TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->reason ) );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( DecodeContextSwitchReason( pit->reason ) );
+                }
                 TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->state ) );
                 ImGui::SameLine();
                 TextDisabledUnformatted( DecodeContextSwitchState( pit->state ) );

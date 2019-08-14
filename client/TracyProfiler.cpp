@@ -1729,6 +1729,37 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
     return DequeueStatus::Success;
 }
 
+Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::ConsumerToken& token, int64_t& timeStop )
+{
+    const auto sz = GetQueue().try_dequeue_bulk( token, m_itemBuf, BulkSize );
+    if( sz > 0 )
+    {
+        auto end = m_itemBuf + sz;
+        auto item = m_itemBuf;
+        while( item != end )
+        {
+            FreeAssociatedMemory( *item );
+            const auto idx = MemRead<uint8_t>( &item->hdr.idx );
+            if( idx == (uint8_t)QueueType::ContextSwitch )
+            {
+                const auto csTime = MemRead<int64_t>( &item->contextSwitch.time );
+                if( csTime > timeStop )
+                {
+                    timeStop = -1;
+                    return DequeueStatus::Success;
+                }
+                if( !AppendData( item, QueueDataSize[(int)QueueType::ContextSwitch] ) ) return DequeueStatus::ConnectionLost;
+            }
+            item++;
+        }
+    }
+    else
+    {
+        return DequeueStatus::QueueEmpty;
+    }
+    return DequeueStatus::Success;
+}
+
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
     {
@@ -2026,11 +2057,62 @@ bool Profiler::HandleServerQuery()
 
 void Profiler::HandleDisconnect()
 {
+    moodycamel::ConsumerToken token( GetQueue() );
+
+    if( s_sysTraceThread )
+    {
+        auto timestamp = GetTime();
+        for(;;)
+        {
+            const auto status = DequeueContextSwitches( token, timestamp );
+            if( status == DequeueStatus::ConnectionLost )
+            {
+                return;
+            }
+            else if( status == DequeueStatus::QueueEmpty )
+            {
+                if( m_bufferOffset != m_bufferStart )
+                {
+                    if( !CommitData() ) return;
+                }
+            }
+            if( timestamp < 0 )
+            {
+                if( m_bufferOffset != m_bufferStart )
+                {
+                    if( !CommitData() ) return;
+                }
+                break;
+            }
+            ClearSerial();
+            if( m_sock->HasData() )
+            {
+                while( m_sock->HasData() )
+                {
+                    if( !HandleServerQuery() ) return;
+                }
+                if( m_bufferOffset != m_bufferStart )
+                {
+                    if( !CommitData() ) return;
+                }
+            }
+            else
+            {
+                if( m_bufferOffset != m_bufferStart )
+                {
+                    if( !CommitData() ) return;
+                }
+                std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+            }
+        }
+    }
+
     QueueItem terminate;
     MemWrite( &terminate.hdr.type, QueueType::Terminate );
     if( !SendData( (const char*)&terminate, 1 ) ) return;
     for(;;)
     {
+        ClearQueues( token );
         if( m_sock->HasData() )
         {
             while( m_sock->HasData() )

@@ -452,6 +452,7 @@ private:
     void CompressWorker();
 
     void ClearQueues( tracy::moodycamel::ConsumerToken& token );
+    void ClearSerial();
     DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
     DequeueStatus DequeueSerial();
     bool AppendData( const void* data, size_t len );

@@ -1614,22 +1614,25 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
         for( size_t i=0; i<sz; i++ ) FreeAssociatedMemory( m_itemBuf[i] );
     }
 
+    ClearSerial();
+}
+
+void Profiler::ClearSerial()
+{
+    bool lockHeld = true;
+    while( !m_serialLock.try_lock() )
     {
-        bool lockHeld = true;
-        while( !m_serialLock.try_lock() )
+        if( m_shutdownManual.load( std::memory_order_relaxed ) )
         {
-            if( m_shutdownManual.load( std::memory_order_relaxed ) )
-            {
-                lockHeld = false;
-                break;
-            }
+            lockHeld = false;
+            break;
         }
-        for( auto& v : m_serialQueue ) FreeAssociatedMemory( v );
-        m_serialQueue.clear();
-        if( lockHeld )
-        {
-            m_serialLock.unlock();
-        }
+    }
+    for( auto& v : m_serialQueue ) FreeAssociatedMemory( v );
+    m_serialQueue.clear();
+    if( lockHeld )
+    {
+        m_serialLock.unlock();
     }
 
     for( auto& v : m_serialDequeue ) FreeAssociatedMemory( v );

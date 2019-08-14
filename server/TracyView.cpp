@@ -6543,19 +6543,19 @@ void View::DrawFindZone()
             const auto ty = ImGui::GetFontSize();
 
             auto& zones = zoneData.zones;
-            auto tmin = m_findZone.selfTime ? zoneData.selfMin : zoneData.min;
-            auto tmax = m_findZone.selfTime ? zoneData.selfMax : zoneData.max;
-            auto timeTotal = m_findZone.selfTime ? zoneData.selfTotal : zoneData.total;
-
+            int64_t tmin = m_findZone.tmin;
+            int64_t tmax = m_findZone.tmax;
+            int64_t total = m_findZone.total;
             const auto zsz = zones.size();
             if( m_findZone.sortedNum != zsz )
             {
                 auto& vec = m_findZone.sorted;
                 vec.reserve( zsz );
-                int64_t total = m_findZone.total;
                 size_t i;
                 if( m_findZone.selfTime )
                 {
+                    tmin = zoneData.selfMin;
+                    tmax = zoneData.selfMax;
                     for( i=m_findZone.sortedNum; i<zsz; i++ )
                     {
                         auto& zone = *zones[i].zone;
@@ -6567,6 +6567,8 @@ void View::DrawFindZone()
                 }
                 else
                 {
+                    tmin = zoneData.min;
+                    tmax = zoneData.max;
                     for( i=m_findZone.sortedNum; i<zsz; i++ )
                     {
                         auto& zone = *zones[i].zone;
@@ -6584,6 +6586,8 @@ void View::DrawFindZone()
                 m_findZone.median = vec[i/2];
                 m_findZone.total = total;
                 m_findZone.sortedNum = i;
+                m_findZone.tmin = tmin;
+                m_findZone.tmax = tmax;
             }
 
             if( m_findZone.selGroup != m_findZone.Unselected )
@@ -6734,7 +6738,7 @@ void View::DrawFindZone()
 
                             tmin = *sortedBegin;
                             tmax = *(sortedEnd-1);
-                            timeTotal = tmax - tmin;
+                            total = tmax - tmin;
                         }
 
                         if( numBins > m_findZone.numBins )
@@ -6875,7 +6879,7 @@ void View::DrawFindZone()
                             }
                         }
 
-                        TextFocused( "Total time:", TimeToString( timeTotal ) );
+                        TextFocused( "Total time:", TimeToString( total ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();

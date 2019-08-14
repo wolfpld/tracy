@@ -211,6 +211,8 @@ bool SysTraceStart()
     if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "noirq-info", 11 ) ) return false;
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
     if( !TraceWrite( TraceClock, sizeof( TraceClock ), "x86-tsc", 8 ) ) return false;
+#elif __ARM_ARCH >= 6
+    if( !TraceWrite( TraceClock, sizeof( TraceClock ), "mono_raw", 8 ) ) return false;
 #endif
     if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
@@ -284,7 +286,14 @@ void SysTraceWorker( void* ptr )
         ptr++;      // ']'
         while( *ptr == ' ' ) ptr++;
 
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
         const auto time = ReadNumber( ptr );
+#elif __ARM_ARCH >= 6
+        const auto ts = ReadNumber( ptr );
+        ptr++;      // '.'
+        const auto tus = ReadNumber( ptr );
+        const auto time = ts * 1000000000ll + tus * 1000ll;
+#endif
 
         ptr += 2;   // ': '
         if( memcmp( ptr, "sched_switch", 12 ) != 0 ) continue;

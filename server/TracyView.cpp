@@ -4689,16 +4689,24 @@ void View::DrawZoneInfoWindow()
         {
             const auto end = m_worker.GetZoneEnd( ev );
             auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.start; } );
+            bool incomplete = eit == ctx->v.end();
             uint64_t cnt = std::distance( it, eit );
             if( cnt == 1 )
             {
-                TextFocused( "Running state time:", TimeToString( ztime ) );
-                ImGui::SameLine();
-                TextDisabledUnformatted( "(100%)" );
-                TextFocused( "Running state regions:", "1" );
+                if( !incomplete )
+                {
+                    TextFocused( "Running state time:", TimeToString( ztime ) );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "(100%)" );
+                    TextFocused( "Running state regions:", "1" );
+                }
             }
             else
             {
+                if( incomplete )
+                {
+                    TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "Incomplete context switch data!" );
+                }
                 auto bit = it;
                 int64_t running = it->end - ev.start;
                 ++it;
@@ -11699,6 +11707,7 @@ bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, in
     if( it == ctx->v.end() ) return false;
     const auto end = m_worker.GetZoneEnd( ev );
     const auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.start; } );
+    if( eit == ctx->v.end() ) return false;
     cnt = std::distance( it, eit );
     if( cnt == 1 )
     {

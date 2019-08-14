@@ -2061,13 +2061,21 @@ void View::DrawZones()
 #endif
                 }
 
+                const auto ctx = m_worker.GetContextSwitchData( v->id );
+
                 ImGui::Separator();
                 int64_t first = std::numeric_limits<int64_t>::max();
                 int64_t last = -1;
+                if( ctx && !ctx->v.empty() )
+                {
+                    const auto& back = ctx->v.back();
+                    first = ctx->v.begin()->start;
+                    last = back.end >= 0 ? back.end : back.start;
+                }
                 if( !v->timeline.empty() )
                 {
-                    first = v->timeline.front()->start;
-                    last = m_worker.GetZoneEnd( *v->timeline.back() );
+                    first = std::min( first, v->timeline.front()->start );
+                    last = std::max( last, m_worker.GetZoneEnd( *v->timeline.back() ) );
                 }
                 if( !v->messages.empty() )
                 {
@@ -2093,14 +2101,14 @@ void View::DrawZones()
 
                 if( last >= 0 )
                 {
-                    const auto activity = last - first;
+                    const auto lifetime = last - first;
                     const auto traceLen = m_worker.GetLastTime() - m_worker.GetTimeBegin();
 
                     TextFocused( "Appeared at", TimeToString( first - m_worker.GetTimeBegin() ) );
                     TextFocused( "Last event at", TimeToString( last - m_worker.GetTimeBegin() ) );
-                    TextFocused( "Activity time:", TimeToString( activity ) );
+                    TextFocused( "Lifetime:", TimeToString( lifetime ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", activity / double( traceLen ) * 100 );
+                    ImGui::TextDisabled( "(%.2f%%)", lifetime / double( traceLen ) * 100 );
                 }
 
                 ImGui::Separator();

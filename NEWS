@@ -12,6 +12,7 @@ v0.6 (xxxx-xx-xx)
 - Dropped support for pre-v0.4 traces.
 - Implemented context switch capture on selected platforms.
 - API breakage: SetThreadName() now only works on current thread.
+- Fixed thread name retrieval after thread is destroyed.
 
 v0.5 (2019-08-10)
 -----------------

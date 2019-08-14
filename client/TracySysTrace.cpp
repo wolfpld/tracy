@@ -152,6 +152,175 @@ void SysTraceWorker( void* ptr )
 
 }
 
+#  elif defined __linux__
+
+#  include <sys/types.h>
+#  include <sys/stat.h>
+#  include <fcntl.h>
+#  include <stdint.h>
+#  include <stdio.h>
+#  include <string.h>
+#  include <unistd.h>
+
+namespace tracy
+{
+
+static const char BasePath[] = "/sys/kernel/debug/tracing/";
+static const char TracingOn[] = "tracing_on";
+static const char CurrentTracer[] = "current_tracer";
+static const char TraceOptions[] = "trace_options";
+static const char TraceClock[] = "trace_clock";
+static const char SchedSwitch[] = "events/sched/sched_switch/enable";
+static const char TracePipe[] = "trace_pipe";
+
+static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
+{
+    char tmp[256];
+    memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
+    memcpy( tmp + sizeof( BasePath ) - 1, path, psz );
+
+    int fd = open( tmp, O_WRONLY );
+    if( fd < 0 ) return false;
+
+    for(;;)
+    {
+        ssize_t cnt = write( fd, val, vsz );
+        if( cnt == (ssize_t)vsz )
+        {
+            close( fd );
+            return true;
+        }
+        if( cnt < 0 )
+        {
+            close( fd );
+            return false;
+        }
+        vsz -= cnt;
+        val += cnt;
+    }
+}
+
+bool SysTraceStart()
+{
+    if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
+    if( !TraceWrite( CurrentTracer, sizeof( CurrentTracer ), "nop", 4 ) ) return false;
+    if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-cmd", 13 ) ) return false;
+    if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-tgid", 14 ) ) return false;
+    if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "noirq-info", 11 ) ) return false;
+    if( !TraceWrite( TraceClock, sizeof( TraceClock ), "x86-tsc", 8 ) ) return false;
+    if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
+    if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
+
+    return true;
+}
+
+void SysTraceStop()
+{
+    TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 );
+}
+
+static uint64_t ReadNumber( const char*& ptr )
+{
+    uint64_t val = 0;
+    for(;;)
+    {
+        if( *ptr >= '0' && *ptr <= '9' )
+        {
+            val = val * 10 + ( *ptr - '0' );
+            ptr++;
+        }
+        else
+        {
+            return val;
+        }
+    }
+}
+
+static uint8_t ReadState( char state )
+{
+    switch( state )
+    {
+    case 'D': return 101;
+    case 'I': return 102;
+    case 'R': return 103;
+    case 'S': return 104;
+    case 'T': return 105;
+    case 't': return 106;
+    case 'W': return 107;
+    case 'X': return 108;
+    case 'Z': return 109;
+    default: return 100;
+    }
+}
+
+void SysTraceWorker( void* ptr )
+{
+    char tmp[256];
+    memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
+    memcpy( tmp + sizeof( BasePath ) - 1, TracePipe, sizeof( TracePipe ) );
+
+    FILE* f = fopen( tmp, "rb" );
+    if( !f ) return;
+
+    size_t lsz = 1024;
+    auto line = (char*)malloc( lsz );
+
+    for(;;)
+    {
+        auto rd = getline( &line, &lsz, f );
+        if( rd < 0 ) break;
+
+        const char* ptr = line + 24;
+        const auto cpu = (uint8_t)ReadNumber( ptr );
+
+        ptr++;      // ']'
+        while( *ptr == ' ' ) ptr++;
+
+        const auto time = ReadNumber( ptr );
+
+        ptr += 2;   // ': '
+        if( memcmp( ptr, "sched_switch", 12 ) != 0 ) continue;
+        ptr += 14;
+
+        while( memcmp( ptr, "prev_pid", 8 ) != 0 ) ptr++;
+        ptr += 9;
+
+        const auto oldPid = ReadNumber( ptr );
+        ptr++;
+
+        while( memcmp( ptr, "prev_state", 10 ) != 0 ) ptr++;
+        ptr += 11;
+
+        const auto oldState = (uint8_t)ReadState( *ptr );
+        ptr += 5;
+
+        while( memcmp( ptr, "next_pid", 8 ) != 0 ) ptr++;
+        ptr += 9;
+
+        const auto newPid = ReadNumber( ptr );
+
+        uint8_t reason = 100;
+
+        Magic magic;
+        auto token = GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::ContextSwitch );
+        MemWrite( &item->contextSwitch.time, time );
+        MemWrite( &item->contextSwitch.oldThread, oldPid );
+        MemWrite( &item->contextSwitch.newThread, newPid );
+        MemWrite( &item->contextSwitch.cpu, cpu );
+        MemWrite( &item->contextSwitch.reason, reason );
+        MemWrite( &item->contextSwitch.state, oldState );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    free( line );
+    fclose( f );
+}
+
+}
+
 #  endif
 
 #endif

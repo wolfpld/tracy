@@ -1,7 +1,7 @@
 #ifndef __TRACYSYSTRACE_HPP__
 #define __TRACYSYSTRACE_HPP__
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined _WIN32 || defined __CYGWIN__ || defined __linux__
 #  define TRACY_HAS_SYSTEM_TRACING
 #endif
 

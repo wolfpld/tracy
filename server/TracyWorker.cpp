@@ -263,8 +263,7 @@ Worker::Worker( const char* addr )
     m_data.sourceLocationZonesReady = true;
 #endif
 
-    m_thread = std::thread( [this] { Exec(); } );
-    SetThreadName( m_thread, "Tracy Worker" );
+    m_thread = std::thread( [this] { SetThreadName( "Tracy Worker" ); Exec(); } );
 }
 
 Worker::Worker( FileRead& f, EventType::Type eventMask )

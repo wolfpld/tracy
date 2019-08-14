@@ -1679,9 +1679,9 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                 case QueueType::MessageAppInfo:
                     ptr = MemRead<uint64_t>( &item->message.text );
                     SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-    #ifndef TRACY_ON_DEMAND
+#ifndef TRACY_ON_DEMAND
                     tracy_free( (void*)ptr );
-    #endif
+#endif
                     break;
                 case QueueType::ZoneBeginAllocSrcLoc:
                 case QueueType::ZoneBeginAllocSrcLocCallstack:

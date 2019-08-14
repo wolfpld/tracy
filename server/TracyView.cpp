@@ -4681,6 +4681,22 @@ void View::DrawZoneInfoWindow()
         ImGui::SameLine();
         ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
     }
+    const auto ctx = m_worker.GetContextSwitchData( tid );
+    if( ctx )
+    {
+        int64_t time;
+        uint64_t cnt;
+        if( GetZoneRunningTime( ctx, ev, time, cnt ) )
+        {
+            TextFocused( "Running state time:", TimeToString( time ) );
+            if( ztime != 0 )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%%)", 100.f * time / ztime );
+            }
+            TextFocused( "Running state regions:", RealToString( cnt, true ) );
+        }
+    }
 
     auto& mem = m_worker.GetMemData();
     if( !mem.data.empty() )

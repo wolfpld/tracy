@@ -2132,6 +2132,10 @@ void View::DrawZones()
                 {
                     TextFocused( "Locks:", RealToString( lockCnt, true ) );
                 }
+                if( ctx )
+                {
+                    TextFocused( "Running state regions:", RealToString( ctx->v.size(), true ) );
+                }
                 ImGui::EndTooltip();
 
                 if( ImGui::IsMouseClicked( 0 ) )

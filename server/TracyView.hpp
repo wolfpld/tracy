@@ -374,6 +374,7 @@ private:
         bool logTime = true;
         bool cumulateTime = false;
         bool selfTime = false;
+        bool runningTime = false;
         GroupBy groupBy = GroupBy::Thread;
         SortBy sortBy = SortBy::Count;
         TableSortBy tableSortBy = TableSortBy::Starttime;

@@ -6552,7 +6552,26 @@ void View::DrawFindZone()
                 auto& vec = m_findZone.sorted;
                 vec.reserve( zsz );
                 size_t i;
-                if( m_findZone.selfTime )
+                if( m_findZone.runningTime )
+                {
+                    tmin = std::numeric_limits<int64_t>::max();
+                    tmax = std::numeric_limits<int64_t>::min();
+                    for( i=m_findZone.sortedNum; i<zsz; i++ )
+                    {
+                        auto& zone = *zones[i].zone;
+                        if( zone.end < 0 ) break;
+                        const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].thread ) );
+                        if( !ctx ) break;
+                        int64_t t;
+                        uint64_t cnt;
+                        if( !GetZoneRunningTime( ctx, zone, t, cnt ) ) break;
+                        vec.emplace_back( t );
+                        total += t;
+                        if( t < tmin ) tmin = t;
+                        else if( t > tmax ) tmax = t;
+                    }
+                }
+                else if( m_findZone.selfTime )
                 {
                     tmin = zoneData.selfMin;
                     tmax = zoneData.selfMax;
@@ -6601,7 +6620,25 @@ void View::DrawFindZone()
                     vec.reserve( zsz );
                     auto act = m_findZone.selSortActive;
                     int64_t total = m_findZone.selTotal;
-                    if( m_findZone.selfTime )
+                    if( m_findZone.runningTime )
+                    {
+                        for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                        {
+                            auto& ev = zones[i];
+                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                            {
+                                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].thread ) );
+                                int64_t t;
+                                uint64_t cnt;
+                                GetZoneRunningTime( ctx, *ev.zone, t, cnt );
+                                vec.emplace_back( t );
+                                act++;
+                                total += t;
+                            }
+                        }
+
+                    }
+                    else if( m_findZone.selfTime )
                     {
                         for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                         {
@@ -6666,10 +6703,20 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 if( SmallCheckbox( "Self time", &m_findZone.selfTime ) )
                 {
+                    m_findZone.runningTime = false;
                     m_findZone.scheduleResetMatch = true;
                 }
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.2f%%)", 100.f * zoneData.selfTotal / zoneData.total );
+                if( m_worker.HasContextSwitches() )
+                {
+                    ImGui::SameLine();
+                    if( SmallCheckbox( "Running time", &m_findZone.runningTime ) )
+                    {
+                        m_findZone.selfTime = false;
+                        m_findZone.scheduleResetMatch = true;
+                    }
+                }
 
                 const auto cumulateTime = m_findZone.cumulateTime;
 
@@ -7348,7 +7395,19 @@ void View::DrawFindZone()
                 processed++;
                 continue;
             }
-            if( m_findZone.selfTime ) timespan -= GetZoneChildTimeFast( *ev.zone );
+            if( m_findZone.selfTime )
+            {
+                timespan -= GetZoneChildTimeFast( *ev.zone );
+            }
+            else if( m_findZone.runningTime )
+            {
+                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( ev.thread ) );
+                if( !ctx ) break;
+                int64_t t;
+                uint64_t cnt;
+                if( !GetZoneRunningTime( ctx, *ev.zone, t, cnt ) ) break;
+                timespan = t;
+            }
 
             if( highlightActive )
             {
@@ -7623,6 +7682,18 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
                         m_worker.GetZoneEndDirect( *rhs ) - rhs->start - this->GetZoneChildTimeFast( *rhs );
                 } );
             }
+            else if( m_findZone.runningTime )
+            {
+                pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
+                    const auto ctx0 = m_worker.GetContextSwitchData( GetZoneThread( *lhs ) );
+                    const auto ctx1 = m_worker.GetContextSwitchData( GetZoneThread( *rhs ) );
+                    int64_t t0, t1;
+                    uint64_t c0, c1;
+                    GetZoneRunningTime( ctx0, *lhs, t0, c0 );
+                    GetZoneRunningTime( ctx1, *rhs, t1, c1 );
+                    return t0 > t1;
+                } );
+            }
             else
             {
                 pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
@@ -7645,8 +7716,18 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
     for( auto& ev : *zonesToIterate )
     {
         const auto end = m_worker.GetZoneEndDirect( *ev );
-        auto timespan = end - ev->start;
-        if( m_findZone.selfTime ) timespan -= GetZoneChildTimeFast( *ev );
+        int64_t timespan;
+        if( m_findZone.runningTime )
+        {
+            const auto ctx = m_worker.GetContextSwitchData( GetZoneThread( *ev ) );
+            uint64_t cnt;
+            GetZoneRunningTime( ctx, *ev, timespan, cnt );
+        }
+        else
+        {
+            timespan = end - ev->start;
+            if( m_findZone.selfTime ) timespan -= GetZoneChildTimeFast( *ev );
+        }
 
         ImGui::PushID( ev );
         if( ImGui::Selectable( TimeToString( ev->start - m_worker.GetTimeBegin() ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )

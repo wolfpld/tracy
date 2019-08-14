@@ -2349,12 +2349,12 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 {
                     TextFocused( "CPU:", RealToString( ev.cpu, true ) );
                 }
-                TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( ContextSwitchData::Reason( *pit ) ) );
+                TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->reason ) );
                 ImGui::SameLine();
-                TextDisabledUnformatted( DecodeContextSwitchReason( ContextSwitchData::Reason( *pit ) ) );
-                TextFocused( "Wait state:", DecodeContextSwitchStateCode( ContextSwitchData::State( *pit ) ) );
+                TextDisabledUnformatted( DecodeContextSwitchReason( pit->reason ) );
+                TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->state ) );
                 ImGui::SameLine();
-                TextDisabledUnformatted( DecodeContextSwitchState( ContextSwitchData::State( *pit ) ) );
+                TextDisabledUnformatted( DecodeContextSwitchState( pit->state ) );
                 ImGui::EndTooltip();
 
                 if( ImGui::IsMouseClicked( 2 ) )

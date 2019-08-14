@@ -222,13 +222,11 @@ enum { CrashEventSize = sizeof( CrashEvent ) };
 
 struct ContextSwitchData
 {
-    static uint8_t Reason( const ContextSwitchData& cs ) { return cs.data & 0xF; }
-    static uint8_t State( const ContextSwitchData& cs ) { return cs.data >> 4; }
-
     int64_t start;
     int64_t end;
     uint8_t cpu;
-    uint8_t data;
+    int8_t reason;
+    int8_t state;
 };
 
 enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };

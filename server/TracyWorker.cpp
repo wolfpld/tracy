@@ -1167,7 +1167,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 {
                     ptr->start = ReadTimeOffset( f, refTime );
                     ptr->end = ReadTimeOffset( f, refTime );
-                    f.Read( &ptr->cpu, sizeof( ptr->cpu ) + sizeof( ptr->data ) );
+                    f.Read( &ptr->cpu, sizeof( ptr->cpu ) + sizeof( ptr->reason ) + sizeof( ptr->state ) );
                     ptr++;
                 }
                 m_data.ctxSwitch.emplace( thread, data );
@@ -3726,9 +3726,8 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             auto& item = data.back();
             assert( item.start <= time );
             item.end = time;
-            assert( ( ev.reason & 0xF ) == ev.reason );
-            assert( ( ev.state & 0xF ) == ev.state );
-            item.data = ev.reason | ( ev.state << 4 );
+            item.reason = ev.reason;
+            item.state = ev.state;
         }
     }
     if( ev.newThread != 0 )
@@ -3745,7 +3744,8 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         item.start = time;
         item.end = -1;
         item.cpu = ev.cpu;
-        item.data = ~0;
+        item.reason = -1;
+        item.state = -1;
     }
 }
 
@@ -4496,7 +4496,7 @@ void Worker::Write( FileWrite& f )
         {
             WriteTimeOffset( f, refTime, cs.start );
             WriteTimeOffset( f, refTime, cs.end );
-            f.Write( &cs.cpu, sizeof( cs.cpu ) + sizeof( cs.data ) );
+            f.Write( &cs.cpu, sizeof( cs.cpu ) + sizeof( cs.reason ) + sizeof( cs.state ) );
         }
     }
 }

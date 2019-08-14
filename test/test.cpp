@@ -36,6 +36,7 @@ void operator delete( void* ptr ) noexcept
 
 void TestFunction()
 {
+    tracy::SetThreadName( "First/second thread" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
@@ -46,6 +47,7 @@ void TestFunction()
 
 void ResolutionCheck()
 {
+    tracy::SetThreadName( "Resolution check" );
     for(;;)
     {
         {
@@ -62,6 +64,7 @@ void ResolutionCheck()
 
 void ScopeCheck()
 {
+    tracy::SetThreadName( "Scope check" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
@@ -74,6 +77,7 @@ static TracyLockable( std::recursive_mutex, recmutex );
 
 void Lock1()
 {
+    tracy::SetThreadName( "Lock 1" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 4 ) );
@@ -86,6 +90,7 @@ void Lock1()
 
 void Lock2()
 {
+    tracy::SetThreadName( "Lock 2" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 3 ) );
@@ -98,6 +103,7 @@ void Lock2()
 
 void Lock3()
 {
+    tracy::SetThreadName( "Lock 3" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
@@ -110,6 +116,7 @@ void Lock3()
 
 void RecLock()
 {
+    tracy::SetThreadName( "Recursive mtx 1/2" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 7 ) );
@@ -129,6 +136,7 @@ void RecLock()
 
 void Plot()
 {
+    tracy::SetThreadName( "Plot 1/2" );
     unsigned char i = 0;
     for(;;)
     {
@@ -142,6 +150,7 @@ void Plot()
 
 void MessageTest()
 {
+    tracy::SetThreadName( "Message test" );
     for(;;)
     {
         TracyMessage( "Tock", 4 );
@@ -165,6 +174,7 @@ static int Fibonacci( int n )
 
 void DepthTest()
 {
+    tracy::SetThreadName( "Depth test" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
@@ -179,6 +189,7 @@ static TracySharedLockable( std::shared_mutex, sharedMutex );
 
 void SharedRead1()
 {
+    tracy::SetThreadName( "Shared read 1/2" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
@@ -189,6 +200,7 @@ void SharedRead1()
 
 void SharedRead2()
 {
+    tracy::SetThreadName( "Shared read 3" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 6 ) );
@@ -199,6 +211,7 @@ void SharedRead2()
 
 void SharedWrite1()
 {
+    tracy::SetThreadName( "Shared write 1" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 3 ) );
@@ -209,6 +222,7 @@ void SharedWrite1()
 
 void SharedWrite2()
 {
+    tracy::SetThreadName( "Shared write 2" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
@@ -224,6 +238,7 @@ void CaptureCallstack()
 
 void CallstackTime()
 {
+    tracy::SetThreadName( "Callstack time" );
     for(;;)
     {
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
@@ -233,6 +248,7 @@ void CallstackTime()
 
 void OnlyMemory()
 {
+    tracy::SetThreadName( "Only memory" );
     new int;
 }
 
@@ -241,6 +257,7 @@ static TracyLockable( std::mutex, deadlockMutex2 );
 
 void DeadlockTest1()
 {
+    tracy::SetThreadName( "Deadlock test 1" );
     deadlockMutex1.lock();
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     deadlockMutex2.lock();
@@ -248,6 +265,7 @@ void DeadlockTest1()
 
 void DeadlockTest2()
 {
+    tracy::SetThreadName( "Deadlock test 2" );
     deadlockMutex2.lock();
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     deadlockMutex1.lock();
@@ -277,29 +295,6 @@ int main()
     auto t20 = std::thread( OnlyMemory );
     auto t21 = std::thread( DeadlockTest1 );
     auto t22 = std::thread( DeadlockTest2 );
-
-    tracy::SetThreadName( t1, "First thread" );
-    tracy::SetThreadName( t2, "Second thread" );
-    tracy::SetThreadName( t3, "Resolution check" );
-    tracy::SetThreadName( t4, "Scope check" );
-    tracy::SetThreadName( t5, "Lock 1" );
-    tracy::SetThreadName( t6, "Lock 2" );
-    tracy::SetThreadName( t7, "Lock 3" );
-    tracy::SetThreadName( t8, "Plot 1" );
-    tracy::SetThreadName( t9, "Plot 2" );
-    tracy::SetThreadName( t10, "Message test" );
-    tracy::SetThreadName( t11, "Depth test" );
-    tracy::SetThreadName( t12, "Recursive mtx 1" );
-    tracy::SetThreadName( t13, "Recursive mtx 2" );
-    tracy::SetThreadName( t14, "Shared read 1" );
-    tracy::SetThreadName( t15, "Shared read 2" );
-    tracy::SetThreadName( t16, "Shared read 3" );
-    tracy::SetThreadName( t17, "Shared write 1" );
-    tracy::SetThreadName( t18, "Shared write 2" );
-    tracy::SetThreadName( t19, "Callstack time" );
-    tracy::SetThreadName( t20, "Only memory" );
-    tracy::SetThreadName( t21, "Deadlock test 1" );
-    tracy::SetThreadName( t22, "Deadlock test 2" );
 
     int x, y;
     auto image = stbi_load( "image.jpg", &x, &y, nullptr, 4 );

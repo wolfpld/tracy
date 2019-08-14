@@ -13,6 +13,7 @@
 #    include <evntcons.h>
 
 #    include "../common/TracyAlloc.hpp"
+#    include "../common/TracySystem.hpp"
 #    include "TracyProfiler.hpp"
 
 namespace tracy
@@ -143,6 +144,7 @@ void SysTraceStop()
 
 void SysTraceWorker( void* ptr )
 {
+    SetThreadName( "Tracy Profiler system trace" );
     ProcessTrace( &s_traceHandle2, 1, 0, 0 );
     ControlTrace( 0, KERNEL_LOGGER_NAME, s_prop, EVENT_TRACE_CONTROL_STOP );
     tracy_free( s_prop );

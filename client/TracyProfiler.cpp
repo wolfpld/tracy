@@ -1137,18 +1137,15 @@ Profiler::Profiler()
 
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
-    SetThreadName( s_thread->Handle(), "Tracy Profiler" );
 
     s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_compressThread) Thread( LaunchCompressWorker, this );
-    SetThreadName( s_compressThread->Handle(), "Tracy Profiler DXT1" );
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
     if( SysTraceStart() )
     {
         s_sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
         new(s_sysTraceThread) Thread( SysTraceWorker, nullptr );
-        SetThreadName( s_sysTraceThread->Handle(), "Tracy Profiler system trace" );
     }
 #endif
 
@@ -1234,6 +1231,8 @@ void Profiler::Worker()
 #ifdef __linux__
     s_profilerTid = syscall( SYS_gettid );
 #endif
+
+    SetThreadName( "Tracy Profiler" );
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
@@ -1576,6 +1575,7 @@ void Profiler::Worker()
 
 void Profiler::CompressWorker()
 {
+    SetThreadName( "Tracy Profiler DXT1" );
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     rpmalloc_thread_initialize();
     for(;;)

@@ -7,7 +7,7 @@
 #  endif
 #endif
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 #  ifndef _WINDOWS_
 extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
 #  endif
@@ -23,7 +23,6 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 #endif
 
 #include <stdint.h>
-#include <thread>
 
 #include "TracyApi.h"
 
@@ -34,7 +33,7 @@ namespace detail
 {
 static inline uint64_t GetThreadHandleImpl()
 {
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
     static_assert( sizeof( decltype( GetCurrentThreadId() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
     return uint64_t( GetCurrentThreadId() );
 #elif defined __APPLE__
@@ -61,8 +60,7 @@ static inline uint64_t GetThreadHandle()
 }
 #endif
 
-void SetThreadName( std::thread& thread, const char* name );
-void SetThreadName( std::thread::native_handle_type handle, const char* name );
+void SetThreadName( const char* name );
 const char* GetThreadName( uint64_t id );
 
 }

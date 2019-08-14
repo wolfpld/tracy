@@ -6554,8 +6554,6 @@ void View::DrawFindZone()
                 size_t i;
                 if( m_findZone.runningTime )
                 {
-                    tmin = std::numeric_limits<int64_t>::max();
-                    tmax = std::numeric_limits<int64_t>::min();
                     for( i=m_findZone.sortedNum; i<zsz; i++ )
                     {
                         auto& zone = *zones[i].zone;

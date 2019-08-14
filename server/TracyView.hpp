@@ -418,6 +418,8 @@ private:
             average = 0;
             median = 0;
             total = 0;
+            tmin = std::numeric_limits<int64_t>::max();
+            tmax = std::numeric_limits<int64_t>::min();
         }
 
         void ResetGroups()

@@ -151,89 +151,7 @@ struct ThreadHandleWrapper
 #endif
 
 
-#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
-int64_t (*GetTimeImpl)();
-
-int64_t GetTimeImplFallback()
-{
-#  ifdef CLOCK_MONOTONIC_RAW
-    struct timespec ts;
-    clock_gettime( CLOCK_MONOTONIC_RAW, &ts );
-    return int64_t( ts.tv_sec ) * 1000000000 + int64_t( ts.tv_nsec );
-#  else
-    return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-#  endif
-}
-
-int64_t GetTimeImplCntvct()
-{
-    int64_t t;
-#  ifdef __aarch64__
-    asm volatile ( "mrs %0, cntvct_el0" : "=r" (t) );
-#  else
-    asm volatile ( "mrrc p15, 1, %Q0, %R0, c14" : "=r" (t) );
-#  endif
-    return t;
-}
-
-static sigjmp_buf SigIllEnv;
-
-static int SetupHwTimerFailed()
-{
-    return sigsetjmp( SigIllEnv, 1 );
-}
-
-static void SetupHwTimerSigIllHandler( int /*signum*/ )
-{
-    siglongjmp( SigIllEnv, 1 );
-}
-
-static int64_t SetupHwTimer()
-{
-    struct sigaction act, oldact;
-    memset( &act, 0, sizeof( act ) );
-    act.sa_handler = SetupHwTimerSigIllHandler;
-
-    if( sigaction( SIGILL, &act, &oldact ) )
-    {
-        GetTimeImpl = GetTimeImplFallback;
-        return Profiler::GetTime();
-    }
-
-    if( SetupHwTimerFailed() )
-    {
-        sigaction( SIGILL, &oldact, nullptr );
-        GetTimeImpl = GetTimeImplFallback;
-        return Profiler::GetTime();
-    }
-
-    GetTimeImplCntvct();
-
-    sigaction( SIGILL, &oldact, nullptr );
-    GetTimeImpl = GetTimeImplCntvct;
-
-    // Check if cntvct is monotonic (there is faulty hw out there)
-    enum { NumProbes = 32 * 1024 };
-    int64_t probe[NumProbes];
-    for( int j=0; j<10; j++ )
-    {
-        for( int i=0; i<NumProbes; i++ )
-        {
-            probe[i] = Profiler::GetTime();
-        }
-        for( int i=1; i<NumProbes; i++ )
-        {
-            if( probe[i] < probe[i-1] )
-            {
-                GetTimeImpl = GetTimeImplFallback;
-                return Profiler::GetTime();
-            }
-        }
-    }
-
-    return Profiler::GetTime();
-}
-#elif defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
 static inline void CpuId( uint32_t* regs, uint32_t leaf )
 {
 #if defined _WIN32 || defined __CYGWIN__
@@ -2141,24 +2059,12 @@ void Profiler::HandleDisconnect()
     }
 }
 
-bool Profiler::IsTimerMonotonicRaw()
-{
-#if defined TRACY_HW_TIMER && !defined TARGET_OS_IOS && __ARM_ARCH >= 6
-    return GetTimeImpl == GetTimeImplFallback;
-#else
-    return false;
-#endif
-}
-
 void Profiler::CalibrateTimer()
 {
 #ifdef TRACY_HW_TIMER
-    if( IsTimerMonotonicRaw() )
-    {
-        m_timerMul = 1.;
-        return;
-    }
-
+#  if !defined TARGET_OS_IOS && __ARM_ARCH >= 6
+    m_timerMul = 1.;
+#  else
     std::atomic_signal_fence( std::memory_order_acq_rel );
     const auto t0 = std::chrono::high_resolution_clock::now();
     const auto r0 = GetTime();
@@ -2173,6 +2079,7 @@ void Profiler::CalibrateTimer()
     const auto dr = r1 - r0;
 
     m_timerMul = double( dt ) / double( dr );
+#  endif
 #else
     m_timerMul = 1.;
 #endif

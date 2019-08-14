@@ -78,10 +78,6 @@ struct LuaZoneState
 
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
-#if __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
-extern int64_t (*GetTimeImpl)();
-#endif
-
 
 class Profiler
 {
@@ -105,7 +101,13 @@ public:
 #  if TARGET_OS_IOS == 1
         return mach_absolute_time();
 #  elif __ARM_ARCH >= 6
-        return GetTimeImpl();
+#    ifdef CLOCK_MONOTONIC_RAW
+        struct timespec ts;
+        clock_gettime( CLOCK_MONOTONIC_RAW, &ts );
+        return int64_t( ts.tv_sec ) * 1000000000ll + int64_t( ts.tv_nsec );
+#    else
+        return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
+#    endif
 #  elif defined _WIN32 || defined __CYGWIN__
         unsigned int dontcare;
         const auto t = int64_t( __rdtscp( &dontcare ) );
@@ -439,8 +441,6 @@ public:
 
     void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); m_shutdownManual.store( true, std::memory_order_relaxed ); }
     bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
-
-    static bool IsTimerMonotonicRaw();
 
 private:
     enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };

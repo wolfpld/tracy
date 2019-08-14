@@ -209,7 +209,9 @@ bool SysTraceStart()
     if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-cmd", 13 ) ) return false;
     if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-tgid", 14 ) ) return false;
     if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "noirq-info", 11 ) ) return false;
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
     if( !TraceWrite( TraceClock, sizeof( TraceClock ), "x86-tsc", 8 ) ) return false;
+#endif
     if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
 

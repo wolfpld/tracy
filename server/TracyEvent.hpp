@@ -242,8 +242,6 @@ struct ContextSwitchData
 
 enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
 
-#pragma pack()
-
 
 struct MessageData
 {
@@ -254,6 +252,9 @@ struct MessageData
 };
 
 enum { MessageDataSize = sizeof( MessageData ) };
+
+#pragma pack()
+
 
 struct ThreadData
 {

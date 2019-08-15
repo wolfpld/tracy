@@ -622,6 +622,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 f.Read2( lockmap.timeAnnounce, lockmap.timeTerminate );
                 lockmap.timeAnnounce -= m_data.baseTime;
                 lockmap.timeTerminate -= m_data.baseTime;
+                if( lockmap.timeTerminate < lockmap.timeAnnounce ) lockmap.timeTerminate = 0;
             }
             else
             {

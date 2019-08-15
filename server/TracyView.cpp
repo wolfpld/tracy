@@ -4789,14 +4789,20 @@ void View::DrawZoneInfoWindow()
                         const auto cstart = bit->Start();
                         const auto cpu1 = bit->Cpu();
 
-                        ImGui::TextUnformatted( TimeToString( cend - adjust ) );
-                        if( ImGui::IsMouseClicked( 0 ) && ImGui::IsItemHovered() ) CenterAtTime( cend );
+                        if( ImGui::Selectable( TimeToString( cend - adjust ) ) )
+                        {
+                            CenterAtTime( cend );
+                        }
                         ImGui::NextColumn();
-                        ImGui::TextUnformatted( TimeToString( cstart - adjust ) );
-                        if( ImGui::IsMouseClicked( 0 ) && ImGui::IsItemHovered() ) CenterAtTime( cstart );
+                        if( ImGui::Selectable( TimeToString( cstart - adjust ) ) )
+                        {
+                            CenterAtTime( cstart );
+                        }
                         ImGui::NextColumn();
-                        ImGui::TextUnformatted( TimeToString( cstart - cend ) );
-                        if( ImGui::IsMouseClicked( 0 ) && ImGui::IsItemHovered() ) ZoomToRange( cend, cstart );
+                        if( ImGui::Selectable( TimeToString( cstart - cend ) ) )
+                        {
+                            ZoomToRange( cend, cstart );
+                        }
                         ImGui::NextColumn();
                         if( cpu0 == cpu1 )
                         {

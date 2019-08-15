@@ -147,6 +147,7 @@ private:
     {
         DataBlock()
             : zonesCnt( 0 )
+            , baseTime( 0 )
             , lastTime( 0 )
             , frameOffset( 0 )
             , threadLast( std::numeric_limits<uint64_t>::max(), 0 )
@@ -163,6 +164,7 @@ private:
         Vector<ThreadData*> threads;
         MemData memory;
         uint64_t zonesCnt;
+        int64_t baseTime;
         int64_t lastTime;
         uint64_t frameOffset;
 

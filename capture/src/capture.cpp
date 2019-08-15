@@ -123,7 +123,7 @@ int main( int argc, char** argv )
         {
             printf( "\33[2K\r\033[36;1m%7.2f Mbps", mbps );
         }
-        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| Mem: \033[31;1m%.2f MB\033[0m | \033[33mTime: %s\033[0m", compRatio * 100.f, mbps / compRatio, tracy::memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ), tracy::TimeToString( worker.GetLastTime() - worker.GetTimeBegin() ) );
+        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| Mem: \033[31;1m%.2f MB\033[0m | \033[33mTime: %s\033[0m", compRatio * 100.f, mbps / compRatio, tracy::memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ), tracy::TimeToString( worker.GetLastTime() ) );
         fflush( stdout );
 
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
@@ -135,7 +135,7 @@ int main( int argc, char** argv )
         printf( "\n\033[31;1mInstrumentation failure: %s\033[0m", tracy::Worker::GetFailureString( failure ) );
     }
 
-    printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nSaving trace...", worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() - worker.GetTimeBegin() ), tracy::RealToString( worker.GetZoneCount(), true ) );
+    printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nSaving trace...", worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() ), tracy::RealToString( worker.GetZoneCount(), true ) );
     fflush( stdout );
     auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );
     if( f )

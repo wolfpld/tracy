@@ -274,7 +274,6 @@ public:
     std::shared_mutex& GetDataLock() { return m_data.lock; }
     size_t GetFrameCount( const FrameData& fd ) const { return fd.frames.size(); }
     size_t GetFullFrameCount( const FrameData& fd ) const;
-    int64_t GetTimeBegin() const { return GetFrameBegin( *m_data.framesBase, 0 ); }
     int64_t GetLastTime() const { return m_data.lastTime; }
     uint64_t GetZoneCount() const { return m_data.zonesCnt; }
     uint64_t GetLockCount() const;

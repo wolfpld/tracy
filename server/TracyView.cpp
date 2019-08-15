@@ -4704,7 +4704,7 @@ void View::DrawZoneInfoWindow()
                     TextFocused( "Running state regions:", "1" );
                 }
             }
-            else
+            else if( cnt > 1 )
             {
                 if( incomplete )
                 {
@@ -11712,6 +11712,7 @@ bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, in
     const auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.start; } );
     if( eit == ctx->v.end() ) return false;
     cnt = std::distance( it, eit );
+    if( cnt == 0 ) return false;
     if( cnt == 1 )
     {
         time = end - ev.start;

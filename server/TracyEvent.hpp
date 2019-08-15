@@ -86,8 +86,6 @@ struct ZoneEvent
     StringIdx text;
     uint32_t callstack;
     StringIdx name;
-
-    // This must be last. All above is read/saved as-is.
     int32_t child;
 };
 
@@ -147,8 +145,6 @@ struct GpuEvent
     int64_t gpuEnd;
     int16_t srcloc;
     uint32_t callstack;
-    // All above is read/saved as-is.
-
     uint16_t thread;
     int32_t child;
 };
@@ -165,8 +161,6 @@ struct MemEvent
     int64_t timeFree;
     uint32_t csAlloc;
     uint32_t csFree;
-    // All above is read/saved as-is.
-
     uint16_t threadAlloc;
     uint16_t threadFree;
 };

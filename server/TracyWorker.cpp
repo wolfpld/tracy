@@ -886,7 +886,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             }
             else if( fileVer <= FileVersion( 0, 5, 1 ) )
             {
-                int64_t refTime = -m_data.baseTime;
+                int64_t refTime = 0;
                 ReadTimelinePre052( f, td->timeline, CompressThread( tid ), tsz, refTime, fileVer );
             }
             else
@@ -945,8 +945,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             if( fileVer <= FileVersion( 0, 5, 1 ) )
             {
-                refTime = -m_data.baseTime;
-                refGpuTime = -m_data.baseTime;
                 ReadTimelinePre052( f, ctx->timeline, tsz, refTime, refGpuTime, fileVer );
             }
             else
@@ -4239,10 +4237,9 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         vec[i] = zone;
         int64_t start;
         f.Read( start );
-        start -= m_data.baseTime;
-        zone->SetStart( start );
+        zone->SetStart( start - m_data.baseTime );
         f.Read( zone->end );
-        zone->end -= m_data.baseTime;
+        if( zone->end >= 0 ) zone->end -= m_data.baseTime;
         int16_t srcloc;
         f.Read( srcloc );
         zone->SetSrcLoc( srcloc );
@@ -4286,9 +4283,10 @@ void Worker::ReadTimelinePre052( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         }
         f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         refTime += zone->end;
-        zone->SetStart( refTime );
+        zone->SetStart( refTime - m_data.baseTime );
         ReadTimelinePre052( f, zone, thread, refTime, fileVer );
         zone->end = ReadTimeOffset( f, refTime );
+        if( zone->end >= 0 ) zone->end -= m_data.baseTime;
 #ifdef TRACY_NO_STATISTICS
         ReadTimelineUpdateStatistics( zone, thread );
 #endif
@@ -4367,8 +4365,9 @@ void Worker::ReadTimelinePre052( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
             f.Read( zone->callstack );
             refTime += zone->gpuStart;
             refGpuTime += zone->gpuEnd;
-            zone->cpuStart = refTime;
+            zone->cpuStart = refTime - m_data.baseTime;
             zone->gpuStart = refGpuTime;
+            if( zone->gpuStart != std::numeric_limits<int64_t>::max() ) zone->gpuStart -= m_data.baseTime;
 
             uint64_t thread;
             f.Read( thread );
@@ -4392,14 +4391,17 @@ void Worker::ReadTimelinePre052( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
             f.Read( zone->thread );
             refTime += zone->gpuStart;
             refGpuTime += zone->gpuEnd;
-            zone->cpuStart = refTime;
+            zone->cpuStart = refTime - m_data.baseTime;
             zone->gpuStart = refGpuTime;
+            if( zone->gpuStart != std::numeric_limits<int64_t>::max() ) zone->gpuStart -= m_data.baseTime;
         }
         ReadTimelinePre052( f, zone, refTime, refGpuTime, fileVer );
         if( fileVer > FileVersion( 0, 4, 1 ) )
         {
             zone->cpuEnd = ReadTimeOffset( f, refTime );
             zone->gpuEnd = ReadTimeOffset( f, refGpuTime );
+            if( zone->cpuEnd > 0 ) zone->cpuEnd -= m_data.baseTime;
+            if( zone->gpuEnd > 0 ) zone->gpuEnd -= m_data.baseTime;
         }
     }
 }

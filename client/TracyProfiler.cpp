@@ -42,6 +42,7 @@
 #include <mutex>
 #include <stdlib.h>
 #include <string.h>
+#include <thread>
 
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyProtocol.hpp"
@@ -465,6 +466,8 @@ static const char* GetHostInfo()
 #else
     ptr += sprintf( ptr, "CPU: unknown\n" );
 #endif
+
+    ptr += sprintf( ptr, "CPU cores: %i\n", std::thread::hardware_concurrency() );
 
 #if defined _WIN32 || defined __CYGWIN__
     MEMORYSTATUSEX statex;

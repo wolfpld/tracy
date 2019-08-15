@@ -122,23 +122,23 @@ struct LockEvent
 
     int64_t Time() const
     {
-        return int64_t( _start_time ) >> 16;
+        return int64_t( _time_srcloc ) >> 16;
     }
     void SetTime( int64_t time )
     {
         assert( time < ( 1ll << 47 ) );
-        _start_time = ( _start_time & 0xFFFF ) | uint64_t( time << 16 );
+        _time_srcloc = ( _time_srcloc & 0xFFFF ) | uint64_t( time << 16 );
     }
     int16_t SrcLoc() const
     {
-        return int16_t( _start_time & 0xFFFF );
+        return int16_t( _time_srcloc & 0xFFFF );
     }
     void SetSrcLoc( int16_t srcloc )
     {
-        _start_time = ( _start_time & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc );
+        _time_srcloc = ( _time_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc );
     }
 
-    uint64_t _start_time;
+    uint64_t _time_srcloc;
     uint8_t thread;
     Type type;
 };

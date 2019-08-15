@@ -173,13 +173,13 @@ private:
 
         flat_hash_map<uint64_t, SourceLocation, nohash<uint64_t>> sourceLocation;
         Vector<SourceLocation*> sourceLocationPayload;
-        flat_hash_map<SourceLocation*, uint32_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
+        flat_hash_map<SourceLocation*, int16_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
         Vector<uint64_t> sourceLocationExpand;
 #ifndef TRACY_NO_STATISTICS
-        flat_hash_map<int32_t, SourceLocationZones, nohash<int32_t>> sourceLocationZones;
+        flat_hash_map<int16_t, SourceLocationZones, nohash<int16_t>> sourceLocationZones;
         bool sourceLocationZonesReady;
 #else
-        flat_hash_map<int32_t, uint64_t> sourceLocationZonesCnt;
+        flat_hash_map<int16_t, uint64_t> sourceLocationZonesCnt;
 #endif
 
         flat_hash_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasherPOT<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
@@ -238,7 +238,7 @@ private:
     struct FailureData
     {
         uint64_t thread;
-        int32_t srcloc;
+        int16_t srcloc;
     };
 
 public:
@@ -326,7 +326,7 @@ public:
     const char* GetString( const StringRef& ref ) const;
     const char* GetString( const StringIdx& idx ) const;
     const char* GetThreadString( uint64_t id ) const;
-    const SourceLocation& GetSourceLocation( int32_t srcloc ) const;
+    const SourceLocation& GetSourceLocation( int16_t srcloc ) const;
 
     const char* GetZoneName( const SourceLocation& srcloc ) const;
     const char* GetZoneName( const ZoneEvent& ev ) const;
@@ -337,11 +337,11 @@ public:
     tracy_force_inline const Vector<ZoneEvent*>& GetZoneChildren( int32_t idx ) const { return m_data.zoneChildren[idx]; }
     tracy_force_inline const Vector<GpuEvent*>& GetGpuChildren( int32_t idx ) const { return m_data.gpuChildren[idx]; }
 
-    std::vector<int32_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
+    std::vector<int16_t> GetMatchingSourceLocation( const char* query, bool ignoreCase ) const;
 
 #ifndef TRACY_NO_STATISTICS
-    const SourceLocationZones& GetZonesForSourceLocation( int32_t srcloc ) const;
-    const flat_hash_map<int32_t, SourceLocationZones, nohash<int32_t>>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
+    const SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc ) const;
+    const flat_hash_map<int16_t, SourceLocationZones, nohash<int16_t>>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
 #endif
 
@@ -447,8 +447,8 @@ private:
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );
-    tracy_force_inline uint32_t ShrinkSourceLocation( uint64_t srcloc );
-    uint32_t NewShrinkedSourceLocation( uint64_t srcloc );
+    tracy_force_inline int16_t ShrinkSourceLocation( uint64_t srcloc );
+    int16_t NewShrinkedSourceLocation( uint64_t srcloc );
 
     tracy_force_inline void MemAllocChanged( int64_t time );
     void CreateMemAllocPlot();
@@ -495,17 +495,17 @@ private:
 
     tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime );
     tracy_force_inline void ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer );
-    tracy_force_inline void ReadTimelinePre051( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer );
+    tracy_force_inline void ReadTimelinePre052( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer );
     tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime );
-    tracy_force_inline void ReadTimelinePre044( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int fileVer );
+    tracy_force_inline void ReadTimelinePre052( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int fileVer );
 
     tracy_force_inline void ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread );
 
     void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime );
     void ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer );
-    void ReadTimelinePre051( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer );
+    void ReadTimelinePre052( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer );
     void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime );
-    void ReadTimelinePre044( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer );
+    void ReadTimelinePre052( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer );
 
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t& refTime );
     void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t& refTime, int64_t& refGpuTime );
@@ -544,9 +544,9 @@ private:
     flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
     uint64_t m_pendingCallstackPtr = 0;
     uint32_t m_pendingCallstackId;
-    flat_hash_map<uint64_t, int32_t, nohash<uint64_t>> m_pendingSourceLocationPayload;
+    flat_hash_map<uint64_t, int16_t, nohash<uint64_t>> m_pendingSourceLocationPayload;
     Vector<uint64_t> m_sourceLocationQueue;
-    flat_hash_map<uint64_t, uint32_t, nohash<uint64_t>> m_sourceLocationShrink;
+    flat_hash_map<uint64_t, int16_t, nohash<uint64_t>> m_sourceLocationShrink;
     flat_hash_map<uint64_t, ThreadData*, nohash<uint64_t>> m_threadMap;
     flat_hash_map<uint64_t, NextCallstack, nohash<uint64_t>> m_nextCallstack;
     flat_hash_map<uint64_t, void*, nohash<uint64_t>> m_pendingFrameImageData;

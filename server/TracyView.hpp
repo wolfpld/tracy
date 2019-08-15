@@ -252,7 +252,7 @@ private:
 
     const ZoneEvent* m_zoneInfoWindow = nullptr;
     const ZoneEvent* m_zoneHighlight;
-    DecayValue<int32_t> m_zoneSrcLocHighlight = 0;
+    DecayValue<int16_t> m_zoneSrcLocHighlight = 0;
     LockHighlight m_lockHighlight { -1 };
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
     DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;
@@ -309,7 +309,7 @@ private:
     BuzzAnim<int> m_callstackTreeBuzzAnim;
     BuzzAnim<const void*> m_zoneinfoBuzzAnim;
     BuzzAnim<int> m_findZoneBuzzAnim;
-    BuzzAnim<uint32_t> m_optionsLockBuzzAnim;
+    BuzzAnim<int16_t> m_optionsLockBuzzAnim;
     BuzzAnim<uint32_t> m_lockInfoAnim;
     BuzzAnim<uint32_t> m_statBuzzAnim;
 
@@ -364,7 +364,7 @@ private:
 
         bool show = false;
         bool ignoreCase = false;
-        std::vector<int32_t> match;
+        std::vector<int16_t> match;
         std::map<uint64_t, Group> groups;
         size_t processed;
         int selMatch = 0;
@@ -441,7 +441,7 @@ private:
             binCache.numBins = -1;
         }
 
-        void ShowZone( int32_t srcloc, const char* name )
+        void ShowZone( int16_t srcloc, const char* name )
         {
             show = true;
             Reset();
@@ -467,7 +467,7 @@ private:
         std::thread loadThread;
         BadVersionState badVer;
         char pattern[1024] = {};
-        std::vector<int32_t> match[2];
+        std::vector<int16_t> match[2];
         int selMatch[2] = { 0, 0 };
         bool logVal = false;
         bool logTime = true;

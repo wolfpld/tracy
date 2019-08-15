@@ -3571,7 +3571,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         TextFocused( "Time:", TimeToString( t1 - t0 ) );
                         ImGui::Separator();
 
-                        uint32_t markloc = 0;
+                        int16_t markloc = 0;
                         auto it = vbegin;
                         for(;;)
                         {
@@ -5056,12 +5056,12 @@ void View::DrawZoneInfoWindow()
             {
                 struct ChildGroup
                 {
-                    int32_t srcloc;
+                    int16_t srcloc;
                     uint64_t t;
                     Vector<uint32_t> v;
                 };
                 uint64_t ctime = 0;
-                flat_hash_map<int32_t, ChildGroup, nohash<int32_t>> cmap;
+                flat_hash_map<int16_t, ChildGroup, nohash<int16_t>> cmap;
                 cmap.reserve( 128 );
                 for( size_t i=0; i<children.size(); i++ )
                 {
@@ -5466,12 +5466,12 @@ void View::DrawGpuInfoWindow()
             {
                 struct ChildGroup
                 {
-                    int32_t srcloc;
+                    int16_t srcloc;
                     uint64_t t;
                     Vector<uint32_t> v;
                 };
                 uint64_t ctime = 0;
-                flat_hash_map<int32_t, ChildGroup, nohash<int32_t>> cmap;
+                flat_hash_map<int16_t, ChildGroup, nohash<int16_t>> cmap;
                 cmap.reserve( 128 );
                 for( size_t i=0; i<children.size(); i++ )
                 {

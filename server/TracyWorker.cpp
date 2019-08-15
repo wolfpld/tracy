@@ -504,7 +504,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         auto srcloc = m_slab.Alloc<SourceLocation>();
         f.Read( srcloc, sizeof( *srcloc ) );
         m_data.sourceLocationPayload[i] = srcloc;
-        m_data.sourceLocationPayloadMap.emplace( srcloc, uint32_t( i ) );
+        m_data.sourceLocationPayloadMap.emplace( srcloc, int16_t( i ) );
     }
 
 #ifndef TRACY_NO_STATISTICS
@@ -512,24 +512,53 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     m_data.sourceLocationZones.reserve( sle + sz );
 
     f.Read( sz );
-    for( uint64_t i=0; i<sz; i++ )
+    if( fileVer >= FileVersion( 0, 5, 2 ) )
     {
-        int32_t id;
-        uint64_t cnt;
-        f.Read( id );
-        f.Read( cnt );
-        auto status = m_data.sourceLocationZones.emplace( id, SourceLocationZones() );
-        assert( status.second );
-        status.first->second.zones.reserve( cnt );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            int16_t id;
+            uint64_t cnt;
+            f.Read( id );
+            f.Read( cnt );
+            auto status = m_data.sourceLocationZones.emplace( id, SourceLocationZones() );
+            assert( status.second );
+            status.first->second.zones.reserve( cnt );
+        }
+    }
+    else
+    {
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            int32_t id;
+            uint64_t cnt;
+            f.Read( id );
+            f.Read( cnt );
+            auto status = m_data.sourceLocationZones.emplace( int16_t( id ), SourceLocationZones() );
+            assert( status.second );
+            status.first->second.zones.reserve( cnt );
+        }
     }
 #else
     f.Read( sz );
-    for( uint64_t i=0; i<sz; i++ )
+    if( fileVer >= FileVersion( 0, 5, 2 ) )
     {
-        int32_t id;
-        f.Read( id );
-        f.Skip( sizeof( uint64_t ) );
-        m_data.sourceLocationZonesCnt.emplace( id, 0 );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            int16_t id;
+            f.Read( id );
+            f.Skip( sizeof( uint64_t ) );
+            m_data.sourceLocationZonesCnt.emplace( id, 0 );
+        }
+    }
+    else
+    {
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            int32_t id;
+            f.Read( id );
+            f.Skip( sizeof( uint64_t ) );
+            m_data.sourceLocationZonesCnt.emplace( int16_t( id ), 0 );
+        }
     }
 #endif
 
@@ -546,7 +575,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             uint32_t id;
             uint64_t tsz;
             f.Read( id );
-            f.Read( lockmap.srcloc );
+            if( fileVer >= FileVersion( 0, 5, 2 ) )
+            {
+                f.Read( lockmap.srcloc );
+            }
+            else
+            {
+                int32_t srcloc;
+                f.Read( srcloc );
+                lockmap.srcloc = int16_t( srcloc );
+            }
             f.Read( lockmap.type );
             f.Read( lockmap.valid );
             lockmap.isContended = false;
@@ -569,7 +607,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( tsz );
             lockmap.timeline.reserve_exact( tsz, m_slab );
             auto ptr = lockmap.timeline.data();
-            if( fileVer >= FileVersion( 0, 4, 2 ) )
+            if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
                 int64_t refTime = lockmap.timeAnnounce;
                 if( lockmap.type == LockType::Lockable )
@@ -595,14 +633,19 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     }
                 }
             }
-            else
+            else if( fileVer >= FileVersion( 0, 4, 2 ) )
             {
+                int64_t refTime = lockmap.timeAnnounce;
                 if( lockmap.type == LockType::Lockable )
                 {
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
-                        f.Read( lev, sizeof( LockEvent::time ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
+                        lev->time = ReadTimeOffset( f, refTime );
+                        int32_t srcloc;
+                        f.Read( srcloc );
+                        lev->srcloc = int16_t( srcloc );
+                        f.Read( &lev->thread, sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = { lev };
                         UpdateLockRange( lockmap, *lev );
                     }
@@ -612,7 +655,42 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
-                        f.Read( lev, sizeof( LockEventShared::time ) + sizeof( LockEventShared::srcloc ) + sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
+                        lev->time = ReadTimeOffset( f, refTime );
+                        int32_t srcloc;
+                        f.Read( srcloc );
+                        lev->srcloc = int16_t( srcloc );
+                        f.Read( &lev->thread, sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
+                        *ptr++ = { lev };
+                        UpdateLockRange( lockmap, *lev );
+                    }
+                }
+            }
+            else
+            {
+                if( lockmap.type == LockType::Lockable )
+                {
+                    for( uint64_t i=0; i<tsz; i++ )
+                    {
+                        auto lev = m_slab.Alloc<LockEvent>();
+                        f.Read( lev->time );
+                        int32_t srcloc;
+                        f.Read( srcloc );
+                        lev->srcloc = int16_t( srcloc );
+                        f.Read( &lev->thread, sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
+                        *ptr++ = { lev };
+                        UpdateLockRange( lockmap, *lev );
+                    }
+                }
+                else
+                {
+                    for( uint64_t i=0; i<tsz; i++ )
+                    {
+                        auto lev = m_slab.Alloc<LockEventShared>();
+                        f.Read( lev->time );
+                        int32_t srcloc;
+                        f.Read( srcloc );
+                        lev->srcloc = int16_t( srcloc );
+                        f.Read( &lev->thread, sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = { lev };
                         UpdateLockRange( lockmap, *lev );
                     }
@@ -628,7 +706,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             LockType type;
             uint64_t tsz;
-            f.Skip( sizeof( uint32_t ) + sizeof( LockMap::srcloc ) );
+            if( fileVer >= FileVersion( 0, 5, 2 ) )
+            {
+                f.Skip( sizeof( uint32_t ) + sizeof( LockMap::srcloc ) );
+            }
+            else
+            {
+                f.Skip( sizeof( uint32_t ) + sizeof( int32_t ) );
+            }
             f.Read( type );
             f.Skip( sizeof( LockMap::valid ) );
             if( fileVer >= FileVersion( 0, 4, 1 ) )
@@ -638,7 +723,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( tsz );
             f.Skip( tsz * sizeof( uint64_t ) );
             f.Read( tsz );
-            f.Skip( tsz * ( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) ) );
+            if( fileVer >= FileVersion( 0, 5, 2 ) )
+            {
+                f.Skip( tsz * ( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) ) );
+            }
+            else
+            {
+                f.Skip( tsz * ( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( int32_t ) + sizeof( LockEvent::thread ) ) );
+            }
         }
     }
 
@@ -734,10 +826,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             {
                 ReadTimelinePre042( f, td->timeline, CompressThread( tid ), tsz, fileVer );
             }
-            else if( fileVer <= FileVersion( 0, 5, 0 ) )
+            else if( fileVer <= FileVersion( 0, 5, 1 ) )
             {
                 int64_t refTime = 0;
-                ReadTimelinePre051( f, td->timeline, CompressThread( tid ), tsz, refTime, fileVer );
+                ReadTimelinePre052( f, td->timeline, CompressThread( tid ), tsz, refTime, fileVer );
             }
             else
             {
@@ -793,9 +885,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( tsz );
         if( tsz != 0 )
         {
-            if( fileVer <= FileVersion( 0, 4, 3 ) )
+            if( fileVer <= FileVersion( 0, 5, 1 ) )
             {
-                ReadTimelinePre044( f, ctx->timeline, tsz, refTime, refGpuTime, fileVer );
+                ReadTimelinePre052( f, ctx->timeline, tsz, refTime, refGpuTime, fileVer );
             }
             else
             {
@@ -1532,7 +1624,7 @@ const char* Worker::GetThreadString( uint64_t id ) const
     }
 }
 
-const SourceLocation& Worker::GetSourceLocation( int32_t srcloc ) const
+const SourceLocation& Worker::GetSourceLocation( int16_t srcloc ) const
 {
     if( srcloc < 0 )
     {
@@ -1617,9 +1709,9 @@ static bool strstr_nocase( const char* l, const char* r )
     return strstr( ll, rl ) != nullptr;
 }
 
-std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query, bool ignoreCase ) const
+std::vector<int16_t> Worker::GetMatchingSourceLocation( const char* query, bool ignoreCase ) const
 {
-    std::vector<int32_t> match;
+    std::vector<int16_t> match;
 
     const auto sz = m_data.sourceLocationExpand.size();
     for( size_t i=1; i<sz; i++ )
@@ -1639,7 +1731,7 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query, bool 
         }
         if( found )
         {
-            match.push_back( (int32_t)i );
+            match.push_back( (int16_t)i );
         }
     }
 
@@ -1659,7 +1751,7 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query, bool 
         {
             auto it = m_data.sourceLocationPayloadMap.find( srcloc );
             assert( it != m_data.sourceLocationPayloadMap.end() );
-            match.push_back( -int32_t( it->second + 1 ) );
+            match.push_back( -int16_t( it->second + 1 ) );
         }
     }
 
@@ -1667,7 +1759,7 @@ std::vector<int32_t> Worker::GetMatchingSourceLocation( const char* query, bool 
 }
 
 #ifndef TRACY_NO_STATISTICS
-const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int32_t srcloc ) const
+const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t srcloc ) const
 {
     static const SourceLocationZones empty;
     auto it = m_data.sourceLocationZones.find( srcloc );
@@ -1996,7 +2088,7 @@ void Worker::NewSourceLocation( uint64_t ptr )
     Query( ServerQuerySourceLocation, ptr );
 }
 
-uint32_t Worker::ShrinkSourceLocation( uint64_t srcloc )
+int16_t Worker::ShrinkSourceLocation( uint64_t srcloc )
 {
     auto it = m_sourceLocationShrink.find( srcloc );
     if( it != m_sourceLocationShrink.end() )
@@ -2009,9 +2101,10 @@ uint32_t Worker::ShrinkSourceLocation( uint64_t srcloc )
     }
 }
 
-uint32_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
+int16_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
 {
-    const auto sz = int32_t( m_data.sourceLocationExpand.size() );
+    assert( m_data.sourceLocationExpand.size() < std::numeric_limits<int16_t>::max() );
+    const auto sz = int16_t( m_data.sourceLocationExpand.size() );
     m_data.sourceLocationExpand.push_back( srcloc );
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZones.emplace( sz, SourceLocationZones() );
@@ -2241,17 +2334,17 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
         memcpy( slptr, &srcloc, sizeof( srcloc ) );
         uint32_t idx = m_data.sourceLocationPayload.size();
         m_data.sourceLocationPayloadMap.emplace( slptr, idx );
-        m_pendingSourceLocationPayload.emplace( ptr, -int32_t( idx + 1 ) );
+        m_pendingSourceLocationPayload.emplace( ptr, -int16_t( idx + 1 ) );
         m_data.sourceLocationPayload.push_back( slptr );
 #ifndef TRACY_NO_STATISTICS
-        m_data.sourceLocationZones.emplace( -int32_t( idx + 1 ), SourceLocationZones() );
+        m_data.sourceLocationZones.emplace( -int16_t( idx + 1 ), SourceLocationZones() );
 #else
-        m_data.sourceLocationZonesCnt.emplace( -int32_t( idx + 1 ), 0 );
+        m_data.sourceLocationZonesCnt.emplace( -int16_t( idx + 1 ), 0 );
 #endif
     }
     else
     {
-        m_pendingSourceLocationPayload.emplace( ptr, -int32_t( it->second + 1 ) );
+        m_pendingSourceLocationPayload.emplace( ptr, -int16_t( it->second + 1 ) );
     }
 }
 
@@ -3929,7 +4022,7 @@ void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     }
 }
 
-void Worker::ReadTimelinePre051( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre052( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer )
 {
     uint64_t sz;
     f.Read( sz );
@@ -3942,7 +4035,7 @@ void Worker::ReadTimelinePre051( FileRead& f, ZoneEvent* zone, uint16_t thread, 
         zone->child = m_data.zoneChildren.size();
         m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         Vector<ZoneEvent*> tmp;
-        ReadTimelinePre051( f, tmp, thread, sz, refTime, fileVer );
+        ReadTimelinePre052( f, tmp, thread, sz, refTime, fileVer );
         m_data.zoneChildren[zone->child] = std::move( tmp );
     }
 }
@@ -3965,7 +4058,7 @@ void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_
     }
 }
 
-void Worker::ReadTimelinePre044( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int fileVer )
+void Worker::ReadTimelinePre052( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int fileVer )
 {
     uint64_t sz;
     f.Read( sz );
@@ -3978,7 +4071,7 @@ void Worker::ReadTimelinePre044( FileRead& f, GpuEvent* zone, int64_t& refTime, 
         zone->child = m_data.gpuChildren.size();
         m_data.gpuChildren.push_back( Vector<GpuEvent*>() );
         Vector<GpuEvent*> tmp;
-        ReadTimelinePre044( f, tmp, sz, refTime, refGpuTime, fileVer );
+        ReadTimelinePre052( f, tmp, sz, refTime, refGpuTime, fileVer );
         m_data.gpuChildren[zone->child] = std::move( tmp );
     }
 }
@@ -4063,7 +4156,7 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec[i] = zone;
         f.Read( &zone->start, sizeof( zone->start ) + sizeof( zone->end ) + sizeof( zone->srcloc ) );
-        f.Skip( 2 );
+        f.Skip( 4 );
         f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         ReadTimelinePre042( f, zone, thread, fileVer );
 #ifdef TRACY_NO_STATISTICS
@@ -4072,9 +4165,9 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
     }
 }
 
-void Worker::ReadTimelinePre051( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre052( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer )
 {
-    assert( fileVer <= FileVersion( 0, 5, 0 ) );
+    assert( fileVer <= FileVersion( 0, 5, 1 ) );
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
     m_data.zonesCnt += size;
@@ -4089,12 +4182,20 @@ void Worker::ReadTimelinePre051( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         // Use zone->end as scratch buffer for zone start time offset.
-        f.Read( &zone->end, sizeof( zone->end ) + sizeof( zone->srcloc ) );
-        f.Skip( 2 );
+        f.Read( &zone->end, sizeof( zone->end ) );
+        f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
+        if( fileVer <= FileVersion( 0, 5, 0 ) )
+        {
+            f.Skip( 4 );
+        }
+        else
+        {
+            f.Skip( 2 );
+        }
         f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         refTime += zone->end;
         zone->start = refTime;
-        ReadTimelinePre051( f, zone, thread, refTime, fileVer );
+        ReadTimelinePre052( f, zone, thread, refTime, fileVer );
         zone->end = ReadTimeOffset( f, refTime );
 #ifdef TRACY_NO_STATISTICS
         ReadTimelineUpdateStatistics( zone, thread );
@@ -4134,7 +4235,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
     while( ++zone != zptr );
 }
 
-void Worker::ReadTimelinePre044( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer )
+void Worker::ReadTimelinePre052( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer )
 {
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
@@ -4147,7 +4248,10 @@ void Worker::ReadTimelinePre044( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
 
         if( fileVer <= FileVersion( 0, 4, 1 ) )
         {
-            f.Read( zone, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) + sizeof( GpuEvent::srcloc ) + sizeof( GpuEvent::callstack ) );
+            f.Read( zone, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) );
+            f.Read( zone->srcloc );
+            f.Skip( 2 );
+            f.Read( zone->callstack );
             uint64_t thread;
             f.Read( thread );
             if( thread == 0 )
@@ -4159,11 +4263,12 @@ void Worker::ReadTimelinePre044( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
                 zone->thread = CompressThread( thread );
             }
         }
-        else
+        else if( fileVer <= FileVersion( 0, 4, 3 ) )
         {
-            assert( fileVer <= FileVersion( 0, 4, 3 ) );
-
-            f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) + sizeof( zone->gpuEnd ) + sizeof( zone->srcloc ) + sizeof( zone->callstack ) );
+            f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) + sizeof( zone->gpuEnd ) );
+            f.Read( zone->srcloc );
+            f.Skip( 2 );
+            f.Read( zone->callstack );
             refTime += zone->gpuStart;
             refGpuTime += zone->gpuEnd;
             zone->cpuStart = refTime;
@@ -4180,10 +4285,23 @@ void Worker::ReadTimelinePre044( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
                 zone->thread = CompressThread( thread );
             }
         }
-        ReadTimelinePre044( f, zone, refTime, refGpuTime, fileVer );
+        else
+        {
+            // Use zone->gpuStart as scratch buffer for CPU zone start time offset.
+            // Use zone->gpuEnd as scratch buffer for GPU zone start time offset.
+            f.Read( &zone->gpuStart, sizeof( zone->gpuStart ) + sizeof( zone->gpuEnd ) );
+            f.Read( zone->srcloc );
+            f.Skip( 2 );
+            f.Read( zone->callstack );
+            f.Read( zone->thread );
+            refTime += zone->gpuStart;
+            refGpuTime += zone->gpuEnd;
+            zone->cpuStart = refTime;
+            zone->gpuStart = refGpuTime;
+        }
+        ReadTimelinePre052( f, zone, refTime, refGpuTime, fileVer );
         if( fileVer > FileVersion( 0, 4, 1 ) )
         {
-            assert( fileVer <= FileVersion( 0, 4, 3 ) );
             zone->cpuEnd = ReadTimeOffset( f, refTime );
             zone->gpuEnd = ReadTimeOffset( f, refGpuTime );
         }
@@ -4310,7 +4428,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.sourceLocationZones )
     {
-        int32_t id = v.first;
+        int16_t id = v.first;
         uint64_t cnt = v.second.zones.size();
         f.Write( &id, sizeof( id ) );
         f.Write( &cnt, sizeof( cnt ) );
@@ -4320,7 +4438,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.sourceLocationZonesCnt )
     {
-        int32_t id = v.first;
+        int16_t id = v.first;
         uint64_t cnt = v.second;
         f.Write( &id, sizeof( id ) );
         f.Write( &cnt, sizeof( cnt ) );

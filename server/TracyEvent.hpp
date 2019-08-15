@@ -2,6 +2,7 @@
 #define __TRACYEVENT_HPP__
 
 #include <limits>
+#include <stdint.h>
 #include <string.h>
 
 #include "TracyCharUtil.hpp"
@@ -76,7 +77,7 @@ struct ZoneEvent
 {
     int64_t start;
     int64_t end;
-    int32_t srcloc;
+    int16_t srcloc;
     StringIdx text;
     uint32_t callstack;
     StringIdx name;
@@ -102,7 +103,7 @@ struct LockEvent
     };
 
     int64_t time;
-    int32_t srcloc;
+    int16_t srcloc;
     uint8_t thread;
     Type type;
 };
@@ -135,7 +136,7 @@ struct GpuEvent
     int64_t cpuEnd;
     int64_t gpuStart;
     int64_t gpuEnd;
-    int32_t srcloc;
+    int16_t srcloc;
     uint32_t callstack;
     // All above is read/saved as-is.
 
@@ -276,7 +277,7 @@ struct LockMap
         int64_t end = std::numeric_limits<int64_t>::min();
     };
 
-    uint32_t srcloc;
+    int16_t srcloc;
     Vector<LockEventPtr> timeline;
     flat_hash_map<uint64_t, uint8_t, nohash<uint64_t>> threadMap;
     std::vector<uint64_t> threadList;

@@ -1386,9 +1386,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             auto& zones = v.second.zones;
 #ifdef MY_LIBCPP_SUCKS
-            pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
+            pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->Start() < rhs.zone->Start(); } );
 #else
-            std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->start < rhs.zone->start; } );
+            std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->Start() < rhs.zone->Start(); } );
 #endif
         }
         {
@@ -1623,7 +1623,7 @@ int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
     for(;;)
     {
         if( ptr->end >= 0 ) return ptr->end;
-        if( ptr->child < 0 ) return ptr->start;
+        if( ptr->child < 0 ) return ptr->Start();
         ptr = GetZoneChildren( ptr->child ).back();
     }
 }
@@ -1719,7 +1719,7 @@ const char* Worker::GetZoneName( const SourceLocation& srcloc ) const
 
 const char* Worker::GetZoneName( const ZoneEvent& ev ) const
 {
-    auto& srcloc = GetSourceLocation( ev.srcloc );
+    auto& srcloc = GetSourceLocation( ev.SrcLoc() );
     return GetZoneName( ev, srcloc );
 }
 
@@ -2249,11 +2249,11 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     m_data.zonesCnt++;
 
 #ifndef TRACY_NO_STATISTICS
-    auto it = m_data.sourceLocationZones.find( zone->srcloc );
+    auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
     assert( it != m_data.sourceLocationZones.end() );
     it->second.zones.push_back( ZoneThreadData { zone, CompressThread( thread ) } );
 #else
-    auto it = m_data.sourceLocationZonesCnt.find( zone->srcloc );
+    auto it = m_data.sourceLocationZonesCnt.find( zone->SrcLoc() );
     assert( it != m_data.sourceLocationZonesCnt.end() );
     it->second++;
 #endif
@@ -2879,13 +2879,14 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 {
     CheckSourceLocation( ev.srcloc );
 
-    zone->start = TscTime( ev.time - m_data.baseTime );
+    const auto start = TscTime( ev.time - m_data.baseTime );
+    zone->SetStart( start );
     zone->end = -1;
-    zone->srcloc = ShrinkSourceLocation( ev.srcloc );
+    zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
     zone->callstack = 0;
     zone->child = -1;
 
-    m_data.lastTime = std::max( m_data.lastTime, zone->start );
+    m_data.lastTime = std::max( m_data.lastTime, start );
 
     NewZone( zone, m_threadCtx );
 }
@@ -2911,13 +2912,14 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
     auto it = m_pendingSourceLocationPayload.find( ev.srcloc );
     assert( it != m_pendingSourceLocationPayload.end() );
 
-    zone->start = TscTime( ev.time - m_data.baseTime );
+    const auto start = TscTime( ev.time - m_data.baseTime );
+    zone->SetStart( start );
     zone->end = -1;
-    zone->srcloc = it->second;
+    zone->SetSrcLoc( it->second );
     zone->callstack = 0;
     zone->child = -1;
 
-    m_data.lastTime = std::max( m_data.lastTime, zone->start );
+    m_data.lastTime = std::max( m_data.lastTime, start );
 
     NewZone( zone, m_threadCtx );
 
@@ -2963,7 +2965,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto zone = stack.back_and_pop();
     assert( zone->end == -1 );
     zone->end = TscTime( ev.time - m_data.baseTime );
-    assert( zone->end >= zone->start );
+    assert( zone->end >= zone->Start() );
 
     m_data.lastTime = std::max( m_data.lastTime, zone->end );
 
@@ -2982,10 +2984,10 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     }
 
 #ifndef TRACY_NO_STATISTICS
-    auto timeSpan = zone->end - zone->start;
+    auto timeSpan = zone->end - zone->Start();
     if( timeSpan > 0 )
     {
-        auto it = m_data.sourceLocationZones.find( zone->srcloc );
+        auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
         assert( it != m_data.sourceLocationZones.end() );
         auto& slz = it->second;
         slz.min = std::min( slz.min, timeSpan );
@@ -2996,7 +2998,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         {
             for( auto& v : GetZoneChildren( zone->child ) )
             {
-                const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
+                const auto childSpan = std::max( int64_t( 0 ), v->end - v->Start() );
                 timeSpan -= childSpan;
             }
         }
@@ -3011,7 +3013,7 @@ void Worker::ZoneStackFailure( uint64_t thread, const ZoneEvent* ev )
 {
     m_failure = Failure::ZoneStack;
     m_failureData.thread = thread;
-    m_failureData.srcloc = ev->srcloc;
+    m_failureData.srcloc = ev->SrcLoc();
 }
 
 void Worker::ZoneEndFailure( uint64_t thread )
@@ -4147,7 +4149,7 @@ void Worker::ReadTimelinePre052( FileRead& f, GpuEvent* zone, int64_t& refTime, 
 void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
 {
 #ifndef TRACY_NO_STATISTICS
-    auto it = m_data.sourceLocationZones.find( zone->srcloc );
+    auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
     assert( it != m_data.sourceLocationZones.end() );
     auto& slz = it->second;
     auto& ztd = slz.zones.push_next();
@@ -4156,7 +4158,7 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
 
     if( zone->end >= 0 )
     {
-        auto timeSpan = zone->end - zone->start;
+        auto timeSpan = zone->end - zone->Start();
         if( timeSpan > 0 )
         {
             slz.min = std::min( slz.min, timeSpan );
@@ -4167,7 +4169,7 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
             {
                 for( auto& v : GetZoneChildren( zone->child ) )
                 {
-                    const auto childSpan = std::max( int64_t( 0 ), v->end - v->start );
+                    const auto childSpan = std::max( int64_t( 0 ), v->end - v->Start() );
                     timeSpan -= childSpan;
                 }
             }
@@ -4177,7 +4179,7 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
         }
     }
 #else
-    auto it = m_data.sourceLocationZonesCnt.find( zone->srcloc );
+    auto it = m_data.sourceLocationZonesCnt.find( zone->SrcLoc() );
     assert( it != m_data.sourceLocationZonesCnt.end() );
     it->second++;
 #endif
@@ -4198,10 +4200,13 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
     do
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
+        uint16_t srcloc;
+        f.Read( srcloc );
+        zone->SetSrcLoc( srcloc );
         // Use zone->end as scratch buffer for zone start time offset.
-        f.Read( &zone->end, sizeof( zone->end ) + sizeof( zone->srcloc ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
+        f.Read( &zone->end, sizeof( zone->end ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         refTime += zone->end;
-        zone->start = refTime;
+        zone->SetStart( refTime );
         ReadTimeline( f, zone, thread, refTime );
         zone->end = ReadTimeOffset( f, refTime );
 #ifdef TRACY_NO_STATISTICS
@@ -4223,9 +4228,15 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec[i] = zone;
-        f.Read( &zone->start, sizeof( zone->start ) + sizeof( zone->end ) + sizeof( zone->srcloc ) );
-        zone->start -= m_data.baseTime;
+        int64_t start;
+        f.Read( start );
+        start -= m_data.baseTime;
+        zone->SetStart( start );
+        f.Read( zone->end );
         zone->end -= m_data.baseTime;
+        int16_t srcloc;
+        f.Read( srcloc );
+        zone->SetSrcLoc( srcloc );
         f.Skip( 4 );
         f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         ReadTimelinePre042( f, zone, thread, fileVer );
@@ -4253,7 +4264,9 @@ void Worker::ReadTimelinePre052( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         // Use zone->end as scratch buffer for zone start time offset.
         f.Read( &zone->end, sizeof( zone->end ) );
-        f.Read( &zone->srcloc, sizeof( zone->srcloc ) );
+        int16_t srcloc;
+        f.Read( srcloc );
+        zone->SetSrcLoc( srcloc );
         if( fileVer <= FileVersion( 0, 5, 0 ) )
         {
             f.Skip( 4 );
@@ -4264,7 +4277,7 @@ void Worker::ReadTimelinePre052( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         }
         f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         refTime += zone->end;
-        zone->start = refTime;
+        zone->SetStart( refTime );
         ReadTimelinePre052( f, zone, thread, refTime, fileVer );
         zone->end = ReadTimeOffset( f, refTime );
 #ifdef TRACY_NO_STATISTICS
@@ -4710,8 +4723,10 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t
 
     for( auto& v : vec )
     {
-        WriteTimeOffset( f, refTime, v->start );
-        f.Write( &v->srcloc, sizeof( v->srcloc ) );
+        int16_t srcloc = v->SrcLoc();
+        f.Write( &srcloc, sizeof( srcloc ) );
+        int64_t start = v->Start();
+        WriteTimeOffset( f, refTime, start );
         f.Write( &v->text, sizeof( v->text ) );
         f.Write( &v->callstack, sizeof( v->callstack ) );
         f.Write( &v->name, sizeof( v->name ) );

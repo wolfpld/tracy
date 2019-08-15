@@ -1,6 +1,7 @@
 #ifndef __TRACYEVENT_HPP__
 #define __TRACYEVENT_HPP__
 
+#include <assert.h>
 #include <limits>
 #include <stdint.h>
 #include <string.h>
@@ -75,9 +76,26 @@ enum { SourceLocationSize = sizeof( SourceLocation ) };
 
 struct ZoneEvent
 {
-    int64_t start;
+    int64_t Start() const
+    {
+        return int64_t( _start_srcloc ) >> 16;
+    }
+    void SetStart( int64_t start )
+    {
+        assert( start < ( 1ll << 47 ) );
+        _start_srcloc = ( _start_srcloc & 0xFFFF ) | ( start << 16 );
+    }
+    int16_t SrcLoc() const
+    {
+        return int16_t( _start_srcloc & 0xFFFF );
+    }
+    void SetSrcLoc( int16_t srcloc )
+    {
+        _start_srcloc = ( _start_srcloc & 0xFFFFFFFFFFFF0000 ) | srcloc;
+    }
+
+    uint64_t _start_srcloc;
     int64_t end;
-    int16_t srcloc;
     StringIdx text;
     uint32_t callstack;
     StringIdx name;

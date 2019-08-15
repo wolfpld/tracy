@@ -425,6 +425,31 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     m_data.framesBase = m_data.frames.Data()[0];
     assert( m_data.framesBase->name == 0 );
 
+    if( fileVer < FileVersion( 0, 5, 2 ) )
+    {
+        m_data.baseTime = m_data.framesBase->frames[0].start;
+        m_data.lastTime -= m_data.baseTime;
+        if( m_data.crashEvent.time != 0 ) m_data.crashEvent.time -= m_data.baseTime;
+        for( auto& fd : m_data.frames.Data() )
+        {
+            if( fd->continuous )
+            {
+                for( auto& fe : fd->frames )
+                {
+                    fe.start -= m_data.baseTime;
+                }
+            }
+            else
+            {
+                for( auto& fe : fd->frames )
+                {
+                    fe.start -= m_data.baseTime;
+                    fe.end -= m_data.baseTime;
+                }
+            }
+        }
+    }
+
     flat_hash_map<uint64_t, const char*, nohash<uint64_t>> pointerMap;
 
     f.Read( sz );
@@ -588,9 +613,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( lockmap.type );
             f.Read( lockmap.valid );
             lockmap.isContended = false;
-            if( fileVer >= FileVersion( 0, 4, 1 ) )
+            if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
                 f.Read2( lockmap.timeAnnounce, lockmap.timeTerminate );
+            }
+            else if( fileVer >= FileVersion( 0, 4, 1 ) )
+            {
+                f.Read2( lockmap.timeAnnounce, lockmap.timeTerminate );
+                lockmap.timeAnnounce -= m_data.baseTime;
+                lockmap.timeTerminate -= m_data.baseTime;
             }
             else
             {
@@ -673,6 +704,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
                         f.Read( lev->time );
+                        lev->time -= m_data.baseTime;
                         int32_t srcloc;
                         f.Read( srcloc );
                         lev->srcloc = int16_t( srcloc );
@@ -687,6 +719,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
                         f.Read( lev->time );
+                        lev->time -= m_data.baseTime;
                         int32_t srcloc;
                         f.Read( srcloc );
                         lev->srcloc = int16_t( srcloc );
@@ -741,7 +774,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     if( eventMask & EventType::Messages )
     {
         m_data.messages.reserve_exact( sz, m_slab );
-        if( fileVer >= FileVersion( 0, 4, 8 ) )
+        if( fileVer >= FileVersion( 0, 5, 2 ) )
         {
             int64_t refTime = 0;
             for( uint64_t i=0; i<sz; i++ )
@@ -756,9 +789,24 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 msgMap.emplace( ptr, msgdata );
             }
         }
+        else if( fileVer >= FileVersion( 0, 4, 8 ) )
+        {
+            int64_t refTime = -m_data.baseTime;
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint64_t ptr;
+                f.Read( ptr );
+                auto msgdata = m_slab.Alloc<MessageData>();
+                msgdata->time = ReadTimeOffset( f, refTime );
+                f.Read( msgdata->ref );
+                f.Read( msgdata->color );
+                m_data.messages[i] = msgdata;
+                msgMap.emplace( ptr, msgdata );
+            }
+        }
         else if( fileVer >= FileVersion( 0, 4, 2 ) )
         {
-            int64_t refTime = 0;
+            int64_t refTime = -m_data.baseTime;
             for( uint64_t i=0; i<sz; i++ )
             {
                 uint64_t ptr;
@@ -779,6 +827,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 f.Read( ptr );
                 auto msgdata = m_slab.Alloc<MessageData>();
                 f.Read( msgdata, sizeof( MessageData::time ) + sizeof( MessageData::ref ) );
+                msgdata->time -= m_data.baseTime;
                 msgdata->color = 0xFFFFFFFF;
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
@@ -828,7 +877,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             }
             else if( fileVer <= FileVersion( 0, 5, 1 ) )
             {
-                int64_t refTime = 0;
+                int64_t refTime = -m_data.baseTime;
                 ReadTimelinePre052( f, td->timeline, CompressThread( tid ), tsz, refTime, fileVer );
             }
             else
@@ -887,11 +936,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             if( fileVer <= FileVersion( 0, 5, 1 ) )
             {
+                refTime = -m_data.baseTime;
+                refGpuTime = -m_data.baseTime;
                 ReadTimelinePre052( f, ctx->timeline, tsz, refTime, refGpuTime, fileVer );
             }
             else
             {
-
                 ReadTimeline( f, ctx->timeline, tsz, refTime, refGpuTime );
             }
         }
@@ -922,9 +972,18 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             uint64_t psz;
             f.Read( psz );
             pd->data.reserve_exact( psz, m_slab );
-            if( fileVer >= FileVersion( 0, 4, 2 ) )
+            if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
                 int64_t refTime = 0;
+                for( uint64_t j=0; j<psz; j++ )
+                {
+                    pd->data[j].time = ReadTimeOffset( f, refTime );
+                    f.Read( pd->data[j].val );
+                }
+            }
+            else if( fileVer >= FileVersion( 0, 4, 2 ) )
+            {
+                int64_t refTime = -m_data.baseTime;
                 for( uint64_t j=0; j<psz; j++ )
                 {
                     pd->data[j].time = ReadTimeOffset( f, refTime );
@@ -934,6 +993,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             else
             {
                 f.Read( pd->data.data(), psz * sizeof( PlotItem ) );
+                for( uint64_t j=0; j<psz; j++ )
+                {
+                    pd->data[j].time -= m_data.baseTime;
+                }
             }
             m_data.plots.Data().push_back_no_space_check( pd );
         }
@@ -972,6 +1035,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
         size_t fidx = 0;
         int64_t refTime = 0;
+        if( fileVer <= FileVersion( 0, 5, 2 ) ) refTime = -m_data.baseTime;
         if( fileVer >= FileVersion( 0, 4, 4 ) )
         {
             auto& frees = m_data.memory.frees;
@@ -1010,6 +1074,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 else
                 {
                     f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+                    mem->timeAlloc -= m_data.baseTime;
+                    mem->timeFree -= m_data.baseTime;
                 }
 
                 uint64_t t0, t1;
@@ -1255,6 +1321,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 data->v.reserve_exact( csz, m_slab );
                 int64_t runningTime = 0;
                 int64_t refTime = 0;
+                if( fileVer <= FileVersion( 0, 5, 2 ) ) refTime = -m_data.baseTime;
                 auto ptr = data->v.data();
                 for( uint64_t j=0; j<csz; j++ )
                 {
@@ -4157,6 +4224,8 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         auto zone = m_slab.Alloc<ZoneEvent>();
         vec[i] = zone;
         f.Read( &zone->start, sizeof( zone->start ) + sizeof( zone->end ) + sizeof( zone->srcloc ) );
+        zone->start -= m_data.baseTime;
+        zone->end -= m_data.baseTime;
         f.Skip( 4 );
         f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         ReadTimelinePre042( f, zone, thread, fileVer );
@@ -4250,6 +4319,10 @@ void Worker::ReadTimelinePre052( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
         if( fileVer <= FileVersion( 0, 4, 1 ) )
         {
             f.Read( zone, sizeof( GpuEvent::cpuStart ) + sizeof( GpuEvent::cpuEnd ) + sizeof( GpuEvent::gpuStart ) + sizeof( GpuEvent::gpuEnd ) );
+            zone->cpuStart -= m_data.baseTime;
+            if( zone->cpuEnd >= 0 ) zone->cpuEnd -= m_data.baseTime;
+            if( zone->gpuStart != std::numeric_limits<int64_t>::max() ) zone->gpuStart -= m_data.baseTime;
+            if( zone->gpuEnd >= 0 ) zone->gpuEnd -= m_data.baseTime;
             f.Read( zone->srcloc );
             f.Skip( 2 );
             f.Read( zone->callstack );

@@ -1074,7 +1074,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
         else if( fileVer >= FileVersion( 0, 4, 4 ) )
         {
-            refTime = -m_data.baseTime;
             auto& frees = m_data.memory.frees;
             auto& active = m_data.memory.active;
 
@@ -1088,10 +1087,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 uint16_t threadAlloc, threadFree;
                 f.Read2( threadAlloc, threadFree );
                 refTime += timeAlloc;
-                mem->SetTimeAlloc( refTime );
+                mem->SetTimeAlloc( refTime - m_data.baseTime );
                 if( timeFree >= 0 )
                 {
-                    mem->SetTimeFree( timeFree + refTime );
+                    mem->SetTimeFree( timeFree + refTime - m_data.baseTime );
                     frees[fidx++] = i;
                 }
                 else
@@ -1106,7 +1105,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
         else
         {
-            refTime = -m_data.baseTime;
             for( uint64_t i=0; i<sz; i++ )
             {
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
@@ -1116,13 +1114,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     int64_t timeAlloc, timeFree;
                     f.Read2( timeAlloc, timeFree );
                     f.Read( &mem->csAlloc, sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
-                    uint16_t threadAlloc, threadFree;
-                    f.Read2( threadAlloc, threadFree );
                     refTime += timeAlloc;
-                    mem->SetTimeAlloc( refTime );
+                    mem->SetTimeAlloc( refTime - m_data.baseTime );
                     if( timeFree >= 0 )
                     {
-                        mem->SetTimeFree( timeFree + refTime );
+                        mem->SetTimeFree( timeFree + refTime - m_data.baseTime );
                     }
                     else
                     {
@@ -1135,8 +1131,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     int64_t timeAlloc, timeFree;
                     f.Read2( timeAlloc, timeFree );
                     f.Read( &mem->csAlloc, sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
-                    uint16_t threadAlloc, threadFree;
-                    f.Read2( threadAlloc, threadFree );
                     mem->SetTimeAlloc( timeAlloc - m_data.baseTime );
                     if( timeFree >= 0 )
                     {

@@ -378,7 +378,6 @@ public:
 
     const char* PackFrameImage( const char* image, uint16_t w, uint16_t h, uint32_t& csz );
     const char* UnpackFrameImage( const FrameImage& image );
-    bool HasEtc1FrameImages() const;
 
 private:
     void Exec();

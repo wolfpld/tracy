@@ -25,11 +25,11 @@ void FreeTexture( void* _tex )
     glDeleteTextures( 1, &tex );
 }
 
-void UpdateTexture( void* _tex, const char* data, int w, int h, bool etc )
+void UpdateTexture( void* _tex, const char* data, int w, int h )
 {
     auto tex = (GLuint)(intptr_t)_tex;
     glBindTexture( GL_TEXTURE_2D, tex );
-    glCompressedTexImage2D( GL_TEXTURE_2D, 0, etc ? GL_COMPRESSED_RGB8_ETC2 : COMPRESSED_RGB_S3TC_DXT1_EXT, w, h, 0, w * h / 2, data );
+    glCompressedTexImage2D( GL_TEXTURE_2D, 0, COMPRESSED_RGB_S3TC_DXT1_EXT, w, h, 0, w * h / 2, data );
 }
 
 }

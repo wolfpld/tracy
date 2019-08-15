@@ -6,7 +6,7 @@ namespace tracy
 
 void* MakeTexture();
 void FreeTexture( void* tex );
-void UpdateTexture( void* tex, const char* data, int w, int h, bool etc );
+void UpdateTexture( void* tex, const char* data, int w, int h );
 
 }
 

@@ -155,14 +155,21 @@ static_assert( std::is_standard_layout<GpuEvent>::value, "GpuEvent is not standa
 
 struct MemEvent
 {
+    int64_t TimeAlloc() const { return int64_t( _time_thread_alloc ) >> 16; }
+    void SetTimeAlloc( int64_t time ) { assert( time < ( 1ll << 47 ) ); _time_thread_alloc = ( _time_thread_alloc & 0xFFFF ) | uint64_t( time << 16 ); }
+    int64_t TimeFree() const { return int64_t( _time_thread_free ) >> 16; }
+    void SetTimeFree( int64_t time ) { assert( time < ( 1ll << 47 ) ); _time_thread_free = ( _time_thread_free & 0xFFFF ) | uint64_t( time << 16 ); }
+    uint16_t ThreadAlloc() const { return uint16_t( _time_thread_alloc ); }
+    void SetThreadAlloc( uint16_t thread ) { _time_thread_alloc = ( _time_thread_alloc & 0xFFFFFFFFFFFF0000 ) | thread; }
+    uint16_t ThreadFree() const { return uint16_t( _time_thread_free ); }
+    void SetThreadFree( uint16_t thread ) { _time_thread_free = ( _time_thread_free & 0xFFFFFFFFFFFF0000 ) | thread; }
+
     uint64_t ptr;
     uint64_t size;
-    int64_t timeAlloc;
-    int64_t timeFree;
     uint32_t csAlloc;
     uint32_t csFree;
-    uint16_t threadAlloc;
-    uint16_t threadFree;
+    uint64_t _time_thread_alloc;
+    uint64_t _time_thread_free;
 };
 
 enum { MemEventSize = sizeof( MemEvent ) };

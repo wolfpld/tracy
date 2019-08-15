@@ -3979,8 +3979,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     {
                         const auto& ev = mem.data[m_memoryAllocInfoWindow];
 
-                        const auto tStart = ev.timeAlloc;
-                        const auto tEnd = ev.timeFree < 0 ? m_worker.GetLastTime() : ev.timeFree;
+                        const auto tStart = ev.TimeAlloc();
+                        const auto tEnd = ev.TimeFree() < 0 ? m_worker.GetLastTime() : ev.TimeFree();
 
                         const auto px0 = ( tStart - m_zvStart ) * pxns;
                         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_zvStart ) * pxns );
@@ -3991,8 +3991,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     {
                         const auto& ev = mem.data[m_memoryAllocHover];
 
-                        const auto tStart = ev.timeAlloc;
-                        const auto tEnd = ev.timeFree < 0 ? m_worker.GetLastTime() : ev.timeFree;
+                        const auto tStart = ev.TimeAlloc();
+                        const auto tEnd = ev.TimeFree() < 0 ? m_worker.GetLastTime() : ev.TimeFree();
 
                         const auto px0 = ( tStart - m_zvStart ) * pxns;
                         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_zvStart ) * pxns );
@@ -4286,8 +4286,8 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                 const MemEvent* ev = nullptr;
                 if( change > 0 )
                 {
-                    auto it = std::lower_bound( mem.data.begin(), mem.data.end(), item->time, [] ( const auto& lhs, const auto& rhs ) { return lhs.timeAlloc < rhs; } );
-                    if( it != mem.data.end() && it->timeAlloc == item->time )
+                    auto it = std::lower_bound( mem.data.begin(), mem.data.end(), item->time, [] ( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+                    if( it != mem.data.end() && it->TimeAlloc() == item->time )
                     {
                         ev = it;
                     }
@@ -4295,8 +4295,8 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                 else
                 {
                     const auto& data = mem.data;
-                    auto it = std::lower_bound( mem.frees.begin(), mem.frees.end(), item->time, [&data] ( const auto& lhs, const auto& rhs ) { return data[lhs].timeFree < rhs; } );
-                    if( it != mem.frees.end() && data[*it].timeFree == item->time )
+                    auto it = std::lower_bound( mem.frees.begin(), mem.frees.end(), item->time, [&data] ( const auto& lhs, const auto& rhs ) { return data[lhs].TimeFree() < rhs; } );
+                    if( it != mem.frees.end() && data[*it].TimeFree() == item->time )
                     {
                         ev = &data[*it];
                     }
@@ -4307,34 +4307,34 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     TextDisabledUnformatted( "Address:" );
                     ImGui::SameLine();
                     ImGui::Text( "0x%" PRIx64, ev->ptr );
-                    TextFocused( "Appeared at", TimeToString( ev->timeAlloc ) );
+                    TextFocused( "Appeared at", TimeToString( ev->TimeAlloc() ) );
                     if( change > 0 )
                     {
                         ImGui::SameLine();
                         ImGui::TextDisabled( "(this event)" );
                     }
-                    if( ev->timeFree < 0 )
+                    if( ev->TimeFree() < 0 )
                     {
                         ImGui::TextUnformatted( "Allocation still active" );
                     }
                     else
                     {
-                        TextFocused( "Freed at", TimeToString( ev->timeFree ) );
+                        TextFocused( "Freed at", TimeToString( ev->TimeFree() ) );
                         if( change < 0 )
                         {
                             ImGui::SameLine();
                             TextDisabledUnformatted( "(this event)" );
                         }
-                        TextFocused( "Duration:", TimeToString( ev->timeFree - ev->timeAlloc ) );
+                        TextFocused( "Duration:", TimeToString( ev->TimeFree() - ev->TimeAlloc() ) );
                     }
                     uint64_t tid;
                     if( change > 0 )
                     {
-                        tid = m_worker.DecompressThread( ev->threadAlloc );
+                        tid = m_worker.DecompressThread( ev->ThreadAlloc() );
                     }
                     else
                     {
-                        tid = m_worker.DecompressThread( ev->threadFree );
+                        tid = m_worker.DecompressThread( ev->ThreadFree() );
                     }
                     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
                     ImGui::SameLine();
@@ -4852,11 +4852,12 @@ void View::DrawZoneInfoWindow()
         {
             const auto thread = m_worker.CompressThread( tid );
 
-            auto ait = std::lower_bound( mem.data.begin(), mem.data.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.timeAlloc < r; } );
-            const auto aend = std::upper_bound( mem.data.begin(), mem.data.end(), end, [] ( const auto& l, const auto& r ) { return l < r.timeAlloc; } );
+            // TODO: use ait, fit as begin for aend, fend search
+            auto ait = std::lower_bound( mem.data.begin(), mem.data.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return l.TimeAlloc() < r; } );
+            const auto aend = std::upper_bound( mem.data.begin(), mem.data.end(), end, [] ( const auto& l, const auto& r ) { return l < r.TimeAlloc(); } );
 
-            auto fit = std::lower_bound( mem.frees.begin(), mem.frees.end(), ev.Start(), [&mem] ( const auto& l, const auto& r ) { return mem.data[l].timeFree < r; } );
-            const auto fend = std::upper_bound( mem.frees.begin(), mem.frees.end(), end, [&mem] ( const auto& l, const auto& r ) { return l < mem.data[r].timeFree; } );
+            auto fit = std::lower_bound( mem.frees.begin(), mem.frees.end(), ev.Start(), [&mem] ( const auto& l, const auto& r ) { return mem.data[l].TimeFree() < r; } );
+            const auto fend = std::upper_bound( mem.frees.begin(), mem.frees.end(), end, [&mem] ( const auto& l, const auto& r ) { return l < mem.data[r].TimeFree(); } );
 
             const auto aDist = std::distance( ait, aend );
             const auto fDist = std::distance( fit, fend );
@@ -4876,7 +4877,7 @@ void View::DrawZoneInfoWindow()
 
                 while( ait != aend )
                 {
-                    if( ait->threadAlloc == thread )
+                    if( ait->ThreadAlloc() == thread )
                     {
                         cAlloc += ait->size;
                         nAlloc++;
@@ -4885,7 +4886,7 @@ void View::DrawZoneInfoWindow()
                 }
                 while( fit != fend )
                 {
-                    if( mem.data[*fit].threadFree == thread )
+                    if( mem.data[*fit].ThreadFree() == thread )
                     {
                         cFree += mem.data[*fit].size;
                         nFree++;
@@ -4923,7 +4924,7 @@ void View::DrawZoneInfoWindow()
                         auto it = ait2;
                         while( it != aend )
                         {
-                            if( it->threadAlloc == thread )
+                            if( it->ThreadAlloc() == thread )
                             {
                                 v.emplace_back( it );
                             }
@@ -4932,7 +4933,7 @@ void View::DrawZoneInfoWindow()
                         while( fit2 != fend )
                         {
                             const auto ptr = &mem.data[*fit2++];
-                            if( ptr->threadFree == thread )
+                            if( ptr->ThreadFree() == thread )
                             {
                                 if( ptr < ait2 || ptr >= aend )
                                 {
@@ -4940,7 +4941,7 @@ void View::DrawZoneInfoWindow()
                                 }
                             }
                         }
-                        pdqsort_branchless( v.begin(), v.end(), [] ( const auto& l, const auto& r ) { return l->timeAlloc < r->timeAlloc; } );
+                        pdqsort_branchless( v.begin(), v.end(), [] ( const auto& l, const auto& r ) { return l->TimeAlloc() < r->TimeAlloc(); } );
 
                         ListMemData<decltype( v.begin() )>( v.begin(), v.end(), []( auto& v ) {
                             ImGui::Text( "0x%" PRIx64, (*v)->ptr );
@@ -8976,8 +8977,8 @@ void View::DrawMemoryAllocWindow()
 
     const auto& mem = m_worker.GetMemData();
     const auto& ev = mem.data[m_memoryAllocInfoWindow];
-    const auto tidAlloc = m_worker.DecompressThread( ev.threadAlloc );
-    const auto tidFree = m_worker.DecompressThread( ev.threadFree );
+    const auto tidAlloc = m_worker.DecompressThread( ev.ThreadAlloc() );
+    const auto tidFree = m_worker.DecompressThread( ev.ThreadFree() );
     int idx = 0;
 
 #ifdef TRACY_EXTENDED_FONT
@@ -8986,7 +8987,7 @@ void View::DrawMemoryAllocWindow()
     if( ImGui::Button( "Zoom to allocation" ) )
 #endif
     {
-        ZoomToRange( ev.timeAlloc, ev.timeFree >= 0 ? ev.timeFree : m_worker.GetLastTime() );
+        ZoomToRange( ev.TimeAlloc(), ev.TimeFree() >= 0 ? ev.TimeFree() : m_worker.GetLastTime() );
     }
 
     char buf[64];
@@ -8999,8 +9000,8 @@ void View::DrawMemoryAllocWindow()
         ImGui::TextDisabled( "(%s bytes)", RealToString( ev.size, true ) );
     }
     ImGui::Separator();
-    TextFocused( "Appeared at", TimeToString( ev.timeAlloc ) );
-    if( ImGui::IsItemClicked() ) CenterAtTime( ev.timeAlloc );
+    TextFocused( "Appeared at", TimeToString( ev.TimeAlloc() ) );
+    if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeAlloc() );
     ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadString( tidAlloc ) );
     ImGui::SameLine();
@@ -9010,14 +9011,14 @@ void View::DrawMemoryAllocWindow()
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
         SmallCallstackButton( "Call stack", ev.csAlloc, idx );
     }
-    if( ev.timeFree < 0 )
+    if( ev.TimeFree() < 0 )
     {
         TextDisabledUnformatted( "Allocation still active" );
     }
     else
     {
-        TextFocused( "Freed at", TimeToString( ev.timeFree ) );
-        if( ImGui::IsItemClicked() ) CenterAtTime( ev.timeFree );
+        TextFocused( "Freed at", TimeToString( ev.TimeFree() ) );
+        if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeFree() );
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
         TextFocused( "Thread:", m_worker.GetThreadString( tidFree ) );
         ImGui::SameLine();
@@ -9027,12 +9028,12 @@ void View::DrawMemoryAllocWindow()
             ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
             SmallCallstackButton( "Call stack", ev.csFree, idx );
         }
-        TextFocused( "Duration:", TimeToString( ev.timeFree - ev.timeAlloc ) );
+        TextFocused( "Duration:", TimeToString( ev.TimeFree() - ev.TimeAlloc() ) );
     }
 
     ImGui::Separator();
 
-    auto zoneAlloc = FindZoneAtTime( tidAlloc, ev.timeAlloc );
+    auto zoneAlloc = FindZoneAtTime( tidAlloc, ev.TimeAlloc() );
     if( zoneAlloc )
     {
         const auto& srcloc = m_worker.GetSourceLocation( zoneAlloc->SrcLoc() );
@@ -9056,9 +9057,9 @@ void View::DrawMemoryAllocWindow()
         }
     }
 
-    if( ev.timeFree >= 0 )
+    if( ev.TimeFree() >= 0 )
     {
-        auto zoneFree = FindZoneAtTime( tidFree, ev.timeFree );
+        auto zoneFree = FindZoneAtTime( tidFree, ev.TimeFree() );
         if( zoneFree )
         {
             const auto& srcloc = m_worker.GetSourceLocation( zoneFree->SrcLoc() );
@@ -10166,7 +10167,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         }
         if( ImGui::IsItemClicked( 2 ) )
         {
-            ZoomToRange( v->timeAlloc, v->timeFree >= 0 ? v->timeFree : m_worker.GetLastTime() );
+            ZoomToRange( v->TimeAlloc(), v->TimeFree() >= 0 ? v->TimeFree() : m_worker.GetLastTime() );
         }
         if( ImGui::IsItemHovered() )
         {
@@ -10177,38 +10178,38 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         ImGui::TextUnformatted( MemSizeToString( v->size ) );
         ImGui::NextColumn();
         ImGui::PushID( idx++ );
-        if( ImGui::Selectable( TimeToString( v->timeAlloc - startTime ) ) )
+        if( ImGui::Selectable( TimeToString( v->TimeAlloc() - startTime ) ) )
         {
-            CenterAtTime( v->timeAlloc );
+            CenterAtTime( v->TimeAlloc() );
         }
         ImGui::PopID();
         ImGui::NextColumn();
-        if( v->timeFree < 0 )
+        if( v->TimeFree() < 0 )
         {
-            TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
+            TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), TimeToString( m_worker.GetLastTime() - v->TimeAlloc() ) );
             ImGui::NextColumn();
-            ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+            ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->ThreadAlloc() ) ) );
         }
         else
         {
             ImGui::PushID( idx++ );
-            if( ImGui::Selectable( TimeToString( v->timeFree - v->timeAlloc ) ) )
+            if( ImGui::Selectable( TimeToString( v->TimeFree() - v->TimeAlloc() ) ) )
             {
-                CenterAtTime( v->timeFree );
+                CenterAtTime( v->TimeFree() );
             }
             ImGui::PopID();
             ImGui::NextColumn();
-            if( v->threadAlloc == v->threadFree )
+            if( v->ThreadAlloc() == v->ThreadFree() )
             {
-                ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
+                ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->ThreadAlloc() ) ) );
             }
             else
             {
-                ImGui::Text( "%s / %s", m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ), m_worker.GetThreadString( m_worker.DecompressThread( v->threadFree ) ) );
+                ImGui::Text( "%s / %s", m_worker.GetThreadString( m_worker.DecompressThread( v->ThreadAlloc() ) ), m_worker.GetThreadString( m_worker.DecompressThread( v->ThreadFree() ) ) );
             }
         }
         ImGui::NextColumn();
-        auto zone = FindZoneAtTime( m_worker.DecompressThread( v->threadAlloc ), v->timeAlloc );
+        auto zone = FindZoneAtTime( m_worker.DecompressThread( v->ThreadAlloc() ), v->TimeAlloc() );
         if( !zone )
         {
             ImGui::TextUnformatted( "-" );
@@ -10236,13 +10237,13 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             }
         }
         ImGui::NextColumn();
-        if( v->timeFree < 0 )
+        if( v->TimeFree() < 0 )
         {
             TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "active" );
         }
         else
         {
-            auto zoneFree = FindZoneAtTime( m_worker.DecompressThread( v->threadFree ), v->timeFree );
+            auto zoneFree = FindZoneAtTime( m_worker.DecompressThread( v->ThreadFree() ), v->TimeFree() );
             if( !zoneFree )
             {
                 ImGui::TextUnformatted( "-" );
@@ -10343,8 +10344,8 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
         for( auto& ev : mem.data )
         {
             if( ev.csAlloc == 0 ) continue;
-            if( ev.timeAlloc >= zvMid ) continue;
-            if( onlyActive && ev.timeFree >= 0 && ev.timeFree < zvMid ) continue;
+            if( ev.TimeAlloc() >= zvMid ) continue;
+            if( onlyActive && ev.TimeFree() >= 0 && ev.TimeFree() < zvMid ) continue;
 
             auto it = pathSum.find( ev.csAlloc );
             if( it == pathSum.end() )
@@ -10363,7 +10364,7 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
         for( auto& ev : mem.data )
         {
             if( ev.csAlloc == 0 ) continue;
-            if( onlyActive && ev.timeFree >= 0 ) continue;
+            if( onlyActive && ev.TimeFree() >= 0 ) continue;
 
             auto it = pathSum.find( ev.csAlloc );
             if( it == pathSum.end() )
@@ -10589,18 +10590,18 @@ std::vector<MemoryPage> View::GetMemoryPages() const
     if( m_memInfo.restrictTime )
     {
         const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
-        auto end = std::upper_bound( mem.data.begin(), mem.data.end(), zvMid, []( const auto& lhs, const auto& rhs ) { return lhs < rhs.timeAlloc; } );
+        auto end = std::upper_bound( mem.data.begin(), mem.data.end(), zvMid, []( const auto& lhs, const auto& rhs ) { return lhs < rhs.TimeAlloc(); } );
         for( auto it = mem.data.begin(); it != end; ++it )
         {
             auto& alloc = *it;
 
             const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;
-            int8_t val = alloc.timeFree < 0 ?
-                int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
-                ( alloc.timeFree > zvMid ?
-                    int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeAlloc ) >> 24 ) ) ) :
-                    int8_t( -std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.timeFree ) >> 24 ) ) ) );
+            int8_t val = alloc.TimeFree() < 0 ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.TimeAlloc() ) >> 24 ) ) ) :
+                ( alloc.TimeFree() > zvMid ?
+                    int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.TimeAlloc() ) >> 24 ) ) ) :
+                    int8_t( -std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.TimeFree() ) >> 24 ) ) ) );
 
             const auto c0 = a0 >> ChunkBits;
             const auto c1 = a1 >> ChunkBits;
@@ -10615,9 +10616,9 @@ std::vector<MemoryPage> View::GetMemoryPages() const
         {
             const auto a0 = alloc.ptr - memlow;
             const auto a1 = a0 + alloc.size;
-            const int8_t val = alloc.timeFree < 0 ?
-                int8_t( std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeAlloc ) ) >> 24 ) ) ) :
-                int8_t( -std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.timeFree ) ) >> 24 ) ) );
+            const int8_t val = alloc.TimeFree() < 0 ?
+                int8_t( std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.TimeAlloc() ) ) >> 24 ) ) ) :
+                int8_t( -std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.TimeFree() ) ) >> 24 ) ) );
 
             const auto c0 = a0 >> ChunkBits;
             const auto c1 = a1 >> ChunkBits;
@@ -10713,7 +10714,7 @@ void View::DrawMemory()
             {
                 for( auto& v : mem.data )
                 {
-                    if( v.ptr <= m_memInfo.ptrFind && v.ptr + v.size > m_memInfo.ptrFind && v.timeAlloc < zvMid )
+                    if( v.ptr <= m_memInfo.ptrFind && v.ptr + v.size > m_memInfo.ptrFind && v.TimeAlloc() < zvMid )
                     {
                         match.emplace_back( &v );
                     }
@@ -10766,7 +10767,7 @@ void View::DrawMemory()
         {
             for( auto& v : mem.data )
             {
-                if( v.timeAlloc < zvMid && ( v.timeFree > zvMid || v.timeFree < 0 ) )
+                if( v.TimeAlloc() < zvMid && ( v.TimeFree() > zvMid || v.TimeFree() < 0 ) )
                 {
                     items.emplace_back( &v );
                     total += v.size;
@@ -10780,7 +10781,7 @@ void View::DrawMemory()
             {
                 items.emplace_back( ptr + v.second );
             }
-            pdqsort_branchless( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->timeAlloc < rhs->timeAlloc; } );
+            pdqsort_branchless( items.begin(), items.end(), []( const auto& lhs, const auto& rhs ) { return lhs->TimeAlloc() < rhs->TimeAlloc(); } );
             total = mem.usage;
         }
 

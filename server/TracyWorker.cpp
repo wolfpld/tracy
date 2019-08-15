@@ -1042,8 +1042,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
         size_t fidx = 0;
         int64_t refTime = 0;
-        if( fileVer <= FileVersion( 0, 5, 2 ) ) refTime = -m_data.baseTime;
-        if( fileVer >= FileVersion( 0, 4, 4 ) )
+        if( fileVer >= FileVersion( 0, 5, 2 ) )
         {
             auto& frees = m_data.memory.frees;
             auto& active = m_data.memory.active;
@@ -1051,53 +1050,117 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             for( uint64_t i=0; i<sz; i++ )
             {
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
-                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + sizeof( MemEvent::threadAlloc ) + sizeof( MemEvent::threadFree ) );
-                refTime += mem->timeAlloc;
-                mem->timeAlloc = refTime;
-                if( mem->timeFree >= 0 )
+                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+                int64_t timeAlloc, timeFree;
+                uint16_t threadAlloc, threadFree;
+                f.Read2( timeAlloc, timeFree );
+                f.Read2( threadAlloc, threadFree );
+                refTime += timeAlloc;
+                mem->SetTimeAlloc( refTime );
+                if( timeFree >= 0 )
                 {
-                    mem->timeFree += refTime;
+                    mem->SetTimeFree( timeFree + refTime );
                     frees[fidx++] = i;
                 }
                 else
                 {
+                    mem->SetTimeFree( timeFree );
                     active.emplace( mem->ptr, i );
                 }
+                mem->SetThreadAlloc( threadAlloc );
+                mem->SetThreadFree( threadFree );
+                mem++;
+            }
+        }
+        else if( fileVer >= FileVersion( 0, 4, 4 ) )
+        {
+            refTime = -m_data.baseTime;
+            auto& frees = m_data.memory.frees;
+            auto& active = m_data.memory.active;
+
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) );
+                int64_t timeAlloc, timeFree;
+                f.Read2( timeAlloc, timeFree );
+                f.Read( &mem->csAlloc, sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+                uint16_t threadAlloc, threadFree;
+                f.Read2( threadAlloc, threadFree );
+                refTime += timeAlloc;
+                mem->SetTimeAlloc( refTime );
+                if( timeFree >= 0 )
+                {
+                    mem->SetTimeFree( timeFree + refTime );
+                    frees[fidx++] = i;
+                }
+                else
+                {
+                    mem->SetTimeFree( timeFree );
+                    active.emplace( mem->ptr, i );
+                }
+                mem->SetThreadAlloc( threadAlloc );
+                mem->SetThreadFree( threadFree );
                 mem++;
             }
         }
         else
         {
+            refTime = -m_data.baseTime;
             for( uint64_t i=0; i<sz; i++ )
             {
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 if( fileVer > FileVersion( 0, 4, 1 ) )
                 {
-                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
-                    refTime += mem->timeAlloc;
-                    mem->timeAlloc = refTime;
-                    if( mem->timeFree >= 0 ) mem->timeFree += refTime;
+                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) );
+                    int64_t timeAlloc, timeFree;
+                    f.Read2( timeAlloc, timeFree );
+                    f.Read( &mem->csAlloc, sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+                    uint16_t threadAlloc, threadFree;
+                    f.Read2( threadAlloc, threadFree );
+                    refTime += timeAlloc;
+                    mem->SetTimeAlloc( refTime );
+                    if( timeFree >= 0 )
+                    {
+                        mem->SetTimeFree( timeFree + refTime );
+                    }
+                    else
+                    {
+                        mem->SetTimeFree( timeFree );
+                    }
                 }
                 else
                 {
-                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
-                    mem->timeAlloc -= m_data.baseTime;
-                    mem->timeFree -= m_data.baseTime;
+                    f.Read( mem, sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) );
+                    int64_t timeAlloc, timeFree;
+                    f.Read2( timeAlloc, timeFree );
+                    f.Read( &mem->csAlloc, sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) );
+                    uint16_t threadAlloc, threadFree;
+                    f.Read2( threadAlloc, threadFree );
+                    mem->SetTimeAlloc( timeAlloc - m_data.baseTime );
+                    if( timeFree >= 0 )
+                    {
+                        mem->SetTimeFree( timeFree - m_data.baseTime );
+                    }
+                    else
+                    {
+                        mem->SetTimeFree( timeFree );
+                    }
                 }
 
                 uint64_t t0, t1;
                 f.Read2( t0, t1 );
-                mem->threadAlloc = CompressThread( t0 );
+                mem->SetThreadAlloc( CompressThread( t0 ) );
                 if( t0 == t1 )
                 {
-                    mem->threadFree = mem->threadAlloc;
+                    mem->SetThreadFree( mem->ThreadAlloc() );
                 }
                 else
                 {
-                    mem->threadFree = CompressThread( t1 );
+                    mem->SetThreadFree( CompressThread( t1 ) );
                 }
 
-                if( mem->timeFree < 0 )
+                if( mem->TimeFree() < 0 )
                 {
                     m_data.memory.active.emplace( mem->ptr, i );
                 }
@@ -1123,17 +1186,21 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         f.Skip( 2 * sizeof( uint64_t ) );
 
-        if( fileVer >= FileVersion( 0, 4, 4 ) )
+        if( fileVer >= FileVersion( 0, 5, 2 ) )
         {
-            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + sizeof( MemEvent::threadAlloc ) + sizeof( MemEvent::threadFree ) ) );
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + + sizeof( MemEvent::size ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + sizeof( MemEvent::_time_thread_alloc ) + sizeof( MemEvent::_time_thread_free ) ) );
+        }
+        else if( fileVer >= FileVersion( 0, 4, 4 ) )
+        {
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( int64_t ) + sizeof( int64_t ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + sizeof( uint16_t ) + sizeof( uint16_t ) ) );
         }
         else if( fileVer > FileVersion( 0, 4, 1 ) )
         {
-            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + 2 * sizeof( uint64_t ) ) );
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( int64_t ) + sizeof( int64_t ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + 2 * sizeof( uint64_t ) ) );
         }
         else
         {
-            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::timeAlloc ) + sizeof( MemEvent::timeFree ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + 2 * sizeof( uint64_t ) ) );
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( int64_t ) + sizeof( int64_t ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + 2 * sizeof( uint64_t ) ) );
         }
 
         f.Skip( sizeof( MemData::high ) + sizeof( MemData::low ) + sizeof( MemData::usage ) );
@@ -3646,7 +3713,7 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     NoticeThread( ev.thread );
 
     assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
-    assert( m_data.memory.data.empty() || m_data.memory.data.back().timeAlloc <= time );
+    assert( m_data.memory.data.empty() || m_data.memory.data.back().TimeAlloc() <= time );
 
     m_data.memory.active.emplace( ev.ptr, m_data.memory.data.size() );
 
@@ -3660,10 +3727,10 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     auto& mem = m_data.memory.data.push_next();
     mem.ptr = ptr;
     mem.size = size;
-    mem.timeAlloc = time;
-    mem.threadAlloc = CompressThread( ev.thread );
-    mem.timeFree = -1;
-    mem.threadFree = 0;
+    mem.SetTimeAlloc( time );
+    mem.SetThreadAlloc( CompressThread( ev.thread ) );
+    mem.SetTimeFree( -1 );
+    mem.SetThreadFree( 0 );
     mem.csAlloc = 0;
     mem.csFree = 0;
 
@@ -3698,8 +3765,8 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
 
     m_data.memory.frees.push_back( it->second );
     auto& mem = m_data.memory.data[it->second];
-    mem.timeFree = time;
-    mem.threadFree = CompressThread( ev.thread );
+    mem.SetTimeFree( time );
+    mem.SetThreadFree( CompressThread( ev.thread ) );
     m_data.memory.usage -= mem.size;
     m_data.memory.active.erase( it );
 
@@ -3963,9 +4030,9 @@ void Worker::ReconstructMemAllocPlot()
 {
     auto& mem = m_data.memory;
 #ifdef MY_LIBCPP_SUCKS
-    pdqsort_branchless( mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].timeFree < mem.data[rhs].timeFree; } );
+    pdqsort_branchless( mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].TimeFree() < mem.data[rhs].TimeFree(); } );
 #else
-    std::sort( std::execution::par_unseq, mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].timeFree < mem.data[rhs].timeFree; } );
+    std::sort( std::execution::par_unseq, mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].TimeFree() < mem.data[rhs].TimeFree(); } );
 #endif
 
     const auto psz = mem.data.size() + mem.frees.size() + 1;
@@ -3995,8 +4062,8 @@ void Worker::ReconstructMemAllocPlot()
 
     if( aptr != aend && fptr != fend )
     {
-        auto atime = aptr->timeAlloc;
-        auto ftime = mem.data[*fptr].timeFree;
+        auto atime = aptr->TimeAlloc();
+        auto ftime = mem.data[*fptr].TimeFree();
 
         for(;;)
         {
@@ -4010,7 +4077,7 @@ void Worker::ReconstructMemAllocPlot()
                 ptr++;
                 aptr++;
                 if( aptr == aend ) break;
-                atime = aptr->timeAlloc;
+                atime = aptr->TimeAlloc();
             }
             else
             {
@@ -4022,15 +4089,15 @@ void Worker::ReconstructMemAllocPlot()
                 ptr++;
                 fptr++;
                 if( fptr == fend ) break;
-                ftime = mem.data[*fptr].timeFree;
+                ftime = mem.data[*fptr].TimeFree();
             }
         }
     }
 
     while( aptr != aend )
     {
-        assert( aptr->timeFree < 0 );
-        int64_t time = aptr->timeAlloc;
+        assert( aptr->TimeFree() < 0 );
+        int64_t time = aptr->TimeAlloc();
         usage += int64_t( aptr->size );
         assert( usage >= 0 );
         if( max < usage ) max = usage;
@@ -4042,7 +4109,7 @@ void Worker::ReconstructMemAllocPlot()
     while( fptr != fend )
     {
         const auto& memData = mem.data[*fptr];
-        int64_t time = memData.timeFree;
+        int64_t time = memData.TimeFree();
         usage -= int64_t( memData.size );
         assert( usage >= 0 );
         assert( max >= usage );
@@ -4654,13 +4721,18 @@ void Worker::Write( FileWrite& f )
         {
             f.Write( &mem.ptr, sizeof( mem.ptr ) );
             f.Write( &mem.size, sizeof( mem.size ) );
-            WriteTimeOffset( f, refTime, mem.timeAlloc );
-            int64_t freeOffset = mem.timeFree < 0 ? mem.timeFree : mem.timeFree - mem.timeAlloc;
-            f.Write( &freeOffset, sizeof( freeOffset ) );
             f.Write( &mem.csAlloc, sizeof( mem.csAlloc ) );
             f.Write( &mem.csFree, sizeof( mem.csFree ) );
-            f.Write( &mem.threadAlloc, sizeof( mem.threadAlloc ) );
-            f.Write( &mem.threadFree, sizeof( mem.threadFree ) );
+
+            int64_t timeAlloc = mem.TimeAlloc();
+            uint16_t threadAlloc = mem.ThreadAlloc();
+            int64_t timeFree = mem.TimeFree();
+            uint16_t threadFree = mem.ThreadFree();
+            WriteTimeOffset( f, refTime, timeAlloc );
+            int64_t freeOffset = timeFree < 0 ? timeFree : timeFree - timeAlloc;
+            f.Write( &freeOffset, sizeof( freeOffset ) );
+            f.Write( &threadAlloc, sizeof( threadAlloc ) );
+            f.Write( &threadFree, sizeof( threadFree ) );
         }
         f.Write( &m_data.memory.high, sizeof( m_data.memory.high ) );
         f.Write( &m_data.memory.low, sizeof( m_data.memory.low ) );

@@ -11,10 +11,11 @@ v0.6 (xxxx-xx-xx)
 
 - Dropped support for pre-v0.4 traces.
 - Implemented context switch capture on selected platforms.
+  - Zone timings in various UI places can now take into account only the
+    time when the thread was executing.
   - Zone information window can now display regions in which thread was
     suspended by the operating system.
-  - Find zone menu can now display zone timing information for when the
-    thread was in a running state.
+  - CPUs on which the zone was running are enumerated.
 - API breakage: SetThreadName() now only works on current thread.
 - Fixed thread name retrieval after thread is destroyed.
 - Added number of CPU cores to host info.

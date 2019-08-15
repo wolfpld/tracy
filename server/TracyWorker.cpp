@@ -767,7 +767,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( tsz );
             if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
-                f.Skip( tsz * ( sizeof( int64_t ) + sizeof( LockEvent::type ) + sizeof( int16_t ) + sizeof( LockEvent::thread ) ) );
+                f.Skip( tsz * ( sizeof( LockEvent::_time_srcloc ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) ) );
             }
             else
             {

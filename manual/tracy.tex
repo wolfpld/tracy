@@ -343,6 +343,7 @@ When using Tracy Profiler, keep in mind the following requirements:
 \begin{itemize}
 \item Each lock may be used in no more than 64 unique threads.
 \item There can be no more than 65534 unique source locations\footnote{A source location is a place in the code, which is identified by source file name and line number, for example when you markup a zone.}. This number is further split in half between native code source locations and dynamic source locations (for example, when Lua instrumentation is used).
+\item Profiling session cannot be longer than 1.6 days ($2^{47}$ \si{\nano\second}). This also includes on-demand sessions.
 \end{itemize}
 
 \subsection{Check your environment}

@@ -20,6 +20,7 @@ v0.6 (xxxx-xx-xx)
 - Fixed thread name retrieval after thread is destroyed.
 - Added number of CPU cores to host info.
 - Limited number of possible source locations to 64K.
+- Limited supported capture length to 1.6 days.
 
 v0.5 (2019-08-10)
 -----------------

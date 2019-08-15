@@ -120,8 +120,25 @@ struct LockEvent
         ReleaseShared
     };
 
-    int64_t time;
-    int16_t srcloc;
+    int64_t Time() const
+    {
+        return int64_t( _start_time ) >> 16;
+    }
+    void SetTime( int64_t time )
+    {
+        assert( time < ( 1ll << 47 ) );
+        _start_time = ( _start_time & 0xFFFF ) | ( time << 16 );
+    }
+    int16_t SrcLoc() const
+    {
+        return int16_t( _start_time & 0xFFFF );
+    }
+    void SetSrcLoc( int16_t srcloc )
+    {
+        _start_time = ( _start_time & 0xFFFFFFFFFFFF0000 ) | srcloc;
+    }
+
+    uint64_t _start_time;
     uint8_t thread;
     Type type;
 };

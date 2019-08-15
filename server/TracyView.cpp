@@ -2094,9 +2094,9 @@ void View::DrawZones()
                     auto lptr = lockmap.timeline.data();
                     auto eptr = lptr + lockmap.timeline.size() - 1;
                     while( lptr->ptr->thread != thread ) lptr++;
-                    if( lptr->ptr->time < first ) first = lptr->ptr->time;
+                    if( lptr->ptr->Time() < first ) first = lptr->ptr->Time();
                     while( eptr->ptr->thread != thread ) eptr--;
-                    if( eptr->ptr->time > last ) last = eptr->ptr->time;
+                    if( eptr->ptr->Time() > last ) last = eptr->ptr->Time();
                 }
 
                 if( last >= 0 )
@@ -3254,11 +3254,11 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             {
                 if( timeAnnounce == 0 )
                 {
-                    timeAnnounce = lockmap.timeline.front().ptr->time;
+                    timeAnnounce = lockmap.timeline.front().ptr->Time();
                 }
                 if( timeTerminate == 0 )
                 {
-                    timeTerminate = lockmap.timeline.back().ptr->time;
+                    timeTerminate = lockmap.timeline.back().ptr->Time();
                 }
             }
             const auto lockLen = timeTerminate - timeAnnounce;
@@ -3364,8 +3364,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         const auto thread = it->second;
         const auto threadBit = GetThreadBit( thread );
 
-        auto vbegin = std::lower_bound( tl.begin(), tl.end(), std::max( range.start, m_zvStart - delay ), [] ( const auto& l, const auto& r ) { return l.ptr->time < r; } );
-        const auto vend = std::lower_bound( vbegin, tl.end(), std::min( range.end, m_zvEnd + resolution ), [] ( const auto& l, const auto& r ) { return l.ptr->time < r; } );
+        auto vbegin = std::lower_bound( tl.begin(), tl.end(), std::max( range.start, m_zvStart - delay ), [] ( const auto& l, const auto& r ) { return l.ptr->Time() < r; } );
+        const auto vend = std::lower_bound( vbegin, tl.end(), std::min( range.end, m_zvEnd + resolution ), [] ( const auto& l, const auto& r ) { return l.ptr->Time() < r; } );
 
         if( vbegin > tl.begin() ) vbegin--;
 
@@ -3439,8 +3439,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 LockState drawState = state;
                 auto next = GetNextLockFunc( vbegin, vend, state, threadBit );
 
-                const auto t0 = vbegin->ptr->time;
-                int64_t t1 = next == tl.end() ? m_worker.GetLastTime() : next->ptr->time;
+                const auto t0 = vbegin->ptr->Time();
+                int64_t t1 = next == tl.end() ? m_worker.GetLastTime() : next->ptr->Time();
                 const auto px0 = std::max( pxend, ( t0 - m_zvStart ) * pxns );
                 auto tx0 = px0;
                 double px1 = ( t1 - m_zvStart ) * pxns;
@@ -3464,7 +3464,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         }
                         drawState = CombineLockState( drawState, state );
                         condensed++;
-                        const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->time;
+                        const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->Time();
                         const auto px2 = ( t2 - m_zvStart ) * pxns;
                         if( px2 - px1 > MinVisSize ) break;
                         if( drawState != ns && px2 - px0 > MinVisSize && !( ns == LockState::Nothing || ns == LockState::HasLock ) ) break;
@@ -3493,7 +3493,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         }
                         drawState = CombineLockState( drawState, state );
                         condensed++;
-                        const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->time;
+                        const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->Time();
                         const auto px2 = ( t2 - m_zvStart ) * pxns;
                         if( px2 - px1 > MinVisSize ) break;
                         if( drawState != ns && px2 - px0 > MinVisSize && ns != LockState::Nothing ) break;
@@ -3548,7 +3548,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 b--;
                             }
                             b++;
-                            highlight.begin = b->ptr->time;
+                            highlight.begin = b->ptr->Time();
 
                             auto e = next;
                             while( e != tl.end() )
@@ -3556,7 +3556,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 if( e->lockingThread != next->lockingThread )
                                 {
                                     highlight.id = v.first;
-                                    highlight.end = e->ptr->time;
+                                    highlight.end = e->ptr->Time();
                                     highlight.thread = thread;
                                     break;
                                 }
@@ -3577,9 +3577,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         {
                             if( it->ptr->thread == thread )
                             {
-                                if( ( it->lockingThread == thread || IsThreadWaiting( it->waitList, threadBit ) ) && it->ptr->srcloc != 0 )
+                                if( ( it->lockingThread == thread || IsThreadWaiting( it->waitList, threadBit ) ) && it->ptr->SrcLoc() != 0 )
                                 {
-                                    markloc = it->ptr->srcloc;
+                                    markloc = it->ptr->SrcLoc();
                                     break;
                                 }
                             }
@@ -3792,7 +3792,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
                 const auto cfilled  = drawState == LockState::HasLock ? 0xFF228A22 : ( drawState == LockState::HasBlockingLock ? 0xFF228A8A : 0xFF2222BD );
                 draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( pxend, double( w + 10 ) ), offset + ty ), cfilled );
-                if( m_lockHighlight.thread != thread && ( drawState == LockState::HasBlockingLock ) != m_lockHighlight.blocked && next != tl.end() && m_lockHighlight.id == int64_t( v.first ) && m_lockHighlight.begin <= vbegin->ptr->time && m_lockHighlight.end >= next->ptr->time )
+                if( m_lockHighlight.thread != thread && ( drawState == LockState::HasBlockingLock ) != m_lockHighlight.blocked && next != tl.end() && m_lockHighlight.id == int64_t( v.first ) && m_lockHighlight.begin <= vbegin->ptr->Time() && m_lockHighlight.end >= next->ptr->Time() )
                 {
                     const auto t = uint8_t( ( sin( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count() * 0.01 ) * 0.5 + 0.5 ) * 255 );
                     draw->AddRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( pxend, double( w + 10 ) ), offset + ty ), 0x00FFFFFF | ( t << 24 ), 0.f, -1, 2.f );
@@ -9792,11 +9792,11 @@ void View::DrawLockInfoWindow()
     {
         if( timeAnnounce == 0 )
         {
-            timeAnnounce = lock.timeline.front().ptr->time;
+            timeAnnounce = lock.timeline.front().ptr->Time();
         }
         if( timeTerminate == 0 )
         {
-            timeTerminate = lock.timeline.back().ptr->time;
+            timeTerminate = lock.timeline.back().ptr->Time();
         }
     }
 
@@ -9813,7 +9813,7 @@ void View::DrawLockInfoWindow()
         {
             if( v.lockCount == 0 )
             {
-                holdTotalTime += v.ptr->time - holdStartTime;
+                holdTotalTime += v.ptr->Time() - holdStartTime;
                 holdState = false;
             }
         }
@@ -9821,7 +9821,7 @@ void View::DrawLockInfoWindow()
         {
             if( v.lockCount != 0 )
             {
-                holdStartTime = v.ptr->time;
+                holdStartTime = v.ptr->Time();
                 holdState = true;
             }
         }
@@ -9829,7 +9829,7 @@ void View::DrawLockInfoWindow()
         {
             if( v.waitList == 0 )
             {
-                waitTotalTime += v.ptr->time - waitStartTime;
+                waitTotalTime += v.ptr->Time() - waitStartTime;
                 waitState = false;
             }
             else
@@ -9841,7 +9841,7 @@ void View::DrawLockInfoWindow()
         {
             if( v.waitList != 0 )
             {
-                waitStartTime = v.ptr->time;
+                waitStartTime = v.ptr->Time();
                 waitState = true;
                 maxWaitingThreads = std::max<uint32_t>( maxWaitingThreads, TracyCountBits( v.waitList ) );
             }

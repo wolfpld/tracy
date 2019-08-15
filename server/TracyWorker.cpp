@@ -230,7 +230,7 @@ static tracy_force_inline int64_t ReadTimeOffset( FileRead& f, int64_t& refTime 
 
 static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEvent& ev )
 {
-    const auto lt = ev.time;
+    const auto lt = ev.Time();
     auto& range = lockmap.range[ev.thread];
     if( range.start > lt ) range.start = lt;
     if( range.end < lt ) range.end = lt;
@@ -646,8 +646,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
-                        lev->time = ReadTimeOffset( f, refTime );
-                        f.Read( &lev->srcloc, sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
+                        lev->SetTime( ReadTimeOffset( f, refTime ) );
+                        int16_t srcloc;
+                        f.Read( srcloc );
+                        lev->SetSrcLoc( srcloc );
+                        f.Read( &lev->thread, sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = { lev };
                         UpdateLockRange( lockmap, *lev );
                     }
@@ -657,8 +660,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
-                        lev->time = ReadTimeOffset( f, refTime );
-                        f.Read( &lev->srcloc, sizeof( LockEventShared::srcloc ) + sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
+                        lev->SetTime( ReadTimeOffset( f, refTime ) );
+                        int16_t srcloc;
+                        f.Read( srcloc );
+                        lev->SetSrcLoc( srcloc );
+                        f.Read( &lev->thread, sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = { lev };
                         UpdateLockRange( lockmap, *lev );
                     }
@@ -672,10 +678,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
-                        lev->time = ReadTimeOffset( f, refTime );
+                        lev->SetTime( ReadTimeOffset( f, refTime ) );
                         int32_t srcloc;
                         f.Read( srcloc );
-                        lev->srcloc = int16_t( srcloc );
+                        lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = { lev };
                         UpdateLockRange( lockmap, *lev );
@@ -686,10 +692,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
-                        lev->time = ReadTimeOffset( f, refTime );
+                        lev->SetTime( ReadTimeOffset( f, refTime ) );
                         int32_t srcloc;
                         f.Read( srcloc );
-                        lev->srcloc = int16_t( srcloc );
+                        lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = { lev };
                         UpdateLockRange( lockmap, *lev );
@@ -703,11 +709,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
-                        f.Read( lev->time );
-                        lev->time -= m_data.baseTime;
+                        int64_t time;
+                        f.Read( time );
+                        lev->SetTime( time - m_data.baseTime );
                         int32_t srcloc;
                         f.Read( srcloc );
-                        lev->srcloc = int16_t( srcloc );
+                        lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = { lev };
                         UpdateLockRange( lockmap, *lev );
@@ -718,11 +725,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
-                        f.Read( lev->time );
-                        lev->time -= m_data.baseTime;
+                        int64_t time;
+                        f.Read( time );
+                        lev->SetTime( time - m_data.baseTime );
                         int32_t srcloc;
                         f.Read( srcloc );
-                        lev->srcloc = int16_t( srcloc );
+                        lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = { lev };
                         UpdateLockRange( lockmap, *lev );
@@ -758,11 +766,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( tsz );
             if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
-                f.Skip( tsz * ( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( LockEvent::srcloc ) + sizeof( LockEvent::thread ) ) );
+                f.Skip( tsz * ( sizeof( int64_t ) + sizeof( LockEvent::type ) + sizeof( int16_t ) + sizeof( LockEvent::thread ) ) );
             }
             else
             {
-                f.Skip( tsz * ( sizeof( LockEvent::time ) + sizeof( LockEvent::type ) + sizeof( int32_t ) + sizeof( LockEvent::thread ) ) );
+                f.Skip( tsz * ( sizeof( int64_t ) + sizeof( LockEvent::type ) + sizeof( int32_t ) + sizeof( LockEvent::thread ) ) );
             }
         }
     }
@@ -2297,7 +2305,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
 
 void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
 {
-    const auto lt = lev->time;
+    const auto lt = lev->Time();
     m_data.lastTime = std::max( m_data.lastTime, lt );
 
     NoticeThread( thread );
@@ -2319,7 +2327,7 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread 
     }
     else
     {
-        assert( timeline.back().ptr->time <= lt );
+        assert( timeline.back().ptr->Time() <= lt );
         timeline.push_back_non_empty( { lev } );
         UpdateLockCount( lockmap, timeline.size() - 1 );
     }
@@ -3283,9 +3291,9 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     }
 
     auto lev = ev.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time - m_data.baseTime );
+    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Wait;
-    lev->srcloc = 0;
 
     InsertLockEvent( *it->second, lev, ev.thread );
 }
@@ -3297,9 +3305,9 @@ void Worker::ProcessLockObtain( const QueueLockObtain& ev )
     auto& lock = *it->second;
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time - m_data.baseTime );
+    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Obtain;
-    lev->srcloc = 0;
 
     InsertLockEvent( lock, lev, ev.thread );
 }
@@ -3311,9 +3319,9 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
     auto& lock = *it->second;
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time - m_data.baseTime );
+    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Release;
-    lev->srcloc = 0;
 
     InsertLockEvent( lock, lev, ev.thread );
 }
@@ -3332,9 +3340,9 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
 
     assert( ev.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time - m_data.baseTime );
+    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::WaitShared;
-    lev->srcloc = 0;
 
     InsertLockEvent( *it->second, lev, ev.thread );
 }
@@ -3347,9 +3355,9 @@ void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time - m_data.baseTime );
+    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ObtainShared;
-    lev->srcloc = 0;
 
     InsertLockEvent( lock, lev, ev.thread );
 }
@@ -3362,9 +3370,9 @@ void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    lev->time = TscTime( ev.time - m_data.baseTime );
+    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ReleaseShared;
-    lev->srcloc = 0;
 
     InsertLockEvent( lock, lev, ev.thread );
 }
@@ -3390,7 +3398,7 @@ void Worker::ProcessLockMark( const QueueLockMark& ev )
             case LockEvent::Type::ObtainShared:
             case LockEvent::Type::Wait:
             case LockEvent::Type::WaitShared:
-                it->ptr->srcloc = ShrinkSourceLocation( ev.srcloc );
+                it->ptr->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
                 return;
             default:
                 break;
@@ -4553,8 +4561,9 @@ void Worker::Write( FileWrite& f )
         f.Write( &sz, sizeof( sz ) );
         for( auto& lev : v.second->timeline )
         {
-            WriteTimeOffset( f, refTime, lev.ptr->time );
-            f.Write( &lev.ptr->srcloc, sizeof( lev.ptr->srcloc ) );
+            WriteTimeOffset( f, refTime, lev.ptr->Time() );
+            const int16_t srcloc = lev.ptr->SrcLoc();
+            f.Write( &srcloc, sizeof( srcloc ) );
             f.Write( &lev.ptr->thread, sizeof( lev.ptr->thread ) );
             f.Write( &lev.ptr->type, sizeof( lev.ptr->type ) );
         }

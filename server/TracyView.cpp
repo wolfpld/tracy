@@ -4701,31 +4701,66 @@ void View::DrawZoneInfoWindow()
                     TextFocused( "Running state time:", TimeToString( ztime ) );
                     ImGui::SameLine();
                     TextDisabledUnformatted( "(100%)" );
+                    ImGui::Separator();
                     TextFocused( "Running state regions:", "1" );
+                    TextFocused( "CPU:", RealToString( it->cpu, true ) );
                 }
             }
             else if( cnt > 1 )
             {
-                if( incomplete )
-                {
-                    TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "Incomplete context switch data!" );
-                }
+                uint8_t cpus[256] = {};
                 auto bit = it;
                 int64_t running = it->end - ev.start;
+                cpus[it->cpu] = 1;
                 ++it;
                 for( int64_t i=0; i<cnt-2; i++ )
                 {
                     running += it->end - it->start;
+                    cpus[it->cpu] = 1;
                     ++it;
                 }
                 running += end - it->start;
+                cpus[it->cpu] = 1;
                 TextFocused( "Running state time:", TimeToString( running ) );
                 if( ztime != 0 )
                 {
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.2f%%)", 100.f * running / ztime );
                 }
+                ImGui::Separator();
+                if( incomplete )
+                {
+                    TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "Incomplete context switch data!" );
+                }
                 TextFocused( "Running state regions:", RealToString( cnt, true ) );
+
+                int numCpus = 0;
+                for( int i=0; i<256; i++ ) numCpus += cpus[i];
+                if( numCpus == 1 )
+                {
+                    TextFocused( "CPU:", RealToString( it->cpu, true ) );
+                }
+                else
+                {
+                    ImGui::TextDisabled( "CPUs (%i):", numCpus );
+                    for( int i=0;; i++ )
+                    {
+                        if( cpus[i] != 0 )
+                        {
+                            ImGui::SameLine();
+                            numCpus--;
+                            if( numCpus == 0 )
+                            {
+                                ImGui::Text( "%i", i );
+                                break;
+                            }
+                            else
+                            {
+                                ImGui::Text( "%i,", i );
+                            }
+                        }
+                    }
+                }
 
                 --eit;
                 if( ImGui::TreeNode( "Wait regions" ) )

@@ -76,23 +76,10 @@ enum { SourceLocationSize = sizeof( SourceLocation ) };
 
 struct ZoneEvent
 {
-    int64_t Start() const
-    {
-        return int64_t( _start_srcloc ) >> 16;
-    }
-    void SetStart( int64_t start )
-    {
-        assert( start < ( 1ll << 47 ) );
-        _start_srcloc = ( _start_srcloc & 0xFFFF ) | uint64_t( start << 16 );
-    }
-    int16_t SrcLoc() const
-    {
-        return int16_t( _start_srcloc & 0xFFFF );
-    }
-    void SetSrcLoc( int16_t srcloc )
-    {
-        _start_srcloc = ( _start_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc );
-    }
+    int64_t Start() const { return int64_t( _start_srcloc ) >> 16; }
+    void SetStart( int64_t start ) { assert( start < ( 1ll << 47 ) ); _start_srcloc = ( _start_srcloc & 0xFFFF ) | uint64_t( start << 16 ); }
+    int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
+    void SetSrcLoc( int16_t srcloc ) { _start_srcloc = ( _start_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc ); }
 
     uint64_t _start_srcloc;
     int64_t end;
@@ -120,23 +107,10 @@ struct LockEvent
         ReleaseShared
     };
 
-    int64_t Time() const
-    {
-        return int64_t( _time_srcloc ) >> 16;
-    }
-    void SetTime( int64_t time )
-    {
-        assert( time < ( 1ll << 47 ) );
-        _time_srcloc = ( _time_srcloc & 0xFFFF ) | uint64_t( time << 16 );
-    }
-    int16_t SrcLoc() const
-    {
-        return int16_t( _time_srcloc & 0xFFFF );
-    }
-    void SetSrcLoc( int16_t srcloc )
-    {
-        _time_srcloc = ( _time_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc );
-    }
+    int64_t Time() const { return int64_t( _time_srcloc ) >> 16; }
+    void SetTime( int64_t time ) { assert( time < ( 1ll << 47 ) ); _time_srcloc = ( _time_srcloc & 0xFFFF ) | uint64_t( time << 16 ); }
+    int16_t SrcLoc() const { return int16_t( _time_srcloc & 0xFFFF ); }
+    void SetSrcLoc( int16_t srcloc ) { _time_srcloc = ( _time_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc ); }
 
     uint64_t _time_srcloc;
     uint8_t thread;

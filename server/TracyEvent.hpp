@@ -88,6 +88,7 @@ struct ZoneEvent
 enum { ZoneEventSize = sizeof( ZoneEvent ) };
 static_assert( std::is_standard_layout<ZoneEvent>::value, "ZoneEvent is not standard layout" );
 
+
 struct LockEvent
 {
     enum class Type : uint8_t
@@ -242,6 +243,8 @@ struct MessageData
     uint32_t color;
 };
 
+enum { MessageDataSize = sizeof( MessageData ) };
+
 struct ThreadData
 {
     uint64_t id;
@@ -337,6 +340,8 @@ struct FrameEvent
     int32_t frameImage;
 };
 
+enum { FrameEventSize = sizeof( FrameEvent ) };
+
 struct FrameData
 {
     uint64_t name;
@@ -375,6 +380,8 @@ struct FrameImage
     uint32_t frameRef;
     uint8_t flip;
 };
+
+enum { FrameImageSize = sizeof( FrameImage ) };
 
 struct ContextSwitch
 {

@@ -1399,13 +1399,21 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 auto ptr = data->v.data();
                 for( uint64_t j=0; j<csz; j++ )
                 {
-                    ptr->start = ReadTimeOffset( f, refTime );
+                    ptr->SetStart( ReadTimeOffset( f, refTime ) );
                     int64_t diff;
                     f.Read( diff );
                     if( diff > 0 ) runningTime += diff;
                     refTime += diff;
-                    ptr->end = refTime;
-                    f.Read( &ptr->cpu, sizeof( ptr->cpu ) + sizeof( ptr->reason ) + sizeof( ptr->state ) );
+                    ptr->SetEnd( refTime );
+                    uint8_t cpu;
+                    int8_t reason;
+                    int8_t state;
+                    f.Read( cpu );
+                    f.Read( reason );
+                    f.Read( state );
+                    ptr->SetCpu( cpu );
+                    ptr->SetReason( reason );
+                    ptr->SetState( state );
                     ptr++;
                 }
                 data->runningTime = runningTime;
@@ -3969,12 +3977,12 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             auto& data = it->second->v;
             assert( !data.empty() );
             auto& item = data.back();
-            assert( item.start <= time );
-            item.end = time;
-            item.reason = ev.reason;
-            item.state = ev.state;
+            assert( item.Start() <= time );
+            item.SetEnd( time );
+            item.SetReason( ev.reason );
+            item.SetState( ev.state );
 
-            it->second->runningTime += time - item.start;
+            it->second->runningTime += time - item.Start();
         }
     }
     if( ev.newThread != 0 )
@@ -3986,13 +3994,13 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             it = m_data.ctxSwitch.emplace( ev.newThread, ctx ).first;
         }
         auto& data = it->second->v;
-        assert( data.empty() || (uint64_t)data.back().end <= time );
+        assert( data.empty() || (uint64_t)data.back().End() <= time );
         auto& item = data.push_next();
-        item.start = time;
-        item.end = -1;
-        item.cpu = ev.cpu;
-        item.reason = -1;
-        item.state = -1;
+        item.SetStart( time );
+        item.SetEnd( -1 );
+        item.SetCpu( ev.cpu );
+        item.SetReason( -1 );
+        item.SetState( -1 );
     }
 }
 
@@ -4793,9 +4801,14 @@ void Worker::Write( FileWrite& f )
         int64_t refTime = 0;
         for( auto& cs : ctx->second->v )
         {
-            WriteTimeOffset( f, refTime, cs.start );
-            WriteTimeOffset( f, refTime, cs.end );
-            f.Write( &cs.cpu, sizeof( cs.cpu ) + sizeof( cs.reason ) + sizeof( cs.state ) );
+            WriteTimeOffset( f, refTime, cs.Start() );
+            WriteTimeOffset( f, refTime, cs.End() );
+            uint8_t cpu = cs.Cpu();
+            int8_t reason = cs.Reason();
+            int8_t state = cs.State();
+            f.Write( &cpu, sizeof( cpu ) );
+            f.Write( &reason, sizeof( reason ) );
+            f.Write( &state, sizeof( state ) );
         }
     }
 }

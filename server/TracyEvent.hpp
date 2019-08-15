@@ -234,11 +234,19 @@ enum { CrashEventSize = sizeof( CrashEvent ) };
 
 struct ContextSwitchData
 {
-    int64_t start;
-    int64_t end;
-    uint8_t cpu;
-    int8_t reason;
-    int8_t state;
+    int64_t Start() const { return int64_t( _start_cpu ) >> 8; }
+    void SetStart( int64_t start ) { assert( start < ( 1ll << 47 ) ); _start_cpu = ( _start_cpu & 0xFF ) | uint64_t( start << 8 ); }
+    int64_t End() const { return int64_t( _end_reason_state ) >> 16; }
+    void SetEnd( int64_t end ) { assert( end < ( 1ll << 47 ) ); _end_reason_state = ( _end_reason_state & 0xFFFF ) | uint64_t( end << 16 ); }
+    uint8_t Cpu() const { return uint8_t( _start_cpu & 0xFF ); }
+    void SetCpu( uint8_t cpu ) { _start_cpu = ( _start_cpu & 0xFFFFFFFFFFFFFF00 ) | uint8_t( cpu ); }
+    int8_t Reason() const { return int8_t( (_end_reason_state >> 8) & 0xFF ); }
+    void SetReason( int8_t reason ) { _end_reason_state = ( _end_reason_state & 0xFFFFFFFFFFFF00FF ) | ( uint64_t( reason ) << 8 ); }
+    int8_t State() const { return int8_t( _end_reason_state & 0xFF ); }
+    void SetState( int8_t state ) { _end_reason_state = ( _end_reason_state & 0xFFFFFFFFFFFFFF00 ) | uint8_t( state ); }
+
+    uint64_t _start_cpu;
+    uint64_t _end_reason_state;
 };
 
 enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };

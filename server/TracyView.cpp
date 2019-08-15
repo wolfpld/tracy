@@ -2068,8 +2068,8 @@ void View::DrawZones()
                 if( ctx && !ctx->v.empty() )
                 {
                     const auto& back = ctx->v.back();
-                    first = ctx->v.begin()->start;
-                    last = back.end >= 0 ? back.end : back.start;
+                    first = ctx->v.begin()->Start();
+                    last = back.End() >= 0 ? back.End() : back.Start();
                 }
                 if( !v->timeline.empty() )
                 {
@@ -2343,11 +2343,11 @@ static const char* DecodeContextSwitchState( uint8_t state )
 void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset )
 {
     auto& vec = ctx->v;
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
     if( it == vec.end() ) return;
     if( it != vec.begin() ) --it;
 
-    auto citend = std::lower_bound( it, vec.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l.start < r; } );
+    auto citend = std::lower_bound( it, vec.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
     if( it == citend ) return;
     if( citend != vec.end() ) ++citend;
 
@@ -2363,9 +2363,9 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         auto& ev = *it;
         if( pit != citend )
         {
-            const bool migration = pit->cpu != ev.cpu;
-            const auto px0 = std::max( { ( pit->end - m_zvStart ) * pxns, -10.0, minpx } );
-            const auto px1 = std::min( ( ev.start - m_zvStart ) * pxns, w + 10.0 );
+            const bool migration = pit->Cpu() != ev.Cpu();
+            const auto px0 = std::max( { ( pit->End() - m_zvStart ) * pxns, -10.0, minpx } );
+            const auto px1 = std::min( ( ev.Start() - m_zvStart ) * pxns, w + 10.0 );
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
             draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
 
@@ -2373,56 +2373,56 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             {
                 ImGui::BeginTooltip();
                 TextFocused( "Thread is", migration ? "migrating CPUs" : "waiting" );
-                TextFocused( "Waiting time:", TimeToString( ev.start - pit->end ) );
+                TextFocused( "Waiting time:", TimeToString( ev.Start() - pit->End() ) );
                 if( migration )
                 {
-                    TextFocused( "CPU:", RealToString( pit->cpu, true ) );
+                    TextFocused( "CPU:", RealToString( pit->Cpu(), true ) );
                     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                    TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.cpu, true ) );
+                    TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu(), true ) );
 #else
-                    TextFocused( "->", RealToString( ev.cpu, true ) );
+                    TextFocused( "->", RealToString( ev.Cpu(), true ) );
 #endif
                 }
                 else
                 {
-                    TextFocused( "CPU:", RealToString( ev.cpu, true ) );
+                    TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
                 }
-                if( pit->reason != 100 )
+                if( pit->Reason() != 100 )
                 {
-                    TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->reason ) );
+                    TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->Reason() ) );
                     ImGui::SameLine();
-                    TextDisabledUnformatted( DecodeContextSwitchReason( pit->reason ) );
+                    TextDisabledUnformatted( DecodeContextSwitchReason( pit->Reason() ) );
                 }
-                TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->state ) );
+                TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->State() ) );
                 ImGui::SameLine();
-                TextDisabledUnformatted( DecodeContextSwitchState( pit->state ) );
+                TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
                 ImGui::EndTooltip();
 
                 if( ImGui::IsMouseClicked( 2 ) )
                 {
-                    ZoomToRange( pit->end, ev.start );
+                    ZoomToRange( pit->End(), ev.Start() );
                 }
             }
         }
 
-        const auto end = ev.end >= 0 ? ev.end : m_worker.GetLastTime();
-        const auto zsz = std::max( ( end - ev.start ) * pxns, pxns * 0.5 );
+        const auto end = ev.End() >= 0 ? ev.End() : m_worker.GetLastTime();
+        const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinCtxSize )
         {
             int num = 0;
-            const auto px0 = std::max( ( ev.start - m_zvStart ) * pxns, -10.0 );
+            const auto px0 = std::max( ( ev.Start() - m_zvStart ) * pxns, -10.0 );
             auto px1 = ( end - m_zvStart ) * pxns;
             auto rend = end;
             auto nextTime = end + MinCtxSize;
             for(;;)
             {
                 const auto prevIt = it;
-                it = std::lower_bound( it, citend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+                it = std::lower_bound( it, citend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
                 if( it == prevIt ) ++it;
                 num += std::distance( prevIt, it );
                 if( it == citend ) break;
-                const auto nend = it->end >= 0 ? it->end : m_worker.GetLastTime();
+                const auto nend = it->End() >= 0 ? it->End() : m_worker.GetLastTime();
                 const auto pxnext = ( nend - m_zvStart ) * pxns;
                 if( pxnext - px1 >= MinCtxSize * 2 ) break;
                 px1 = pxnext;
@@ -2437,13 +2437,13 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 {
                     ImGui::BeginTooltip();
                     TextFocused( "Thread is", "running" );
-                    TextFocused( "Activity time:", TimeToString( end - ev.start ) );
-                    TextFocused( "CPU:", RealToString( ev.cpu, true ) );
+                    TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                    TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
                     ImGui::EndTooltip();
 
                     if( ImGui::IsMouseClicked( 2 ) )
                     {
-                        ZoomToRange( ev.start, rend );
+                        ZoomToRange( ev.Start(), rend );
                     }
                 }
             }
@@ -2455,12 +2455,12 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     ImGui::BeginTooltip();
                     TextFocused( "Thread is", "chaning activity multiple times" );
                     TextFocused( "Number of running regions:", RealToString( num, true ) );
-                    TextFocused( "Time:", TimeToString( rend - ev.start ) );
+                    TextFocused( "Time:", TimeToString( rend - ev.Start() ) );
                     ImGui::EndTooltip();
 
                     if( ImGui::IsMouseClicked( 2 ) )
                     {
-                        ZoomToRange( ev.start, rend );
+                        ZoomToRange( ev.Start(), rend );
                     }
                 }
             }
@@ -2468,20 +2468,20 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         }
         else
         {
-            const auto px0 = std::max( { ( ev.start - m_zvStart ) * pxns, -10.0, minpx } );
+            const auto px0 = std::max( { ( ev.Start() - m_zvStart ) * pxns, -10.0, minpx } );
             const auto px1 = std::min( ( end - m_zvStart ) * pxns, w + 10.0 );
             draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), 0xFF22DD22, 2 );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty ) ) )
             {
                 ImGui::BeginTooltip();
                 TextFocused( "Thread is", "running" );
-                TextFocused( "Activity time:", TimeToString( end - ev.start ) );
-                TextFocused( "CPU:", RealToString( ev.cpu, true ) );
+                TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
+                TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
                 ImGui::EndTooltip();
 
                 if( ImGui::IsMouseClicked( 2 ) )
                 {
-                    ZoomToRange( ev.start, end );
+                    ZoomToRange( ev.Start(), end );
                 }
             }
             pit = it;
@@ -4686,11 +4686,11 @@ void View::DrawZoneInfoWindow()
     const auto ctx = m_worker.GetContextSwitchData( tid );
     if( ctx )
     {
-        auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+        auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
         if( it != ctx->v.end() )
         {
             const auto end = m_worker.GetZoneEnd( ev );
-            auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.start; } );
+            auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
             bool incomplete = eit == ctx->v.end();
             uint64_t cnt = std::distance( it, eit );
             if( cnt == 1 )
@@ -4702,24 +4702,24 @@ void View::DrawZoneInfoWindow()
                     TextDisabledUnformatted( "(100%)" );
                     ImGui::Separator();
                     TextFocused( "Running state regions:", "1" );
-                    TextFocused( "CPU:", RealToString( it->cpu, true ) );
+                    TextFocused( "CPU:", RealToString( it->Cpu(), true ) );
                 }
             }
             else if( cnt > 1 )
             {
                 uint8_t cpus[256] = {};
                 auto bit = it;
-                int64_t running = it->end - ev.Start();
-                cpus[it->cpu] = 1;
+                int64_t running = it->End() - ev.Start();
+                cpus[it->Cpu()] = 1;
                 ++it;
                 for( int64_t i=0; i<cnt-2; i++ )
                 {
-                    running += it->end - it->start;
-                    cpus[it->cpu] = 1;
+                    running += it->End() - it->Start();
+                    cpus[it->Cpu()] = 1;
                     ++it;
                 }
-                running += end - it->start;
-                cpus[it->cpu] = 1;
+                running += end - it->Start();
+                cpus[it->Cpu()] = 1;
                 TextFocused( "Running state time:", TimeToString( running ) );
                 if( ztime != 0 )
                 {
@@ -4737,7 +4737,7 @@ void View::DrawZoneInfoWindow()
                 for( int i=0; i<256; i++ ) numCpus += cpus[i];
                 if( numCpus == 1 )
                 {
-                    TextFocused( "CPU:", RealToString( it->cpu, true ) );
+                    TextFocused( "CPU:", RealToString( it->Cpu(), true ) );
                 }
                 else
                 {
@@ -4781,13 +4781,13 @@ void View::DrawZoneInfoWindow()
                     ImGui::Separator();
                     while( bit < eit )
                     {
-                        const auto cend = bit->end;
-                        const auto state = bit->state;
-                        const auto reason = bit->reason;
-                        const auto cpu0 = bit->cpu;
+                        const auto cend = bit->End();
+                        const auto state = bit->State();
+                        const auto reason = bit->Reason();
+                        const auto cpu0 = bit->Cpu();
                         ++bit;
-                        const auto cstart = bit->start;
-                        const auto cpu1 = bit->cpu;
+                        const auto cstart = bit->Start();
+                        const auto cpu1 = bit->Cpu();
 
                         ImGui::TextUnformatted( TimeToString( cend - adjust ) );
                         if( ImGui::IsMouseClicked( 0 ) && ImGui::IsItemHovered() ) CenterAtTime( cend );
@@ -11740,10 +11740,10 @@ int64_t View::GetZoneSelfTime( const GpuEvent& zone )
 
 bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt )
 {
-    auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+    auto it = std::lower_bound( ctx->v.begin(), ctx->v.end(), ev.Start(), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
     if( it == ctx->v.end() ) return false;
     const auto end = m_worker.GetZoneEnd( ev );
-    const auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.start; } );
+    const auto eit = std::upper_bound( it, ctx->v.end(), end, [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
     if( eit == ctx->v.end() ) return false;
     cnt = std::distance( it, eit );
     if( cnt == 0 ) return false;
@@ -11753,14 +11753,14 @@ bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, in
     }
     else
     {
-        int64_t running = it->end - ev.Start();
+        int64_t running = it->End() - ev.Start();
         ++it;
         for( int64_t i=0; i<cnt-2; i++ )
         {
-            running += it->end - it->start;
+            running += it->End() - it->Start();
             ++it;
         }
-        running += end - it->start;
+        running += end - it->Start();
         time = running;
     }
     return true;

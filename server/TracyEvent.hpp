@@ -83,7 +83,7 @@ struct ZoneEvent
     void SetStart( int64_t start )
     {
         assert( start < ( 1ll << 47 ) );
-        _start_srcloc = ( _start_srcloc & 0xFFFF ) | ( start << 16 );
+        _start_srcloc = ( _start_srcloc & 0xFFFF ) | uint64_t( start << 16 );
     }
     int16_t SrcLoc() const
     {
@@ -91,7 +91,7 @@ struct ZoneEvent
     }
     void SetSrcLoc( int16_t srcloc )
     {
-        _start_srcloc = ( _start_srcloc & 0xFFFFFFFFFFFF0000 ) | srcloc;
+        _start_srcloc = ( _start_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc );
     }
 
     uint64_t _start_srcloc;
@@ -127,7 +127,7 @@ struct LockEvent
     void SetTime( int64_t time )
     {
         assert( time < ( 1ll << 47 ) );
-        _start_time = ( _start_time & 0xFFFF ) | ( time << 16 );
+        _start_time = ( _start_time & 0xFFFF ) | uint64_t( time << 16 );
     }
     int16_t SrcLoc() const
     {
@@ -135,7 +135,7 @@ struct LockEvent
     }
     void SetSrcLoc( int16_t srcloc )
     {
-        _start_time = ( _start_time & 0xFFFFFFFFFFFF0000 ) | srcloc;
+        _start_time = ( _start_time & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc );
     }
 
     uint64_t _start_time;

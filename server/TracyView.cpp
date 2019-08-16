@@ -4003,7 +4003,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 else
                                 {
                                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                                    DrawTextContrast( draw, wpos + ImVec2( ( start - m_zvStart ) * pxns, offset ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
+                                    DrawTextContrast( draw, wpos + ImVec2( ( start - m_zvStart ) * pxns, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
                                     ImGui::PopClipRect();
                                 }
 

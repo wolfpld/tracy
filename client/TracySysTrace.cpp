@@ -156,6 +156,18 @@ void SysTraceWorker( void* ptr )
     tracy_free( s_prop );
 }
 
+#ifdef __CYGWIN__
+extern "C" typedef DWORD (WINAPI *t_GetProcessIdOfThread)( HANDLE );
+extern "C" typedef DWORD (WINAPI *t_GetProcessImageFileNameA)( HANDLE, LPSTR, DWORD );
+#  ifdef UNICODE
+t_GetProcessIdOfThread GetProcessIdOfThread = (t_GetProcessIdOfThread)GetProcAddress( GetModuleHandle( L"kernel32.dll" ), "GetProcessIdOfThread" );
+t_GetProcessImageFileNameA GetProcessImageFileNameA = (t_GetProcessImageFileNameA)GetProcAddress( GetModuleHandle( L"kernel32.dll" ), "K32GetProcessImageFileNameA" );
+#  else
+t_GetProcessIdOfThread GetProcessIdOfThread = (t_GetProcessIdOfThread)GetProcAddress( GetModuleHandle( "kernel32.dll" ), "GetProcessIdOfThread" );
+t_GetProcessImageFileNameA GetProcessImageFileNameA = (t_GetProcessImageFileNameA)GetProcAddress( GetModuleHandle( "kernel32.dll" ), "K32GetProcessImageFileNameA" );
+#  endif
+#endif
+
 void SysTraceSendExternalName( uint64_t thread )
 {
     bool threadSent = false;

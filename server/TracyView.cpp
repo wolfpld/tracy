@@ -3967,47 +3967,45 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         ZoomToRange( start, rend );
                                     }
                                 }
-
                             }
                             else
                             {
                                 const auto thread = it->Thread();
-                                const auto local = thread != 0 && m_worker.IsThreadLocal( thread );
+                                const auto local = m_worker.IsThreadLocal( thread );
                                 const auto pr0 = ( start - m_zvStart ) * pxns;
                                 const auto pr1 = ( end - m_zvStart ) * pxns;
                                 const auto px0 = std::max( pr0, -10.0 );
                                 const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
                                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF334488 : 0xFF444444 );
                                 draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF5566AA : 0xFF666666 );
-                                if( local )
+
+                                auto txt = local ? m_worker.GetThreadString( thread ) : m_worker.GetExternalName( thread );
+                                auto tsz = ImGui::CalcTextSize( txt );
+                                if( tsz.x < zsz )
                                 {
-                                    auto txt = m_worker.GetThreadString( thread );
-                                    auto tsz = ImGui::CalcTextSize( txt );
-                                    if( tsz.x < zsz )
+                                    const auto x = ( start - m_zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;
+                                    if( x < 0 || x > w - tsz.x )
                                     {
-                                        const auto x = ( start - m_zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;
-                                        if( x < 0 || x > w - tsz.x )
-                                        {
-                                            ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                                            DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset-1 ), 0xFFFFFFFF, txt );
-                                            ImGui::PopClipRect();
-                                        }
-                                        else if( start == end )
-                                        {
-                                            DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset-1 ), 0xFFFFFFFF, txt );
-                                        }
-                                        else
-                                        {
-                                            DrawTextContrast( draw, wpos + ImVec2( x, offset-1 ), 0xFFFFFFFF, txt );
-                                        }
+                                        ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                                        DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
+                                        ImGui::PopClipRect();
+                                    }
+                                    else if( start == end )
+                                    {
+                                        DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
                                     }
                                     else
                                     {
-                                        ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                                        DrawTextContrast( draw, wpos + ImVec2( ( start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, txt );
-                                        ImGui::PopClipRect();
+                                        DrawTextContrast( draw, wpos + ImVec2( x, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
                                     }
                                 }
+                                else
+                                {
+                                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                                    DrawTextContrast( draw, wpos + ImVec2( ( start - m_zvStart ) * pxns, offset ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
+                                    ImGui::PopClipRect();
+                                }
+
                                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset-1 ), wpos + ImVec2( px1, offset + sty - 1 ) ) )
                                 {
                                     ImGui::PopFont();
@@ -4022,7 +4020,9 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     }
                                     else
                                     {
-                                        TextFocused( "Program:", "<external>" );
+                                        TextFocused( "Program:", txt );
+                                        ImGui::SameLine();
+                                        TextDisabledUnformatted( "(external)" );
                                     }
                                     ImGui::Separator();
                                     TextFocused( "Start time:", TimeToString( start ) );

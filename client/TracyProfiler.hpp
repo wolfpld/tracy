@@ -442,6 +442,8 @@ public:
     void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); m_shutdownManual.store( true, std::memory_order_relaxed ); }
     bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
 
+    void SendString( uint64_t ptr, const char* str, QueueType type );
+
 private:
     enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };
 
@@ -467,7 +469,6 @@ private:
     }
 
     bool SendData( const char* data, size_t len );
-    void SendString( uint64_t ptr, const char* str, QueueType type );
     void SendLongString( uint64_t ptr, const char* str, size_t len, QueueType type );
     void SendSourceLocation( uint64_t ptr );
     void SendSourceLocationPayload( uint64_t ptr );

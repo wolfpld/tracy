@@ -56,6 +56,7 @@
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
 #include "TracyArmCpuTable.hpp"
+#include "TracySysTrace.hpp"
 #include "../TracyC.h"
 
 #ifdef __APPLE__
@@ -1851,7 +1852,7 @@ bool Profiler::SendData( const char* data, size_t len )
 
 void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
-    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName || type == QueueType::FrameName );
+    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName || type == QueueType::FrameName || type == QueueType::ExternalName );
 
     QueueItem item;
     MemWrite( &item.hdr.type, type );
@@ -2050,6 +2051,9 @@ bool Profiler::HandleServerQuery()
     case ServerQueryDisconnect:
         HandleDisconnect();
         return false;
+    case ServerQueryExternalName:
+        SysTraceSendExternalName( ptr );
+        break;
     default:
         assert( false );
         break;

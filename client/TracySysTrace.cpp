@@ -6,11 +6,11 @@
 
 #    define INITGUID
 #    include <assert.h>
-#    include <stdint.h>
 #    include <string.h>
 #    include <windows.h>
 #    include <evntrace.h>
 #    include <evntcons.h>
+#    include <psapi.h>
 
 #    include "../common/TracyAlloc.hpp"
 #    include "../common/TracySystem.hpp"
@@ -156,6 +156,36 @@ void SysTraceWorker( void* ptr )
     tracy_free( s_prop );
 }
 
+void SysTraceSendExternalName( uint64_t thread )
+{
+    const auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, thread );
+    if( hnd != INVALID_HANDLE_VALUE )
+    {
+        const auto pid = GetProcessIdOfThread( hnd );
+        CloseHandle( hnd );
+        if( pid != 0 )
+        {
+            const auto phnd = OpenProcess( PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid );
+            if( phnd != INVALID_HANDLE_VALUE )
+            {
+                char buf[1024];
+                const auto sz = GetProcessImageFileNameA( phnd, buf, 1024 );
+                CloseHandle( phnd );
+                if( sz != 0 )
+                {
+                    auto ptr = buf + sz - 1;
+                    while( ptr > buf && *ptr != '\\' ) ptr--;
+                    if( *ptr == '\\' ) ptr++;
+                    GetProfiler().SendString( thread, ptr, QueueType::ExternalName );
+                    return;
+                }
+            }
+        }
+    }
+
+    GetProfiler().SendString( thread, "???", QueueType::ExternalName );
+}
+
 }
 
 #  elif defined __linux__
@@ -163,7 +193,6 @@ void SysTraceWorker( void* ptr )
 #    include <sys/types.h>
 #    include <sys/stat.h>
 #    include <fcntl.h>
-#    include <stdint.h>
 #    include <stdio.h>
 #    include <string.h>
 #    include <unistd.h>
@@ -340,6 +369,12 @@ void SysTraceWorker( void* ptr )
 
     free( line );
     fclose( f );
+}
+
+void SysTraceSendExternalName( uint64_t thread )
+{
+    // TODO
+    GetProfiler().SendString( thread, "???", QueueType::ExternalName );
 }
 
 }

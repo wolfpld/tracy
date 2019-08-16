@@ -66,6 +66,7 @@ enum class QueueType : uint8_t
     CallstackAllocPayload,
     FrameName,
     FrameImageData,
+    ExternalName,
     NUM_TYPES
 };
 
@@ -424,6 +425,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // callstack alloc payload
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // frame name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // frame image data
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // external name
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

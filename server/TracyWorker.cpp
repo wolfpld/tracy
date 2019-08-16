@@ -246,6 +246,7 @@ Worker::Worker( const char* addr )
     , m_bufferOffset( 0 )
     , m_pendingStrings( 0 )
     , m_pendingThreads( 0 )
+    , m_pendingExternalNames( 0 )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
     , m_pendingCallstackSubframes( 0 )
@@ -1838,6 +1839,19 @@ const SourceLocation& Worker::GetSourceLocation( int16_t srcloc ) const
     }
 }
 
+const char* Worker::GetExternalName( uint64_t id ) const
+{
+    const auto it = m_data.externalNames.find( id );
+    if( it == m_data.externalNames.end() )
+    {
+        return "???";
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
 const char* Worker::GetZoneName( const SourceLocation& srcloc ) const
 {
     if( srcloc.name.active )
@@ -2160,7 +2174,7 @@ void Worker::Exec()
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
                 !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
-                m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() )
+                m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() )
             {
                 continue;
             }
@@ -2254,6 +2268,9 @@ bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
                 break;
             case QueueType::CallstackAllocPayload:
                 AddCallstackAllocPayload( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            case QueueType::ExternalName:
+                AddExternalName( ev.stringTransfer.ptr, ptr, sz );
                 break;
             default:
                 assert( false );
@@ -2483,6 +2500,16 @@ void Worker::CheckThreadString( uint64_t id )
     Query( ServerQueryThreadString, id );
 }
 
+void Worker::CheckExternalName( uint64_t id )
+{
+    if( m_data.externalNames.find( id ) != m_data.externalNames.end() ) return;
+
+    m_data.externalNames.emplace( id, "???" );
+    m_pendingExternalNames++;
+
+    Query( ServerQueryExternalName, id );
+}
+
 void Worker::AddSourceLocation( const QueueSourceLocation& srcloc )
 {
     assert( m_pendingSourceLocation > 0 );
@@ -2573,6 +2600,16 @@ void Worker::AddCustomString( uint64_t ptr, char* str, size_t sz )
 {
     assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
+}
+
+void Worker::AddExternalName( uint64_t ptr, char* str, size_t sz )
+{
+    assert( m_pendingExternalNames > 0 );
+    m_pendingExternalNames--;
+    auto it = m_data.externalNames.find( ptr );
+    assert( it != m_data.externalNames.end() && strcmp( it->second, "???" ) == 0 );
+    const auto sl = StoreString( str, sz );
+    it->second = sl.ptr;
 }
 
 static const uint8_t DxtcIndexTable[256] = {
@@ -4063,6 +4100,12 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         auto& cx = cs.push_next();
         cx.SetStart( time );
         cx.SetThread( ev.newThread );
+
+        // At this point that check is approximate
+        if( !IsThreadLocal( ev.newThread ) )
+        {
+            CheckExternalName( ev.newThread );
+        }
     }
 }
 
@@ -4886,8 +4929,6 @@ void Worker::Write( FileWrite& f )
             WriteTimeOffset( f, refTime, cx.Start() );
             WriteTimeOffset( f, refTime, cx.End() );
             uint64_t thread = cx.Thread();
-            // Don't care about external thread identifiers
-            if( m_data.threadMap.find( thread ) == m_data.threadMap.end() ) thread = 0;
             f.Write( &thread, sizeof( thread ) );
         }
     }

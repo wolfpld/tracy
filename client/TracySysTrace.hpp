@@ -7,12 +7,16 @@
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
 
+#include <stdint.h>
+
 namespace tracy
 {
 
 bool SysTraceStart();
 void SysTraceStop();
 void SysTraceWorker( void* ptr );
+
+void SysTraceSendExternalName( uint64_t thread );
 
 }
 

@@ -110,13 +110,14 @@ enum { MinFrameSize = 5 };
 
 static View* s_instance = nullptr;
 
-View::View( const char* addr, ImFont* fixedWidth, ImFont* bigFont, SetTitleCallback stcb )
+View::View( const char* addr, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb )
     : m_worker( addr )
     , m_staticView( false )
     , m_pause( false )
     , m_frames( nullptr )
     , m_messagesScrollBottom( true )
     , m_textEditorFont( fixedWidth )
+    , m_smallFont( smallFont )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
     , m_userData()
@@ -127,13 +128,14 @@ View::View( const char* addr, ImFont* fixedWidth, ImFont* bigFont, SetTitleCallb
     InitTextEditor();
 }
 
-View::View( FileRead& f, ImFont* fixedWidth, ImFont* bigFont, SetTitleCallback stcb )
+View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb )
     : m_worker( f )
     , m_staticView( true )
     , m_pause( true )
     , m_frames( m_worker.GetFramesBase() )
     , m_messagesScrollBottom( false )
     , m_textEditorFont( fixedWidth )
+    , m_smallFont( smallFont )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
     , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() )

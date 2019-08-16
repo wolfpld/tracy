@@ -62,9 +62,9 @@ public:
 
     using SetTitleCallback = void(*)( const char* );
 
-    View( ImFont* fixedWidth = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", fixedWidth, bigFont, stcb ) {}
-    View( const char* addr, ImFont* fixedWidth = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
-    View( FileRead& f, ImFont* fixedWidth = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
+    View( ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", fixedWidth, smallFont, bigFont, stcb ) {}
+    View( const char* addr, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
+    View( FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
     ~View();
 
     static bool Draw();
@@ -321,6 +321,7 @@ private:
     ImFont* m_textEditorFont;
     bool m_textEditorWhitespace = true;
 
+    ImFont* m_smallFont;
     ImFont* m_bigFont;
 
     float m_rootWidth, m_rootHeight;

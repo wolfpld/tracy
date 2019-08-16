@@ -237,6 +237,7 @@ int main( int argc, char** argv )
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * dpiScale, &configMerge, rangesIcons );
     auto fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 15.0f * dpiScale );
     auto bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, 20.0f * dpiScale );
+    auto smallFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, 10.0f * dpiScale );
 
     ImGuiFreeType::BuildFontAtlas( io.Fonts, ImGuiFreeType::LightHinting );
 
@@ -456,7 +457,7 @@ int main( int argc, char** argv )
                 }
                 connHistVec = RebuildConnectionHistory( connHistMap );
 
-                view = std::make_unique<tracy::View>( addr, fixedWidth, bigFont, SetWindowTitleCallback );
+                view = std::make_unique<tracy::View>( addr, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
             }
             ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
             if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
@@ -470,10 +471,10 @@ int main( int argc, char** argv )
                         auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
                         if( f )
                         {
-                            loadThread = std::thread( [&view, f, &badVer, fixedWidth, bigFont] {
+                            loadThread = std::thread( [&view, f, &badVer, fixedWidth, smallFont, bigFont] {
                                 try
                                 {
-                                    view = std::make_unique<tracy::View>( *f, fixedWidth, bigFont, SetWindowTitleCallback );
+                                    view = std::make_unique<tracy::View>( *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
                                 }
                                 catch( const tracy::UnsupportedVersion& e )
                                 {
@@ -527,7 +528,7 @@ int main( int argc, char** argv )
                     if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
                     if( ImGui::Selectable( name->second.c_str(), &sel, flags ) && !loadThread.joinable() )
                     {
-                        view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, bigFont, SetWindowTitleCallback );
+                        view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
                     }
                     ImGui::NextColumn();
                     const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;

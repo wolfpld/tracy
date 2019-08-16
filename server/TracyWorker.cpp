@@ -1553,6 +1553,16 @@ uint64_t Worker::GetContextSwitchCount() const
     return cnt;
 }
 
+uint64_t Worker::GetContextSwitchPerCpuCount() const
+{
+    uint64_t cnt = 0;
+    for( int i=0; i<256; i++ )
+    {
+        cnt += m_data.cpuData[i].cs.size();
+    }
+    return cnt;
+}
+
 const ContextSwitch* const Worker::GetContextSwitchDataImpl( uint64_t thread )
 {
     auto it = m_data.ctxSwitch.find( thread );

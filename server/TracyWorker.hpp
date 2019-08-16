@@ -281,6 +281,7 @@ public:
     uint64_t GetLockCount() const;
     uint64_t GetPlotCount() const;
     uint64_t GetContextSwitchCount() const;
+    uint64_t GetContextSwitchPerCpuCount() const;
     bool HasContextSwitches() const { return !m_data.ctxSwitch.empty(); }
     uint64_t GetSrcLocCount() const { return m_data.sourceLocationPayload.size() + m_data.sourceLocation.size(); }
     uint64_t GetCallstackPayloadCount() const { return m_data.callstackPayload.size() - 1; }

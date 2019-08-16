@@ -9154,6 +9154,8 @@ void View::DrawInfo()
         TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
         TextFocused( "Frame images:", RealToString( ficnt, true ) );
         TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount(), true ) );
+        ImGui::SameLine();
+        TextFocused( "+", RealToString( m_worker.GetContextSwitchPerCpuCount(), true ) );
         ImGui::TreePop();
     }
 

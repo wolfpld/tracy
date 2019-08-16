@@ -3972,14 +3972,15 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                             {
                                 const auto thread = it->Thread();
                                 const auto local = m_worker.IsThreadLocal( thread );
+                                auto txt = local ? m_worker.GetThreadString( thread ) : m_worker.GetExternalName( thread );
+                                const bool untracked = !local && strcmp( txt, m_worker.GetCaptureProgram().c_str() ) == 0;
                                 const auto pr0 = ( start - m_zvStart ) * pxns;
                                 const auto pr1 = ( end - m_zvStart ) * pxns;
                                 const auto px0 = std::max( pr0, -10.0 );
                                 const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
-                                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF334488 : 0xFF444444 );
-                                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF5566AA : 0xFF666666 );
+                                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 ) );
+                                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF5566AA : ( untracked ? 0xFF885555 : 0xFF666666 ) );
 
-                                auto txt = local ? m_worker.GetThreadString( thread ) : m_worker.GetExternalName( thread );
                                 auto tsz = ImGui::CalcTextSize( txt );
                                 if( tsz.x < zsz )
                                 {
@@ -4022,7 +4023,14 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     {
                                         TextFocused( "Program:", txt );
                                         ImGui::SameLine();
-                                        TextDisabledUnformatted( "(external)" );
+                                        if( untracked )
+                                        {
+                                            TextDisabledUnformatted( "(untracked thread in profiled program)" );
+                                        }
+                                        else
+                                        {
+                                            TextDisabledUnformatted( "(external)" );
+                                        }
                                     }
                                     ImGui::Separator();
                                     TextFocused( "Start time:", TimeToString( start ) );

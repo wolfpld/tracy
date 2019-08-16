@@ -3972,7 +3972,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                             {
                                 const auto thread = it->Thread();
                                 const auto local = m_worker.IsThreadLocal( thread );
-                                auto txt = local ? m_worker.GetThreadString( thread ) : m_worker.GetExternalName( thread );
+                                auto txt = local ? m_worker.GetThreadString( thread ) : m_worker.GetExternalName( thread ).first;
                                 const bool untracked = !local && strcmp( txt, m_worker.GetCaptureProgram().c_str() ) == 0;
                                 const auto pr0 = ( start - m_zvStart ) * pxns;
                                 const auto pr1 = ( end - m_zvStart ) * pxns;
@@ -4031,6 +4031,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         {
                                             TextDisabledUnformatted( "(external)" );
                                         }
+                                        TextFocused( "Thread:", m_worker.GetExternalName( thread ).second );
                                     }
                                     ImGui::Separator();
                                     TextFocused( "Start time:", TimeToString( start ) );

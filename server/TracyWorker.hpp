@@ -173,7 +173,7 @@ private:
         Vector<const char*> stringData;
         flat_hash_map<charutil::StringKey, uint32_t, charutil::StringKey::HasherPOT, charutil::StringKey::Comparator> stringMap;
         flat_hash_map<uint64_t, const char*, nohash<uint64_t>> threadNames;
-        flat_hash_map<uint64_t, const char*, nohash<uint64_t>> externalNames;
+        flat_hash_map<uint64_t, std::pair<const char*, const char*>, nohash<uint64_t>> externalNames;
 
         flat_hash_map<uint64_t, SourceLocation, nohash<uint64_t>> sourceLocation;
         Vector<SourceLocation*> sourceLocationPayload;
@@ -335,7 +335,7 @@ public:
     const char* GetThreadString( uint64_t id ) const;
     bool IsThreadLocal( uint64_t id ) const;
     const SourceLocation& GetSourceLocation( int16_t srcloc ) const;
-    const char* GetExternalName( uint64_t id ) const;
+    std::pair<const char*, const char*> GetExternalName( uint64_t id ) const;
 
     const char* GetZoneName( const SourceLocation& srcloc ) const;
     const char* GetZoneName( const ZoneEvent& ev ) const;
@@ -488,6 +488,7 @@ private:
     void AddThreadString( uint64_t id, char* str, size_t sz );
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
     void AddExternalName( uint64_t ptr, char* str, size_t sz );
+    void AddExternalThreadName( uint64_t ptr, char* str, size_t sz );
     void AddFrameImageData( uint64_t ptr, char* data, size_t sz );
 
     tracy_force_inline void AddCallstackPayload( uint64_t ptr, char* data, size_t sz );

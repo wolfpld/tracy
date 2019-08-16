@@ -1852,7 +1852,13 @@ bool Profiler::SendData( const char* data, size_t len )
 
 void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 {
-    assert( type == QueueType::StringData || type == QueueType::ThreadName || type == QueueType::CustomStringData || type == QueueType::PlotName || type == QueueType::FrameName || type == QueueType::ExternalName );
+    assert( type == QueueType::StringData ||
+            type == QueueType::ThreadName ||
+            type == QueueType::CustomStringData ||
+            type == QueueType::PlotName ||
+            type == QueueType::FrameName ||
+            type == QueueType::ExternalName ||
+            type == QueueType::ExternalThreadName );
 
     QueueItem item;
     MemWrite( &item.hdr.type, type );

@@ -499,12 +499,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( sz );
         for( uint64_t i=0; i<sz; i++ )
         {
-            uint64_t id, ptr;
+            uint64_t id, ptr, ptr2;
             f.Read2( id, ptr );
+            f.Read( ptr2 );
             auto it = pointerMap.find( ptr );
-            if( it != pointerMap.end() )
+            auto it2 = pointerMap.find( ptr2 );
+            if( it != pointerMap.end() && it2 != pointerMap.end() )
             {
-                m_data.externalNames.emplace( id, it->second );
+                m_data.externalNames.emplace( id, std::make_pair( it->second, it2->second ) );
             }
         }
     }
@@ -1854,12 +1856,12 @@ const SourceLocation& Worker::GetSourceLocation( int16_t srcloc ) const
     }
 }
 
-const char* Worker::GetExternalName( uint64_t id ) const
+std::pair<const char*, const char*> Worker::GetExternalName( uint64_t id ) const
 {
     const auto it = m_data.externalNames.find( id );
     if( it == m_data.externalNames.end() )
     {
-        return "???";
+        return std::make_pair( "???", "???" );
     }
     else
     {
@@ -2287,6 +2289,9 @@ bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
             case QueueType::ExternalName:
                 AddExternalName( ev.stringTransfer.ptr, ptr, sz );
                 break;
+            case QueueType::ExternalThreadName:
+                AddExternalThreadName( ev.stringTransfer.ptr, ptr, sz );
+                break;
             default:
                 assert( false );
                 break;
@@ -2519,8 +2524,8 @@ void Worker::CheckExternalName( uint64_t id )
 {
     if( m_data.externalNames.find( id ) != m_data.externalNames.end() ) return;
 
-    m_data.externalNames.emplace( id, "???" );
-    m_pendingExternalNames++;
+    m_data.externalNames.emplace( id, std::make_pair( "???", "???" ) );
+    m_pendingExternalNames += 2;
 
     Query( ServerQueryExternalName, id );
 }
@@ -2622,9 +2627,19 @@ void Worker::AddExternalName( uint64_t ptr, char* str, size_t sz )
     assert( m_pendingExternalNames > 0 );
     m_pendingExternalNames--;
     auto it = m_data.externalNames.find( ptr );
-    assert( it != m_data.externalNames.end() && strcmp( it->second, "???" ) == 0 );
+    assert( it != m_data.externalNames.end() && strcmp( it->second.first, "???" ) == 0 );
     const auto sl = StoreString( str, sz );
-    it->second = sl.ptr;
+    it->second.first = sl.ptr;
+}
+
+void Worker::AddExternalThreadName( uint64_t ptr, char* str, size_t sz )
+{
+    assert( m_pendingExternalNames > 0 );
+    m_pendingExternalNames--;
+    auto it = m_data.externalNames.find( ptr );
+    assert( it != m_data.externalNames.end() && strcmp( it->second.second, "???" ) == 0 );
+    const auto sl = StoreString( str, sz );
+    it->second.second = sl.ptr;
 }
 
 static const uint8_t DxtcIndexTable[256] = {
@@ -4695,7 +4710,9 @@ void Worker::Write( FileWrite& f )
     for( auto& v : m_data.externalNames )
     {
         f.Write( &v.first, sizeof( v.first ) );
-        uint64_t ptr = (uint64_t)v.second;
+        uint64_t ptr = (uint64_t)v.second.first;
+        f.Write( &ptr, sizeof( ptr ) );
+        ptr = (uint64_t)v.second.second;
         f.Write( &ptr, sizeof( ptr ) );
     }
 

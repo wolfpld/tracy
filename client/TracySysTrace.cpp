@@ -158,9 +158,24 @@ void SysTraceWorker( void* ptr )
 
 void SysTraceSendExternalName( uint64_t thread )
 {
+    bool threadSent = false;
     const auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, thread );
     if( hnd != INVALID_HANDLE_VALUE )
     {
+#if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2
+        PWSTR tmp;
+        GetThreadDescription( hnd, &tmp );
+        char buf[256];
+        if( tmp )
+        {
+            auto ret = wcstombs( buf, tmp, 256 );
+            if( ret != 0 )
+            {
+                GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
+                threadSent = true;
+            }
+        }
+#endif
         const auto pid = GetProcessIdOfThread( hnd );
         CloseHandle( hnd );
         if( pid != 0 )
@@ -173,6 +188,10 @@ void SysTraceSendExternalName( uint64_t thread )
                 CloseHandle( phnd );
                 if( sz != 0 )
                 {
+                    if( !threadSent )
+                    {
+                        GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+                    }
                     auto ptr = buf + sz - 1;
                     while( ptr > buf && *ptr != '\\' ) ptr--;
                     if( *ptr == '\\' ) ptr++;
@@ -183,6 +202,7 @@ void SysTraceSendExternalName( uint64_t thread )
         }
     }
 
+    GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
     GetProfiler().SendString( thread, "???", QueueType::ExternalName );
 }
 
@@ -374,6 +394,7 @@ void SysTraceWorker( void* ptr )
 void SysTraceSendExternalName( uint64_t thread )
 {
     // TODO
+    GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
     GetProfiler().SendString( thread, "???", QueueType::ExternalName );
 }
 

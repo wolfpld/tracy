@@ -4129,6 +4129,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
 
         auto& cx = cs.push_next();
         cx.SetStart( time );
+        cx.SetEnd( -1 );
         cx.SetThread( ev.newThread );
 
         // At this point that check is approximate

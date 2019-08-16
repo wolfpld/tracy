@@ -213,6 +213,7 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <sys/types.h>
 #    include <sys/stat.h>
 #    include <fcntl.h>
+#    include <inttypes.h>
 #    include <stdio.h>
 #    include <string.h>
 #    include <unistd.h>
@@ -393,8 +394,57 @@ void SysTraceWorker( void* ptr )
 
 void SysTraceSendExternalName( uint64_t thread )
 {
-    // TODO
-    GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+    FILE* f;
+    char fn[256];
+    sprintf( fn, "/proc/%" PRIu64 "/comm", thread );
+    f = fopen( fn, "rb" );
+    if( f )
+    {
+        char buf[256];
+        const auto sz = fread( buf, 1, 256, f );
+        if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
+        GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
+        fclose( f );
+    }
+    else
+    {
+        GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+    }
+
+    sprintf( fn, "/proc/%" PRIu64 "/status", thread );
+    f = fopen( fn, "rb" );
+    if( f )
+    {
+        int pid = -1;
+        size_t lsz = 1024;
+        auto line = (char*)malloc( lsz );
+        for(;;)
+        {
+            auto rd = getline( &line, &lsz, f );
+            if( rd <= 0 ) break;
+            if( memcmp( "Tgid:\t", line, 6 ) == 0 )
+            {
+                pid = atoi( line + 6 );
+                break;
+            }
+        }
+        free( line );
+        fclose( f );
+        if( pid >= 0 )
+        {
+            sprintf( fn, "/proc/%i/comm", pid );
+            f = fopen( fn, "rb" );
+            if( f )
+            {
+                char buf[256];
+                const auto sz = fread( buf, 1, 256, f );
+                if( sz > 0 && buf[sz-1] == '\n' ) buf[sz-1] = '\0';
+                GetProfiler().SendString( thread, buf, QueueType::ExternalName );
+                fclose( f );
+                return;
+            }
+        }
+    }
     GetProfiler().SendString( thread, "???", QueueType::ExternalName );
 }
 

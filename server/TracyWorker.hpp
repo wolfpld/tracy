@@ -294,6 +294,7 @@ public:
         if( m_data.ctxSwitchLast.first == thread ) return m_data.ctxSwitchLast.second;
         return GetContextSwitchDataImpl( thread );
     }
+    const CpuData* GetCpuData() const { return m_data.cpuData; }
 
     int64_t GetFrameTime( const FrameData& fd, size_t idx ) const;
     int64_t GetFrameBegin( const FrameData& fd, size_t idx ) const;

@@ -332,6 +332,7 @@ public:
     const char* GetString( const StringRef& ref ) const;
     const char* GetString( const StringIdx& idx ) const;
     const char* GetThreadString( uint64_t id ) const;
+    bool IsThreadLocal( uint64_t id ) const;
     const SourceLocation& GetSourceLocation( int16_t srcloc ) const;
 
     const char* GetZoneName( const SourceLocation& srcloc ) const;

@@ -1819,6 +1819,11 @@ const char* Worker::GetThreadString( uint64_t id ) const
     }
 }
 
+bool Worker::IsThreadLocal( uint64_t id ) const
+{
+    return m_data.threadMap.find( id ) != m_data.threadMap.end();
+}
+
 const SourceLocation& Worker::GetSourceLocation( int16_t srcloc ) const
 {
     if( srcloc < 0 )

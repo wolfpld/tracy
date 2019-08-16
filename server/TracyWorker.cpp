@@ -494,6 +494,21 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 5, 3 ) )
+    {
+        f.Read( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t id, ptr;
+            f.Read2( id, ptr );
+            auto it = pointerMap.find( ptr );
+            if( it != pointerMap.end() )
+            {
+                m_data.externalNames.emplace( id, it->second );
+            }
+        }
+    }
+
     if( fileVer >= FileVersion( 0, 4, 4 ) )
     {
         f.Read( sz );
@@ -4669,6 +4684,15 @@ void Worker::Write( FileWrite& f )
     sz = m_data.threadNames.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.threadNames )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        uint64_t ptr = (uint64_t)v.second;
+        f.Write( &ptr, sizeof( ptr ) );
+    }
+
+    sz = m_data.externalNames.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.externalNames )
     {
         f.Write( &v.first, sizeof( v.first ) );
         uint64_t ptr = (uint64_t)v.second;

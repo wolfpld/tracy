@@ -67,7 +67,8 @@ struct LoadProgress
         Memory,
         CallStacks,
         FrameImages,
-        ContextSwitches
+        ContextSwitches,
+        ContextSwitchesPerCpu
     };
 
     LoadProgress() : total( 0 ), progress( 0 ), subTotal( 0 ), subProgress( 0 ) {}

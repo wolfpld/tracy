@@ -626,6 +626,9 @@ int main( int argc, char** argv )
             case tracy::LoadProgress::ContextSwitches:
                 ImGui::TextUnformatted( "Context switches..." );
                 break;
+            case tracy::LoadProgress::ContextSwitchesPerCpu:
+                ImGui::TextUnformatted( "CPU context switches..." );
+                break;
             default:
                 assert( false );
                 break;

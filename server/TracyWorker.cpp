@@ -307,9 +307,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         s_loadProgress.total.store( 9, std::memory_order_relaxed );
     }
-    else
+    else if( fileVer <= FileVersion( 0, 5, 2 ) )
     {
         s_loadProgress.total.store( 10, std::memory_order_relaxed );
+    }
+    else
+    {
+        s_loadProgress.total.store( 11, std::memory_order_relaxed );
     }
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
@@ -1425,6 +1429,44 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 uint64_t csz;
                 f.Read( csz );
                 f.Skip( csz * sizeof( ContextSwitchData ) );
+            }
+        }
+    }
+
+    if( fileVer >= FileVersion( 0, 5, 3 ) )
+    {
+        s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
+        s_loadProgress.progress.store( LoadProgress::ContextSwitchesPerCpu, std::memory_order_relaxed );
+        f.Read( sz );
+        s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
+        if( eventMask & EventType::ContextSwitches )
+        {
+            uint64_t cnt = 0;
+            for( int i=0; i<256; i++ )
+            {
+                int64_t refTime = 0;
+                f.Read( sz );
+                m_data.cpuData[i].cs.reserve_exact( sz, m_slab );
+                auto ptr = m_data.cpuData[i].cs.data();
+                for( uint64_t j=0; j<sz; j++ )
+                {
+                    ptr->SetStart( ReadTimeOffset( f, refTime ) );
+                    ptr->SetEnd( ReadTimeOffset( f, refTime ) );
+                    uint64_t thread;
+                    f.Read( thread );
+                    ptr->SetThread( thread );
+                    ptr++;
+                }
+                cnt += sz;
+                s_loadProgress.subProgress.store( cnt, std::memory_order_relaxed );
+            }
+        }
+        else
+        {
+            for( int i=0; i<256; i++ )
+            {
+                f.Read( sz );
+                f.Skip( sizeof( uint64_t ) * 3 * sz );
             }
         }
     }
@@ -4824,6 +4866,24 @@ void Worker::Write( FileWrite& f )
             f.Write( &cpu, sizeof( cpu ) );
             f.Write( &reason, sizeof( reason ) );
             f.Write( &state, sizeof( state ) );
+        }
+    }
+
+    sz = GetContextSwitchPerCpuCount();
+    f.Write( &sz, sizeof( sz ) );
+    for( int i=0; i<256; i++ )
+    {
+        sz = m_data.cpuData[i].cs.size();
+        f.Write( &sz, sizeof( sz ) );
+        int64_t refTime = 0;
+        for( auto& cx : m_data.cpuData[i].cs )
+        {
+            WriteTimeOffset( f, refTime, cx.Start() );
+            WriteTimeOffset( f, refTime, cx.End() );
+            uint64_t thread = cx.Thread();
+            // Don't care about external thread identifiers
+            if( m_data.threadMap.find( thread ) == m_data.threadMap.end() ) thread = 0;
+            f.Write( &thread, sizeof( thread ) );
         }
     }
 }

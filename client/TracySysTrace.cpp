@@ -171,7 +171,7 @@ t_GetProcessImageFileNameA GetProcessImageFileNameA = (t_GetProcessImageFileName
 void SysTraceSendExternalName( uint64_t thread )
 {
     bool threadSent = false;
-    const auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, thread );
+    const auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, DWORD( thread ) );
     if( hnd != INVALID_HANDLE_VALUE )
     {
 #if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2

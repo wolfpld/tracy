@@ -120,6 +120,7 @@ private:
     int DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax );
     void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type, float PlotHeight );
     void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged, PlotType type, float PlotHeight );
+    int DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax );
     void DrawOptions();
     void DrawMessages();
     void DrawFindZone();
@@ -293,6 +294,7 @@ private:
     bool m_goToFrame = false;
     bool m_drawEmptyLabels = false;
     bool m_drawContextSwitches = true;
+    bool m_drawCpuData = true;
 
     int m_statSort = 0;
     bool m_statSelf = false;

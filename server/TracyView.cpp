@@ -1853,6 +1853,11 @@ void View::DrawZones()
     }
 
     // zones
+    if( m_drawCpuData && m_worker.HasContextSwitches() )
+    {
+        offset = DrawCpuData( offset, pxns, wpos, hover, yMin, yMax );
+    }
+
     const auto& threadData = m_worker.GetThreadData();
     if( threadData.size() != m_threadOrder.size() )
     {
@@ -3856,6 +3861,156 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     return cnt;
 }
 
+int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax )
+{
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto ty = ImGui::GetFontSize();
+    const auto ostep = ty + 1;
+    const auto nspx = 1.0 / pxns;
+    auto draw = ImGui::GetWindowDrawList();
+    const auto to = 9.f;
+    const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
+
+    static int cpuDataVisStub;
+    auto& vis = Vis( &cpuDataVisStub );
+    bool& showFull = vis.showFull;
+
+    const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
+    const auto oldOffset = offset;
+    ImGui::PushClipRect( wpos, wpos + ImVec2( w, offset + vis.height ), true );
+    if( yPos + ty >= yMin && yPos <= yMax )
+    {
+        if( showFull )
+        {
+            draw->AddTriangleFilled( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( ty - to/2, offset + to/2 ), wpos + ImVec2( ty * 0.5, offset + to/2 + th ), 0xFFDD88DD );
+        }
+        else
+        {
+            draw->AddTriangle( wpos + ImVec2( to/2, offset + to/2 ), wpos + ImVec2( to/2, offset + ty - to/2 ), wpos + ImVec2( to/2 + th, offset + ty * 0.5 ), 0xFF6E446E, 2.0f );
+        }
+
+        float txtx = ImGui::CalcTextSize( "CPU data" ).x;
+        DrawTextContrast( draw, wpos + ImVec2( ty, offset ), showFull ? 0xFFDD88DD : 0xFF6E446E, "CPU data" );
+        draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x66DD88DD );
+
+        if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
+        {
+            showFull = !showFull;
+        }
+    }
+    offset += ostep;
+
+    if( showFull )
+    {
+        ImGui::PushFont( m_smallFont );
+        const auto sty = ImGui::GetFontSize();
+        const auto sstep = sty + 1;
+
+        auto cpuData = m_worker.GetCpuData();
+        for( int i=0; i<256; i++ )
+        {
+            if( !cpuData[i].cs.empty() )
+            {
+                if( wpos.y + offset + sty >= yMin && wpos.y + offset <= yMax )
+                {
+                    draw->AddLine( wpos + ImVec2( 0, offset+sty ), wpos + ImVec2( w, offset+sty ), 0x22DD88DD );
+
+                    auto& cs = cpuData[i].cs;
+
+                    auto it = std::lower_bound( cs.begin(), cs.end(), std::max<int64_t>( 0, m_zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                    if( it != cs.end() )
+                    {
+                        auto eit = std::lower_bound( it, cs.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+                        while( it < eit )
+                        {
+                            const auto start = it->Start();
+                            const auto end = it->End();
+                            const auto zsz = std::max( ( end - start ) * pxns, pxns * 0.5 );
+                            if( zsz < MinVisSize )
+                            {
+                                int num = 0;
+                                const auto px0 = ( start - m_zvStart ) * pxns;
+                                auto px1 = ( end - m_zvStart ) * pxns;
+                                auto rend = end;
+                                auto nextTime = end + MinVisSize;
+                                for(;;)
+                                {
+                                    const auto prevIt = it;
+                                    it = std::lower_bound( it, eit, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                                    if( it == prevIt ) ++it;
+                                    num += std::distance( prevIt, it );
+                                    if( it == eit ) break;
+                                    const auto nend = it->End() >= 0 ? it->End() : m_worker.GetLastTime();
+                                    const auto pxnext = ( nend - m_zvStart ) * pxns;
+                                    if( pxnext - px1 >= MinVisSize * 2 ) break;
+                                    px1 = pxnext;
+                                    rend = nend;
+                                    nextTime = nend + nspx;
+                                }
+                                DrawZigZag( draw, wpos + ImVec2( 0, offset + sty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), sty/4, 0xFF888888 );
+                            }
+                            else
+                            {
+                                const auto thread = it->Thread();
+                                const auto local = thread != 0 && m_worker.IsThreadLocal( thread );
+                                const auto pr0 = ( start - m_zvStart ) * pxns;
+                                const auto pr1 = ( end - m_zvStart ) * pxns;
+                                const auto px0 = std::max( pr0, -10.0 );
+                                const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
+                                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF334488 : 0xFF444444 );
+                                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF5566AA : 0xFF666666 );
+                                if( local )
+                                {
+                                    auto txt = m_worker.GetThreadString( thread );
+                                    auto tsz = ImGui::CalcTextSize( txt );
+                                    if( tsz.x < zsz )
+                                    {
+                                        const auto x = ( start - m_zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;
+                                        if( x < 0 || x > w - tsz.x )
+                                        {
+                                            ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                                            DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset-1 ), 0xFFFFFFFF, txt );
+                                            ImGui::PopClipRect();
+                                        }
+                                        else if( start == end )
+                                        {
+                                            DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset-1 ), 0xFFFFFFFF, txt );
+                                        }
+                                        else
+                                        {
+                                            DrawTextContrast( draw, wpos + ImVec2( x, offset-1 ), 0xFFFFFFFF, txt );
+                                        }
+                                    }
+                                    else
+                                    {
+                                        ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                                        DrawTextContrast( draw, wpos + ImVec2( ( start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, txt );
+                                        ImGui::PopClipRect();
+                                    }
+                                }
+                                ++it;
+                            }
+                        }
+                    }
+
+                    char buf[32];
+                    sprintf( buf, "CPU %i", i );
+                    DrawTextContrast( draw, wpos + ImVec2( ty, offset-1 ), 0xFFDD88DD, buf );
+                }
+                offset += sstep;
+            }
+        }
+
+        ImGui::PopFont();
+    }
+
+    offset += ostep * 0.2f;
+    AdjustThreadHeight( vis, oldOffset, offset );
+    ImGui::PopClipRect();
+
+    return offset;
+}
+
 static const char* FormatPlotValue( double val, PlotType type )
 {
     static char buf[64];
@@ -5730,6 +5885,11 @@ void View::DrawOptions()
     ImGui::Checkbox( ICON_FA_HIKING " Draw context switches", &m_drawContextSwitches );
 #else
     ImGui::Checkbox( "Draw context switches", &m_drawContextSwitches );
+#endif
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_MICROCHIP " Draw CPU data", &m_drawCpuData );
+#else
+    ImGui::Checkbox( "Draw CPU data", &m_drawCpuData );
 #endif
     ImGui::Separator();
 

@@ -3948,6 +3948,26 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     nextTime = nend + nspx;
                                 }
                                 DrawZigZag( draw, wpos + ImVec2( 0, offset + sty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), sty/4, 0xFF888888 );
+
+                                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset-1 ), wpos + ImVec2( std::max( px1, px0+MinVisSize ), offset + sty - 1 ) ) )
+                                {
+                                    ImGui::PopFont();
+                                    ImGui::BeginTooltip();
+                                    TextFocused( "CPU:", RealToString( i, true ) );
+                                    TextFocused( "Context switch regions:", RealToString( num, true ) );
+                                    ImGui::Separator();
+                                    TextFocused( "Start time:", TimeToString( start ) );
+                                    TextFocused( "End time:", TimeToString( rend ) );
+                                    TextFocused( "Activity time:", TimeToString( rend - start ) );
+                                    ImGui::EndTooltip();
+                                    ImGui::PushFont( m_smallFont );
+
+                                    if( ImGui::IsMouseClicked( 2 ) )
+                                    {
+                                        ZoomToRange( start, rend );
+                                    }
+                                }
+
                             }
                             else
                             {
@@ -3986,6 +4006,34 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
                                         DrawTextContrast( draw, wpos + ImVec2( ( start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, txt );
                                         ImGui::PopClipRect();
+                                    }
+                                }
+                                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset-1 ), wpos + ImVec2( px1, offset + sty - 1 ) ) )
+                                {
+                                    ImGui::PopFont();
+                                    ImGui::BeginTooltip();
+                                    TextFocused( "CPU:", RealToString( i, true ) );
+                                    if( local )
+                                    {
+                                        TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
+                                        ImGui::SameLine();
+                                        TextDisabledUnformatted( "(profiled program)" );
+                                        TextFocused( "Thread:", m_worker.GetThreadString( thread ) );
+                                    }
+                                    else
+                                    {
+                                        TextFocused( "Program:", "<external>" );
+                                    }
+                                    ImGui::Separator();
+                                    TextFocused( "Start time:", TimeToString( start ) );
+                                    TextFocused( "End time:", TimeToString( end ) );
+                                    TextFocused( "Activity time:", TimeToString( end - start ) );
+                                    ImGui::EndTooltip();
+                                    ImGui::PushFont( m_smallFont );
+
+                                    if( ImGui::IsMouseClicked( 2 ) )
+                                    {
+                                        ZoomToRange( start, end );
                                     }
                                 }
                                 ++it;

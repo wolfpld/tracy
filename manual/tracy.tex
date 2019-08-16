@@ -347,6 +347,7 @@ When using Tracy Profiler, keep in mind the following requirements:
 \end{itemize}
 
 \subsection{Check your environment}
+\label{checkenvironment}
 
 In order to get the most accurate profiling results you should minimize interference caused by other programs running on the same machine. Before starting a profile session close all web browsers, music players, instant messengers, and all other non-essential applications like Steam, Uplay, etc. Make sure you don't have the debugger hooked into the profiled program, as it also has impact on the timing results.
 
@@ -1549,6 +1550,7 @@ The left hand side \emph{index area} of the timeline view displays various label
 
 \begin{itemize}
 \item \emph{Light blue label} -- OpenGL/Vulkan context.
+\item \emph{Pink label} -- CPU data graph.
 \item \emph{White label} -- A CPU thread. Will be replaced by a bright red label in a thread that has crashed (section~\ref{crashhandling}).
 \item \emph{Light red label} -- Indicates a lock.
 \item \emph{Yellow label} -- Plot.
@@ -1595,6 +1597,18 @@ At high zoom levels, the zones will be displayed with additional markers, as pre
 The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan context in place of a thread name.
 
 Hovering the \faMousePointer{} mouse pointer over a zone will highlight all other zones that have the same source location with a white outline. Clicking the \LMB{}~left mouse button on a zone will open zone information window (section~\ref{zoneinfo}). Holding the \keys{\ctrl} key and clicking the \LMB{}~left mouse button on a zone will open zone statistics window (section~\ref{findzone}). Clicking the \MMB{}~middle mouse button on a zone will zoom the view to the extent of the zone.
+
+\subparagraph{CPU data}
+
+This label is only available if context switch data was collected. Each line in this graph represents a separate CPU core. When a core is busy executing a thread, a zone will be drawn at the appropriate time. Zones are colored according to the following key:
+
+\begin{itemize}
+\item \emph{Orange} -- Thread tracked by the profiler.
+\item \emph{Dark blue} -- Thread existing in the profiled application\footnote{Assuming process names are unique. Two programs with the same name are not distinguished.}, but not known to the profiler. This may include internal profiler threads, helper threads created by external libraries, etc.
+\item \emph{Gray} -- Threads assigned to other programs running in the system.
+\end{itemize}
+
+Careful examination of the data presented on this graph may allow you to determine areas where the profiled application was fighting for system resources with other programs (see section~\ref{checkenvironment}), or give you a hint to add more instrumentation macros.
 
 \subparagraph{Locks}
 
@@ -1648,6 +1662,8 @@ In this window you can set various trace-related options. The timeline view migh
 
 \begin{itemize}
 \item \emph{\faExpand{} Draw empty labels} -- By default threads that don't have anything to display at the current zoom level are hidden. Enabling this option will show them anyway.
+\item \emph{\faHiking{} Draw context switches} -- Allows disabling context switch display in threads.
+\item \emph{\faMicrochip{} Draw CPU data} -- Per-CPU behavior graph can be disabled here.
 \item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
 \item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed. The \emph{Namespaces} drop-down controls the display behavior of long zone names:
 \begin{itemize}

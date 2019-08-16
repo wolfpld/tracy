@@ -120,7 +120,11 @@ bool SysTraceStart()
         return false;
     }
 
+#ifdef UNICODE
+    WCHAR KernelLoggerName[sizeof( KERNEL_LOGGER_NAME )];
+#else
     char KernelLoggerName[sizeof( KERNEL_LOGGER_NAME )];
+#endif
     memcpy( KernelLoggerName, KERNEL_LOGGER_NAME, sizeof( KERNEL_LOGGER_NAME ) );
     EVENT_TRACE_LOGFILE log = {};
     log.LoggerName = KernelLoggerName;

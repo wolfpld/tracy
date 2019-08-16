@@ -120,8 +120,10 @@ bool SysTraceStart()
         return false;
     }
 
+    char KernelLoggerName[sizeof( KERNEL_LOGGER_NAME )];
+    memcpy( KernelLoggerName, KERNEL_LOGGER_NAME, sizeof( KERNEL_LOGGER_NAME ) );
     EVENT_TRACE_LOGFILE log = {};
-    log.LoggerName = KERNEL_LOGGER_NAME;
+    log.LoggerName = KernelLoggerName;
     log.ProcessTraceMode = PROCESS_TRACE_MODE_REAL_TIME | PROCESS_TRACE_MODE_EVENT_RECORD | PROCESS_TRACE_MODE_RAW_TIMESTAMP;
     log.EventRecordCallback = EventRecordCallback;
 

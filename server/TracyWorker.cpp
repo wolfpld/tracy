@@ -3963,6 +3963,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
     const auto time = TscTime( ev.time - m_data.baseTime );
     m_data.lastTime = std::max( m_data.lastTime, time );
 
+    auto& cs = m_data.cpuData[ev.cpu].cs;
     if( ev.oldThread != 0 )
     {
         auto it = m_data.ctxSwitch.find( ev.oldThread );
@@ -3977,6 +3978,12 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             item.SetState( ev.state );
 
             it->second->runningTime += time - item.Start();
+        }
+        if( !cs.empty() )
+        {
+            auto& cx = cs.back();
+            assert( cx.Thread() == ev.oldThread );
+            cx.SetEnd( time );
         }
     }
     if( ev.newThread != 0 )
@@ -3995,6 +4002,10 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         item.SetCpu( ev.cpu );
         item.SetReason( -1 );
         item.SetState( -1 );
+
+        auto& cx = cs.push_next();
+        cx.SetStart( time );
+        cx.SetThread( ev.newThread );
     }
 }
 

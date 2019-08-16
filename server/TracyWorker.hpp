@@ -208,6 +208,8 @@ private:
 
         flat_hash_map<uint64_t, ContextSwitch*, nohash<uint64_t>> ctxSwitch;
         std::pair<uint64_t, ContextSwitch*> ctxSwitchLast;
+
+        CpuData cpuData[256];
     };
 
     struct MbpsBlock

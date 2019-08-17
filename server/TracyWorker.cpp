@@ -1517,6 +1517,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read2( tid, pid );
             m_data.tidToPid.emplace( tid, pid );
         }
+
+        f.Read( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t tid;
+            CpuThreadData data;
+            f.Read( tid );
+            f.Read( data );
+            m_data.cpuThreadData.emplace( tid, data );
+        }
     }
 
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
@@ -5089,6 +5099,14 @@ void Worker::Write( FileWrite& f )
     sz = m_data.tidToPid.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.tidToPid )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second, sizeof( v.second ) );
+    }
+
+    sz = m_data.cpuThreadData.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.cpuThreadData )
     {
         f.Write( &v.first, sizeof( v.first ) );
         f.Write( &v.second, sizeof( v.second ) );

@@ -449,6 +449,8 @@ struct CpuThreadData
     uint32_t migrations = 0;
 };
 
+enum { CpuThreadDataSize = sizeof( CpuThreadData ) };
+
 }
 
 #endif

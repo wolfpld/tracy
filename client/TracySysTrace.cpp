@@ -172,7 +172,7 @@ void SysTraceSendExternalName( uint64_t thread )
 {
     bool threadSent = false;
     const auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, DWORD( thread ) );
-    if( hnd != INVALID_HANDLE_VALUE )
+    if( hnd != 0 )
     {
 #if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2
         PWSTR tmp;

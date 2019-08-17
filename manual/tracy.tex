@@ -1570,6 +1570,7 @@ Context switch regions are using the following color key:
 \item \emph{Green} -- Thread is running.
 \item \emph{Red} -- Thread is waiting to be resumed by the scheduler. There are many reasons why a thread may be in the waiting state. Hovering the \faMousePointer{}~mouse pointer over the region will display more information.
 \item \emph{Blue} -- Thread is waiting to be resumed and is migrating to another CPU core. This might have visible performance effects, because low level CPU caches are not shared between cores, which may result in additional cache misses. To avoid this problem, you may pin a thread to a specific core, by setting its affinity.
+\item \emph{Bronze} -- Thread has been placed in the scheduler's run queue and is about to be resumed.
 \end{itemize}
 
 Meanwhile the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}), which in addition to being listed in the message log is being indicated by the triangle over the thread separator. When there are multiple messages in one place, the triangle outline changes to a filled triangle.

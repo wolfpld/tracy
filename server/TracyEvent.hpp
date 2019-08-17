@@ -442,6 +442,13 @@ struct CpuData
     Vector<ContextSwitchCpu> cs;
 };
 
+struct CpuThreadData
+{
+    int64_t runningTime = 0;
+    uint32_t runningRegions = 0;
+    uint32_t migrations = 0;
+};
+
 }
 
 #endif

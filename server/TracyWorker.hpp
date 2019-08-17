@@ -213,6 +213,7 @@ private:
 
         CpuData cpuData[256];
         flat_hash_map<uint64_t, uint64_t, nohash<uint64_t>> tidToPid;
+        flat_hash_map<uint64_t, CpuThreadData, nohash<uint64_t>> cpuThreadData;
     };
 
     struct MbpsBlock

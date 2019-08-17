@@ -4138,7 +4138,16 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             item.SetReason( ev.reason );
             item.SetState( ev.state );
 
-            it->second->runningTime += time - item.Start();
+            const auto dt = time - item.Start();
+            it->second->runningTime += dt;
+
+            auto tdit = m_data.cpuThreadData.find( ev.oldThread );
+            if( tdit == m_data.cpuThreadData.end() )
+            {
+                tdit = m_data.cpuThreadData.emplace( ev.oldThread, CpuThreadData {} ).first;
+            }
+            tdit->second.runningRegions++;
+            tdit->second.runningTime += dt;
         }
         if( !cs.empty() )
         {
@@ -4157,13 +4166,22 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         }
         auto& data = it->second->v;
         ContextSwitchData* item = nullptr;
+        bool migration = false;
         if( !data.empty() && data.back().Reason() == ContextSwitchData::Wakeup )
         {
             item = &data.back();
+            if( data.size() > 1 )
+            {
+                migration = data[data.size()-2].Cpu() != ev.cpu;
+            }
         }
         else
         {
             assert( data.empty() || (uint64_t)data.back().End() <= time );
+            if( !data.empty() )
+            {
+                migration = data.back().Cpu() != ev.cpu;
+            }
             item = &data.push_next();
             item->wakeup = time;
         }
@@ -4182,6 +4200,16 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         if( !IsThreadLocal( ev.newThread ) )
         {
             CheckExternalName( ev.newThread );
+        }
+
+        if( migration )
+        {
+            auto tdit = m_data.cpuThreadData.find( ev.newThread );
+            if( tdit == m_data.cpuThreadData.end() )
+            {
+                tdit = m_data.cpuThreadData.emplace( ev.newThread, CpuThreadData {} ).first;
+            }
+            tdit->second.migrations++;
         }
     }
 }

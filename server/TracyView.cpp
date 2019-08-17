@@ -4018,6 +4018,8 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         ImGui::SameLine();
                                         TextDisabledUnformatted( "(profiled program)" );
                                         TextFocused( "Thread:", m_worker.GetThreadString( thread ) );
+                                        ImGui::SameLine();
+                                        ImGui::TextDisabled( "(0x%" PRIX64 ")", thread );
                                     }
                                     else
                                     {
@@ -4032,6 +4034,8 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                             TextDisabledUnformatted( "(external)" );
                                         }
                                         TextFocused( "Thread:", m_worker.GetExternalName( thread ).second );
+                                        ImGui::SameLine();
+                                        ImGui::TextDisabled( "(0x%" PRIX64 ")", thread );
                                     }
                                     ImGui::Separator();
                                     TextFocused( "Start time:", TimeToString( start ) );

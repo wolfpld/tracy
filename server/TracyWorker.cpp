@@ -1653,6 +1653,13 @@ uint64_t Worker::GetContextSwitchPerCpuCount() const
     return cnt;
 }
 
+uint64_t Worker::GetPidFromTid( uint64_t tid ) const
+{
+    auto it = m_data.tidToPid.find( tid );
+    if( it == m_data.tidToPid.end() ) return 0;
+    return it->second;
+}
+
 const ContextSwitch* const Worker::GetContextSwitchDataImpl( uint64_t thread )
 {
     auto it = m_data.ctxSwitch.find( thread );

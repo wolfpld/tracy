@@ -269,6 +269,7 @@ static const char CurrentTracer[] = "current_tracer";
 static const char TraceOptions[] = "trace_options";
 static const char TraceClock[] = "trace_clock";
 static const char SchedSwitch[] = "events/sched/sched_switch/enable";
+static const char SchedWakeup[] = "events/sched/sched_wakeup/enable";
 static const char TracePipe[] = "trace_pipe";
 
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
@@ -311,6 +312,7 @@ bool SysTraceStart()
     if( !TraceWrite( TraceClock, sizeof( TraceClock ), "mono_raw", 8 ) ) return false;
 #endif
     if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
+    if( !TraceWrite( SchedWakeup, sizeof( SchedWakeup ), "1", 2 ) ) return false;
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
 
     return true;
@@ -392,40 +394,60 @@ void SysTraceWorker( void* ptr )
 #endif
 
         ptr += 2;   // ': '
-        if( memcmp( ptr, "sched_switch", 12 ) != 0 ) continue;
-        ptr += 14;
+        if( memcmp( ptr, "sched_switch", 12 ) == 0 )
+        {
+            ptr += 14;
 
-        while( memcmp( ptr, "prev_pid", 8 ) != 0 ) ptr++;
-        ptr += 9;
+            while( memcmp( ptr, "prev_pid", 8 ) != 0 ) ptr++;
+            ptr += 9;
 
-        const auto oldPid = ReadNumber( ptr );
-        ptr++;
+            const auto oldPid = ReadNumber( ptr );
+            ptr++;
 
-        while( memcmp( ptr, "prev_state", 10 ) != 0 ) ptr++;
-        ptr += 11;
+            while( memcmp( ptr, "prev_state", 10 ) != 0 ) ptr++;
+            ptr += 11;
 
-        const auto oldState = (uint8_t)ReadState( *ptr );
-        ptr += 5;
+            const auto oldState = (uint8_t)ReadState( *ptr );
+            ptr += 5;
 
-        while( memcmp( ptr, "next_pid", 8 ) != 0 ) ptr++;
-        ptr += 9;
+            while( memcmp( ptr, "next_pid", 8 ) != 0 ) ptr++;
+            ptr += 9;
 
-        const auto newPid = ReadNumber( ptr );
+            const auto newPid = ReadNumber( ptr );
 
-        uint8_t reason = 100;
+            uint8_t reason = 100;
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ContextSwitch );
-        MemWrite( &item->contextSwitch.time, time );
-        MemWrite( &item->contextSwitch.oldThread, oldPid );
-        MemWrite( &item->contextSwitch.newThread, newPid );
-        MemWrite( &item->contextSwitch.cpu, cpu );
-        MemWrite( &item->contextSwitch.reason, reason );
-        MemWrite( &item->contextSwitch.state, oldState );
-        tail.store( magic + 1, std::memory_order_release );
+            Magic magic;
+            auto token = GetToken();
+            auto& tail = token->get_tail_index();
+            auto item = token->enqueue_begin( magic );
+            MemWrite( &item->hdr.type, QueueType::ContextSwitch );
+            MemWrite( &item->contextSwitch.time, time );
+            MemWrite( &item->contextSwitch.oldThread, oldPid );
+            MemWrite( &item->contextSwitch.newThread, newPid );
+            MemWrite( &item->contextSwitch.cpu, cpu );
+            MemWrite( &item->contextSwitch.reason, reason );
+            MemWrite( &item->contextSwitch.state, oldState );
+            tail.store( magic + 1, std::memory_order_release );
+        }
+        else if( memcmp( ptr, "sched_wakeup", 12 ) == 0 )
+        {
+            ptr += 14;
+
+            while( memcmp( ptr, "pid", 3 ) != 0 ) ptr++;
+            ptr += 4;
+
+            const auto pid = ReadNumber( ptr );
+
+            Magic magic;
+            auto token = GetToken();
+            auto& tail = token->get_tail_index();
+            auto item = token->enqueue_begin( magic );
+            MemWrite( &item->hdr.type, QueueType::ThreadWakeup );
+            MemWrite( &item->threadWakeup.time, time );
+            MemWrite( &item->threadWakeup.thread, pid );
+            tail.store( magic + 1, std::memory_order_release );
+        }
     }
 
     free( line );

@@ -9918,6 +9918,7 @@ void View::DrawInfo()
     }
 
     ImGui::Separator();
+    TextFocused( "PID:", RealToString( m_worker.GetPid(), true ) );
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );
 
     auto& appInfo = m_worker.GetAppInfo();

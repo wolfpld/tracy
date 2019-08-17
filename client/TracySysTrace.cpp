@@ -8,9 +8,11 @@
 #    include <assert.h>
 #    include <string.h>
 #    include <windows.h>
+#    include <dbghelp.h>
 #    include <evntrace.h>
 #    include <evntcons.h>
 #    include <psapi.h>
+#    include <winternl.h>
 
 #    include "../common/TracyAlloc.hpp"
 #    include "../common/TracySystem.hpp"
@@ -185,10 +187,27 @@ t_GetProcessImageFileNameA GetProcessImageFileNameA = (t_GetProcessImageFileName
 #  endif
 #endif
 
+extern "C" typedef NTSTATUS (WINAPI *t_NtQueryInformationThread)( HANDLE, THREADINFOCLASS, PVOID, ULONG, PULONG );
+extern "C" typedef BOOL (WINAPI *t_EnumProcessModules)( HANDLE, HMODULE*, DWORD, LPDWORD );
+extern "C" typedef BOOL (WINAPI *t_GetModuleInformation)( HANDLE, HMODULE, LPMODULEINFO, DWORD );
+extern "C" typedef DWORD (WINAPI *t_GetModuleBaseNameA)( HANDLE, HMODULE, LPSTR, DWORD );
+#ifdef UNICODE
+t_NtQueryInformationThread NtQueryInformationThread = (t_NtQueryInformationThread)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "NtQueryInformationThread" );
+t_EnumProcessModules _EnumProcessModules = (t_EnumProcessModules)GetProcAddress( GetModuleHandle( L"kernel32.dll" ), "K32EnumProcessModules" );
+t_GetModuleInformation _GetModuleInformation = (t_GetModuleInformation)GetProcAddress( GetModuleHandle( L"kernel32.dll" ), "K32GetModuleInformation" );
+t_GetModuleBaseNameA _GetModuleBaseNameA = (t_GetModuleBaseNameA)GetProcAddress( GetModuleHandle( L"kernel32.dll" ), "K32GetModuleBaseName" );
+#else
+t_NtQueryInformationThread NtQueryInformationThread = (t_NtQueryInformationThread)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "NtQueryInformationThread" );
+t_EnumProcessModules _EnumProcessModules = (t_EnumProcessModules)GetProcAddress( GetModuleHandle( "kernel32.dll" ), "K32EnumProcessModules" );
+t_GetModuleInformation _GetModuleInformation = (t_GetModuleInformation)GetProcAddress( GetModuleHandle( "kernel32.dll" ), "K32GetModuleInformation" );
+t_GetModuleBaseNameA _GetModuleBaseNameA = (t_GetModuleBaseNameA)GetProcAddress( GetModuleHandle( "kernel32.dll" ), "K32GetModuleBaseNameA" );
+#endif
+
+
 void SysTraceSendExternalName( uint64_t thread )
 {
     bool threadSent = false;
-    const auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, DWORD( thread ) );
+    const auto hnd = OpenThread( THREAD_QUERY_INFORMATION, FALSE, DWORD( thread ) );
     if( hnd != 0 )
     {
 #if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2
@@ -205,12 +224,48 @@ void SysTraceSendExternalName( uint64_t thread )
             }
         }
 #endif
+        const auto pid = GetProcessIdOfThread( hnd );
+        if( !threadSent && NtQueryInformationThread && _EnumProcessModules )
+        {
+            void* ptr;
+            ULONG retlen;
+            auto status = NtQueryInformationThread( hnd, (THREADINFOCLASS)9 /*ThreadQuerySetWin32StartAddress*/, &ptr, sizeof( &ptr ), &retlen );
+            if( status == 0 )
+            {
+                const auto phnd = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid );
+                if( phnd != INVALID_HANDLE_VALUE )
+                {
+                    HMODULE modules[1024];
+                    DWORD needed;
+                    if( _EnumProcessModules( phnd, modules, 1024 * sizeof( HMODULE ), &needed ) != 0 )
+                    {
+                        const auto sz = std::min( DWORD( needed / sizeof( HMODULE ) ), DWORD( 1024 ) );
+                        for( int i=0; i<sz; i++ )
+                        {
+                            MODULEINFO info;
+                            if( _GetModuleInformation( phnd, modules[i], &info, sizeof( info ) ) != 0 )
+                            {
+                                if( (uint64_t)ptr >= (uint64_t)info.lpBaseOfDll && (uint64_t)ptr <= (uint64_t)info.lpBaseOfDll + (uint64_t)info.SizeOfImage )
+                                {
+                                    char buf[1024];
+                                    if( _GetModuleBaseNameA( phnd, modules[i], buf, 1024 ) != 0 )
+                                    {
+                                        GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
+                                        threadSent = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    CloseHandle( phnd );
+                }
+            }
+        }
+        CloseHandle( hnd );
         if( !threadSent )
         {
             GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
         }
-        const auto pid = GetProcessIdOfThread( hnd );
-        CloseHandle( hnd );
         if( pid != 0 )
         {
             if( pid == 4 )

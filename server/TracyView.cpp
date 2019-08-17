@@ -2423,6 +2423,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     ImGui::BeginTooltip();
                     TextFocused( "Thread is", "waking up" );
                     TextFocused( "Scheduling delay:", TimeToString( ev.Start() - ev.wakeup ) );
+                    TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
                     if( ImGui::IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( pit->End(), ev.wakeup );

@@ -5046,7 +5046,7 @@ void View::DrawZoneInfoWindow()
                         }
                         ImGui::NextColumn();
                         const char* desc;
-                        if( reason == 100 )
+                        if( reason == ContextSwitchData::NoState )
                         {
                             ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
                             desc = DecodeContextSwitchState( state );

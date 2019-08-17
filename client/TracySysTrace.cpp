@@ -188,33 +188,44 @@ void SysTraceSendExternalName( uint64_t thread )
             }
         }
 #endif
+        if( !threadSent )
+        {
+            GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+        }
         const auto pid = GetProcessIdOfThread( hnd );
         CloseHandle( hnd );
         if( pid != 0 )
         {
-            const auto phnd = OpenProcess( PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid );
-            if( phnd != INVALID_HANDLE_VALUE )
+            if( pid == 4 )
             {
-                char buf[1024];
-                const auto sz = GetProcessImageFileNameA( phnd, buf, 1024 );
-                CloseHandle( phnd );
-                if( sz != 0 )
+                GetProfiler().SendString( thread, "System", QueueType::ExternalName );
+                return;
+            }
+            else
+            {
+                const auto phnd = OpenProcess( PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid );
+                if( phnd != INVALID_HANDLE_VALUE )
                 {
-                    if( !threadSent )
+                    char buf[1024];
+                    const auto sz = GetProcessImageFileNameA( phnd, buf, 1024 );
+                    CloseHandle( phnd );
+                    if( sz != 0 )
                     {
-                        GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+                        auto ptr = buf + sz - 1;
+                        while( ptr > buf && *ptr != '\\' ) ptr--;
+                        if( *ptr == '\\' ) ptr++;
+                        GetProfiler().SendString( thread, ptr, QueueType::ExternalName );
+                        return;
                     }
-                    auto ptr = buf + sz - 1;
-                    while( ptr > buf && *ptr != '\\' ) ptr--;
-                    if( *ptr == '\\' ) ptr++;
-                    GetProfiler().SendString( thread, ptr, QueueType::ExternalName );
-                    return;
                 }
             }
         }
     }
 
-    GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+    if( !threadSent )
+    {
+        GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+    }
     GetProfiler().SendString( thread, "???", QueueType::ExternalName );
 }
 

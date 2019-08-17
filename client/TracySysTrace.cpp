@@ -268,6 +268,17 @@ void SysTraceSendExternalName( uint64_t thread )
         }
         if( pid != 0 )
         {
+            {
+                uint64_t _pid = pid;
+                Magic magic;
+                auto token = GetToken();
+                auto& tail = token->get_tail_index();
+                auto item = token->enqueue_begin( magic );
+                MemWrite( &item->hdr.type, QueueType::TidToPid );
+                MemWrite( &item->tidToPid.tid, thread );
+                MemWrite( &item->tidToPid.pid, _pid );
+                tail.store( magic + 1, std::memory_order_release );
+            }
             if( pid == 4 )
             {
                 GetProfiler().SendString( thread, "System", QueueType::ExternalName );
@@ -549,6 +560,17 @@ void SysTraceSendExternalName( uint64_t thread )
         fclose( f );
         if( pid >= 0 )
         {
+            {
+                uint64_t _pid = pid;
+                Magic magic;
+                auto token = GetToken();
+                auto& tail = token->get_tail_index();
+                auto item = token->enqueue_begin( magic );
+                MemWrite( &item->hdr.type, QueueType::TidToPid );
+                MemWrite( &item->tidToPid.tid, thread );
+                MemWrite( &item->tidToPid.pid, _pid );
+                tail.store( magic + 1, std::memory_order_release );
+            }
             sprintf( fn, "/proc/%i/comm", pid );
             f = fopen( fn, "rb" );
             if( f )

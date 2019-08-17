@@ -212,6 +212,7 @@ private:
         std::pair<uint64_t, ContextSwitch*> ctxSwitchLast;
 
         CpuData cpuData[256];
+        flat_hash_map<uint64_t, uint64_t, nohash<uint64_t>> tidToPid;
     };
 
     struct MbpsBlock
@@ -442,6 +443,7 @@ private:
     tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
     tracy_force_inline void ProcessContextSwitch( const QueueContextSwitch& ev );
     tracy_force_inline void ProcessThreadWakeup( const QueueThreadWakeup& ev );
+    tracy_force_inline void ProcessTidToPid( const QueueTidToPid& ev );
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBegin& ev );

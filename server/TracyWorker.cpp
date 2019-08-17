@@ -3085,6 +3085,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ThreadWakeup:
         ProcessThreadWakeup( ev.threadWakeup );
         break;
+    case QueueType::TidToPid:
+        ProcessTidToPid( ev.tidToPid );
+        break;
     default:
         assert( false );
         break;
@@ -4192,6 +4195,12 @@ void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
     item.SetCpu( 0 );
     item.SetReason( ContextSwitchData::Wakeup );
     item.SetState( -1 );
+}
+
+void Worker::ProcessTidToPid( const QueueTidToPid& ev )
+{
+    assert( m_data.tidToPid.find( ev.tid ) == m_data.tidToPid.end() );
+    m_data.tidToPid.emplace( ev.tid, ev.pid );
 }
 
 void Worker::MemAllocChanged( int64_t time )

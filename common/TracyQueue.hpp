@@ -58,6 +58,7 @@ enum class QueueType : uint8_t
     SysTimeReport,
     ContextSwitch,
     ThreadWakeup,
+    TidToPid,
     StringData,
     ThreadName,
     CustomStringData,
@@ -319,6 +320,12 @@ struct QueueThreadWakeup
     uint64_t thread;
 };
 
+struct QueueTidToPid
+{
+    uint64_t tid;
+    uint64_t pid;
+};
+
 struct QueueHeader
 {
     union
@@ -366,6 +373,7 @@ struct QueueItem
         QueueSysTime sysTime;
         QueueContextSwitch contextSwitch;
         QueueThreadWakeup threadWakeup;
+        QueueTidToPid tidToPid;
     };
 };
 #pragma pack()
@@ -425,6 +433,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
     sizeof( QueueHeader ) + sizeof( QueueContextSwitch ),
     sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
+    sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

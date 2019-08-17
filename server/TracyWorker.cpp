@@ -1508,6 +1508,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 5, 5 ) )
+    {
+        f.Read( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t tid, pid;
+            f.Read2( tid, pid );
+            m_data.tidToPid.emplace( tid, pid );
+        }
+    }
+
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
@@ -5038,6 +5049,14 @@ void Worker::Write( FileWrite& f )
             uint64_t thread = cx.Thread();
             f.Write( &thread, sizeof( thread ) );
         }
+    }
+
+    sz = m_data.tidToPid.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.tidToPid )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second, sizeof( v.second ) );
     }
 }
 

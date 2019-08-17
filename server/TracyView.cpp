@@ -2372,13 +2372,13 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         {
             const bool migration = pit->Cpu() != ev.Cpu();
             const auto px0 = std::max( { ( pit->End() - m_zvStart ) * pxns, -10.0, minpx } );
-            const auto pxw = std::max( ( ev.wakeup - m_zvStart ) * pxns, -10.0 );
+            const auto pxw = ( ev.wakeup - m_zvStart ) * pxns;
             const auto px1 = std::min( ( ev.Start() - m_zvStart ) * pxns, w + 10.0 );
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
-            draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( pxw, round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
+            draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( std::min( pxw, w+10.0 ), round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
             if( ev.wakeup != ev.Start() )
             {
-                draw->AddLine( wpos + ImVec2( pxw, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), 0xFF2280A0, 2 );
+                draw->AddLine( wpos + ImVec2( std::max( pxw, 10.0 ), round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), 0xFF2280A0, 2 );
             }
 
             if( hover )

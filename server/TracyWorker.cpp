@@ -324,6 +324,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     f.Read( m_data.lastTime );
     f.Read( m_data.frameOffset );
 
+    if( fileVer >= FileVersion( 0, 5, 5 ) )
+    {
+        f.Read( m_pid );
+    }
+    else
+    {
+        m_pid = 0;
+    }
+
     uint64_t sz;
     {
         f.Read( sz );
@@ -2099,6 +2108,7 @@ void Worker::Exec()
         m_data.lastTime = initEnd;
         m_delay = TscTime( welcome.delay );
         m_resolution = TscTime( welcome.resolution );
+        m_pid = welcome.pid;
         m_onDemand = welcome.onDemand;
         m_captureProgram = welcome.programName;
         m_captureTime = welcome.epoch;
@@ -4676,6 +4686,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &m_timerMul, sizeof( m_timerMul ) );
     f.Write( &m_data.lastTime, sizeof( m_data.lastTime ) );
     f.Write( &m_data.frameOffset, sizeof( m_data.frameOffset ) );
+    f.Write( &m_pid, sizeof( m_pid ) );
 
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );

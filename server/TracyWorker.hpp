@@ -274,6 +274,7 @@ public:
     const std::string& GetHostInfo() const { return m_hostInfo; }
     int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }
+    uint64_t GetPid() const { return m_pid; };
 
     std::shared_mutex& GetDataLock() { return m_data.lock; }
     size_t GetFrameCount( const FrameData& fd ) const { return fd.frames.size(); }
@@ -544,6 +545,7 @@ private:
     std::string m_captureProgram;
     uint64_t m_captureTime;
     std::string m_hostInfo;
+    uint64_t m_pid;
     bool m_terminate = false;
     bool m_crashed = false;
     bool m_disconnect = false;

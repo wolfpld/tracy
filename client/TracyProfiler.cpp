@@ -495,6 +495,15 @@ static const char* GetHostInfo()
     return buf;
 }
 
+static uint64_t GetPid()
+{
+#if defined _WIN32 || defined __CYGWIN__
+    return uint64_t( GetCurrentProcessId() );
+#else
+    return uint64_t( getpid() );
+#endif
+}
+
 static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz, int& len )
 {
     static BroadcastMessage msg;
@@ -1157,6 +1166,8 @@ void Profiler::Worker()
     const auto hostinfo = GetHostInfo();
     const auto hisz = std::min<size_t>( strlen( hostinfo ), WelcomeMessageHostInfoSize - 1 );
 
+    const uint64_t pid = GetPid();
+
 #ifdef TRACY_ON_DEMAND
     uint8_t onDemand = 1;
 #else
@@ -1176,6 +1187,7 @@ void Profiler::Worker()
     MemWrite( &welcome.delay, m_delay );
     MemWrite( &welcome.resolution, m_resolution );
     MemWrite( &welcome.epoch, m_epoch );
+    MemWrite( &welcome.pid, pid );
     MemWrite( &welcome.onDemand, onDemand );
     MemWrite( &welcome.isApple, isApple );
     memcpy( welcome.programName, procname, pnsz );

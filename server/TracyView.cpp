@@ -2372,43 +2372,62 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         {
             const bool migration = pit->Cpu() != ev.Cpu();
             const auto px0 = std::max( { ( pit->End() - m_zvStart ) * pxns, -10.0, minpx } );
+            const auto pxw = std::max( ( ev.wakeup - m_zvStart ) * pxns, -10.0 );
             const auto px1 = std::min( ( ev.Start() - m_zvStart ) * pxns, w + 10.0 );
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
-            draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
-
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty ) ) )
+            draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( pxw, round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
+            if( ev.wakeup != ev.Start() )
             {
-                ImGui::BeginTooltip();
-                TextFocused( "Thread is", migration ? "migrating CPUs" : "waiting" );
-                TextFocused( "Waiting time:", TimeToString( ev.Start() - pit->End() ) );
-                if( migration )
-                {
-                    TextFocused( "CPU:", RealToString( pit->Cpu(), true ) );
-                    ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-                    TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu(), true ) );
-#else
-                    TextFocused( "->", RealToString( ev.Cpu(), true ) );
-#endif
-                }
-                else
-                {
-                    TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
-                }
-                if( pit->Reason() != 100 )
-                {
-                    TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->Reason() ) );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( DecodeContextSwitchReason( pit->Reason() ) );
-                }
-                TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->State() ) );
-                ImGui::SameLine();
-                TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
-                ImGui::EndTooltip();
+                draw->AddLine( wpos + ImVec2( pxw, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), 0xFF2280A0, 2 );
+            }
 
-                if( ImGui::IsMouseClicked( 2 ) )
+            if( hover )
+            {
+                if( ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( pxw, offset + ty ) ) )
                 {
-                    ZoomToRange( pit->End(), ev.Start() );
+                    ImGui::BeginTooltip();
+                    TextFocused( "Thread is", migration ? "migrating CPUs" : "waiting" );
+                    TextFocused( "Waiting time:", TimeToString( ev.wakeup - pit->End() ) );
+                    if( migration )
+                    {
+                        TextFocused( "CPU:", RealToString( pit->Cpu(), true ) );
+                        ImGui::SameLine();
+    #ifdef TRACY_EXTENDED_FONT
+                        TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu(), true ) );
+    #else
+                        TextFocused( "->", RealToString( ev.Cpu(), true ) );
+    #endif
+                    }
+                    else
+                    {
+                        TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
+                    }
+                    if( pit->Reason() != 100 )
+                    {
+                        TextFocused( "Wait reason:", DecodeContextSwitchReasonCode( pit->Reason() ) );
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( DecodeContextSwitchReason( pit->Reason() ) );
+                    }
+                    TextFocused( "Wait state:", DecodeContextSwitchStateCode( pit->State() ) );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
+                    ImGui::EndTooltip();
+
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( pit->End(), ev.wakeup );
+                    }
+                }
+                else if( ev.wakeup != ev.Start() && ImGui::IsMouseHoveringRect( wpos + ImVec2( pxw, offset ), wpos + ImVec2( px1, offset + ty ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    TextFocused( "Thread is", "waking up" );
+                    TextFocused( "Scheduling delay:", TimeToString( ev.Start() - ev.wakeup ) );
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( pit->End(), ev.wakeup );
+                    }
+                    ImGui::EndTooltip();
                 }
             }
         }

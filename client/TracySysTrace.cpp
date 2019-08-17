@@ -39,6 +39,15 @@ struct CSwitch
     uint32_t    reserved;
 };
 
+struct ReadyThread
+{
+    uint32_t    threadId;
+    int8_t      adjustReason;
+    int8_t      adjustIncrement;
+    int8_t      flag;
+    int8_t      reserverd;
+};
+
 void EventRecordCallback( PEVENT_RECORD record )
 {
 #ifdef TRACY_ON_DEMAND
@@ -46,31 +55,39 @@ void EventRecordCallback( PEVENT_RECORD record )
 #endif
 
     const auto& hdr = record->EventHeader;
-    if( hdr.EventDescriptor.Opcode != 36 ) return;
+    if( hdr.EventDescriptor.Opcode == 36 )
+    {
+        const auto cswitch = (const CSwitch*)record->UserData;
 
-    const auto cswitch = (const CSwitch*)record->UserData;
+        Magic magic;
+        auto token = GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::ContextSwitch );
+        MemWrite( &item->contextSwitch.time, hdr.TimeStamp.QuadPart );
+        memcpy( &item->contextSwitch.oldThread, &cswitch->oldThreadId, sizeof( cswitch->oldThreadId ) );
+        memcpy( &item->contextSwitch.newThread, &cswitch->newThreadId, sizeof( cswitch->newThreadId ) );
+        memset( ((char*)&item->contextSwitch.oldThread)+4, 0, 4 );
+        memset( ((char*)&item->contextSwitch.newThread)+4, 0, 4 );
+        MemWrite( &item->contextSwitch.cpu, record->BufferContext.ProcessorNumber );
+        MemWrite( &item->contextSwitch.reason, cswitch->oldThreadWaitReason );
+        MemWrite( &item->contextSwitch.state, cswitch->oldThreadState );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+    else if( hdr.EventDescriptor.Opcode == 50 )
+    {
+        const auto rt = (const ReadyThread*)record->UserData;
 
-    static_assert( sizeof( record->BufferContext.ProcessorNumber ) == sizeof( uint8_t ), "Bad data size" );
-    static_assert( sizeof( cswitch->oldThreadId ) == sizeof( uint32_t ), "Bad data size" );
-    static_assert( sizeof( cswitch->newThreadId ) == sizeof( uint32_t ), "Bad data size" );
-    static_assert( sizeof( hdr.TimeStamp.QuadPart ) == sizeof( int64_t ), "Bad data size" );
-    static_assert( sizeof( cswitch->oldThreadWaitReason ) == sizeof( uint8_t ), "Bad data size" );
-    static_assert( sizeof( cswitch->oldThreadState ) == sizeof( uint8_t ), "Bad data size" );
-
-    Magic magic;
-    auto token = GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::ContextSwitch );
-    MemWrite( &item->contextSwitch.time, hdr.TimeStamp.QuadPart );
-    memcpy( &item->contextSwitch.oldThread, &cswitch->oldThreadId, sizeof( cswitch->oldThreadId ) );
-    memcpy( &item->contextSwitch.newThread, &cswitch->newThreadId, sizeof( cswitch->newThreadId ) );
-    memset( ((char*)&item->contextSwitch.oldThread)+4, 0, 4 );
-    memset( ((char*)&item->contextSwitch.newThread)+4, 0, 4 );
-    MemWrite( &item->contextSwitch.cpu, record->BufferContext.ProcessorNumber );
-    MemWrite( &item->contextSwitch.reason, cswitch->oldThreadWaitReason );
-    MemWrite( &item->contextSwitch.state, cswitch->oldThreadState );
-    tail.store( magic + 1, std::memory_order_release );
+        Magic magic;
+        auto token = GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::ThreadWakeup );
+        MemWrite( &item->threadWakeup.time, hdr.TimeStamp.QuadPart );
+        memcpy( &item->threadWakeup.thread, &rt->threadId, sizeof( rt->threadId ) );
+        memset( ((char*)&item->threadWakeup.thread)+4, 0, 4 );
+        tail.store( magic + 1, std::memory_order_release );
+    }
 }
 
 bool SysTraceStart()
@@ -91,7 +108,7 @@ bool SysTraceStart()
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + sizeof( KERNEL_LOGGER_NAME );
     s_prop = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
     memset( s_prop, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
-    s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH;
+    s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER;
     s_prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
     s_prop->Wnode.BufferSize = psz;
     s_prop->Wnode.Flags = WNODE_FLAG_TRACED_GUID;

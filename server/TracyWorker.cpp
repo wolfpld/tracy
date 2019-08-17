@@ -1415,7 +1415,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 auto ptr = data->v.data();
                 for( uint64_t j=0; j<csz; j++ )
                 {
-                    ptr->SetStart( ReadTimeOffset( f, refTime ) );
+                    if( fileVer >= FileVersion( 0, 5, 4 ) )
+                    {
+                        ptr->wakeup = ReadTimeOffset( f, refTime );
+                        ptr->SetStart( ReadTimeOffset( f, refTime ) );
+                    }
+                    else
+                    {
+                        int64_t start = ReadTimeOffset( f, refTime );
+                        ptr->wakeup = start;
+                        ptr->SetStart( start );
+                    }
                     int64_t diff;
                     f.Read( diff );
                     if( diff > 0 ) runningTime += diff;
@@ -3062,6 +3072,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ContextSwitch:
         ProcessContextSwitch( ev.contextSwitch );
         break;
+    case QueueType::ThreadWakeup:
+        ProcessThreadWakeup( ev.threadWakeup );
+        break;
     default:
         assert( false );
         break;
@@ -4119,13 +4132,22 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             it = m_data.ctxSwitch.emplace( ev.newThread, ctx ).first;
         }
         auto& data = it->second->v;
-        assert( data.empty() || (uint64_t)data.back().End() <= time );
-        auto& item = data.push_next();
-        item.SetStart( time );
-        item.SetEnd( -1 );
-        item.SetCpu( ev.cpu );
-        item.SetReason( -1 );
-        item.SetState( -1 );
+        ContextSwitchData* item = nullptr;
+        if( !data.empty() && data.back().Reason() == ContextSwitchData::Wakeup )
+        {
+            item = &data.back();
+        }
+        else
+        {
+            assert( data.empty() || (uint64_t)data.back().End() <= time );
+            item = &data.push_next();
+            item->wakeup = time;
+        }
+        item->SetStart( time );
+        item->SetEnd( -1 );
+        item->SetCpu( ev.cpu );
+        item->SetReason( -1 );
+        item->SetState( -1 );
 
         auto& cx = cs.push_next();
         cx.SetStart( time );
@@ -4138,6 +4160,28 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             CheckExternalName( ev.newThread );
         }
     }
+}
+
+void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
+{
+    const auto time = TscTime( ev.time - m_data.baseTime );
+    m_data.lastTime = std::max( m_data.lastTime, time );
+
+    auto it = m_data.ctxSwitch.find( ev.thread );
+    if( it == m_data.ctxSwitch.end() )
+    {
+        auto ctx = m_slab.AllocInit<ContextSwitch>();
+        it = m_data.ctxSwitch.emplace( ev.thread, ctx ).first;
+    }
+    auto& data = it->second->v;
+    if( !data.empty() && data.back().End() < 0 ) return;        // wakeup of a running thread
+    auto& item = data.push_next();
+    item.wakeup = time;
+    item.SetStart( time );
+    item.SetEnd( -1 );
+    item.SetCpu( 0 );
+    item.SetReason( ContextSwitchData::Wakeup );
+    item.SetState( -1 );
 }
 
 void Worker::MemAllocChanged( int64_t time )
@@ -4948,6 +4992,7 @@ void Worker::Write( FileWrite& f )
         int64_t refTime = 0;
         for( auto& cs : ctx->second->v )
         {
+            WriteTimeOffset( f, refTime, cs.wakeup );
             WriteTimeOffset( f, refTime, cs.Start() );
             WriteTimeOffset( f, refTime, cs.End() );
             uint8_t cpu = cs.Cpu();

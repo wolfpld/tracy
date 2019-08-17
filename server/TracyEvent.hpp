@@ -235,6 +235,7 @@ enum { CrashEventSize = sizeof( CrashEvent ) };
 struct ContextSwitchData
 {
     enum : int8_t { NoState = 100 };
+    enum : int8_t { Wakeup = -2 };
 
     int64_t Start() const { return int64_t( _start_cpu ) >> 8; }
     void SetStart( int64_t start ) { assert( start < ( 1ll << 47 ) ); _start_cpu = ( _start_cpu & 0xFF ) | uint64_t( start << 8 ); }
@@ -249,6 +250,7 @@ struct ContextSwitchData
 
     uint64_t _start_cpu;
     uint64_t _end_reason_state;
+    int64_t wakeup;
 };
 
 enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };

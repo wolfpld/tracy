@@ -10426,7 +10426,8 @@ void View::DrawCpuDataWindow()
     for( auto& pidit : psort )
     {
         auto& pid = *pidit;
-        const auto expand = ImGui::TreeNode( RealToString( pid.first, true ) );
+        const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first, true );
+        const auto expand = ImGui::TreeNode( pidtxt );
         ImGui::NextColumn();
         ImGui::TextUnformatted( m_worker.GetExternalName( pid.second.tids[0] ).first );
         ImGui::NextColumn();

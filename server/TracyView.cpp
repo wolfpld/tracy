@@ -720,6 +720,7 @@ bool View::DrawImpl()
     if( m_goToFrame ) DrawGoToFrame();
     if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
     if( m_showPlayback ) DrawPlayback();
+    if( m_showCpuDataWindow ) DrawCpuDataWindow();
 
     if( m_zoomAnim.active )
     {
@@ -9917,6 +9918,16 @@ void View::DrawInfo()
         }
     }
 
+    const auto& ctd = m_worker.GetCpuThreadData();
+    if( !ctd.empty() )
+    {
+        if( ficnt != 0 ) ImGui::SameLine();
+        if( ImGui::Button( "CPU data" ) )
+        {
+            m_showCpuDataWindow = true;
+        }
+    }
+
     ImGui::Separator();
     TextFocused( "PID:", RealToString( m_worker.GetPid(), true ) );
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );
@@ -10364,6 +10375,92 @@ void View::DrawPlayback()
     ImGui::SameLine();
     ImGui::Checkbox( "Zoom 2x", &m_playback.zoom );
     TextFocused( "Timestamp:", TimeToString( tstart ) );
+    ImGui::End();
+}
+
+void View::DrawCpuDataWindow()
+{
+    struct PidData
+    {
+        std::vector<uint64_t> tids;
+        CpuThreadData data;
+    };
+
+    const auto& ctd = m_worker.GetCpuThreadData();
+    flat_hash_map<uint64_t, PidData, nohash<uint64_t>> pids;
+    for( auto& v : ctd )
+    {
+        uint64_t pid = m_worker.GetPidFromTid( v.first );
+        auto it = pids.find( pid );
+        if( it == pids.end() )
+        {
+            it = pids.emplace( pid, PidData {} ).first;
+        }
+        it->second.tids.emplace_back( v.first );
+        it->second.data.runningTime += v.second.runningTime;
+        it->second.data.runningRegions += v.second.runningRegions;
+        it->second.data.migrations += v.second.migrations;
+    }
+
+    std::vector<flat_hash_map<uint64_t, PidData, nohash<uint64_t>>::iterator> psort;
+    psort.reserve( pids.size() );
+    for( auto it = pids.begin(); it != pids.end(); ++it ) psort.emplace_back( it );
+    pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+
+    ImGui::Begin( "CPU data", &m_showCpuDataWindow );
+    TextFocused( "Tracked threads:", RealToString( ctd.size(), true ) );
+    ImGui::Separator();
+    ImGui::BeginChild( "##cpudata" );
+    ImGui::Columns( 5 );
+    ImGui::Text( "PID/TID" );
+    ImGui::NextColumn();
+    ImGui::Text( "Name" );
+    ImGui::NextColumn();
+    ImGui::Text( "Running time" );
+    ImGui::NextColumn();
+    ImGui::Text( "Running regions" );
+    ImGui::NextColumn();
+    ImGui::Text( "CPU migrations" );
+    ImGui::NextColumn();
+    ImGui::Separator();
+    for( auto& pidit : psort )
+    {
+        auto& pid = *pidit;
+        const auto expand = ImGui::TreeNode( RealToString( pid.first, true ) );
+        ImGui::NextColumn();
+        ImGui::TextUnformatted( m_worker.GetExternalName( pid.second.tids[0] ).first );
+        ImGui::NextColumn();
+        ImGui::TextUnformatted( TimeToString( pid.second.data.runningTime ) );
+        ImGui::NextColumn();
+        ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions, true ) );
+        ImGui::NextColumn();
+        ImGui::TextUnformatted( RealToString( pid.second.data.migrations, true ) );
+        ImGui::NextColumn();
+        if( expand )
+        {
+            ImGui::Separator();
+            pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end() );
+            for( auto& tid : pid.second.tids )
+            {
+                const auto& tit = ctd.find( tid );
+                assert( tit != ctd.end() );
+                ImGui::TextUnformatted( RealToString( tid, true ) );
+                ImGui::NextColumn();
+                ImGui::TextUnformatted( m_worker.GetExternalName( tid ).second );
+                ImGui::NextColumn();
+                ImGui::TextUnformatted( TimeToString( tit->second.runningTime ) );
+                ImGui::NextColumn();
+                ImGui::TextUnformatted( RealToString( tit->second.runningRegions, true ) );
+                ImGui::NextColumn();
+                ImGui::TextUnformatted( RealToString( tit->second.migrations, true ) );
+                ImGui::NextColumn();
+            }
+            ImGui::TreePop();
+            ImGui::Separator();
+        }
+    }
+    ImGui::EndColumns();
+    ImGui::EndChild();
     ImGui::End();
 }
 

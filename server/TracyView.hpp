@@ -135,6 +135,7 @@ private:
     void DrawGoToFrame();
     void DrawLockInfoWindow();
     void DrawPlayback();
+    void DrawCpuDataWindow();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
@@ -286,6 +287,7 @@ private:
     bool m_showStatistics = false;
     bool m_showInfo = false;
     bool m_showPlayback = false;
+    bool m_showCpuDataWindow = false;
     bool m_drawGpuZones = true;
     bool m_drawZones = true;
     bool m_drawLocks = true;

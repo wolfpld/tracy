@@ -10423,6 +10423,8 @@ void View::DrawCpuDataWindow()
     for( auto it = pids.begin(); it != pids.end(); ++it ) psort.emplace_back( it );
     pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
 
+    const auto thisPid = m_worker.GetPid();
+
     ImGui::Begin( "CPU data", &m_showCpuDataWindow );
     TextFocused( "Tracked threads:", RealToString( ctd.size(), true ) );
     ImGui::SameLine();
@@ -10444,6 +10446,11 @@ void View::DrawCpuDataWindow()
     for( auto& pidit : psort )
     {
         auto& pid = *pidit;
+        const auto pidMatch = thisPid != 0 && thisPid == pid.first;
+        if( pidMatch )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.2f, 1.0f, 0.2f, 1.0f ) );
+        }
         const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first, true );
         const auto expand = ImGui::TreeNode( pidtxt );
         ImGui::NextColumn();
@@ -10480,6 +10487,10 @@ void View::DrawCpuDataWindow()
             }
             ImGui::TreePop();
             ImGui::Separator();
+        }
+        if( pidMatch )
+        {
+            ImGui::PopStyleColor();
         }
     }
     ImGui::EndColumns();

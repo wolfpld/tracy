@@ -9922,7 +9922,11 @@ void View::DrawInfo()
     if( !ctd.empty() )
     {
         if( ficnt != 0 ) ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_MICROCHIP " CPU data" ) )
+#else
         if( ImGui::Button( "CPU data" ) )
+#endif
         {
             m_showCpuDataWindow = true;
         }

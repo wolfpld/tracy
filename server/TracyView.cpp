@@ -10413,6 +10413,8 @@ void View::DrawCpuDataWindow()
 
     ImGui::Begin( "CPU data", &m_showCpuDataWindow );
     TextFocused( "Tracked threads:", RealToString( ctd.size(), true ) );
+    ImGui::SameLine();
+    TextFocused( "Tracked processes:", RealToString( pids.size(), true ) );
     ImGui::Separator();
     ImGui::BeginChild( "##cpudata" );
     ImGui::Columns( 5 );

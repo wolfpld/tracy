@@ -10474,6 +10474,11 @@ void View::DrawCpuDataWindow()
             pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end() );
             for( auto& tid : pid.second.tids )
             {
+                const auto tidMatch = pidMatch && m_worker.IsThreadLocal( tid );
+                if( tidMatch )
+                {
+                    ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.0f, 1.0f, 0.2f, 1.0f ) );
+                }
                 const auto& tit = ctd.find( tid );
                 assert( tit != ctd.end() );
                 ImGui::TextUnformatted( RealToString( tid, true ) );
@@ -10489,6 +10494,10 @@ void View::DrawCpuDataWindow()
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.2f%%)", double( tit->second.migrations ) / tit->second.runningRegions * 100 );
                 ImGui::NextColumn();
+                if( tidMatch )
+                {
+                    ImGui::PopStyleColor();
+                }
             }
             ImGui::TreePop();
             ImGui::Separator();

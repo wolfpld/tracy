@@ -10424,6 +10424,8 @@ void View::DrawCpuDataWindow()
     pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
 
     const auto thisPid = m_worker.GetPid();
+    const auto rtimespan = 1.0 / m_worker.GetLastTime();
+    const auto ty = ImGui::GetTextLineHeight();
 
     ImGui::Begin( "CPU data", &m_showCpuDataWindow );
     TextFocused( "Tracked threads:", RealToString( ctd.size(), true ) );
@@ -10445,6 +10447,7 @@ void View::DrawCpuDataWindow()
     ImGui::Separator();
     for( auto& pidit : psort )
     {
+        char buf[128];
         auto& pid = *pidit;
         const auto pidMatch = thisPid != 0 && thisPid == pid.first;
         if( pidMatch )
@@ -10456,7 +10459,8 @@ void View::DrawCpuDataWindow()
         ImGui::NextColumn();
         ImGui::TextUnformatted( m_worker.GetExternalName( pid.second.tids[0] ).first );
         ImGui::NextColumn();
-        ImGui::TextUnformatted( TimeToString( pid.second.data.runningTime ) );
+        sprintf( buf, "%s (%.2f%%)", TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
+        ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
         ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions, true ) );
         ImGui::NextColumn();
@@ -10476,7 +10480,8 @@ void View::DrawCpuDataWindow()
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( m_worker.GetExternalName( tid ).second );
                 ImGui::NextColumn();
-                ImGui::TextUnformatted( TimeToString( tit->second.runningTime ) );
+                sprintf( buf, "%s (%.2f%%)", TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
+                ImGui::ProgressBar( double( tit->second.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( RealToString( tit->second.runningRegions, true ) );
                 ImGui::NextColumn();

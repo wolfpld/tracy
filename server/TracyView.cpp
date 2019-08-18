@@ -3994,7 +3994,19 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 const auto thread = it->Thread();
                                 const auto local = m_worker.IsThreadLocal( thread );
                                 auto txt = local ? m_worker.GetThreadString( thread ) : m_worker.GetExternalName( thread ).first;
-                                const bool untracked = !local && strcmp( txt, m_worker.GetCaptureProgram().c_str() ) == 0;
+                                bool untracked = false;
+                                if( !local )
+                                {
+                                    if( m_worker.GetPid() == 0 )
+                                    {
+                                        untracked = strcmp( txt, m_worker.GetCaptureProgram().c_str() ) == 0;
+                                    }
+                                    else
+                                    {
+                                        const auto pid = m_worker.GetPidFromTid( thread );
+                                        untracked = pid == m_worker.GetPid();
+                                    }
+                                }
                                 const auto pr0 = ( start - m_zvStart ) * pxns;
                                 const auto pr1 = ( end - m_zvStart ) * pxns;
                                 const auto px0 = std::max( pr0, -10.0 );

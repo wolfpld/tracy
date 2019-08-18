@@ -10454,6 +10454,8 @@ void View::DrawCpuDataWindow()
         ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions, true ) );
         ImGui::NextColumn();
         ImGui::TextUnformatted( RealToString( pid.second.data.migrations, true ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", double( pid.second.data.migrations ) / pid.second.data.runningRegions * 100 );
         ImGui::NextColumn();
         if( expand )
         {
@@ -10472,6 +10474,8 @@ void View::DrawCpuDataWindow()
                 ImGui::TextUnformatted( RealToString( tit->second.runningRegions, true ) );
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( RealToString( tit->second.migrations, true ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%%)", double( tit->second.migrations ) / tit->second.runningRegions * 100 );
                 ImGui::NextColumn();
             }
             ImGui::TreePop();

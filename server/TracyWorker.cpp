@@ -4213,11 +4213,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         cx.SetEnd( -1 );
         cx.SetThread( ev.newThread );
 
-        // At this point that check is approximate
-        if( !IsThreadLocal( ev.newThread ) )
-        {
-            CheckExternalName( ev.newThread );
-        }
+        CheckExternalName( ev.newThread );
 
         if( migration )
         {

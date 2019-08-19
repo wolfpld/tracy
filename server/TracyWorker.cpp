@@ -53,11 +53,6 @@ static inline CallstackFrameId PackPointer( uint64_t ptr )
     return id;
 }
 
-static constexpr int FileVersion( uint8_t h5, uint8_t h6, uint8_t h7 )
-{
-    return ( h5 << 16 ) | ( h6 << 8 ) | h7;
-}
-
 static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', Version::Major, Version::Minor, Version::Patch };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( Version::Major, Version::Minor, Version::Patch );

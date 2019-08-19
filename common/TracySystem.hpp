@@ -9,11 +9,13 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 #  include <pthread.h>
 #endif
 
-#ifdef __ANDROID__
-#  include <sys/types.h>
-#elif defined __linux__
+#ifdef __linux__
 #  include <unistd.h>
-#  include <sys/syscall.h>
+#  ifdef __ANDROID__
+#    include <sys/types.h>
+#  else
+#    include <sys/syscall.h>
+#  endif
 #endif
 
 #include <stdint.h>

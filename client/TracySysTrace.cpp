@@ -195,7 +195,7 @@ extern "C" typedef DWORD (WINAPI *t_GetModuleBaseNameA)( HANDLE, HMODULE, LPSTR,
 t_NtQueryInformationThread NtQueryInformationThread = (t_NtQueryInformationThread)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "NtQueryInformationThread" );
 t_EnumProcessModules _EnumProcessModules = (t_EnumProcessModules)GetProcAddress( GetModuleHandle( L"kernel32.dll" ), "K32EnumProcessModules" );
 t_GetModuleInformation _GetModuleInformation = (t_GetModuleInformation)GetProcAddress( GetModuleHandle( L"kernel32.dll" ), "K32GetModuleInformation" );
-t_GetModuleBaseNameA _GetModuleBaseNameA = (t_GetModuleBaseNameA)GetProcAddress( GetModuleHandle( L"kernel32.dll" ), "K32GetModuleBaseName" );
+t_GetModuleBaseNameA _GetModuleBaseNameA = (t_GetModuleBaseNameA)GetProcAddress( GetModuleHandle( L"kernel32.dll" ), "K32GetModuleBaseNameA" );
 #else
 t_NtQueryInformationThread NtQueryInformationThread = (t_NtQueryInformationThread)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "NtQueryInformationThread" );
 t_EnumProcessModules _EnumProcessModules = (t_EnumProcessModules)GetProcAddress( GetModuleHandle( "kernel32.dll" ), "K32EnumProcessModules" );

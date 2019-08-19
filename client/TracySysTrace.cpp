@@ -225,7 +225,7 @@ void SysTraceSendExternalName( uint64_t thread )
         }
 #endif
         const auto pid = GetProcessIdOfThread( hnd );
-        if( !threadSent && NtQueryInformationThread && _EnumProcessModules )
+        if( !threadSent && NtQueryInformationThread && _EnumProcessModules && _GetModuleInformation && _GetModuleBaseNameA )
         {
             void* ptr;
             ULONG retlen;

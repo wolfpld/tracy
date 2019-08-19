@@ -105,6 +105,9 @@
     <ClCompile Include="..\..\..\server\TracyUserData.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyThreadCompress.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -279,6 +282,9 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyUserData.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyThreadCompress.hpp">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

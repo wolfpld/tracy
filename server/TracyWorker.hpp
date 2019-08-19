@@ -18,6 +18,7 @@
 #include "TracyEvent.hpp"
 #include "TracySlab.hpp"
 #include "TracyStringDiscovery.hpp"
+#include "TracyThreadCompress.hpp"
 #include "TracyVarArray.hpp"
 
 namespace tracy
@@ -151,7 +152,6 @@ private:
             , baseTime( 0 )
             , lastTime( 0 )
             , frameOffset( 0 )
-            , threadLast( std::numeric_limits<uint64_t>::max(), 0 )
             , threadDataLast( std::numeric_limits<uint64_t>::max(), nullptr )
             , ctxSwitchLast( std::numeric_limits<uint64_t>::max(), nullptr )
         {}
@@ -193,9 +193,7 @@ private:
 
         flat_hash_map<uint32_t, LockMap*, nohash<uint32_t>> lockMap;
 
-        flat_hash_map<uint64_t, uint16_t, nohash<uint64_t>> threadMap;
-        Vector<uint64_t> threadExpand;
-        std::pair<uint64_t, uint16_t> threadLast;
+        ThreadCompress localThreadCompress;
         std::pair<uint64_t, ThreadData*> threadDataLast;
 
         Vector<Vector<ZoneEvent*>> zoneChildren;
@@ -359,12 +357,8 @@ public:
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
 #endif
 
-    tracy_force_inline uint16_t CompressThread( uint64_t thread )
-    {
-        if( m_data.threadLast.first == thread ) return m_data.threadLast.second;
-        return CompressThreadReal( thread );
-    }
-    tracy_force_inline uint64_t DecompressThread( uint16_t thread ) const { assert( thread < m_data.threadExpand.size() ); return m_data.threadExpand[thread]; }
+    tracy_force_inline uint16_t CompressThread( uint64_t thread ) { return m_data.localThreadCompress.CompressThread( thread ); }
+    tracy_force_inline uint64_t DecompressThread( uint16_t thread ) const { return m_data.localThreadCompress.DecompressThread( thread ); }
 
     std::shared_mutex& GetMbpsDataLock() { return m_mbpsData.lock; }
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }
@@ -508,8 +502,6 @@ private:
     void HandlePostponedPlots();
 
     StringLocation StoreString( char* str, size_t sz );
-    uint16_t CompressThreadReal( uint64_t thread );
-    uint16_t CompressThreadNew( uint64_t thread );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
     tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime );

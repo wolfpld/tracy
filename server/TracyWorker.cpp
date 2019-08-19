@@ -250,7 +250,7 @@ Worker::Worker( const char* addr )
     , m_loadTime( 0 )
 {
     m_data.sourceLocationExpand.push_back( 0 );
-    m_data.threadExpand.push_back( 0 );
+    m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
 
     memset( m_gpuCtxMap, 0, sizeof( m_gpuCtxMap ) );
@@ -515,23 +515,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
-    if( fileVer >= FileVersion( 0, 4, 4 ) )
-    {
-        f.Read( sz );
-        m_data.threadExpand.reserve_and_use( sz );
-        f.Read( m_data.threadExpand.data(), sizeof( uint64_t ) * sz );
-        m_data.threadMap.reserve( sz );
-        for( size_t i=0; i<sz; i++ )
-        {
-            m_data.threadMap.emplace( m_data.threadExpand[i], i );
-        }
-    }
-    else
-    {
-        f.Read( sz );
-        m_data.threadExpand.reserve( sz );
-        m_data.threadExpand.push_back( 0 );
-    }
+    m_data.localThreadCompress.Load( f, fileVer );
 
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -1548,9 +1532,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             if( !t->timeline.empty() )
             {
                 // Don't touch thread compression cache in a thread.
-                auto it = m_data.threadMap.find( t->id );
-                assert( it != m_data.threadMap.end() );
-                ProcessTimeline( t->timeline, it->second );
+                ProcessTimeline( t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
             }
         }
         for( auto& v : m_data.sourceLocationZones )
@@ -1881,7 +1863,7 @@ const char* Worker::GetThreadString( uint64_t id ) const
 
 bool Worker::IsThreadLocal( uint64_t id ) const
 {
-    return m_data.threadMap.find( id ) != m_data.threadMap.end();
+    return m_data.localThreadCompress.Exists( id );
 }
 
 const SourceLocation& Worker::GetSourceLocation( int16_t srcloc ) const
@@ -2039,31 +2021,6 @@ const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t sr
     return it != m_data.sourceLocationZones.end() ? it->second : empty;
 }
 #endif
-
-uint16_t Worker::CompressThreadReal( uint64_t thread )
-{
-    auto it = m_data.threadMap.find( thread );
-    if( it != m_data.threadMap.end() )
-    {
-        m_data.threadLast.first = thread;
-        m_data.threadLast.second = it->second;
-        return it->second;
-    }
-    else
-    {
-        return CompressThreadNew( thread );
-    }
-}
-
-uint16_t Worker::CompressThreadNew( uint64_t thread )
-{
-    auto sz = m_data.threadExpand.size();
-    m_data.threadExpand.push_back( thread );
-    m_data.threadMap.emplace( thread, sz );
-    m_data.threadLast.first = thread;
-    m_data.threadLast.second = sz;
-    return sz;
-}
 
 void Worker::Exec()
 {
@@ -4828,9 +4785,7 @@ void Worker::Write( FileWrite& f )
         f.Write( &ptr, sizeof( ptr ) );
     }
 
-    sz = m_data.threadExpand.size();
-    f.Write( &sz, sizeof( sz ) );
-    f.Write( m_data.threadExpand.data(), sz * sizeof( uint64_t ) );
+    m_data.localThreadCompress.Save( f );
 
     sz = m_data.sourceLocation.size();
     f.Write( &sz, sizeof( sz ) );
@@ -5044,7 +4999,7 @@ void Worker::Write( FileWrite& f )
     ctxValid.reserve( m_data.ctxSwitch.size() );
     for( auto it = m_data.ctxSwitch.begin(); it != m_data.ctxSwitch.end(); ++it )
     {
-        if( m_data.threadMap.find( it->first ) != m_data.threadMap.end() )
+        if( m_data.localThreadCompress.Exists( it->first ) )
         {
             ctxValid.emplace_back( it );
         }

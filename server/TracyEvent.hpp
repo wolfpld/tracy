@@ -261,20 +261,15 @@ enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
 // might come after context switch data).
 struct ContextSwitchCpu
 {
-    int64_t Start() const { return int64_t( _start_thread1 ) >> 16; }
-    void SetStart( int64_t start ) { assert( start < ( 1ll << 47 ) ); _start_thread1 = ( _start_thread1 & 0xFFFF ) | uint64_t( start << 16 ); }
-    int64_t End() const { return int64_t( _end_thread2 ) >> 16; }
-    void SetEnd( int64_t end ) { assert( end < ( 1ll << 47 ) ); _end_thread2 = ( _end_thread2 & 0xFFFF ) | uint64_t( end << 16 ); }
-    uint64_t Thread() const { return uint64_t( uint16_t( _start_thread1 ) ) | ( uint64_t( uint16_t( _end_thread2 ) ) << 16 ) | ( uint64_t( _thread3 ) << 32 ); }
-    void SetThread( uint64_t thread ) {
-        _start_thread1 = ( _start_thread1 & 0xFFFFFFFFFFFF0000 ) | uint16_t( thread );
-        _end_thread2 = ( _end_thread2 & 0xFFFFFFFFFFFF0000 ) | uint16_t( thread >> 16 );
-        _thread3 = uint32_t( thread >> 32 );
-    }
+    int64_t Start() const { return int64_t( _start_thread ) >> 16; }
+    void SetStart( int64_t start ) { assert( start < ( 1ll << 47 ) ); _start_thread = ( _start_thread & 0xFFFF ) | uint64_t( start << 16 ); }
+    int64_t End() const { return _end; }
+    void SetEnd( int64_t end ) { assert( end < ( 1ll << 47 ) ); _end = end; }
+    uint16_t Thread() const { return uint16_t( _start_thread ); }
+    void SetThread( uint16_t thread ) { _start_thread = ( _start_thread & 0xFFFFFFFFFFFF0000 ) | thread; }
 
-    uint64_t _start_thread1;
-    uint64_t _end_thread2;
-    uint32_t _thread3;
+    uint64_t _start_thread;
+    uint64_t _end;
 };
 
 enum { ContextSwitchCpuSize = sizeof( ContextSwitchCpu ) };

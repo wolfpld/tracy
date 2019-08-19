@@ -194,6 +194,7 @@ private:
         flat_hash_map<uint32_t, LockMap*, nohash<uint32_t>> lockMap;
 
         ThreadCompress localThreadCompress;
+        ThreadCompress externalThreadCompress;
         std::pair<uint64_t, ThreadData*> threadDataLast;
 
         Vector<Vector<ZoneEvent*>> zoneChildren;
@@ -359,6 +360,7 @@ public:
 
     tracy_force_inline uint16_t CompressThread( uint64_t thread ) { return m_data.localThreadCompress.CompressThread( thread ); }
     tracy_force_inline uint64_t DecompressThread( uint16_t thread ) const { return m_data.localThreadCompress.DecompressThread( thread ); }
+    tracy_force_inline uint64_t DecompressThreadExternal( uint16_t thread ) const { return m_data.externalThreadCompress.DecompressThread( thread ); }
 
     std::shared_mutex& GetMbpsDataLock() { return m_mbpsData.lock; }
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }

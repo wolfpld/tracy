@@ -3991,7 +3991,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                             }
                             else
                             {
-                                const auto thread = it->Thread();
+                                const auto thread = m_worker.DecompressThreadExternal( it->Thread() );
                                 const auto local = m_worker.IsThreadLocal( thread );
                                 auto txt = local ? m_worker.GetThreadString( thread ) : m_worker.GetExternalName( thread ).first;
                                 bool untracked = false;

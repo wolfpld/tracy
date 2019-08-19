@@ -516,6 +516,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     }
 
     m_data.localThreadCompress.Load( f, fileVer );
+    if( fileVer >= FileVersion( 0, 5, 6 ) )
+    {
+        m_data.externalThreadCompress.Load( f, fileVer );
+    }
 
     f.Read( sz );
     for( uint64_t i=0; i<sz; i++ )
@@ -1380,7 +1384,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
-    if( fileVer >= FileVersion( 0, 5, 1 ) )
+    if( fileVer >= FileVersion( 0, 5, 6 ) )
     {
         s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
         s_loadProgress.progress.store( LoadProgress::ContextSwitches, std::memory_order_relaxed );
@@ -1399,21 +1403,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 data->v.reserve_exact( csz, m_slab );
                 int64_t runningTime = 0;
                 int64_t refTime = 0;
-                if( fileVer <= FileVersion( 0, 5, 2 ) ) refTime = -m_data.baseTime;
                 auto ptr = data->v.data();
                 for( uint64_t j=0; j<csz; j++ )
                 {
-                    if( fileVer >= FileVersion( 0, 5, 4 ) )
-                    {
-                        ptr->wakeup = ReadTimeOffset( f, refTime );
-                        ptr->SetStart( ReadTimeOffset( f, refTime ) );
-                    }
-                    else
-                    {
-                        int64_t start = ReadTimeOffset( f, refTime );
-                        ptr->wakeup = start;
-                        ptr->SetStart( start );
-                    }
+                    ptr->wakeup = ReadTimeOffset( f, refTime );
+                    ptr->SetStart( ReadTimeOffset( f, refTime ) );
                     int64_t diff;
                     f.Read( diff );
                     if( diff > 0 ) runningTime += diff;
@@ -1447,10 +1441,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 f.Skip( csz * sizeof( ContextSwitchData ) );
             }
         }
-    }
 
-    if( fileVer >= FileVersion( 0, 5, 3 ) )
-    {
         s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
         s_loadProgress.progress.store( LoadProgress::ContextSwitchesPerCpu, std::memory_order_relaxed );
         f.Read( sz );
@@ -1468,7 +1459,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 {
                     ptr->SetStart( ReadTimeOffset( f, refTime ) );
                     ptr->SetEnd( ReadTimeOffset( f, refTime ) );
-                    uint64_t thread;
+                    uint16_t thread;
                     f.Read( thread );
                     ptr->SetThread( thread );
                     ptr++;
@@ -1485,10 +1476,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 f.Skip( sizeof( uint64_t ) * 3 * sz );
             }
         }
-    }
 
-    if( fileVer >= FileVersion( 0, 5, 5 ) )
-    {
         f.Read( sz );
         for( uint64_t i=0; i<sz; i++ )
         {
@@ -4121,7 +4109,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         if( !cs.empty() )
         {
             auto& cx = cs.back();
-            assert( cx.Thread() == ev.oldThread );
+            assert( m_data.externalThreadCompress.DecompressThread( cx.Thread() ) == ev.oldThread );
             cx.SetEnd( time );
         }
     }
@@ -4163,7 +4151,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         auto& cx = cs.push_next();
         cx.SetStart( time );
         cx.SetEnd( -1 );
-        cx.SetThread( ev.newThread );
+        cx.SetThread( m_data.externalThreadCompress.CompressThread( ev.newThread ) );
 
         CheckExternalName( ev.newThread );
 
@@ -4786,6 +4774,7 @@ void Worker::Write( FileWrite& f )
     }
 
     m_data.localThreadCompress.Save( f );
+    m_data.externalThreadCompress.Save( f );
 
     sz = m_data.sourceLocation.size();
     f.Write( &sz, sizeof( sz ) );
@@ -5037,7 +5026,7 @@ void Worker::Write( FileWrite& f )
         {
             WriteTimeOffset( f, refTime, cx.Start() );
             WriteTimeOffset( f, refTime, cx.End() );
-            uint64_t thread = cx.Thread();
+            uint16_t thread = cx.Thread();
             f.Write( &thread, sizeof( thread ) );
         }
     }

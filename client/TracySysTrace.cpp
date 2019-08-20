@@ -506,15 +506,8 @@ ssize_t getline(char **buf, size_t *bufsiz, FILE *fp)
 }
 #endif
 
-void SysTraceWorker( void* ptr )
+static void ProcessTraceLines( FILE* f )
 {
-    char tmp[256];
-    memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
-    memcpy( tmp + sizeof( BasePath ) - 1, TracePipe, sizeof( TracePipe ) );
-
-    FILE* f = fopen( tmp, "rb" );
-    if( !f ) return;
-
     size_t lsz = 1024;
     auto line = (char*)malloc( lsz );
 
@@ -600,8 +593,51 @@ void SysTraceWorker( void* ptr )
     }
 
     free( line );
+}
+
+#ifdef __ANDROID__
+void SysTraceWorker( void* ptr )
+{
+    int pipefd[2];
+    if( pipe( pipefd ) == 0 )
+    {
+        const auto pid = fork();
+        if( pid == 0 )
+        {
+            // child
+            close( pipefd[0] );
+            dup2( pipefd[1], STDERR_FILENO );
+            if( dup2( pipefd[1], STDOUT_FILENO ) >= 0 )
+            {
+                close( pipefd[1] );
+                execlp( "su", "su", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
+                exit( 1 );
+            }
+        }
+        else if( pid > 0 )
+        {
+            // parent
+            close( pipefd[1] );
+            FILE* f = fdopen( pipefd[0], "rb" );
+            if( !f ) return;
+            ProcessTraceLines( f );
+            fclose( f );
+        }
+    }
+}
+#else
+void SysTraceWorker( void* ptr )
+{
+    char tmp[256];
+    memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
+    memcpy( tmp + sizeof( BasePath ) - 1, TracePipe, sizeof( TracePipe ) );
+
+    FILE* f = fopen( tmp, "rb" );
+    if( !f ) return;
+    ProcessTraceLines( f );
     fclose( f );
 }
+#endif
 
 void SysTraceSendExternalName( uint64_t thread )
 {

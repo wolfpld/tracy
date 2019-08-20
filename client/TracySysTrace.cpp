@@ -379,9 +379,9 @@ bool SysTraceStart()
 {
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
     if( !TraceWrite( CurrentTracer, sizeof( CurrentTracer ), "nop", 4 ) ) return false;
-    if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-cmd", 13 ) ) return false;
-    if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-tgid", 14 ) ) return false;
-    if( !TraceWrite( TraceOptions, sizeof( TraceOptions ), "noirq-info", 11 ) ) return false;
+    TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-cmd", 13 );
+    TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-tgid", 14 );
+    TraceWrite( TraceOptions, sizeof( TraceOptions ), "noirq-info", 11 );
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
     if( !TraceWrite( TraceClock, sizeof( TraceClock ), "x86-tsc", 8 ) ) return false;
 #elif __ARM_ARCH >= 6

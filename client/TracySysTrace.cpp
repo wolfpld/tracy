@@ -598,6 +598,7 @@ static void ProcessTraceLines( FILE* f )
 #ifdef __ANDROID__
 void SysTraceWorker( void* ptr )
 {
+    SetThreadName( "Tracy SysTrace" );
     int pipefd[2];
     if( pipe( pipefd ) == 0 )
     {
@@ -628,6 +629,7 @@ void SysTraceWorker( void* ptr )
 #else
 void SysTraceWorker( void* ptr )
 {
+    SetThreadName( "Tracy SysTrace" );
     char tmp[256];
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
     memcpy( tmp + sizeof( BasePath ) - 1, TracePipe, sizeof( TracePipe ) );

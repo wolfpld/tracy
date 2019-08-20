@@ -169,7 +169,7 @@ void SysTraceStop()
 
 void SysTraceWorker( void* ptr )
 {
-    SetThreadName( "Tracy Profiler system trace" );
+    SetThreadName( "Tracy SysTrace" );
     ProcessTrace( &s_traceHandle2, 1, 0, 0 );
     ControlTrace( 0, KERNEL_LOGGER_NAME, s_prop, EVENT_TRACE_CONTROL_STOP );
     tracy_free( s_prop );

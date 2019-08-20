@@ -321,6 +321,7 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <fcntl.h>
 #    include <inttypes.h>
 #    include <stdio.h>
+#    include <stdlib.h>
 #    include <string.h>
 #    include <unistd.h>
 
@@ -338,6 +339,14 @@ static const char SchedSwitch[] = "events/sched/sched_switch/enable";
 static const char SchedWakeup[] = "events/sched/sched_wakeup/enable";
 static const char TracePipe[] = "trace_pipe";
 
+#ifdef __ANDROID__
+static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
+{
+    char tmp[256];
+    sprintf( tmp, "su -c 'echo \"%s\" > %s%s'", val, BasePath, path );
+    return system( tmp ) == 0;
+}
+#else
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
 {
     char tmp[256];
@@ -364,6 +373,7 @@ static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vs
         val += cnt;
     }
 }
+#endif
 
 bool SysTraceStart()
 {

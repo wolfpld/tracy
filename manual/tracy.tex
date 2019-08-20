@@ -331,10 +331,20 @@ Because Apple \emph{has} to be \emph{think different}, there are some problems w
 \end{itemize}
 
 \paragraph{Android lunacy}
+\label{androidlunacy}
 
 Starting with Android 8.0 you are no longer allowed to use the \texttt{/proc} file system. One of the consequences of this change is inability to check system CPU usage.
 
 This is apparently a security enhancement. In its infinite wisdom Google has decided to not give you any option to bypass this restriction.
+
+To workaround this limitation, you will need to have a rooted device. Execute the following commands using \texttt{root} shell:
+
+\begin{lstlisting}[language=sh]
+setenforce 0
+mount -o remount,hidepid=0 /proc
+\end{lstlisting}
+
+The first command will allow access to system CPU statistics. The second one will allow inspection of foreign processes (which is required for context switch capture). \emph{Be sure that you are fully aware of the consequences of making these changes.}
 
 \subsubsection{Limitations}
 
@@ -1151,7 +1161,7 @@ noborder=true,
 couleur=black!5,
 logo=\bcattention
 ]{Caveats}
-Context switch data is retrieved using the kernel profiling facilities, which are not available to users with normal privilege level. To collect context switches you will need to elevate your rights to admin level, either by running the profiled program from the \texttt{root} account on Unix, or through the \emph{Run as administrator} option on Windows.
+Context switch data is retrieved using the kernel profiling facilities, which are not available to users with normal privilege level. To collect context switches you will need to elevate your rights to admin level, either by running the profiled program from the \texttt{root} account on Unix, or through the \emph{Run as administrator} option on Windows. On Android context switches will be collected if you have a rooted device (see section~\ref{androidlunacy} for additional information).
 \end{bclogo}
 
 \section{Capturing the data}
@@ -1605,7 +1615,7 @@ This label is only available if context switch data was collected. Each line in 
 
 \begin{itemize}
 \item \emph{Orange} -- Thread tracked by the profiler.
-\item \emph{Dark blue} -- Thread existing in the profiled application\footnote{Assuming process names are unique. Two programs with the same name are not distinguished.}, but not known to the profiler. This may include internal profiler threads, helper threads created by external libraries, etc.
+\item \emph{Dark blue} -- Thread existing in the profiled application, but not known to the profiler. This may include internal profiler threads, helper threads created by external libraries, etc.
 \item \emph{Gray} -- Threads assigned to other programs running in the system.
 \end{itemize}
 
@@ -1955,6 +1965,8 @@ There's also a section containing the selected frame set timing statistics and h
 
 If frame images were captured (section~\ref{frameimages}), you will have option to open frame image playback window, described in chapter~\ref{playback}.
 
+If context switch data was captured (section~\ref{contextswitches}), the \emph{\faMicrochip{}~CPU~data} button will allow inspecting what was the processor load during the capture, as described in section~\ref{cpudata}.
+
 In this window you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, amount of total available RAM, etc. If application information was provided (see section~\ref{appinfo}), it will also be displayed here.
 
 In this place you will also be able to see the tombstone generated during an application's crash (section~\ref{crashhandling}). It provides you with information about the thread that has crashed, the crash reason and the crash call stack (section~\ref{callstackwindow}).
@@ -2048,6 +2060,17 @@ This window presents information and statistics about a lock. The lock events co
 You may view a live replay of the profiled application screen captures (see section~\ref{frameimages}) using this window. Playback is controlled by the \emph{\faPlay~Play} and \emph{\faPause~Pause} buttons and the \emph{Frame image} slider can be used to scrub to the desired time stamp. Alternatively you may use the \emph{\faCaretLeft} and \emph{\faCaretRight} buttons to change single frame back or forward.
 
 If the \emph{Sync timeline} option is selected, the timeline view will be focused on the frame corresponding to the currently displayed screen shot.
+
+\subsection{CPU data window}
+\label{cpudata}
+
+Statistical data about all processes running on the system during the capture is available in this window, if context switch capture (section~\ref{contextswitches}) was performed.
+
+Each running program has an assigned process identifier (PID), which is displayed in the first column. If a program entry is expanded, a list of thread identifiers (TIDs) will also be displayed.
+
+The \emph{running time} column shows how much processor time was used by a process or thread. The percentage may be over 100\%, as it is scaled to trace length and multiple threads belonging to a single program may be executing simultaneously. The \emph{running regions} column displays how many times a given entry was in the \emph{running} state and the \emph{CPU migrations} shows how many times an entry was moved from one CPU core to another, when an entry was suspended by the system scheduler.
+
+The profiled program is highlighted using green color. Furthermore, yellow highlight indicates threads which are known to the profiler (that is, which sent events due to instrumentation).
 
 \section{Configuration files}
 

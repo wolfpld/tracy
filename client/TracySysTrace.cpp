@@ -320,6 +320,8 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <sys/stat.h>
 #    include <fcntl.h>
 #    include <inttypes.h>
+#    include <limits>
+#    include <poll.h>
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <string.h>
@@ -674,24 +676,43 @@ void SysTraceWorker( void* ptr )
     }
 }
 #else
-static void ProcessTraceLines( FILE* f )
+static void ProcessTraceLines( int fd )
 {
-    size_t lsz = 1024;
-    auto line = (char*)malloc( lsz );
+    char* buf = (char*)tracy_malloc( 64*1024 );
+
+    struct pollfd pfd;
+    pfd.fd = fd;
+    pfd.events = POLLIN | POLLERR;
 
     for(;;)
     {
-        auto rd = getline( &line, &lsz, f );
-        if( rd < 0 ) break;
+        while( poll( &pfd, 1, 0 ) <= 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+
+        const auto rd = read( fd, buf, 64*1024 );
+        if( rd <= 0 ) break;
 
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) continue;
 #endif
 
-        HandleTraceLine( line );
+        auto line = buf;
+        const auto end = buf + rd;
+        for(;;)
+        {
+            auto next = line;
+            while( next < end && *next != '\n' ) next++;
+            next++;
+            if( next >= end )
+            {
+                break;
+            }
+
+            HandleTraceLine( line );
+            line = next;
+        }
     }
 
-    free( line );
+    tracy_free( buf );
 }
 
 void SysTraceWorker( void* ptr )
@@ -701,10 +722,10 @@ void SysTraceWorker( void* ptr )
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );
     memcpy( tmp + sizeof( BasePath ) - 1, TracePipe, sizeof( TracePipe ) );
 
-    FILE* f = fopen( tmp, "rb" );
-    if( !f ) return;
-    ProcessTraceLines( f );
-    fclose( f );
+    int fd = open( tmp, O_RDONLY );
+    if( fd < 0 ) return;
+    ProcessTraceLines( fd );
+    close( fd );
 }
 #endif
 

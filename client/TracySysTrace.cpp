@@ -701,11 +701,9 @@ static void ProcessTraceLines( int fd )
         {
             auto next = line;
             while( next < end && *next != '\n' ) next++;
+            if( next == end ) break;
+            assert( *next == '\n' );
             next++;
-            if( next >= end )
-            {
-                break;
-            }
 
             HandleTraceLine( line );
             line = next;

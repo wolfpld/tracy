@@ -506,96 +506,145 @@ ssize_t getline(char **buf, size_t *bufsiz, FILE *fp)
 }
 #endif
 
-static void ProcessTraceLines( FILE* f )
+static void HandleTraceLine( const char* line )
 {
-    size_t lsz = 1024;
-    auto line = (char*)malloc( lsz );
+    line += 24;
+    const auto cpu = (uint8_t)ReadNumber( line );
 
-    for(;;)
-    {
-        auto rd = getline( &line, &lsz, f );
-        if( rd < 0 ) break;
-
-#ifdef TRACY_ON_DEMAND
-        if( !GetProfiler().IsConnected() ) continue;
-#endif
-
-        const char* ptr = line + 24;
-        const auto cpu = (uint8_t)ReadNumber( ptr );
-
-        ptr++;      // ']'
-        while( *ptr == ' ' ) ptr++;
+    line++;      // ']'
+    while( *line == ' ' ) line++;
 
 #if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-        const auto time = ReadNumber( ptr );
+    const auto time = ReadNumber( line );
 #elif __ARM_ARCH >= 6
-        const auto ts = ReadNumber( ptr );
-        ptr++;      // '.'
-        const auto tus = ReadNumber( ptr );
-        const auto time = ts * 1000000000ll + tus * 1000ll;
+    const auto ts = ReadNumber( line );
+    line++;      // '.'
+    const auto tus = ReadNumber( line );
+    const auto time = ts * 1000000000ll + tus * 1000ll;
 #endif
 
-        ptr += 2;   // ': '
-        if( memcmp( ptr, "sched_switch", 12 ) == 0 )
-        {
-            ptr += 14;
+    line += 2;   // ': '
+    if( memcmp( line, "sched_switch", 12 ) == 0 )
+    {
+        line += 14;
 
-            while( memcmp( ptr, "prev_pid", 8 ) != 0 ) ptr++;
-            ptr += 9;
+        while( memcmp( line, "prev_pid", 8 ) != 0 ) line++;
+        line += 9;
 
-            const auto oldPid = ReadNumber( ptr );
-            ptr++;
+        const auto oldPid = ReadNumber( line );
+        line++;
 
-            while( memcmp( ptr, "prev_state", 10 ) != 0 ) ptr++;
-            ptr += 11;
+        while( memcmp( line, "prev_state", 10 ) != 0 ) line++;
+        line += 11;
 
-            const auto oldState = (uint8_t)ReadState( *ptr );
-            ptr += 5;
+        const auto oldState = (uint8_t)ReadState( *line );
+        line += 5;
 
-            while( memcmp( ptr, "next_pid", 8 ) != 0 ) ptr++;
-            ptr += 9;
+        while( memcmp( line, "next_pid", 8 ) != 0 ) line++;
+        line += 9;
 
-            const auto newPid = ReadNumber( ptr );
+        const auto newPid = ReadNumber( line );
 
-            uint8_t reason = 100;
+        uint8_t reason = 100;
 
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
-            MemWrite( &item->hdr.type, QueueType::ContextSwitch );
-            MemWrite( &item->contextSwitch.time, time );
-            MemWrite( &item->contextSwitch.oldThread, oldPid );
-            MemWrite( &item->contextSwitch.newThread, newPid );
-            MemWrite( &item->contextSwitch.cpu, cpu );
-            MemWrite( &item->contextSwitch.reason, reason );
-            MemWrite( &item->contextSwitch.state, oldState );
-            tail.store( magic + 1, std::memory_order_release );
-        }
-        else if( memcmp( ptr, "sched_wakeup", 12 ) == 0 )
-        {
-            ptr += 14;
-
-            while( memcmp( ptr, "pid", 3 ) != 0 ) ptr++;
-            ptr += 4;
-
-            const auto pid = ReadNumber( ptr );
-
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
-            MemWrite( &item->hdr.type, QueueType::ThreadWakeup );
-            MemWrite( &item->threadWakeup.time, time );
-            MemWrite( &item->threadWakeup.thread, pid );
-            tail.store( magic + 1, std::memory_order_release );
-        }
+        Magic magic;
+        auto token = GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::ContextSwitch );
+        MemWrite( &item->contextSwitch.time, time );
+        MemWrite( &item->contextSwitch.oldThread, oldPid );
+        MemWrite( &item->contextSwitch.newThread, newPid );
+        MemWrite( &item->contextSwitch.cpu, cpu );
+        MemWrite( &item->contextSwitch.reason, reason );
+        MemWrite( &item->contextSwitch.state, oldState );
+        tail.store( magic + 1, std::memory_order_release );
     }
+    else if( memcmp( line, "sched_wakeup", 12 ) == 0 )
+    {
+        line += 14;
 
-    free( line );
+        while( memcmp( line, "pid", 3 ) != 0 ) line++;
+        line += 4;
+
+        const auto pid = ReadNumber( line );
+
+        Magic magic;
+        auto token = GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::ThreadWakeup );
+        MemWrite( &item->threadWakeup.time, time );
+        MemWrite( &item->threadWakeup.thread, pid );
+        tail.store( magic + 1, std::memory_order_release );
+    }
 }
 
 #ifdef __ANDROID__
+static void ProcessTraceLines( int fd )
+{
+    // Linux pipe buffer is 64KB, additional 1KB is for unfinished lines
+    char* buf = (char*)tracy_malloc( (64+1)*1024 );
+    char* line = buf;
+
+    for(;;)
+    {
+        const auto rd = read( fd, line, 64*1024 );
+        if( rd <= 0 ) break;
+
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() )
+        {
+            if( rd < 64*1024 )
+            {
+                assert( line[rd-1] == '\n' );
+                line = buf;
+                std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+            }
+            else
+            {
+                const auto end = line + rd;
+                line = end - 1;
+                while( line > buf && *line != '\n' ) line--;
+                if( line > buf )
+                {
+                    line++;
+                    const auto lsz = end - line;
+                    memmove( buf, line, lsz );
+                    line = buf + lsz;
+                }
+            }
+            continue;
+        }
+#endif
+
+        const auto end = line + rd;
+        line = buf;
+        for(;;)
+        {
+            auto next = line;
+            while( next < end && *next != '\n' ) next++;
+            next++;
+            if( next >= end )
+            {
+                const auto lsz = end - line;
+                memmove( buf, line, lsz );
+                line = buf + lsz;
+                break;
+            }
+
+            HandleTraceLine( line );
+            line = next;
+        }
+        if( rd < 64*1024 )
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        }
+    }
+
+    tracy_free( buf );
+}
+
 void SysTraceWorker( void* ptr )
 {
     SetThreadName( "Tracy SysTrace" );
@@ -619,14 +668,32 @@ void SysTraceWorker( void* ptr )
         {
             // parent
             close( pipefd[1] );
-            FILE* f = fdopen( pipefd[0], "rb" );
-            if( !f ) return;
-            ProcessTraceLines( f );
-            fclose( f );
+            ProcessTraceLines( pipefd[0] );
+            close( pipefd[0] );
         }
     }
 }
 #else
+static void ProcessTraceLines( FILE* f )
+{
+    size_t lsz = 1024;
+    auto line = (char*)malloc( lsz );
+
+    for(;;)
+    {
+        auto rd = getline( &line, &lsz, f );
+        if( rd < 0 ) break;
+
+#ifdef TRACY_ON_DEMAND
+        if( !GetProfiler().IsConnected() ) continue;
+#endif
+
+        HandleTraceLine( line );
+    }
+
+    free( line );
+}
+
 void SysTraceWorker( void* ptr )
 {
     SetThreadName( "Tracy SysTrace" );

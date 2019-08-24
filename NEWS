@@ -24,6 +24,10 @@ v0.6 (xxxx-xx-xx)
 - CPU cores are now displayed on the timeline.
   - Thread execution workload is displayed, including threads from external
     programs.
+- Added "CPU data" window (accessible from the trace info window), showing
+  programs competing for CPU during the capture.
+- Switched to using native thread identifiers (relatively small numbers), as
+  opposed to pthreads identifiers, which in reality were pointers.
 
 v0.5 (2019-08-10)
 -----------------

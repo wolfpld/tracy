@@ -10420,15 +10420,6 @@ void View::DrawCpuDataWindow()
         it->second.data.migrations += v.second.migrations;
     }
 
-    std::vector<flat_hash_map<uint64_t, PidData, nohash<uint64_t>>::iterator> psort;
-    psort.reserve( pids.size() );
-    for( auto it = pids.begin(); it != pids.end(); ++it ) psort.emplace_back( it );
-    pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
-
-    const auto thisPid = m_worker.GetPid();
-    const auto rtimespan = 1.0 / m_worker.GetLastTime();
-    const auto ty = ImGui::GetTextLineHeight();
-
     ImGui::Begin( "CPU data", &m_showCpuDataWindow );
     TextFocused( "Tracked threads:", RealToString( ctd.size(), true ) );
     ImGui::SameLine();
@@ -10436,17 +10427,35 @@ void View::DrawCpuDataWindow()
     ImGui::Separator();
     ImGui::BeginChild( "##cpudata" );
     ImGui::Columns( 5 );
-    ImGui::Text( "PID/TID" );
+    if( ImGui::SmallButton( "PID/TID" ) ) m_cpuDataSort = CpuDataSortBy::Pid;
     ImGui::NextColumn();
-    ImGui::Text( "Name" );
+    if( ImGui::SmallButton( "Name" ) ) m_cpuDataSort = CpuDataSortBy::Name;
     ImGui::NextColumn();
-    ImGui::Text( "Running time" );
+    if( ImGui::SmallButton( "Running time" ) ) m_cpuDataSort = CpuDataSortBy::Time;
     ImGui::NextColumn();
-    ImGui::Text( "Running regions" );
+    if( ImGui::SmallButton( "Running regions" ) ) m_cpuDataSort = CpuDataSortBy::Regions;
     ImGui::NextColumn();
-    ImGui::Text( "CPU migrations" );
+    if( ImGui::SmallButton( "CPU migrations" ) ) m_cpuDataSort = CpuDataSortBy::Migrations;
     ImGui::NextColumn();
     ImGui::Separator();
+
+    std::vector<flat_hash_map<uint64_t, PidData, nohash<uint64_t>>::iterator> psort;
+    psort.reserve( pids.size() );
+    for( auto it = pids.begin(); it != pids.end(); ++it ) psort.emplace_back( it );
+    switch( m_cpuDataSort )
+    {
+    case CpuDataSortBy::Pid: pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } ); break;
+    case CpuDataSortBy::Name: pdqsort_branchless( psort.begin(), psort.end(), [this] ( const auto& l, const auto& r ) { return strcmp( m_worker.GetExternalName( l->second.tids[0] ).first, m_worker.GetExternalName( r->second.tids[0] ).first ) < 0; } ); break;
+    case CpuDataSortBy::Time: pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.runningTime > r->second.data.runningTime; } ); break;
+    case CpuDataSortBy::Regions: pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.runningRegions > r->second.data.runningRegions; } ); break;
+    case CpuDataSortBy::Migrations: pdqsort_branchless( psort.begin(), psort.end(), [] ( const auto& l, const auto& r ) { return l->second.data.migrations > r->second.data.migrations; } ); break;
+    default: assert( false ); break;
+    }
+
+    const auto thisPid = m_worker.GetPid();
+    const auto rtimespan = 1.0 / m_worker.GetLastTime();
+    const auto ty = ImGui::GetTextLineHeight();
+
     for( auto& pidit : psort )
     {
         char buf[128];
@@ -10473,7 +10482,15 @@ void View::DrawCpuDataWindow()
         if( expand )
         {
             ImGui::Separator();
-            pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end() );
+            switch( m_cpuDataSort )
+            {
+            case CpuDataSortBy::Pid: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end() ); break;
+            case CpuDataSortBy::Name: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [this] ( const auto& l, const auto& r ) { return strcmp( m_worker.GetExternalName( l ).second, m_worker.GetExternalName( r ).second ) < 0; } ); break;
+            case CpuDataSortBy::Time: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.runningTime > ctd.find( r )->second.runningTime; } ); break;
+            case CpuDataSortBy::Regions: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.runningRegions > ctd.find( r )->second.runningRegions; } ); break;
+            case CpuDataSortBy::Migrations: pdqsort_branchless( pid.second.tids.begin(), pid.second.tids.end(), [&ctd] ( const auto& l, const auto& r ) { return ctd.find( l )->second.migrations > ctd.find( r )->second.migrations; } ); break;
+            default: assert( false ); break;
+            }
             for( auto& tid : pid.second.tids )
             {
                 const auto tidMatch = pidMatch && m_worker.IsThreadLocal( tid );

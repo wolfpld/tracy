@@ -298,6 +298,17 @@ private:
     bool m_drawContextSwitches = true;
     bool m_drawCpuData = true;
 
+    enum class CpuDataSortBy
+    {
+        Pid,
+        Name,
+        Time,
+        Regions,
+        Migrations
+    };
+
+    CpuDataSortBy m_cpuDataSort = CpuDataSortBy::Pid;
+
     int m_statSort = 0;
     bool m_statSelf = false;
     bool m_showCallstackFrameAddress = false;

@@ -6444,6 +6444,8 @@ void View::DrawOptions()
                 ImGui::EndDragDropSource();
             }
             ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", RealToString( t->id, true ) );
             if( crash.thread == t->id )
             {
                 ImGui::SameLine();

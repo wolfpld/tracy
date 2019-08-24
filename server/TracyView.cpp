@@ -345,7 +345,7 @@ bool View::Draw()
         {
             TextFocused( "Thread:", s_instance->m_worker.GetThreadString( data.thread ) );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(0x%" PRIX64 ")", data.thread );
+            ImGui::TextDisabled( "(%s)", RealToString( data.thread, true ) );
         }
         ImGui::Separator();
         if( ImGui::Button( "I understand" ) )
@@ -2057,7 +2057,7 @@ void View::DrawZones()
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( m_worker.GetThreadString( v->id ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(0x%" PRIx64 ")", v->id );
+                ImGui::TextDisabled( "(%s)", RealToString( v->id, true ) );
                 if( crash.thread == v->id )
                 {
                     ImGui::SameLine();
@@ -4052,7 +4052,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         TextDisabledUnformatted( "(profiled program)" );
                                         TextFocused( "Thread:", m_worker.GetThreadString( thread ) );
                                         ImGui::SameLine();
-                                        ImGui::TextDisabled( "(0x%" PRIX64 ")", thread );
+                                        ImGui::TextDisabled( "(%s)", RealToString( thread, true ) );
                                     }
                                     else
                                     {
@@ -4068,7 +4068,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         }
                                         TextFocused( "Thread:", m_worker.GetExternalName( thread ).second );
                                         ImGui::SameLine();
-                                        ImGui::TextDisabled( "(0x%" PRIX64 ")", thread );
+                                        ImGui::TextDisabled( "(%s)", RealToString( thread, true ) );
                                     }
                                     ImGui::Separator();
                                     TextFocused( "Start time:", TimeToString( start ) );
@@ -4599,7 +4599,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     }
                     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
+                    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
 
                     m_memoryAllocHover = std::distance( mem.data.begin(), ev );
                     m_memoryAllocHoverWait = 2;
@@ -4918,7 +4918,7 @@ void View::DrawZoneInfoWindow()
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
+    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
     if( ev.text.active )
     {
         TextFocused( "User text:", m_worker.GetString( ev.text ) );
@@ -5664,7 +5664,7 @@ void View::DrawGpuInfoWindow()
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
+    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
 
     ImGui::Separator();
     ImGui::BeginChild( "##gpuinfo" );
@@ -6684,7 +6684,7 @@ void View::DrawMessages()
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( m_worker.GetThreadString( v->thread ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(0x%" PRIX64 ")", v->thread );
+                ImGui::TextDisabled( "(%s)", RealToString( v->thread, true ) );
                 ImGui::NextColumn();
                 ImGui::PushStyleColor( ImGuiCol_Text, v->color );
                 ImGui::TextWrapped( "%s", text );
@@ -9276,7 +9276,7 @@ void View::DrawMemoryAllocWindow()
     ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadString( tidAlloc ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(0x%" PRIX64 ")", tidAlloc );
+    ImGui::TextDisabled( "(%s)", RealToString( tidAlloc, true ) );
     if( ev.csAlloc != 0 )
     {
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
@@ -9293,7 +9293,7 @@ void View::DrawMemoryAllocWindow()
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
         TextFocused( "Thread:", m_worker.GetThreadString( tidFree ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(0x%" PRIX64 ")", tidFree );
+        ImGui::TextDisabled( "(%s)", RealToString( tidFree, true ) );
         if( ev.csFree != 0 )
         {
             ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
@@ -9971,7 +9971,7 @@ void View::DrawInfo()
         TextFocused( "Time of crash:", TimeToString( crash.time ) );
         TextFocused( "Thread:", m_worker.GetThreadString( crash.thread ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(0x%" PRIX64 ")", crash.thread );
+        ImGui::TextDisabled( "(%s)", RealToString( crash.thread, true ) );
         TextDisabledUnformatted( "Reason:" );
         ImGui::SameLine();
         ImGui::TextWrapped( "%s", m_worker.GetString( crash.message ) );
@@ -10213,7 +10213,7 @@ void View::DrawLockInfoWindow()
         {
             ImGui::TextUnformatted( m_worker.GetThreadString( t ) );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(0x%" PRIX64 ")", t );
+            ImGui::TextDisabled( "(%s)", RealToString( t, true ) );
         }
         ImGui::TreePop();
     }
@@ -11700,7 +11700,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
+    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
 #ifndef TRACY_NO_STATISTICS
@@ -11753,7 +11753,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
+    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
     ImGui::Separator();
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );

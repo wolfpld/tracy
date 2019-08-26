@@ -10414,6 +10414,8 @@ void View::DrawPlayback()
     ImGui::SameLine();
     ImGui::Checkbox( "Zoom 2x", &m_playback.zoom );
     TextFocused( "Timestamp:", TimeToString( tstart ) );
+    ImGui::SameLine();
+    TextFocused( "Frame:", RealToString( GetFrameNumber( *frameSet, fi->frameRef, m_worker.GetFrameOffset() ), true) );
     ImGui::End();
 }
 

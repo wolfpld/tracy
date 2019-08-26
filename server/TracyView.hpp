@@ -181,6 +181,7 @@ private:
     uint64_t GetZoneThread( const GpuEvent& zone ) const;
     const GpuCtxData* GetZoneCtx( const GpuEvent& zone ) const;
     const ZoneEvent* FindZoneAtTime( uint64_t thread, int64_t time ) const;
+    uint64_t GetFrameNumber( const FrameData& fd, int i, uint64_t offset ) const;
     const char* GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint64_t offset ) const;
 
 #ifndef TRACY_NO_STATISTICS

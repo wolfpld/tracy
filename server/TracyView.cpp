@@ -998,6 +998,7 @@ void View::DrawFrames()
                 }
                 else
                 {
+                    const auto fnum = GetFrameNumber( *m_frames, sel, m_worker.GetFrameOffset() );
                     m_frameHover = sel;
                     if( m_frames->name == 0 )
                     {
@@ -1012,7 +1013,7 @@ void View::DrawFrames()
                         {
                             TextDisabledUnformatted( "Frame:" );
                             ImGui::SameLine();
-                            ImGui::TextUnformatted( RealToString( sel, true ) );
+                            ImGui::TextUnformatted( RealToString( fnum, true ) );
                             ImGui::Separator();
                             const auto frameTime = m_worker.GetFrameTime( *m_frames, sel );
                             TextFocused( "Frame time:", TimeToString( frameTime ) );
@@ -1029,7 +1030,7 @@ void View::DrawFrames()
                         {
                             TextDisabledUnformatted( "Frame:" );
                             ImGui::SameLine();
-                            ImGui::TextUnformatted( RealToString( sel + offset - 1, true ) );
+                            ImGui::TextUnformatted( RealToString( fnum, true ) );
                             ImGui::Separator();
                             const auto frameTime = m_worker.GetFrameTime( *m_frames, sel );
                             TextFocused( "Frame time:", TimeToString( frameTime ) );
@@ -1041,7 +1042,7 @@ void View::DrawFrames()
                     {
                         ImGui::TextDisabled( "%s:", m_worker.GetString( m_frames->name ) );
                         ImGui::SameLine();
-                        ImGui::TextUnformatted( RealToString( sel + 1, true ) );
+                        ImGui::TextUnformatted( RealToString( fnum, true ) );
                         ImGui::Separator();
                         const auto frameTime = m_worker.GetFrameTime( *m_frames, sel );
                         TextFocused( "Frame time:", TimeToString( frameTime ) );
@@ -1269,8 +1270,28 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     }
 }
 
+uint64_t View::GetFrameNumber( const FrameData& fd, int i, uint64_t offset ) const
+{
+    if( fd.name == 0 )
+    {
+        if( offset == 0 )
+        {
+            return i;
+        }
+        else
+        {
+            return i + offset - 1;
+        }
+    }
+    else
+    {
+        return i + 1;
+    }
+}
+
 const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint64_t offset ) const
 {
+    const auto fnum = GetFrameNumber( fd, i, offset );
     static char buf[1024];
     if( fd.name == 0 )
     {
@@ -1280,7 +1301,7 @@ const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint
         }
         else if( offset == 0 )
         {
-            sprintf( buf, "Frame %s (%s)", RealToString( i, true ), TimeToString( ftime ) );
+            sprintf( buf, "Frame %s (%s)", RealToString( fnum, true ), TimeToString( ftime ) );
         }
         else if( i == 1 )
         {
@@ -1288,12 +1309,12 @@ const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint
         }
         else
         {
-            sprintf( buf, "Frame %s (%s)", RealToString( i + offset - 1, true ), TimeToString( ftime ) );
+            sprintf( buf, "Frame %s (%s)", RealToString( fnum, true ), TimeToString( ftime ) );
         }
     }
     else
     {
-        sprintf( buf, "%s %s (%s)", m_worker.GetString( fd.name ), RealToString( i + 1, true ), TimeToString( ftime ) );
+        sprintf( buf, "%s %s (%s)", m_worker.GetString( fd.name ), RealToString( fnum, true ), TimeToString( ftime ) );
     }
     return buf;
 }

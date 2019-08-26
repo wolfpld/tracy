@@ -2069,9 +2069,11 @@ bool Profiler::HandleServerQuery()
     case ServerQueryDisconnect:
         HandleDisconnect();
         return false;
+#ifdef TRACY_HAS_SYSTEM_TRACING
     case ServerQueryExternalName:
         SysTraceSendExternalName( ptr );
         break;
+#endif
     default:
         assert( false );
         break;
@@ -2084,6 +2086,7 @@ void Profiler::HandleDisconnect()
 {
     moodycamel::ConsumerToken token( GetQueue() );
 
+#ifdef TRACY_HAS_SYSTEM_TRACING
     if( s_sysTraceThread )
     {
         auto timestamp = GetTime();
@@ -2131,6 +2134,7 @@ void Profiler::HandleDisconnect()
             }
         }
     }
+#endif
 
     QueueItem terminate;
     MemWrite( &terminate.hdr.type, QueueType::Terminate );

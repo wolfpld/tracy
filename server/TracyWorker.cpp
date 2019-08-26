@@ -3338,7 +3338,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     assert( it != m_pendingFrameImageData.end() );
 
     auto& frames = m_data.framesBase->frames;
-    const auto fidx = int64_t( ev.frame ) - m_data.frameOffset + 1;
+    const auto fidx = int64_t( ev.frame ) - int64_t( m_data.frameOffset ) + 1;
     if( m_onDemand && fidx <= 1 )
     {
         m_pendingFrameImageData.erase( it );
@@ -3354,7 +3354,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     fi->ptr = PackFrameImage( (const char*)it->second, ev.w, ev.h, fi->csz );
     fi->w = ev.w;
     fi->h = ev.h;
-    fi->frameRef = fidx;
+    fi->frameRef = uint32_t( fidx );
     fi->flip = ev.flip;
 
     const auto idx = m_data.frameImage.size();

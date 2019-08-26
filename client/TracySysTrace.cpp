@@ -50,7 +50,7 @@ struct ReadyThread
     int8_t      reserverd;
 };
 
-void EventRecordCallback( PEVENT_RECORD record )
+void WINAPI EventRecordCallback( PEVENT_RECORD record )
 {
 #ifdef TRACY_ON_DEMAND
     if( !GetProfiler().IsConnected() ) return;

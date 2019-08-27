@@ -343,7 +343,7 @@ bool View::Draw()
         }
         if( data.thread != 0 )
         {
-            TextFocused( "Thread:", s_instance->m_worker.GetThreadString( data.thread ) );
+            TextFocused( "Thread:", s_instance->m_worker.GetThreadName( data.thread ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", RealToString( data.thread, true ) );
         }
@@ -1843,7 +1843,7 @@ void View::DrawZones()
                     ImGui::Separator();
                     if( !isVulkan )
                     {
-                        TextFocused( "Thread:", m_worker.GetThreadString( v->thread ) );
+                        TextFocused( "Thread:", m_worker.GetThreadName( v->thread ) );
                     }
                     if( !v->timeline.empty() )
                     {
@@ -2059,7 +2059,7 @@ void View::DrawZones()
             {
                 draw->AddTriangle( wpos + ImVec2( to/2, oldOffset + to/2 ), wpos + ImVec2( to/2, oldOffset + ty - to/2 ), wpos + ImVec2( to/2 + th, oldOffset + ty * 0.5 ), labelColor, 2.0f );
             }
-            const auto txt = m_worker.GetThreadString( v->id );
+            const auto txt = m_worker.GetThreadName( v->id );
             const auto txtsz = ImGui::CalcTextSize( txt );
             if( m_gpuThread == v->id )
             {
@@ -2076,7 +2076,7 @@ void View::DrawZones()
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
             {
                 ImGui::BeginTooltip();
-                ImGui::TextUnformatted( m_worker.GetThreadString( v->id ) );
+                ImGui::TextUnformatted( m_worker.GetThreadName( v->id ) );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%s)", RealToString( v->id, true ) );
                 if( crash.thread == v->id )
@@ -3349,7 +3349,7 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             ImGui::Indent( ty );
             for( const auto& t : lockmap.threadList )
             {
-                ImGui::TextUnformatted( m_worker.GetThreadString( t ) );
+                ImGui::TextUnformatted( m_worker.GetThreadName( t ) );
             }
             ImGui::Unindent( ty );
             ImGui::Separator();
@@ -3650,11 +3650,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             case LockState::HasLock:
                                 if( vbegin->lockCount == 1 )
                                 {
-                                    ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", m_worker.GetThreadString( tid ) );
+                                    ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", m_worker.GetThreadName( tid ) );
                                 }
                                 else
                                 {
-                                    ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", m_worker.GetThreadString( tid ), vbegin->lockCount );
+                                    ImGui::Text( "Thread \"%s\" has %i locks. No other threads are waiting.", m_worker.GetThreadName( tid ), vbegin->lockCount );
                                 }
                                 if( vbegin->waitList != 0 )
                                 {
@@ -3666,11 +3666,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             {
                                 if( vbegin->lockCount == 1 )
                                 {
-                                    ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), TracyCountBits( vbegin->waitList ) );
+                                    ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%" PRIu64 "):", m_worker.GetThreadName( tid ), TracyCountBits( vbegin->waitList ) );
                                 }
                                 else
                                 {
-                                    ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), vbegin->lockCount, TracyCountBits( vbegin->waitList ) );
+                                    ImGui::Text( "Thread \"%s\" has %i locks. Blocked threads (%" PRIu64 "):", m_worker.GetThreadName( tid ), vbegin->lockCount, TracyCountBits( vbegin->waitList ) );
                                 }
                                 auto waitList = vbegin->waitList;
                                 int t = 0;
@@ -3679,7 +3679,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 {
                                     if( waitList & 0x1 )
                                     {
-                                        ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
+                                        ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threadList[t] ) );
                                     }
                                     waitList >>= 1;
                                     t++;
@@ -3691,14 +3691,14 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                             {
                                 if( vbegin->lockCount > 0 )
                                 {
-                                    ImGui::Text( "Thread \"%s\" is blocked by other thread:", m_worker.GetThreadString( tid ) );
+                                    ImGui::Text( "Thread \"%s\" is blocked by other thread:", m_worker.GetThreadName( tid ) );
                                 }
                                 else
                                 {
-                                    ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", m_worker.GetThreadString( tid ) );
+                                    ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", m_worker.GetThreadName( tid ) );
                                 }
                                 ImGui::Indent( ty );
-                                ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[vbegin->lockingThread] ) );
+                                ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threadList[vbegin->lockingThread] ) );
                                 ImGui::Unindent( ty );
                                 break;
                             }
@@ -3717,15 +3717,15 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 if( ptr->sharedList == 0 )
                                 {
                                     assert( vbegin->lockCount == 1 );
-                                    ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", m_worker.GetThreadString( tid ) );
+                                    ImGui::Text( "Thread \"%s\" has lock. No other threads are waiting.", m_worker.GetThreadName( tid ) );
                                 }
                                 else if( TracyCountBits( ptr->sharedList ) == 1 )
                                 {
-                                    ImGui::Text( "Thread \"%s\" has a sole shared lock. No other threads are waiting.", m_worker.GetThreadString( tid ) );
+                                    ImGui::Text( "Thread \"%s\" has a sole shared lock. No other threads are waiting.", m_worker.GetThreadName( tid ) );
                                 }
                                 else
                                 {
-                                    ImGui::Text( "Thread \"%s\" has shared lock. No other threads are waiting.", m_worker.GetThreadString( tid ) );
+                                    ImGui::Text( "Thread \"%s\" has shared lock. No other threads are waiting.", m_worker.GetThreadName( tid ) );
                                     ImGui::Text( "Threads sharing the lock (%" PRIu64 "):", TracyCountBits( ptr->sharedList ) - 1 );
                                     auto sharedList = ptr->sharedList;
                                     int t = 0;
@@ -3734,7 +3734,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                     {
                                         if( sharedList & 0x1 && t != thread )
                                         {
-                                            ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
+                                            ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threadList[t] ) );
                                         }
                                         sharedList >>= 1;
                                         t++;
@@ -3747,15 +3747,15 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 if( ptr->sharedList == 0 )
                                 {
                                     assert( vbegin->lockCount == 1 );
-                                    ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
+                                    ImGui::Text( "Thread \"%s\" has lock. Blocked threads (%" PRIu64 "):", m_worker.GetThreadName( tid ), TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
                                 }
                                 else if( TracyCountBits( ptr->sharedList ) == 1 )
                                 {
-                                    ImGui::Text( "Thread \"%s\" has a sole shared lock. Blocked threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
+                                    ImGui::Text( "Thread \"%s\" has a sole shared lock. Blocked threads (%" PRIu64 "):", m_worker.GetThreadName( tid ), TracyCountBits( vbegin->waitList ) + TracyCountBits( ptr->waitShared ) );
                                 }
                                 else
                                 {
-                                    ImGui::Text( "Thread \"%s\" has shared lock.", m_worker.GetThreadString( tid ) );
+                                    ImGui::Text( "Thread \"%s\" has shared lock.", m_worker.GetThreadName( tid ) );
                                     ImGui::Text( "Threads sharing the lock (%" PRIu64 "):", TracyCountBits( ptr->sharedList ) - 1 );
                                     auto sharedList = ptr->sharedList;
                                     int t = 0;
@@ -3764,7 +3764,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                     {
                                         if( sharedList & 0x1 && t != thread )
                                         {
-                                            ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
+                                            ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threadList[t] ) );
                                         }
                                         sharedList >>= 1;
                                         t++;
@@ -3780,7 +3780,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 {
                                     if( waitList & 0x1 )
                                     {
-                                        ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
+                                        ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threadList[t] ) );
                                     }
                                     waitList >>= 1;
                                     t++;
@@ -3791,7 +3791,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 {
                                     if( waitShared & 0x1 )
                                     {
-                                        ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
+                                        ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threadList[t] ) );
                                     }
                                     waitShared >>= 1;
                                     t++;
@@ -3804,16 +3804,16 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 assert( vbegin->lockCount == 0 || vbegin->lockCount == 1 );
                                 if( vbegin->lockCount != 0 || ptr->sharedList != 0 )
                                 {
-                                    ImGui::Text( "Thread \"%s\" is blocked by other threads (%" PRIu64 "):", m_worker.GetThreadString( tid ), vbegin->lockCount + TracyCountBits( ptr->sharedList ) );
+                                    ImGui::Text( "Thread \"%s\" is blocked by other threads (%" PRIu64 "):", m_worker.GetThreadName( tid ), vbegin->lockCount + TracyCountBits( ptr->sharedList ) );
                                 }
                                 else
                                 {
-                                    ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", m_worker.GetThreadString( tid ) );
+                                    ImGui::Text( "Thread \"%s\" waits to obtain lock after release by thread:", m_worker.GetThreadName( tid ) );
                                 }
                                 ImGui::Indent( ty );
                                 if( vbegin->lockCount != 0 )
                                 {
-                                    ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[vbegin->lockingThread] ) );
+                                    ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threadList[vbegin->lockingThread] ) );
                                 }
                                 auto sharedList = ptr->sharedList;
                                 int t = 0;
@@ -3821,7 +3821,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                                 {
                                     if( sharedList & 0x1 )
                                     {
-                                        ImGui::Text( "\"%s\"", m_worker.GetThreadString( lockmap.threadList[t] ) );
+                                        ImGui::Text( "\"%s\"", m_worker.GetThreadName( lockmap.threadList[t] ) );
                                     }
                                     sharedList >>= 1;
                                     t++;
@@ -4014,7 +4014,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                             {
                                 const auto thread = m_worker.DecompressThreadExternal( it->Thread() );
                                 const auto local = m_worker.IsThreadLocal( thread );
-                                auto txt = local ? m_worker.GetThreadString( thread ) : m_worker.GetExternalName( thread ).first;
+                                auto txt = local ? m_worker.GetThreadName( thread ) : m_worker.GetExternalName( thread ).first;
                                 bool untracked = false;
                                 if( !local )
                                 {
@@ -4071,7 +4071,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
                                         ImGui::SameLine();
                                         TextDisabledUnformatted( "(profiled program)" );
-                                        TextFocused( "Thread:", m_worker.GetThreadString( thread ) );
+                                        TextFocused( "Thread:", m_worker.GetThreadName( thread ) );
                                         ImGui::SameLine();
                                         ImGui::TextDisabled( "(%s)", RealToString( thread, true ) );
                                     }
@@ -4618,7 +4618,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     {
                         tid = m_worker.DecompressThread( ev->ThreadFree() );
                     }
-                    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
+                    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
 
@@ -4937,7 +4937,7 @@ void View::DrawZoneInfoWindow()
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
+    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
     if( ev.text.active )
@@ -5683,7 +5683,7 @@ void View::DrawGpuInfoWindow()
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
+    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
 
@@ -6452,7 +6452,7 @@ void View::DrawOptions()
         {
             m_threadDnd.push_back( ImGui::GetCursorScreenPos().y );
             ImGui::PushID( idx );
-            const auto threadName = m_worker.GetThreadString( t->id );
+            const auto threadName = m_worker.GetThreadName( t->id );
             SmallCheckbox( threadName, &Vis( t ).visible );
             if( ImGui::BeginDragDropSource( ImGuiDragDropFlags_SourceNoHoldToOpenOthers ) )
             {
@@ -6640,7 +6640,7 @@ void View::DrawMessages()
         {
             if( t->messages.empty() ) continue;
             ImGui::PushID( idx++ );
-            SmallCheckbox( m_worker.GetThreadString( t->id ), &VisibleMsgThread( t->id ) );
+            SmallCheckbox( m_worker.GetThreadName( t->id ), &VisibleMsgThread( t->id ) );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", RealToString( t->messages.size(), true ) );
@@ -6705,7 +6705,7 @@ void View::DrawMessages()
                 }
                 ImGui::PopID();
                 ImGui::NextColumn();
-                ImGui::TextUnformatted( m_worker.GetThreadString( v->thread ) );
+                ImGui::TextUnformatted( m_worker.GetThreadName( v->thread ) );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%s)", RealToString( v->thread, true ) );
                 ImGui::NextColumn();
@@ -7936,7 +7936,7 @@ void View::DrawFindZone()
                 switch( groupBy )
                 {
                 case FindZone::GroupBy::Thread:
-                    hdrString = m_worker.GetThreadString( m_worker.DecompressThread( v->first ) );
+                    hdrString = m_worker.GetThreadName( m_worker.DecompressThread( v->first ) );
                     break;
                 case FindZone::GroupBy::UserText:
                     hdrString = v->first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v->first ) );
@@ -9297,7 +9297,7 @@ void View::DrawMemoryAllocWindow()
     TextFocused( "Appeared at", TimeToString( ev.TimeAlloc() ) );
     if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeAlloc() );
     ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-    TextFocused( "Thread:", m_worker.GetThreadString( tidAlloc ) );
+    TextFocused( "Thread:", m_worker.GetThreadName( tidAlloc ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tidAlloc, true ) );
     if( ev.csAlloc != 0 )
@@ -9314,7 +9314,7 @@ void View::DrawMemoryAllocWindow()
         TextFocused( "Freed at", TimeToString( ev.TimeFree() ) );
         if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeFree() );
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-        TextFocused( "Thread:", m_worker.GetThreadString( tidFree ) );
+        TextFocused( "Thread:", m_worker.GetThreadName( tidFree ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( tidFree, true ) );
         if( ev.csFree != 0 )
@@ -9992,7 +9992,7 @@ void View::DrawInfo()
         TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Application has crashed." );
 #endif
         TextFocused( "Time of crash:", TimeToString( crash.time ) );
-        TextFocused( "Thread:", m_worker.GetThreadString( crash.thread ) );
+        TextFocused( "Thread:", m_worker.GetThreadName( crash.thread ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( crash.thread, true ) );
         TextDisabledUnformatted( "Reason:" );
@@ -10234,7 +10234,7 @@ void View::DrawLockInfoWindow()
     {
         for( const auto& t : lock.threadList )
         {
-            ImGui::TextUnformatted( m_worker.GetThreadString( t ) );
+            ImGui::TextUnformatted( m_worker.GetThreadName( t ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", RealToString( t, true ) );
         }
@@ -10645,7 +10645,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         {
             TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), TimeToString( m_worker.GetLastTime() - v->TimeAlloc() ) );
             ImGui::NextColumn();
-            ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->ThreadAlloc() ) ) );
+            ImGui::TextUnformatted( m_worker.GetThreadName( m_worker.DecompressThread( v->ThreadAlloc() ) ) );
         }
         else
         {
@@ -10658,11 +10658,11 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             ImGui::NextColumn();
             if( v->ThreadAlloc() == v->ThreadFree() )
             {
-                ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->ThreadAlloc() ) ) );
+                ImGui::TextUnformatted( m_worker.GetThreadName( m_worker.DecompressThread( v->ThreadAlloc() ) ) );
             }
             else
             {
-                ImGui::Text( "%s / %s", m_worker.GetThreadString( m_worker.DecompressThread( v->ThreadAlloc() ) ), m_worker.GetThreadString( m_worker.DecompressThread( v->ThreadFree() ) ) );
+                ImGui::Text( "%s / %s", m_worker.GetThreadName( m_worker.DecompressThread( v->ThreadAlloc() ) ), m_worker.GetThreadName( m_worker.DecompressThread( v->ThreadFree() ) ) );
             }
         }
         ImGui::NextColumn();
@@ -11747,7 +11747,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
+    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
     ImGui::Separator();
@@ -11800,7 +11800,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
-    TextFocused( "Thread:", m_worker.GetThreadString( tid ) );
+    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
     ImGui::Separator();

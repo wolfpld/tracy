@@ -10530,14 +10530,15 @@ void View::DrawCpuDataWindow()
             for( auto& tid : pid.second.tids )
             {
                 const auto tidMatch = pidMatch && m_worker.IsThreadLocal( tid );
-                auto tname = m_worker.GetExternalName( tid ).second;
+                const char* tname;
                 if( tidMatch )
                 {
-                    auto lname = m_worker.GetThreadString( tid );
-                    const auto tsz = strlen( tname );
-                    const auto lsz = strlen( lname );
-                    if( lsz > tsz && strncmp( tname, lname, tsz ) == 0 ) tname = lname;
+                    tname = m_worker.GetThreadName( tid );
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.0f, 1.0f, 0.2f, 1.0f ) );
+                }
+                else
+                {
+                    tname = m_worker.GetExternalName( tid ).second;
                 }
                 const auto& tit = ctd.find( tid );
                 assert( tit != ctd.end() );

@@ -4026,6 +4026,10 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     {
                                         const auto pid = m_worker.GetPidFromTid( thread );
                                         untracked = pid == m_worker.GetPid();
+                                        if( untracked )
+                                        {
+                                            txt = m_worker.GetExternalName( thread ).second;
+                                        }
                                     }
                                 }
                                 const auto pr0 = ( start - m_zvStart ) * pxns;
@@ -4077,7 +4081,14 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     }
                                     else
                                     {
-                                        TextFocused( "Program:", txt );
+                                        if( untracked )
+                                        {
+                                            TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
+                                        }
+                                        else
+                                        {
+                                            TextFocused( "Program:", txt );
+                                        }
                                         ImGui::SameLine();
                                         if( untracked )
                                         {

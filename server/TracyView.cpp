@@ -10484,14 +10484,16 @@ void View::DrawCpuDataWindow()
         char buf[128];
         auto& pid = *pidit;
         const auto pidMatch = thisPid != 0 && thisPid == pid.first;
+        auto name = m_worker.GetExternalName( pid.second.tids[0] ).first;
         if( pidMatch )
         {
+            name = m_worker.GetCaptureProgram().c_str();
             ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.2f, 1.0f, 0.2f, 1.0f ) );
         }
         const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first, true );
         const auto expand = ImGui::TreeNode( pidtxt );
         ImGui::NextColumn();
-        ImGui::TextUnformatted( m_worker.GetExternalName( pid.second.tids[0] ).first );
+        ImGui::TextUnformatted( name );
         ImGui::NextColumn();
         sprintf( buf, "%s (%.2f%%)", TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
         ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );

@@ -1849,6 +1849,37 @@ const char* Worker::GetThreadString( uint64_t id ) const
     }
 }
 
+const char* Worker::GetThreadName( uint64_t id ) const
+{
+    const auto it = m_data.threadNames.find( id );
+    if( it == m_data.threadNames.end() )
+    {
+        const auto eit = m_data.externalNames.find( id );
+        if( eit == m_data.externalNames.end() )
+        {
+            return "???";
+        }
+        else
+        {
+            return eit->second.second;
+        }
+    }
+    else
+    {
+        // Client should send additional information about thread name, to make this check unnecessary
+        const auto txt = it->second;
+        if( txt[0] >= '0' && txt[0] <= '9' && atoi( txt ) == id )
+        {
+            const auto eit = m_data.externalNames.find( id );
+            if( eit != m_data.externalNames.end() )
+            {
+                return eit->second.second;
+            }
+        }
+        return txt;
+    }
+}
+
 bool Worker::IsThreadLocal( uint64_t id ) const
 {
     return m_data.localThreadCompress.Exists( id );

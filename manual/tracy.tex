@@ -1360,6 +1360,18 @@ The next two items show the \faEye{}~view time range and \faDatabase{}~time span
 
 The notification area is used to display informational notices, for example how long it took to load a trace from disk. A pulsating dot next to the \faTasks~icon indicates that some background tasks are being performed, that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section~\ref{crashhandling}), a \emph{\faSkull{}~crash} icon will be displayed.
 
+If drawing of timeline elements was disabled in the options menu (section~\ref{options}), the following orange icons will be used to remind the user about that fact. Click on the icons to enable drawing of the selected elements. Note that collapsed labels (section~\ref{zoneslocksplots}) are not taken into account here.
+
+\begin{itemize}
+\item \faHiking{} -- Context switches are hidden.
+\item \faSlidersH{} -- CPU data is hidden.
+\item \faEye{} -- GPU zones are hidden.
+\item \faMicrochip{} -- CPU zones are hidden.
+\item \faLock{} -- Locks are hidden.
+\item \faSignature{} -- Plots are hidden.
+\item \faLowVision{} -- At least one timeline item (e.g. a single thread, a single plot, a single lock, etc.) is hidden.
+\end{itemize}
+
 \subsubsection{Frame time graph}
 
 The graph of currently selected frame set (figure~\ref{frametime}) provides an outlook on the time spent in each frame, allowing you to see where the problematic frames are and to quickly navigate to them.

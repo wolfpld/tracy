@@ -670,7 +670,7 @@ bool View::DrawImpl()
         {
             ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-            TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EYE_SLASH );
+            TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_LOW_VISION );
 #else
             TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "hidden" );
 #endif
@@ -6058,7 +6058,7 @@ void View::DrawOptions()
     ImGui::Checkbox( "Draw context switches", &m_drawContextSwitches );
 #endif
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_MICROCHIP " Draw CPU data", &m_drawCpuData );
+    ImGui::Checkbox( ICON_FA_SLIDERS_H " Draw CPU data", &m_drawCpuData );
 #else
     ImGui::Checkbox( "Draw CPU data", &m_drawCpuData );
 #endif
@@ -10004,7 +10004,7 @@ void View::DrawInfo()
     {
         if( ficnt != 0 ) ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-        if( ImGui::Button( ICON_FA_MICROCHIP " CPU data" ) )
+        if( ImGui::Button( ICON_FA_SLIDERS_H " CPU data" ) )
 #else
         if( ImGui::Button( "CPU data" ) )
 #endif

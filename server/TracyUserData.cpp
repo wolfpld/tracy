@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <memory>
-#include <stdio.h>
 
 #include "TracyStorage.hpp"
 #include "TracyUserData.hpp"
@@ -18,20 +17,16 @@ UserData::UserData( const char* program, uint64_t time )
     : m_program( program )
     , m_time( time )
 {
-    const auto descpath = GetSavePath( m_program.c_str(), m_time, FileDescription, false );
-    if( descpath )
+    FILE* f = OpenFile( FileDescription, false );
+    if( f )
     {
-        FILE* f = fopen( descpath, "rb" );
-        if( f )
-        {
-            fseek( f, 0, SEEK_END );
-            const auto sz = ftell( f );
-            fseek( f, 0, SEEK_SET );
-            auto buf = std::make_unique<char[]>( sz );
-            fread( buf.get(), 1, sz, f );
-            fclose( f );
-            m_description.assign( buf.get(), buf.get() + sz );
-        }
+        fseek( f, 0, SEEK_END );
+        const auto sz = ftell( f );
+        fseek( f, 0, SEEK_SET );
+        auto buf = std::make_unique<char[]>( sz );
+        fread( buf.get(), 1, sz, f );
+        fclose( f );
+        m_description.assign( buf.get(), buf.get() + sz );
     }
 }
 
@@ -49,15 +44,20 @@ bool UserData::SetDescription( const char* description )
     m_description = description;
     const auto sz = m_description.size();
 
-    const auto path = GetSavePath( m_program.c_str(), m_time, FileDescription, true );
-    if( !path ) return false;
-
-    FILE* f = fopen( path, "wb" );
+    FILE* f = OpenFile( FileDescription, true );
     if( !f ) return false;
 
     fwrite( description, 1, sz, f );
     fclose( f );
     return true;
+}
+
+FILE* UserData::OpenFile( const char* filename, bool write )
+{
+    const auto path = GetSavePath( m_program.c_str(), m_time, filename, write );
+    if( !path ) return nullptr;
+    FILE* f = fopen( path, write ? "wb" : "rb" );
+    return f;
 }
 
 }

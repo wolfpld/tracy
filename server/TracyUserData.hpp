@@ -2,6 +2,7 @@
 #define __TRACYUSERDATA_HPP__
 
 #include <stdint.h>
+#include <stdio.h>
 #include <string>
 
 namespace tracy
@@ -20,6 +21,8 @@ public:
     bool SetDescription( const char* description );
 
 private:
+    FILE* OpenFile( const char* filename, bool write );
+
     std::string m_program;
     uint64_t m_time;
 

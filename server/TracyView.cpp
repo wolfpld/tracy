@@ -632,7 +632,67 @@ bool View::DrawImpl()
 #else
     ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_vd.zvEnd - m_vd.zvStart ), TimeToString( m_worker.GetLastTime() ) );
 #endif
+    DrawNotificationArea();
 
+    m_frameHover = -1;
+
+    DrawFrames();
+    DrawZones();
+
+    ImGui::End();
+
+    m_zoneHighlight = nullptr;
+    m_gpuHighlight = nullptr;
+
+    DrawInfoWindow();
+
+    if( m_showOptions ) DrawOptions();
+    if( m_showMessages ) DrawMessages();
+    if( m_findZone.show ) DrawFindZone();
+    if( m_showStatistics ) DrawStatistics();
+    if( m_memInfo.show ) DrawMemory();
+    if( m_memInfo.showAllocList ) DrawAllocList();
+    if( m_compare.show ) DrawCompare();
+    if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
+    if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
+    if( m_showInfo ) DrawInfo();
+    if( m_textEditorFile ) DrawTextEditor();
+    if( m_goToFrame ) DrawGoToFrame();
+    if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
+    if( m_showPlayback ) DrawPlayback();
+    if( m_showCpuDataWindow ) DrawCpuDataWindow();
+
+    if( m_zoomAnim.active )
+    {
+        m_zoomAnim.progress += io.DeltaTime * 3.33f;
+        if( m_zoomAnim.progress >= 1.f )
+        {
+            m_zoomAnim.active = false;
+            m_vd.zvStart = m_zoomAnim.start1;
+            m_vd.zvEnd = m_zoomAnim.end1;
+        }
+        else
+        {
+            const auto v = sqrt( sin( M_PI_2 * m_zoomAnim.progress ) );
+            m_vd.zvStart = int64_t( m_zoomAnim.start0 + ( m_zoomAnim.start1 - m_zoomAnim.start0 ) * v );
+            m_vd.zvEnd = int64_t( m_zoomAnim.end0 + ( m_zoomAnim.end1 - m_zoomAnim.end0 ) * v );
+        }
+    }
+
+    m_callstackBuzzAnim.Update( io.DeltaTime );
+    m_callstackTreeBuzzAnim.Update( io.DeltaTime );
+    m_zoneinfoBuzzAnim.Update( io.DeltaTime );
+    m_findZoneBuzzAnim.Update( io.DeltaTime );
+    m_optionsLockBuzzAnim.Update( io.DeltaTime );
+    m_lockInfoAnim.Update( io.DeltaTime );
+    m_statBuzzAnim.Update( io.DeltaTime );
+
+    return keepOpen;
+}
+
+void View::DrawNotificationArea()
+{
+    auto& io = ImGui::GetIO();
     const auto ty = ImGui::GetFontSize();
     auto& crash = m_worker.GetCrashEvent();
     if( crash.thread != 0 )
@@ -819,61 +879,6 @@ bool View::DrawImpl()
         ImGui::SameLine();
         TextDisabledUnformatted( m_notificationText.c_str() );
     }
-
-    m_frameHover = -1;
-
-    DrawFrames();
-    DrawZones();
-
-    ImGui::End();
-
-    m_zoneHighlight = nullptr;
-    m_gpuHighlight = nullptr;
-
-    DrawInfoWindow();
-
-    if( m_showOptions ) DrawOptions();
-    if( m_showMessages ) DrawMessages();
-    if( m_findZone.show ) DrawFindZone();
-    if( m_showStatistics ) DrawStatistics();
-    if( m_memInfo.show ) DrawMemory();
-    if( m_memInfo.showAllocList ) DrawAllocList();
-    if( m_compare.show ) DrawCompare();
-    if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
-    if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
-    if( m_showInfo ) DrawInfo();
-    if( m_textEditorFile ) DrawTextEditor();
-    if( m_goToFrame ) DrawGoToFrame();
-    if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
-    if( m_showPlayback ) DrawPlayback();
-    if( m_showCpuDataWindow ) DrawCpuDataWindow();
-
-    if( m_zoomAnim.active )
-    {
-        m_zoomAnim.progress += io.DeltaTime * 3.33f;
-        if( m_zoomAnim.progress >= 1.f )
-        {
-            m_zoomAnim.active = false;
-            m_vd.zvStart = m_zoomAnim.start1;
-            m_vd.zvEnd = m_zoomAnim.end1;
-        }
-        else
-        {
-            const auto v = sqrt( sin( M_PI_2 * m_zoomAnim.progress ) );
-            m_vd.zvStart = int64_t( m_zoomAnim.start0 + ( m_zoomAnim.start1 - m_zoomAnim.start0 ) * v );
-            m_vd.zvEnd = int64_t( m_zoomAnim.end0 + ( m_zoomAnim.end1 - m_zoomAnim.end0 ) * v );
-        }
-    }
-
-    m_callstackBuzzAnim.Update( io.DeltaTime );
-    m_callstackTreeBuzzAnim.Update( io.DeltaTime );
-    m_zoneinfoBuzzAnim.Update( io.DeltaTime );
-    m_findZoneBuzzAnim.Update( io.DeltaTime );
-    m_optionsLockBuzzAnim.Update( io.DeltaTime );
-    m_lockInfoAnim.Update( io.DeltaTime );
-    m_statBuzzAnim.Update( io.DeltaTime );
-
-    return keepOpen;
 }
 
 bool View::DrawConnection()

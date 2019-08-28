@@ -148,6 +148,7 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
 
     InitTextEditor();
     SetViewToLastFrames();
+    m_userData.StateShouldBePreserved();
 }
 
 View::~View()
@@ -852,6 +853,7 @@ bool View::DrawConnection()
             }
             if( f )
             {
+                m_userData.StateShouldBePreserved();
                 m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
                 m_saveThread = std::thread( [this, f{std::move( f )}] {
                     std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );

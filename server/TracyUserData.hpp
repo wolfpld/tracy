@@ -20,6 +20,8 @@ public:
     const std::string& GetDescription() const { return m_description; }
     bool SetDescription( const char* description );
 
+    void StateShouldBePreserved();
+
 private:
     FILE* OpenFile( const char* filename, bool write );
 
@@ -27,6 +29,8 @@ private:
     uint64_t m_time;
 
     std::string m_description;
+
+    bool m_preserveState;
 };
 
 }

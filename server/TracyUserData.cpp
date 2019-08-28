@@ -10,6 +10,7 @@ namespace tracy
 constexpr auto FileDescription = "description";
 
 UserData::UserData()
+    : m_preserveState( false )
 {
 }
 
@@ -50,6 +51,11 @@ bool UserData::SetDescription( const char* description )
     fwrite( description, 1, sz, f );
     fclose( f );
     return true;
+}
+
+void UserData::StateShouldBePreserved()
+{
+    m_preserveState = true;
 }
 
 FILE* UserData::OpenFile( const char* filename, bool write )

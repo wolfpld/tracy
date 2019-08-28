@@ -611,7 +611,7 @@ bool View::DrawImpl()
     ImGui::Spacing();
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Text( ICON_FA_EYE " %-10s", TimeToString( m_zvEnd - m_zvStart ) );
+    ImGui::Text( ICON_FA_EYE " %-10s", TimeToString( m_vd.zvEnd - m_vd.zvStart ) );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
@@ -627,7 +627,7 @@ bool View::DrawImpl()
         ImGui::EndTooltip();
     }
 #else
-    ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_zvEnd - m_zvStart ), TimeToString( m_worker.GetLastTime() ) );
+    ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_vd.zvEnd - m_vd.zvStart ), TimeToString( m_worker.GetLastTime() ) );
 #endif
 
     const auto ty = ImGui::GetFontSize();
@@ -759,14 +759,14 @@ bool View::DrawImpl()
         if( m_zoomAnim.progress >= 1.f )
         {
             m_zoomAnim.active = false;
-            m_zvStart = m_zoomAnim.start1;
-            m_zvEnd = m_zoomAnim.end1;
+            m_vd.zvStart = m_zoomAnim.start1;
+            m_vd.zvEnd = m_zoomAnim.end1;
         }
         else
         {
             const auto v = sqrt( sin( M_PI_2 * m_zoomAnim.progress ) );
-            m_zvStart = int64_t( m_zoomAnim.start0 + ( m_zoomAnim.start1 - m_zoomAnim.start0 ) * v );
-            m_zvEnd = int64_t( m_zoomAnim.end0 + ( m_zoomAnim.end1 - m_zoomAnim.end0 ) * v );
+            m_vd.zvStart = int64_t( m_zoomAnim.start0 + ( m_zoomAnim.start1 - m_zoomAnim.start0 ) * v );
+            m_vd.zvEnd = int64_t( m_zoomAnim.end0 + ( m_zoomAnim.end1 - m_zoomAnim.end0 ) * v );
         }
     }
 
@@ -1119,14 +1119,14 @@ void View::DrawFrames()
                         m_pause = true;
                         m_zoomAnim.active = false;
                         if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
-                        m_zvStart = m_worker.GetFrameBegin( *m_frames, sel );
-                        m_zvEnd = m_worker.GetFrameEnd( *m_frames, sel + group - 1 );
-                        if( m_zvStart == m_zvEnd ) m_zvStart--;
+                        m_vd.zvStart = m_worker.GetFrameBegin( *m_frames, sel );
+                        m_vd.zvEnd = m_worker.GetFrameEnd( *m_frames, sel + group - 1 );
+                        if( m_vd.zvStart == m_vd.zvEnd ) m_vd.zvStart--;
                     }
                     else if( ImGui::IsMouseDragging( 0 ) )
                     {
-                        const auto t0 = std::min( m_zvStart, m_worker.GetFrameBegin( *m_frames, sel ) );
-                        const auto t1 = std::max( m_zvEnd, m_worker.GetFrameEnd( *m_frames, sel + group - 1 ) );
+                        const auto t0 = std::min( m_vd.zvStart, m_worker.GetFrameBegin( *m_frames, sel ) );
+                        const auto t1 = std::max( m_vd.zvEnd, m_worker.GetFrameEnd( *m_frames, sel + group - 1 ) );
                         ZoomToRange( t0, t1 );
                     }
                 }
@@ -1171,7 +1171,7 @@ void View::DrawFrames()
         idx += group;
     }
 
-    const auto zrange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
+    const auto zrange = m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvEnd );
     if( zrange.second > m_frameStart && zrange.first < m_frameStart + onScreen * group )
     {
         auto x1 = std::min( onScreen * fwidth, ( zrange.second - m_frameStart ) * fwidth / group );
@@ -1197,11 +1197,11 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     if( ImGui::IsMouseClicked( 0 ) )
     {
         m_highlight.active = true;
-        m_highlight.start = m_highlight.end = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        m_highlight.start = m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
     else if( ImGui::IsMouseDragging( 0, 0 ) )
     {
-        m_highlight.end = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
     else
     {
@@ -1211,11 +1211,11 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     if( ImGui::IsMouseClicked( 2 ) )
     {
         m_highlightZoom.active = true;
-        m_highlightZoom.start = m_highlightZoom.end = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        m_highlightZoom.start = m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
     else if( ImGui::IsMouseDragging( 2, 0 ) )
     {
-        m_highlightZoom.end = m_zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
     else if( m_highlightZoom.active )
     {
@@ -1227,13 +1227,13 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             // ZoomToRange disables m_highlightZoom.active
             if( io.KeyCtrl )
             {
-                const auto tsOld = m_zvEnd - m_zvStart;
+                const auto tsOld = m_vd.zvEnd - m_vd.zvStart;
                 const auto tsNew = e - s;
                 const auto mul = double( tsOld ) / tsNew;
-                const auto left = s - m_zvStart;
-                const auto right = m_zvEnd - e;
+                const auto left = s - m_vd.zvStart;
+                const auto right = m_vd.zvEnd - e;
 
-                ZoomToRange( m_zvStart - left * mul, m_zvEnd + right * mul );
+                ZoomToRange( m_vd.zvStart - left * mul, m_vd.zvEnd + right * mul );
             }
             else
             {
@@ -1255,8 +1255,8 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
         const auto dpx = int64_t( delta.x * nspx );
         if( dpx != 0 )
         {
-            m_zvStart -= dpx;
-            m_zvEnd -= dpx;
+            m_vd.zvStart -= dpx;
+            m_vd.zvEnd -= dpx;
             io.MouseClickedPos[1].x = io.MousePos.x;
         }
         if( delta.y != 0 )
@@ -1281,8 +1281,8 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
         }
         else
         {
-            t0 = m_zvStart;
-            t1 = m_zvEnd;
+            t0 = m_vd.zvStart;
+            t1 = m_vd.zvEnd;
         }
         const auto zoomSpan = t1 - t0;
         const auto p1 = zoomSpan * p;
@@ -1360,7 +1360,7 @@ bool View::DrawZoneFramesHeader()
     ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty * 1.5 ) );
     bool hover = ImGui::IsItemHovered();
 
-    auto timespan = m_zvEnd - m_zvStart;
+    auto timespan = m_vd.zvEnd - m_vd.zvStart;
     auto pxns = w / double( timespan );
 
     if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
@@ -1381,8 +1381,8 @@ bool View::DrawZoneFramesHeader()
             if( tw == 0 )
             {
                 char buf[128];
-                auto txt = TimeToString( m_zvStart );
-                if( m_zvStart >= 0 )
+                auto txt = TimeToString( m_vd.zvStart );
+                if( m_vd.zvStart >= 0 )
                 {
                     sprintf( buf, "+%s", txt );
                     txt = buf;
@@ -1478,14 +1478,14 @@ bool View::DrawZoneFrames( const FrameData& frames )
     ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty ) );
     bool hover = ImGui::IsItemHovered();
 
-    auto timespan = m_zvEnd - m_zvStart;
+    auto timespan = m_vd.zvEnd - m_vd.zvStart;
     auto pxns = w / double( timespan );
 
     if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
 
     const auto nspx = 1.0 / pxns;
 
-    const std::pair <int, int> zrange = m_worker.GetFrameRange( frames, m_zvStart, m_zvEnd );
+    const std::pair <int, int> zrange = m_worker.GetFrameRange( frames, m_vd.zvStart, m_vd.zvEnd );
     if( zrange.first < 0 ) return hover;
 
     int64_t prev = -1;
@@ -1506,7 +1506,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
         const auto fend = m_worker.GetFrameEnd( frames, i );
         const auto fsz = pxns * ftime;
 
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, ty ) ) )
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_vd.zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_vd.zvStart ) * pxns, ty ) ) )
         {
             tooltipDisplayed = true;
 
@@ -1557,7 +1557,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
             {
                 if( ( fbegin - prevEnd ) * pxns >= MinFrameSize )
                 {
-                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, inactiveColor );
+                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_vd.zvStart ) * pxns, ( prevEnd - m_vd.zvStart ) * pxns, ty / 4, inactiveColor );
                     prev = -1;
                 }
                 else
@@ -1583,24 +1583,24 @@ bool View::DrawZoneFrames( const FrameData& frames )
         {
             if( frames.continuous )
             {
-                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( fbegin - m_zvStart ) * pxns, ty / 4, inactiveColor );
+                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_vd.zvStart ) * pxns, ( fbegin - m_vd.zvStart ) * pxns, ty / 4, inactiveColor );
             }
             else
             {
-                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( prevEnd - m_zvStart ) * pxns, ty / 4, inactiveColor );
+                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_vd.zvStart ) * pxns, ( prevEnd - m_vd.zvStart ) * pxns, ty / 4, inactiveColor );
             }
             prev = -1;
         }
 
         if( activeFrameSet )
         {
-            if( fbegin >= m_zvStart && endPos != fbegin )
+            if( fbegin >= m_vd.zvStart && endPos != fbegin )
             {
-                draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
+                draw->AddLine( wpos + ImVec2( ( fbegin - m_vd.zvStart ) * pxns, 0 ), wpos + ImVec2( ( fbegin - m_vd.zvStart ) * pxns, wh ), 0x22FFFFFF );
             }
-            if( fend <= m_zvEnd )
+            if( fend <= m_vd.zvEnd )
             {
-                draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns, wh ), 0x22FFFFFF );
+                draw->AddLine( wpos + ImVec2( ( fend - m_vd.zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_vd.zvStart ) * pxns, wh ), 0x22FFFFFF );
             }
             endPos = fend;
         }
@@ -1615,18 +1615,18 @@ bool View::DrawZoneFrames( const FrameData& frames )
             tx = ImGui::CalcTextSize( buf ).x;
         }
 
-        if( fbegin >= m_zvStart )
+        if( fbegin >= m_vd.zvStart )
         {
-            draw->AddLine( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2, ty - 1 ), color );
+            draw->AddLine( wpos + ImVec2( ( fbegin - m_vd.zvStart ) * pxns + 2, 1 ), wpos + ImVec2( ( fbegin - m_vd.zvStart ) * pxns + 2, ty - 1 ), color );
         }
-        if( fend <= m_zvEnd )
+        if( fend <= m_vd.zvEnd )
         {
-            draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, ty - 1 ), color );
+            draw->AddLine( wpos + ImVec2( ( fend - m_vd.zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_vd.zvStart ) * pxns - 2, ty - 1 ), color );
         }
         if( fsz - 7 > tx )
         {
-            const auto f0 = ( fbegin - m_zvStart ) * pxns + 2;
-            const auto f1 = ( fend - m_zvStart ) * pxns - 2;
+            const auto f0 = ( fbegin - m_vd.zvStart ) * pxns + 2;
+            const auto f1 = ( fend - m_vd.zvStart ) * pxns - 2;
             const auto x0 = f0 + 1;
             const auto x1 = f1 - 1;
             const auto te = x1 - tx;
@@ -1648,7 +1648,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
         }
         else
         {
-            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_vd.zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_vd.zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
         }
 
         i++;
@@ -1658,12 +1658,12 @@ bool View::DrawZoneFrames( const FrameData& frames )
     {
         if( frames.continuous )
         {
-            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns, ty / 4, inactiveColor );
+            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_vd.zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_vd.zvStart ) * pxns, ty / 4, inactiveColor );
         }
         else
         {
-            const auto begin = ( prev - m_zvStart ) * pxns;
-            const auto end = ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_zvStart ) * pxns;
+            const auto begin = ( prev - m_vd.zvStart ) * pxns;
+            const auto end = ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_vd.zvStart ) * pxns;
             DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), begin, std::max( begin + MinFrameSize, end ), ty / 4, inactiveColor );
         }
     }
@@ -1727,8 +1727,8 @@ void View::DrawZones()
     m_lockHoverHighlight.Decay( InvalidId );
     m_zoneHover = nullptr;
 
-    if( m_zvStart == m_zvEnd ) return;
-    assert( m_zvStart < m_zvEnd );
+    if( m_vd.zvStart == m_vd.zvEnd ) return;
+    assert( m_vd.zvStart < m_vd.zvEnd );
 
     if( ImGui::GetCurrentWindow()->SkipItems ) return;
 
@@ -1741,18 +1741,18 @@ void View::DrawZones()
 
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
-    const auto timespan = m_zvEnd - m_zvStart;
+    const auto timespan = m_vd.zvEnd - m_vd.zvStart;
     auto pxns = w / double( timespan );
     {
         const auto tbegin = 0;
         const auto tend = m_worker.GetLastTime();
-        if( tbegin > m_zvStart )
+        if( tbegin > m_vd.zvStart )
         {
-            draw->AddRectFilled( linepos, linepos + ImVec2( ( tbegin - m_zvStart ) * pxns, lineh ), 0x44000000 );
+            draw->AddRectFilled( linepos, linepos + ImVec2( ( tbegin - m_vd.zvStart ) * pxns, lineh ), 0x44000000 );
         }
-        if( tend < m_zvEnd )
+        if( tend < m_vd.zvEnd )
         {
-            draw->AddRectFilled( linepos + ImVec2( ( tend - m_zvStart ) * pxns, 0 ), linepos + ImVec2( w, lineh ), 0x44000000 );
+            draw->AddRectFilled( linepos + ImVec2( ( tend - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( w, lineh ), 0x44000000 );
         }
     }
 
@@ -1967,8 +1967,8 @@ void View::DrawZones()
         }
         offset += ostep * 0.2f;
 
-        auto msgit = std::lower_bound( v->messages.begin(), v->messages.end(), m_zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
-        auto msgend = std::lower_bound( msgit, v->messages.end(), m_zvEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        auto msgit = std::lower_bound( v->messages.begin(), v->messages.end(), m_vd.zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
+        auto msgend = std::lower_bound( msgit, v->messages.end(), m_vd.zvEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
 
         if( !m_drawEmptyLabels && showFull && depth == 0 && msgit == msgend && crash.thread != v->id )
         {
@@ -1992,7 +1992,7 @@ void View::DrawZones()
                     const auto next = std::upper_bound( msgit, v->messages.end(), (*msgit)->time + MinVisSize * nspx, [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs->time; } );
                     const auto dist = std::distance( msgit, next );
 
-                    const auto px = ( (*msgit)->time - m_zvStart ) * pxns;
+                    const auto px = ( (*msgit)->time - m_vd.zvStart ) * pxns;
                     const bool isMsgHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) );
 
                     unsigned int color = 0xFFDDDDDD;
@@ -2056,9 +2056,9 @@ void View::DrawZones()
                     msgit = next;
                 }
 
-                if( crash.thread == v->id && crash.time >= m_zvStart && crash.time <= m_zvEnd )
+                if( crash.thread == v->id && crash.time >= m_vd.zvStart && crash.time <= m_vd.zvEnd )
                 {
-                    const auto px = ( crash.time - m_zvStart ) * pxns;
+                    const auto px = ( crash.time - m_vd.zvStart ) * pxns;
 
                     draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px, oldOffset + to + th ), 0xFF2222FF );
                     draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px, oldOffset + to + th ), 0xFF2222FF, 2.0f );
@@ -2233,15 +2233,15 @@ void View::DrawZones()
 
     if( m_gpuStart != 0 && m_gpuEnd != 0 )
     {
-        const auto px0 = ( m_gpuStart - m_zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuEnd - m_zvStart ) * pxns );
+        const auto px0 = ( m_gpuStart - m_vd.zvStart ) * pxns;
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuEnd - m_vd.zvStart ) * pxns );
         draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x228888DD );
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x448888DD );
     }
     if( m_gpuInfoWindow )
     {
-        const auto px0 = ( m_gpuInfoWindow->cpuStart - m_zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuInfoWindow->cpuEnd - m_zvStart ) * pxns );
+        const auto px0 = ( m_gpuInfoWindow->cpuStart - m_vd.zvStart ) * pxns;
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuInfoWindow->cpuEnd - m_vd.zvStart ) * pxns );
         draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x2288DD88 );
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
@@ -2250,8 +2250,8 @@ void View::DrawZones()
     {
         const auto s = std::min( m_highlight.start, m_highlight.end );
         const auto e = std::max( m_highlight.start, m_highlight.end );
-        draw->AddRectFilled( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x22DD8888 );
-        draw->AddRect( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x44DD8888 );
+        draw->AddRectFilled( ImVec2( wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh ), 0x22DD8888 );
+        draw->AddRect( ImVec2( wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh ), 0x44DD8888 );
 
         ImGui::BeginTooltip();
         ImGui::TextUnformatted( TimeToString( e - s ) );
@@ -2267,13 +2267,13 @@ void View::DrawZones()
     {
         const auto s = std::min( m_highlightZoom.start, m_highlightZoom.end );
         const auto e = std::max( m_highlightZoom.start, m_highlightZoom.end );
-        draw->AddRectFilled( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x1688DD88 );
-        draw->AddRect( ImVec2( wpos.x + ( s - m_zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_zvStart ) * pxns, linepos.y + lineh ), 0x2C88DD88 );
+        draw->AddRectFilled( ImVec2( wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh ), 0x1688DD88 );
+        draw->AddRect( ImVec2( wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh ), 0x2C88DD88 );
     }
 
     if( m_memInfo.show && m_memInfo.restrictTime )
     {
-        const auto zvMid = ( m_zvEnd - m_zvStart ) / 2;
+        const auto zvMid = ( m_vd.zvEnd - m_vd.zvStart ) / 2;
         draw->AddLine( ImVec2( wpos.x + zvMid * pxns, linepos.y ), ImVec2( wpos.x + zvMid * pxns, linepos.y + lineh ), 0x88FF44FF );
     }
 }
@@ -2403,11 +2403,11 @@ static const char* DecodeContextSwitchState( uint8_t state )
 void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset )
 {
     auto& vec = ctx->v;
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
     if( it == vec.end() ) return;
     if( it != vec.begin() ) --it;
 
-    auto citend = std::lower_bound( it, vec.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+    auto citend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
     if( it == citend ) return;
     if( citend != vec.end() ) ++citend;
 
@@ -2424,9 +2424,9 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         if( pit != citend )
         {
             const bool migration = pit->Cpu() != ev.Cpu();
-            const auto px0 = std::max( { ( pit->End() - m_zvStart ) * pxns, -10.0, minpx } );
-            const auto pxw = ( ev.wakeup - m_zvStart ) * pxns;
-            const auto px1 = std::min( ( ev.Start() - m_zvStart ) * pxns, w + 10.0 );
+            const auto px0 = std::max( { ( pit->End() - m_vd.zvStart ) * pxns, -10.0, minpx } );
+            const auto pxw = ( ev.wakeup - m_vd.zvStart ) * pxns;
+            const auto px1 = std::min( ( ev.Start() - m_vd.zvStart ) * pxns, w + 10.0 );
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
             draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( std::min( pxw, w+10.0 ), round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
             if( ev.wakeup != ev.Start() )
@@ -2491,8 +2491,8 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         if( zsz < MinCtxSize )
         {
             int num = 0;
-            const auto px0 = std::max( ( ev.Start() - m_zvStart ) * pxns, -10.0 );
-            auto px1 = ( end - m_zvStart ) * pxns;
+            const auto px0 = std::max( ( ev.Start() - m_vd.zvStart ) * pxns, -10.0 );
+            auto px1 = ( end - m_vd.zvStart ) * pxns;
             auto rend = end;
             auto nextTime = end + MinCtxSize;
             for(;;)
@@ -2503,7 +2503,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 num += std::distance( prevIt, it );
                 if( it == citend ) break;
                 const auto nend = it->End() >= 0 ? it->End() : m_worker.GetLastTime();
-                const auto pxnext = ( nend - m_zvStart ) * pxns;
+                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                 if( pxnext - px1 >= MinCtxSize * 2 ) break;
                 px1 = pxnext;
                 rend = nend;
@@ -2548,8 +2548,8 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         }
         else
         {
-            const auto px0 = std::max( { ( ev.Start() - m_zvStart ) * pxns, -10.0, minpx } );
-            const auto px1 = std::min( ( end - m_zvStart ) * pxns, w + 10.0 );
+            const auto px0 = std::max( { ( ev.Start() - m_vd.zvStart ) * pxns, -10.0, minpx } );
+            const auto px1 = std::min( ( end - m_vd.zvStart ) * pxns, w + 10.0 );
             draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), 0xFF22DD22, 2 );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty ) ) )
             {
@@ -2592,12 +2592,12 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_zvStart - delay ), [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
     if( it == zitend ) return depth;
-    if( (*it)->end < 0 && m_worker.GetZoneEnd( **it ) < m_zvStart ) return depth;
+    if( (*it)->end < 0 && m_worker.GetZoneEnd( **it ) < m_vd.zvStart ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
@@ -2619,8 +2619,8 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         if( zsz < MinVisSize )
         {
             int num = 0;
-            const auto px0 = ( ev.Start() - m_zvStart ) * pxns;
-            auto px1 = ( end - m_zvStart ) * pxns;
+            const auto px0 = ( ev.Start() - m_vd.zvStart ) * pxns;
+            auto px1 = ( end - m_vd.zvStart ) * pxns;
             auto rend = end;
             auto nextTime = end + MinVisSize;
             for(;;)
@@ -2631,7 +2631,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;
                 const auto nend = m_worker.GetZoneEnd( **it );
-                const auto pxnext = ( nend - m_zvStart ) * pxns;
+                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
                 rend = nend;
@@ -2706,8 +2706,8 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 tsz = ImGui::CalcTextSize( zoneName );
             }
 
-            const auto pr0 = ( ev.Start() - m_zvStart ) * pxns;
-            const auto pr1 = ( end - m_zvStart ) * pxns;
+            const auto pr0 = ( ev.Start() - m_vd.zvStart ) * pxns;
+            const auto pr1 = ( end - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
@@ -2751,7 +2751,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             }
             if( tsz.x < zsz )
             {
-                const auto x = ( ev.Start() - m_zvStart ) * pxns + ( ( end - ev.Start() ) * pxns - tsz.x ) / 2;
+                const auto x = ( ev.Start() - m_vd.zvStart ) * pxns + ( ( end - ev.Start() ) * pxns - tsz.x ) / 2;
                 if( x < 0 || x > w - tsz.x )
                 {
                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
@@ -2770,7 +2770,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             else
             {
                 ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                DrawTextContrast( draw, wpos + ImVec2( ( ev.Start() - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
+                DrawTextContrast( draw, wpos + ImVec2( ( ev.Start() - m_vd.zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
                 ImGui::PopClipRect();
             }
 
@@ -2810,10 +2810,10 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart - delay, [] ( const auto& l, const auto& r ) { return (uint64_t)l->end < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
     if( it == zitend ) return depth;
 
     depth++;
@@ -2826,7 +2826,7 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
-            auto px1 = ( end - m_zvStart ) * pxns;
+            auto px1 = ( end - m_vd.zvStart ) * pxns;
             auto nextTime = end + MinVisSize;
             for(;;)
             {
@@ -2835,7 +2835,7 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 if( it == prevIt ) ++it;
                 if( it == zitend ) break;
                 const auto nend = m_worker.GetZoneEnd( **it );
-                const auto pxnext = ( nend - m_zvStart ) * pxns;
+                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
                 nextTime = nend + nspx;
@@ -2883,10 +2883,10 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_zvStart - delay ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + resolution, [begin, drift] ( const auto& l, const auto& r ) { return AdjustGpuTime( l->gpuStart, begin, drift ) < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [begin, drift] ( const auto& l, const auto& r ) { return AdjustGpuTime( l->gpuStart, begin, drift ) < r; } );
     if( it == zitend ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
@@ -2910,8 +2910,8 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         if( zsz < MinVisSize )
         {
             int num = 0;
-            const auto px0 = ( start - m_zvStart ) * pxns;
-            auto px1 = ( end - m_zvStart ) * pxns;
+            const auto px0 = ( start - m_vd.zvStart ) * pxns;
+            auto px1 = ( end - m_vd.zvStart ) * pxns;
             auto rend = end;
             auto nextTime = end + MinVisSize;
             for(;;)
@@ -2922,7 +2922,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;
                 const auto nend = AdjustGpuTime( m_worker.GetZoneEnd( **it ), begin, drift );
-                const auto pxnext = ( nend - m_zvStart ) * pxns;
+                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
                 rend = nend;
@@ -2983,15 +2983,15 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             const char* zoneName = m_worker.GetZoneName( ev );
             auto tsz = ImGui::CalcTextSize( zoneName );
 
-            const auto pr0 = ( start - m_zvStart ) * pxns;
-            const auto pr1 = ( end - m_zvStart ) * pxns;
+            const auto pr0 = ( start - m_vd.zvStart ) * pxns;
+            const auto pr1 = ( end - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
             draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev ), 0.f, -1, GetZoneThickness( ev ) );
             if( tsz.x < zsz )
             {
-                const auto x = ( start - m_zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;
+                const auto x = ( start - m_vd.zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;
                 if( x < 0 || x > w - tsz.x )
                 {
                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
@@ -3010,7 +3010,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             else
             {
                 ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                DrawTextContrast( draw, wpos + ImVec2( ( start - m_zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
+                DrawTextContrast( draw, wpos + ImVec2( ( start - m_vd.zvStart ) * pxns, offset ), 0xFFFFFFFF, zoneName );
                 ImGui::PopClipRect();
             }
 
@@ -3043,10 +3043,10 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - delay, [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart - delay, [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_zvEnd + resolution, [begin, drift] ( const auto& l, const auto& r ) { return AdjustGpuTime( l->gpuStart, begin, drift ) < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [begin, drift] ( const auto& l, const auto& r ) { return AdjustGpuTime( l->gpuStart, begin, drift ) < r; } );
     if( it == zitend ) return depth;
 
     depth++;
@@ -3062,7 +3062,7 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         const auto zsz = std::max( ( end - start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
-            auto px1 = ( end - m_zvStart ) * pxns;
+            auto px1 = ( end - m_vd.zvStart ) * pxns;
             auto nextTime = end;
             for(;;)
             {
@@ -3071,7 +3071,7 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 if( it == prevIt ) ++it;
                 if( it == zitend ) break;
                 const auto nend = AdjustGpuTime( m_worker.GetZoneEnd( **it ), begin, drift );
-                const auto pxnext = ( nend - m_zvStart ) * pxns;
+                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
                 nextTime = nend + nspx;
@@ -3425,7 +3425,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         const auto& range = lockmap.range[it->second];
         const auto& tl = lockmap.timeline;
         assert( !tl.empty() );
-        if( range.start > m_zvEnd || range.end < m_zvStart )
+        if( range.start > m_vd.zvEnd || range.end < m_vd.zvStart )
         {
             if( m_lockInfoWindow == v.first )
             {
@@ -3443,8 +3443,8 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         const auto thread = it->second;
         const auto threadBit = GetThreadBit( thread );
 
-        auto vbegin = std::lower_bound( tl.begin(), tl.end(), std::max( range.start, m_zvStart - delay ), [] ( const auto& l, const auto& r ) { return l.ptr->Time() < r; } );
-        const auto vend = std::lower_bound( vbegin, tl.end(), std::min( range.end, m_zvEnd + resolution ), [] ( const auto& l, const auto& r ) { return l.ptr->Time() < r; } );
+        auto vbegin = std::lower_bound( tl.begin(), tl.end(), std::max( range.start, m_vd.zvStart - delay ), [] ( const auto& l, const auto& r ) { return l.ptr->Time() < r; } );
+        const auto vend = std::lower_bound( vbegin, tl.end(), std::min( range.end, m_vd.zvEnd + resolution ), [] ( const auto& l, const auto& r ) { return l.ptr->Time() < r; } );
 
         if( vbegin > tl.begin() ) vbegin--;
 
@@ -3520,9 +3520,9 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
 
                 const auto t0 = vbegin->ptr->Time();
                 int64_t t1 = next == tl.end() ? m_worker.GetLastTime() : next->ptr->Time();
-                const auto px0 = std::max( pxend, ( t0 - m_zvStart ) * pxns );
+                const auto px0 = std::max( pxend, ( t0 - m_vd.zvStart ) * pxns );
                 auto tx0 = px0;
-                double px1 = ( t1 - m_zvStart ) * pxns;
+                double px1 = ( t1 - m_vd.zvStart ) * pxns;
                 uint64_t condensed = 0;
 
                 if( m_onlyContendedLocks )
@@ -3544,7 +3544,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         drawState = CombineLockState( drawState, state );
                         condensed++;
                         const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->Time();
-                        const auto px2 = ( t2 - m_zvStart ) * pxns;
+                        const auto px2 = ( t2 - m_vd.zvStart ) * pxns;
                         if( px2 - px1 > MinVisSize ) break;
                         if( drawState != ns && px2 - px0 > MinVisSize && !( ns == LockState::Nothing || ns == LockState::HasLock ) ) break;
                         t1 = t2;
@@ -3573,7 +3573,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         drawState = CombineLockState( drawState, state );
                         condensed++;
                         const auto t2 = n == tl.end() ? m_worker.GetLastTime() : n->ptr->Time();
-                        const auto px2 = ( t2 - m_zvStart ) * pxns;
+                        const auto px2 = ( t2 - m_vd.zvStart ) * pxns;
                         if( px2 - px1 > MinVisSize ) break;
                         if( drawState != ns && px2 - px0 > MinVisSize && ns != LockState::Nothing ) break;
                         t1 = t2;
@@ -3886,7 +3886,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     DrawZigZag( draw, wpos + ImVec2( 0, offset + round( ty / 2 ) ), px0, pxend, ty / 4, DarkenColor( cfilled ) );
                 }
 
-                const auto rx0 = ( t0 - m_zvStart ) * pxns;
+                const auto rx0 = ( t0 - m_vd.zvStart ) * pxns;
                 if( dsz >= MinVisSize )
                 {
                     draw->AddRectFilled( wpos + ImVec2( rx0, offset ), wpos + ImVec2( std::min( rx0+dsz, px1 ), offset + ty ), 0x882222DD );
@@ -3990,10 +3990,10 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
 
                     auto& cs = cpuData[i].cs;
 
-                    auto it = std::lower_bound( cs.begin(), cs.end(), std::max<int64_t>( 0, m_zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                    auto it = std::lower_bound( cs.begin(), cs.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
                     if( it != cs.end() )
                     {
-                        auto eit = std::lower_bound( it, cs.end(), m_zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+                        auto eit = std::lower_bound( it, cs.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
                         while( it < eit )
                         {
                             const auto start = it->Start();
@@ -4002,8 +4002,8 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                             if( zsz < MinVisSize )
                             {
                                 int num = 0;
-                                const auto px0 = ( start - m_zvStart ) * pxns;
-                                auto px1 = ( end - m_zvStart ) * pxns;
+                                const auto px0 = ( start - m_vd.zvStart ) * pxns;
+                                auto px1 = ( end - m_vd.zvStart ) * pxns;
                                 auto rend = end;
                                 auto nextTime = end + MinVisSize;
                                 for(;;)
@@ -4014,7 +4014,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     num += std::distance( prevIt, it );
                                     if( it == eit ) break;
                                     const auto nend = it->End() >= 0 ? it->End() : m_worker.GetLastTime();
-                                    const auto pxnext = ( nend - m_zvStart ) * pxns;
+                                    const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                                     if( pxnext - px1 >= MinVisSize * 2 ) break;
                                     px1 = pxnext;
                                     rend = nend;
@@ -4063,8 +4063,8 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         }
                                     }
                                 }
-                                const auto pr0 = ( start - m_zvStart ) * pxns;
-                                const auto pr1 = ( end - m_zvStart ) * pxns;
+                                const auto pr0 = ( start - m_vd.zvStart ) * pxns;
+                                const auto pr1 = ( end - m_vd.zvStart ) * pxns;
                                 const auto px0 = std::max( pr0, -10.0 );
                                 const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
                                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 ) );
@@ -4073,7 +4073,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 auto tsz = ImGui::CalcTextSize( txt );
                                 if( tsz.x < zsz )
                                 {
-                                    const auto x = ( start - m_zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;
+                                    const auto x = ( start - m_vd.zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;
                                     if( x < 0 || x > w - tsz.x )
                                     {
                                         ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
@@ -4092,7 +4092,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 else
                                 {
                                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                                    DrawTextContrast( draw, wpos + ImVec2( ( start - m_zvStart ) * pxns, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
+                                    DrawTextContrast( draw, wpos + ImVec2( ( start - m_vd.zvStart ) * pxns, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
                                     ImGui::PopClipRect();
                                 }
 
@@ -4306,8 +4306,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         const auto tStart = ev.TimeAlloc();
                         const auto tEnd = ev.TimeFree() < 0 ? m_worker.GetLastTime() : ev.TimeFree();
 
-                        const auto px0 = ( tStart - m_zvStart ) * pxns;
-                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_zvStart ) * pxns );
+                        const auto px0 = ( tStart - m_vd.zvStart ) * pxns;
+                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_vd.zvStart ) * pxns );
                         draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x2288DD88 );
                         draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x4488DD88 );
                     }
@@ -4318,8 +4318,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         const auto tStart = ev.TimeAlloc();
                         const auto tEnd = ev.TimeFree() < 0 ? m_worker.GetLastTime() : ev.TimeFree();
 
-                        const auto px0 = ( tStart - m_zvStart ) * pxns;
-                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_zvStart ) * pxns );
+                        const auto px0 = ( tStart - m_vd.zvStart ) * pxns;
+                        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( tEnd - m_vd.zvStart ) * pxns );
                         draw->AddRectFilled( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x228888DD );
                         draw->AddRect( ImVec2( wpos.x + px0, yPos ), ImVec2( wpos.x + px1, yPos + PlotHeight ), 0x448888DD );
 
@@ -4334,8 +4334,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     }
                 }
 
-                auto it = std::lower_bound( vec.begin(), vec.end(), m_zvStart - m_worker.GetDelay(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
-                auto end = std::lower_bound( it, vec.end(), m_zvEnd + m_worker.GetResolution(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
+                auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart - m_worker.GetDelay(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
+                auto end = std::lower_bound( it, vec.end(), m_vd.zvEnd + m_worker.GetResolution(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
 
                 if( end != vec.end() ) end++;
                 if( it != vec.begin() ) it--;
@@ -4425,7 +4425,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
                 if( it == vec.begin() )
                 {
-                    const auto x = ( it->time - m_zvStart ) * pxns;
+                    const auto x = ( it->time - m_vd.zvStart ) * pxns;
                     const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
                     DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type, PlotHeight );
                 }
@@ -4436,8 +4436,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 ptrdiff_t skip = 0;
                 while( it < end )
                 {
-                    const auto x0 = ( prevx->time - m_zvStart ) * pxns;
-                    const auto x1 = ( it->time - m_zvStart ) * pxns;
+                    const auto x0 = ( prevx->time - m_vd.zvStart ) * pxns;
+                    const auto x1 = ( it->time - m_vd.zvStart ) * pxns;
                     const auto y0 = PlotHeight - ( prevy->val - min ) * revrange * PlotHeight;
                     const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
 
@@ -9521,7 +9521,7 @@ void View::DrawInfo()
             ImGui::SameLine();
             SmallCheckbox( "Limit to view", &m_frameSortData.limitToView );
 
-            const auto frameRange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
+            const auto frameRange = m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvEnd );
             if( m_frameSortData.frameSet != m_frames || ( m_frameSortData.limitToView && m_frameSortData.limitRange != frameRange ) || ( !m_frameSortData.limitToView && m_frameSortData.limitRange.first != -1 ) )
             {
                 m_frameSortData.frameSet = m_frames;
@@ -10340,8 +10340,8 @@ void View::DrawPlayback()
         {
             const auto end = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
             m_zoomAnim.active = false;
-            m_zvStart = tstart;
-            m_zvEnd = end;
+            m_vd.zvStart = tstart;
+            m_vd.zvEnd = end;
         }
     }
 
@@ -10449,8 +10449,8 @@ void View::DrawPlayback()
     {
         if( m_playback.sync )
         {
-            m_zvStart = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
-            m_zvEnd = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
+            m_vd.zvStart = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
+            m_vd.zvEnd = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
         }
     }
     ImGui::SameLine();
@@ -10837,7 +10837,7 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
     flat_hash_map<uint32_t, PathData, nohash<uint32_t>> pathSum;
     pathSum.reserve( m_worker.GetCallstackPayloadCount() );
 
-    const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
+    const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
 
     if( m_memInfo.restrictTime )
     {
@@ -11089,7 +11089,7 @@ std::vector<MemoryPage> View::GetMemoryPages() const
 
     if( m_memInfo.restrictTime )
     {
-        const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
+        const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
         auto end = std::upper_bound( mem.data.begin(), mem.data.end(), zvMid, []( const auto& lhs, const auto& rhs ) { return lhs < rhs.TimeAlloc(); } );
         for( auto it = mem.data.begin(); it != end; ++it )
         {
@@ -11174,7 +11174,7 @@ void View::DrawMemory()
     ImGui::SameLine();
     DrawHelpMarker( "Don't show allocations beyond the middle of timeline display (it is indicated by purple line)." );
 
-    const auto zvMid = m_zvStart + ( m_zvEnd - m_zvStart ) / 2;
+    const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
 
     ImGui::Separator();
     ImGui::BeginChild( "##memory" );
@@ -11674,25 +11674,25 @@ void View::ZoomToRange( int64_t start, int64_t end )
     m_highlightZoom.active = false;
     if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
     m_zoomAnim.active = true;
-    m_zoomAnim.start0 = m_zvStart;
+    m_zoomAnim.start0 = m_vd.zvStart;
     m_zoomAnim.start1 = start;
-    m_zoomAnim.end0 = m_zvEnd;
+    m_zoomAnim.end0 = m_vd.zvEnd;
     m_zoomAnim.end1 = end;
     m_zoomAnim.progress = 0;
 }
 
 void View::ZoomToPrevFrame()
 {
-    if( m_zvStart >= m_worker.GetFrameBegin( *m_frames, 0 ) )
+    if( m_vd.zvStart >= m_worker.GetFrameBegin( *m_frames, 0 ) )
     {
         size_t frame;
         if( m_frames->continuous )
         {
-            frame = (size_t)m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).first;
+            frame = (size_t)m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvStart ).first;
         }
         else
         {
-            frame = (size_t)m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).second;
+            frame = (size_t)m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvStart ).second;
         }
 
         if( frame > 0 )
@@ -11714,7 +11714,7 @@ void View::ZoomToNextFrame()
     }
     else
     {
-        start = m_zvStart;
+        start = m_vd.zvStart;
     }
 
     size_t frame;
@@ -11735,7 +11735,7 @@ void View::ZoomToNextFrame()
 
 void View::CenterAtTime( int64_t t )
 {
-    const auto hr = std::max<uint64_t>( 1, ( m_zvEnd - m_zvStart ) / 2 );
+    const auto hr = std::max<uint64_t>( 1, ( m_vd.zvEnd - m_vd.zvStart ) / 2 );
     ZoomToRange( t - hr, t + hr );
 }
 
@@ -12158,14 +12158,14 @@ void View::SetViewToLastFrames()
 {
     const int total = m_worker.GetFrameCount( *m_frames );
 
-    m_zvStart = m_worker.GetFrameBegin( *m_frames, std::max( 0, total - 4 ) );
+    m_vd.zvStart = m_worker.GetFrameBegin( *m_frames, std::max( 0, total - 4 ) );
     if( total == 1 )
     {
-        m_zvEnd = m_worker.GetLastTime();
+        m_vd.zvEnd = m_worker.GetLastTime();
     }
     else
     {
-        m_zvEnd = m_worker.GetFrameBegin( *m_frames, total - 1 );
+        m_vd.zvEnd = m_worker.GetFrameBegin( *m_frames, total - 1 );
     }
 }
 

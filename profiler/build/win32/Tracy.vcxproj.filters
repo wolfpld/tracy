@@ -287,6 +287,9 @@
     <ClInclude Include="..\..\..\server\TracyThreadCompress.hpp">
       <Filter>server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyViewData.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

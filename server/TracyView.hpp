@@ -14,6 +14,7 @@
 #include "TracyTexture.hpp"
 #include "TracyUserData.hpp"
 #include "TracyVector.hpp"
+#include "TracyViewData.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_flat_hash_map.hpp"
 
@@ -247,8 +248,7 @@ private:
     bool m_pause;
     int m_frameStart = 0;
 
-    int64_t m_zvStart = 0;
-    int64_t m_zvEnd = 0;
+    ViewData m_vd;
 
     int m_zvHeight = 0;
     int m_zvScroll = 0;

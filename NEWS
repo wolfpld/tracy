@@ -29,8 +29,9 @@ v0.6 (xxxx-xx-xx)
 - Switched to using native thread identifiers (relatively small numbers), as
   opposed to pthreads identifiers, which in reality were pointers.
 - Improved thread name discovery if context switch capture is enabled.
-- Timeline view state of a given trace will now be preserved between
-  profiling sessions.
+- Per-trace state is now preserved between profiling sessions:
+  - Timeline view position.
+  - Item categories draw/hide settings.
 
 v0.5 (2019-08-10)
 -----------------

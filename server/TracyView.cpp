@@ -2100,7 +2100,7 @@ void View::DrawZones()
                     float animOff = 0;
                     if( dist > 1 )
                     {
-                        if( m_msgHighlight && m_msgHighlight->thread == v->id )
+                        if( m_msgHighlight && m_worker.DecompressThread( m_msgHighlight->thread ) == v->id )
                         {
                             const auto hTime = m_msgHighlight->time;
                             if( (*msgit)->time <= hTime && ( next == v->messages.end() || (*next)->time > hTime ) )
@@ -6826,7 +6826,8 @@ void View::DrawMessages()
     const auto filterActive = m_messageFilter.IsActive();
     for( const auto& v : msgs )
     {
-        if( VisibleMsgThread( v->thread ) )
+        const auto tid = m_worker.DecompressThread( v->thread );
+        if( VisibleMsgThread( tid ) )
         {
             const auto text = m_worker.GetString( v->ref );
             if( !filterActive || m_messageFilter.PassFilter( text ) )
@@ -6848,9 +6849,9 @@ void View::DrawMessages()
                 }
                 ImGui::PopID();
                 ImGui::NextColumn();
-                ImGui::TextUnformatted( m_worker.GetThreadName( v->thread ) );
+                ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( v->thread, true ) );
+                ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
                 ImGui::NextColumn();
                 ImGui::PushStyleColor( ImGuiCol_Text, v->color );
                 ImGui::TextWrapped( "%s", text );

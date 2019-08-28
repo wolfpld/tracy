@@ -913,6 +913,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         f.Read( msz );
         if( eventMask & EventType::Messages )
         {
+            const auto ctid = CompressThread( tid );
             td->messages.reserve_exact( msz, m_slab );
             for( uint64_t j=0; j<msz; j++ )
             {
@@ -920,7 +921,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 f.Read( ptr );
                 auto md = msgMap[ptr];
                 td->messages[j] = md;
-                md->thread = tid;
+                md->thread = ctid;
             }
         }
         else
@@ -3648,7 +3649,7 @@ void Worker::ProcessMessage( const QueueMessage& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time - m_data.baseTime );
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
-    msg->thread = m_threadCtx;
+    msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFFFFFFFF;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, m_threadCtx );
@@ -3661,7 +3662,7 @@ void Worker::ProcessMessageLiteral( const QueueMessage& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time - m_data.baseTime );
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
-    msg->thread = m_threadCtx;
+    msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFFFFFFFF;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, m_threadCtx );
@@ -3674,7 +3675,7 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time - m_data.baseTime );
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
-    msg->thread = m_threadCtx;
+    msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, m_threadCtx );
@@ -3687,7 +3688,7 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColor& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time - m_data.baseTime );
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
-    msg->thread = m_threadCtx;
+    msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
     InsertMessageData( msg, m_threadCtx );

@@ -279,7 +279,7 @@ struct MessageData
 {
     int64_t time;
     StringRef ref;
-    uint64_t thread;
+    uint16_t thread;
     uint32_t color;
 };
 

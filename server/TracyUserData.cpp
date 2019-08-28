@@ -3,11 +3,15 @@
 
 #include "TracyStorage.hpp"
 #include "TracyUserData.hpp"
+#include "TracyViewData.hpp"
 
 namespace tracy
 {
 
 constexpr auto FileDescription = "description";
+constexpr auto FileTimeline = "timeline";
+
+enum : uint32_t { VersionTimeline = 0 };
 
 UserData::UserData()
     : m_preserveState( false )
@@ -51,6 +55,34 @@ bool UserData::SetDescription( const char* description )
     fwrite( description, 1, sz, f );
     fclose( f );
     return true;
+}
+
+void UserData::LoadState( ViewData& data )
+{
+    assert( Valid() );
+    FILE* f = OpenFile( FileTimeline, false );
+    if( !f ) return;
+    uint32_t ver;
+    fread( &ver, 1, sizeof( ver ), f );
+    if( ver == VersionTimeline )
+    {
+        fread( &data.zvStart, 1, sizeof( data.zvStart ), f );
+        fread( &data.zvEnd, 1, sizeof( data.zvEnd ), f );
+    }
+    fclose( f );
+}
+
+void UserData::SaveState( const ViewData& data )
+{
+    if( !m_preserveState ) return;
+    assert( Valid() );
+    FILE* f = OpenFile( FileTimeline, true );
+    if( !f ) return;
+    uint32_t ver = VersionTimeline;
+    fwrite( &ver, 1, sizeof( ver ), f );
+    fwrite( &data.zvStart, 1, sizeof( data.zvStart ), f );
+    fwrite( &data.zvEnd, 1, sizeof( data.zvEnd ), f );
+    fclose( f );
 }
 
 void UserData::StateShouldBePreserved()

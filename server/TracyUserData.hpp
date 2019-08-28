@@ -8,6 +8,8 @@
 namespace tracy
 {
 
+struct ViewData;
+
 class UserData
 {
 public:
@@ -20,6 +22,8 @@ public:
     const std::string& GetDescription() const { return m_description; }
     bool SetDescription( const char* description );
 
+    void LoadState( ViewData& data );
+    void SaveState( const ViewData& data );
     void StateShouldBePreserved();
 
 private:

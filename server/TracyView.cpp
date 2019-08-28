@@ -149,11 +149,13 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
     InitTextEditor();
     SetViewToLastFrames();
     m_userData.StateShouldBePreserved();
+    m_userData.LoadState( m_vd );
 }
 
 View::~View()
 {
     m_worker.Shutdown();
+    m_userData.SaveState( m_vd );
 
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();

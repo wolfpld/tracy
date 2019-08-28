@@ -656,6 +656,102 @@ bool View::DrawImpl()
             }
         }
     }
+    if( !m_drawContextSwitches )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_HIKING );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "ctx" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Context switches are hidden." );
+            ImGui::EndTooltip();
+            if( ImGui::IsMouseClicked( 0 ) ) m_drawContextSwitches = true;
+        }
+    }
+    if( !m_drawCpuData )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_SLIDERS_H );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "cpu" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "CPU data is hidden." );
+            ImGui::EndTooltip();
+            if( ImGui::IsMouseClicked( 0 ) ) m_drawCpuData = true;
+        }
+    }
+    if( !m_drawGpuZones )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EYE );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "gpu" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "GPU zones are hidden." );
+            ImGui::EndTooltip();
+            if( ImGui::IsMouseClicked( 0 ) ) m_drawGpuZones = true;
+        }
+    }
+    if( !m_drawZones )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_MICROCHIP );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "zones" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "CPU zones are hidden." );
+            ImGui::EndTooltip();
+            if( ImGui::IsMouseClicked( 0 ) ) m_drawZones = true;
+        }
+    }
+    if( !m_drawLocks )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_LOCK );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "locks" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Locks are hidden." );
+            ImGui::EndTooltip();
+            if( ImGui::IsMouseClicked( 0 ) ) m_drawLocks = true;
+        }
+    }
+    if( !m_drawPlots )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_SIGNATURE );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "plots" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Plots are hidden." );
+            ImGui::EndTooltip();
+            if( ImGui::IsMouseClicked( 0 ) ) m_drawPlots = true;
+        }
+    }
     {
         bool hidden = false;
         for( auto& v : m_visData )
@@ -679,11 +775,7 @@ bool View::DrawImpl()
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( "Some timeline entries are hidden." );
                 ImGui::EndTooltip();
-
-                if( ImGui::IsMouseClicked( 0 ) )
-                {
-                    m_showOptions = true;
-                }
+                if( ImGui::IsMouseClicked( 0 ) ) m_showOptions = true;
             }
         }
     }

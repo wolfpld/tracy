@@ -2098,7 +2098,7 @@ Various files at the root configuration directory store common profiler state su
 
 \subsection{Trace specific settings}
 
-Trace files saved on disk are immutable and can't be changed, but it may be desirable to add additional trace information to be displayed by the profiler, for example a custom description of the trace.
+Trace files saved on disk are immutable and can't be changed, but it may be desirable to store additional per-trace information to be used by the profiler, for example a custom description of the trace, or the timeline view position used in the previous profiling session.
 
 This external data is stored in the \texttt{user/[letter]/[program]/[week]/[epoch]} directory, relative to the configuration's root directory. The \texttt{program} part is the name of the profiled application (for example \texttt{program.exe}). The \texttt{letter} part is a first letter of the profiled application's name. The \texttt{week} part is a number of weeks since the unix epoch, and the \texttt{epoch} part is a number of seconds since unix epoch. This rather unusual convention prevents creation of directories with hundreds of entries.
 

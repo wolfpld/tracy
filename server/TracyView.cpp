@@ -6863,7 +6863,7 @@ void View::DrawMessages()
     }
     m_visibleMessages = msgcnt;
 
-    if( ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
+    if( m_worker.IsConnected() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
     {
         ImGui::SetScrollHereY( 1.f );
     }

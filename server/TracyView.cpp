@@ -716,7 +716,7 @@ void View::DrawNotificationArea()
             }
         }
     }
-    if( !m_drawContextSwitches )
+    if( !m_vd.drawContextSwitches )
     {
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -729,10 +729,10 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "Context switches are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_drawContextSwitches = true;
+            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawContextSwitches = true;
         }
     }
-    if( !m_drawCpuData )
+    if( !m_vd.drawCpuData )
     {
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -745,10 +745,10 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "CPU data is hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_drawCpuData = true;
+            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawCpuData = true;
         }
     }
-    if( !m_drawGpuZones )
+    if( !m_vd.drawGpuZones )
     {
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -761,10 +761,10 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "GPU zones are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_drawGpuZones = true;
+            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawGpuZones = true;
         }
     }
-    if( !m_drawZones )
+    if( !m_vd.drawZones )
     {
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -777,10 +777,10 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "CPU zones are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_drawZones = true;
+            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawZones = true;
         }
     }
-    if( !m_drawLocks )
+    if( !m_vd.drawLocks )
     {
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -793,10 +793,10 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "Locks are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_drawLocks = true;
+            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawLocks = true;
         }
     }
-    if( !m_drawPlots )
+    if( !m_vd.drawPlots )
     {
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -809,7 +809,7 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "Plots are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_drawPlots = true;
+            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawPlots = true;
         }
     }
     {
@@ -1894,7 +1894,7 @@ void View::DrawZones()
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
 
     // gpu zones
-    if( m_drawGpuZones )
+    if( m_vd.drawGpuZones )
     {
         for( size_t i=0; i<m_worker.GetGpuData().size(); i++ )
         {
@@ -1923,7 +1923,7 @@ void View::DrawZones()
             }
             offset += ostep * 0.2f;
 
-            if( !m_drawEmptyLabels && showFull && depth == 0 )
+            if( !m_vd.drawEmptyLabels && showFull && depth == 0 )
             {
                 vis.height = 0;
                 vis.offset = 0;
@@ -2007,7 +2007,7 @@ void View::DrawZones()
     }
 
     // zones
-    if( m_drawCpuData && m_worker.HasContextSwitches() )
+    if( m_vd.drawCpuData && m_worker.HasContextSwitches() )
     {
         offset = DrawCpuData( offset, pxns, wpos, hover, yMin, yMax );
     }
@@ -2043,7 +2043,7 @@ void View::DrawZones()
         offset += ostep;
         if( showFull )
         {
-            if( m_drawContextSwitches )
+            if( m_vd.drawContextSwitches )
             {
                 auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
                 if( ctxSwitch )
@@ -2053,13 +2053,13 @@ void View::DrawZones()
                 }
             }
 
-            if( m_drawZones )
+            if( m_vd.drawZones )
             {
                 depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax );
                 offset += ostep * depth;
             }
 
-            if( m_drawLocks )
+            if( m_vd.drawLocks )
             {
                 const auto lockDepth = DrawLocks( v->id, hover, pxns, wpos, offset, nextLockHighlight, yMin, yMax );
                 offset += ostep * lockDepth;
@@ -2071,7 +2071,7 @@ void View::DrawZones()
         auto msgit = std::lower_bound( v->messages.begin(), v->messages.end(), m_vd.zvStart, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
         auto msgend = std::lower_bound( msgit, v->messages.end(), m_vd.zvEnd+1, [] ( const auto& lhs, const auto& rhs ) { return lhs->time < rhs; } );
 
-        if( !m_drawEmptyLabels && showFull && depth == 0 && msgit == msgend && crash.thread != v->id )
+        if( !m_vd.drawEmptyLabels && showFull && depth == 0 && msgit == msgend && crash.thread != v->id )
         {
             auto& vis = Vis( v );
             vis.height = 0;
@@ -2314,7 +2314,7 @@ void View::DrawZones()
     }
     m_lockHighlight = nextLockHighlight;
 
-    if( m_drawPlots )
+    if( m_vd.drawPlots )
     {
         offset = DrawPlots( offset, pxns, wpos, hover, yMin, yMax );
     }
@@ -3516,7 +3516,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     {
         const auto& lockmap = *v.second;
         if( !lockmap.valid || !Vis( &lockmap ).visible ) continue;
-        if( m_onlyContendedLocks && ( lockmap.threadList.size() == 1 || !lockmap.isContended ) && m_lockInfoWindow != v.first ) continue;
+        if( m_vd.onlyContendedLocks && ( lockmap.threadList.size() == 1 || !lockmap.isContended ) && m_lockInfoWindow != v.first ) continue;
 
         auto it = lockmap.threadMap.find( tid );
         if( it == lockmap.threadMap.end() ) continue;
@@ -3597,7 +3597,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
             double pxend = 0;
             for(;;)
             {
-                if( m_onlyContendedLocks )
+                if( m_vd.onlyContendedLocks )
                 {
                     while( vbegin < vend && ( state == LockState::Nothing || state == LockState::HasLock ) )
                     {
@@ -3613,7 +3613,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 }
                 if( vbegin >= vend ) break;
 
-                assert( state != LockState::Nothing && ( !m_onlyContendedLocks || state != LockState::HasLock ) );
+                assert( state != LockState::Nothing && ( !m_vd.onlyContendedLocks || state != LockState::HasLock ) );
                 drawn = true;
 
                 LockState drawState = state;
@@ -3626,7 +3626,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 double px1 = ( t1 - m_vd.zvStart ) * pxns;
                 uint64_t condensed = 0;
 
-                if( m_onlyContendedLocks )
+                if( m_vd.onlyContendedLocks )
                 {
                     for(;;)
                     {
@@ -4025,7 +4025,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         }
         else
         {
-            while( vbegin < vend && ( state == LockState::Nothing || ( m_onlyContendedLocks && state == LockState::HasLock ) ) )
+            while( vbegin < vend && ( state == LockState::Nothing || ( m_vd.onlyContendedLocks && state == LockState::HasLock ) ) )
             {
                 vbegin = GetNextLockFunc( vbegin, vend, state, threadBit );
             }
@@ -6144,31 +6144,39 @@ void View::DrawOptions()
 {
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
 
+    bool val = m_vd.drawEmptyLabels;
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_EXPAND " Draw empty labels", &m_drawEmptyLabels );
+    ImGui::Checkbox( ICON_FA_EXPAND " Draw empty labels", &val );
 #else
-    ImGui::Checkbox( "Draw empty labels", &m_drawEmptyLabels );
+    ImGui::Checkbox( "Draw empty labels", &val );
 #endif
+    m_vd.drawEmptyLabels = val;
+    val = m_vd.drawContextSwitches;
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_HIKING " Draw context switches", &m_drawContextSwitches );
+    ImGui::Checkbox( ICON_FA_HIKING " Draw context switches", &val );
 #else
-    ImGui::Checkbox( "Draw context switches", &m_drawContextSwitches );
+    ImGui::Checkbox( "Draw context switches", &val );
 #endif
+    m_vd.drawContextSwitches = val;
+    val = m_vd.drawCpuData;
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_SLIDERS_H " Draw CPU data", &m_drawCpuData );
+    ImGui::Checkbox( ICON_FA_SLIDERS_H " Draw CPU data", &val );
 #else
-    ImGui::Checkbox( "Draw CPU data", &m_drawCpuData );
+    ImGui::Checkbox( "Draw CPU data", &val );
 #endif
+    m_vd.drawCpuData = val;
     ImGui::Separator();
 
     const auto& gpuData = m_worker.GetGpuData();
     if( !gpuData.empty() )
     {
+        val = m_vd.drawGpuZones;
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::Checkbox( ICON_FA_EYE " Draw GPU zones", &m_drawGpuZones );
+        ImGui::Checkbox( ICON_FA_EYE " Draw GPU zones", &val );
 #else
-        ImGui::Checkbox( "Draw GPU zones", &m_drawGpuZones );
+        ImGui::Checkbox( "Draw GPU zones", &val );
 #endif
+        m_vd.drawGpuZones = val;
         const auto expand = ImGui::TreeNode( "GPU zones" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", gpuData.size() );
@@ -6241,11 +6249,13 @@ void View::DrawOptions()
         }
     }
 
+    val = m_vd.drawZones;
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_MICROCHIP " Draw CPU zones", &m_drawZones );
+    ImGui::Checkbox( ICON_FA_MICROCHIP " Draw CPU zones", &val );
 #else
-    ImGui::Checkbox( "Draw CPU zones", &m_drawZones );
+    ImGui::Checkbox( "Draw CPU zones", &val );
 #endif
+    m_vd.drawZones = val;
     int ns = (int)m_namespace;
     ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None\0" );
     m_namespace = (Namespace)ns;
@@ -6277,13 +6287,17 @@ void View::DrawOptions()
         }
 
         ImGui::Separator();
+        val = m_vd.drawLocks;
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::Checkbox( ICON_FA_LOCK " Draw locks", &m_drawLocks );
+        ImGui::Checkbox( ICON_FA_LOCK " Draw locks", &val );
 #else
-        ImGui::Checkbox( "Draw locks", &m_drawLocks );
+        ImGui::Checkbox( "Draw locks", &val );
 #endif
+        m_vd.drawLocks = val;
         ImGui::SameLine();
-        ImGui::Checkbox( "Only contended", &m_onlyContendedLocks );
+        val = m_vd.onlyContendedLocks;
+        ImGui::Checkbox( "Only contended", &val );
+        m_vd.onlyContendedLocks = val;
         const auto expand = ImGui::TreeNode( "Locks" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", lockCnt );
@@ -6522,11 +6536,13 @@ void View::DrawOptions()
     if( !m_worker.GetPlots().empty() )
     {
         ImGui::Separator();
+        val = m_vd.drawPlots;
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::Checkbox( ICON_FA_SIGNATURE " Draw plots", &m_drawPlots );
+        ImGui::Checkbox( ICON_FA_SIGNATURE " Draw plots", &val );
 #else
-        ImGui::Checkbox( "Draw plots", &m_drawPlots );
+        ImGui::Checkbox( "Draw plots", &val );
 #endif
+        m_vd.drawPlots = val;
         const auto expand = ImGui::TreeNode( "Plots" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%zu)", m_worker.GetPlots().size() );

@@ -284,15 +284,7 @@ private:
     bool m_showInfo = false;
     bool m_showPlayback = false;
     bool m_showCpuDataWindow = false;
-    bool m_drawGpuZones = true;
-    bool m_drawZones = true;
-    bool m_drawLocks = true;
-    bool m_drawPlots = true;
-    bool m_onlyContendedLocks = true;
     bool m_goToFrame = false;
-    bool m_drawEmptyLabels = false;
-    bool m_drawContextSwitches = true;
-    bool m_drawCpuData = true;
 
     enum class CpuDataSortBy
     {

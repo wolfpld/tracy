@@ -967,26 +967,26 @@ void View::DrawFrames()
 
     draw->AddRectFilled( wpos, wpos + ImVec2( w, Height ), 0x33FFFFFF );
     const auto wheel = io.MouseWheel;
-    const auto prevScale = m_frameScale;
+    const auto prevScale = m_vd.frameScale;
     if( hover )
     {
         if( wheel > 0 )
         {
-            if( m_frameScale >= 0 ) m_frameScale--;
+            if( m_vd.frameScale >= 0 ) m_vd.frameScale--;
         }
         else if( wheel < 0 )
         {
-            if( m_frameScale < 10 ) m_frameScale++;
+            if( m_vd.frameScale < 10 ) m_vd.frameScale++;
         }
     }
 
-    const int fwidth = GetFrameWidth( m_frameScale );
-    const int group = GetFrameGroup( m_frameScale );
+    const int fwidth = GetFrameWidth( m_vd.frameScale );
+    const int group = GetFrameGroup( m_vd.frameScale );
     const int total = m_worker.GetFrameCount( *m_frames );
     const int onScreen = ( w - 2 ) / fwidth;
     if( !m_pause )
     {
-        m_frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
+        m_vd.frameStart = ( total < onScreen * group ) ? 0 : total - onScreen * group;
         SetViewToLastFrames();
     }
 
@@ -999,7 +999,7 @@ void View::DrawFrames()
             if( abs( delta ) >= fwidth )
             {
                 const auto d = (int)delta / fwidth;
-                m_frameStart = std::max( 0, m_frameStart - d * group );
+                m_vd.frameStart = std::max( 0, m_vd.frameStart - d * group );
                 io.MouseClickedPos[1].x = io.MousePos.x + d * fwidth - delta;
             }
         }
@@ -1010,7 +1010,7 @@ void View::DrawFrames()
             const auto mo = mx - ( wpos.x + 1 );
             const auto off = mo * group / fwidth;
 
-            const int sel = m_frameStart + off;
+            const int sel = m_vd.frameStart + off;
             if( sel < total )
             {
                 ImGui::BeginTooltip();
@@ -1142,22 +1142,22 @@ void View::DrawFrames()
                 const int pgroup = GetFrameGroup( prevScale );
 
                 const auto oldoff = mo * pgroup / pfwidth;
-                m_frameStart = std::min( total, std::max( 0, m_frameStart - int( off - oldoff ) ) );
+                m_vd.frameStart = std::min( total, std::max( 0, m_vd.frameStart - int( off - oldoff ) ) );
             }
         }
     }
 
     int i = 0, idx = 0;
-    while( i < onScreen && m_frameStart + idx < total )
+    while( i < onScreen && m_vd.frameStart + idx < total )
     {
-        auto f = m_worker.GetFrameTime( *m_frames, m_frameStart + idx );
+        auto f = m_worker.GetFrameTime( *m_frames, m_vd.frameStart + idx );
         int g;
         if( group > 1 )
         {
-            g = std::min( group, total - ( m_frameStart + idx ) );
+            g = std::min( group, total - ( m_vd.frameStart + idx ) );
             for( int j=1; j<g; j++ )
             {
-                f = std::max( f, m_worker.GetFrameTime( *m_frames, m_frameStart + idx + j ) );
+                f = std::max( f, m_worker.GetFrameTime( *m_frames, m_vd.frameStart + idx + j ) );
             }
         }
 
@@ -1176,10 +1176,10 @@ void View::DrawFrames()
     }
 
     const auto zrange = m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvEnd );
-    if( zrange.second > m_frameStart && zrange.first < m_frameStart + onScreen * group )
+    if( zrange.second > m_vd.frameStart && zrange.first < m_vd.frameStart + onScreen * group )
     {
-        auto x1 = std::min( onScreen * fwidth, ( zrange.second - m_frameStart ) * fwidth / group );
-        auto x0 = std::max( 0, ( zrange.first - m_frameStart ) * fwidth / group );
+        auto x1 = std::min( onScreen * fwidth, ( zrange.second - m_vd.frameStart ) * fwidth / group );
+        auto x0 = std::max( 0, ( zrange.first - m_vd.frameStart ) * fwidth / group );
 
         if( x0 == x1 ) x1 = x0 + 1;
 

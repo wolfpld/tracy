@@ -243,10 +243,7 @@ private:
 
     Worker m_worker;
     bool m_staticView;
-
-    int m_frameScale = 0;
     bool m_pause;
-    int m_frameStart = 0;
 
     ViewData m_vd;
 

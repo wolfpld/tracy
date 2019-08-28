@@ -653,6 +653,37 @@ bool View::DrawImpl()
             }
         }
     }
+    {
+        bool hidden = false;
+        for( auto& v : m_visData )
+        {
+            if( !v.second.visible )
+            {
+                hidden = true;
+                break;
+            }
+        }
+        if( hidden )
+        {
+            ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+            TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EYE_SLASH );
+#else
+            TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "hidden" );
+#endif
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Some timeline entries are hidden." );
+                ImGui::EndTooltip();
+
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    m_showOptions = true;
+                }
+            }
+        }
+    }
     if( !m_worker.IsBackgroundDone() )
     {
         ImGui::SameLine();

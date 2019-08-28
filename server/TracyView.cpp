@@ -5192,12 +5192,14 @@ void View::DrawZoneInfoWindow()
                     SmallCheckbox( "Time relative to zone start", &m_ctxSwitchTimeRelativeToZone );
                     const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
 
-                    ImGui::Columns( 5 );
+                    ImGui::Columns( 6 );
                     ImGui::Text( "Begin" );
                     ImGui::NextColumn();
                     ImGui::Text( "End" );
                     ImGui::NextColumn();
                     ImGui::Text( "Time" );
+                    ImGui::NextColumn();
+                    ImGui::Text( "Wakeup" );
                     ImGui::NextColumn();
                     ImGui::Text( "CPU" );
                     ImGui::NextColumn();
@@ -5212,6 +5214,7 @@ void View::DrawZoneInfoWindow()
                         const auto cpu0 = bit->Cpu();
                         ++bit;
                         const auto cstart = bit->Start();
+                        const auto cwakeup = bit->wakeup;
                         const auto cpu1 = bit->Cpu();
 
                         if( ImGui::Selectable( TimeToString( cend - adjust ) ) )
@@ -5224,9 +5227,21 @@ void View::DrawZoneInfoWindow()
                             CenterAtTime( cstart );
                         }
                         ImGui::NextColumn();
-                        if( ImGui::Selectable( TimeToString( cstart - cend ) ) )
+                        if( ImGui::Selectable( TimeToString( cwakeup - cend ) ) )
                         {
-                            ZoomToRange( cend, cstart );
+                            ZoomToRange( cend, cwakeup );
+                        }
+                        ImGui::NextColumn();
+                        if( cstart != cwakeup )
+                        {
+                            if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
+                            {
+                                ZoomToRange( cwakeup, cstart );
+                            }
+                        }
+                        else
+                        {
+                            ImGui::TextUnformatted( "-" );
                         }
                         ImGui::NextColumn();
                         if( cpu0 == cpu1 )

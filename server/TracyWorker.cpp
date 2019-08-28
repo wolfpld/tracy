@@ -1836,19 +1836,6 @@ const char* Worker::GetString( const StringIdx& idx ) const
     return m_data.stringData[idx.idx];
 }
 
-const char* Worker::GetThreadString( uint64_t id ) const
-{
-    const auto it = m_data.threadNames.find( id );
-    if( it == m_data.threadNames.end() )
-    {
-        return "???";
-    }
-    else
-    {
-        return it->second;
-    }
-}
-
 const char* Worker::GetThreadName( uint64_t id ) const
 {
     const auto it = m_data.threadNames.find( id );

@@ -68,6 +68,8 @@ void UserData::LoadState( ViewData& data )
     {
         fread( &data.zvStart, 1, sizeof( data.zvStart ), f );
         fread( &data.zvEnd, 1, sizeof( data.zvEnd ), f );
+        fread( &data.zvHeight, 1, sizeof( data.zvHeight ), f );
+        fread( &data.zvScroll, 1, sizeof( data.zvScroll ), f );
     }
     fclose( f );
 }
@@ -82,6 +84,8 @@ void UserData::SaveState( const ViewData& data )
     fwrite( &ver, 1, sizeof( ver ), f );
     fwrite( &data.zvStart, 1, sizeof( data.zvStart ), f );
     fwrite( &data.zvEnd, 1, sizeof( data.zvEnd ), f );
+    fwrite( &data.zvHeight, 1, sizeof( data.zvHeight ), f );
+    fwrite( &data.zvScroll, 1, sizeof( data.zvScroll ), f );
     fclose( f );
 }
 

@@ -250,9 +250,6 @@ private:
 
     ViewData m_vd;
 
-    int m_zvHeight = 0;
-    int m_zvScroll = 0;
-
     const ZoneEvent* m_zoneInfoWindow = nullptr;
     const ZoneEvent* m_zoneHighlight;
     DecayValue<int16_t> m_zoneSrcLocHighlight = 0;

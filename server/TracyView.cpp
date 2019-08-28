@@ -1776,7 +1776,7 @@ void View::DrawZones()
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
     const auto wpos = ImGui::GetCursorScreenPos();
-    const auto h = std::max<float>( m_zvHeight, ImGui::GetContentRegionAvail().y - 4 );    // magic border value
+    const auto h = std::max<float>( m_vd.zvHeight, ImGui::GetContentRegionAvail().y - 4 );    // magic border value
 
     ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
     bool hover = ImGui::IsItemHovered();
@@ -2223,15 +2223,15 @@ void View::DrawZones()
     }
 
     const auto scrollPos = ImGui::GetScrollY();
-    if( scrollPos == 0 && m_zvScroll != 0 )
+    if( scrollPos == 0 && m_vd.zvScroll != 0 )
     {
-        m_zvHeight = 0;
+        m_vd.zvHeight = 0;
     }
     else
     {
-        if( offset > m_zvHeight ) m_zvHeight = offset;
+        if( offset > m_vd.zvHeight ) m_vd.zvHeight = offset;
     }
-    m_zvScroll = scrollPos;
+    m_vd.zvScroll = scrollPos;
 
     ImGui::EndChild();
 

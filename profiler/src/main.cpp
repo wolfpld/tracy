@@ -254,7 +254,7 @@ int main( int argc, char** argv )
     char addr[1024] = { "127.0.0.1" };
 
     std::thread loadThread;
-    tracy::UdpListen* broadcastListen = nullptr;
+    std::unique_ptr<tracy::UdpListen> broadcastListen;
 
     enum class ViewShutdown { False, True, Join };
     ViewShutdown viewShutdown = ViewShutdown::False;
@@ -295,11 +295,10 @@ int main( int argc, char** argv )
             const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
             if( !broadcastListen )
             {
-                broadcastListen = new tracy::UdpListen();
+                broadcastListen = std::make_unique<tracy::UdpListen>();
                 if( !broadcastListen->Listen( 8086 ) )
                 {
-                    delete broadcastListen;
-                    broadcastListen = nullptr;
+                    broadcastListen.reset();
                 }
             }
             else
@@ -560,8 +559,7 @@ int main( int argc, char** argv )
         {
             if( broadcastListen )
             {
-                delete broadcastListen;
-                broadcastListen = nullptr;
+                broadcastListen.reset();
                 clients.clear();
             }
             if( loadThread.joinable() ) loadThread.join();

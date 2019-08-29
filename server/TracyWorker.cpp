@@ -781,11 +781,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Read( tsz );
             if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
-                f.Skip( tsz * ( sizeof( LockEvent::_time_srcloc ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) ) );
+                f.Skip( tsz * ( sizeof( int64_t ) + sizeof( int16_t ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) ) );
             }
             else
             {
-                f.Skip( tsz * ( sizeof( int64_t ) + sizeof( LockEvent::type ) + sizeof( int32_t ) + sizeof( LockEvent::thread ) ) );
+                f.Skip( tsz * ( sizeof( int64_t ) + sizeof( int32_t ) + sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) ) );
             }
         }
     }
@@ -1379,8 +1379,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 uint16_t w, h;
                 f.Read2( w, h );
-                const auto sz = w * h / 2;
-                f.Skip( sz + 1 );
+                const auto fisz = w * h / 2;
+                f.Skip( fisz + sizeof( FrameImage::flip ) );
             }
         }
     }
@@ -1439,7 +1439,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 f.Skip( sizeof( uint64_t ) );
                 uint64_t csz;
                 f.Read( csz );
-                f.Skip( csz * sizeof( ContextSwitchData ) );
+                f.Skip( csz * ( sizeof( int64_t ) * 3 + sizeof( int8_t ) * 3 ) );
             }
         }
 
@@ -1474,7 +1474,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             for( int i=0; i<256; i++ )
             {
                 f.Read( sz );
-                f.Skip( sizeof( uint64_t ) * 3 * sz );
+                f.Skip( sz * ( sizeof( int64_t ) * 2 + sizeof( uint16_t ) ) );
             }
         }
 

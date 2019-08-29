@@ -10668,7 +10668,7 @@ void View::DrawCpuDataWindow()
         const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first, true );
         const auto expand = ImGui::TreeNode( pidtxt );
         ImGui::NextColumn();
-        ImGui::TextUnformatted( name );
+        ImGui::TextUnformatted( pid.first == 0 ? "???" : name );
         ImGui::NextColumn();
         sprintf( buf, "%s (%.2f%%)", TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
         ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );

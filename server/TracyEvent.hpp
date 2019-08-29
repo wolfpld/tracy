@@ -77,7 +77,7 @@ enum { SourceLocationSize = sizeof( SourceLocation ) };
 struct ZoneEvent
 {
     int64_t Start() const { return int64_t( _start_srcloc ) >> 16; }
-    void SetStart( int64_t start ) { assert( start < ( 1ll << 47 ) ); _start_srcloc = ( _start_srcloc & 0xFFFF ) | uint64_t( start << 16 ); }
+    void SetStart( int64_t start ) { assert( start < ( 1ull << 47 ) ); _start_srcloc = ( _start_srcloc & 0xFFFF ) | ( uint64_t( start ) << 16 ); }
     int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
     void SetSrcLoc( int16_t srcloc ) { _start_srcloc = ( _start_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc ); }
 
@@ -106,7 +106,7 @@ struct LockEvent
     };
 
     int64_t Time() const { return int64_t( _time_srcloc ) >> 16; }
-    void SetTime( int64_t time ) { assert( time < ( 1ll << 47 ) ); _time_srcloc = ( _time_srcloc & 0xFFFF ) | uint64_t( time << 16 ); }
+    void SetTime( int64_t time ) { assert( time < ( 1ull << 47 ) ); _time_srcloc = ( _time_srcloc & 0xFFFF ) | ( uint64_t( time ) << 16 ); }
     int16_t SrcLoc() const { return int16_t( _time_srcloc & 0xFFFF ); }
     void SetSrcLoc( int16_t srcloc ) { _time_srcloc = ( _time_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc ); }
 
@@ -156,9 +156,9 @@ static_assert( std::is_standard_layout<GpuEvent>::value, "GpuEvent is not standa
 struct MemEvent
 {
     int64_t TimeAlloc() const { return int64_t( _time_thread_alloc ) >> 16; }
-    void SetTimeAlloc( int64_t time ) { assert( time < ( 1ll << 47 ) ); _time_thread_alloc = ( _time_thread_alloc & 0xFFFF ) | uint64_t( time << 16 ); }
+    void SetTimeAlloc( int64_t time ) { assert( time < ( 1ull << 47 ) ); _time_thread_alloc = ( _time_thread_alloc & 0xFFFF ) | ( uint64_t( time ) << 16 ); }
     int64_t TimeFree() const { return int64_t( _time_thread_free ) >> 16; }
-    void SetTimeFree( int64_t time ) { assert( time < ( 1ll << 47 ) ); _time_thread_free = ( _time_thread_free & 0xFFFF ) | uint64_t( time << 16 ); }
+    void SetTimeFree( int64_t time ) { assert( time < ( 1ull << 47 ) ); _time_thread_free = ( _time_thread_free & 0xFFFF ) | ( uint64_t( time ) << 16 ); }
     uint16_t ThreadAlloc() const { return uint16_t( _time_thread_alloc ); }
     void SetThreadAlloc( uint16_t thread ) { _time_thread_alloc = ( _time_thread_alloc & 0xFFFFFFFFFFFF0000 ) | thread; }
     uint16_t ThreadFree() const { return uint16_t( _time_thread_free ); }
@@ -238,9 +238,9 @@ struct ContextSwitchData
     enum : int8_t { Wakeup = -2 };
 
     int64_t Start() const { return int64_t( _start_cpu ) >> 8; }
-    void SetStart( int64_t start ) { assert( start < ( 1ll << 47 ) ); _start_cpu = ( _start_cpu & 0xFF ) | uint64_t( start << 8 ); }
+    void SetStart( int64_t start ) { assert( start < ( 1ull << 47 ) ); _start_cpu = ( _start_cpu & 0xFF ) | ( uint64_t( start ) << 8 ); }
     int64_t End() const { return int64_t( _end_reason_state ) >> 16; }
-    void SetEnd( int64_t end ) { assert( end < ( 1ll << 47 ) ); _end_reason_state = ( _end_reason_state & 0xFFFF ) | uint64_t( end << 16 ); }
+    void SetEnd( int64_t end ) { assert( end < ( 1ull << 47 ) ); _end_reason_state = ( _end_reason_state & 0xFFFF ) | ( uint64_t( end ) << 16 ); }
     uint8_t Cpu() const { return uint8_t( _start_cpu & 0xFF ); }
     void SetCpu( uint8_t cpu ) { _start_cpu = ( _start_cpu & 0xFFFFFFFFFFFFFF00 ) | uint8_t( cpu ); }
     int8_t Reason() const { return int8_t( (_end_reason_state >> 8) & 0xFF ); }
@@ -262,9 +262,9 @@ enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
 struct ContextSwitchCpu
 {
     int64_t Start() const { return int64_t( _start_thread ) >> 16; }
-    void SetStart( int64_t start ) { assert( start < ( 1ll << 47 ) ); _start_thread = ( _start_thread & 0xFFFF ) | uint64_t( start << 16 ); }
+    void SetStart( int64_t start ) { assert( start < ( 1ull << 47 ) ); _start_thread = ( _start_thread & 0xFFFF ) | ( uint64_t( start ) << 16 ); }
     int64_t End() const { return _end; }
-    void SetEnd( int64_t end ) { assert( end < ( 1ll << 47 ) ); _end = end; }
+    void SetEnd( int64_t end ) { assert( end < ( 1ull << 47 ) ); _end = end; }
     uint16_t Thread() const { return uint16_t( _start_thread ); }
     void SetThread( uint16_t thread ) { _start_thread = ( _start_thread & 0xFFFFFFFFFFFF0000 ) | thread; }
 

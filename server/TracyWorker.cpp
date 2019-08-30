@@ -1528,9 +1528,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             auto& zones = v.second.zones;
 #ifdef MY_LIBCPP_SUCKS
-            pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->Start() < rhs.zone->Start(); } );
+            pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
 #else
-            std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.zone->Start() < rhs.zone->Start(); } );
+            std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
 #endif
         }
         {
@@ -2440,7 +2440,9 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
 #ifndef TRACY_NO_STATISTICS
     auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
     assert( it != m_data.sourceLocationZones.end() );
-    it->second.zones.push_back( ZoneThreadData { zone, CompressThread( thread ) } );
+    auto& ztd = it->second.zones.push_next();
+    ztd.SetZone( zone );
+    ztd.SetThread( CompressThread( thread ) );
 #else
     auto it = m_data.sourceLocationZonesCnt.find( zone->SrcLoc() );
     assert( it != m_data.sourceLocationZonesCnt.end() );
@@ -4457,8 +4459,8 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
     assert( it != m_data.sourceLocationZones.end() );
     auto& slz = it->second;
     auto& ztd = slz.zones.push_next();
-    ztd.zone = zone;
-    ztd.thread = thread;
+    ztd.SetZone( zone );
+    ztd.SetThread( thread );
 
     if( zone->end >= 0 )
     {

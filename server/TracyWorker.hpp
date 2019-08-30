@@ -86,9 +86,15 @@ public:
 #pragma pack( 1 )
     struct ZoneThreadData
     {
-        ZoneEvent* zone;
-        uint16_t thread;
+        ZoneEvent* Zone() const { return (ZoneEvent*)( _zone_thread >> 16 ); }
+        void SetZone( ZoneEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); _zone_thread = ( _zone_thread & 0xFFFF ) | ( uint64_t( zone ) << 16 ); }
+        uint16_t Thread() const { return uint16_t( _zone_thread & 0xFFFF ); }
+        void SetThread( uint16_t thread ) { _zone_thread = ( _zone_thread & 0xFFFFFFFFFFFF0000 ) | uint64_t( thread ); }
+
+        uint64_t _zone_thread;
     };
+
+    enum { ZoneThreadDataSize = sizeof( ZoneThreadData ) };
 #pragma pack()
 
 private:

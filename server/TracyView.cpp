@@ -6909,11 +6909,11 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
     switch( groupBy )
     {
     case FindZone::GroupBy::Thread:
-        return ev.thread;
+        return ev.Thread();
     case FindZone::GroupBy::UserText:
-        return ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max();
+        return ev.Zone()->text.active ? ev.Zone()->text.idx : std::numeric_limits<uint64_t>::max();
     case FindZone::GroupBy::Callstack:
-        return ev.zone->callstack;
+        return ev.Zone()->callstack;
     default:
         assert( false );
         return 0;
@@ -7071,9 +7071,9 @@ void View::DrawFindZone()
                 {
                     for( i=m_findZone.sortedNum; i<zsz; i++ )
                     {
-                        auto& zone = *zones[i].zone;
+                        auto& zone = *zones[i].Zone();
                         if( zone.end < 0 ) break;
-                        const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].thread ) );
+                        const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
                         if( !ctx ) break;
                         int64_t t;
                         uint64_t cnt;
@@ -7090,7 +7090,7 @@ void View::DrawFindZone()
                     tmax = zoneData.selfMax;
                     for( i=m_findZone.sortedNum; i<zsz; i++ )
                     {
-                        auto& zone = *zones[i].zone;
+                        auto& zone = *zones[i].Zone();
                         if( zone.end < 0 ) break;
                         const auto t = zone.end - zone.Start() - GetZoneChildTimeFast( zone );
                         vec.emplace_back( t );
@@ -7103,7 +7103,7 @@ void View::DrawFindZone()
                     tmax = zoneData.max;
                     for( i=m_findZone.sortedNum; i<zsz; i++ )
                     {
-                        auto& zone = *zones[i].zone;
+                        auto& zone = *zones[i].Zone();
                         if( zone.end < 0 ) break;
                         const auto t = zone.end - zone.Start();
                         vec.emplace_back( t );
@@ -7140,10 +7140,10 @@ void View::DrawFindZone()
                             auto& ev = zones[i];
                             if( selGroup == GetSelectionTarget( ev, groupBy ) )
                             {
-                                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].thread ) );
+                                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
                                 int64_t t;
                                 uint64_t cnt;
-                                GetZoneRunningTime( ctx, *ev.zone, t, cnt );
+                                GetZoneRunningTime( ctx, *ev.Zone(), t, cnt );
                                 vec.emplace_back( t );
                                 act++;
                                 total += t;
@@ -7158,7 +7158,7 @@ void View::DrawFindZone()
                             auto& ev = zones[i];
                             if( selGroup == GetSelectionTarget( ev, groupBy ) )
                             {
-                                const auto t = ev.zone->end - ev.zone->Start() - GetZoneChildTimeFast( *ev.zone );
+                                const auto t = ev.Zone()->end - ev.Zone()->Start() - GetZoneChildTimeFast( *ev.Zone() );
                                 vec.emplace_back( t );
                                 act++;
                                 total += t;
@@ -7172,7 +7172,7 @@ void View::DrawFindZone()
                             auto& ev = zones[i];
                             if( selGroup == GetSelectionTarget( ev, groupBy ) )
                             {
-                                const auto t = ev.zone->end - ev.zone->Start();
+                                const auto t = ev.Zone()->end - ev.Zone()->Start();
                                 vec.emplace_back( t );
                                 act++;
                                 total += t;
@@ -7899,10 +7899,10 @@ void View::DrawFindZone()
         while( processed < sz )
         {
             auto& ev = zones[processed];
-            if( ev.zone->end < 0 ) break;
+            if( ev.Zone()->end < 0 ) break;
 
-            const auto end = m_worker.GetZoneEndDirect( *ev.zone );
-            auto timespan = end - ev.zone->Start();
+            const auto end = m_worker.GetZoneEndDirect( *ev.Zone() );
+            auto timespan = end - ev.Zone()->Start();
             if( timespan == 0 )
             {
                 processed++;
@@ -7910,15 +7910,15 @@ void View::DrawFindZone()
             }
             if( m_findZone.selfTime )
             {
-                timespan -= GetZoneChildTimeFast( *ev.zone );
+                timespan -= GetZoneChildTimeFast( *ev.Zone() );
             }
             else if( m_findZone.runningTime )
             {
-                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( ev.thread ) );
+                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( ev.Thread() ) );
                 if( !ctx ) break;
                 int64_t t;
                 uint64_t cnt;
-                if( !GetZoneRunningTime( ctx, *ev.zone, t, cnt ) ) break;
+                if( !GetZoneRunningTime( ctx, *ev.Zone(), t, cnt ) ) break;
                 timespan = t;
             }
 
@@ -7936,13 +7936,13 @@ void View::DrawFindZone()
             switch( groupBy )
             {
             case FindZone::GroupBy::Thread:
-                group = &m_findZone.groups[ev.thread];
+                group = &m_findZone.groups[ev.Thread()];
                 break;
             case FindZone::GroupBy::UserText:
-                group = &m_findZone.groups[ev.zone->text.active ? ev.zone->text.idx : std::numeric_limits<uint64_t>::max()];
+                group = &m_findZone.groups[ev.Zone()->text.active ? ev.Zone()->text.idx : std::numeric_limits<uint64_t>::max()];
                 break;
             case FindZone::GroupBy::Callstack:
-                group = &m_findZone.groups[ev.zone->callstack];
+                group = &m_findZone.groups[ev.Zone()->callstack];
                 break;
             default:
                 group = nullptr;
@@ -7950,7 +7950,7 @@ void View::DrawFindZone()
                 break;
             }
             group->time += timespan;
-            group->zones.push_back( ev.zone );
+            group->zones.push_back( ev.Zone() );
         }
         m_findZone.processed = processed;
 
@@ -8566,7 +8566,7 @@ void View::DrawCompare()
                 size_t i;
                 for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
                 {
-                    auto& zone = *zones[i].zone;
+                    auto& zone = *zones[i].Zone();
                     if( zone.end < 0 ) break;
                     const auto t = zone.end - zone.Start();
                     vec.emplace_back( t );

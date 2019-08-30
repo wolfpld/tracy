@@ -2051,23 +2051,26 @@ private:
 		return recycle_or_create_producer(recycled);
 	}
 	
-	ProducerBase* recycle_or_create_producer(bool& recycled)
-	{
-		// Try to re-use one first
-		for (auto ptr = producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
-			if (ptr->inactive.load(std::memory_order_relaxed)) {
-				bool expected = true;
-				if (ptr->inactive.compare_exchange_strong(expected, /* desired */ false, std::memory_order_acquire, std::memory_order_relaxed)) {
-					// We caught one! It's been marked as activated, the caller can have it
-					recycled = true;
-					return ptr;
-				}
-			}
-		}
-		
-		recycled = false;
-		return add_producer(static_cast<ProducerBase*>(create<ExplicitProducer>(this)));
-	}
+    ProducerBase* recycle_or_create_producer(bool& recycled)
+    {
+        // Try to re-use one first
+        for (auto ptr = producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
+            if (ptr->inactive.load(std::memory_order_relaxed)) {
+                if( ptr->size_approx() == 0 )
+                {
+                    bool expected = true;
+                    if (ptr->inactive.compare_exchange_strong(expected, /* desired */ false, std::memory_order_acquire, std::memory_order_relaxed)) {
+                        // We caught one! It's been marked as activated, the caller can have it
+                        recycled = true;
+                        return ptr;
+                    }
+                }
+            }
+        }
+
+        recycled = false;
+        return add_producer(static_cast<ProducerBase*>(create<ExplicitProducer>(this)));
+    }
 	
 	ProducerBase* add_producer(ProducerBase* producer)
 	{

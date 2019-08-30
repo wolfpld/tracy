@@ -1837,6 +1837,11 @@ const char* Worker::GetString( const StringIdx& idx ) const
     return m_data.stringData[idx.idx];
 }
 
+static const char* BadExternalThreadNames[] = {
+    "ntdll.dll",
+    nullptr
+};
+
 const char* Worker::GetThreadName( uint64_t id ) const
 {
     const auto it = m_data.threadNames.find( id );
@@ -1861,7 +1866,14 @@ const char* Worker::GetThreadName( uint64_t id ) const
             const auto eit = m_data.externalNames.find( id );
             if( eit != m_data.externalNames.end() )
             {
-                return eit->second.second;
+                const char* ext = eit->second.second;
+                const char** ptr = BadExternalThreadNames;
+                while( *ptr )
+                {
+                    if( strcmp( *ptr, ext ) == 0 ) return txt;
+                    ptr++;
+                }
+                return ext;
             }
         }
         return txt;

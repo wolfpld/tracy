@@ -5,6 +5,9 @@
 #  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data 
 #endif
 
+#include <algorithm>
+#include <stdint.h>
+
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_internal.h"
 
@@ -63,6 +66,27 @@ namespace tracy
         auto ret = ImGui::Checkbox( label, var );
         ImGui::PopStyleVar();
         return ret;
+    }
+
+    static inline void LineVertical( struct ImDrawList* draw, float x, float y0, float y1, uint32_t c0, uint32_t c1 )
+    {
+        draw->AddRectFilledMultiColor( ImVec2( x, y0 ), ImVec2( x+1, y1 ), c0, c0, c1, c1 );
+    }
+
+    static inline uint8_t lerp( uint8_t v0, uint8_t v1, float t )
+    {
+        return uint8_t( v0 + t * ( v1 - v0 ) );
+    }
+
+    static inline void LineVerticalShaded( struct ImDrawList* draw, float x, float y0, float y1, uint32_t c0, uint32_t c1, float maxHeight )
+    {
+        const auto dy = y1 - y0;
+        const auto t = std::min( 1.f, dy / maxHeight );
+        const auto ct = 0xFF000000 |
+            ( lerp( ( c0 & 0x00FF0000 ) >> 16, ( c1 & 0x00FF0000 ) >> 16, t ) << 16 ) |
+            ( lerp( ( c0 & 0x0000FF00 ) >>  8, ( c1 & 0x0000FF00 ) >>  8, t ) <<  8 ) |
+            ( lerp( ( c0 & 0x000000FF )      , ( c1 & 0x000000FF )      , t )       );
+        LineVertical( draw, x, y0, y1, c0, ct );
     }
 
 }

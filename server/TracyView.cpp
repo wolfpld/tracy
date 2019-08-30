@@ -7586,7 +7586,8 @@ void View::DrawFindZone()
                                 const auto val = cumulateTime ? binTime[i] : bins[i];
                                 if( val > 0 )
                                 {
-                                    draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - val * hAdj ), 0xFF22DDDD );
+                                    LineVerticalShaded( draw, wpos.x + 2+i, wpos.y + Height-2 - val * hAdj, wpos.y + Height-1, 0xFF22DDDD, 0xFF118888, hAdj );
+                                    //draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - val * hAdj ), 0xFF22DDDD );
                                     if( selBin[i] > 0 )
                                     {
                                         draw->AddLine( wpos + ImVec2( 2+i, Height-3 ), wpos + ImVec2( 2+i, Height-3 - selBin[i] * hAdj ), 0xFFDD7777 );

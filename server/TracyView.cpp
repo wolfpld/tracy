@@ -4144,9 +4144,11 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                             }
                             else
                             {
+                                char buf[256];
                                 const auto thread = m_worker.DecompressThreadExternal( it->Thread() );
                                 const auto local = m_worker.IsThreadLocal( thread );
                                 auto txt = local ? m_worker.GetThreadName( thread ) : m_worker.GetExternalName( thread ).first;
+                                auto label = txt;
                                 bool untracked = false;
                                 if( !local )
                                 {
@@ -4160,7 +4162,16 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         untracked = pid == m_worker.GetPid();
                                         if( untracked )
                                         {
-                                            txt = m_worker.GetExternalName( thread ).second;
+                                            label = txt = m_worker.GetExternalName( thread ).second;
+                                        }
+                                        else
+                                        {
+                                            const auto ttxt = m_worker.GetExternalName( thread ).second;
+                                            if( strcmp( ttxt, "???" ) != 0 && strcmp( ttxt, txt ) != 0 )
+                                            {
+                                                snprintf( buf, 256, "%s (%s)", txt, ttxt );
+                                                label = buf;
+                                            }
                                         }
                                     }
                                 }
@@ -4171,29 +4182,29 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 ) );
                                 draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF5566AA : ( untracked ? 0xFF885555 : 0xFF666666 ) );
 
-                                auto tsz = ImGui::CalcTextSize( txt );
+                                auto tsz = ImGui::CalcTextSize( label );
                                 if( tsz.x < zsz )
                                 {
                                     const auto x = ( start - m_vd.zvStart ) * pxns + ( ( end - start ) * pxns - tsz.x ) / 2;
                                     if( x < 0 || x > w - tsz.x )
                                     {
                                         ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                                        DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
+                                        DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, label );
                                         ImGui::PopClipRect();
                                     }
                                     else if( start == end )
                                     {
-                                        DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
+                                        DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, label );
                                     }
                                     else
                                     {
-                                        DrawTextContrast( draw, wpos + ImVec2( x, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
+                                        DrawTextContrast( draw, wpos + ImVec2( x, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, label );
                                     }
                                 }
                                 else
                                 {
                                     ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
-                                    DrawTextContrast( draw, wpos + ImVec2( ( start - m_vd.zvStart ) * pxns, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, txt );
+                                    DrawTextContrast( draw, wpos + ImVec2( ( start - m_vd.zvStart ) * pxns, offset-1 ), local ? 0xFFFFFFFF : 0xAAFFFFFF, label );
                                     ImGui::PopClipRect();
                                 }
 

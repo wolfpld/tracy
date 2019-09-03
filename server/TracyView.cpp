@@ -10678,6 +10678,12 @@ void View::DrawCpuDataWindow()
         }
         const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first, true );
         const auto expand = ImGui::TreeNode( pidtxt );
+        const auto tsz = pid.second.tids.size();
+        if( tsz > 1 )
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%s)", RealToString( tsz, true ) );
+        }
         ImGui::NextColumn();
         ImGui::TextUnformatted( pid.first == 0 ? "???" : name );
         ImGui::NextColumn();

@@ -372,10 +372,11 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
         return uint64_t( to565( src[0], src[1], src[2] ) ) << 16;
     }
 
-    uint8x16_t l0 = vreinterpretq_u8_u32( px0 );
-    uint8x16_t l1 = vreinterpretq_u8_u32( px1 );
-    uint8x16_t l2 = vreinterpretq_u8_u32( px2 );
-    uint8x16_t l3 = vreinterpretq_u8_u32( px3 );
+    uint32x4_t mask = vdupq_n_u32( 0xFFFFFF );
+    uint8x16_t l0 = vreinterpretq_u8_u32( vandq_u32( mask, px0 ) );
+    uint8x16_t l1 = vreinterpretq_u8_u32( vandq_u32( mask, px1 ) );
+    uint8x16_t l2 = vreinterpretq_u8_u32( vandq_u32( mask, px2 ) );
+    uint8x16_t l3 = vreinterpretq_u8_u32( vandq_u32( mask, px3 ) );
 
     uint8x16_t min0 = vminq_u8( l0, l1 );
     uint8x16_t min1 = vminq_u8( l2, l3 );

@@ -1275,12 +1275,31 @@ void View::DrawFrames()
             if( itStart != zoneData.zones.end() )
             {
                 auto itEnd = std::lower_bound( itStart, zoneData.zones.end(), f1, [this] ( const auto& l, const auto& r ) { return l.Zone()->Start() < r; } );
-                while( itStart != itEnd )
+                if( m_frames->continuous )
                 {
-                    const auto t0 = clamp( itStart->Zone()->Start(), f0, f1 );
-                    const auto t1 = clamp( m_worker.GetZoneEndDirect( *itStart->Zone() ), f0, f1 );
-                    zoneTime += t1 - t0;
-                    itStart++;
+                    while( itStart != itEnd )
+                    {
+                        const auto t0 = clamp( itStart->Zone()->Start(), f0, f1 );
+                        const auto t1 = clamp( m_worker.GetZoneEndDirect( *itStart->Zone() ), f0, f1 );
+                        zoneTime += t1 - t0;
+                        itStart++;
+                    }
+                }
+                else
+                {
+                    while( itStart != itEnd )
+                    {
+                        const int g = std::min( group, total - ( m_vd.frameStart + idx ) );
+                        for( int j=0; j<g; j++ )
+                        {
+                            const auto ft0 = m_worker.GetFrameBegin( *m_frames, m_vd.frameStart + idx + j );
+                            const auto ft1 = m_worker.GetFrameEnd( *m_frames, m_vd.frameStart + idx + j );
+                            const auto t0 = clamp( itStart->Zone()->Start(), ft0, ft1 );
+                            const auto t1 = clamp( m_worker.GetZoneEndDirect( *itStart->Zone() ), ft0, ft1 );
+                            zoneTime += t1 - t0;
+                        }
+                        itStart++;
+                    }
                 }
             }
             else

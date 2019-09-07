@@ -1271,6 +1271,7 @@ void View::DrawFrames()
             }
 
             int64_t zoneTime = 0;
+            // This search is not valid, as zones are sorted according to their start time, not end time.
             auto itStart = std::lower_bound( begin, zoneData.zones.end(), f0, [this] ( const auto& l, const auto& r ) { return m_worker.GetZoneEndDirect( *l.Zone() ) < r; } );
             if( itStart != zoneData.zones.end() )
             {

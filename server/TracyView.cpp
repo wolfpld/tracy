@@ -1041,6 +1041,12 @@ static int GetFrameGroup( int frameScale )
     return frameScale < 2 ? 1 : ( 1 << ( frameScale - 1 ) );
 }
 
+template<class T>
+constexpr const T& clamp( const T& v, const T& lo, const T& hi )
+{
+    return v < lo ? lo : v > hi ? hi : v;
+}
+
 void View::DrawFrames()
 {
     assert( m_worker.GetFrameCount( *m_frames ) != 0 );
@@ -1245,31 +1251,116 @@ void View::DrawFrames()
     }
 
     int i = 0, idx = 0;
-    while( i < onScreen && m_vd.frameStart + idx < total )
+    if( m_findZone.show && !m_findZone.match.empty() )
     {
-        auto f = m_worker.GetFrameTime( *m_frames, m_vd.frameStart + idx );
-        int g;
-        if( group > 1 )
+        auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
+        auto begin = zoneData.zones.begin();
+        while( i < onScreen && m_vd.frameStart + idx < total )
         {
-            g = std::min( group, total - ( m_vd.frameStart + idx ) );
-            for( int j=1; j<g; j++ )
+            const auto f0 = m_worker.GetFrameBegin( *m_frames, m_vd.frameStart + idx );
+            auto f1 = m_worker.GetFrameEnd( *m_frames, m_vd.frameStart + idx );
+            auto f = f1 - f0;
+            if( group > 1 )
             {
-                f = std::max( f, m_worker.GetFrameTime( *m_frames, m_vd.frameStart + idx + j ) );
+                const int g = std::min( group, total - ( m_vd.frameStart + idx ) );
+                for( int j=1; j<g; j++ )
+                {
+                    f = std::max( f, m_worker.GetFrameTime( *m_frames, m_vd.frameStart + idx + j ) );
+                }
+                f1 = m_worker.GetFrameEnd( *m_frames, m_vd.frameStart + idx + g - 1 );
             }
-        }
 
-        const auto h = std::max( 1.f, float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 ) );
-        if( fwidth != 1 )
-        {
-            draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-h ), wpos + ImVec2( fwidth + i*fwidth, Height-1 ), GetFrameColor( f ) );
-        }
-        else
-        {
-            draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2 ), GetFrameColor( f ) );
-        }
+            int64_t zoneTime = 0;
+            auto itStart = std::lower_bound( begin, zoneData.zones.end(), f0, [this] ( const auto& l, const auto& r ) { return m_worker.GetZoneEndDirect( *l.Zone() ) < r; } );
+            if( itStart != zoneData.zones.end() )
+            {
+                auto itEnd = std::lower_bound( itStart, zoneData.zones.end(), f1, [this] ( const auto& l, const auto& r ) { return l.Zone()->Start() < r; } );
+                while( itStart != itEnd )
+                {
+                    const auto t0 = clamp( itStart->Zone()->Start(), f0, f1 );
+                    const auto t1 = clamp( m_worker.GetZoneEndDirect( *itStart->Zone() ), f0, f1 );
+                    zoneTime += t1 - t0;
+                    itStart++;
+                }
+            }
+            else
+            {
+                begin = itStart;
+            }
 
-        i++;
-        idx += group;
+            zoneTime /= group;
+            const auto h = std::max( 1.f, float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 ) );
+            if( zoneTime == 0 )
+            {
+                if( fwidth != 1 )
+                {
+                    draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-h ), wpos + ImVec2( fwidth + i*fwidth, Height-1 ), 0xFF888888 );
+                }
+                else
+                {
+                    draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2 ), 0xFF888888 );
+                }
+            }
+            else if( zoneTime <= f )
+            {
+                const auto zh = float( std::min<uint64_t>( MaxFrameTime, zoneTime ) ) / MaxFrameTime * ( Height - 2 );
+                if( fwidth != 1 )
+                {
+                    draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-h ), wpos + ImVec2( fwidth + i*fwidth, Height-1-zh ), 0xFF888888 );
+                    draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-zh ), wpos + ImVec2( fwidth + i*fwidth, Height-1 ), 0xFFEEEEEE );
+                }
+                else
+                {
+                    draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2-zh ), 0xFF888888 );
+                    draw->AddLine( wpos + ImVec2( 1+i, Height-2-zh ), wpos + ImVec2( 1+i, Height-2 ), 0xFFEEEEEE );
+                }
+            }
+            else
+            {
+                const auto zh = float( std::min<uint64_t>( MaxFrameTime, zoneTime ) ) / MaxFrameTime * ( Height - 2 );
+                if( fwidth != 1 )
+                {
+                    draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-zh ), wpos + ImVec2( fwidth + i*fwidth, Height-1-h ), 0xFF2222BB );
+                    draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-h ), wpos + ImVec2( fwidth + i*fwidth, Height-1 ), 0xFFEEEEEE );
+                }
+                else
+                {
+                    draw->AddLine( wpos + ImVec2( 1+i, Height-2-zh ), wpos + ImVec2( 1+i, Height-2-h ), 0xFF2222BB );
+                    draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2 ), 0xFFEEEEEE );
+                }
+            }
+
+            i++;
+            idx += group;
+        }
+    }
+    else
+    {
+        while( i < onScreen && m_vd.frameStart + idx < total )
+        {
+            auto f = m_worker.GetFrameTime( *m_frames, m_vd.frameStart + idx );
+            if( group > 1 )
+            {
+                const int g = std::min( group, total - ( m_vd.frameStart + idx ) );
+                for( int j=1; j<g; j++ )
+                {
+                    f = std::max( f, m_worker.GetFrameTime( *m_frames, m_vd.frameStart + idx + j ) );
+                }
+            }
+
+            const auto h = std::max( 1.f, float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 ) );
+            if( fwidth != 1 )
+            {
+                draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-h ), wpos + ImVec2( fwidth + i*fwidth, Height-1 ), GetFrameColor( f ) );
+            }
+            else
+            {
+                draw->AddLine( wpos + ImVec2( 1+i, Height-2-h ), wpos + ImVec2( 1+i, Height-2 ), GetFrameColor( f ) );
+            }
+
+            i++;
+            idx += group;
+        }
     }
 
     const auto zrange = m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvEnd );

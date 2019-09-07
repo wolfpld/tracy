@@ -32,6 +32,10 @@ v0.6 (xxxx-xx-xx)
 - Per-trace state is now preserved between profiling sessions:
   - Timeline view position.
   - Item categories draw/hide settings.
+- Timeline zones will be highlighted using a different color, when a
+  matching time range is selected on histogram.
+- Per-frame zone times are now displayed on the frames plot when a zone is
+  selected in the find zone menu.
 
 v0.5 (2019-08-10)
 -----------------

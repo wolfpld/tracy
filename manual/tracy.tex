@@ -1376,6 +1376,7 @@ If drawing of timeline elements was disabled in the options menu (section~\ref{o
 \end{itemize}
 
 \subsubsection{Frame time graph}
+\label{frametimegraph}
 
 The graph of currently selected frame set (figure~\ref{frametime}) provides an outlook on the time spent in each frame, allowing you to see where the problematic frames are and to quickly navigate to them.
 
@@ -1434,6 +1435,8 @@ Each bar displayed on the graph represents an unique frame in the current frame 
 \end{itemize}
 
 The frames visible on the timeline are marked with a violet box drawn over them (presented as a dotted box on figure~\ref{frametime}).
+
+When a zone is displayed in the find zone window (section~\ref{findzone}), the coloring of frames is changed, as described in section~\ref{frametimefindzone}.
 
 Moving the \faMousePointer{} mouse cursor over the frames displayed on the graph will display tooltip with information about frame number, frame time, frame image (if available, see chapter~\ref{frameimages}), etc. Such tooltips are common for many UI elements in the profiler and won't be mentioned later in the manual.
 
@@ -1854,6 +1857,17 @@ logo=\bclampe
 ]{Keyboard shortcut}
 You may press \keys{\ctrl + F} to open or focus the find zone window and set the keyboard input on the search box.
 \end{bclogo}
+
+\subsubsection{Timeline interaction}
+
+When the zone statistics are displayed in the find zone menu, matching zones will be highlighted on the timeline display. Highlight colors match the histogram display. Bright blue highlight is used to indicate that a zone is in the optional selection range, while the yellow highlight is used for the rest of zones.
+
+\subsubsection{Frame time graph interaction}
+\label{frametimefindzone}
+
+The frame time graph (section~\ref{frametimegraph}) behavior is altered when a zone is displayed in the find zone window. Instead of coloring the frame bars according to the frame time targets, an accumulated zone execution time is shown.
+
+Each bar is drawn in gray color, with the white part accounting for the zone time. If the execution time is greater than the frame time (this is possible if more than one thread was executing the same zone), the overflow will be displayed using red color.
 
 \subsection{Compare traces window}
 \label{compare}

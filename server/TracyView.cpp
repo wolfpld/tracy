@@ -1251,7 +1251,7 @@ void View::DrawFrames()
     }
 
     int i = 0, idx = 0;
-    if( m_findZone.show && !m_findZone.match.empty() )
+    if( m_worker.AreSourceLocationZonesReady() && m_findZone.show && !m_findZone.match.empty() )
     {
         auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
         auto begin = zoneData.zones.begin();

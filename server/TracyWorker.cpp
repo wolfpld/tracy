@@ -2035,6 +2035,7 @@ std::vector<int16_t> Worker::GetMatchingSourceLocation( const char* query, bool 
 #ifndef TRACY_NO_STATISTICS
 const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t srcloc ) const
 {
+    assert( AreSourceLocationZonesReady() );
     static const SourceLocationZones empty;
     auto it = m_data.sourceLocationZones.find( srcloc );
     return it != m_data.sourceLocationZones.end() ? it->second : empty;

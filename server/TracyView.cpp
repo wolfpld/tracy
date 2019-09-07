@@ -11704,6 +11704,14 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev )
 {
     if( m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == ev.SrcLoc() )
     {
+        if( m_findZone.highlight.active )
+        {
+            const auto zt = m_worker.GetZoneEnd( ev ) - ev.Start();
+            if( zt >= m_findZone.highlight.start && zt <= m_findZone.highlight.end )
+            {
+                return 0xFFFFCC66;
+            }
+        }
         return 0xFF229999;
     }
     else

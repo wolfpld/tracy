@@ -36,6 +36,7 @@ v0.6 (xxxx-xx-xx)
   matching time range is selected on histogram.
 - Per-frame zone times are now displayed on the frames plot when a zone is
   selected in the find zone menu.
+- Zone color is now displayed in zone information window.
 
 v0.5 (2019-08-10)
 -----------------

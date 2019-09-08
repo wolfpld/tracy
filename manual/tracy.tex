@@ -427,9 +427,9 @@ The following defines may be of interest:
 
 \subsection{Naming threads}
 
-Remember to set thread names for proper identification of threads. You should use the functions exposed in the \texttt{tracy/common/TracySystem.hpp} header to do so.
+Remember to set thread names for proper identification of threads. You must use the functions exposed in the \texttt{tracy/common/TracySystem.hpp} header to do so, as the system facilities typically have limited functionality.
 
-Be aware that even if you already have thread naming functionality implemented, some platforms\footnote{Basically everything, but the recent Windows releases.} do not have adequate system-level capabilities (or none at all), in which case Tracy uses its own internal thread name storage.
+If context switch capture is active, Tracy will try to capture thread names through operating system data. This is only a fallback mechanism and it shouldn't be relied upon.
 
 \subsection{Crash handling}
 \label{crashhandling}
@@ -468,6 +468,8 @@ When dealing with Tracy macros, you will encounter two ways of providing string 
 In some cases you will want to provide your own colors to be displayed by the profiler. In all such places you should use a hexadecimal \texttt{0xRRGGBB} notation.
 
 Alternatively you may use named colors predefined in \texttt{common/TracyColor.hpp} (included by \texttt{Tracy.hpp}). Visual reference: \url{https://en.wikipedia.org/wiki/X11_color_names}.
+
+Do not use \texttt{0x000000} if you want to specify black color, as zero is a special value indicating that no color was set. Instead, use a value close to zero, e.g. \texttt{0x000001}.
 
 \subsection{Marking frames}
 \label{markingframes}

@@ -12222,6 +12222,24 @@ void View::CrashTooltip()
     ImGui::EndTooltip();
 }
 
+int View::GetZoneDepth( const ZoneEvent& zone, uint64_t tid ) const
+{
+    auto td = m_worker.GetThreadData( tid );
+    assert( td );
+    auto timeline = &td->timeline;
+    int depth = 0;
+    for(;;)
+    {
+        auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
+        if( it != timeline->begin() ) --it;
+        assert( !( zone.end >= 0 && (*it)->Start() > zone.end ) );
+        if( *it == &zone ) return depth;
+        assert( (*it)->child >= 0 );
+        timeline = &m_worker.GetZoneChildren( (*it)->child );
+        depth++;
+    }
+}
+
 const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
 {
     for( const auto& thread : m_worker.GetThreadData() )

@@ -178,6 +178,7 @@ private:
     void CallstackTooltip( uint32_t idx );
     void CrashTooltip();
 
+    int GetZoneDepth( const ZoneEvent& zone, uint64_t tid ) const;
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
     const ThreadData* GetZoneThreadData( const ZoneEvent& zone ) const;

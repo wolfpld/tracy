@@ -111,9 +111,9 @@ private:
     bool DrawZoneFrames( const FrameData& frames );
     void DrawZones();
     void DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset );
-    int DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
-    int DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
-    int SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
+    int DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    int DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    int SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
     int DispatchGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
     int DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
     int SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
@@ -154,11 +154,11 @@ private:
 
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
-    uint32_t GetZoneColor( const ZoneEvent& ev );
+    uint32_t GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetZoneColor( const GpuEvent& ev );
-    uint32_t GetRawZoneColor( const ZoneEvent& ev );
+    uint32_t GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetRawZoneColor( const GpuEvent& ev );
-    uint32_t GetZoneHighlight( const ZoneEvent& ev );
+    uint32_t GetZoneHighlight( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetZoneHighlight( const GpuEvent& ev );
     float GetZoneThickness( const ZoneEvent& ev );
     float GetZoneThickness( const GpuEvent& ev );

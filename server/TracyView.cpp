@@ -2166,7 +2166,7 @@ void View::DrawZones()
 
             if( m_vd.drawZones )
             {
-                depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax );
+                depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, v->id );
                 offset += ostep * depth;
             }
 
@@ -2782,7 +2782,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
     }
 }
 
-int View::DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax )
+int View::DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
@@ -2791,15 +2791,15 @@ int View::DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double p
     const auto yPos = wpos.y + offset;
     if( yPos + ostep >= yMin && yPos <= yMax )
     {
-        return DrawZoneLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax );
+        return DrawZoneLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
     }
     else
     {
-        return SkipZoneLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax );
+        return SkipZoneLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
     }
 }
 
-int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax )
+int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
@@ -2825,7 +2825,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     while( it < zitend )
     {
         auto& ev = **it;
-        const auto color = GetZoneColor( ev );
+        const auto color = GetZoneColor( ev, tid, depth );
         const auto end = m_worker.GetZoneEnd( ev );
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
@@ -2907,7 +2907,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
 
             if( ev.child >= 0 )
             {
-                const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax );
+                const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
                 if( d > maxdepth ) maxdepth = d;
             }
 
@@ -2923,7 +2923,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev ), 0.f, -1, GetZoneThickness( ev ) );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev, tid, depth ), 0.f, -1, GetZoneThickness( ev ) );
             if( dsz * dmul > MinVisSize )
             {
                 const auto diff = dsz * dmul - MinVisSize;
@@ -3017,7 +3017,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     return maxdepth;
 }
 
-int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax )
+int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
@@ -3057,7 +3057,7 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         {
             if( ev.child >= 0 )
             {
-                const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax );
+                const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
                 if( d > maxdepth ) maxdepth = d;
             }
             ++it;
@@ -5204,7 +5204,7 @@ void View::DrawZoneInfoWindow()
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     ImGui::SameLine();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    const auto col = GetRawZoneColor( ev );
+    const auto col = GetRawZoneColor( ev, tid, GetZoneDepth( ev, tid ) );
     ImGui::ColorButton( "c1", ImVec4( (col & 0xFF) / 255.f, ((col>>8) & 0xFF ) / 255.f, ((col>>16) & 0xFF ) / 255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
     ImGui::PopStyleVar();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
@@ -6396,6 +6396,7 @@ void View::DrawOptions()
         }
     }
 
+    ImGui::Separator();
     val = m_vd.drawZones;
 #ifdef TRACY_EXTENDED_FONT
     ImGui::Checkbox( ICON_FA_MICROCHIP " Draw CPU zones", &val );
@@ -6403,6 +6404,13 @@ void View::DrawOptions()
     ImGui::Checkbox( "Draw CPU zones", &val );
 #endif
     m_vd.drawZones = val;
+    val = m_vd.dynamicColors;
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_PALETTE " Dynamic thread colors", &val );
+#else
+    ImGui::Checkbox( "Dynamic thread colors", &val );
+#endif
+    m_vd.dynamicColors = val;
     int ns = (int)m_namespace;
     ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None\0" );
     m_namespace = (Namespace)ns;
@@ -11821,7 +11829,7 @@ const char* View::GetPlotName( const PlotData* plot ) const
     }
 }
 
-uint32_t View::GetZoneColor( const ZoneEvent& ev )
+uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
 {
     if( m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == ev.SrcLoc() )
     {
@@ -11837,15 +11845,41 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev )
     }
     else
     {
-        return GetRawZoneColor( ev );
+        return GetRawZoneColor( ev, thread, depth );
     }
 }
 
-uint32_t View::GetRawZoneColor( const ZoneEvent& ev )
+uint32_t View::GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
 {
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
     const auto color = srcloc.color;
-    return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
+    if( color != 0 ) return color | 0xFF000000;
+    if( !m_vd.dynamicColors ) return 0xFFCC5555;
+
+    const uint8_t h = thread & 0xFF;
+    const uint8_t s = 96;
+    const uint8_t v = std::max( 96, 170 - depth * 8 );
+
+    const uint8_t reg = h / 43;
+    const uint8_t rem = ( h - ( reg * 43 ) ) * 6;
+
+    const uint8_t p = ( v * ( 255 - s ) ) >> 8;
+    const uint8_t q = ( v * ( 255 - ( ( s * rem ) >> 8 ) ) ) >> 8;
+    const uint8_t t = ( v * ( 255 - ( ( s * ( 255 - rem ) ) >> 8 ) ) ) >> 8;
+
+    uint8_t r, g, b;
+
+    switch( reg )
+    {
+    case 0:  r = v; g = t; b = p; break;
+    case 1:  r = q; g = v; b = p; break;
+    case 2:  r = p; g = v; b = t; break;
+    case 3:  r = p; g = q; b = v; break;
+    case 4:  r = t; g = p; b = v; break;
+    default: r = v; g = p; b = q; break;
+    }
+
+    return 0xFF000000 | ( r << 16 ) | ( g << 8 ) | b;
 }
 
 uint32_t View::GetZoneColor( const GpuEvent& ev )
@@ -11860,7 +11894,7 @@ uint32_t View::GetRawZoneColor( const GpuEvent& ev )
     return GetZoneColor( ev );
 }
 
-uint32_t View::GetZoneHighlight( const ZoneEvent& ev )
+uint32_t View::GetZoneHighlight( const ZoneEvent& ev, uint64_t thread, int depth )
 {
     if( m_zoneInfoWindow == &ev )
     {
@@ -11876,7 +11910,7 @@ uint32_t View::GetZoneHighlight( const ZoneEvent& ev )
     }
     else
     {
-        const auto color = GetZoneColor( ev );
+        const auto color = GetZoneColor( ev, thread, depth );
         return 0xFF000000 |
             ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + 25 ) ) << 16 ) |
             ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + 25 ) ) << 8  ) |

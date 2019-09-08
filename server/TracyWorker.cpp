@@ -2420,6 +2420,13 @@ ThreadData* Worker::NoticeThreadReal( uint64_t thread )
     }
 }
 
+const ThreadData* Worker::GetThreadData( uint64_t tid ) const
+{
+    auto it = m_threadMap.find( tid );
+    if( it == m_threadMap.end() ) return nullptr;
+    return it->second;
+}
+
 ThreadData* Worker::NewThread( uint64_t thread )
 {
     CheckThreadString( thread );

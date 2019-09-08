@@ -320,6 +320,7 @@ public:
     const Vector<GpuCtxData*>& GetGpuData() const { return m_data.gpuData; }
     const Vector<PlotData*>& GetPlots() const { return m_data.plots.Data(); }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
+    const ThreadData* GetThreadData( uint64_t tid ) const;
     const MemData& GetMemData() const { return m_data.memory; }
     const Vector<FrameImage*>& GetFrameImages() const { return m_data.frameImage; }
     const Vector<StringRef>& GetAppInfo() const { return m_data.appInfo; }

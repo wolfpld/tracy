@@ -11827,10 +11827,15 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev )
     }
     else
     {
-        const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
-        const auto color = srcloc.color;
-        return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
+        return GetRawZoneColor( ev );
     }
+}
+
+uint32_t View::GetRawZoneColor( const ZoneEvent& ev )
+{
+    const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
+    const auto color = srcloc.color;
+    return color != 0 ? ( color | 0xFF000000 ) : 0xFFCC5555;
 }
 
 uint32_t View::GetZoneColor( const GpuEvent& ev )
@@ -11838,6 +11843,11 @@ uint32_t View::GetZoneColor( const GpuEvent& ev )
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
     const auto color = srcloc.color;
     return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
+}
+
+uint32_t View::GetRawZoneColor( const GpuEvent& ev )
+{
+    return GetZoneColor( ev );
 }
 
 uint32_t View::GetZoneHighlight( const ZoneEvent& ev )

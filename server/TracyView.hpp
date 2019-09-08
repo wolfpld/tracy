@@ -156,6 +156,8 @@ private:
 
     uint32_t GetZoneColor( const ZoneEvent& ev );
     uint32_t GetZoneColor( const GpuEvent& ev );
+    uint32_t GetRawZoneColor( const ZoneEvent& ev );
+    uint32_t GetRawZoneColor( const GpuEvent& ev );
     uint32_t GetZoneHighlight( const ZoneEvent& ev );
     uint32_t GetZoneHighlight( const GpuEvent& ev );
     float GetZoneThickness( const ZoneEvent& ev );

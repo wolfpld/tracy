@@ -1698,7 +1698,9 @@ In this window you can set various trace-related options. The timeline view migh
 \item \emph{\faHiking{} Draw context switches} -- Allows disabling context switch display in threads.
 \item \emph{\faSlidersH{} Draw CPU data} -- Per-CPU behavior graph can be disabled here.
 \item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
-\item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed. The \emph{Namespaces} drop-down controls the display behavior of long zone names:
+\item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed.
+\item \emph{\faPalette{} Dynamic thread colors} -- Zones may be colored according to the thread they belong to and depth level. A constant color will be used if this option is disabled.
+\item The \emph{Namespaces} drop-down controls the display behavior of long zone names:
 \begin{itemize}
 \item \emph{Full} -- Zone names are always fully displayed (e.g.\ \texttt{std::sort}).
 \item \emph{Shortened} -- If there's no space for full zone name, the namespaces will be shortened to one letter (e.g.\ \texttt{s::sort}).

@@ -37,6 +37,7 @@ v0.6 (xxxx-xx-xx)
 - Per-frame zone times are now displayed on the frames plot when a zone is
   selected in the find zone menu.
 - Zone color is now displayed in zone information window.
+- Zone colors can now be determined basing on thread and depth.
 
 v0.5 (2019-08-10)
 -----------------

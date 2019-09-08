@@ -929,6 +929,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             f.Skip( msz * sizeof( uint64_t ) );
         }
         m_data.threads[i] = td;
+        m_threadMap.emplace( tid, td );
     }
 
     s_loadProgress.progress.store( LoadProgress::GpuZones, std::memory_order_relaxed );

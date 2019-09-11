@@ -1636,7 +1636,7 @@ Hovering the \faMousePointer{} mouse pointer over a zone will highlight all othe
 This label is only available if context switch data was collected. Each line in this graph represents a separate CPU core. When a core is busy executing a thread, a zone will be drawn at the appropriate time. Zones are colored according to the following key:
 
 \begin{itemize}
-\item \emph{Orange} -- Thread tracked by the profiler.
+\item \emph{Bright color} or \emph{orange} if dynamic thread colors are disabled -- Thread tracked by the profiler.
 \item \emph{Dark blue} -- Thread existing in the profiled application, but not known to the profiler. This may include internal profiler threads, helper threads created by external libraries, etc.
 \item \emph{Gray} -- Threads assigned to other programs running in the system.
 \end{itemize}
@@ -1699,7 +1699,7 @@ In this window you can set various trace-related options. The timeline view migh
 \item \emph{\faSlidersH{} Draw CPU data} -- Per-CPU behavior graph can be disabled here.
 \item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
 \item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed.
-\item \emph{\faPalette{} Dynamic thread colors} -- Zones may be colored according to the thread they belong to and depth level. A constant color will be used if this option is disabled.
+\item \emph{\faPalette{} Dynamic thread colors} -- Zones with no user-set color may be colored according to the thread they belong to and depth level. A constant color (blue) will be used if this option is disabled.
 \item The \emph{Namespaces} drop-down controls the display behavior of long zone names:
 \begin{itemize}
 \item \emph{Full} -- Zone names are always fully displayed (e.g.\ \texttt{std::sort}).

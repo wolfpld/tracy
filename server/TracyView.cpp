@@ -7655,18 +7655,18 @@ void View::DrawFindZone()
                         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                         ImGui::Checkbox( "###draw1", &m_findZone.drawAvgMed );
                         ImGui::SameLine();
-                        ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
                         ImGui::SameLine();
                         ImGui::TextUnformatted( "Average time" );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-                        ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0xAA/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0xAA/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
                         ImGui::SameLine();
                         ImGui::TextUnformatted( "Median time" );
                         ImGui::Checkbox( "###draw2", &m_findZone.drawSelAvgMed );
                         ImGui::SameLine();
-                        ImGui::ColorButton( "c3", ImVec4( 0xFF/255.f, 0xAA/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::ColorButton( "c3", ImVec4( 0xFF/255.f, 0xAA/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
                         ImGui::SameLine();
                         if( m_findZone.selGroup != m_findZone.Unselected )
                         {
@@ -7679,7 +7679,7 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-                        ImGui::ColorButton( "c4", ImVec4( 0x44/255.f, 0xDD/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                        ImGui::ColorButton( "c4", ImVec4( 0x44/255.f, 0xDD/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
                         ImGui::SameLine();
                         if( m_findZone.selGroup != m_findZone.Unselected )
                         {
@@ -9007,7 +9007,7 @@ void View::DrawCompare()
                     ImGui::Button( ICON_FA_LEMON );
                     ImGui::PopStyleColor( 4 );
 #else
-                    ImGui::ColorButton( "c1", ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                    ImGui::ColorButton( "c1", ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
 #endif
                     ImGui::SameLine();
                     ImGui::TextUnformatted( "This trace" );
@@ -9023,7 +9023,7 @@ void View::DrawCompare()
                     ImGui::Button( ICON_FA_GEM );
                     ImGui::PopStyleColor( 4 );
 #else
-                    ImGui::ColorButton( "c2", ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                    ImGui::ColorButton( "c2", ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
 #endif
                     ImGui::SameLine();
                     ImGui::TextUnformatted( "External trace" );
@@ -9031,7 +9031,7 @@ void View::DrawCompare()
                     ImGui::Spacing();
                     ImGui::SameLine();
 
-                    ImGui::ColorButton( "c3", ImVec4( 0x44/255.f, 0xBB/255.f, 0xBB/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                    ImGui::ColorButton( "c3", ImVec4( 0x44/255.f, 0xBB/255.f, 0xBB/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
                     ImGui::SameLine();
                     ImGui::TextUnformatted( "Overlap" );
 
@@ -10020,13 +10020,13 @@ void View::DrawInfo()
                             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                             ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );
                             ImGui::SameLine();
-                            ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                            ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
                             ImGui::SameLine();
                             ImGui::TextUnformatted( "Average time" );
                             ImGui::SameLine();
                             ImGui::Spacing();
                             ImGui::SameLine();
-                            ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
+                            ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
                             ImGui::SameLine();
                             ImGui::TextUnformatted( "Median time" );
                             ImGui::PopStyleVar();

@@ -5203,10 +5203,7 @@ void View::DrawZoneInfoWindow()
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     ImGui::SameLine();
-    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    const auto col = GetRawZoneColor( ev, tid, GetZoneDepth( ev, tid ) );
-    ImGui::ColorButton( "c1", ImVec4( (col & 0xFF) / 255.f, ((col>>8) & 0xFF ) / 255.f, ((col>>16) & 0xFF ) / 255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
-    ImGui::PopStyleVar();
+    SmallColorBox( GetRawZoneColor( ev, tid, GetZoneDepth( ev, tid ) ) );
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
@@ -5969,10 +5966,7 @@ void View::DrawGpuInfoWindow()
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     ImGui::SameLine();
-    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-    const auto col = GetRawZoneColor( ev );
-    ImGui::ColorButton( "c1", ImVec4( (col & 0xFF) / 255.f, ((col>>8) & 0xFF ) / 255.f, ((col>>16) & 0xFF ) / 255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
-    ImGui::PopStyleVar();
+    SmallColorBox( GetRawZoneColor( ev ) );
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );

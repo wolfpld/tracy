@@ -2319,6 +2319,8 @@ void View::DrawZones()
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
             {
                 ImGui::BeginTooltip();
+                SmallColorBox( GetThreadColor( v->id, 0 ) );
+                ImGui::SameLine();
                 ImGui::TextUnformatted( m_worker.GetThreadName( v->id ) );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%s)", RealToString( v->id, true ) );

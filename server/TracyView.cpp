@@ -6761,6 +6761,9 @@ void View::DrawOptions()
             m_threadDnd.push_back( ImGui::GetCursorScreenPos().y );
             ImGui::PushID( idx );
             const auto threadName = m_worker.GetThreadName( t->id );
+            const auto threadColor = GetThreadColor( t->id, 0 );
+            SmallColorBox( threadColor );
+            ImGui::SameLine();
             SmallCheckbox( threadName, &Vis( t ).visible );
             if( ImGui::BeginDragDropSource( ImGuiDragDropFlags_SourceNoHoldToOpenOthers ) )
             {
@@ -6769,6 +6772,8 @@ void View::DrawOptions()
                 ImGui::TextUnformatted( ICON_FA_RANDOM );
                 ImGui::SameLine();
 #endif
+                SmallColorBox( threadColor );
+                ImGui::SameLine();
                 ImGui::TextUnformatted( threadName );
                 ImGui::EndDragDropSource();
             }

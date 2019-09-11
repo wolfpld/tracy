@@ -4290,8 +4290,19 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 const auto pr1 = ( end - m_vd.zvStart ) * pxns;
                                 const auto px0 = std::max( pr0, -10.0 );
                                 const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
-                                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 ) );
-                                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), local ? 0xFF5566AA : ( untracked ? 0xFF885555 : 0xFF666666 ) );
+
+                                uint32_t color;
+                                if( m_vd.dynamicColors )
+                                {
+                                    color = local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
+                                }
+                                else
+                                {
+                                    color = local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 );
+                                }
+
+                                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), color );
+                                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), HighlightColor( color ) );
 
                                 auto tsz = ImGui::CalcTextSize( label );
                                 if( tsz.x < zsz )

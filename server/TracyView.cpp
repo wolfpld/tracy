@@ -11897,6 +11897,14 @@ uint32_t View::GetRawZoneColor( const GpuEvent& ev )
     return GetZoneColor( ev );
 }
 
+uint32_t View::HighlightColor( uint32_t color )
+{
+    return 0xFF000000 |
+        ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + 25 ) ) << 16 ) |
+        ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + 25 ) ) << 8  ) |
+        ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + 25 ) )       );
+}
+
 uint32_t View::GetZoneHighlight( const ZoneEvent& ev, uint64_t thread, int depth )
 {
     if( m_zoneInfoWindow == &ev )
@@ -11913,11 +11921,7 @@ uint32_t View::GetZoneHighlight( const ZoneEvent& ev, uint64_t thread, int depth
     }
     else
     {
-        const auto color = GetZoneColor( ev, thread, depth );
-        return 0xFF000000 |
-            ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + 25 ) ) << 16 ) |
-            ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + 25 ) ) << 8  ) |
-            ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + 25 ) )       );
+        return HighlightColor( GetZoneColor( ev, thread, depth ) );
     }
 }
 

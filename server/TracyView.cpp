@@ -1937,6 +1937,7 @@ void View::DrawZones()
     m_msgHighlight.Decay( nullptr );
     m_zoneSrcLocHighlight.Decay( 0 );
     m_lockHoverHighlight.Decay( InvalidId );
+    m_drawThreadMigrations.Decay( 0 );
     m_zoneHover = nullptr;
 
     if( m_vd.zvStart == m_vd.zvEnd ) return;
@@ -2318,6 +2319,7 @@ void View::DrawZones()
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
             {
+                m_drawThreadMigrations = v->id;
                 ImGui::BeginTooltip();
                 SmallColorBox( GetThreadColor( v->id, 0 ) );
                 ImGui::SameLine();
@@ -4193,6 +4195,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         const auto sty = ImGui::GetFontSize();
         const auto sstep = sty + 1;
 
+        const auto origOffset = offset;
         auto cpuData = m_worker.GetCpuData();
         for( int i=0; i<256; i++ )
         {
@@ -4345,6 +4348,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         TextFocused( "Thread:", m_worker.GetThreadName( thread ) );
                                         ImGui::SameLine();
                                         ImGui::TextDisabled( "(%s)", RealToString( thread, true ) );
+                                        m_drawThreadMigrations = thread;
                                     }
                                     else
                                     {
@@ -4401,6 +4405,45 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     }
                 }
                 offset += sstep;
+            }
+        }
+
+        if( m_drawThreadMigrations != 0 )
+        {
+            auto ctxSwitch = m_worker.GetContextSwitchData( m_drawThreadMigrations );
+            if( ctxSwitch )
+            {
+                const auto color = HighlightColor( GetThreadColor( m_drawThreadMigrations, -8 ) );
+
+                auto& v = ctxSwitch->v;
+                auto it = std::lower_bound( v.begin(), v.end(), m_vd.zvStart, [] ( const auto& l, const auto& r ) { return l.End() < r; } );
+                if( it != v.begin() ) --it;
+                auto end = std::lower_bound( it, v.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+                if( end == v.end() ) --end;
+
+                while( it < end )
+                {
+                    const auto t0 = it->End();
+                    const auto cpu0 = it->Cpu();
+
+                    ++it;
+
+                    const auto t1 = it->Start();
+                    const auto cpu1 = it->Cpu();
+
+                    const auto px0 = ( t0 - m_vd.zvStart ) * pxns;
+                    const auto px1 = ( t1 - m_vd.zvStart ) * pxns;
+
+                    if( t1 - t0 < 2.f * nspx )
+                    {
+                        draw->AddLine( wpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), wpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color );
+                    }
+                    else
+                    {
+                        draw->AddLine( wpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), wpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), 0xFF000000, 4.f );
+                        draw->AddLine( wpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), wpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color, 2.f );
+                    }
+                }
             }
         }
 

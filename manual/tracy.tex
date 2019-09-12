@@ -1641,6 +1641,8 @@ This label is only available if context switch data was collected. Each line in 
 \item \emph{Gray} -- Threads assigned to other programs running in the system.
 \end{itemize}
 
+When the \faMousePointer{}~mouse pointer is hovered over either the CPU data zone, or the thread timeline label, Tracy will display a line connecting all zones associated with the selected thread. This can be used to easily see how the thread was migrating across the CPU cores.
+
 Careful examination of the data presented on this graph may allow you to determine areas where the profiled application was fighting for system resources with other programs (see section~\ref{checkenvironment}), or give you a hint to add more instrumentation macros.
 
 \subparagraph{Locks}

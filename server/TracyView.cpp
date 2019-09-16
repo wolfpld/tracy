@@ -2829,11 +2829,11 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     while( it < zitend )
     {
         auto& ev = **it;
-        const auto color = GetZoneColor( ev, tid, depth );
         const auto end = m_worker.GetZoneEnd( ev );
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
         {
+            const auto color = GetThreadColor( tid, depth );
             int num = 0;
             const auto px0 = ( ev.Start() - m_vd.zvStart ) * pxns;
             auto px1 = ( end - m_vd.zvStart ) * pxns;
@@ -2906,6 +2906,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         }
         else
         {
+            const auto color = GetZoneColor( ev, tid, depth );
             const char* zoneName = m_worker.GetZoneName( ev );
             int dmul = ev.text.active ? 2 : 1;
 

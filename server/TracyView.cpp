@@ -11908,6 +11908,8 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
 
 uint32_t View::GetThreadColor( uint64_t thread, int depth )
 {
+    if( !m_vd.dynamicColors ) return 0xFFCC5555;
+
     const uint8_t h = thread & 0xFF;
     const uint8_t s = 96;
     const uint8_t v = std::max( 96, 170 - depth * 8 );
@@ -11939,7 +11941,6 @@ uint32_t View::GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth 
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
     const auto color = srcloc.color;
     if( color != 0 ) return color | 0xFF000000;
-    if( !m_vd.dynamicColors ) return 0xFFCC5555;
     return GetThreadColor( thread, depth );
 }
 

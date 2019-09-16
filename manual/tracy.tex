@@ -1888,11 +1888,11 @@ The displayed data might not be calculated correctly and some zones may not be i
 
 Comparing the performance impact of the optimization work is not an easy thing to do. Benchmarking is often inconclusive, if even possible, in case of interactive applications, where the benchmarked function might not have a visible impact on frame render time. Doing isolated micro-benchmarks loses the execution environment of the application, in which many different functions compete for limited system resources.
 
-Tracy solves this problem by providing a compare traces functionality, very similar to the find zone window, described in section~\ref{findzone}.
+Tracy solves this problem by providing a compare traces functionality, very similar to the find zone window, described in section~\ref{findzone}. Traces can be compared either by zone or frame timing data.
 
 You would begin your work by recording a reference trace that represents the usual behavior of the program. Then, after the optimization of the code is completed, you record another trace, doing roughly what you did for the reference one. Having the optimized trace open you select the \emph{\faFolderOpen{}~Open second trace} option in the compare traces window and load the reference trace.
 
-Now things start to get familiar. You search for a zone, similarly like in the find zone window, choose the one you want in the \emph{matched source locations} drop-down, and then you look at the histogram. This time there are two overlaid graphs, one representing the current trace, and the second one representing the external (reference) trace (figure~\ref{comparehistogram}). You can easily see how the performance characteristics of the zone were affected by your modifications.
+Now things start to get familiar. You search for a zone, similarly like in the find zone window, choose the one you want in the \emph{matched source locations} drop-down, and then you look at the histogram\footnote{When comparing frame times you are presented with a list of available frame sets, without the search box.}. This time there are two overlaid graphs, one representing the current trace, and the second one representing the external (reference) trace (figure~\ref{comparehistogram}). You can easily see how the performance characteristics of the zone were affected by your modifications.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}

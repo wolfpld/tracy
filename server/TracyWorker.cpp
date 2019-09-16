@@ -1198,7 +1198,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
         if( fileVer >= FileVersion( 0, 5, 2 ) )
         {
-            f.Skip( sz * ( sizeof( MemEvent::ptr ) + + sizeof( MemEvent::size ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + sizeof( MemEvent::_time_thread_alloc ) + sizeof( MemEvent::_time_thread_free ) ) );
+            f.Skip( sz * ( sizeof( MemEvent::ptr ) + sizeof( MemEvent::size ) + sizeof( MemEvent::csAlloc ) + sizeof( MemEvent::csFree ) + sizeof( int64_t ) * 2 + sizeof( uint16_t ) * 2 ) );
         }
         else if( fileVer >= FileVersion( 0, 4, 4 ) )
         {

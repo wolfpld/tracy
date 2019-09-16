@@ -12182,9 +12182,12 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
 #ifndef TRACY_NO_STATISTICS
-    auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+    if( m_worker.AreSourceLocationZonesReady() )
+    {
+        auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+    }
 #endif
     TextFocused( "Self time:", TimeToString( selftime ) );
     if( ztime != 0 )

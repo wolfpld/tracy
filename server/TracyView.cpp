@@ -4871,7 +4871,9 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
             }
             else
             {
-                ImGui::Text( "%s (%s)", MemSizeToString( item->val ), RealToString( item->val, true ) );
+                ImGui::TextUnformatted( MemSizeToString( item->val ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( item->val, true ) );
             }
         }
         else

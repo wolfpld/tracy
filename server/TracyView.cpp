@@ -8571,34 +8571,6 @@ void View::DrawCompare()
         ImGui::TextDisabled( "(%s)", m_compare.second->GetCaptureName().c_str() );
     }
 
-    bool findClicked = false;
-
-    ImGui::PushItemWidth( -0.01f );
-    findClicked |= ImGui::InputTextWithHint( "###compare", "Enter zone name to search for", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
-    ImGui::PopItemWidth();
-
-#ifdef TRACY_EXTENDED_FONT
-    findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
-#else
-    findClicked |= ImGui::Button( "Find" );
-#endif
-    ImGui::SameLine();
-
-#ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_BAN " Clear" ) )
-#else
-    if( ImGui::Button( "Clear" ) )
-#endif
-    {
-        m_compare.Reset();
-    }
-    ImGui::SameLine();
-
-    ImGui::Checkbox( "Ignore case", &m_compare.ignoreCase );
-
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_TRASH_ALT " Unload" ) )
 #else
@@ -8611,120 +8583,274 @@ void View::DrawCompare()
         ImGui::End();
         return;
     }
-
-    if( findClicked )
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::Text( "Compare mode: " );
+    ImGui::SameLine();
+    const auto oldMode = m_compare.compareMode;
+    ImGui::RadioButton( "Zones", &m_compare.compareMode, 0 );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Frames", &m_compare.compareMode, 1 );
+    if( oldMode != m_compare.compareMode )
     {
         m_compare.Reset();
-        FindZonesCompare();
     }
 
-    if( m_compare.match[0].empty() && m_compare.match[1].empty() )
-    {
-        ImGui::End();
-        return;
-    }
+    bool findClicked = false;
 
-    ImGui::Separator();
-    ImGui::BeginChild( "##compare" );
-
-    if( ImGui::TreeNodeEx( "Matched source locations", ImGuiTreeNodeFlags_DefaultOpen ) )
+    if( m_compare.compareMode == 0 )
     {
+        ImGui::PushItemWidth( -0.01f );
+        findClicked |= ImGui::InputTextWithHint( "###compare", "Enter zone name to search for", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+        ImGui::PopItemWidth();
+
+#ifdef TRACY_EXTENDED_FONT
+        findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
+#else
+        findClicked |= ImGui::Button( "Find" );
+#endif
         ImGui::SameLine();
-        SmallCheckbox( "Link selection", &m_compare.link );
+
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_BAN " Clear" ) )
+#else
+        if( ImGui::Button( "Clear" ) )
+#endif
+        {
+            m_compare.Reset();
+        }
+        ImGui::SameLine();
+        ImGui::Checkbox( "Ignore case", &m_compare.ignoreCase );
+
+        if( findClicked )
+        {
+            m_compare.Reset();
+            FindZonesCompare();
+        }
+
+        if( m_compare.match[0].empty() && m_compare.match[1].empty() )
+        {
+            ImGui::End();
+            return;
+        }
 
         ImGui::Separator();
-        ImGui::Columns( 2 );
-#ifdef TRACY_EXTENDED_FONT
-        TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
-        ImGui::SameLine();
-#endif
-        ImGui::TextUnformatted( "This trace" );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%zu)", m_compare.match[0].size() );
-        ImGui::NextColumn();
-#ifdef TRACY_EXTENDED_FONT
-        TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
-        ImGui::SameLine();
-#endif
-        ImGui::TextUnformatted( "External trace" );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%zu)", m_compare.match[1].size() );
-        ImGui::Separator();
-        ImGui::NextColumn();
+        ImGui::BeginChild( "##compare" );
 
-        const auto prev0 = m_compare.selMatch[0];
-        int idx = 0;
-        for( auto& v : m_compare.match[0] )
+        if( ImGui::TreeNodeEx( "Matched source locations", ImGuiTreeNodeFlags_DefaultOpen ) )
         {
-            auto& srcloc = m_worker.GetSourceLocation( v );
-            auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
-            ImGui::PushID( idx );
-            ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[0], idx++ );
             ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_worker.GetString( srcloc.file ), srcloc.line );
-            ImGui::PopID();
-        }
-        ImGui::NextColumn();
+            SmallCheckbox( "Link selection", &m_compare.link );
 
-        const auto prev1 = m_compare.selMatch[1];
-        idx = 0;
-        for( auto& v : m_compare.match[1] )
-        {
-            auto& srcloc = m_compare.second->GetSourceLocation( v );
-            auto& zones = m_compare.second->GetZonesForSourceLocation( v ).zones;
-            ImGui::PushID( -1 - idx );
-            ImGui::RadioButton( m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[1], idx++ );
+            ImGui::Separator();
+            ImGui::Columns( 2 );
+#ifdef TRACY_EXTENDED_FONT
+            TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
             ImGui::SameLine();
-            ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_compare.second->GetString( srcloc.file ), srcloc.line );
-            ImGui::PopID();
-        }
-        ImGui::NextColumn();
-        ImGui::EndColumns();
-        ImGui::TreePop();
+#endif
+            ImGui::TextUnformatted( "This trace" );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%zu)", m_compare.match[0].size() );
+            ImGui::NextColumn();
+#ifdef TRACY_EXTENDED_FONT
+            TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
+            ImGui::SameLine();
+#endif
+            ImGui::TextUnformatted( "External trace" );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%zu)", m_compare.match[1].size() );
+            ImGui::Separator();
+            ImGui::NextColumn();
 
-        if( prev0 != m_compare.selMatch[0] || prev1 != m_compare.selMatch[1] )
-        {
-            m_compare.ResetSelection();
-
-            if( m_compare.link )
+            const auto prev0 = m_compare.selMatch[0];
+            int idx = 0;
+            for( auto& v : m_compare.match[0] )
             {
-                auto& srcloc0 = m_worker.GetSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
-                auto& srcloc1 = m_compare.second->GetSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
-                auto string0 = m_worker.GetString( srcloc0.name.active ? srcloc0.name : srcloc0.function );
-                auto string1 = m_compare.second->GetString( srcloc1.name.active ? srcloc1.name : srcloc1.function );
+                auto& srcloc = m_worker.GetSourceLocation( v );
+                auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
+                ImGui::PushID( idx );
+                ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[0], idx++ );
+                ImGui::SameLine();
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_worker.GetString( srcloc.file ), srcloc.line );
+                ImGui::PopID();
+            }
+            ImGui::NextColumn();
 
-                if( strcmp( string0, string1 ) != 0 )
+            const auto prev1 = m_compare.selMatch[1];
+            idx = 0;
+            for( auto& v : m_compare.match[1] )
+            {
+                auto& srcloc = m_compare.second->GetSourceLocation( v );
+                auto& zones = m_compare.second->GetZonesForSourceLocation( v ).zones;
+                ImGui::PushID( -1 - idx );
+                ImGui::RadioButton( m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[1], idx++ );
+                ImGui::SameLine();
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_compare.second->GetString( srcloc.file ), srcloc.line );
+                ImGui::PopID();
+            }
+            ImGui::NextColumn();
+            ImGui::EndColumns();
+            ImGui::TreePop();
+
+            if( prev0 != m_compare.selMatch[0] || prev1 != m_compare.selMatch[1] )
+            {
+                m_compare.ResetSelection();
+
+                if( m_compare.link )
                 {
-                    idx = 0;
-                    if( prev0 != m_compare.selMatch[0] )
+                    auto& srcloc0 = m_worker.GetSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
+                    auto& srcloc1 = m_compare.second->GetSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
+                    auto string0 = m_worker.GetString( srcloc0.name.active ? srcloc0.name : srcloc0.function );
+                    auto string1 = m_compare.second->GetString( srcloc1.name.active ? srcloc1.name : srcloc1.function );
+
+                    if( strcmp( string0, string1 ) != 0 )
                     {
-                        for( auto& v : m_compare.match[1] )
+                        idx = 0;
+                        if( prev0 != m_compare.selMatch[0] )
                         {
-                            auto& srcloc = m_compare.second->GetSourceLocation( v );
-                            auto string = m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-                            if( strcmp( string0, string ) == 0 )
+                            for( auto& v : m_compare.match[1] )
                             {
-                                m_compare.selMatch[1] = idx;
-                                break;
+                                auto& srcloc = m_compare.second->GetSourceLocation( v );
+                                auto string = m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                                if( strcmp( string0, string ) == 0 )
+                                {
+                                    m_compare.selMatch[1] = idx;
+                                    break;
+                                }
+                                idx++;
                             }
-                            idx++;
+                        }
+                        else
+                        {
+                            assert( prev1 != m_compare.selMatch[1] );
+                            for( auto& v : m_compare.match[0] )
+                            {
+                                auto& srcloc = m_worker.GetSourceLocation( v );
+                                auto string = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                                if( strcmp( string1, string ) == 0 )
+                                {
+                                    m_compare.selMatch[0] = idx;
+                                    break;
+                                }
+                                idx++;
+                            }
+
                         }
                     }
-                    else
-                    {
-                        assert( prev1 != m_compare.selMatch[1] );
-                        for( auto& v : m_compare.match[0] )
-                        {
-                            auto& srcloc = m_worker.GetSourceLocation( v );
-                            auto string = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
-                            if( strcmp( string1, string ) == 0 )
-                            {
-                                m_compare.selMatch[0] = idx;
-                                break;
-                            }
-                            idx++;
-                        }
+                }
+            }
+        }
 
+        if( m_compare.match[0].empty() || m_compare.match[1].empty() )
+        {
+            ImGui::Separator();
+            ImGui::TextWrapped( "Both traces must have matches." );
+            ImGui::End();
+            return;
+        }
+    }
+    else
+    {
+        assert( m_compare.compareMode == 1 );
+
+        ImGui::Separator();
+        ImGui::BeginChild( "##compare" );
+        if( ImGui::TreeNodeEx( "Frame sets", ImGuiTreeNodeFlags_DefaultOpen ) )
+        {
+            const auto& f0 = m_worker.GetFrames();
+            const auto& f1 = m_compare.second->GetFrames();
+
+            ImGui::SameLine();
+            SmallCheckbox( "Link selection", &m_compare.link );
+
+            ImGui::Separator();
+            ImGui::Columns( 2 );
+#ifdef TRACY_EXTENDED_FONT
+            TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
+            ImGui::SameLine();
+#endif
+            ImGui::TextUnformatted( "This trace" );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%zu)", f0.size() );
+            ImGui::NextColumn();
+#ifdef TRACY_EXTENDED_FONT
+            TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
+            ImGui::SameLine();
+#endif
+            ImGui::TextUnformatted( "External trace" );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%zu)", f1.size() );
+            ImGui::Separator();
+            ImGui::NextColumn();
+
+            const auto prev0 = m_compare.selMatch[0];
+            int idx = 0;
+            for( auto& v : f0 )
+            {
+                const auto name = m_worker.GetString( v->name );
+                ImGui::PushID( -1 - idx );
+                ImGui::RadioButton( name, &m_compare.selMatch[0], idx++ );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( v->frames.size(), true ) );
+                ImGui::PopID();
+            }
+            ImGui::NextColumn();
+
+            const auto prev1 = m_compare.selMatch[1];
+            idx = 0;
+            for( auto& v : f1 )
+            {
+                const auto name = m_compare.second->GetString( v->name );
+                ImGui::PushID( idx );
+                ImGui::RadioButton( name, &m_compare.selMatch[1], idx++ );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", RealToString( v->frames.size(), true ) );
+                ImGui::PopID();
+            }
+            ImGui::NextColumn();
+            ImGui::EndColumns();
+            ImGui::TreePop();
+
+            if( prev0 != m_compare.selMatch[0] || prev1 != m_compare.selMatch[1] )
+            {
+                m_compare.ResetSelection();
+
+                if( m_compare.link )
+                {
+                    auto string0 = m_worker.GetString( f0[m_compare.selMatch[0]]->name );
+                    auto string1 = m_compare.second->GetString( f1[m_compare.selMatch[1]]->name );
+
+                    if( strcmp( string0, string1 ) != 0 )
+                    {
+                        idx = 0;
+                        if( prev0 != m_compare.selMatch[0] )
+                        {
+                            for( auto& v : f1 )
+                            {
+                                auto string = m_compare.second->GetString( v->name );
+                                if( strcmp( string0, string ) == 0 )
+                                {
+                                    m_compare.selMatch[1] = idx;
+                                    break;
+                                }
+                                idx++;
+                            }
+                        }
+                        else
+                        {
+                            assert( prev1 != m_compare.selMatch[1] );
+                            for( auto& v : f0 )
+                            {
+                                auto string = m_worker.GetString( v->name );
+                                if( strcmp( string1, string ) == 0 )
+                                {
+                                    m_compare.selMatch[0] = idx;
+                                    break;
+                                }
+                                idx++;
+                            }
+                        }
                     }
                 }
             }
@@ -8732,52 +8858,105 @@ void View::DrawCompare()
     }
 
     ImGui::Separator();
-
-    if( m_compare.match[0].empty() || m_compare.match[1].empty() )
-    {
-        ImGui::TextWrapped( "Both traces must have matches." );
-        ImGui::End();
-        return;
-    }
-
     if( ImGui::TreeNodeEx( "Histogram", ImGuiTreeNodeFlags_DefaultOpen ) )
     {
         const auto ty = ImGui::GetFontSize();
 
-        auto& zoneData0 = m_worker.GetZonesForSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
-        auto& zoneData1 = m_compare.second->GetZonesForSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
-        auto& zones0 = zoneData0.zones;
-        auto& zones1 = zoneData1.zones;
+        int64_t tmin, tmax;
+        size_t size0, size1;
+        int64_t total0, total1;
+        double sumSq0, sumSq1;
 
-        auto tmin = std::min( zoneData0.min, zoneData1.min );
-        auto tmax = std::max( zoneData0.max, zoneData1.max );
-
-        const size_t zsz[2] = { zones0.size(), zones1.size() };
-        for( int k=0; k<2; k++ )
+        if( m_compare.compareMode == 0 )
         {
-            if( m_compare.sortedNum[k] != zsz[k] )
-            {
-                auto& zones = k == 0 ? zones0 : zones1;
-                auto& vec = m_compare.sorted[k];
-                vec.reserve( zsz[k] );
-                int64_t total = m_compare.total[k];
-                size_t i;
-                for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
-                {
-                    auto& zone = *zones[i].Zone();
-                    if( zone.end < 0 ) break;
-                    const auto t = zone.end - zone.Start();
-                    vec.emplace_back( t );
-                    total += t;
-                }
-                auto mid = vec.begin() + m_compare.sortedNum[k];
-                pdqsort_branchless( mid, vec.end() );
-                std::inplace_merge( vec.begin(), mid, vec.end() );
+            auto& zoneData0 = m_worker.GetZonesForSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
+            auto& zoneData1 = m_compare.second->GetZonesForSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
+            auto& zones0 = zoneData0.zones;
+            auto& zones1 = zoneData1.zones;
 
-                m_compare.average[k] = float( total ) / i;
-                m_compare.median[k] = vec[i/2];
-                m_compare.total[k] = total;
-                m_compare.sortedNum[k] = i;
+            tmin = std::min( zoneData0.min, zoneData1.min );
+            tmax = std::max( zoneData0.max, zoneData1.max );
+
+            size0 = zones0.size();
+            size1 = zones1.size();
+            total0 = zoneData0.total;
+            total1 = zoneData1.total;
+            sumSq0 = zoneData0.sumSq;
+            sumSq1 = zoneData1.sumSq;
+
+            const size_t zsz[2] = { size0, size1 };
+            for( int k=0; k<2; k++ )
+            {
+                if( m_compare.sortedNum[k] != zsz[k] )
+                {
+                    auto& zones = k == 0 ? zones0 : zones1;
+                    auto& vec = m_compare.sorted[k];
+                    vec.reserve( zsz[k] );
+                    int64_t total = m_compare.total[k];
+                    size_t i;
+                    for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
+                    {
+                        auto& zone = *zones[i].Zone();
+                        if( zone.end < 0 ) break;
+                        const auto t = zone.end - zone.Start();
+                        vec.emplace_back( t );
+                        total += t;
+                    }
+                    auto mid = vec.begin() + m_compare.sortedNum[k];
+                    pdqsort_branchless( mid, vec.end() );
+                    std::inplace_merge( vec.begin(), mid, vec.end() );
+
+                    m_compare.average[k] = float( total ) / i;
+                    m_compare.median[k] = vec[i/2];
+                    m_compare.total[k] = total;
+                    m_compare.sortedNum[k] = i;
+                }
+            }
+        }
+        else
+        {
+            assert( m_compare.compareMode == 1 );
+
+            const auto& f0 = m_worker.GetFrames()[m_compare.selMatch[0]];
+            const auto& f1 = m_compare.second->GetFrames()[m_compare.selMatch[1]];
+
+            tmin = std::min( f0->min, f1->min );
+            tmax = std::max( f0->max, f1->max );
+
+            size0 = f0->frames.size();
+            size1 = f1->frames.size();
+            total0 = f0->total;
+            total1 = f1->total;
+            sumSq0 = f0->sumSq;
+            sumSq1 = f1->sumSq;
+
+            const size_t zsz[2] = { size0, size1 };
+            for( int k=0; k<2; k++ )
+            {
+                if( m_compare.sortedNum[k] != zsz[k] )
+                {
+                    auto& frameSet = k == 0 ? f0 : f1;
+                    auto worker = k == 0 ? &m_worker : m_compare.second.get();
+                    auto& vec = m_compare.sorted[k];
+                    vec.reserve( zsz[k] );
+                    int64_t total = m_compare.total[k];
+                    size_t i;
+                    for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
+                    {
+                        if( worker->GetFrameEnd( *frameSet, i ) == worker->GetLastTime() ) break;
+                        const auto t = worker->GetFrameTime( *frameSet, i );
+                        vec.emplace_back( t );
+                        total += t;
+                    }
+                    auto mid = vec.begin() + m_compare.sortedNum[k];
+                    pdqsort_branchless( mid, vec.end() );
+                    std::inplace_merge( vec.begin(), mid, vec.end() );
+
+                    m_compare.average[k] = float( total ) / i;
+                    m_compare.median[k] = vec[i/2];
+                    m_compare.total[k] = total;
+                    m_compare.sortedNum[k] = i;
+                }
             }
         }
 
@@ -8831,13 +9010,13 @@ void View::DrawCompare()
                     double adj1 = 1;
                     if( m_compare.normalize )
                     {
-                        if( zones0.size() > zones1.size() )
+                        if( size0 > size1 )
                         {
-                            adj1 = double( zones0.size() ) / zones1.size();
+                            adj1 = double( size0 ) / size1;
                         }
                         else
                         {
-                            adj0 = double( zones1.size() ) / zones0.size();
+                            adj0 = double( size1 ) / size0;
                         }
                     }
 
@@ -8967,7 +9146,7 @@ void View::DrawCompare()
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
 #endif
-                    TextFocused( "Total time (this):", TimeToString( zoneData0.total * adj0 ) );
+                    TextFocused( "Total time (this):", TimeToString( total0 * adj0 ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
@@ -8975,10 +9154,10 @@ void View::DrawCompare()
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
 #endif
-                    TextFocused( "Total time (ext.):", TimeToString( zoneData1.total * adj1 ) );
-                    TextFocused( "Savings:", TimeToString( zoneData1.total * adj1 - zoneData0.total * adj0 ) );
+                    TextFocused( "Total time (ext.):", TimeToString( total1 * adj1 ) );
+                    TextFocused( "Savings:", TimeToString( total1 * adj1 - total0 * adj0 ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", ( zoneData0.total * adj0 ) / ( zoneData1.total * adj1 ) * 100 );
+                    ImGui::TextDisabled( "(%.2f%%)", ( total0 * adj0 ) / ( total1 * adj1 ) * 100 );
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
 
 #ifdef TRACY_EXTENDED_FONT
@@ -8998,7 +9177,7 @@ void View::DrawCompare()
                     {
                         const auto sz = sorted[0].size();
                         const auto avg = m_compare.average[0];
-                        const auto ss = zoneData0.sumSq - 2. * zoneData0.total * avg + avg * avg * sz;
+                        const auto ss = sumSq0 - 2. * total0 * avg + avg * avg * sz;
                         const auto sd = sqrt( ss / ( sz - 1 ) );
 
                         ImGui::SameLine();
@@ -9037,7 +9216,7 @@ void View::DrawCompare()
                     {
                         const auto sz = sorted[1].size();
                         const auto avg = m_compare.average[1];
-                        const auto ss = zoneData1.sumSq - 2. * zoneData1.total * avg + avg * avg * sz;
+                        const auto ss = sumSq1 - 2. * total1 * avg + avg * avg * sz;
                         const auto sd = sqrt( ss / ( sz - 1 ) );
 
                         ImGui::SameLine();

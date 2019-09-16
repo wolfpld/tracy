@@ -491,6 +491,7 @@ private:
         float median[2];
         int64_t total[2];
         int minBinVal = 1;
+        int compareMode = 0;
 
         void ResetSelection()
         {

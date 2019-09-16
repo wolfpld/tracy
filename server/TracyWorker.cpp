@@ -429,6 +429,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                 }
             }
         }
+        for( uint64_t j=0; j<fsz; j++ )
+        {
+            const auto timeSpan = GetFrameTime( *ptr, j );
+            if( timeSpan > 0 )
+            {
+                ptr->min = std::min( ptr->min, timeSpan );
+                ptr->max = std::max( ptr->max, timeSpan );
+                ptr->total += timeSpan;
+                ptr->sumSq += double( timeSpan ) * timeSpan;
+            }
+        }
         m_data.frames.Data()[i] = ptr;
     }
     m_data.framesBase = m_data.frames.Data()[0];
@@ -3331,6 +3342,17 @@ void Worker::ProcessFrameMark( const QueueFrameMark& ev )
     assert( fd->frames.empty() || fd->frames.back().start <= time );
     fd->frames.push_back( FrameEvent{ time, -1, frameImage } );
     m_data.lastTime = std::max( m_data.lastTime, time );
+
+#ifndef TRACY_NO_STATISTICS
+    const auto timeSpan = GetFrameTime( *fd, fd->frames.size() - 1 );
+    if( timeSpan > 0 )
+    {
+        fd->min = std::min( fd->min, timeSpan );
+        fd->max = std::max( fd->max, timeSpan );
+        fd->total += timeSpan;
+        fd->sumSq += double( timeSpan ) * timeSpan;
+    }
+#endif
 }
 
 void Worker::ProcessFrameMarkStart( const QueueFrameMark& ev )
@@ -3372,6 +3394,17 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     assert( fd->frames.back().end == -1 );
     fd->frames.back().end = time;
     m_data.lastTime = std::max( m_data.lastTime, time );
+
+#ifndef TRACY_NO_STATISTICS
+    const auto timeSpan = GetFrameTime( *fd, fd->frames.size() - 1 );
+    if( timeSpan > 0 )
+    {
+        fd->min = std::min( fd->min, timeSpan );
+        fd->max = std::max( fd->max, timeSpan );
+        fd->total += timeSpan;
+        fd->sumSq += double( timeSpan ) * timeSpan;
+    }
+#endif
 }
 
 void Worker::ProcessFrameImage( const QueueFrameImage& ev )

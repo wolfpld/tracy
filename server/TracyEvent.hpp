@@ -390,6 +390,11 @@ struct FrameData
     uint64_t name;
     Vector<FrameEvent> frames;
     uint8_t continuous;
+
+    int64_t min = std::numeric_limits<int64_t>::max();
+    int64_t max = std::numeric_limits<int64_t>::min();
+    int64_t total = 0;
+    double sumSq = 0;
 };
 
 struct StringLocation

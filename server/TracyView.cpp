@@ -5372,6 +5372,9 @@ void View::DrawZoneInfoWindow()
                 --eit;
                 if( ImGui::TreeNode( "Wait regions" ) )
                 {
+                    ImGui::SameLine();
+                    ImGui::Spacing();
+                    ImGui::SameLine();
                     SmallCheckbox( "Time relative to zone start", &m_ctxSwitchTimeRelativeToZone );
                     const int64_t adjust = m_ctxSwitchTimeRelativeToZone ? ev.Start() : 0;
 
@@ -5544,7 +5547,10 @@ void View::DrawZoneInfoWindow()
 
                     if( ImGui::TreeNode( "Allocations list" ) )
                     {
-                        SmallCheckbox( "Allocation times relative to zone start", &m_allocTimeRelativeToZone );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        SmallCheckbox( "Time relative to zone start", &m_allocTimeRelativeToZone );
 
                         std::vector<const MemEvent*> v;
                         v.reserve( nAlloc + nFree );
@@ -10629,8 +10635,10 @@ void View::DrawGoToFrame()
 
     bool goClicked = false;
     ImGui::Begin( "Go to frame", &m_goToFrame, ImGuiWindowFlags_AlwaysAutoResize );
-    goClicked |= ImGui::InputInt( "Frame", &frameNum, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+    ImGui::SetNextItemWidth( 120 );
+    goClicked |= ImGui::InputInt( "##goToFrame", &frameNum, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
     frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
+    ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
     goClicked |= ImGui::Button( ICON_FA_CROSSHAIRS " Go to" );
 #else
@@ -11668,6 +11676,16 @@ void View::DrawMemory()
         return;
     }
 
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_HISTORY " Restrict time", &m_memInfo.restrictTime );
+#else
+    ImGui::Checkbox( "Restrict time", &m_memInfo.restrictTime );
+#endif
+    ImGui::SameLine();
+    DrawHelpMarker( "Don't show allocations beyond the middle of timeline display (it is indicated by purple line)." );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
     TextDisabledUnformatted( "Total allocations:" );
     ImGui::SameLine();
     ImGui::Text( "%-15s", RealToString( mem.data.size(), true ) );
@@ -11682,14 +11700,6 @@ void View::DrawMemory()
     ImGui::SameLine();
     TextFocused( "Memory span:", MemSizeToString( mem.high - mem.low ) );
 
-#ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_HISTORY " Restrict time", &m_memInfo.restrictTime );
-#else
-    ImGui::Checkbox( "Restrict time", &m_memInfo.restrictTime );
-#endif
-    ImGui::SameLine();
-    DrawHelpMarker( "Don't show allocations beyond the middle of timeline display (it is indicated by purple line)." );
-
     const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
 
     ImGui::Separator();
@@ -11700,14 +11710,14 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Allocations" ) )
 #endif
     {
-        ImGui::InputTextWithHint( "###address", "Enter memory address to search for", m_memInfo.pattern, 1024 );
+        bool findClicked =  ImGui::InputTextWithHint( "###address", "Enter memory address to search for", m_memInfo.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::SameLine();
-
 #ifdef TRACY_EXTENDED_FONT
-        if( ImGui::Button( ICON_FA_SEARCH " Find" ) )
+        findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
 #else
-        if( ImGui::Button( "Find" ) )
+        findClicked |= ImGui::Button( "Find" );
 #endif
+        if( findClicked )
         {
             m_memInfo.ptrFind = strtoull( m_memInfo.pattern, nullptr, 0 );
         }
@@ -11803,6 +11813,9 @@ void View::DrawMemory()
 
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( items.size(), true ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         TextFocused( "Memory usage:", MemSizeToString( total ) );
 
         ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
@@ -11818,9 +11831,12 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Memory map" ) )
 #endif
     {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         TextFocused( "Single pixel:", MemSizeToString( 1 << ChunkBits ) );
         ImGui::SameLine();
-        ImGui::Separator();
+        ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Single line:", MemSizeToString( PageChunkSize ) );
 
@@ -11873,12 +11889,18 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Bottom-up call stack tree" ) )
 #endif
     {
+        ImGui::SameLine();
+        DrawHelpMarker( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         SmallCheckbox( "Group by function name", &m_groupCallstackTreeByNameBottomUp );
         ImGui::SameLine();
         DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
         ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         SmallCheckbox( "Only active allocations", &m_activeOnlyBottomUp );
-        TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
 
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeBottomUp( mem );
@@ -11896,12 +11918,18 @@ void View::DrawMemory()
     if( ImGui::TreeNode( "Top-down call stack tree" ) )
 #endif
     {
+        ImGui::SameLine();
+        DrawHelpMarker( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         SmallCheckbox( "Group by function name", &m_groupCallstackTreeByNameTopDown );
         ImGui::SameLine();
         DrawHelpMarker( "If enabled, only one source location will be displayed (which may be incorrect)." );
         ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         SmallCheckbox( "Only active allocations", &m_activeOnlyTopDown );
-        TextDisabledUnformatted( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
 
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeTopDown( mem );

@@ -36,6 +36,7 @@
 #include "../common/TracySystem.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
+#include "TracyTaskDispatch.hpp"
 #include "TracyVersion.hpp"
 #include "TracyWorker.hpp"
 
@@ -1347,38 +1348,98 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
 
         if( eventMask & EventType::FrameImages )
         {
-            size_t tmpbufsz = 0;
-            char* tmpbuf = nullptr;
             f.Read( sz );
             m_data.frameImage.reserve_exact( sz, m_slab );
             s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
-            for( uint64_t i=0; i<sz; i++ )
+            if( sz != 0 )
             {
-                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
-                auto fi = m_slab.Alloc<FrameImage>();
-                f.Read2( fi->w, fi->h );
-                f.Read( fi->flip );
-                const auto sz = size_t( fi->w * fi->h / 2 );
-                if( tmpbufsz < sz )
+                struct JobData
                 {
-                    tmpbufsz = sz;
-                    delete[] tmpbuf;
-                    tmpbuf = new char[sz];
-                }
-                f.Read( tmpbuf, sz );
-                fi->ptr = PackFrameImage( tmpbuf, fi->w, fi->h, fi->csz );
-                m_data.frameImage[i] = fi;
-            }
-            delete[] tmpbuf;
+                    enum State : int { InProgress, Available, DataReady };
+                    FrameImage* fi;
+                    char* buf = nullptr;
+                    size_t bufsz = 0;
+                    char* outbuf = nullptr;
+                    size_t outsz = 0;
+                    std::atomic<State> state = Available;
+                };
 
-            const auto& frames = GetFramesBase()->frames;
-            const auto fsz = uint32_t( frames.size() );
-            for( uint32_t i=0; i<fsz; i++ )
-            {
-                const auto& f = frames[i];
-                if( f.frameImage != -1 )
+                // Leave one thread for file reader, second thread for dispatch (this thread)
+                // Minimum 2 threads to have at least two buffers (one in use, second one filling up)
+                const auto jobs = std::max<int>( std::thread::hardware_concurrency() - 2, 2 );
+                auto td = std::make_unique<TaskDispatch>( jobs );
+                auto data = std::make_unique<JobData[]>( jobs );
+
+                for( uint64_t i=0; i<sz; i++ )
                 {
-                    m_data.frameImage[f.frameImage]->frameRef = i;
+                    s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                    auto fi = m_slab.Alloc<FrameImage>();
+                    f.Read2( fi->w, fi->h );
+                    f.Read( fi->flip );
+                    const auto sz = size_t( fi->w * fi->h / 2 );
+
+                    int idx = -1;
+                    for(;;)
+                    {
+                        for( int j=0; j<jobs; j++ )
+                        {
+                            const auto state = data[j].state.load( std::memory_order_acquire );
+                            if( state != JobData::InProgress )
+                            {
+                                if( state == JobData::DataReady )
+                                {
+                                    char* tmp = (char*)m_slab.AllocBig( data[j].fi->csz );
+                                    memcpy( tmp, data[j].outbuf, data[j].fi->csz );
+                                    data[j].fi->ptr = tmp;
+                                }
+                                idx = j;
+                                break;
+                            }
+                        }
+                        if( idx >= 0 ) break;
+                        std::this_thread::yield();
+                    }
+
+                    if( data[idx].bufsz < sz )
+                    {
+                        data[idx].bufsz = sz;
+                        delete[] data[idx].buf;
+                        data[idx].buf = new char[sz];
+                    }
+                    f.Read( data[idx].buf, sz );
+                    data[idx].fi = fi;
+
+                    data[idx].state.store( JobData::InProgress, std::memory_order_release );
+                    td->Queue( [this, &data, idx, fi] {
+                        PackFrameImage( data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w, fi->h, fi->csz );
+                        data[idx].state.store( JobData::DataReady, std::memory_order_release );
+                    } );
+
+                    m_data.frameImage[i] = fi;
+                }
+                td->Sync();
+                td.reset();
+                for( size_t i=0; i<jobs; i++ )
+                {
+                    if( data[i].state.load( std::memory_order_acquire ) == JobData::DataReady )
+                    {
+                        char* tmp = (char*)m_slab.AllocBig( data[i].fi->csz );
+                        memcpy( tmp, data[i].outbuf, data[i].fi->csz );
+                        data[i].fi->ptr = tmp;
+                    }
+                    delete[] data[i].buf;
+                    delete[] data[i].outbuf;
+                }
+
+                const auto& frames = GetFramesBase()->frames;
+                const auto fsz = uint32_t( frames.size() );
+                for( uint32_t i=0; i<fsz; i++ )
+                {
+                    const auto& f = frames[i];
+                    if( f.frameImage != -1 )
+                    {
+                        m_data.frameImage[f.frameImage]->frameRef = i;
+                    }
                 }
             }
         }

@@ -245,9 +245,9 @@ int main( int argc, char** argv )
     auto& style = ImGui::GetStyle();
     style.WindowBorderSize = 1.f * dpiScale;
     style.FrameBorderSize = 1.f * dpiScale;
-    style.FrameRounding = 5.f * dpiScale;
-    style.ScrollbarSize *= dpiScale;
+    style.FrameRounding = 5.f;
     style.Colors[ImGuiCol_ScrollbarBg] = ImVec4( 1, 1, 1, 0.03f );
+    style.ScaleAllSizes( dpiScale );
 
     ImVec4 clear_color = ImColor(114, 144, 154);
 

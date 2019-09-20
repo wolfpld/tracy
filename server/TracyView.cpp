@@ -11818,9 +11818,16 @@ void View::DrawMemory()
         ImGui::SameLine();
         TextFocused( "Memory usage:", MemSizeToString( total ) );
 
-        ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
-            ImGui::Text( "0x%" PRIx64, (*v)->ptr );
-        }, "##activeMem" );
+        if( !items.empty() )
+        {
+            ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
+                ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+            }, "##activeMem" );
+        }
+        else
+        {
+            TextDisabledUnformatted( "No active allocations" );
+        }
         ImGui::TreePop();
     }
 

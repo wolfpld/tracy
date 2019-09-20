@@ -5199,6 +5199,20 @@ const char* Worker::GetFailureString( Worker::Failure failure )
     return s_failureReasons[(int)failure];
 }
 
+void Worker::PackFrameImage( char*& buf, size_t& bufsz, const char* image, uint16_t w, uint16_t h, uint32_t& csz ) const
+{
+    const auto insz = size_t( w ) * size_t( h ) / 2;
+    const auto maxout = LZ4_COMPRESSBOUND( insz );
+    if( bufsz < maxout )
+    {
+        bufsz = maxout;
+        delete[] buf;
+        buf = new char[maxout];
+    }
+    const auto outsz = LZ4_compress_default( image, buf, insz, maxout );
+    csz = uint32_t( outsz );
+}
+
 const char* Worker::PackFrameImage( const char* image, uint16_t w, uint16_t h, uint32_t& csz )
 {
     const auto insz = size_t( w ) * size_t( h ) / 2;

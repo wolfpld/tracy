@@ -393,6 +393,7 @@ public:
     const FailureData& GetFailureData() const { return m_failureData; }
     static const char* GetFailureString( Failure failure );
 
+    void PackFrameImage( char*& buf, size_t& bufsz, const char* image, uint16_t w, uint16_t h, uint32_t& csz ) const;
     const char* PackFrameImage( const char* image, uint16_t w, uint16_t h, uint32_t& csz );
     const char* UnpackFrameImage( const FrameImage& image );
 

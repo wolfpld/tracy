@@ -11889,6 +11889,7 @@ void View::DrawMemory()
         ImGui::TreePop();
     }
 
+
     ImGui::Separator();
 #ifdef TRACY_EXTENDED_FONT
     if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Bottom-up call stack tree" ) )
@@ -11912,8 +11913,15 @@ void View::DrawMemory()
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeBottomUp( mem );
 
-        int idx = 0;
-        DrawFrameTreeLevel( tree, idx );
+        if( !tree.empty() )
+        {
+            int idx = 0;
+            DrawFrameTreeLevel( tree, idx );
+        }
+        else
+        {
+            TextDisabledUnformatted( "No call stack data collected" );
+        }
 
         ImGui::TreePop();
     }
@@ -11941,8 +11949,15 @@ void View::DrawMemory()
         auto& mem = m_worker.GetMemData();
         auto tree = GetCallstackFrameTreeTopDown( mem );
 
-        int idx = 0;
-        DrawFrameTreeLevel( tree, idx );
+        if( !tree.empty() )
+        {
+            int idx = 0;
+            DrawFrameTreeLevel( tree, idx );
+        }
+        else
+        {
+            TextDisabledUnformatted( "No call stack data collected" );
+        }
 
         ImGui::TreePop();
     }

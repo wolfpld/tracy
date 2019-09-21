@@ -1191,18 +1191,19 @@ After the client application has been instrumented, you will want to connect to 
 
 \subsection{Command line}
 
-You can capture a trace using a command line utility contained in the \texttt{capture} directory. To use it you will need to provide two parameters:
+You can capture a trace using a command line utility contained in the \texttt{capture} directory. To use it you will need to provide the following parameters:
 
 \begin{itemize}
 \item \texttt{-a address} -- specifies the IP address (or a domain name) of the client application.
 \item \texttt{-o output.tracy} -- the file name of the resulting trace.
+\item \texttt{-p port} -- network port which should be used (optional).
 \end{itemize}
 
 If there is no client running at the given address, the server will wait until a connection can be made. During the capture the following information will be displayed:
 
 \begin{verbatim}
 % ./capture -a 127.0.0.1 -o trace
-Connecting to 127.0.0.1...
+Connecting to 127.0.0.1:8086...
 Queue delay: 9 ns
 Timer resolution: 6 ns
    1.90 Mbps | Ratio:  40.8% | Real:    4.67 Mbps | Mem: 77.57 MB
@@ -1274,7 +1275,7 @@ You can use the \faSave{}~\emph{Save trace} button to save the current profile d
 
 \subsubsection{Automatic loading or connecting}
 
-You can pass trace file name as an argument to the profiler application to open the capture, skipping the welcome dialog. You can also use the \texttt{-a address} argument to automatically connect to the given address.
+You can pass trace file name as an argument to the profiler application to open the capture, skipping the welcome dialog. You can also use the \texttt{-a address} argument to automatically connect to the given address. To specify the network port, pass the \texttt{-p port} parameter.
 
 \subsection{Connection speed}
 

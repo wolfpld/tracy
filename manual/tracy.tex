@@ -777,6 +777,10 @@ logo=\bcattention
 Due to limits of internal bookkeeping in the profiler, each lock may be used in no more than 64 unique threads. If you have many short lived temporary threads, consider using a thread pool to limit the numbers of created threads.
 \end{bclogo}
 
+\subsubsection{Custom locks}
+
+If using the \texttt{TracyLockable} or \texttt{TracySharedLockable} wrappers does not fit your needs, you may want to add a more fine-grained instrumentation to your code. Classes \texttt{LockableCtx} and \texttt{SharedLockableCtx} contained in the \texttt{TracyLock.hpp} header contain all the required functionality. Lock implementations in classes \texttt{Lockable} and \texttt{SharedLockable} show how to properly perform context handling.
+
 \subsection{Plotting data}
 \label{plottingdata}
 

@@ -12140,7 +12140,7 @@ uint32_t View::GetThreadColor( uint64_t thread, int depth )
 {
     if( !m_vd.dynamicColors ) return 0xFFCC5555;
 
-    const uint8_t h = thread & 0xFF;
+    const uint8_t h = ( thread * 11400714819323198485ull ) & 0xFF;
     const uint8_t s = 96;
     const uint8_t v = std::max( 96, 170 - depth * 8 );
 

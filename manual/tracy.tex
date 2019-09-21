@@ -306,6 +306,10 @@ logo=\bcattention
 The client with on-demand profiling enabled needs to perform additional bookkeeping, in order to present a coherent application state to the profiler. This incurs additional time cost for each profiling event.
 \end{bclogo}
 
+\subsubsection{Client discovery}
+
+By default Tracy client will broadcast its presence to the local network. If you want to disable this feature, define the \texttt{TRACY\_NO\_BROADCAST} macro.
+
 \subsubsection{Setup for multi-DLL projects}
 
 In projects that consist of multiple DLLs/shared objects things are a bit different. Compiling \texttt{TracyClient.cpp} into every DLL is not an option because this would result in several instances of Tracy objects lying around in the process. We rather need to pass the instances of them to the different DLLs to be reused there.
@@ -345,6 +349,12 @@ mount -o remount,hidepid=0 /proc
 \end{lstlisting}
 
 The first command will allow access to system CPU statistics. The second one will allow inspection of foreign processes (which is required for context switch capture). \emph{Be sure that you are fully aware of the consequences of making these changes.}
+
+\subsubsection{Changing network port}
+
+Network communication between the client and the server is performed using network port 8086. The profiling session utilizes the TCP protocol and client broadcasts are done over UDP.
+
+If for some reason you can't use this network port, you may add the \texttt{TRACY\_PORT} macro in the client, which should define a numerical port value to use instead.
 
 \subsubsection{Limitations}
 
@@ -422,7 +432,6 @@ The following defines may be of interest:
 \item \texttt{TRACY\_NO\_STATISTICS} -- Tracy will perform statistical data collection on the fly, if this macro is \emph{not} defined. This allows extended analysis of the trace (for example, you can perform a live search for matching zones) at a small CPU processing cost and a considerable memory usage increase (at least 8 bytes per zone).
 \item \texttt{TRACY\_EXTENDED\_FONT} -- use this define, if you have loaded extra symbol ranges in your font and added icons\footnote{See the \texttt{profiler} utility source code for reference.}. Otherwise, some characters will be replaced with an ASCII compatible version. For example, the micro (\si\micro) symbol will be replaced with \texttt{u}, and \faExclamationTriangle{} icon will be replaced with \texttt{/!\textbackslash}.
 \item \texttt{TRACY\_ROOT\_WINDOW} -- the main profiler view will occupy whole window if this macro is defined. Additional setup is required for this to work. If you are embedding the server into your application you probably do \emph{not} want this.
-\item \texttt{TRACY\_NO\_BROADCAST} -- client will not broadcast its presence to the local network.
 \end{itemize}
 
 \subsection{Naming threads}

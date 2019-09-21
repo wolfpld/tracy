@@ -110,8 +110,8 @@ enum { MinFrameSize = 5 };
 
 static View* s_instance = nullptr;
 
-View::View( const char* addr, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb )
-    : m_worker( addr )
+View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb )
+    : m_worker( addr, port )
     , m_staticView( false )
     , m_pause( false )
     , m_frames( nullptr )

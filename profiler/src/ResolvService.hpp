@@ -19,7 +19,7 @@ class ResolvService
     };
 
 public:
-    ResolvService();
+    ResolvService( int port );
     ~ResolvService();
 
     void Query( uint32_t ip, const std::function<void(std::string&&)>& callback );
@@ -31,6 +31,7 @@ private:
     std::mutex m_lock;
     std::condition_variable m_cv;
     std::vector<QueueItem> m_queue;
+    int m_port;
     std::thread m_thread;
 };
 

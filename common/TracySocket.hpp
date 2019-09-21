@@ -21,7 +21,7 @@ public:
     Socket( int sock );
     ~Socket();
 
-    bool Connect( const char* addr, const char* port );
+    bool Connect( const char* addr, int port );
     void Close();
 
     int Send( const void* buf, int len );

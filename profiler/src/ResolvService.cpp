@@ -8,8 +8,9 @@
 
 #include "ResolvService.hpp"
 
-ResolvService::ResolvService()
+ResolvService::ResolvService( int port )
     : m_exit( false )
+    , m_port( port )
     , m_thread( [this] { Worker(); } )
 {
 }
@@ -32,7 +33,7 @@ void ResolvService::Worker()
 {
     struct sockaddr_in addr = {};
     addr.sin_family = AF_INET;
-    addr.sin_port = 8086;
+    addr.sin_port = m_port;
 
     char buf[128];
 

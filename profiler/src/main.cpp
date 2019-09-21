@@ -104,6 +104,9 @@ int main( int argc, char** argv )
     std::unique_ptr<tracy::View> view;
     tracy::BadVersionState badVer;
 
+    int port = 8086;
+    const char* connectTo = nullptr;
+
     if( argc == 2 )
     {
         auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
@@ -112,9 +115,30 @@ int main( int argc, char** argv )
             view = std::make_unique<tracy::View>( *f );
         }
     }
-    else if( argc == 3 && strcmp( argv[1], "-a" ) == 0 )
+    else
     {
-        view = std::make_unique<tracy::View>( argv[2] );
+        while( argc >= 3 )
+        {
+            if( strcmp( argv[1], "-a" ) == 0 )
+            {
+                connectTo = argv[2];
+            }
+            else if( strcmp( argv[1], "-p" ) == 0 )
+            {
+                port = atoi( argv[2] );
+            }
+            else
+            {
+                fprintf( stderr, "Bad parameter: %s", argv[1] );
+                exit( 1 );
+            }
+            argc -= 2;
+            argv += 2;
+        }
+    }
+    if( connectTo )
+    {
+        view = std::make_unique<tracy::View>( connectTo, port );
     }
 
     char title[128];
@@ -261,7 +285,7 @@ int main( int argc, char** argv )
 
     std::mutex resolvLock;
     tracy::flat_hash_map<std::string, std::string> resolvMap;
-    ResolvService resolv;
+    ResolvService resolv( port );
 
     glfwShowWindow( window );
 
@@ -296,7 +320,7 @@ int main( int argc, char** argv )
             if( !broadcastListen )
             {
                 broadcastListen = std::make_unique<tracy::UdpListen>();
-                if( !broadcastListen->Listen( 8086 ) )
+                if( !broadcastListen->Listen( port ) )
                 {
                     broadcastListen.reset();
                 }
@@ -456,7 +480,7 @@ int main( int argc, char** argv )
                 }
                 connHistVec = RebuildConnectionHistory( connHistMap );
 
-                view = std::make_unique<tracy::View>( addr, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
+                view = std::make_unique<tracy::View>( addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
             }
             ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
             if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
@@ -527,7 +551,7 @@ int main( int argc, char** argv )
                     if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
                     if( ImGui::Selectable( name->second.c_str(), &sel, flags ) && !loadThread.joinable() )
                     {
-                        view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
+                        view = std::make_unique<tracy::View>( v.second.address.c_str(), port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
                     }
                     ImGui::NextColumn();
                     const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;

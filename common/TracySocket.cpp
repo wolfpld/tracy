@@ -86,7 +86,7 @@ Socket::~Socket()
     }
 }
 
-bool Socket::Connect( const char* addr, const char* port )
+bool Socket::Connect( const char* addr, int port )
 {
     assert( m_sock == -1 );
 
@@ -97,7 +97,10 @@ bool Socket::Connect( const char* addr, const char* port )
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if( getaddrinfo( addr, port, &hints, &res ) != 0 ) return false;
+    char portbuf[32];
+    sprintf( portbuf, "%i", port );
+
+    if( getaddrinfo( addr, portbuf, &hints, &res ) != 0 ) return false;
     int sock = 0;
     for( ptr = res; ptr; ptr = ptr->ai_next )
     {

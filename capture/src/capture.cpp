@@ -30,7 +30,7 @@ void SigInt( int )
 
 void Usage()
 {
-    printf( "Usage: capture -a address -o output.tracy\n" );
+    printf( "Usage: capture -a address -o output.tracy [-p port]\n" );
     exit( 1 );
 }
 
@@ -46,9 +46,10 @@ int main( int argc, char** argv )
 
     const char* address = nullptr;
     const char* output = nullptr;
+    int port = 8086;
 
     int c;
-    while( ( c = getopt( argc, argv, "a:o:" ) ) != -1 )
+    while( ( c = getopt( argc, argv, "a:o:p:" ) ) != -1 )
     {
         switch( c )
         {
@@ -58,6 +59,9 @@ int main( int argc, char** argv )
         case 'o':
             output = optarg;
             break;
+        case 'p':
+            port = atoi( optarg );
+            break;
         default:
             Usage();
             break;
@@ -66,9 +70,9 @@ int main( int argc, char** argv )
 
     if( !address || !output ) Usage();
 
-    printf( "Connecting to %s...", address );
+    printf( "Connecting to %s:%i...", address, port );
     fflush( stdout );
-    tracy::Worker worker( address );
+    tracy::Worker worker( address, port );
     while( !worker.IsConnected() )
     {
         const auto handshake = worker.GetHandshakeStatus();

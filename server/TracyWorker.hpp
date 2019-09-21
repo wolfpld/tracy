@@ -270,7 +270,7 @@ public:
         NUM_FAILURES
     };
 
-    Worker( const char* addr );
+    Worker( const char* addr, int port );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All );
     ~Worker();
 
@@ -536,6 +536,7 @@ private:
 
     Socket m_sock;
     std::string m_addr;
+    int m_port;
 
     std::thread m_thread;
     std::atomic<bool> m_connected { false };

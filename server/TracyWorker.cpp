@@ -234,8 +234,9 @@ static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEven
 
 LoadProgress Worker::s_loadProgress;
 
-Worker::Worker( const char* addr )
+Worker::Worker( const char* addr, int port )
     : m_addr( addr )
+    , m_port( port )
     , m_hasData( false )
     , m_stream( LZ4_createStreamDecode() )
     , m_buffer( new char[TargetFrameSize*3 + 1] )
@@ -2125,7 +2126,7 @@ void Worker::Exec()
     for(;;)
     {
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-        if( m_sock.Connect( m_addr.c_str(), "8086" ) ) break;
+        if( m_sock.Connect( m_addr.c_str(), m_port ) ) break;
     }
 
     auto lz4buf = std::make_unique<char[]>( LZ4Size );

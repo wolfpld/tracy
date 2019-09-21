@@ -20,4 +20,6 @@ build_script:
   - sh: make -C profiler/build/unix debug release
   - sh: make -C capture/build/unix debug release
   - sh: make -C test
+  - sh: make -C test clean
+  - sh: make -C test TRACYFLAGS=-DTRACY_ON_DEMAND
 test: off

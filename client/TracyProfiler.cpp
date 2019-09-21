@@ -1156,6 +1156,12 @@ void Profiler::Worker()
 
     SetThreadName( "Tracy Profiler" );
 
+#ifdef TRACY_PORT
+    const auto port = TRACY_PORT;
+#else
+    const auto port = 8086;
+#endif
+
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 
     rpmalloc_thread_initialize();
@@ -1198,7 +1204,7 @@ void Profiler::Worker()
     moodycamel::ConsumerToken token( GetQueue() );
 
     ListenSocket listen;
-    if( !listen.Listen( "8086", 8 ) )
+    if( !listen.Listen( port, 8 ) )
     {
         for(;;)
         {
@@ -1215,7 +1221,7 @@ void Profiler::Worker()
 #ifndef TRACY_NO_BROADCAST
     m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
     new(m_broadcast) UdpBroadcast();
-    if( !m_broadcast->Open( "255.255.255.255", "8086" ) )
+    if( !m_broadcast->Open( "255.255.255.255", port ) )
     {
         m_broadcast->~UdpBroadcast();
         tracy_free( m_broadcast );
@@ -1256,7 +1262,7 @@ void Profiler::Worker()
                     lastBroadcast = t;
                     const auto ts = std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
                     broadcastMsg.activeTime = uint32_t( ts - m_epoch );
-                    m_broadcast->Send( 8086, &broadcastMsg, broadcastLen );
+                    m_broadcast->Send( port, &broadcastMsg, broadcastLen );
                 }
             }
         }

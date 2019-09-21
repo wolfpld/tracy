@@ -52,7 +52,7 @@ public:
     ListenSocket();
     ~ListenSocket();
 
-    bool Listen( const char* port, int backlog );
+    bool Listen( int port, int backlog );
     Socket* Accept();
     void Close();
 
@@ -71,7 +71,7 @@ public:
     UdpBroadcast();
     ~UdpBroadcast();
 
-    bool Open( const char* addr, const char* port );
+    bool Open( const char* addr, int port );
     void Close();
 
     int Send( int port, const void* data, int len );

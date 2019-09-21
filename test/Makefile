@@ -1,5 +1,6 @@
 OPTFLAGS := -g3 -fmerge-constants
-CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE -rdynamic
+TRACYFLAGS :=
+CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE $(TRACYFLAGS) -rdynamic
 CXXFLAGS := $(CFLAGS) -std=gnu++17
 DEFINES +=
 INCLUDES :=

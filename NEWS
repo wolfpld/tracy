@@ -40,6 +40,7 @@ v0.6 (xxxx-xx-xx)
 - Zone color is now displayed in zone information window.
 - Zone colors can now be determined basing on thread and depth.
 - Frame times can be now compared.
+- Expose more lock handling functionality.
 
 v0.5 (2019-08-10)
 -----------------

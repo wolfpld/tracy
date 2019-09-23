@@ -42,6 +42,7 @@ v0.6 (xxxx-xx-xx)
 - Frame times can be now compared.
 - Expose more lock handling functionality.
 - Network port can be now specified by the user.
+- Proper handling of multithreaded Vulkan code.
 
 v0.5 (2019-08-10)
 -----------------

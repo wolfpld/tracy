@@ -2132,15 +2132,33 @@ void View::DrawZones()
                     {
                         if( !v->threadData.empty() )
                         {
-                            ImGui::TextDisabled( "Threads:" );
-                            ImGui::Indent();
-                            for( auto& td : v->threadData )
+                            if( v->threadData.size() == 1 )
                             {
-                                ImGui::TextUnformatted( m_worker.GetThreadName( td.first ) );
+                                auto it = v->threadData.begin();
+                                auto tid = it->first;
+                                if( tid == 0 )
+                                {
+                                    if( !it->second.timeline.empty() )
+                                    {
+                                        tid = m_worker.DecompressThread( (*it->second.timeline.begin())->thread );
+                                    }
+                                }
+                                TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                                 ImGui::SameLine();
-                                ImGui::TextDisabled( "(%s)", RealToString( td.first, true ) );
+                                ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
                             }
-                            ImGui::Unindent();
+                            else
+                            {
+                                ImGui::TextDisabled( "Threads:" );
+                                ImGui::Indent();
+                                for( auto& td : v->threadData )
+                                {
+                                    ImGui::TextUnformatted( m_worker.GetThreadName( td.first ) );
+                                    ImGui::SameLine();
+                                    ImGui::TextDisabled( "(%s)", RealToString( td.first, true ) );
+                                }
+                                ImGui::Unindent();
+                            }
                         }
                     }
                     if( !v->threadData.empty() )

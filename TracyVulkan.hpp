@@ -97,10 +97,7 @@ public:
         vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
         vkQueueWaitIdle( queue );
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
+        auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
@@ -108,12 +105,10 @@ public:
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, uint8_t( 0 ) );
-
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );
 #endif
-
-        tail.store( magic + 1, std::memory_order_release );
+        Profiler::QueueSerialFinish();
 
         m_res = (int64_t*)tracy_malloc( sizeof( int64_t ) * m_queryCount );
     }
@@ -156,18 +151,14 @@ public:
             return;
         }
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-
         for( unsigned int idx=0; idx<cnt; idx++ )
         {
-            auto item = token->enqueue_begin( magic );
+            auto item = Profiler::QueueSerial();
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, m_res[idx] );
             MemWrite( &item->gpuTime.queryId, uint16_t( m_tail + idx ) );
             MemWrite( &item->gpuTime.context, m_context );
-            tail.store( magic + 1, std::memory_order_release );
+            Profiler::QueueSerialFinish();
         }
 
         vkCmdResetQueryPool( cmdbuf, m_query, m_tail, cnt );
@@ -218,18 +209,14 @@ public:
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
-        Magic magic;
-        const auto thread = GetThreadHandle();
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
+        auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
-        MemWrite( &item->gpuZoneBegin.thread, thread );
+        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
-        tail.store( magic + 1, std::memory_order_release );
+        Profiler::QueueSerialFinish();
     }
 
     tracy_force_inline VkCtxScope( VkCtx* ctx, const SourceLocationData* srcloc, VkCommandBuffer cmdbuf, int depth )
@@ -246,18 +233,14 @@ public:
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
-        Magic magic;
-        const auto thread = GetThreadHandle();
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
+        auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstack );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
-        MemWrite( &item->gpuZoneBegin.thread, thread );
+        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
-        tail.store( magic + 1, std::memory_order_release );
+        Profiler::QueueSerialFinish();
 
         GetProfiler().SendCallstack( depth );
     }
@@ -270,15 +253,12 @@ public:
         const auto queryId = m_ctx->NextQueryId();
         vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_ctx->m_query, queryId );
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
+        auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuZoneEnd );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneEnd.context, m_ctx->GetId() );
-        tail.store( magic + 1, std::memory_order_release );
+        Profiler::QueueSerialFinish();
     }
 
 private:

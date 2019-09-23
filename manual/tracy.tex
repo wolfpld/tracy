@@ -895,14 +895,6 @@ To mark a GPU zone use the \texttt{TracyVkZone(ctx, cmdbuf, name)} macro, where 
 
 You also need to periodically collect the GPU events using the \texttt{TracyVkCollect(ctx, cmdbuf)} macro\footnote{It is considerably faster than the OpenGL's \texttt{TracyGpuCollect}.}. The provided command buffer must be in the recording state and outside of a render pass instance.
 
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bcattention
-]{Caveats}
-Vulkan support is very bare at the moment. Multi-threaded submitting commands to command buffers is not supported right now.
-\end{bclogo}
-
 \subsubsection{Multiple zones in one scope}
 
 Putting more than one GPU zone macro in a single scope features the same issue as with the \texttt{ZoneScoped} macros, described in section~\ref{multizone} (but this time the variable name is \texttt{\_\_\_tracy\_gpu\_zone}).

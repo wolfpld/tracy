@@ -965,20 +965,41 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             s_loadProgress.subTotal.store( ctx->count, std::memory_order_relaxed );
             s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
         }
-        int64_t refTime = 0;
-        int64_t refGpuTime = 0;
         f.Read( ctx->period );
-        uint64_t tsz;
-        f.Read( tsz );
-        if( tsz != 0 )
+        if( fileVer >= FileVersion( 0, 5, 7 ) )
         {
-            if( fileVer <= FileVersion( 0, 5, 1 ) )
+            uint64_t tdsz;
+            f.Read( tdsz );
+            for( uint64_t j=0; j<tdsz; j++ )
             {
-                ReadTimelinePre052( f, ctx->timeline, tsz, refTime, refGpuTime, fileVer );
+                uint64_t tid, tsz;
+                f.Read2( tid, tsz );
+                if( tsz != 0 )
+                {
+                    int64_t refTime = 0;
+                    int64_t refGpuTime = 0;
+                    auto td = ctx->threadData.emplace( tid, GpuCtxThreadData {} ).first;
+                    ReadTimeline( f, td->second.timeline, tsz, refTime, refGpuTime );
+                }
             }
-            else
+        }
+        else
+        {
+            uint64_t tsz;
+            f.Read( tsz );
+            if( tsz != 0 )
             {
-                ReadTimeline( f, ctx->timeline, tsz, refTime, refGpuTime );
+                int64_t refTime = 0;
+                int64_t refGpuTime = 0;
+                auto td = ctx->threadData.emplace( 0, GpuCtxThreadData {} ).first;
+                if( fileVer <= FileVersion( 0, 5, 1 ) )
+                {
+                    ReadTimelinePre052( f, td->second.timeline, tsz, refTime, refGpuTime, fileVer );
+                }
+                else
+                {
+                    ReadTimeline( f, td->second.timeline, tsz, refTime, refGpuTime );
+                }
             }
         }
         m_data.gpuData[i] = ctx;
@@ -1643,8 +1664,11 @@ Worker::~Worker()
     }
     for( auto& v : m_data.gpuData )
     {
-        v->timeline.~Vector();
-        v->stack.~Vector();
+        for( auto& vt : v->threadData )
+        {
+            vt.second.timeline.~Vector();
+            vt.second.stack.~Vector();
+        }
     }
     for( auto& v : m_data.plots.Data() )
     {
@@ -3861,24 +3885,33 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     zone->callstack = 0;
     zone->child = -1;
 
+    uint64_t ztid;
     if( ctx->thread == 0 )
     {
         // Vulkan context is not bound to any single thread.
         zone->thread = CompressThread( ev.thread );
+        ztid = ev.thread;
     }
     else
     {
         // OpenGL doesn't need per-zone thread id. It still can be sent,
         // because it may be needed for callstack collection purposes.
         zone->thread = 0;
+        ztid = 0;
     }
 
     m_data.lastTime = std::max( m_data.lastTime, zone->cpuStart );
 
-    auto timeline = &ctx->timeline;
-    if( !ctx->stack.empty() )
+    auto td = ctx->threadData.find( ztid );
+    if( td == ctx->threadData.end() )
     {
-        auto back = ctx->stack.back();
+        td = ctx->threadData.emplace( ztid, GpuCtxThreadData {} ).first;
+    }
+    auto timeline = &td->second.timeline;
+    auto& stack = td->second.stack;
+    if( !stack.empty() )
+    {
+        auto back = stack.back();
         if( back->child < 0 )
         {
             back->child = int32_t( m_data.gpuChildren.size() );
@@ -3888,8 +3921,7 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     }
 
     timeline->push_back( zone );
-
-    ctx->stack.push_back( zone );
+    stack.push_back( zone );
 
     assert( !ctx->query[ev.queryId] );
     ctx->query[ev.queryId] = zone;
@@ -3916,8 +3948,11 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
 
-    assert( !ctx->stack.empty() );
-    auto zone = ctx->stack.back_and_pop();
+    auto td = ctx->threadData.find( ev.thread );
+    assert( td != ctx->threadData.end() );
+
+    assert( !td->second.stack.empty() );
+    auto zone = td->second.stack.back_and_pop();
 
     assert( !ctx->query[ev.queryId] );
     ctx->query[ev.queryId] = zone;
@@ -5027,13 +5062,20 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& ctx : m_data.gpuData )
     {
-        int64_t refTime = 0;
-        int64_t refGpuTime = 0;
         f.Write( &ctx->thread, sizeof( ctx->thread ) );
         f.Write( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
         f.Write( &ctx->count, sizeof( ctx->count ) );
         f.Write( &ctx->period, sizeof( ctx->period ) );
-        WriteTimeline( f, ctx->timeline, refTime, refGpuTime );
+        sz = ctx->threadData.size();
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& td : ctx->threadData )
+        {
+            int64_t refTime = 0;
+            int64_t refGpuTime = 0;
+            uint64_t tid = td.first;
+            f.Write( &tid, sizeof( tid ) );
+            WriteTimeline( f, td.second.timeline, refTime, refGpuTime );
+        }
     }
 
     sz = m_data.plots.Data().size();

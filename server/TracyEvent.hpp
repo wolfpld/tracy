@@ -299,15 +299,20 @@ struct ThreadData
     Vector<uint32_t> zoneIdStack;
 };
 
+struct GpuCtxThreadData
+{
+    Vector<GpuEvent*> timeline;
+    Vector<GpuEvent*> stack;
+};
+
 struct GpuCtxData
 {
     int64_t timeDiff;
     uint64_t thread;
     uint64_t count;
-    Vector<GpuEvent*> timeline;
-    Vector<GpuEvent*> stack;
     uint8_t accuracyBits;
     float period;
+    flat_hash_map<uint64_t, GpuCtxThreadData, nohash<uint64_t>> threadData;
     GpuEvent* query[64*1024];
 };
 

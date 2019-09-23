@@ -2024,14 +2024,44 @@ void View::DrawZones()
             const auto oldOffset = offset;
             ImGui::PushClipRect( wpos, wpos + ImVec2( w, oldOffset + vis.height ), true );
 
+            ImGui::PushFont( m_smallFont );
+            const auto sty = ImGui::GetFontSize();
+            const auto sstep = sty + 1;
+            ImGui::PopFont();
+
+            const auto singleThread = v->threadData.size() == 1;
             int depth = 0;
             offset += ostep;
-            if( showFull && !v->timeline.empty() && v->timeline.front()->gpuStart != std::numeric_limits<int64_t>::max() )
+            if( showFull && !v->threadData.empty() )
             {
-                const auto begin = v->timeline.front()->gpuStart;
-                const auto drift = GpuDrift( v );
-                depth = DispatchGpuZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, v->thread, yMin, yMax, begin, drift );
-                offset += ostep * depth;
+                for( auto& td : v->threadData )
+                {
+                    assert( !td.second.timeline.empty() );
+                    if( td.second.timeline.front()->gpuStart != std::numeric_limits<int64_t>::max() )
+                    {
+                        const auto begin = td.second.timeline.front()->gpuStart;
+                        const auto drift = GpuDrift( v );
+                        if( !singleThread ) offset += sstep;
+                        const auto partDepth = DispatchGpuZoneLevel( td.second.timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, v->thread, yMin, yMax, begin, drift );
+                        if( partDepth != 0 )
+                        {
+                            if( !singleThread )
+                            {
+                                ImGui::PushFont( m_smallFont );
+                                DrawTextContrast( draw, wpos + ImVec2( ty, offset-1-sstep ), 0xFFFFAAAA, m_worker.GetThreadName( td.first ) );
+                                draw->AddLine( wpos + ImVec2( 0, offset+sty-sstep ), wpos + ImVec2( w, offset+sty-sstep ), 0x22FFAAAA );
+                                ImGui::PopFont();
+                            }
+
+                            offset += ostep * partDepth;
+                            depth += partDepth;
+                        }
+                        else if( !singleThread )
+                        {
+                            offset -= sstep;
+                        }
+                    }
+                }
             }
             offset += ostep * 0.2f;
 
@@ -2073,11 +2103,20 @@ void View::DrawZones()
                     }
                     if( ImGui::IsMouseClicked( 2 ) )
                     {
-                        const auto t0 = v->timeline.front()->gpuStart;
-                        if( t0 != std::numeric_limits<int64_t>::max() )
+                        int64_t t0 = std::numeric_limits<int64_t>::max();
+                        int64_t t1 = std::numeric_limits<int64_t>::min();
+                        for( auto& td : v->threadData )
                         {
-                            // FIXME
-                            const auto t1 = std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( *v->timeline.back() ) );
+                            const auto _t0 = td.second.timeline.front()->gpuStart;
+                            if( _t0 != std::numeric_limits<int64_t>::max() )
+                            {
+                                // FIXME
+                                t0 = std::min( t0, _t0 );
+                                t1 = std::max( t1, std::min( m_worker.GetLastTime(), m_worker.GetZoneEnd( *td.second.timeline.back() ) ) );
+                            }
+                        }
+                        if( t0 < t1 )
+                        {
                             ZoomToRange( t0, t1 );
                         }
                     }
@@ -2089,16 +2128,39 @@ void View::DrawZones()
                     {
                         TextFocused( "Thread:", m_worker.GetThreadName( v->thread ) );
                     }
-                    if( !v->timeline.empty() )
+                    else
                     {
-                        const auto t = v->timeline.front()->gpuStart;
-                        if( t != std::numeric_limits<int64_t>::max() )
+                        if( !v->threadData.empty() )
                         {
-                            TextFocused( "Appeared at", TimeToString( t ) );
+                            ImGui::TextDisabled( "Threads:" );
+                            ImGui::Indent();
+                            for( auto& td : v->threadData )
+                            {
+                                ImGui::TextUnformatted( m_worker.GetThreadName( td.first ) );
+                                ImGui::SameLine();
+                                ImGui::TextDisabled( "(%s)", RealToString( td.first, true ) );
+                            }
+                            ImGui::Unindent();
+                        }
+                    }
+                    if( !v->threadData.empty() )
+                    {
+                        int64_t t0 = std::numeric_limits<int64_t>::max();
+                        for( auto& td : v->threadData )
+                        {
+                            const auto _t0 = td.second.timeline.front()->gpuStart;
+                            if( _t0 != std::numeric_limits<int64_t>::max() )
+                            {
+                                t0 = std::min( t0, _t0 );
+                            }
+                        }
+                        if( t0 != std::numeric_limits<int64_t>::max() )
+                        {
+                            TextFocused( "Appeared at", TimeToString( t0 ) );
                         }
                     }
                     TextFocused( "Zone count:", RealToString( v->count, true ) );
-                    TextFocused( "Top-level zones:", RealToString( v->timeline.size(), true ) );
+                    //TextFocused( "Top-level zones:", RealToString( v->timeline.size(), true ) );
                     if( isVulkan )
                     {
                         TextFocused( "Timestamp accuracy:", TimeToString( v->period ) );
@@ -6058,7 +6120,9 @@ void View::DrawGpuInfoWindow()
     }
     else
     {
-        const auto begin = ctx->timeline.front()->gpuStart;
+        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.thread ) );
+        assert( td != ctx->threadData.end() );
+        const auto begin = td->second.timeline.front()->gpuStart;
         const auto drift = GpuDrift( ctx );
         TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.cpuStart ) );
     }
@@ -6390,7 +6454,7 @@ void View::DrawOptions()
         {
             for( size_t i=0; i<gpuData.size(); i++ )
             {
-                const auto& timeline = gpuData[i]->timeline;
+                const auto& timeline = gpuData[i]->threadData.begin()->second.timeline;
                 const bool isVulkan = gpuData[i]->thread == 0;
                 char buf[1024];
                 if( isVulkan )
@@ -6403,7 +6467,14 @@ void View::DrawOptions()
                 }
                 SmallCheckbox( buf, &Vis( gpuData[i] ).visible );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "%s top level zones", RealToString( timeline.size(), true ) );
+                if( gpuData[i]->threadData.size() == 1 )
+                {
+                    ImGui::TextDisabled( "%s top level zones", RealToString( timeline.size(), true ) );
+                }
+                else
+                {
+                    ImGui::TextDisabled( "%s threads", RealToString( gpuData[i]->threadData.size(), true ) );
+                }
                 ImGui::TreePush();
                 auto& drift = GpuDrift( gpuData[i] );
                 ImGui::SetNextItemWidth( 120 );
@@ -12276,7 +12347,9 @@ void View::ZoomToZone( const GpuEvent& ev )
     }
     else
     {
-        const auto begin = ctx->timeline.front()->gpuStart;
+        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.thread ) );
+        assert( td != ctx->threadData.end() );
+        const auto begin = td->second.timeline.front()->gpuStart;
         const auto drift = GpuDrift( ctx );
         ZoomToRange( AdjustGpuTime( ev.gpuStart, begin, drift ), AdjustGpuTime( end, begin, drift ) );
     }
@@ -12484,7 +12557,9 @@ void View::ZoneTooltip( const GpuEvent& ev )
     }
     else
     {
-        const auto begin = ctx->timeline.front()->gpuStart;
+        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.thread ) );
+        assert( td != ctx->threadData.end() );
+        const auto begin = td->second.timeline.front()->gpuStart;
         const auto drift = GpuDrift( ctx );
         TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.cpuStart ) );
     }
@@ -12598,18 +12673,21 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 {
     for( const auto& ctx : m_worker.GetGpuData() )
     {
-        const GpuEvent* parent = nullptr;
-        const Vector<GpuEvent*>* timeline = &ctx->timeline;
-        if( timeline->empty() ) continue;
-        for(;;)
+        for( const auto& td : ctx->threadData )
         {
-            auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
-            if( it != timeline->begin() ) --it;
-            if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
-            if( *it == &zone ) return parent;
-            if( (*it)->child < 0 ) break;
-            parent = *it;
-            timeline = &m_worker.GetGpuChildren( parent->child );
+            const GpuEvent* parent = nullptr;
+            const Vector<GpuEvent*>* timeline = &td.second.timeline;
+            if( timeline->empty() ) continue;
+            for(;;)
+            {
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
+                if( it != timeline->begin() ) --it;
+                if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
+                if( *it == &zone ) return parent;
+                if( (*it)->child < 0 ) break;
+                parent = *it;
+                timeline = &m_worker.GetGpuChildren( parent->child );
+            }
         }
     }
     return nullptr;
@@ -12646,7 +12724,8 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
     {
         for( const auto& ctx : m_worker.GetGpuData() )
         {
-            const Vector<GpuEvent*>* timeline = &ctx->timeline;
+            assert( ctx->threadData.size() == 1 );
+            const Vector<GpuEvent*>* timeline = &ctx->threadData.begin()->second.timeline;
             if( timeline->empty() ) continue;
             for(;;)
             {
@@ -12670,16 +12749,19 @@ const GpuCtxData* View::GetZoneCtx( const GpuEvent& zone ) const
 {
     for( const auto& ctx : m_worker.GetGpuData() )
     {
-        const Vector<GpuEvent*>* timeline = &ctx->timeline;
-        if( timeline->empty() ) continue;
-        for(;;)
+        for( const auto& td : ctx->threadData )
         {
-            auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
-            if( it != timeline->begin() ) --it;
-            if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
-            if( *it == &zone ) return ctx;
-            if( (*it)->child < 0 ) break;
-            timeline = &m_worker.GetGpuChildren( (*it)->child );
+            const Vector<GpuEvent*>* timeline = &td.second.timeline;
+            if( timeline->empty() ) continue;
+            for(;;)
+            {
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
+                if( it != timeline->begin() ) --it;
+                if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
+                if( *it == &zone ) return ctx;
+                if( (*it)->child < 0 ) break;
+                timeline = &m_worker.GetGpuChildren( (*it)->child );
+            }
         }
     }
     return nullptr;

@@ -7107,6 +7107,9 @@ void View::DrawMessages()
         {
             if( t->messages.empty() ) continue;
             ImGui::PushID( idx++ );
+            const auto threadColor = GetThreadColor( t->id, 0 );
+            SmallColorBox( threadColor );
+            ImGui::SameLine();
             SmallCheckbox( m_worker.GetThreadName( t->id ), &VisibleMsgThread( t->id ) );
             ImGui::PopID();
             ImGui::SameLine();

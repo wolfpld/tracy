@@ -2127,6 +2127,8 @@ void View::DrawZones()
                     if( !isVulkan )
                     {
                         TextFocused( "Thread:", m_worker.GetThreadName( v->thread ) );
+                        ImGui::SameLine();
+                        SmallColorBox( GetThreadColor( v->thread, 0 ) );
                     }
                     else
                     {
@@ -2146,6 +2148,8 @@ void View::DrawZones()
                                 TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                                 ImGui::SameLine();
                                 ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+                                ImGui::SameLine();
+                                SmallColorBox( GetThreadColor( tid, 0 ) );
                             }
                             else
                             {
@@ -2156,6 +2160,8 @@ void View::DrawZones()
                                     ImGui::TextUnformatted( m_worker.GetThreadName( td.first ) );
                                     ImGui::SameLine();
                                     ImGui::TextDisabled( "(%s)", RealToString( td.first, true ) );
+                                    ImGui::SameLine();
+                                    SmallColorBox( GetThreadColor( td.first, 0 ) );
                                 }
                                 ImGui::Unindent();
                             }

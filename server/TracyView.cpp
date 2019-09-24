@@ -8407,8 +8407,14 @@ void View::DrawFindZone()
                 switch( groupBy )
                 {
                 case FindZone::GroupBy::Thread:
-                    hdrString = m_worker.GetThreadName( m_worker.DecompressThread( v->first ) );
+                    {
+                    const auto tid = m_worker.DecompressThread( v->first );
+                    const auto threadColor = GetThreadColor( tid, 0 );
+                    SmallColorBox( threadColor );
+                    ImGui::SameLine();
+                    hdrString = m_worker.GetThreadName( tid );
                     break;
+                    }
                 case FindZone::GroupBy::UserText:
                     hdrString = v->first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v->first ) );
                     break;

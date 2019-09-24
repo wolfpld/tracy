@@ -9956,6 +9956,8 @@ void View::DrawMemoryAllocWindow()
     TextFocused( "Thread:", m_worker.GetThreadName( tidAlloc ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tidAlloc, true ) );
+    ImGui::SameLine();
+    SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
     if( ev.csAlloc != 0 )
     {
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
@@ -9973,6 +9975,8 @@ void View::DrawMemoryAllocWindow()
         TextFocused( "Thread:", m_worker.GetThreadName( tidFree ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( tidFree, true ) );
+        ImGui::SameLine();
+        SmallColorBox( GetThreadColor( tidFree, 0 ) );
         if( ev.csFree != 0 )
         {
             ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();

@@ -4435,6 +4435,8 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         TextFocused( "Thread:", m_worker.GetThreadName( thread ) );
                                         ImGui::SameLine();
                                         ImGui::TextDisabled( "(%s)", RealToString( thread, true ) );
+                                        ImGui::SameLine();
+                                        SmallColorBox( GetThreadColor( thread, 0 ) );
                                         m_drawThreadMigrations = thread;
                                     }
                                     else

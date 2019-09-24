@@ -12528,6 +12528,8 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+    ImGui::SameLine();
+    SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
 #ifndef TRACY_NO_STATISTICS
@@ -12584,6 +12586,8 @@ void View::ZoneTooltip( const GpuEvent& ev )
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+    ImGui::SameLine();
+    SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::Separator();
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );

@@ -3683,6 +3683,8 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             ImGui::Indent( ty );
             for( const auto& t : lockmap.threadList )
             {
+                SmallColorBox( GetThreadColor( t, 0 ) );
+                ImGui::SameLine();
                 ImGui::TextUnformatted( m_worker.GetThreadName( t ) );
             }
             ImGui::Unindent( ty );
@@ -10912,6 +10914,8 @@ void View::DrawLockInfoWindow()
     {
         for( const auto& t : lock.threadList )
         {
+            SmallColorBox( GetThreadColor( t, 0 ) );
+            ImGui::SameLine();
             ImGui::TextUnformatted( m_worker.GetThreadName( t ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", RealToString( t, true ) );

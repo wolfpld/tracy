@@ -10655,6 +10655,8 @@ void View::DrawInfo()
         TextFocused( "Thread:", m_worker.GetThreadName( crash.thread ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( crash.thread, true ) );
+        ImGui::SameLine();
+        SmallColorBox( GetThreadColor( crash.thread, 0 ) );
         TextDisabledUnformatted( "Reason:" );
         ImGui::SameLine();
         ImGui::TextWrapped( "%s", m_worker.GetString( crash.message ) );

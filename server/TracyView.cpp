@@ -5356,6 +5356,8 @@ void View::DrawZoneInfoWindow()
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+    ImGui::SameLine();
+    SmallColorBox( GetThreadColor( tid, 0 ) );
     if( ev.text.active )
     {
         TextFocused( "User text:", m_worker.GetString( ev.text ) );
@@ -6125,6 +6127,8 @@ void View::DrawGpuInfoWindow()
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+    ImGui::SameLine();
+    SmallColorBox( GetThreadColor( tid, 0 ) );
 
     ImGui::Separator();
     ImGui::BeginChild( "##gpuinfo" );

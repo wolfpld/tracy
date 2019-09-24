@@ -11334,7 +11334,10 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         {
             TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), TimeToString( m_worker.GetLastTime() - v->TimeAlloc() ) );
             ImGui::NextColumn();
-            ImGui::TextUnformatted( m_worker.GetThreadName( m_worker.DecompressThread( v->ThreadAlloc() ) ) );
+            const auto tid = m_worker.DecompressThread( v->ThreadAlloc() );
+            SmallColorBox( GetThreadColor( tid, 0 ) );
+            ImGui::SameLine();
+            ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
         }
         else
         {
@@ -11347,11 +11350,24 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             ImGui::NextColumn();
             if( v->ThreadAlloc() == v->ThreadFree() )
             {
-                ImGui::TextUnformatted( m_worker.GetThreadName( m_worker.DecompressThread( v->ThreadAlloc() ) ) );
+                const auto tid = m_worker.DecompressThread( v->ThreadAlloc() );
+                SmallColorBox( GetThreadColor( tid, 0 ) );
+                ImGui::SameLine();
+                ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
             }
             else
             {
-                ImGui::Text( "%s / %s", m_worker.GetThreadName( m_worker.DecompressThread( v->ThreadAlloc() ) ), m_worker.GetThreadName( m_worker.DecompressThread( v->ThreadFree() ) ) );
+                const auto tidAlloc = m_worker.DecompressThread( v->ThreadAlloc() );
+                const auto tidFree = m_worker.DecompressThread( v->ThreadFree() );
+                SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
+                ImGui::SameLine();
+                ImGui::TextUnformatted( m_worker.GetThreadName( tidAlloc ) );
+                ImGui::SameLine();
+                ImGui::TextUnformatted( "/" );
+                ImGui::SameLine();
+                SmallColorBox( GetThreadColor( tidFree, 0 ) );
+                ImGui::SameLine();
+                ImGui::TextUnformatted( m_worker.GetThreadName( tidFree ) );
             }
         }
         ImGui::NextColumn();

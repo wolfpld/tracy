@@ -11222,6 +11222,11 @@ void View::DrawCpuDataWindow()
                 ImGui::TextUnformatted( RealToString( tid, true ) );
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( tname );
+                if( tidMatch )
+                {
+                    ImGui::SameLine();
+                    SmallColorBox( GetThreadColor( tid, 0 ) );
+                }
                 ImGui::NextColumn();
                 sprintf( buf, "%s (%.2f%%)", TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
                 ImGui::ProgressBar( double( tit->second.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );

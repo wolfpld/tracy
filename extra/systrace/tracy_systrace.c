@@ -3,17 +3,18 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 
 enum { BufSize = 64*1024 };
 
-int main()
+void _start()
 {
     char buf[BufSize];
 
     int kernelFd = open( "/sys/kernel/debug/tracing/trace_pipe", O_RDONLY );
-    if( kernelFd == -1 ) return -1;
+    if( kernelFd < 0 ) exit( 0 );
 
     struct pollfd pfd;
     pfd.fd = kernelFd;
@@ -31,6 +32,5 @@ int main()
         write( STDOUT_FILENO, buf, rd );
     }
 
-    close( kernelFd );
-    return 0;
+    exit( 0 );
 }

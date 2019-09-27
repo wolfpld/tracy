@@ -1172,7 +1172,7 @@ logo=\bcattention
 ]{Caveats}
 \begin{itemize}
 \item Context switch data is retrieved using the kernel profiling facilities, which are not available to users with normal privilege level. To collect context switches you will need to elevate your rights to admin level, either by running the profiled program from the \texttt{root} account on Unix, or through the \emph{Run as administrator} option on Windows. On Android context switches will be collected if you have a rooted device (see section~\ref{androidlunacy} for additional information).
-\item Android context switch capture requires spawning an elevated process to read kernel data (the standard \texttt{cat} utility). Due to the way pipes are handled on Linux, this process will be using quite a lot of system resources, hogging one CPU core most of the time (this time is spent waiting in a busy loop for kernel to generate new data).
+\item Android context switch capture requires spawning an elevated process to read kernel data. While the standard \texttt{cat} utility can be used for this task, the CPU usage is not acceptable due to how the kernel handles blocking reads. As a workaround, Tracy will inject a specialized kernel data reader program at \texttt{/data/tracy\_systrace}, which has more acceptable resource requirements.
 \end{itemize}
 \end{bclogo}
 

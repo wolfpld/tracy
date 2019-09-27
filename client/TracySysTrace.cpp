@@ -322,6 +322,7 @@ void SysTraceSendExternalName( uint64_t thread )
 
 #    include <sys/types.h>
 #    include <sys/stat.h>
+#    include <sys/wait.h>
 #    include <fcntl.h>
 #    include <inttypes.h>
 #    include <limits>
@@ -332,6 +333,10 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <unistd.h>
 
 #    include "TracyProfiler.hpp"
+
+#    ifdef __ANDROID__
+#      include "TracySysTracePayload.hpp"
+#    endif
 
 namespace tracy
 {
@@ -381,6 +386,43 @@ static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vs
 }
 #endif
 
+#ifdef __ANDROID__
+void SysTraceInjectPayload()
+{
+    int pipefd[2];
+    if( pipe( pipefd ) == 0 )
+    {
+        const auto pid = fork();
+        if( pid == 0 )
+        {
+            // child
+            close( pipefd[1] );
+            if( dup2( pipefd[0], STDIN_FILENO ) >= 0 )
+            {
+                close( pipefd[0] );
+                execlp( "su", "su", "-c", "cat > /data/tracy_systrace", (char*)nullptr );
+                exit( 1 );
+            }
+        }
+        else if( pid > 0 )
+        {
+            // parent
+            close( pipefd[0] );
+
+#ifdef __aarch64__
+            write( pipefd[1], tracy_systrace_aarch64_data, tracy_systrace_aarch64_size );
+#else
+            write( pipefd[1], tracy_systrace_armv7_data, tracy_systrace_armv7_size );
+#endif
+            close( pipefd[1] );
+            waitpid( pid, nullptr, 0 );
+
+            system( "su -c 'chmod 700 /data/tracy_systrace'" );
+        }
+    }
+}
+#endif
+
 bool SysTraceStart()
 {
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
@@ -395,6 +437,11 @@ bool SysTraceStart()
 #endif
     if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
     if( !TraceWrite( SchedWakeup, sizeof( SchedWakeup ), "1", 2 ) ) return false;
+
+#if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
+    SysTraceInjectPayload();
+#endif
+
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
 
     return true;
@@ -666,6 +713,9 @@ void SysTraceWorker( void* ptr )
             if( dup2( pipefd[1], STDOUT_FILENO ) >= 0 )
             {
                 close( pipefd[1] );
+#if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
+                execlp( "su", "su", "-c", "/data/tracy_systrace", (char*)nullptr );
+#endif
                 execlp( "su", "su", "-c", "cat /sys/kernel/debug/tracing/trace_pipe", (char*)nullptr );
                 exit( 1 );
             }

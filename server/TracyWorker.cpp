@@ -2067,7 +2067,7 @@ static bool strstr_nocase( const char* l, const char* r )
     const auto lsz = strlen( l );
     const auto rsz = strlen( r );
     auto ll = (char*)alloca( lsz + 1 );
-    auto rl = (char*)alloca( lsz + 1 );
+    auto rl = (char*)alloca( rsz + 1 );
     for( size_t i=0; i<lsz; i++ )
     {
         ll[i] = tolower( l[i] );

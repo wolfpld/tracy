@@ -1938,6 +1938,7 @@ void View::DrawZones()
     m_zoneSrcLocHighlight.Decay( 0 );
     m_lockHoverHighlight.Decay( InvalidId );
     m_drawThreadMigrations.Decay( 0 );
+    m_drawThreadHighlight.Decay( 0 );
     m_zoneHover = nullptr;
 
     if( m_vd.zvStart == m_vd.zvEnd ) return;
@@ -4385,7 +4386,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 const auto px0 = std::max( pr0, -10.0 );
                                 const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
 
-                                uint32_t color;
+                                uint32_t color, highlight;
                                 if( m_vd.dynamicColors )
                                 {
                                     color = local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
@@ -4394,9 +4395,17 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 {
                                     color = local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 );
                                 }
+                                if( m_drawThreadHighlight == thread )
+                                {
+                                    highlight = 0xFFFFFFFF;
+                                }
+                                else
+                                {
+                                    highlight = HighlightColor( color );
+                                }
 
                                 draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), color );
-                                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), HighlightColor( color ) );
+                                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + sty ), highlight );
 
                                 auto tsz = ImGui::CalcTextSize( label );
                                 if( tsz.x < zsz )
@@ -4426,6 +4435,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
 
                                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset-1 ), wpos + ImVec2( px1, offset + sty - 1 ) ) )
                                 {
+                                    m_drawThreadHighlight = thread;
                                     ImGui::PopFont();
                                     ImGui::BeginTooltip();
                                     TextFocused( "CPU:", RealToString( i, true ) );

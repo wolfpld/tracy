@@ -276,6 +276,7 @@ private:
     int m_visibleMessages = 0;
     bool m_disconnectIssued = false;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
+    DecayValue<uint64_t> m_drawThreadHighlight = 0;
 
     Region m_highlight;
     Region m_highlightZoom;

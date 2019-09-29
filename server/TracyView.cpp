@@ -2407,6 +2407,7 @@ void View::DrawZones()
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
             {
                 m_drawThreadMigrations = v->id;
+                m_drawThreadHighlight = v->id;
                 ImGui::BeginTooltip();
                 SmallColorBox( GetThreadColor( v->id, 0 ) );
                 ImGui::SameLine();

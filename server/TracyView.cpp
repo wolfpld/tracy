@@ -11184,6 +11184,7 @@ void View::DrawCpuDataWindow()
         }
         const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first, true );
         const auto expand = ImGui::TreeNode( pidtxt );
+        if( ImGui::IsItemHovered() ) m_drawThreadHighlight = pid.first;
         const auto tsz = pid.second.tids.size();
         if( tsz > 1 )
         {
@@ -11192,6 +11193,7 @@ void View::DrawCpuDataWindow()
         }
         ImGui::NextColumn();
         ImGui::TextUnformatted( pid.first == 0 ? "???" : name );
+        if( ImGui::IsItemHovered() ) m_drawThreadHighlight = pid.first;
         ImGui::NextColumn();
         sprintf( buf, "%s (%.2f%%)", TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
         ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
@@ -11230,8 +11232,10 @@ void View::DrawCpuDataWindow()
                 const auto& tit = ctd.find( tid );
                 assert( tit != ctd.end() );
                 ImGui::TextUnformatted( RealToString( tid, true ) );
+                if( ImGui::IsItemHovered() ) m_drawThreadHighlight = tid;
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( tname );
+                if( ImGui::IsItemHovered() ) m_drawThreadHighlight = tid;
                 if( tidMatch )
                 {
                     ImGui::SameLine();

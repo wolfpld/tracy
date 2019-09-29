@@ -41,26 +41,44 @@ struct StringRef
     };
 };
 
-struct StringIdx
+class StringIdx
 {
-    StringIdx() : __data( 0 ) {}
-    StringIdx( uint32_t _idx )
-        : __data( 0 )
+public:
+    StringIdx() { memset( m_idx, 0, sizeof( m_idx ) ); }
+    StringIdx( uint32_t idx )
     {
-        idx = _idx;
-        active = 1;
+        SetIdx( idx );
     }
 
-    union
+    void SetIdx( uint32_t idx )
     {
-        struct
-        {
-            uint32_t idx    : 31;
-            uint32_t active : 1;
-        };
-        uint32_t __data;
-    };
+        idx++;
+        memcpy( m_idx, &idx, 3 );
+    }
+
+    uint32_t Idx() const
+    {
+        uint32_t idx = 0;
+        memcpy( &idx, m_idx, 3 );
+        return idx - 1;
+    }
+
+    bool Active() const
+    {
+        uint32_t zero = 0;
+        return memcmp( m_idx, &zero, 3 ) != 0;
+    }
+
+private:
+    uint8_t m_idx[3];
 };
+
+struct __StringIdxOld
+{
+    uint32_t idx    : 31;
+    uint32_t active : 1;
+};
+
 
 struct SourceLocation
 {

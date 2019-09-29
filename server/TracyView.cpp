@@ -2996,7 +2996,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         {
             const auto color = GetZoneColor( ev, tid, depth );
             const char* zoneName = m_worker.GetZoneName( ev );
-            int dmul = ev.text.active ? 2 : 1;
+            int dmul = ev.text.Active() ? 2 : 1;
 
             if( ev.child >= 0 )
             {
@@ -5336,7 +5336,7 @@ void View::DrawZoneInfoWindow()
     auto threadData = GetZoneThreadData( ev );
     assert( threadData );
     const auto tid = threadData->id;
-    if( ev.name.active )
+    if( ev.name.Active() )
     {
         if( m_bigFont ) ImGui::PushFont( m_bigFont );
         TextFocused( "Zone name:", m_worker.GetString( ev.name ) );
@@ -5371,7 +5371,7 @@ void View::DrawZoneInfoWindow()
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
     ImGui::SameLine();
     SmallColorBox( GetThreadColor( tid, 0 ) );
-    if( ev.text.active )
+    if( ev.text.Active() )
     {
         TextFocused( "User text:", m_worker.GetString( ev.text ) );
         dmul++;
@@ -7237,7 +7237,7 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
     case FindZone::GroupBy::Thread:
         return ev.Thread();
     case FindZone::GroupBy::UserText:
-        return ev.Zone()->text.active ? ev.Zone()->text.idx : std::numeric_limits<uint64_t>::max();
+        return ev.Zone()->text.Active() ? ev.Zone()->text.Idx() : std::numeric_limits<uint64_t>::max();
     case FindZone::GroupBy::Callstack:
         return ev.Zone()->callstack;
     default:
@@ -8265,7 +8265,7 @@ void View::DrawFindZone()
                 group = &m_findZone.groups[ev.Thread()];
                 break;
             case FindZone::GroupBy::UserText:
-                group = &m_findZone.groups[ev.Zone()->text.active ? ev.Zone()->text.idx : std::numeric_limits<uint64_t>::max()];
+                group = &m_findZone.groups[ev.Zone()->text.Active() ? ev.Zone()->text.Idx() : std::numeric_limits<uint64_t>::max()];
                 break;
             case FindZone::GroupBy::Callstack:
                 group = &m_findZone.groups[ev.Zone()->callstack];
@@ -8548,7 +8548,7 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
             break;
         case FindZone::TableSortBy::Name:
             pdqsort_branchless( sortedZones.begin(), sortedZones.end(), [this]( const auto& lhs, const auto& rhs ) {
-                if( lhs->name.active != rhs->name.active ) return lhs->name.active > rhs->name.active;
+                if( lhs->name.Active() != rhs->name.Active() ) return lhs->name.Active() > rhs->name.Active();
                 return strcmp( m_worker.GetString( lhs->name ), m_worker.GetString( rhs->name ) ) < 0;
             } );
             break;
@@ -8592,7 +8592,7 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
         ImGui::NextColumn();
         ImGui::TextUnformatted( TimeToString( timespan ) );
         ImGui::NextColumn();
-        if( ev->name.active )
+        if( ev->name.Active() )
         {
             ImGui::TextUnformatted( m_worker.GetString( ev->name ) );
         }
@@ -11508,7 +11508,7 @@ static tracy_force_inline CallstackFrameTree* GetFrameTreeItemGroup( flat_hash_m
 {
     auto& frameData = *worker.GetCallstackFrame( idx );
     auto& frame = frameData.data[frameData.size-1];
-    auto fidx = frame.name.idx;
+    auto fidx = frame.name.Idx();
 
     auto it = tree.find( fidx );
     if( it == tree.end() )
@@ -12562,7 +12562,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     const auto selftime = GetZoneSelfTime( ev );
 
     ImGui::BeginTooltip();
-    if( ev.name.active )
+    if( ev.name.Active() )
     {
         ImGui::TextUnformatted( m_worker.GetString( ev.name ) );
     }
@@ -12610,7 +12610,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
             TextFocused( "Running state regions:", RealToString( cnt, true ) );
         }
     }
-    if( ev.text.active )
+    if( ev.text.Active() )
     {
         ImGui::NewLine();
         TextColoredUnformatted( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), m_worker.GetString( ev.text ) );

@@ -911,10 +911,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             {
                 ReadTimelinePre042( f, td->timeline, CompressThread( tid ), tsz, fileVer );
             }
-            else if( fileVer <= FileVersion( 0, 5, 1 ) )
+            else if( fileVer <= FileVersion( 0, 5, 7 ) )
             {
                 int64_t refTime = 0;
-                ReadTimelinePre052( f, td->timeline, CompressThread( tid ), tsz, refTime, fileVer );
+                ReadTimelinePre058( f, td->timeline, CompressThread( tid ), tsz, refTime, fileVer );
             }
             else
             {
@@ -1298,7 +1298,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
-    if( fileVer >= FileVersion( 0, 4, 6 ) )
+    if( fileVer >= FileVersion( 0, 5, 8 ) )
     {
         f.Read( sz );
         m_data.callstackFrameMap.reserve( sz );
@@ -1316,20 +1316,54 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             m_data.callstackFrameMap.emplace( id, frameData );
         }
     }
+    else if( fileVer >= FileVersion( 0, 4, 6 ) )
+    {
+        f.Read( sz );
+        m_data.callstackFrameMap.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            __StringIdxOld str;
+            CallstackFrameId id;
+            f.Read( id );
+
+            auto frameData = m_slab.Alloc<CallstackFrameData>();
+            f.Read( frameData->size );
+
+            frameData->data = m_slab.AllocInit<CallstackFrame>( frameData->size );
+            for( uint8_t j=0; j<frameData->size; j++ )
+            {
+                f.Read( str );
+                if( str.active ) frameData->data[j].name.SetIdx( str.idx );
+                f.Read( str );
+                if( str.active ) frameData->data[j].file.SetIdx( str.idx );
+                f.Read( frameData->data[j].line );
+            }
+
+            m_data.callstackFrameMap.emplace( id, frameData );
+        }
+    }
     else if( fileVer >= FileVersion( 0, 4, 3 ) )
     {
         f.Read( sz );
         m_data.callstackFrameMap.reserve( sz );
         for( uint64_t i=0; i<sz; i++ )
         {
+            __StringIdxOld str;
             uint64_t ptr;
             f.Read( ptr );
 
             auto frameData = m_slab.Alloc<CallstackFrameData>();
             f.Read( frameData->size );
 
-            frameData->data = m_slab.Alloc<CallstackFrame>( frameData->size );
-            f.Read( frameData->data, sizeof( CallstackFrame ) * frameData->size );
+            frameData->data = m_slab.AllocInit<CallstackFrame>( frameData->size );
+            for( uint8_t j=0; j<frameData->size; j++ )
+            {
+                f.Read( str );
+                if( str.active ) frameData->data[j].name.SetIdx( str.idx );
+                f.Read( str );
+                if( str.active ) frameData->data[j].file.SetIdx( str.idx );
+                f.Read( frameData->data[j].line );
+            }
 
             m_data.callstackFrameMap.emplace( PackPointer( ptr ), frameData );
         }
@@ -1340,14 +1374,19 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         m_data.callstackFrameMap.reserve( sz );
         for( uint64_t i=0; i<sz; i++ )
         {
+            __StringIdxOld str;
             uint64_t ptr;
             f.Read( ptr );
 
             auto frameData = m_slab.Alloc<CallstackFrameData>();
             frameData->size = 1;
 
-            frameData->data = m_slab.Alloc<CallstackFrame>();
-            f.Read( frameData->data, sizeof( CallstackFrame ) );
+            frameData->data = m_slab.AllocInit<CallstackFrame>();
+            f.Read( str );
+            if( str.active ) frameData->data->name.SetIdx( str.idx );
+            f.Read( str );
+            if( str.active ) frameData->data->file.SetIdx( str.idx );
+            f.Read( frameData->data->line );
 
             m_data.callstackFrameMap.emplace( PackPointer( ptr ), frameData );
         }
@@ -1931,8 +1970,8 @@ const char* Worker::GetString( const StringRef& ref ) const
 
 const char* Worker::GetString( const StringIdx& idx ) const
 {
-    assert( idx.active );
-    return m_data.stringData[idx.idx];
+    assert( idx.Active() );
+    return m_data.stringData[idx.Idx()];
 }
 
 static const char* BadExternalThreadNames[] = {
@@ -2030,7 +2069,7 @@ const char* Worker::GetZoneName( const ZoneEvent& ev ) const
 
 const char* Worker::GetZoneName( const ZoneEvent& ev, const SourceLocation& srcloc ) const
 {
-    if( ev.name.active )
+    if( ev.name.Active() )
     {
         return GetString( ev.name );
     }
@@ -4537,7 +4576,7 @@ void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     }
 }
 
-void Worker::ReadTimelinePre052( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre058( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer )
 {
     uint64_t sz;
     f.Read( sz );
@@ -4550,7 +4589,7 @@ void Worker::ReadTimelinePre052( FileRead& f, ZoneEvent* zone, uint16_t thread, 
         zone->child = m_data.zoneChildren.size();
         m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         Vector<ZoneEvent*> tmp;
-        ReadTimelinePre052( f, tmp, thread, sz, refTime, fileVer );
+        ReadTimelinePre058( f, tmp, thread, sz, refTime, fileVer );
         m_data.zoneChildren[zone->child] = std::move( tmp );
     }
 }
@@ -4645,7 +4684,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
     do
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
-        uint16_t srcloc;
+        int16_t srcloc;
         f.Read( srcloc );
         zone->SetSrcLoc( srcloc );
         // Use zone->end as scratch buffer for zone start time offset.
@@ -4682,7 +4721,26 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         f.Read( srcloc );
         zone->SetSrcLoc( srcloc );
         f.Skip( 4 );
-        f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
+        __StringIdxOld str;
+        f.Read( str );
+        if( str.active )
+        {
+            zone->text.SetIdx( str.idx );
+    }
+        else
+        {
+            new ( &zone->text ) StringIdx();
+        }
+        f.Read( zone->callstack );
+        f.Read( str );
+        if( str.active )
+        {
+            zone->name.SetIdx( str.idx );
+        }
+        else
+        {
+            new ( &zone->name ) StringIdx();
+        }
         ReadTimelinePre042( f, zone, thread, fileVer );
 #ifdef TRACY_NO_STATISTICS
         ReadTimelineUpdateStatistics( zone, thread );
@@ -4690,9 +4748,9 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
     }
 }
 
-void Worker::ReadTimelinePre052( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre058( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer )
 {
-    assert( fileVer <= FileVersion( 0, 5, 1 ) );
+    assert( fileVer <= FileVersion( 0, 5, 7 ) );
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
     m_data.zonesCnt += size;
@@ -4706,23 +4764,51 @@ void Worker::ReadTimelinePre052( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
     do
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
-        // Use zone->end as scratch buffer for zone start time offset.
-        f.Read( &zone->end, sizeof( zone->end ) );
-        int16_t srcloc;
-        f.Read( srcloc );
-        zone->SetSrcLoc( srcloc );
-        if( fileVer <= FileVersion( 0, 5, 0 ) )
+        if( fileVer >= FileVersion( 0, 5, 2 ) )
         {
-            f.Skip( 4 );
+            int16_t srcloc;
+            f.Read( srcloc );
+            zone->SetSrcLoc( srcloc );
+            f.Read( &zone->end, sizeof( zone->end ) );
         }
         else
         {
-            f.Skip( 2 );
+            f.Read( &zone->end, sizeof( zone->end ) );
+            int16_t srcloc;
+            f.Read( srcloc );
+            zone->SetSrcLoc( srcloc );
+            if( fileVer <= FileVersion( 0, 5, 0 ) )
+            {
+                f.Skip( 4 );
+            }
+            else
+            {
+                f.Skip( 2 );
+            }
         }
-        f.Read( &zone->text, sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
+        __StringIdxOld str;
+        f.Read( str );
+        if( str.active )
+        {
+            zone->text.SetIdx( str.idx );
+        }
+        else
+        {
+            new ( &zone->text ) StringIdx();
+        }
+        f.Read( zone->callstack );
+        f.Read( str );
+        if( str.active )
+        {
+            zone->name.SetIdx( str.idx );
+        }
+        else
+        {
+            new ( &zone->name ) StringIdx();
+        }
         refTime += zone->end;
         zone->SetStart( refTime - m_data.baseTime );
-        ReadTimelinePre052( f, zone, thread, refTime, fileVer );
+        ReadTimelinePre058( f, zone, thread, refTime, fileVer );
         zone->end = ReadTimeOffset( f, refTime );
         if( zone->end >= 0 ) zone->end -= m_data.baseTime;
 #ifdef TRACY_NO_STATISTICS

@@ -10124,6 +10124,7 @@ void View::DrawInfo()
         TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount(), true ) );
         TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size(), true ) );
         TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
+        TextFocused( "Strings:", RealToString( m_worker.GetStringsCount(), true ) );
         TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
         TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
         TextFocused( "Frame images:", RealToString( ficnt, true ) );

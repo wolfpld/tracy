@@ -42,6 +42,8 @@ int main( int argc, char** argv )
     const char* input = argv[1];
     const char* output = argv[2];
 
+    printf( "Loading...\r" );
+    fflush( stdout );
     auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( input ) );
     if( !f )
     {
@@ -65,6 +67,8 @@ int main( int argc, char** argv )
                 fprintf( stderr, "Cannot open output file!\n" );
                 exit( 1 );
             }
+            printf( "Saving... \r" );
+            fflush( stdout );
             worker.Write( *w );
             inVer = worker.GetTraceVersion();
         }

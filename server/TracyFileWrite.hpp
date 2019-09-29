@@ -77,7 +77,7 @@ private:
             break;
         case Compression::Extreme:
             m_streamHC = LZ4_createStreamHC();
-            LZ4_resetStreamHC( m_streamHC, LZ4HC_CLEVEL_OPT_MIN );
+            LZ4_resetStreamHC( m_streamHC, LZ4HC_CLEVEL_MAX );
             break;
         default:
             assert( false );

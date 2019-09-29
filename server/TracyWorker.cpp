@@ -264,7 +264,7 @@ Worker::Worker( const char* addr, int port )
     m_thread = std::thread( [this] { SetThreadName( "Tracy Worker" ); Exec(); } );
 }
 
-Worker::Worker( FileRead& f, EventType::Type eventMask )
+Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     : m_hasData( true )
     , m_stream( nullptr )
     , m_buffer( nullptr )
@@ -1634,52 +1634,59 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
-    m_backgroundDone.store( false, std::memory_order_relaxed );
+    if( !bgTasks )
+    {
+        m_backgroundDone.store( true, std::memory_order_relaxed );
+    }
+    else
+    {
+        m_backgroundDone.store( false, std::memory_order_relaxed );
 #ifndef TRACY_NO_STATISTICS
-    m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
-        std::function<void(const Vector<ZoneEvent*>&, uint16_t)> ProcessTimeline;
-        ProcessTimeline = [this, &ProcessTimeline] ( const Vector<ZoneEvent*>& vec, uint16_t thread )
-        {
-            for( auto& zone : vec )
+        m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
+            std::function<void(const Vector<ZoneEvent*>&, uint16_t)> ProcessTimeline;
+            ProcessTimeline = [this, &ProcessTimeline] ( const Vector<ZoneEvent*>& vec, uint16_t thread )
             {
-                ReadTimelineUpdateStatistics( zone, thread );
-                if( zone->child >= 0 )
+                for( auto& zone : vec )
                 {
-                    ProcessTimeline( GetZoneChildren( zone->child ), thread );
+                    ReadTimelineUpdateStatistics( zone, thread );
+                    if( zone->child >= 0 )
+                    {
+                        ProcessTimeline( GetZoneChildren( zone->child ), thread );
+                    }
+                }
+            };
+
+            for( auto& t : m_data.threads )
+            {
+                if( !t->timeline.empty() )
+                {
+                    // Don't touch thread compression cache in a thread.
+                    ProcessTimeline( t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
                 }
             }
-        };
-
-        for( auto& t : m_data.threads )
-        {
-            if( !t->timeline.empty() )
+            for( auto& v : m_data.sourceLocationZones )
             {
-                // Don't touch thread compression cache in a thread.
-                ProcessTimeline( t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
-            }
-        }
-        for( auto& v : m_data.sourceLocationZones )
-        {
-            auto& zones = v.second.zones;
+                auto& zones = v.second.zones;
 #ifdef MY_LIBCPP_SUCKS
-            pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
+                pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
 #else
-            std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
+                std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
 #endif
-        }
+            }
+            {
+                std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                m_data.sourceLocationZonesReady = true;
+            }
+            if( reconstructMemAllocPlot ) ReconstructMemAllocPlot();
+            m_backgroundDone.store( true, std::memory_order_relaxed );
+        } );
+#else
+        if( reconstructMemAllocPlot )
         {
-            std::lock_guard<std::shared_mutex> lock( m_data.lock );
-            m_data.sourceLocationZonesReady = true;
+            m_threadBackground = std::thread( [this] { ReconstructMemAllocPlot(); m_backgroundDone.store( true, std::memory_order_relaxed ); } );
         }
-        if( reconstructMemAllocPlot ) ReconstructMemAllocPlot();
-        m_backgroundDone.store( true, std::memory_order_relaxed );
-    } );
-#else
-    if( reconstructMemAllocPlot )
-    {
-        m_threadBackground = std::thread( [this] { ReconstructMemAllocPlot(); m_backgroundDone.store( true, std::memory_order_relaxed ); } );
-    }
 #endif
+    }
 }
 
 Worker::~Worker()

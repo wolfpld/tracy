@@ -271,7 +271,7 @@ public:
     };
 
     Worker( const char* addr, int port );
-    Worker( FileRead& f, EventType::Type eventMask = EventType::All );
+    Worker( FileRead& f, EventType::Type eventMask = EventType::All, bool bgTasks = true );
     ~Worker();
 
     const std::string& GetAddr() const { return m_addr; }

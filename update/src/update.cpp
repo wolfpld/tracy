@@ -55,7 +55,7 @@ int main( int argc, char** argv )
     {
         int inVer;
         {
-            tracy::Worker worker( *f );
+            tracy::Worker worker( *f, tracy::EventType::All, false );
 
 #ifndef TRACY_NO_STATISTICS
             while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );

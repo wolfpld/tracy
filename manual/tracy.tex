@@ -1289,7 +1289,7 @@ To use it, you will need to provide the input file and the output file. The prog
 
 \begin{verbatim}
 % ./update old.tracy new.tracy
-old.tracy (0.3.0) -> new.tracy (0.4.0)
+old.tracy (0.3.0) {938437 KB} -> new.tracy (0.4.0) {357865 KB}  38.13% size change
 \end{verbatim}
 
 The new file contains the same data as the old one, but in the updated internal representation. Note that to perform an upgrade, whole trace needs to be loaded to memory.
@@ -1298,7 +1298,9 @@ The new file contains the same data as the old one, but in the updated internal 
 
 The update utility supports optional higher level of data compression, enabled by passing the \texttt{-{}-hc} parameter. It can reduce the trace size down to \numrange{70}{40}\% the original size, at a considerable time cost ($\sim17\times$~increase of compression time).
 
-Note that trace files (even the ones created in high compression mode) are optimized for fast decompression. You still will be able to squeeze the data using normal compression methods. For example, 7-zip can compress traces to about 25\% of their uncompressed\footnote{Compressed internally.} size.
+Even better compression level can be achieved by passing the \texttt{-{}-extreme} parameter, but the compression process will be \emph{very} slow.
+
+Note that trace files (even the ones created in high compression mode) are optimized for fast decompression. You still will be able to squeeze the data using normal compression methods. For example, 7-zip can compress traces to about \numrange{63}{35}\% of their uncompressed\footnote{Compressed internally.} size.
 
 \subsection{Instrumentation failures}
 \label{instrumentationfailures}

@@ -14,8 +14,9 @@
 
 void Usage()
 {
-    printf( "Usage: update [--hc] input.tracy output.tracy\n\n" );
+    printf( "Usage: update [--hc|--extreme] input.tracy output.tracy\n\n" );
     printf( "  --hc: enable LZ4HC compression\n" );
+    printf( "  --extreme: enable extreme LZ4HC compression (very slow)\n" );
     exit( 1 );
 }
 
@@ -29,13 +30,23 @@ int main( int argc, char** argv )
     }
 #endif
 
-    bool hc = false;
+    tracy::FileWrite::Compression clev = tracy::FileWrite::Compression::Fast;
 
     if( argc != 3 && argc != 4 ) Usage();
     if( argc == 4 )
     {
-        if( strcmp( argv[1], "--hc" ) != 0 ) Usage();
-        hc = true;
+        if( strcmp( argv[1], "--hc" ) == 0 )
+        {
+            clev = tracy::FileWrite::Compression::Slow;
+        }
+        else if( strcmp( argv[1], "--extreme" ) == 0 )
+        {
+            clev = tracy::FileWrite::Compression::Extreme;
+        }
+        else
+        {
+            Usage();
+        }
         argv++;
     }
 
@@ -61,7 +72,7 @@ int main( int argc, char** argv )
             while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 #endif
 
-            auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, hc ? tracy::FileWrite::Compression::Slow : tracy::FileWrite::Compression::Fast ) );
+            auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev ) );
             if( !w )
             {
                 fprintf( stderr, "Cannot open output file!\n" );

@@ -2242,20 +2242,25 @@ void View::DrawZones()
         offset += ostep;
         if( showFull )
         {
+            const auto ctxOffset = offset;
             if( m_vd.drawContextSwitches )
             {
-                auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
-                if( ctxSwitch )
-                {
-                    DrawContextSwitches( ctxSwitch, hover, pxns, int64_t( nspx ), wpos, offset );
-                    offset += round( ostep * 0.75f );
-                }
+                offset += round( ostep * 0.75f );
             }
 
             if( m_vd.drawZones )
             {
                 depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, v->id );
                 offset += ostep * depth;
+            }
+
+            if( m_vd.drawContextSwitches )
+            {
+                auto ctxSwitch = m_worker.GetContextSwitchData( v->id );
+                if( ctxSwitch )
+                {
+                    DrawContextSwitches( ctxSwitch, hover, pxns, int64_t( nspx ), wpos, ctxOffset, offset );
+                }
             }
 
             if( m_vd.drawLocks )
@@ -2704,7 +2709,7 @@ static const char* DecodeContextSwitchState( uint8_t state )
     }
 }
 
-void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset )
+void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset )
 {
     auto& vec = ctx->v;
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
@@ -2732,6 +2737,10 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             const auto pxw = ( ev.wakeup - m_vd.zvStart ) * pxns;
             const auto px1 = std::min( ( ev.Start() - m_vd.zvStart ) * pxns, w + 10.0 );
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
+            if( m_vd.darkenContextSwitches )
+            {
+                draw->AddRectFilled( wpos + ImVec2( px0, round( offset + ty * 0.5 ) ), wpos + ImVec2( px1, endOffset ), 0x44000000 );
+            }
             draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( std::min( pxw, w+10.0 ), round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
             if( ev.wakeup != ev.Start() )
             {
@@ -2749,11 +2758,11 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     {
                         TextFocused( "CPU:", RealToString( pit->Cpu(), true ) );
                         ImGui::SameLine();
-    #ifdef TRACY_EXTENDED_FONT
+#ifdef TRACY_EXTENDED_FONT
                         TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu(), true ) );
-    #else
+#else
                         TextFocused( "->", RealToString( ev.Cpu(), true ) );
-    #endif
+#endif
                     }
                     else
                     {
@@ -6476,6 +6485,13 @@ void View::DrawOptions()
     ImGui::Checkbox( "Draw context switches", &val );
 #endif
     m_vd.drawContextSwitches = val;
+    val = m_vd.darkenContextSwitches;
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_MOON " Darken inactive threads", &val );
+#else
+    ImGui::Checkbox( "Darken inactive threads", &val );
+#endif
+    m_vd.darkenContextSwitches = val;
     val = m_vd.drawCpuData;
 #ifdef TRACY_EXTENDED_FONT
     ImGui::Checkbox( ICON_FA_SLIDERS_H " Draw CPU data", &val );

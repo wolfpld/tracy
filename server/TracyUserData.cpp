@@ -13,7 +13,7 @@ constexpr auto FileTimeline = "timeline";
 constexpr auto FileOptions = "options";
 
 enum : uint32_t { VersionTimeline = 0 };
-enum : uint32_t { VersionOptions = 1 };
+enum : uint32_t { VersionOptions = 2 };
 
 UserData::UserData()
     : m_preserveState( false )
@@ -93,6 +93,7 @@ void UserData::LoadState( ViewData& data )
             fread( &data.onlyContendedLocks, 1, sizeof( data.onlyContendedLocks ), f );
             fread( &data.drawEmptyLabels, 1, sizeof( data.drawEmptyLabels ), f );
             fread( &data.drawContextSwitches, 1, sizeof( data.drawContextSwitches ), f );
+            fread( &data.darkenContextSwitches, 1, sizeof( data.darkenContextSwitches ), f );
             fread( &data.drawCpuData, 1, sizeof( data.drawCpuData ), f );
             fread( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
         }
@@ -130,6 +131,7 @@ void UserData::SaveState( const ViewData& data )
         fwrite( &data.onlyContendedLocks, 1, sizeof( data.onlyContendedLocks ), f );
         fwrite( &data.drawEmptyLabels, 1, sizeof( data.drawEmptyLabels ), f );
         fwrite( &data.drawContextSwitches, 1, sizeof( data.drawContextSwitches ), f );
+        fwrite( &data.darkenContextSwitches, 1, sizeof( data.darkenContextSwitches ), f );
         fwrite( &data.drawCpuData, 1, sizeof( data.drawCpuData ), f );
         fwrite( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
         fclose( f );

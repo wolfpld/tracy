@@ -22,6 +22,7 @@ struct ViewData
     uint8_t onlyContendedLocks = true;
     uint8_t drawEmptyLabels = false;
     uint8_t drawContextSwitches = true;
+    uint8_t darkenContextSwitches = true;
     uint8_t drawCpuData = true;
     uint8_t dynamicColors = true;
 };

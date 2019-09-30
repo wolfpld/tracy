@@ -60,6 +60,7 @@ public:
     {
         uint32_t idx = 0;
         memcpy( &idx, m_idx, 3 );
+        assert( idx != 0 );
         return idx - 1;
     }
 

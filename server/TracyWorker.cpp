@@ -1649,9 +1649,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 for( auto& zone : vec )
                 {
                     ReadTimelineUpdateStatistics( zone, thread );
-                    if( zone->child >= 0 )
+                    if( zone->Child() >= 0 )
                     {
-                        ProcessTimeline( GetZoneChildren( zone->child ), thread );
+                        ProcessTimeline( GetZoneChildren( zone->Child() ), thread );
                     }
                 }
             };
@@ -1925,9 +1925,9 @@ int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
     auto ptr = &ev;
     for(;;)
     {
-        if( ptr->end >= 0 ) return ptr->end;
-        if( ptr->child < 0 ) return ptr->Start();
-        ptr = GetZoneChildren( ptr->child ).back();
+        if( ptr->End() >= 0 ) return ptr->End();
+        if( ptr->Child() < 0 ) return ptr->Start();
+        ptr = GetZoneChildren( ptr->Child() ).back();
     }
 }
 
@@ -2611,9 +2611,9 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     else
     {
         auto back = td->stack.back();
-        if( back->child < 0 )
+        if( back->Child() < 0 )
         {
-            back->child = int32_t( m_data.zoneChildren.size() );
+            back->SetChild( int32_t( m_data.zoneChildren.size() ) );
             if( m_data.zoneVectorCache.empty() )
             {
                 m_data.zoneChildren.push_back( Vector<ZoneEvent*>( zone ) );
@@ -2629,7 +2629,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
         }
         else
         {
-            m_data.zoneChildren[back->child].push_back( zone );
+            m_data.zoneChildren[back->Child()].push_back( zone );
         }
         td->stack.push_back_non_empty( zone );
     }
@@ -3260,10 +3260,10 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 
     const auto start = TscTime( ev.time - m_data.baseTime );
     zone->SetStart( start );
-    zone->end = -1;
+    zone->SetEnd( -1 );
     zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
     zone->callstack = 0;
-    zone->child = -1;
+    zone->SetChild( -1 );
 
     m_data.lastTime = std::max( m_data.lastTime, start );
 
@@ -3293,10 +3293,10 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
 
     const auto start = TscTime( ev.time - m_data.baseTime );
     zone->SetStart( start );
-    zone->end = -1;
+    zone->SetEnd( -1 );
     zone->SetSrcLoc( it->second );
     zone->callstack = 0;
-    zone->child = -1;
+    zone->SetChild( -1 );
 
     m_data.lastTime = std::max( m_data.lastTime, start );
 
@@ -3342,15 +3342,15 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto& stack = td->stack;
     assert( !stack.empty() );
     auto zone = stack.back_and_pop();
-    assert( zone->end == -1 );
-    zone->end = TscTime( ev.time - m_data.baseTime );
-    assert( zone->end >= zone->Start() );
+    assert( zone->End() == -1 );
+    zone->SetEnd( TscTime( ev.time - m_data.baseTime ) );
+    assert( zone->End() >= zone->Start() );
 
-    m_data.lastTime = std::max( m_data.lastTime, zone->end );
+    m_data.lastTime = std::max( m_data.lastTime, zone->End() );
 
-    if( zone->child >= 0 )
+    if( zone->Child() >= 0 )
     {
-        auto& childVec = m_data.zoneChildren[zone->child];
+        auto& childVec = m_data.zoneChildren[zone->Child()];
         const auto sz = childVec.size();
         if( sz <= 8 * 1024 )
         {
@@ -3363,7 +3363,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     }
 
 #ifndef TRACY_NO_STATISTICS
-    auto timeSpan = zone->end - zone->Start();
+    auto timeSpan = zone->End() - zone->Start();
     if( timeSpan > 0 )
     {
         auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
@@ -3373,11 +3373,11 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         slz.max = std::max( slz.max, timeSpan );
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
-        if( zone->child >= 0 )
+        if( zone->Child() >= 0 )
         {
-            for( auto& v : GetZoneChildren( zone->child ) )
+            for( auto& v : GetZoneChildren( zone->Child() ) )
             {
-                const auto childSpan = std::max( int64_t( 0 ), v->end - v->Start() );
+                const auto childSpan = std::max( int64_t( 0 ), v->End() - v->Start() );
                 timeSpan -= childSpan;
             }
         }
@@ -4550,18 +4550,18 @@ void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_
     f.Read( sz );
     if( sz == 0 )
     {
-        zone->child = -1;
+        zone->SetChild( -1 );
     }
     else
     {
-        zone->child = m_data.zoneChildren.size();
+        zone->SetChild( m_data.zoneChildren.size() );
         // Put placeholder to have proper size of zone children in nested calls
         m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         // Real data buffer. Can't use placeholder, as the vector can be reallocated
         // and the buffer address will change, but the reference won't.
         Vector<ZoneEvent*> tmp;
         ReadTimeline( f, tmp, thread, sz, refTime );
-        m_data.zoneChildren[zone->child] = std::move( tmp );
+        m_data.zoneChildren[zone->Child()] = std::move( tmp );
     }
 }
 
@@ -4571,15 +4571,15 @@ void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     f.Read( sz );
     if( sz == 0 )
     {
-        zone->child = -1;
+        zone->SetChild( -1 );
     }
     else
     {
-        zone->child = m_data.zoneChildren.size();
+        zone->SetChild( m_data.zoneChildren.size() );
         m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         Vector<ZoneEvent*> tmp;
         ReadTimelinePre042( f, tmp, thread, sz, fileVer );
-        m_data.zoneChildren[zone->child] = std::move( tmp );
+        m_data.zoneChildren[zone->Child()] = std::move( tmp );
     }
 }
 
@@ -4589,15 +4589,15 @@ void Worker::ReadTimelinePre058( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     f.Read( sz );
     if( sz == 0 )
     {
-        zone->child = -1;
+        zone->SetChild( -1 );
     }
     else
     {
-        zone->child = m_data.zoneChildren.size();
+        zone->SetChild( m_data.zoneChildren.size() );
         m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         Vector<ZoneEvent*> tmp;
         ReadTimelinePre058( f, tmp, thread, sz, refTime, fileVer );
-        m_data.zoneChildren[zone->child] = std::move( tmp );
+        m_data.zoneChildren[zone->Child()] = std::move( tmp );
     }
 }
 
@@ -4647,20 +4647,20 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
     ztd.SetZone( zone );
     ztd.SetThread( thread );
 
-    if( zone->end >= 0 )
+    if( zone->End() >= 0 )
     {
-        auto timeSpan = zone->end - zone->Start();
+        auto timeSpan = zone->End() - zone->Start();
         if( timeSpan > 0 )
         {
             slz.min = std::min( slz.min, timeSpan );
             slz.max = std::max( slz.max, timeSpan );
             slz.total += timeSpan;
             slz.sumSq += double( timeSpan ) * timeSpan;
-            if( zone->child >= 0 )
+            if( zone->Child() >= 0 )
             {
-                for( auto& v : GetZoneChildren( zone->child ) )
+                for( auto& v : GetZoneChildren( zone->Child() ) )
                 {
-                    const auto childSpan = std::max( int64_t( 0 ), v->end - v->Start() );
+                    const auto childSpan = std::max( int64_t( 0 ), v->End() - v->Start() );
                     timeSpan -= childSpan;
                 }
             }
@@ -4694,12 +4694,12 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
         int16_t srcloc;
         f.Read( srcloc );
         zone->SetSrcLoc( srcloc );
-        // Use zone->end as scratch buffer for zone start time offset.
-        f.Read( &zone->end, sizeof( zone->end ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
-        refTime += zone->end;
+        // Use zone->_end_child1 as scratch buffer for zone start time offset.
+        f.Read( &zone->_end_child1, sizeof( zone->_end_child1 ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
+        refTime += int64_t( zone->_end_child1 );
         zone->SetStart( refTime );
         ReadTimeline( f, zone, thread, refTime );
-        zone->end = ReadTimeOffset( f, refTime );
+        zone->SetEnd( ReadTimeOffset( f, refTime ) );
 #ifdef TRACY_NO_STATISTICS
         ReadTimelineUpdateStatistics( zone, thread );
 #endif
@@ -4722,8 +4722,10 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         int64_t start;
         f.Read( start );
         zone->SetStart( start - m_data.baseTime );
-        f.Read( zone->end );
-        if( zone->end >= 0 ) zone->end -= m_data.baseTime;
+        int64_t end;
+        f.Read( end );
+        if( end >= 0 ) end -= m_data.baseTime;
+        zone->SetEnd( end );
         int16_t srcloc;
         f.Read( srcloc );
         zone->SetSrcLoc( srcloc );
@@ -4776,11 +4778,11 @@ void Worker::ReadTimelinePre058( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
             int16_t srcloc;
             f.Read( srcloc );
             zone->SetSrcLoc( srcloc );
-            f.Read( &zone->end, sizeof( zone->end ) );
+            f.Read( &zone->_end_child1, sizeof( zone->_end_child1 ) );
         }
         else
         {
-            f.Read( &zone->end, sizeof( zone->end ) );
+            f.Read( &zone->_end_child1, sizeof( zone->_end_child1 ) );
             int16_t srcloc;
             f.Read( srcloc );
             zone->SetSrcLoc( srcloc );
@@ -4813,11 +4815,12 @@ void Worker::ReadTimelinePre058( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
         {
             new ( &zone->name ) StringIdx();
         }
-        refTime += zone->end;
+        refTime += zone->_end_child1;
         zone->SetStart( refTime - m_data.baseTime );
         ReadTimelinePre058( f, zone, thread, refTime, fileVer );
-        zone->end = ReadTimeOffset( f, refTime );
-        if( zone->end >= 0 ) zone->end -= m_data.baseTime;
+        int64_t end = ReadTimeOffset( f, refTime );
+        if( end >= 0 ) end -= m_data.baseTime;
+        zone->SetEnd( end );
 #ifdef TRACY_NO_STATISTICS
         ReadTimelineUpdateStatistics( zone, thread );
 #endif
@@ -5335,17 +5338,17 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t
         f.Write( &v->callstack, sizeof( v->callstack ) );
         f.Write( &v->name, sizeof( v->name ) );
 
-        if( v->child < 0 )
+        if( v->Child() < 0 )
         {
             sz = 0;
             f.Write( &sz, sizeof( sz ) );
         }
         else
         {
-            WriteTimeline( f, GetZoneChildren( v->child ), refTime );
+            WriteTimeline( f, GetZoneChildren( v->Child() ), refTime );
         }
 
-        WriteTimeOffset( f, refTime, v->end );
+        WriteTimeOffset( f, refTime, v->End() );
     }
 }
 

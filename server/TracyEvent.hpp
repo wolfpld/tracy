@@ -97,15 +97,19 @@ struct ZoneEvent
 {
     int64_t Start() const { return int64_t( _start_srcloc ) >> 16; }
     void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_srcloc = ( _start_srcloc & 0xFFFF ) | ( uint64_t( start ) << 16 ); }
+    int64_t End() const { return int64_t( _end_child1 ) >> 16; }
+    void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end_child1 = ( _end_child1 & 0xFFFF ) | ( uint64_t( end ) << 16 ); }
     int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
     void SetSrcLoc( int16_t srcloc ) { _start_srcloc = ( _start_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc ); }
+    int32_t Child() const { return int32_t( uint32_t( _end_child1 & 0xFFFF ) | ( uint32_t( _child2 ) << 16 ) ); }
+    void SetChild( int32_t child ) { _end_child1 = ( _end_child1 & 0xFFFFFFFFFFFF0000 ) | uint16_t( child ); _child2 = uint32_t( child ) >> 16; }
 
     uint64_t _start_srcloc;
-    int64_t end;
+    uint64_t _end_child1;
     StringIdx text;
     uint32_t callstack;
     StringIdx name;
-    int32_t child;
+    uint16_t _child2;
 };
 
 enum { ZoneEventSize = sizeof( ZoneEvent ) };

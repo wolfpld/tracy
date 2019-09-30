@@ -6478,27 +6478,31 @@ void View::DrawOptions()
     ImGui::Checkbox( "Draw empty labels", &val );
 #endif
     m_vd.drawEmptyLabels = val;
-    val = m_vd.drawContextSwitches;
+    if( m_worker.HasContextSwitches() )
+    {
+        ImGui::Separator();
+        val = m_vd.drawContextSwitches;
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_HIKING " Draw context switches", &val );
+        ImGui::Checkbox( ICON_FA_HIKING " Draw context switches", &val );
 #else
-    ImGui::Checkbox( "Draw context switches", &val );
+        ImGui::Checkbox( "Draw context switches", &val );
 #endif
-    m_vd.drawContextSwitches = val;
-    val = m_vd.darkenContextSwitches;
+        m_vd.drawContextSwitches = val;
+        val = m_vd.darkenContextSwitches;
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_MOON " Darken inactive threads", &val );
+        ImGui::Checkbox( ICON_FA_MOON " Darken inactive threads", &val );
 #else
-    ImGui::Checkbox( "Darken inactive threads", &val );
+        ImGui::Checkbox( "Darken inactive threads", &val );
 #endif
-    m_vd.darkenContextSwitches = val;
-    val = m_vd.drawCpuData;
+        m_vd.darkenContextSwitches = val;
+        val = m_vd.drawCpuData;
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_SLIDERS_H " Draw CPU data", &val );
+        ImGui::Checkbox( ICON_FA_SLIDERS_H " Draw CPU data", &val );
 #else
-    ImGui::Checkbox( "Draw CPU data", &val );
+        ImGui::Checkbox( "Draw CPU data", &val );
 #endif
-    m_vd.drawCpuData = val;
+        m_vd.drawCpuData = val;
+    }
     ImGui::Separator();
 
     const auto& gpuData = m_worker.GetGpuData();

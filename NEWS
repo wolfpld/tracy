@@ -16,6 +16,7 @@ v0.6 (xxxx-xx-xx)
   - Zone information window can now display regions in which thread was
     suspended by the operating system.
   - CPUs on which the zone was running are enumerated.
+  - Thread activity regions can be graphed on the timeline.
 - API breakage: SetThreadName() now only works on current thread.
 - Fixed thread name retrieval after thread is destroyed.
 - Added number of CPU cores to host info.

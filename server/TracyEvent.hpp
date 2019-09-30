@@ -279,9 +279,6 @@ struct ContextSwitchData
 enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
 
 
-// Thread can't be compressed here, because we want to ignore external threads and we can't
-// determine whether thread is local or external when context information arrives (thread data
-// might come after context switch data).
 struct ContextSwitchCpu
 {
     int64_t Start() const { return int64_t( _start_thread ) >> 16; }

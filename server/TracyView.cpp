@@ -1275,7 +1275,7 @@ void View::DrawFrames()
             auto itStart = std::lower_bound( begin, zoneData.zones.end(), f0, [this] ( const auto& l, const auto& r ) { return m_worker.GetZoneEndDirect( *l.Zone() ) < r; } );
             if( itStart != zoneData.zones.end() )
             {
-                auto itEnd = std::lower_bound( itStart, zoneData.zones.end(), f1, [this] ( const auto& l, const auto& r ) { return l.Zone()->Start() < r; } );
+                auto itEnd = std::lower_bound( itStart, zoneData.zones.end(), f1, [] ( const auto& l, const auto& r ) { return l.Zone()->Start() < r; } );
                 if( m_frames->continuous )
                 {
                     while( itStart != itEnd )

@@ -90,11 +90,6 @@ public:
         SetVal( val );
     }
 
-    Int24( const Int24& ) = delete;
-    Int24( Int24&& ) = delete;
-    Int24& operator=( const Int24& ) = delete;
-    Int24& operator=( Int24&& ) = delete;
-
     void SetVal( uint32_t val )
     {
         memcpy( m_val, &val, 3 );
@@ -220,8 +215,8 @@ struct MemEvent
 
     uint64_t ptr;
     uint64_t size;
-    uint32_t csAlloc;
-    uint32_t csFree;
+    Int24 csAlloc;
+    Int24 csFree;
     uint64_t _time_thread_alloc;
     uint64_t _time_thread_free;
 };

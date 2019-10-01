@@ -10008,10 +10008,10 @@ void View::DrawMemoryAllocWindow()
     ImGui::TextDisabled( "(%s)", RealToString( tidAlloc, true ) );
     ImGui::SameLine();
     SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
-    if( ev.csAlloc != 0 )
+    if( ev.csAlloc.Val() != 0 )
     {
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-        SmallCallstackButton( "Call stack", ev.csAlloc, idx );
+        SmallCallstackButton( "Call stack", ev.csAlloc.Val(), idx );
     }
     if( ev.TimeFree() < 0 )
     {
@@ -10027,10 +10027,10 @@ void View::DrawMemoryAllocWindow()
         ImGui::TextDisabled( "(%s)", RealToString( tidFree, true ) );
         ImGui::SameLine();
         SmallColorBox( GetThreadColor( tidFree, 0 ) );
-        if( ev.csFree != 0 )
+        if( ev.csFree.Val() != 0 )
         {
             ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-            SmallCallstackButton( "Call stack", ev.csFree, idx );
+            SmallCallstackButton( "Call stack", ev.csFree.Val(), idx );
         }
         TextFocused( "Duration:", TimeToString( ev.TimeFree() - ev.TimeAlloc() ) );
     }
@@ -11488,24 +11488,24 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             }
         }
         ImGui::NextColumn();
-        if( v->csAlloc == 0 )
+        if( v->csAlloc.Val() == 0 )
         {
             TextDisabledUnformatted( "[alloc]" );
         }
         else
         {
-            SmallCallstackButton( "alloc", v->csAlloc, idx );
+            SmallCallstackButton( "alloc", v->csAlloc.Val(), idx );
         }
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        if( v->csFree == 0 )
+        if( v->csFree.Val() == 0 )
         {
             TextDisabledUnformatted( "[free]" );
         }
         else
         {
-            SmallCallstackButton( "free", v->csFree, idx );
+            SmallCallstackButton( "free", v->csFree.Val(), idx );
         }
         ImGui::NextColumn();
         ptr++;
@@ -11549,14 +11549,14 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
     {
         for( auto& ev : mem.data )
         {
-            if( ev.csAlloc == 0 ) continue;
+            if( ev.csAlloc.Val() == 0 ) continue;
             if( ev.TimeAlloc() >= zvMid ) continue;
             if( onlyActive && ev.TimeFree() >= 0 && ev.TimeFree() < zvMid ) continue;
 
-            auto it = pathSum.find( ev.csAlloc );
+            auto it = pathSum.find( ev.csAlloc.Val() );
             if( it == pathSum.end() )
             {
-                pathSum.emplace( ev.csAlloc, PathData { 1, ev.size } );
+                pathSum.emplace( ev.csAlloc.Val(), PathData { 1, ev.size } );
             }
             else
             {
@@ -11569,13 +11569,13 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
     {
         for( auto& ev : mem.data )
         {
-            if( ev.csAlloc == 0 ) continue;
+            if( ev.csAlloc.Val() == 0 ) continue;
             if( onlyActive && ev.TimeFree() >= 0 ) continue;
 
-            auto it = pathSum.find( ev.csAlloc );
+            auto it = pathSum.find( ev.csAlloc.Val() );
             if( it == pathSum.end() )
             {
-                pathSum.emplace( ev.csAlloc, PathData { 1, ev.size } );
+                pathSum.emplace( ev.csAlloc.Val(), PathData { 1, ev.size } );
             }
             else
             {
@@ -12196,7 +12196,7 @@ void View::DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree,
             m_memInfo.allocList.clear();
             for( size_t i=0; i<sz; i++ )
             {
-                if( v.callstacks.find( mem[i].csAlloc ) != v.callstacks.end() )
+                if( v.callstacks.find( mem[i].csAlloc.Val() ) != v.callstacks.end() )
                 {
                     m_memInfo.allocList.emplace_back( i );
                 }

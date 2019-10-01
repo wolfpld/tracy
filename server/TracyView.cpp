@@ -5106,7 +5106,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
         for( size_t i=0; i<sz; i++ )
         {
             auto curr = trace[i];
-            if( prev->callstack == 0 || curr->callstack == 0 )
+            if( prev->callstack.Val() == 0 || curr->callstack.Val() == 0 )
             {
                 if( showUnknownFrames )
                 {
@@ -5115,10 +5115,10 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                     TextDisabledUnformatted( "[unknown frames]" );
                 }
             }
-            else if( prev->callstack != curr->callstack )
+            else if( prev->callstack.Val() != curr->callstack.Val() )
             {
-                auto& prevCs = worker.GetCallstack( prev->callstack );
-                auto& currCs = worker.GetCallstack( curr->callstack );
+                auto& prevCs = worker.GetCallstack( prev->callstack.Val() );
+                auto& currCs = worker.GetCallstack( curr->callstack.Val() );
 
                 const auto psz = int8_t( prevCs.size() );
                 int8_t idx;
@@ -5185,7 +5185,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     }
 
     auto last = trace.empty() ? zone : trace.back();
-    if( last->callstack == 0 )
+    if( last->callstack.Val() == 0 )
     {
         if( showUnknownFrames )
         {
@@ -5196,7 +5196,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     }
     else
     {
-        auto& cs = worker.GetCallstack( last->callstack );
+        auto& cs = worker.GetCallstack( last->callstack.Val() );
         const auto csz = cs.size();
         for( uint8_t i=1; i<csz; i++ )
         {
@@ -5284,10 +5284,10 @@ void View::DrawZoneInfoWindow()
     {
         m_findZone.ShowZone( ev.SrcLoc(), m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
     }
-    if( ev.callstack != 0 )
+    if( ev.callstack.Val() != 0 )
     {
         ImGui::SameLine();
-        bool hilite = m_callstackInfoWindow == ev.callstack;
+        bool hilite = m_callstackInfoWindow == ev.callstack.Val();
         if( hilite )
         {
             SetButtonHighlightColor();
@@ -5298,7 +5298,7 @@ void View::DrawZoneInfoWindow()
         if( ImGui::Button( "Call stack" ) )
 #endif
         {
-            m_callstackInfoWindow = ev.callstack;
+            m_callstackInfoWindow = ev.callstack.Val();
         }
         if( hilite )
         {
@@ -6081,10 +6081,10 @@ void View::DrawGpuInfoWindow()
             ShowZoneInfo( *parent, m_gpuInfoWindowThread );
         }
     }
-    if( ev.callstack != 0 )
+    if( ev.callstack.Val() != 0 )
     {
         ImGui::SameLine();
-        bool hilite = m_callstackInfoWindow == ev.callstack;
+        bool hilite = m_callstackInfoWindow == ev.callstack.Val();
         if( hilite )
         {
             SetButtonHighlightColor();
@@ -6095,7 +6095,7 @@ void View::DrawGpuInfoWindow()
         if( ImGui::Button( "Call stack" ) )
 #endif
         {
-            m_callstackInfoWindow = ev.callstack;
+            m_callstackInfoWindow = ev.callstack.Val();
         }
         if( hilite )
         {
@@ -7259,7 +7259,7 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
     case FindZone::GroupBy::UserText:
         return ev.Zone()->text.Active() ? ev.Zone()->text.Idx() : std::numeric_limits<uint64_t>::max();
     case FindZone::GroupBy::Callstack:
-        return ev.Zone()->callstack;
+        return ev.Zone()->callstack.Val();
     default:
         assert( false );
         return 0;
@@ -8288,7 +8288,7 @@ void View::DrawFindZone()
                 group = &m_findZone.groups[ev.Zone()->text.Active() ? ev.Zone()->text.Idx() : std::numeric_limits<uint64_t>::max()];
                 break;
             case FindZone::GroupBy::Callstack:
-                group = &m_findZone.groups[ev.Zone()->callstack];
+                group = &m_findZone.groups[ev.Zone()->callstack.Val()];
                 break;
             default:
                 group = nullptr;

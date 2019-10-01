@@ -138,7 +138,7 @@ struct ZoneEvent
     uint64_t _start_srcloc;
     uint64_t _end_child1;
     StringIdx text;
-    uint32_t callstack;
+    Int24 callstack;
     StringIdx name;
     uint16_t _child2;
 };
@@ -198,7 +198,7 @@ struct GpuEvent
     int64_t gpuStart;
     int64_t gpuEnd;
     int16_t srcloc;
-    uint32_t callstack;
+    Int24 callstack;
     uint16_t thread;
     int32_t child;
 };

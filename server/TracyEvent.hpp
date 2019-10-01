@@ -81,6 +81,37 @@ struct __StringIdxOld
 };
 
 
+class Int24
+{
+public:
+    Int24() { memset( m_val, 0, sizeof( m_val ) ); }
+    Int24( uint32_t val )
+    {
+        SetVal( val );
+    }
+
+    Int24( const Int24& ) = delete;
+    Int24( Int24&& ) = delete;
+    Int24& operator=( const Int24& ) = delete;
+    Int24& operator=( Int24&& ) = delete;
+
+    void SetVal( uint32_t val )
+    {
+        memcpy( m_val, &val, 3 );
+    }
+
+    uint32_t Val() const
+    {
+        uint32_t val = 0;
+        memcpy( &val, m_val, 3 );
+        return val;
+    }
+
+private:
+    uint8_t m_val[3];
+};
+
+
 struct SourceLocation
 {
     StringRef name;

@@ -2739,7 +2739,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
             if( m_vd.darkenContextSwitches )
             {
-                draw->AddRectFilled( wpos + ImVec2( px0, round( offset + ty * 0.5 ) ), wpos + ImVec2( px1, endOffset ), 0x66212326 );
+                draw->AddRectFilled( wpos + ImVec2( px0, round( offset + ty * 0.5 ) ), wpos + ImVec2( px1, endOffset ), 0x661C2321 );
             }
             draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( std::min( pxw, w+10.0 ), round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
             if( ev.wakeup != ev.Start() )

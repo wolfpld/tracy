@@ -2362,7 +2362,7 @@ void Profiler::ProcessSysTime()
 extern "C" {
 #endif
 
-TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_data* srcloc, int active )
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_data* srcloc, int active )
 {
     ___tracy_c_zone_context ctx;
 #ifdef TRACY_ON_DEMAND
@@ -2398,7 +2398,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
     return ctx;
 }
 
-TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_location_data* srcloc, int depth, int active )
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_location_data* srcloc, int depth, int active )
 {
     ___tracy_c_zone_context ctx;
 #ifdef TRACY_ON_DEMAND
@@ -2436,7 +2436,7 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
     return ctx;
 }
 
-void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
+TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 {
     if( !ctx.active ) return;
 #ifndef TRACY_NO_VERIFY
@@ -2461,7 +2461,7 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
     }
 }
 
-void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
+TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
@@ -2489,7 +2489,7 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
     }
 }
 
-void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
+TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
@@ -2517,20 +2517,20 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
     }
 }
 
-void ___tracy_emit_memory_alloc( const void* ptr, size_t size ) { tracy::Profiler::MemAlloc( ptr, size ); }
-void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth ) { tracy::Profiler::MemAllocCallstack( ptr, size, depth ); }
-void ___tracy_emit_memory_free( const void* ptr ) { tracy::Profiler::MemFree( ptr ); }
-void ___tracy_emit_memory_free_callstack( const void* ptr, int depth ) { tracy::Profiler::MemFreeCallstack( ptr, depth ); }
-void ___tracy_emit_frame_mark( const char* name ) { tracy::Profiler::SendFrameMark( name ); }
-void ___tracy_emit_frame_mark_start( const char* name ) { tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgStart ); }
-void ___tracy_emit_frame_mark_end( const char* name ) { tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgEnd ); }
-void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_t h, uint8_t offset, int flip ) { tracy::Profiler::SendFrameImage( image, w, h, offset, flip ); }
-void ___tracy_emit_plot( const char* name, double val ) { tracy::Profiler::PlotData( name, val ); }
-void ___tracy_emit_message( const char* txt, size_t size ) { tracy::Profiler::Message( txt, size ); }
-void ___tracy_emit_messageL( const char* txt ) { tracy::Profiler::Message( txt ); }
-void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color ) { tracy::Profiler::MessageColor( txt, size, color ); }
-void ___tracy_emit_messageLC( const char* txt, uint32_t color ) { tracy::Profiler::MessageColor( txt, color ); }
-void ___tracy_emit_message_appinfo( const char* txt, size_t size ) { tracy::Profiler::MessageAppInfo( txt, size ); }
+TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size ) { tracy::Profiler::MemAlloc( ptr, size ); }
+TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth ) { tracy::Profiler::MemAllocCallstack( ptr, size, depth ); }
+TRACY_API void ___tracy_emit_memory_free( const void* ptr ) { tracy::Profiler::MemFree( ptr ); }
+TRACY_API void ___tracy_emit_memory_free_callstack( const void* ptr, int depth ) { tracy::Profiler::MemFreeCallstack( ptr, depth ); }
+TRACY_API void ___tracy_emit_frame_mark( const char* name ) { tracy::Profiler::SendFrameMark( name ); }
+TRACY_API void ___tracy_emit_frame_mark_start( const char* name ) { tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgStart ); }
+TRACY_API void ___tracy_emit_frame_mark_end( const char* name ) { tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgEnd ); }
+TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_t h, uint8_t offset, int flip ) { tracy::Profiler::SendFrameImage( image, w, h, offset, flip ); }
+TRACY_API void ___tracy_emit_plot( const char* name, double val ) { tracy::Profiler::PlotData( name, val ); }
+TRACY_API void ___tracy_emit_message( const char* txt, size_t size ) { tracy::Profiler::Message( txt, size ); }
+TRACY_API void ___tracy_emit_messageL( const char* txt ) { tracy::Profiler::Message( txt ); }
+TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color ) { tracy::Profiler::MessageColor( txt, size, color ); }
+TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color ) { tracy::Profiler::MessageColor( txt, color ); }
+TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size ) { tracy::Profiler::MessageAppInfo( txt, size ); }
 
 #ifdef __cplusplus
 }

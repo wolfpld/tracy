@@ -15,5 +15,5 @@
 #  ifndef TRACY_IMPORTS
 #    define TRACY_IMPORTS 1
 #  endif
-#  include "common/TracySystem.cpp"
 #endif
+#include "common/TracySystem.cpp"

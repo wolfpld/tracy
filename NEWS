@@ -46,6 +46,7 @@ v0.6 (xxxx-xx-xx)
 - Network port can be now specified by the user.
 - Proper handling of multithreaded Vulkan code.
 - Added extreme compression level in update utility.
+- Added time distribution data in the zone information window.
 
 v0.5 (2019-08-10)
 -----------------

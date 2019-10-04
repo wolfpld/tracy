@@ -269,6 +269,7 @@ void SysTraceSendExternalName( uint64_t thread )
         if( !threadSent )
         {
             GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+            threadSent = true;
         }
         if( pid != 0 )
         {

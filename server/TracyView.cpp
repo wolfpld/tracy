@@ -7260,6 +7260,8 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
         return ev.Zone()->text.Active() ? ev.Zone()->text.Idx() : std::numeric_limits<uint64_t>::max();
     case FindZone::GroupBy::Callstack:
         return ev.Zone()->callstack.Val();
+    case FindZone::GroupBy::NoGrouping:
+        return 0;
     default:
         assert( false );
         return 0;
@@ -8217,6 +8219,8 @@ void View::DrawFindZone()
         groupChanged |= ImGui::RadioButton( "User text", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::UserText );
         ImGui::SameLine();
         groupChanged |= ImGui::RadioButton( "Call stacks", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Callstack );
+        ImGui::SameLine();
+        groupChanged |= ImGui::RadioButton( "No grouping", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::NoGrouping );
         if( groupChanged )
         {
             m_findZone.selGroup = m_findZone.Unselected;
@@ -8289,6 +8293,9 @@ void View::DrawFindZone()
                 break;
             case FindZone::GroupBy::Callstack:
                 group = &m_findZone.groups[ev.Zone()->callstack.Val()];
+                break;
+            case FindZone::GroupBy::NoGrouping:
+                group = &m_findZone.groups[0];
                 break;
             default:
                 group = nullptr;
@@ -8479,6 +8486,9 @@ void View::DrawFindZone()
                         auto& frameData = *m_worker.GetCallstackFrame( *callstack.begin() );
                         hdrString = m_worker.GetString( frameData.data[frameData.size-1].name );
                     }
+                    break;
+                case FindZone::GroupBy::NoGrouping:
+                    hdrString = "Zone list";
                     break;
                 default:
                     hdrString = nullptr;

@@ -5243,6 +5243,40 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     ImGui::TreePop();
 }
 
+struct ZoneTimeData
+{
+    int64_t time;
+    uint64_t count;
+};
+
+void CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone, Worker& worker )
+{
+    assert( zone.Child() >= 0 );
+    const auto& children = worker.GetZoneChildren( zone.Child() );
+
+    for( auto& child : children )
+    {
+        const auto t = worker.GetZoneEnd( *child ) - child->Start();
+        zit->second.time -= t;
+    }
+    for( auto& child : children )
+    {
+        const auto srcloc = child->SrcLoc();
+        const auto t = worker.GetZoneEnd( *child ) - child->Start();
+        auto it = data.find( srcloc );
+        if( it == data.end() )
+        {
+            it = data.emplace( srcloc, ZoneTimeData { t, 1 } ).first;
+        }
+        else
+        {
+            it->second.time += t;
+            it->second.count++;
+        }
+        if( child->Child() >= 0 ) CalcZoneTimeData( data, it, *child, worker );
+    }
+}
+
 void View::DrawZoneInfoWindow()
 {
     auto& ev = *m_zoneInfoWindow;
@@ -6037,6 +6071,55 @@ void View::DrawZoneInfoWindow()
                 }
                 ImGui::EndColumns();
             }
+            ImGui::TreePop();
+        }
+    }
+
+    if( ev.Child() >= 0 )
+    {
+        const auto& children = m_worker.GetZoneChildren( ev.Child() );
+        bool expand = ImGui::TreeNode( "Time distribution" );
+        if( expand )
+        {
+            flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>> data;
+            auto it = data.emplace( ev.SrcLoc(), ZoneTimeData{ ztime, 1 } ).first;
+            CalcZoneTimeData( data, it, ev, m_worker );
+            std::vector<flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::const_iterator> vec;
+            vec.reserve( data.size() );
+            for( auto it = data.cbegin(); it != data.cend(); ++it ) vec.emplace_back( it );
+            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
+            static bool widthSet = false;
+            ImGui::Columns( 3 );
+            if( !widthSet )
+            {
+                widthSet = true;
+                const auto w = ImGui::GetWindowWidth();
+                ImGui::SetColumnWidth( 0, w * 0.57f );
+                ImGui::SetColumnWidth( 1, w * 0.25f );
+                ImGui::SetColumnWidth( 2, w * 0.18f );
+            }
+            ImGui::TextUnformatted( "Zone" );
+            ImGui::NextColumn();
+            ImGui::TextUnformatted( "Time" );
+            ImGui::NextColumn();
+            ImGui::TextUnformatted( "MTPC" );
+            ImGui::NextColumn();
+            ImGui::Separator();
+            const auto fztime = 100.f / ztime;
+            for( auto& v : vec )
+            {
+                ImGui::TextUnformatted( m_worker.GetZoneName( m_worker.GetSourceLocation( v->first ) ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v->second.count, true ) );
+                ImGui::NextColumn();
+                ImGui::TextUnformatted( TimeToString( v->second.time ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.2f%%)", v->second.time * fztime );
+                ImGui::NextColumn();
+                ImGui::TextUnformatted( TimeToString( v->second.time / v->second.count ) );
+                ImGui::NextColumn();
+            }
+            ImGui::EndColumns();
             ImGui::TreePop();
         }
     }

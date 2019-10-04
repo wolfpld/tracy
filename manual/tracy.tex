@@ -742,6 +742,12 @@ void Graphics::Render()
 
 The zone markup macros automatically report when they end, through the RAII mechanism\footnote{\url{https://en.cppreference.com/w/cpp/language/raii}}. This is very helpful, but sometimes you may want to mark the zone start and end points yourself, for example if you want to have a zone that crosses the function's boundary. This can be achieved by using the C API, which is described in section~\ref{capi}.
 
+\subsubsection{Exiting program from within a zone}
+
+At the present time exiting the profiled application from inside a zone is not supported. When the client calls \texttt{exit()}, the profiler will wait for all zones to end, before a program can be truly terminated. If program execution stopped inside a zone, this will never happen, and the profiled application will seemingly hang up. At this point you will need to manually terminate the program.
+
+As a workaround, you may add a \texttt{try}/\texttt{catch} pair at the bottom of the function stack (for example in the \texttt{main()} function) and replace \texttt{exit()} calls with throwing a custom exception. When this exception is caught, you may call \texttt{exit()}, knowing that the application's data structures (including profiling zones) were properly cleaned up.
+
 \subsection{Marking locks}
 
 Modern programs must use multi-threading to achieve full performance capability of the CPU. Correct execution requires claiming exclusive access to data shared between threads. When many threads want to enter the same critical section at once, the application's multi-threaded performance advantage is nullified. To help solve this problem, Tracy can collect and display lock interactions in threads.

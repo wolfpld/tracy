@@ -8605,6 +8605,7 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
         }
 
         ImGui::PushID( ev );
+        if( m_zoneHover == ev ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0, 1, 0, 1 ) );
         if( ImGui::Selectable( TimeToString( ev->Start() ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
         {
             ShowZoneInfo( *ev );
@@ -8627,7 +8628,7 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
             ImGui::TextUnformatted( m_worker.GetString( ev->name ) );
         }
         ImGui::NextColumn();
-
+        if( m_zoneHover == ev ) ImGui::PopStyleColor();
         ImGui::PopID();
     }
     ImGui::Columns( 1 );

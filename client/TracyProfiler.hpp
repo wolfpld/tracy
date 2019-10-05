@@ -360,8 +360,8 @@ public:
 
     static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth )
     {
-        auto& profiler = GetProfiler();
 #ifdef TRACY_HAS_CALLSTACK
+        auto& profiler = GetProfiler();
 #  ifdef TRACY_ON_DEMAND
         if( !profiler.IsConnected() ) return;
 #  endif
@@ -381,8 +381,8 @@ public:
 
     static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth )
     {
-        auto& profiler = GetProfiler();
 #ifdef TRACY_HAS_CALLSTACK
+        auto& profiler = GetProfiler();
 #  ifdef TRACY_ON_DEMAND
         if( !profiler.IsConnected() ) return;
 #  endif

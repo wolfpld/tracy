@@ -10208,6 +10208,7 @@ void View::DrawInfo()
     TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
     if( m_bigFont ) ImGui::PopFont();
     TextFocused( "Capture time:", dtmp );
+    if( !m_filename.empty() ) TextFocused( "File:", m_filename.c_str() );
     {
         const auto& desc = m_userData.GetDescription();
         const auto descsz = std::min<size_t>( 255, desc.size() );

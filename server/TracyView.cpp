@@ -130,6 +130,7 @@ View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, I
 
 View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb )
     : m_worker( f )
+    , m_filename( f.GetFilename() )
     , m_staticView( true )
     , m_pause( true )
     , m_frames( m_worker.GetFramesBase() )
@@ -945,10 +946,12 @@ bool View::DrawConnection()
                 char tmp[1024];
                 sprintf( tmp, "%s.tracy", fn );
                 f.reset( FileWrite::Open( tmp ) );
+                if( f ) m_filename = tmp;
             }
             else
             {
                 f.reset( FileWrite::Open( fn ) );
+                if( f ) m_filename = fn;
             }
             if( f )
             {

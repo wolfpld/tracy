@@ -248,6 +248,7 @@ private:
     }
 
     Worker m_worker;
+    std::string m_filename;
     bool m_staticView;
     bool m_pause;
 

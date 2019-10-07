@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include <thread>
 
 #include "TracyFileHeader.hpp"
@@ -23,7 +24,7 @@ public:
     static FileRead* Open( const char* fn )
     {
         auto f = fopen( fn, "rb" );
-        return f ? new FileRead( f ) : nullptr;
+        return f ? new FileRead( f, fn ) : nullptr;
     }
 
     ~FileRead()
@@ -105,10 +106,13 @@ public:
         return false;
     }
 
+    const std::string& GetFilename() const { return m_filename; }
+
 private:
-    FileRead( FILE* f )
+    FileRead( FILE* f, const char* fn )
         : m_stream( LZ4_createStreamDecode() )
         , m_file( f )
+        , m_filename( fn )
         , m_buf( m_bufData[1] )
         , m_second( m_bufData[0] )
         , m_offset( 0 )
@@ -215,6 +219,7 @@ private:
 
     LZ4_streamDecode_t* m_stream;
     FILE* m_file;
+    std::string m_filename;
     char m_bufData[2][BufSize];
     char* m_buf;
     char* m_second;

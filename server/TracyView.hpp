@@ -561,6 +561,11 @@ private:
         bool sync = false;
         bool zoom = false;
     } m_playback;
+
+    struct TimeDistribution {
+        enum class SortBy : int { Count, Time, Mtpc };
+        SortBy sortBy = SortBy::Time;
+    } m_timeDist;
 };
 
 }

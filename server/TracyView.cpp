@@ -6090,7 +6090,6 @@ void View::DrawZoneInfoWindow()
             std::vector<flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::const_iterator> vec;
             vec.reserve( data.size() );
             for( auto it = data.cbegin(); it != data.cend(); ++it ) vec.emplace_back( it );
-            pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
             static bool widthSet = false;
             ImGui::Columns( 3 );
             if( !widthSet )
@@ -6101,13 +6100,28 @@ void View::DrawZoneInfoWindow()
                 ImGui::SetColumnWidth( 1, w * 0.25f );
                 ImGui::SetColumnWidth( 2, w * 0.18f );
             }
-            ImGui::TextUnformatted( "Zone" );
+            if( ImGui::SmallButton( "Zone" ) ) m_timeDist.sortBy = TimeDistribution::SortBy::Count;
             ImGui::NextColumn();
-            ImGui::TextUnformatted( "Time" );
+            if( ImGui::SmallButton( "Time" ) ) m_timeDist.sortBy = TimeDistribution::SortBy::Time;
             ImGui::NextColumn();
-            ImGui::TextUnformatted( "MTPC" );
+            if( ImGui::SmallButton( "MTPC" ) ) m_timeDist.sortBy = TimeDistribution::SortBy::Mtpc;
             ImGui::NextColumn();
             ImGui::Separator();
+            switch( m_timeDist.sortBy )
+            {
+            case TimeDistribution::SortBy::Count:
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.count > rhs->second.count; } );
+                break;
+            case TimeDistribution::SortBy::Time:
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.time > rhs->second.time; } );
+                break;
+            case TimeDistribution::SortBy::Mtpc:
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return float( lhs->second.time ) / lhs->second.count > float( rhs->second.time ) / rhs->second.count; } );
+                break;
+            default:
+                assert( false );
+                break;
+            }
             const auto fztime = 100.f / ztime;
             for( auto& v : vec )
             {

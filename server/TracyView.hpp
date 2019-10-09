@@ -28,6 +28,7 @@ struct MemoryPage;
 struct QueueItem;
 class FileRead;
 class TextEditor;
+struct ZoneTimeData;
 
 class View
 {
@@ -207,6 +208,9 @@ private:
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const GpuEvent& zone );
     bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
+
+    void CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
+    void CalcZoneTimeData( const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
 
     void SetPlaybackFrame( uint32_t idx );
 
@@ -565,6 +569,7 @@ private:
     struct TimeDistribution {
         enum class SortBy : int { Count, Time, Mtpc };
         SortBy sortBy = SortBy::Time;
+        bool runningTime = false;
     } m_timeDist;
 };
 

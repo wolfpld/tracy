@@ -6118,9 +6118,9 @@ void View::DrawZoneInfoWindow()
         bool expand = ImGui::TreeNode( "Time distribution" );
         if( expand )
         {
-            ImGui::SameLine();
             if( ctx )
             {
+                ImGui::SameLine();
                 SmallCheckbox( "Running time", &m_timeDist.runningTime );
             }
             flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>> data;

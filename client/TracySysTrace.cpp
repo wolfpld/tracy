@@ -248,7 +248,7 @@ void SysTraceSendExternalName( uint64_t thread )
                     if( _EnumProcessModules( phnd, modules, 1024 * sizeof( HMODULE ), &needed ) != 0 )
                     {
                         const auto sz = std::min( DWORD( needed / sizeof( HMODULE ) ), DWORD( 1024 ) );
-                        for( int i=0; i<sz; i++ )
+                        for( DWORD i=0; i<sz; i++ )
                         {
                             MODULEINFO info;
                             if( _GetModuleInformation( phnd, modules[i], &info, sizeof( info ) ) != 0 )

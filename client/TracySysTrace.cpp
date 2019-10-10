@@ -4,6 +4,10 @@
 
 #  if defined _WIN32 || defined __CYGWIN__
 
+#    ifndef NOMINMAX
+#      define NOMINMAX
+#    endif
+
 #    define INITGUID
 #    include <assert.h>
 #    include <string.h>

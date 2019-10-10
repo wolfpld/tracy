@@ -5,6 +5,9 @@
 #ifdef TRACY_HAS_CALLSTACK
 
 #if TRACY_HAS_CALLSTACK == 1
+#  ifndef NOMINMAX
+#    define NOMINMAX
+#  endif
 #  include <windows.h>
 #  ifdef _MSC_VER
 #    pragma warning( push )

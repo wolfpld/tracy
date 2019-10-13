@@ -2577,13 +2577,29 @@ void View::DrawZones()
                 TextFocused( "Annotation length:", TimeToString( ann->end - ann->start ) );
                 ImGui::EndTooltip();
             }
-            if( ( ann->end - ann->start ) * pxns > th * 4 )
+            const auto aw = ( ann->end - ann->start ) * pxns;
+            if( aw > th * 4 )
             {
                 draw->AddCircleFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0x88AABB22 );
                 draw->AddCircle( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0xAAAABB22 );
                 if( ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th, th ), linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 3, th * 3 ) ) )
                 {
                     m_selectedAnnotation = ann.get();
+                }
+
+                if( !ann->text.empty() )
+                {
+                    const auto tw = ImGui::CalcTextSize( ann->text.c_str() ).x;
+                    if( aw - th*4 > tw )
+                    {
+                        draw->AddText( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 4, th * 0.5 ), 0xFFFFFFFF, ann->text.c_str() );
+                    }
+                    else
+                    {
+                        draw->PushClipRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), true );
+                        draw->AddText( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 4, th * 0.5 ), 0xFFFFFFFF, ann->text.c_str() );
+                        draw->PopClipRect();
+                    }
                 }
             }
         }

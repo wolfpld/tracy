@@ -1,6 +1,12 @@
 #include <assert.h>
 #include <memory>
 
+#ifdef _WIN32
+#  include <stdio.h>
+#else
+#  include <unistd.h>
+#endif
+
 #include "TracyStorage.hpp"
 #include "TracyUserData.hpp"
 #include "TracyViewData.hpp"

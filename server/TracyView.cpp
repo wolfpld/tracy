@@ -1428,6 +1428,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             const auto e = std::max( m_highlight.start, m_highlight.end );
             ann->start = s;
             ann->end = e;
+            ann->color = 0x888888;
             m_selectedAnnotation = ann.get();
             m_annotations.emplace_back( std::move( ann ) );
         }
@@ -2558,8 +2559,10 @@ void View::DrawZones()
     {
         if( ann->start < m_vd.zvEnd && ann->end > m_vd.zvStart )
         {
-            draw->AddRectFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), m_selectedAnnotation == ann.get() ? 0x44888888 : 0x22888888 );
-            draw->AddRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), m_selectedAnnotation == ann.get() ? 0x66888888 : 0x44888888 );
+            uint32_t c0 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x44000000 : 0x22000000 );
+            uint32_t c1 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x66000000 : 0x44000000 );
+            draw->AddRectFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), c0 );
+            draw->AddRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), c1 );
             if( ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ) ) )
             {
                 ImGui::BeginTooltip();
@@ -11575,6 +11578,9 @@ void View::DrawSelectedAnnotation()
             m_selectedAnnotation->text.assign( buf );
         }
     }
+    ImVec4 col = ImGui::ColorConvertU32ToFloat4( m_selectedAnnotation->color );
+    ImGui::ColorEdit3( "Color", &col.x );
+    m_selectedAnnotation->color = ImGui::ColorConvertFloat4ToU32( col );
     ImGui::Separator();
     TextFocused( "Annotation begin:", TimeToString( m_selectedAnnotation->start ) );
     TextFocused( "Annotation end:", TimeToString( m_selectedAnnotation->end ) );

@@ -516,6 +516,7 @@ struct Annotation
     std::string text;
     int64_t start;
     int64_t end;
+    uint32_t color;
 };
 
 }

@@ -1704,6 +1704,29 @@ The timeline view may be scrolled both vertically and horizontally by dragging t
 
 You can zoom in and out the timeline view by using the \Scroll{} mouse scroll. You can select a range to which you want to zoom-in by dragging the \MMB{} middle mouse button. Dragging the \MMB{} middle mouse button while the \keys{\ctrl} key is pressed will zoom-out.
 
+\subsubsection{Annotating the trace}
+\label{annotatingtrace}
+
+Sometimes you may want to add notes to a trace. For example, you may want to mark a region to ignore, because the application was out-of-focus, or a region where a new user was connecting to the game, which resulted in a frame drop that needs to be investigated.
+
+To add an annotation, drag the \LMB{}~left mouse button over the timeline view, while holding the \keys{\ctrl} key. When the mouse key is released, a new annotation region will be added and a settings window will open (section~\ref{annotationsettings}), allowing you to enter a description.
+
+Annotations are displayed on the timeline, as presented on figure~\ref{annotation}. Clicking on the circle next to the text description will open the annotation settings window, in which you can modify or remove the region.
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw (0, 0.25) -- (0, 1) -- (5, 1) -- (5, 0.25);
+\draw[dotted] (0, -0.2) -- (0, 0.25);
+\draw[dotted] (5, -0.2) -- (5, 0.25);
+\draw (0.25, 0.75) circle(0.15);
+\draw (0.4, 0.7) node[anchor=west] {Description};
+\end{tikzpicture}
+\caption{Annotation region.}
+\label{annotation}
+\end{figure}
+
+Please note that while the annotations persist between profiling sessions, they are not saved in the trace, but in the user data files, as described in section~\ref{tracespecific}.
+
 \subsection{Options menu}
 \label{options}
 
@@ -2134,6 +2157,11 @@ The \emph{running time} column shows how much processor time was used by a proce
 
 The profiled program is highlighted using green color. Furthermore, yellow highlight indicates threads which are known to the profiler (that is, which sent events due to instrumentation).
 
+\subsection{Annotation settings window}
+\label{annotationsettings}
+
+In this window you may modify how a timeline annotation (section~\ref{annotatingtrace}) is presented by setting its text description, or selecting region highlight color. If the note is no longer needed, it may also be removed here.
+
 \section{Configuration files}
 
 While the client part doesn't read or write anything to the disk (with the exception of accessing the \texttt{/proc} filesystem on Linux), the server part has to keep some persistent state. The naming conventions or internal data format of the files are not meant to be known by profiler users, but you may want to do a backup of the configuration, or move it to another machine.
@@ -2145,6 +2173,7 @@ On Windows settings are stored in the \texttt{\%APPDATA\%/tracy} directory. All 
 Various files at the root configuration directory store common profiler state such as UI windows position, connections history, etc.
 
 \subsection{Trace specific settings}
+\label{tracespecific}
 
 Trace files saved on disk are immutable and can't be changed, but it may be desirable to store additional per-trace information to be used by the profiler, for example a custom description of the trace, or the timeline view position used in the previous profiling session.
 

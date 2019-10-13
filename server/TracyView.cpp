@@ -10316,7 +10316,8 @@ void View::DrawInfo()
         ImGui::Text( "%i.%i.%i", version >> 16, ( version >> 8 ) & 0xFF, version & 0xFF );
         TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
         TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
-        TextFocused( "Zones:", RealToString( m_worker.GetZoneCount(), true ) );
+        TextFocused( "CPU zones:", RealToString( m_worker.GetZoneCount(), true ) );
+        TextFocused( "GPU zones:", RealToString( m_worker.GetGpuZoneCount(), true ) );
         TextFocused( "Lock events:", RealToString( m_worker.GetLockCount(), true ) );
         TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount(), true ) );
         TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size(), true ) );

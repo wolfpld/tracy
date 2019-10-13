@@ -28,6 +28,7 @@ public:
 
 private:
     FILE* OpenFile( const char* filename, bool write );
+    void Remove( const char* filename );
 
     std::string m_program;
     uint64_t m_time;

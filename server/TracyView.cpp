@@ -151,12 +151,14 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
     SetViewToLastFrames();
     m_userData.StateShouldBePreserved();
     m_userData.LoadState( m_vd );
+    m_userData.LoadAnnotations( m_annotations );
 }
 
 View::~View()
 {
     m_worker.Shutdown();
     m_userData.SaveState( m_vd );
+    m_userData.SaveAnnotations( m_annotations );
 
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();

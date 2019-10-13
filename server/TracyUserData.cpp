@@ -11,9 +11,11 @@ namespace tracy
 constexpr auto FileDescription = "description";
 constexpr auto FileTimeline = "timeline";
 constexpr auto FileOptions = "options";
+constexpr auto FileAnnotations = "annotations";
 
 enum : uint32_t { VersionTimeline = 0 };
 enum : uint32_t { VersionOptions = 2 };
+enum : uint32_t { VersionAnnotations = 0 };
 
 UserData::UserData()
     : m_preserveState( false )
@@ -141,6 +143,74 @@ void UserData::SaveState( const ViewData& data )
 void UserData::StateShouldBePreserved()
 {
     m_preserveState = true;
+}
+
+void UserData::LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data )
+{
+    assert( Valid() );
+    FILE* f = OpenFile( FileAnnotations, false );
+    if( f )
+    {
+        uint32_t ver;
+        fread( &ver, 1, sizeof( ver ), f );
+        if( ver == VersionAnnotations )
+        {
+            uint32_t sz;
+            fread( &sz, 1, sizeof( sz ), f );
+            for( uint32_t i=0; i<sz; i++ )
+            {
+                auto ann = std::make_unique<Annotation>();
+
+                uint32_t tsz;
+                fread( &tsz, 1, sizeof( tsz ), f );
+                if( tsz != 0 )
+                {
+                    char buf[1024];
+                    assert( tsz < 1024 );
+                    fread( buf, 1, tsz, f );
+                    ann->text.assign( buf, tsz );
+                }
+                fread( &ann->start, 1, sizeof( ann->start ), f );
+                fread( &ann->end, 1, sizeof( ann->end ), f );
+                fread( &ann->color, 1, sizeof( ann->color ), f );
+
+                data.emplace_back( std::move( ann ) );
+            }
+        }
+        fclose( f );
+    }
+}
+
+void UserData::SaveAnnotations( const std::vector<std::unique_ptr<Annotation>>& data )
+{
+    if( !m_preserveState ) return;
+    if( data.empty() )
+    {
+        Remove( FileAnnotations );
+        return;
+    }
+    assert( Valid() );
+    FILE* f = OpenFile( FileAnnotations, true );
+    if( f )
+    {
+        uint32_t ver = VersionAnnotations;
+        fwrite( &ver, 1, sizeof( ver ), f );
+        uint32_t sz = uint32_t( data.size() );
+        fwrite( &sz, 1, sizeof( sz ), f );
+        for( auto& ann : data )
+        {
+            sz = uint32_t( ann->text.size() );
+            fwrite( &sz, 1, sizeof( sz ), f );
+            if( sz != 0 )
+            {
+                fwrite( ann->text.c_str(), 1, sz, f );
+            }
+            fwrite( &ann->start, 1, sizeof( ann->start ), f );
+            fwrite( &ann->end, 1, sizeof( ann->end ), f );
+            fwrite( &ann->color, 1, sizeof( ann->color ), f );
+        }
+        fclose( f );
+    }
 }
 
 FILE* UserData::OpenFile( const char* filename, bool write )

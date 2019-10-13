@@ -2146,7 +2146,7 @@ void View::DrawZones()
                                 {
                                     if( !it->second.timeline.empty() )
                                     {
-                                        tid = m_worker.DecompressThread( (*it->second.timeline.begin())->thread );
+                                        tid = m_worker.DecompressThread( (*it->second.timeline.begin())->Thread() );
                                     }
                                 }
                                 TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
@@ -2552,8 +2552,8 @@ void View::DrawZones()
     }
     if( m_gpuInfoWindow )
     {
-        const auto px0 = ( m_gpuInfoWindow->cpuStart - m_vd.zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuInfoWindow->cpuEnd - m_vd.zvStart ) * pxns );
+        const auto px0 = ( m_gpuInfoWindow->CpuStart() - m_vd.zvStart ) * pxns;
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_gpuInfoWindow->CpuEnd() - m_vd.zvStart ) * pxns );
         draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x2288DD88 );
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
@@ -3276,8 +3276,8 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                     }
 
                     m_gpuThread = thread;
-                    m_gpuStart = ev.cpuStart;
-                    m_gpuEnd = ev.cpuEnd;
+                    m_gpuStart = ev.CpuStart();
+                    m_gpuEnd = ev.CpuEnd();
                 }
             }
             char tmp[64];
@@ -3345,8 +3345,8 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                 }
 
                 m_gpuThread = thread;
-                m_gpuStart = ev.cpuStart;
-                m_gpuEnd = ev.cpuEnd;
+                m_gpuStart = ev.CpuStart();
+                m_gpuEnd = ev.CpuEnd();
             }
 
             ++it;
@@ -6216,7 +6216,7 @@ void View::DrawZoneInfoWindow()
 void View::DrawGpuInfoWindow()
 {
     auto& ev = *m_gpuInfoWindow;
-    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+    const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
 
     ImGui::SetNextWindowSize( ImVec2( 500, 400 ), ImGuiCond_FirstUseEver );
     bool show = true;
@@ -6331,19 +6331,19 @@ void View::DrawGpuInfoWindow()
         ImGui::SameLine();
         ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
     }
-    TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
+    TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
     {
-        TextFocused( "Delay to execution:", TimeToString( ev.gpuStart - ev.cpuStart ) );
+        TextFocused( "Delay to execution:", TimeToString( ev.gpuStart - ev.CpuStart() ) );
     }
     else
     {
-        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.thread ) );
+        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
         assert( td != ctx->threadData.end() );
         const auto begin = td->second.timeline.front()->gpuStart;
         const auto drift = GpuDrift( ctx );
-        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.cpuStart ) );
+        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.CpuStart() ) );
     }
 
     ImGui::Separator();
@@ -6358,7 +6358,7 @@ void View::DrawGpuInfoWindow()
     DrawZoneTrace<const GpuEvent*>( &ev, zoneTrace, m_worker, m_zoneinfoBuzzAnim, *this, m_showUnknownFrames, [&idx, this] ( const GpuEvent* v, int& fidx ) {
         ImGui::TextDisabled( "%i.", fidx++ );
         ImGui::SameLine();
-        const auto& srcloc = m_worker.GetSourceLocation( v->srcloc );
+        const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
         auto sel = ImGui::Selectable( txt, false );
@@ -6432,7 +6432,7 @@ void View::DrawGpuInfoWindow()
                     const auto& child = *children[i];
                     const auto cend = m_worker.GetZoneEnd( child );
                     const auto ct = cend - child.gpuStart;
-                    const auto srcloc = child.srcloc;
+                    const auto srcloc = child.SrcLoc();
                     ctime += ct;
 
                     auto it = cmap.find( srcloc );
@@ -6742,7 +6742,7 @@ void View::DrawOptions()
                             const auto p1 = dist( gen );
                             if( p0 != p1 )
                             {
-                                slopes[idx++] = float( 1.0 - double( timeline[p1]->gpuStart - timeline[p0]->gpuStart ) / double( timeline[p1]->cpuStart - timeline[p0]->cpuStart ) );
+                                slopes[idx++] = float( 1.0 - double( timeline[p1]->gpuStart - timeline[p0]->gpuStart ) / double( timeline[p1]->CpuStart() - timeline[p0]->CpuStart() ) );
                             }
                         }
                         while( idx < NumSlopes );
@@ -12533,7 +12533,7 @@ uint32_t View::GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth 
 
 uint32_t View::GetZoneColor( const GpuEvent& ev )
 {
-    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+    const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
     const auto color = srcloc.color;
     return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
 }
@@ -12633,7 +12633,7 @@ void View::ZoomToZone( const GpuEvent& ev )
     }
     else
     {
-        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.thread ) );
+        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
         assert( td != ctx->threadData.end() );
         const auto begin = td->second.timeline.front()->gpuStart;
         const auto drift = GpuDrift( ctx );
@@ -12816,7 +12816,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
 void View::ZoneTooltip( const GpuEvent& ev )
 {
     const auto tid = GetZoneThread( ev );
-    const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+    const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
     const auto end = m_worker.GetZoneEnd( ev );
     const auto ztime = end - ev.gpuStart;
     const auto selftime = GetZoneSelfTime( ev );
@@ -12839,19 +12839,19 @@ void View::ZoneTooltip( const GpuEvent& ev )
         ImGui::SameLine();
         ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
     }
-    TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
+    TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
     {
-        TextFocused( "Delay to execution:", TimeToString( ev.gpuStart - ev.cpuStart ) );
+        TextFocused( "Delay to execution:", TimeToString( ev.gpuStart - ev.CpuStart() ) );
     }
     else
     {
-        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.thread ) );
+        const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
         assert( td != ctx->threadData.end() );
         const auto begin = td->second.timeline.front()->gpuStart;
         const auto drift = GpuDrift( ctx );
-        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.cpuStart ) );
+        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.CpuStart() ) );
     }
 
     ImGui::EndTooltip();
@@ -13010,7 +13010,7 @@ uint64_t View::GetZoneThread( const ZoneEvent& zone ) const
 
 uint64_t View::GetZoneThread( const GpuEvent& zone ) const
 {
-    if( zone.thread == 0 )
+    if( zone.Thread() == 0 )
     {
         for( const auto& ctx : m_worker.GetGpuData() )
         {
@@ -13031,7 +13031,7 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
     }
     else
     {
-        return m_worker.DecompressThread( zone.thread );
+        return m_worker.DecompressThread( zone.Thread() );
     }
 }
 

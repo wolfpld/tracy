@@ -188,13 +188,20 @@ static_assert( std::numeric_limits<decltype(LockEventPtr::lockCount)>::max() >= 
 
 struct GpuEvent
 {
-    int64_t cpuStart;
-    int64_t cpuEnd;
+    int64_t CpuStart() const { return int64_t( _cpuStart_srcloc ) >> 16; }
+    void SetCpuStart( int64_t cpuStart ) { assert( cpuStart < (int64_t)( 1ull << 47 ) ); _cpuStart_srcloc = ( _cpuStart_srcloc & 0xFFFF ) | ( uint64_t( cpuStart ) << 16 ); }
+    int64_t CpuEnd() const { return int64_t( _cpuEnd_thread ) >> 16; }
+    void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); _cpuEnd_thread = ( _cpuEnd_thread & 0xFFFF ) | ( uint64_t( cpuEnd ) << 16 ); }
+    int16_t SrcLoc() const { return int16_t( _cpuStart_srcloc & 0xFFFF ); }
+    void SetSrcLoc( int16_t srcloc ) { _cpuStart_srcloc = ( _cpuStart_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc ); }
+    uint16_t Thread() const { return uint16_t( _cpuEnd_thread & 0xFFFF ); }
+    void SetThread( uint16_t thread ) { _cpuEnd_thread = ( _cpuEnd_thread & 0xFFFFFFFFFFFF0000 ) | thread; }
+
+    uint64_t _cpuStart_srcloc;
+    uint64_t _cpuEnd_thread;
     int64_t gpuStart;
     int64_t gpuEnd;
-    int16_t srcloc;
     Int24 callstack;
-    uint16_t thread;
     int32_t child;
 };
 

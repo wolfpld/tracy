@@ -154,11 +154,7 @@ private:
     struct DataBlock
     {
         DataBlock()
-            : zonesCnt( 0 )
-            , baseTime( 0 )
-            , lastTime( 0 )
-            , frameOffset( 0 )
-            , threadDataLast( std::numeric_limits<uint64_t>::max(), nullptr )
+            : threadDataLast( std::numeric_limits<uint64_t>::max(), nullptr )
             , ctxSwitchLast( std::numeric_limits<uint64_t>::max(), nullptr )
         {}
 
@@ -170,10 +166,11 @@ private:
         StringDiscovery<PlotData*> plots;
         Vector<ThreadData*> threads;
         MemData memory;
-        uint64_t zonesCnt;
-        int64_t baseTime;
-        int64_t lastTime;
-        uint64_t frameOffset;
+        uint64_t zonesCnt = 0;
+        uint64_t gpuCnt = 0;
+        int64_t baseTime = 0;
+        int64_t lastTime = 0;
+        uint64_t frameOffset = 0;
 
         flat_hash_map<uint64_t, const char*, nohash<uint64_t>> strings;
         Vector<const char*> stringData;

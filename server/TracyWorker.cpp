@@ -3978,6 +3978,8 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
 
 void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev )
 {
+    m_data.gpuCnt++;
+
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
 
@@ -4906,6 +4908,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
 {
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
+    m_data.gpuCnt += size;
     auto zone = (GpuEvent*)m_slab.AllocBig( sizeof( GpuEvent ) * size );
     auto zptr = zone;
     auto vptr = vec.data();
@@ -4939,6 +4942,7 @@ void Worker::ReadTimelinePre059( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
 {
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
+    m_data.gpuCnt += size;
 
     for( uint64_t i=0; i<size; i++ )
     {

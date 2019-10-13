@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <limits>
 #include <stdint.h>
+#include <string>
 #include <string.h>
 
 #include "TracyCharUtil.hpp"
@@ -508,6 +509,14 @@ struct CpuThreadData
 };
 
 enum { CpuThreadDataSize = sizeof( CpuThreadData ) };
+
+
+struct Annotation
+{
+    std::string text;
+    int64_t start;
+    int64_t end;
+};
 
 }
 

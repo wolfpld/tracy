@@ -364,6 +364,7 @@ private:
     void* m_frameTexture = nullptr;
     const void* m_frameTexturePtr = nullptr;
 
+    std::vector<std::unique_ptr<Annotation>> m_annotations;
     UserData m_userData;
 
     struct FindZone {

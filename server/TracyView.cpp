@@ -1418,8 +1418,17 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     {
         m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
-    else
+    else if( m_highlight.active )
     {
+        if( ImGui::GetIO().KeyCtrl && m_highlight.start != m_highlight.end )
+        {
+            auto ann = std::make_unique<Annotation>();
+            const auto s = std::min( m_highlight.start, m_highlight.end );
+            const auto e = std::max( m_highlight.start, m_highlight.end );
+            ann->start = s;
+            ann->end = e;
+            m_annotations.emplace_back( std::move( ann ) );
+        }
         m_highlight.active = false;
     }
 
@@ -2542,6 +2551,32 @@ void View::DrawZones()
     m_vd.zvScroll = scrollPos;
 
     ImGui::EndChild();
+
+    for( auto& ann : m_annotations )
+    {
+        if( ann->start < m_vd.zvEnd && ann->end > m_vd.zvStart )
+        {
+            draw->AddRectFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), 0x22888888 );
+            draw->AddRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), 0x44888888 );
+            if( ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ) ) )
+            {
+                ImGui::BeginTooltip();
+                if( ann->text.empty() )
+                {
+                    TextDisabledUnformatted( "Empty annotation" );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( ann->text.c_str() );
+                }
+                ImGui::Separator();
+                TextFocused( "Annotation begin:", TimeToString( ann->start ) );
+                TextFocused( "Annotation end:", TimeToString( ann->end ) );
+                TextFocused( "Annotation length:", TimeToString( ann->end - ann->start ) );
+                ImGui::EndTooltip();
+            }
+        }
+    }
 
     if( m_gpuStart != 0 && m_gpuEnd != 0 )
     {

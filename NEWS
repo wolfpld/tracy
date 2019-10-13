@@ -49,6 +49,7 @@ v0.6 (xxxx-xx-xx)
 - Added extreme compression level in update utility.
 - Added time distribution data in the zone information window.
 - Trace file name is now displayed in trace information window.
+- Annotations can be now added to the timeline.
 
 v0.5 (2019-08-10)
 -----------------

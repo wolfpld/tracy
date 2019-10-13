@@ -662,6 +662,7 @@ bool View::DrawImpl()
     if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
     if( m_showPlayback ) DrawPlayback();
     if( m_showCpuDataWindow ) DrawCpuDataWindow();
+    if( m_selectedAnnotation ) DrawSelectedAnnotation();
 
     if( m_zoomAnim.active )
     {
@@ -1427,6 +1428,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             const auto e = std::max( m_highlight.start, m_highlight.end );
             ann->start = s;
             ann->end = e;
+            m_selectedAnnotation = ann.get();
             m_annotations.emplace_back( std::move( ann ) );
         }
         m_highlight.active = false;
@@ -2556,8 +2558,8 @@ void View::DrawZones()
     {
         if( ann->start < m_vd.zvEnd && ann->end > m_vd.zvStart )
         {
-            draw->AddRectFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), 0x22888888 );
-            draw->AddRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), 0x44888888 );
+            draw->AddRectFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), m_selectedAnnotation == ann.get() ? 0x44888888 : 0x22888888 );
+            draw->AddRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), m_selectedAnnotation == ann.get() ? 0x66888888 : 0x44888888 );
             if( ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ) ) )
             {
                 ImGui::BeginTooltip();
@@ -2574,6 +2576,15 @@ void View::DrawZones()
                 TextFocused( "Annotation end:", TimeToString( ann->end ) );
                 TextFocused( "Annotation length:", TimeToString( ann->end - ann->start ) );
                 ImGui::EndTooltip();
+            }
+            if( ( ann->end - ann->start ) * pxns > th * 4 )
+            {
+                draw->AddCircleFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0x88AABB22 );
+                draw->AddCircle( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0xAAAABB22 );
+                if( ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th, th ), linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 3, th * 3 ) ) )
+                {
+                    m_selectedAnnotation = ann.get();
+                }
             }
         }
     }
@@ -11502,6 +11513,58 @@ void View::DrawCpuDataWindow()
     ImGui::EndColumns();
     ImGui::EndChild();
     ImGui::End();
+}
+
+void View::DrawSelectedAnnotation()
+{
+    assert( m_selectedAnnotation );
+    bool show = true;
+    ImGui::Begin( "Annotation", &show, ImGuiWindowFlags_AlwaysAutoResize );
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to annotation" ) )
+#else
+    if( ImGui::Button( "Zoom to annotation" ) )
+#endif
+    {
+        ZoomToRange( m_selectedAnnotation->start, m_selectedAnnotation->end );
+    }
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_TRASH_ALT " Remove" ) )
+#else
+    if( ImGui::Button( "Remove" ) )
+#endif
+    {
+        for( auto it = m_annotations.begin(); it != m_annotations.end(); ++it )
+        {
+            if( it->get() == m_selectedAnnotation )
+            {
+                m_annotations.erase( it );
+                break;
+            }
+        }
+        ImGui::End();
+        m_selectedAnnotation = nullptr;
+        return;
+    }
+    ImGui::Separator();
+    {
+        const auto desc = m_selectedAnnotation->text.c_str();
+        const auto descsz = std::min<size_t>( 1023, m_selectedAnnotation->text.size() );
+        char buf[1024];
+        buf[descsz] = '\0';
+        memcpy( buf, desc, descsz );
+        if( ImGui::InputTextWithHint( "", "Describe annotation", buf, 256 ) )
+        {
+            m_selectedAnnotation->text.assign( buf );
+        }
+    }
+    ImGui::Separator();
+    TextFocused( "Annotation begin:", TimeToString( m_selectedAnnotation->start ) );
+    TextFocused( "Annotation end:", TimeToString( m_selectedAnnotation->end ) );
+    TextFocused( "Annotation length:", TimeToString( m_selectedAnnotation->end - m_selectedAnnotation->start ) );
+    ImGui::End();
+    if( !show ) m_selectedAnnotation = nullptr;
 }
 
 template<class T>

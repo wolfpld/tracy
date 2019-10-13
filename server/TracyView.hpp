@@ -139,6 +139,7 @@ private:
     void DrawLockInfoWindow();
     void DrawPlayback();
     void DrawCpuDataWindow();
+    void DrawSelectedAnnotation();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
@@ -282,6 +283,7 @@ private:
     bool m_disconnectIssued = false;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
     DecayValue<uint64_t> m_drawThreadHighlight = 0;
+    Annotation* m_selectedAnnotation = nullptr;
 
     Region m_highlight;
     Region m_highlightZoom;

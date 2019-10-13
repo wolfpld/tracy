@@ -285,6 +285,7 @@ public:
     size_t GetFullFrameCount( const FrameData& fd ) const;
     int64_t GetLastTime() const { return m_data.lastTime; }
     uint64_t GetZoneCount() const { return m_data.zonesCnt; }
+    uint64_t GetGpuZoneCount() const { return m_data.gpuCnt; }
     uint64_t GetLockCount() const;
     uint64_t GetPlotCount() const;
     uint64_t GetContextSwitchCount() const;

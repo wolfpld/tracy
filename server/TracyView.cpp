@@ -582,6 +582,15 @@ bool View::DrawImpl()
         {
             m_showCpuDataWindow = true;
         }
+        const auto anncnt = m_annotations.size();
+#ifdef TRACY_EXTENDED_FONT
+        if( ButtonDisablable( ICON_FA_STICKY_NOTE " Annotations", anncnt == 0 ) )
+#else
+        if( ButtonDisablable( "Annotations", , anncnt == 0)  )
+#endif
+        {
+            m_showAnnotationList = true;
+        }
         ImGui::EndPopup();
     }
     ImGui::SameLine();
@@ -693,6 +702,7 @@ bool View::DrawImpl()
     if( m_showPlayback ) DrawPlayback();
     if( m_showCpuDataWindow ) DrawCpuDataWindow();
     if( m_selectedAnnotation ) DrawSelectedAnnotation();
+    if( m_showAnnotationList ) DrawAnnotationList();
 
     if( m_zoomAnim.active )
     {
@@ -11591,6 +11601,77 @@ void View::DrawSelectedAnnotation()
     TextFocused( "Annotation length:", TimeToString( m_selectedAnnotation->end - m_selectedAnnotation->start ) );
     ImGui::End();
     if( !show ) m_selectedAnnotation = nullptr;
+}
+
+void View::DrawAnnotationList()
+{
+    ImGui::SetNextWindowSize( ImVec2( 500, 300 ), ImGuiCond_FirstUseEver );
+    ImGui::Begin( "Annotation list", &m_showAnnotationList );
+    if( m_annotations.empty() )
+    {
+        ImGui::TextWrapped( "No annotations." );
+        ImGui::End();
+        return;
+    }
+
+    TextFocused( "Annotations:", RealToString( m_annotations.size(), true ) );
+    ImGui::SameLine();
+    DrawHelpMarker( "Press ctrl to unlock removal" );
+    ImGui::Separator();
+    ImGui::BeginChild( "##annotationList" );
+    const bool ctrl = ImGui::GetIO().KeyCtrl;
+    int remove = -1;
+    int idx = 0;
+    for( auto& ann : m_annotations )
+    {
+        ImGui::PushID( idx );
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_EDIT ) )
+#else
+        if( ImGui::Button( "Edit" ) )
+#endif
+        {
+            m_selectedAnnotation = ann.get();
+        }
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_MICROSCOPE ) )
+#else
+        if( ImGui::Button( "Zoom" ) )
+#endif
+        {
+            ZoomToRange( ann->start, ann->end );
+        }
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ButtonDisablable( ICON_FA_TRASH_ALT, !ctrl ) )
+#else
+        if( ButtonDisablable( "Remove", !ctrl ) )
+#endif
+        {
+            remove = idx;
+        }
+        ImGui::SameLine();
+        ImGui::ColorButton( "c", ImGui::ColorConvertU32ToFloat4( ann->color ), ImGuiColorEditFlags_NoTooltip );
+        ImGui::SameLine();
+        if( ann->text.empty() )
+        {
+            TextDisabledUnformatted( "Empty annotation" );
+        }
+        else
+        {
+            ImGui::TextUnformatted( ann->text.c_str() );
+        }
+        ImGui::PopID();
+        idx++;
+    }
+    if( remove >= 0 )
+    {
+        if( m_annotations[remove].get() == m_selectedAnnotation ) m_selectedAnnotation = nullptr;
+        m_annotations.erase( m_annotations.begin() + remove );
+    }
+    ImGui::EndChild();
+    ImGui::End();
 }
 
 template<class T>

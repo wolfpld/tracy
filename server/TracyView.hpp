@@ -140,6 +140,7 @@ private:
     void DrawPlayback();
     void DrawCpuDataWindow();
     void DrawSelectedAnnotation();
+    void DrawAnnotationList();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
@@ -299,6 +300,7 @@ private:
     bool m_showPlayback = false;
     bool m_showCpuDataWindow = false;
     bool m_goToFrame = false;
+    bool m_showAnnotationList = false;
 
     enum class CpuDataSortBy
     {

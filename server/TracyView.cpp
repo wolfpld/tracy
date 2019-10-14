@@ -1433,6 +1433,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             ann->color = 0x888888;
             m_selectedAnnotation = ann.get();
             m_annotations.emplace_back( std::move( ann ) );
+            pdqsort_branchless( m_annotations.begin(), m_annotations.end(), []( const auto& lhs, const auto& rhs ) { return lhs->start < rhs->start; } );
         }
         m_highlight.active = false;
     }

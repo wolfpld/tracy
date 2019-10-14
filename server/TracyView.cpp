@@ -558,6 +558,34 @@ bool View::DrawImpl()
 #endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_TOOLS ) ) ImGui::OpenPopup( "ToolsPopup" );
+#else
+    if( ImGui::Button( "Tools" ) ) ImGui::OpenPopup( "ToolsPopup" );
+#endif
+    if( ImGui::BeginPopup( "ToolsPopup" ) )
+    {
+        const auto ficnt = m_worker.GetFrameImageCount();
+#ifdef TRACY_EXTENDED_FONT
+        if( ButtonDisablable( ICON_FA_PLAY " Playback", ficnt == 0 ) )
+#else
+        if( ButtonDisablable( "Playback", , ficnt == 0)  )
+#endif
+        {
+            m_showPlayback = true;
+        }
+        const auto& ctd = m_worker.GetCpuThreadData();
+#ifdef TRACY_EXTENDED_FONT
+        if( ButtonDisablable( ICON_FA_SLIDERS_H " CPU data", ctd.empty() ) )
+#else
+        if( ButtonDisablable( "CPU data", ctd.empty() ) )
+#endif
+        {
+            m_showCpuDataWindow = true;
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
     if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) ) ZoomToPrevFrame();
 #else
     if( ImGui::SmallButton( " < " ) ) ZoomToPrevFrame();
@@ -10892,33 +10920,6 @@ void View::DrawInfo()
             }
         }
         ImGui::TreePop();
-    }
-
-    if( ficnt != 0 )
-    {
-        ImGui::Separator();
-#ifdef TRACY_EXTENDED_FONT
-        if( ImGui::Button( ICON_FA_PLAY " Playback" ) )
-#else
-        if( ImGui::Button( "Playback" ) )
-#endif
-        {
-            m_showPlayback = true;
-        }
-    }
-
-    const auto& ctd = m_worker.GetCpuThreadData();
-    if( !ctd.empty() )
-    {
-        if( ficnt != 0 ) ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-        if( ImGui::Button( ICON_FA_SLIDERS_H " CPU data" ) )
-#else
-        if( ImGui::Button( "CPU data" ) )
-#endif
-        {
-            m_showCpuDataWindow = true;
-        }
     }
 
     ImGui::Separator();

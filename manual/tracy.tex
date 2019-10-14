@@ -1326,8 +1326,8 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw (0, 0) rectangle (15, -5.5);
-\draw[pattern=crosshatch dots] (0, 0) rectangle+(15, 0.3);
+\draw (0, 0) rectangle (15.5, -5.5);
+\draw[pattern=crosshatch dots] (0, 0) rectangle+(15.5, 0.3);
 \draw[rounded corners=5pt] (0.1, -0.1) rectangle+(0.5, -0.5) node [midway] {\faPowerOff};
 \draw[rounded corners=5pt] (0.7, -0.1) rectangle+(1.8, -0.5) node [midway] {\faCog{} Options};
 \draw[rounded corners=5pt] (2.6, -0.1) rectangle+(2.2, -0.5) node [midway] {\faTags{} Messages};
@@ -1336,6 +1336,7 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 \draw[rounded corners=5pt] (9.2, -0.1) rectangle+(2, -0.5) node [midway] {\faMemory{} Memory};
 \draw[rounded corners=5pt] (11.3, -0.1) rectangle+(2.1, -0.5) node [midway] {\faBalanceScale{} Compare};
 \draw[rounded corners=5pt] (13.5, -0.1) rectangle+(1.3, -0.5) node [midway] {\faFingerprint{} Info};
+\draw[rounded corners=5pt] (14.9, -0.1) rectangle+(0.5, -0.5) node [midway] {\faTools{}};
 \draw[rounded corners=5pt] (0.1, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretLeft};
 \draw (0.6, -0.7) node[anchor=north west] {Frames: 364};
 \draw[rounded corners=5pt] (2.8, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretRight};
@@ -1344,8 +1345,8 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 \draw (4.5, -0.65) node[anchor=north west] {\faEye~52.7 ms \hspace{5pt} \faDatabase~6.06 s};
 \draw[dashed] (8.2, -0.75) rectangle+(3.2, -0.4) node[midway] {Notification area};
 
-\draw (0.1, -1.3) rectangle+(14.8, -1) node [midway] {Frame time graph};
-\draw (0.1, -2.4) rectangle+(14.8, -3) node [midway] {Timeline view};
+\draw (0.1, -1.3) rectangle+(15.3, -1) node [midway] {Frame time graph};
+\draw (0.1, -2.4) rectangle+(15.3, -3) node [midway] {Timeline view};
 \end{tikzpicture}
 \caption{Main profiler window. Note that the top line of buttons has been split into two rows in this manual.}
 \label{mainwindow}
@@ -1369,6 +1370,11 @@ The control menu (top row of buttons) provides access to various features of the
 \item \emph{\faMemory{} Memory} -- Various memory profiling options may be accessed here (section~\ref{memorywindow}).
 \item \emph{\faBalanceScale{} Compare} -- Toggles the trace compare window, which allows you to see the performance difference between two profiling runs (section~\ref{compare}).
 \item \emph{\faFingerprint{} Info} -- Show general information about the trace (section~\ref{traceinfo}).
+\item \emph{\faTools{} Tools} -- Allows access to optional data collected during capture. Some choices might be unavailable.
+\begin{itemize}
+\item \emph{\faPlay{}~Playback} -- If frame images were captured (section~\ref{frameimages}), you will have option to open frame image playback window, described in chapter~\ref{playback}.
+\item \emph{\faSlidersH{}~CPU~data} -- If context switch data was captured (section~\ref{contextswitches}), this button will allow inspecting what was the processor load during the capture, as described in section~\ref{cpudata}.
+\end{itemize}
 \end{itemize}
 
 The frame information block consists of four elements: the current frame set name along with the number of captured frames, the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to a another frame set\footnote{See section~\ref{framesets} for another way to change the active frame set.}. The \emph{\faCrosshairs{}~Go to frame} button allows zooming the timeline view on the specified frame. For more information about marking frames, see section~\ref{markingframes}.
@@ -2047,13 +2053,9 @@ Open the \emph{Trace statistics} section to see information about the trace, suc
 
 There's also a section containing the selected frame set timing statistics and histogram\footnote{See section~\ref{findzone} for a description of the histogram. Note that there are subtle differences in the available functionality.}. As a convenience you can switch the active frame set here and limit the displayed frame statistics to the frame range visible on the screen.
 
-If frame images were captured (section~\ref{frameimages}), you will have option to open frame image playback window, described in chapter~\ref{playback}.
-
-If context switch data was captured (section~\ref{contextswitches}), the \emph{\faSlidersH{}~CPU~data} button will allow inspecting what was the processor load during the capture, as described in section~\ref{cpudata}.
-
 In this window you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, amount of total available RAM, etc. If application information was provided (see section~\ref{appinfo}), it will also be displayed here.
 
-In this place you will also be able to see the tombstone generated during an application's crash (section~\ref{crashhandling}). It provides you with information about the thread that has crashed, the crash reason and the crash call stack (section~\ref{callstackwindow}).
+If an application should crash during profiling (section~\ref{crashhandling}), the crash information will be displayed in this window. It provides you information about the thread that has crashed, the crash reason and the crash call stack (section~\ref{callstackwindow}).
 
 \subsection{Zone information window}
 \label{zoneinfo}

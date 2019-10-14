@@ -1374,6 +1374,7 @@ The control menu (top row of buttons) provides access to various features of the
 \begin{itemize}
 \item \emph{\faPlay{}~Playback} -- If frame images were captured (section~\ref{frameimages}), you will have option to open frame image playback window, described in chapter~\ref{playback}.
 \item \emph{\faSlidersH{}~CPU~data} -- If context switch data was captured (section~\ref{contextswitches}), this button will allow inspecting what was the processor load during the capture, as described in section~\ref{cpudata}.
+\item \emph{\faStickyNote{}~Annotations} -- If annotations have been made (section~\ref{annotatingtrace}), you can open a list of all annotations, described in chapter~\ref{annotationlist}.
 \end{itemize}
 \end{itemize}
 
@@ -2163,6 +2164,31 @@ The profiled program is highlighted using green color. Furthermore, yellow highl
 \label{annotationsettings}
 
 In this window you may modify how a timeline annotation (section~\ref{annotatingtrace}) is presented by setting its text description, or selecting region highlight color. If the note is no longer needed, it may also be removed here.
+
+\subsection{Annotation list window}
+\label{annotationlist}
+
+This window lists all annotations marked on the timeline. Each annotation is presented, as shown on figure~\ref{figannlist}. From left to right the elements are:
+
+\begin{itemize}
+\item \emph{\faEdit{} Edit} -- Opens the annotation settings window (section~\ref{annotationsettings}).
+\item \emph{\faMicroscope{} Zoom} -- Zooms timeline to the annotation extent.
+\item \emph{\faTrash*{} Remove} -- Removes the annotation. You must press the \keys{\ctrl} key to enable this button.
+\item Colored box -- Color of the annotation.
+\item Text description of the annotation.
+\end{itemize}
+
+\begin{figure}[h]
+\centering\begin{tikzpicture}
+\draw[rounded corners=5pt] (0.0, 0) rectangle+(0.5, -0.5) node [midway] {\faEdit};
+\draw[rounded corners=5pt] (0.6, 0) rectangle+(0.5, -0.5) node [midway] {\faMicroscope};
+\draw[rounded corners=5pt] (1.2, 0) rectangle+(0.5, -0.5) node [midway] {\faTrash*};
+\draw[rounded corners=5pt, pattern=crosshatch dots] (1.8, 0) rectangle+(0.5, -0.5);
+\draw[rounded corners=5pt] (2.4, 0) node[anchor=north west] {Text description};
+\end{tikzpicture}
+\caption{Annotation list entry}
+\label{figannlist}
+\end{figure}
 
 \section{Configuration files}
 

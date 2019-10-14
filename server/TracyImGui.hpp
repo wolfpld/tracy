@@ -74,6 +74,21 @@ namespace tracy
         ImGui::PopStyleVar();
     }
 
+    static inline bool ButtonDisablable( const char* label, bool disabled )
+    {
+        if( disabled )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
+            ImGui::ButtonEx( label, ImVec2( 0, 0 ), ImGuiButtonFlags_Disabled );
+            ImGui::PopStyleColor( 1 );
+            return false;
+        }
+        else
+        {
+            return ImGui::Button( label );
+        }
+    }
+
 }
 
 #endif

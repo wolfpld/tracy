@@ -6757,11 +6757,13 @@ void View::DrawOptions()
 #endif
         m_vd.drawContextSwitches = val;
         val = m_vd.darkenContextSwitches;
+        ImGui::Indent();
 #ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_MOON " Darken inactive threads", &val );
 #else
         ImGui::Checkbox( "Darken inactive threads", &val );
 #endif
+        ImGui::Unindent();
         m_vd.darkenContextSwitches = val;
         val = m_vd.drawCpuData;
 #ifdef TRACY_EXTENDED_FONT

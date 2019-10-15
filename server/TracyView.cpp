@@ -4406,7 +4406,8 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
 
         const auto origOffset = offset;
         auto cpuData = m_worker.GetCpuData();
-        for( int i=0; i<256; i++ )
+        const auto cpuCnt = m_worker.GetCpuDataCpuCount();
+        for( int i=0; i<cpuCnt; i++ )
         {
             if( !cpuData[i].cs.empty() )
             {

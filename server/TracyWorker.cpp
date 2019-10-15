@@ -1830,7 +1830,7 @@ uint64_t Worker::GetContextSwitchCount() const
 uint64_t Worker::GetContextSwitchPerCpuCount() const
 {
     uint64_t cnt = 0;
-    for( int i=0; i<256; i++ )
+    for( int i=0; i<m_data.cpuDataCount; i++ )
     {
         cnt += m_data.cpuData[i].cs.size();
     }

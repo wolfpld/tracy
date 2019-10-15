@@ -4408,35 +4408,38 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         const auto cpuCnt = m_worker.GetCpuDataCpuCount();
         assert( cpuCnt != 0 );
 
-        const auto cpuUsageHeight = floor( 40.f * ImGui::GetTextLineHeight() / 15.f );
-        if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )
+        if( m_vd.drawCpuUsageGraph )
         {
-            const float cpuCntRev = 1.f / cpuCnt;
-            float pos = 0;
-            int usageOwn, usageOther;
-            while( pos < w )
+            const auto cpuUsageHeight = floor( 40.f * ImGui::GetTextLineHeight() / 15.f );
+            if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )
             {
-                m_worker.GetCpuUsageAtTime( m_vd.zvStart + pos * nspx, usageOwn, usageOther );
-                float base;
-                if( usageOwn != 0 )
+                const float cpuCntRev = 1.f / cpuCnt;
+                float pos = 0;
+                int usageOwn, usageOther;
+                while( pos < w )
                 {
-                    base = wpos.y + offset + ( 1.f - usageOwn * cpuCntRev ) * cpuUsageHeight;
-                    draw->AddLine( ImVec2( wpos.x + pos, wpos.y + offset + cpuUsageHeight ), ImVec2( wpos.x + pos, base ), 0xFF55BB55 );
+                    m_worker.GetCpuUsageAtTime( m_vd.zvStart + pos * nspx, usageOwn, usageOther );
+                    float base;
+                    if( usageOwn != 0 )
+                    {
+                        base = wpos.y + offset + ( 1.f - usageOwn * cpuCntRev ) * cpuUsageHeight;
+                        draw->AddLine( ImVec2( wpos.x + pos, wpos.y + offset + cpuUsageHeight ), ImVec2( wpos.x + pos, base ), 0xFF55BB55 );
+                    }
+                    else
+                    {
+                        base = wpos.y + offset + cpuUsageHeight;
+                    }
+                    if( usageOther != 0 )
+                    {
+                        int usageTotal = usageOwn + usageOther;
+                        draw->AddLine( ImVec2( wpos.x + pos, base ), ImVec2( wpos.x + pos, wpos.y + offset + ( 1.f - usageTotal * cpuCntRev ) * cpuUsageHeight ), 0xFF666666 );
+                    }
+                    pos++;
                 }
-                else
-                {
-                    base = wpos.y + offset + cpuUsageHeight;
-                }
-                if( usageOther != 0 )
-                {
-                    int usageTotal = usageOwn + usageOther;
-                    draw->AddLine( ImVec2( wpos.x + pos, base ), ImVec2( wpos.x + pos, wpos.y + offset + ( 1.f - usageTotal * cpuCntRev ) * cpuUsageHeight ), 0xFF666666 );
-                }
-                pos++;
+                draw->AddLine( wpos + ImVec2( 0, offset+cpuUsageHeight+2 ), wpos + ImVec2( w, offset+cpuUsageHeight+2 ), 0x22DD88DD );
             }
-            draw->AddLine( wpos + ImVec2( 0, offset+cpuUsageHeight+2 ), wpos + ImVec2( w, offset+cpuUsageHeight+2 ), 0x22DD88DD );
+            offset += cpuUsageHeight + 3;
         }
-        offset += cpuUsageHeight + 3;
 
         const auto origOffset = offset;
         for( int i=0; i<cpuCnt; i++ )
@@ -6789,15 +6792,15 @@ void View::DrawOptions()
         ImGui::Checkbox( "Draw context switches", &val );
 #endif
         m_vd.drawContextSwitches = val;
-        val = m_vd.darkenContextSwitches;
         ImGui::Indent();
+        val = m_vd.darkenContextSwitches;
 #ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_MOON " Darken inactive threads", &val );
 #else
         ImGui::Checkbox( "Darken inactive threads", &val );
 #endif
-        ImGui::Unindent();
         m_vd.darkenContextSwitches = val;
+        ImGui::Unindent();
         val = m_vd.drawCpuData;
 #ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_SLIDERS_H " Draw CPU data", &val );
@@ -6805,6 +6808,15 @@ void View::DrawOptions()
         ImGui::Checkbox( "Draw CPU data", &val );
 #endif
         m_vd.drawCpuData = val;
+        ImGui::Indent();
+        val = m_vd.drawCpuUsageGraph;
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_SIGNATURE " Draw CPU usage graph", &val );
+#else
+        ImGui::Checkbox( "Draw CPU usage graph", &val );
+#endif
+        m_vd.drawCpuUsageGraph = val;
+        ImGui::Unindent();
     }
     ImGui::Separator();
 

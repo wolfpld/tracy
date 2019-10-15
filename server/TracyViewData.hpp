@@ -24,6 +24,7 @@ struct ViewData
     uint8_t drawContextSwitches = true;
     uint8_t darkenContextSwitches = true;
     uint8_t drawCpuData = true;
+    uint8_t drawCpuUsageGraph = true;
     uint8_t dynamicColors = true;
 };
 

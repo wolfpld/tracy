@@ -4371,6 +4371,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
             assert( !data.empty() );
             auto& item = data.back();
             assert( item.Start() <= time );
+            assert( item.End() == -1 );
             item.SetEnd( time );
             item.SetReason( ev.reason );
             item.SetState( ev.state );

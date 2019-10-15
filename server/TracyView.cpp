@@ -4404,9 +4404,40 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         const auto sty = ImGui::GetFontSize();
         const auto sstep = sty + 1;
 
-        const auto origOffset = offset;
         auto cpuData = m_worker.GetCpuData();
         const auto cpuCnt = m_worker.GetCpuDataCpuCount();
+        assert( cpuCnt != 0 );
+
+        const auto cpuUsageHeight = 40 * ImGui::GetTextLineHeight() / 15.f;
+        if( wpos.y + offset + cpuUsageHeight + 2 >= yMin && wpos.y + offset <= yMax )
+        {
+            const float cpuCntRev = 1.f / cpuCnt;
+            float pos = 0;
+            int usageOwn, usageOther;
+            while( pos < w )
+            {
+                m_worker.GetCpuUsageAtTime( m_vd.zvStart + pos * nspx, usageOwn, usageOther );
+                float base;
+                if( usageOwn != 0 )
+                {
+                    base = wpos.y + offset + ( 1.f - usageOwn * cpuCntRev ) * cpuUsageHeight;
+                    draw->AddLine( ImVec2( wpos.x + pos, wpos.y + offset + cpuUsageHeight ), ImVec2( wpos.x + pos, base ), 0xFF55BB55 );
+                }
+                else
+                {
+                    base = wpos.y + offset + cpuUsageHeight;
+                }
+                if( usageOther != 0 )
+                {
+                    int usageTotal = usageOwn + usageOther;
+                    draw->AddLine( ImVec2( wpos.x + pos, base ), ImVec2( wpos.x + pos, wpos.y + offset + ( 1.f - usageTotal * cpuCntRev ) * cpuUsageHeight ), 0xFF666666 );
+                }
+                pos++;
+            }
+        }
+        offset += cpuUsageHeight + 2;
+
+        const auto origOffset = offset;
         for( int i=0; i<cpuCnt; i++ )
         {
             if( !cpuData[i].cs.empty() )

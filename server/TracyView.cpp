@@ -4400,17 +4400,13 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
 
     if( showFull )
     {
-        ImGui::PushFont( m_smallFont );
-        const auto sty = ImGui::GetFontSize();
-        const auto sstep = sty + 1;
-
         auto cpuData = m_worker.GetCpuData();
         const auto cpuCnt = m_worker.GetCpuDataCpuCount();
         assert( cpuCnt != 0 );
 
         if( m_vd.drawCpuUsageGraph )
         {
-            const auto cpuUsageHeight = floor( 40.f * ImGui::GetTextLineHeight() / 15.f );
+            const auto cpuUsageHeight = floor( 30.f * ImGui::GetTextLineHeight() / 15.f );
             if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )
             {
                 const float cpuCntRev = 1.f / cpuCnt;
@@ -4440,6 +4436,10 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
             }
             offset += cpuUsageHeight + 3;
         }
+
+        ImGui::PushFont( m_smallFont );
+        const auto sty = ImGui::GetFontSize();
+        const auto sstep = sty + 1;
 
         const auto origOffset = offset;
         for( int i=0; i<cpuCnt; i++ )

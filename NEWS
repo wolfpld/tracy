@@ -27,6 +27,7 @@ v0.6 (xxxx-xx-xx)
   - Thread execution workload is displayed, including threads from external
     programs.
   - Thread migrations across CPU cores can be graphed.
+  - System-wide workload distribution is now plotted on the timeline.
 - Added "CPU data" window (accessible from the trace info window), showing
   programs competing for CPU during the capture.
 - Switched to using native thread identifiers (relatively small numbers), as

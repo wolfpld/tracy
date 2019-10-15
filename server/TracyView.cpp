@@ -4433,6 +4433,21 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     pos++;
                 }
                 draw->AddLine( wpos + ImVec2( 0, offset+cpuUsageHeight+2 ), wpos + ImVec2( w, offset+cpuUsageHeight+2 ), 0x22DD88DD );
+
+                if( ImGui::IsMouseHoveringRect( ImVec2( wpos.x, wpos.y + offset ), ImVec2( wpos.x + w, wpos.y + offset + cpuUsageHeight ), true ) )
+                {
+                    int usageOwn, usageOther;
+                    m_worker.GetCpuUsageAtTime( m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx, usageOwn, usageOther );
+                    ImGui::BeginTooltip();
+                    TextFocused( "Cores used by profiled program:", RealToString( usageOwn, true ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%.2f%%)", usageOwn * cpuCntRev * 100 );
+                    TextFocused( "Cores used by other programs:", RealToString( usageOther, true ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%.2f%%)", usageOther * cpuCntRev * 100 );
+                    TextFocused( "Number of cores:", RealToString( cpuCnt, true ) );
+                    ImGui::EndTooltip();
+                }
             }
             offset += cpuUsageHeight + 3;
         }

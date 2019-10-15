@@ -214,6 +214,7 @@ private:
         std::pair<uint64_t, ContextSwitch*> ctxSwitchLast;
 
         CpuData cpuData[256];
+        int cpuDataCount = 0;
         flat_hash_map<uint64_t, uint64_t, nohash<uint64_t>> tidToPid;
         flat_hash_map<uint64_t, CpuThreadData, nohash<uint64_t>> cpuThreadData;
     };
@@ -305,6 +306,7 @@ public:
         return GetContextSwitchDataImpl( thread );
     }
     const CpuData* GetCpuData() const { return m_data.cpuData; }
+    int GetCpuDataCpuCount() const { return m_data.cpuDataCount; }
     uint64_t GetPidFromTid( uint64_t tid ) const;
     const flat_hash_map<uint64_t, CpuThreadData, nohash<uint64_t>>& GetCpuThreadData() const { return m_data.cpuThreadData; }
 

@@ -1648,18 +1648,22 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             {
                 int64_t refTime = 0;
                 f.Read( sz );
-                m_data.cpuData[i].cs.reserve_exact( sz, m_slab );
-                auto ptr = m_data.cpuData[i].cs.data();
-                for( uint64_t j=0; j<sz; j++ )
+                if( sz != 0 )
                 {
-                    ptr->SetStart( ReadTimeOffset( f, refTime ) );
-                    ptr->SetEnd( ReadTimeOffset( f, refTime ) );
-                    uint16_t thread;
-                    f.Read( thread );
-                    ptr->SetThread( thread );
-                    ptr++;
+                    m_data.cpuDataCount = i+1;
+                    m_data.cpuData[i].cs.reserve_exact( sz, m_slab );
+                    auto ptr = m_data.cpuData[i].cs.data();
+                    for( uint64_t j=0; j<sz; j++ )
+                    {
+                        ptr->SetStart( ReadTimeOffset( f, refTime ) );
+                        ptr->SetEnd( ReadTimeOffset( f, refTime ) );
+                        uint16_t thread;
+                        f.Read( thread );
+                        ptr->SetThread( thread );
+                        ptr++;
+                    }
+                    cnt += sz;
                 }
-                cnt += sz;
                 s_loadProgress.subProgress.store( cnt, std::memory_order_relaxed );
             }
         }
@@ -4361,6 +4365,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
     const auto time = TscTime( ev.time - m_data.baseTime );
     m_data.lastTime = std::max( m_data.lastTime, time );
 
+    if( ev.cpu >= m_data.cpuDataCount ) m_data.cpuDataCount = ev.cpu + 1;
     auto& cs = m_data.cpuData[ev.cpu].cs;
     if( ev.oldThread != 0 )
     {

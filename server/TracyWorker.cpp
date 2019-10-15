@@ -1844,6 +1844,30 @@ uint64_t Worker::GetPidFromTid( uint64_t tid ) const
     return it->second;
 }
 
+void Worker::GetCpuUsageAtTime( int64_t time, int& own, int& other ) const
+{
+    own = other = 0;
+    for( int i=0; i<m_data.cpuDataCount; i++ )
+    {
+        auto& cs = m_data.cpuData[i].cs;
+        if( !cs.empty() )
+        {
+            auto it = std::lower_bound( cs.begin(), cs.end(), time, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+            if( it != cs.end() && it->Start() <= time && it->End() != -1 )
+            {
+                if( GetPidFromTid( DecompressThreadExternal( it->Thread() ) ) == m_pid )
+                {
+                    own++;
+                }
+                else
+                {
+                    other++;
+                }
+            }
+        }
+    }
+}
+
 const ContextSwitch* const Worker::GetContextSwitchDataImpl( uint64_t thread )
 {
     auto it = m_data.ctxSwitch.find( thread );

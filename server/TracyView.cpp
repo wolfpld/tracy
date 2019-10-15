@@ -4408,8 +4408,8 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         const auto cpuCnt = m_worker.GetCpuDataCpuCount();
         assert( cpuCnt != 0 );
 
-        const auto cpuUsageHeight = 40 * ImGui::GetTextLineHeight() / 15.f;
-        if( wpos.y + offset + cpuUsageHeight + 2 >= yMin && wpos.y + offset <= yMax )
+        const auto cpuUsageHeight = floor( 40.f * ImGui::GetTextLineHeight() / 15.f );
+        if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )
         {
             const float cpuCntRev = 1.f / cpuCnt;
             float pos = 0;
@@ -4434,8 +4434,9 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                 }
                 pos++;
             }
+            draw->AddLine( wpos + ImVec2( 0, offset+cpuUsageHeight+2 ), wpos + ImVec2( w, offset+cpuUsageHeight+2 ), 0x22DD88DD );
         }
-        offset += cpuUsageHeight + 2;
+        offset += cpuUsageHeight + 3;
 
         const auto origOffset = offset;
         for( int i=0; i<cpuCnt; i++ )

@@ -1853,7 +1853,7 @@ void Worker::GetCpuUsageAtTime( int64_t time, int& own, int& other ) const
         if( !cs.empty() )
         {
             auto it = std::lower_bound( cs.begin(), cs.end(), time, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-            if( it != cs.end() && it->Start() <= time && it->End() != -1 )
+            if( it != cs.end() && it->Start() <= time && it->End() >= 0 )
             {
                 if( GetPidFromTid( DecompressThreadExternal( it->Thread() ) ) == m_pid )
                 {

@@ -2204,10 +2204,10 @@ void Profiler::CalibrateDelay()
 
     moodycamel::ProducerToken ptoken_detail( GetQueue() );
     moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = GetQueue().get_explicit_producer( ptoken_detail );
+    static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
-        static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
         {
             Magic magic;
             auto& tail = ptoken->get_tail_index();

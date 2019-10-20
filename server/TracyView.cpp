@@ -5403,12 +5403,6 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     ImGui::TreePop();
 }
 
-struct ZoneTimeData
-{
-    int64_t time;
-    uint64_t count;
-};
-
 void View::CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
 {
     assert( zone.Child() >= 0 );
@@ -6278,37 +6272,41 @@ void View::DrawZoneInfoWindow()
             if( ctx )
             {
                 ImGui::SameLine();
-                SmallCheckbox( "Running time", &m_timeDist.runningTime );
+                if( SmallCheckbox( "Running time", &m_timeDist.runningTime ) ) m_timeDist.dataValidFor = nullptr;
             }
-            flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>> data;
-            float fztime;
-            if( m_timeDist.runningTime )
+            if( m_timeDist.dataValidFor != &ev )
             {
-                assert( ctx );
-                int64_t time;
-                uint64_t cnt;
-                if( !GetZoneRunningTime( ctx, ev, time, cnt ) )
+                m_timeDist.data.clear();
+                if( ev.End() >= 0 ) m_timeDist.dataValidFor = &ev;
+
+                if( m_timeDist.runningTime )
                 {
-                    TextDisabledUnformatted( "Incomplete context switch data." );
+                    assert( ctx );
+                    int64_t time;
+                    uint64_t cnt;
+                    if( !GetZoneRunningTime( ctx, ev, time, cnt ) )
+                    {
+                        TextDisabledUnformatted( "Incomplete context switch data." );
+                    }
+                    else
+                    {
+                        auto it = m_timeDist.data.emplace( ev.SrcLoc(), ZoneTimeData{ time, 1 } ).first;
+                        CalcZoneTimeData( ctx, m_timeDist.data, it, ev );
+                    }
+                    m_timeDist.fztime = 100.f / time;
                 }
                 else
                 {
-                    auto it = data.emplace( ev.SrcLoc(), ZoneTimeData{ time, 1 } ).first;
-                    CalcZoneTimeData( ctx, data, it, ev );
+                    auto it = m_timeDist.data.emplace( ev.SrcLoc(), ZoneTimeData{ ztime, 1 } ).first;
+                    CalcZoneTimeData( m_timeDist.data, it, ev );
+                    m_timeDist.fztime = 100.f / ztime;
                 }
-                fztime = 100.f / time;
             }
-            else
-            {
-                auto it = data.emplace( ev.SrcLoc(), ZoneTimeData{ ztime, 1 } ).first;
-                CalcZoneTimeData( data, it, ev );
-                fztime = 100.f / ztime;
-            }
-            if( !data.empty() )
+            if( !m_timeDist.data.empty() )
             {
                 std::vector<flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::const_iterator> vec;
-                vec.reserve( data.size() );
-                for( auto it = data.cbegin(); it != data.cend(); ++it ) vec.emplace_back( it );
+                vec.reserve( m_timeDist.data.size() );
+                for( auto it = m_timeDist.data.cbegin(); it != m_timeDist.data.cend(); ++it ) vec.emplace_back( it );
                 static bool widthSet = false;
                 ImGui::Columns( 3 );
                 if( !widthSet )
@@ -6349,7 +6347,7 @@ void View::DrawZoneInfoWindow()
                     ImGui::NextColumn();
                     ImGui::TextUnformatted( TimeToString( v->second.time ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", v->second.time * fztime );
+                    ImGui::TextDisabled( "(%.2f%%)", v->second.time * m_timeDist.fztime );
                     ImGui::NextColumn();
                     ImGui::TextUnformatted( TimeToString( v->second.time / v->second.count ) );
                     ImGui::NextColumn();

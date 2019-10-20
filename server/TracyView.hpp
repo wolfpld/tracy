@@ -47,6 +47,12 @@ class View
         int64_t end;
     };
 
+    struct ZoneTimeData
+    {
+        int64_t time;
+        uint64_t count;
+    };
+
 public:
     struct VisData
     {
@@ -575,6 +581,9 @@ private:
         enum class SortBy : int { Count, Time, Mtpc };
         SortBy sortBy = SortBy::Time;
         bool runningTime = false;
+        flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>> data;
+        const ZoneEvent* dataValidFor = nullptr;
+        float fztime;
     } m_timeDist;
 };
 

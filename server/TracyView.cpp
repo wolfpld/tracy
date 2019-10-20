@@ -6287,6 +6287,7 @@ void View::DrawZoneInfoWindow()
                     if( !GetZoneRunningTime( ctx, ev, time, cnt ) )
                     {
                         TextDisabledUnformatted( "Incomplete context switch data." );
+                        m_timeDist.dataValidFor = nullptr;
                     }
                     else
                     {

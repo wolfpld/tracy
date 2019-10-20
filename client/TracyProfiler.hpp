@@ -110,10 +110,14 @@ public:
 #    endif
 #  elif defined _WIN32 || defined __CYGWIN__
         return int64_t( __rdtsc() );
-#  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+#  elif defined __i386 || defined _M_IX86
         uint32_t eax, edx;
         asm volatile ( "rdtsc" : "=a" (eax), "=d" (edx) );
         return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
+#  elif defined __x86_64__ || defined _M_X64
+        uint64_t rax, rdx;
+        asm volatile ( "rdtsc" : "=a" (rax), "=d" (rdx) );
+        return ( rdx << 32 ) + rax;
 #  endif
 #else
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();

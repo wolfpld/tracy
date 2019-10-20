@@ -1847,6 +1847,7 @@ uint64_t Worker::GetPidFromTid( uint64_t tid ) const
 void Worker::GetCpuUsageAtTime( int64_t time, int& own, int& other ) const
 {
     own = other = 0;
+    if( time < 0 || time > m_data.lastTime ) return;
     for( int i=0; i<m_data.cpuDataCount; i++ )
     {
         auto& cs = m_data.cpuData[i].cs;

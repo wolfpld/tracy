@@ -2196,51 +2196,14 @@ void Profiler::CalibrateTimer()
 #endif
 }
 
-class FakeZone
-{
-public:
-    FakeZone( const SourceLocationData* srcloc ) : m_id( (uint64_t)srcloc ) {}
-    ~FakeZone() {}
-
-private:
-    volatile uint64_t m_id;
-};
-
 void Profiler::CalibrateDelay()
 {
     enum { Iterations = 50000 };
     enum { Events = Iterations * 2 };   // start + end
-    static_assert( Events * 2 < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
+    static_assert( Events < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
     moodycamel::ProducerToken ptoken_detail( GetQueue() );
     moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = GetQueue().get_explicit_producer( ptoken_detail );
-    for( int i=0; i<Iterations; i++ )
-    {
-        static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
-        {
-            Magic magic;
-            auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin( magic );
-            MemWrite( &item->hdr.type, QueueType::ZoneBegin );
-            MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
-            MemWrite( &item->zoneBegin.srcloc, (uint64_t)&__tracy_source_location );
-            tail.store( magic + 1, std::memory_order_release );
-        }
-        {
-            Magic magic;
-            auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin( magic );
-            MemWrite( &item->hdr.type, QueueType::ZoneEnd );
-            MemWrite( &item->zoneEnd.time, GetTime() );
-            tail.store( magic + 1, std::memory_order_release );
-        }
-    }
-    const auto f0 = GetTime();
-    for( int i=0; i<Iterations; i++ )
-    {
-        static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
-        FakeZone ___tracy_scoped_zone( &__tracy_source_location );
-    }
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
@@ -2265,8 +2228,7 @@ void Profiler::CalibrateDelay()
     }
     const auto t1 = GetTime();
     const auto dt = t1 - t0;
-    const auto df = t0 - f0;
-    m_delay = ( dt - df ) / Events;
+    m_delay = dt / Events;
 
     auto mindiff = std::numeric_limits<int64_t>::max();
     for( int i=0; i<Iterations * 10; i++ )
@@ -2281,7 +2243,7 @@ void Profiler::CalibrateDelay()
 
     enum { Bulk = 1000 };
     moodycamel::ConsumerToken token( GetQueue() );
-    int left = Events * 2;
+    int left = Events;
     QueueItem item[Bulk];
     while( left != 0 )
     {
@@ -2289,6 +2251,7 @@ void Profiler::CalibrateDelay()
         assert( sz > 0 );
         left -= (int)sz;
     }
+    assert( GetQueue().size_approx() == 0 );
 }
 
 void Profiler::SendCallstack( int depth, const char* skipBefore )

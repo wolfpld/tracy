@@ -10,11 +10,11 @@ Telemetry license costs about 8000 $ per year. Tracy is open source software. Te
 
 ### You can use the free Brofiler. Crytek does use it, so it has to be good.
 
-After a cursory look at the Brofiler code I can tell that the timer resolution there is at 300 ns. Tracy can achieve 5 ns timer resolution. Brofiler event logging infrastructure seems to be over-engineered. Brofiler can't track lock contention, nor does it have Lua bindings.
+After a cursory look at the Brofiler code I can tell that the timer resolution there is at 300 ns. Tracy can achieve 4 ns timer resolution. Brofiler event logging infrastructure seems to be over-engineered. Brofiler can't track lock contention, nor does it have Lua bindings.
 
 ### So tracy is supposedly faster?
 
-My measurements show that logging a single zone with tracy takes only 15 ns. In theory, if the program was doing nothing else, tracy should be able to log 66 million zones per second.
+My measurements show that logging a single zone with tracy takes only 2.25 ns. In theory, if the program was doing nothing else, tracy should be able to log 444 million zones per second.
 
 ### Bullshit, RAD is advertising that they are able only to log about a million zones, over the network nevertheless: "Capture over a million timing zones per second in real-time!"
 

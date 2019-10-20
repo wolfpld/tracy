@@ -109,7 +109,7 @@ public:
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
 #    endif
 #  elif defined _WIN32 || defined __CYGWIN__
-        unsigned int dontcare;
+        static unsigned int dontcare;
         const auto t = int64_t( __rdtscp( &dontcare ) );
         return t;
 #  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64

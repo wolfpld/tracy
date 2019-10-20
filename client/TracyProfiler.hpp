@@ -109,12 +109,10 @@ public:
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
 #    endif
 #  elif defined _WIN32 || defined __CYGWIN__
-        static unsigned int dontcare;
-        const auto t = int64_t( __rdtscp( &dontcare ) );
-        return t;
+        return int64_t( __rdtsc() );
 #  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
         uint32_t eax, edx;
-        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx) :: "%ecx" );
+        asm volatile ( "rdtsc" : "=a" (eax), "=d" (edx) );
         return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
 #  endif
 #else

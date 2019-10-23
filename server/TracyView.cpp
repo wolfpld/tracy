@@ -946,6 +946,7 @@ bool View::DrawConnection()
         ImGui::SameLine();
         ImGui::PlotLines( buf, mbpsVector.data(), mbpsVector.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 150, 0 ) );
         ImGui::Text( "Ratio %.1f%%  Real: %6.2f Mbps", m_worker.GetCompRatio() * 100.f, mbps / m_worker.GetCompRatio() );
+        ImGui::Text( "Data transferred: %s", MemSizeToString( m_worker.GetDataTransferred() ) );
         ImGui::Text( "Query backlog: %s", RealToString( m_worker.GetSendQueueSize(), true ) );
     }
 

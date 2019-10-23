@@ -11,6 +11,7 @@ v0.6 (xxxx-xx-xx)
 
 - Dropped support for pre-v0.4 traces.
 - Major memory usage decrease.
+- Significant network bandwidth decrease.
 - Implemented context switch capture on selected platforms.
   - Zone timings in various UI places can now take into account only the
     time when the thread was executing.

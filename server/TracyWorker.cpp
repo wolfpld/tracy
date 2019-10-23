@@ -3268,13 +3268,22 @@ bool Worker::Process( const QueueItem& ev )
         ProcessGpuNewContext( ev.gpuNewContext );
         break;
     case QueueType::GpuZoneBegin:
-        ProcessGpuZoneBegin( ev.gpuZoneBegin );
+        ProcessGpuZoneBegin( ev.gpuZoneBegin, false );
         break;
     case QueueType::GpuZoneBeginCallstack:
-        ProcessGpuZoneBeginCallstack( ev.gpuZoneBegin );
+        ProcessGpuZoneBeginCallstack( ev.gpuZoneBegin, false );
         break;
     case QueueType::GpuZoneEnd:
-        ProcessGpuZoneEnd( ev.gpuZoneEnd );
+        ProcessGpuZoneEnd( ev.gpuZoneEnd, false );
+        break;
+    case QueueType::GpuZoneBeginSerial:
+        ProcessGpuZoneBegin( ev.gpuZoneBegin, true );
+        break;
+    case QueueType::GpuZoneBeginCallstackSerial:
+        ProcessGpuZoneBeginCallstack( ev.gpuZoneBegin, true );
+        break;
+    case QueueType::GpuZoneEndSerial:
+        ProcessGpuZoneEnd( ev.gpuZoneEnd, true );
         break;
     case QueueType::GpuTime:
         ProcessGpuTime( ev.gpuTime );
@@ -3341,13 +3350,15 @@ bool Worker::Process( const QueueItem& ev )
 void Worker::ProcessThreadContext( const QueueThreadContext& ev )
 {
     m_threadCtx = ev.thread;
+    m_refTimeThread = 0;
 }
 
 void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 {
     CheckSourceLocation( ev.srcloc );
 
-    const auto start = TscTime( ev.time - m_data.baseTime );
+    m_refTimeThread += ev.time;
+    const auto start = TscTime( m_refTimeThread - m_data.baseTime );
     zone->SetStart( start );
     zone->SetEnd( -1 );
     zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
@@ -3380,7 +3391,8 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
     auto it = m_pendingSourceLocationPayload.find( ev.srcloc );
     assert( it != m_pendingSourceLocationPayload.end() );
 
-    const auto start = TscTime( ev.time - m_data.baseTime );
+    m_refTimeThread += ev.time;
+    const auto start = TscTime( m_refTimeThread - m_data.baseTime );
     zone->SetStart( start );
     zone->SetEnd( -1 );
     zone->SetSrcLoc( it->second );
@@ -3432,7 +3444,8 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     assert( !stack.empty() );
     auto zone = stack.back_and_pop();
     assert( zone->End() == -1 );
-    zone->SetEnd( TscTime( ev.time - m_data.baseTime ) );
+    m_refTimeThread += ev.time;
+    zone->SetEnd( TscTime( m_refTimeThread - m_data.baseTime ) );
     assert( zone->End() >= zone->Start() );
 
     m_data.lastTime = std::max( m_data.lastTime, zone->End() );
@@ -3773,7 +3786,8 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     }
 
     auto lev = ev.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    m_refTimeSerial += ev.time;
+    lev->SetTime( TscTime( m_refTimeSerial - m_data.baseTime ) );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Wait;
 
@@ -3787,7 +3801,8 @@ void Worker::ProcessLockObtain( const QueueLockObtain& ev )
     auto& lock = *it->second;
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    m_refTimeSerial += ev.time;
+    lev->SetTime( TscTime( m_refTimeSerial - m_data.baseTime ) );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Obtain;
 
@@ -3801,7 +3816,8 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
     auto& lock = *it->second;
 
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
-    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    m_refTimeSerial += ev.time;
+    lev->SetTime( TscTime( m_refTimeSerial - m_data.baseTime ) );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Release;
 
@@ -3822,7 +3838,8 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
 
     assert( ev.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    m_refTimeSerial += ev.time;
+    lev->SetTime( TscTime( m_refTimeSerial - m_data.baseTime ) );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::WaitShared;
 
@@ -3837,7 +3854,8 @@ void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    m_refTimeSerial += ev.time;
+    lev->SetTime( TscTime( m_refTimeSerial - m_data.baseTime ) );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ObtainShared;
 
@@ -3852,7 +3870,8 @@ void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
 
     assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
-    lev->SetTime( TscTime( ev.time - m_data.baseTime ) );
+    m_refTimeSerial += ev.time;
+    lev->SetTime( TscTime( m_refTimeSerial - m_data.baseTime ) );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ReleaseShared;
 
@@ -3900,7 +3919,8 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
         Query( ServerQueryPlotName, name );
     } );
 
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    m_refTimeThread += ev.time;
+    const auto time = TscTime( m_refTimeThread - m_data.baseTime );
     m_data.lastTime = std::max( m_data.lastTime, time );
     switch( ev.type )
     {
@@ -4005,7 +4025,7 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     m_gpuCtxMap[ev.context] = gpu;
 }
 
-void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev )
+void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev, bool serial )
 {
     m_data.gpuCnt++;
 
@@ -4014,7 +4034,18 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
 
     CheckSourceLocation( ev.srcloc );
 
-    zone->SetCpuStart( TscTime( ev.cpuTime - m_data.baseTime ) );
+    int64_t cpuTime;
+    if( serial )
+    {
+        m_refTimeSerial += ev.cpuTime;
+        cpuTime = m_refTimeSerial;
+    }
+    else
+    {
+        m_refTimeThread += ev.cpuTime;
+        cpuTime = m_refTimeThread;
+    }
+    zone->SetCpuStart( TscTime( cpuTime - m_data.baseTime ) );
     zone->SetCpuEnd( -1 );
     zone->gpuStart = std::numeric_limits<int64_t>::max();
     zone->gpuEnd = -1;
@@ -4064,23 +4095,23 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     ctx->query[ev.queryId] = zone;
 }
 
-void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev )
+void Worker::ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev, bool serial )
 {
     auto zone = m_slab.Alloc<GpuEvent>();
-    ProcessGpuZoneBeginImpl( zone, ev );
+    ProcessGpuZoneBeginImpl( zone, ev, serial );
 }
 
-void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev )
+void Worker::ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool serial )
 {
     auto zone = m_slab.Alloc<GpuEvent>();
-    ProcessGpuZoneBeginImpl( zone, ev );
+    ProcessGpuZoneBeginImpl( zone, ev, serial );
 
     auto& next = m_nextCallstack[ev.thread];
     next.type = NextCallstackType::Gpu;
     next.gpu = zone;
 }
 
-void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
+void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
 {
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
@@ -4094,7 +4125,18 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev )
     assert( !ctx->query[ev.queryId] );
     ctx->query[ev.queryId] = zone;
 
-    zone->SetCpuEnd( TscTime( ev.cpuTime - m_data.baseTime ) );
+    int64_t cpuTime;
+    if( serial )
+    {
+        m_refTimeSerial += ev.cpuTime;
+        cpuTime = m_refTimeSerial;
+    }
+    else
+    {
+        m_refTimeThread += ev.cpuTime;
+        cpuTime = m_refTimeThread;
+    }
+    zone->SetCpuEnd( TscTime( cpuTime - m_data.baseTime ) );
     m_data.lastTime = std::max( m_data.lastTime, zone->CpuEnd() );
 }
 
@@ -4137,7 +4179,8 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 
 void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    m_refTimeSerial += ev.time;
+    const auto time = TscTime( m_refTimeSerial - m_data.baseTime );
     m_data.lastTime = std::max( m_data.lastTime, time );
     NoticeThread( ev.thread );
 
@@ -4188,7 +4231,8 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
         return false;
     }
 
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    m_refTimeSerial += ev.time;
+    const auto time = TscTime( m_refTimeSerial - m_data.baseTime );
     m_data.lastTime = std::max( m_data.lastTime, time );
     NoticeThread( ev.thread );
 

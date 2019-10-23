@@ -210,7 +210,7 @@ public:
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
         auto item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
+        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginSerial );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
@@ -234,7 +234,7 @@ public:
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
         auto item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstack );
+        MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstackSerial );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
@@ -254,7 +254,7 @@ public:
         vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_ctx->m_query, queryId );
 
         auto item = Profiler::QueueSerial();
-        MemWrite( &item->hdr.type, QueueType::GpuZoneEnd );
+        MemWrite( &item->hdr.type, QueueType::GpuZoneEndSerial );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneEnd.thread, GetThreadHandle() );
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );

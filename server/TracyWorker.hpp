@@ -435,9 +435,9 @@ private:
     tracy_force_inline void ProcessMessageLiteralColor( const QueueMessageColor& ev );
     tracy_force_inline void ProcessMessageAppInfo( const QueueMessage& ev );
     tracy_force_inline void ProcessGpuNewContext( const QueueGpuNewContext& ev );
-    tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev );
-    tracy_force_inline void ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev );
-    tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev );
+    tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev, bool serial );
+    tracy_force_inline void ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool serial );
+    tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial );
     tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
     tracy_force_inline void ProcessMemAlloc( const QueueMemAlloc& ev );
     tracy_force_inline bool ProcessMemFree( const QueueMemFree& ev );
@@ -456,7 +456,7 @@ private:
 
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
-    tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev );
+    tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev, bool serial );
 
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneEndFailure( uint64_t thread );
@@ -614,6 +614,8 @@ private:
     size_t m_frameImageBufferSize = 0;
 
     uint64_t m_threadCtx = 0;
+    int64_t m_refTimeThread = 0;
+    int64_t m_refTimeSerial = 0;
 };
 
 }

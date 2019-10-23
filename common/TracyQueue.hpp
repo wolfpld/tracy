@@ -19,14 +19,31 @@ enum class QueueType : uint8_t
     Callstack,
     CallstackAlloc,
     FrameImage,
+    ZoneBegin,
+    ZoneBeginCallstack,
+    ZoneEnd,
+    LockWait,
+    LockObtain,
+    LockRelease,
+    LockSharedWait,
+    LockSharedObtain,
+    LockSharedRelease,
+    MemAlloc,
+    MemFree,
+    MemAllocCallstack,
+    MemFreeCallstack,
+    GpuZoneBegin,
+    GpuZoneBeginCallstack,
+    GpuZoneEnd,
+    GpuZoneBeginSerial,
+    GpuZoneBeginCallstackSerial,
+    GpuZoneEndSerial,
+    PlotData,
     Terminate,
     KeepAlive,
     ThreadContext,
     Crash,
     CrashReport,
-    ZoneBegin,
-    ZoneBeginCallstack,
-    ZoneEnd,
     ZoneValidation,
     FrameMarkMsg,
     FrameMarkMsgStart,
@@ -34,25 +51,11 @@ enum class QueueType : uint8_t
     SourceLocation,
     LockAnnounce,
     LockTerminate,
-    LockWait,
-    LockObtain,
-    LockRelease,
-    LockSharedWait,
-    LockSharedObtain,
-    LockSharedRelease,
     LockMark,
-    PlotData,
     MessageLiteral,
     MessageLiteralColor,
     GpuNewContext,
-    GpuZoneBegin,
-    GpuZoneBeginCallstack,
-    GpuZoneEnd,
     GpuTime,
-    MemAlloc,
-    MemFree,
-    MemAllocCallstack,
-    MemFreeCallstack,
     CallstackFrameSize,
     CallstackFrame,
     SysTimeReport,
@@ -394,15 +397,32 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstack ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackAlloc ),
     sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
+    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
+    sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
+    sizeof( QueueHeader ) + sizeof( QueueLockWait ),
+    sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
+    sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
+    sizeof( QueueHeader ) + sizeof( QueueLockWait ),        // shared
+    sizeof( QueueHeader ) + sizeof( QueueLockObtain ),      // shared
+    sizeof( QueueHeader ) + sizeof( QueueLockRelease ),     // shared
+    sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),
+    sizeof( QueueHeader ) + sizeof( QueueMemFree ),
+    sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // callstack
+    sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // callstack
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // callstack
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // serial
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // serial, callstack
+    sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),      // serial
+    sizeof( QueueHeader ) + sizeof( QueuePlotData ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
     sizeof( QueueHeader ) + sizeof( QueueThreadContext ),
     sizeof( QueueHeader ),                                  // crash
     sizeof( QueueHeader ) + sizeof( QueueCrashReport ),
-    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
-    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
-    sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueZoneValidation ),
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // continuous frames
     sizeof( QueueHeader ) + sizeof( QueueFrameMark ),       // start
@@ -410,25 +430,11 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueSourceLocation ),
     sizeof( QueueHeader ) + sizeof( QueueLockAnnounce ),
     sizeof( QueueHeader ) + sizeof( QueueLockTerminate ),
-    sizeof( QueueHeader ) + sizeof( QueueLockWait ),
-    sizeof( QueueHeader ) + sizeof( QueueLockObtain ),
-    sizeof( QueueHeader ) + sizeof( QueueLockRelease ),
-    sizeof( QueueHeader ) + sizeof( QueueLockWait ),        // shared
-    sizeof( QueueHeader ) + sizeof( QueueLockObtain ),      // shared
-    sizeof( QueueHeader ) + sizeof( QueueLockRelease ),     // shared
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
-    sizeof( QueueHeader ) + sizeof( QueuePlotData ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // literal
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
-    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),
-    sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // callstack
-    sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
-    sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),
-    sizeof( QueueHeader ) + sizeof( QueueMemFree ),
-    sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // callstack
-    sizeof( QueueHeader ) + sizeof( QueueMemFree ),         // callstack
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),

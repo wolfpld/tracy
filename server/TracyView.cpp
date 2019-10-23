@@ -945,12 +945,18 @@ bool View::DrawConnection()
         ImGui::Dummy( ImVec2( cs, 0 ) );
         ImGui::SameLine();
         ImGui::PlotLines( buf, mbpsVector.data(), mbpsVector.size(), 0, nullptr, 0, std::numeric_limits<float>::max(), ImVec2( 150, 0 ) );
-        ImGui::Text( "Ratio %.1f%%  Real: %6.2f Mbps", m_worker.GetCompRatio() * 100.f, mbps / m_worker.GetCompRatio() );
-        ImGui::Text( "Data transferred: %s", MemSizeToString( m_worker.GetDataTransferred() ) );
-        ImGui::Text( "Query backlog: %s", RealToString( m_worker.GetSendQueueSize(), true ) );
+        TextDisabledUnformatted( "Ratio" );
+        ImGui::SameLine();
+        ImGui::Text( "%.1f%%", m_worker.GetCompRatio() * 100.f );
+        ImGui::SameLine();
+        TextDisabledUnformatted( "Real:" );
+        ImGui::SameLine();
+        ImGui::Text( "%6.2f Mbps", mbps / m_worker.GetCompRatio() );
+        TextFocused( "Data transferred:", MemSizeToString( m_worker.GetDataTransferred() ) );
+        TextFocused( "Query backlog:", RealToString( m_worker.GetSendQueueSize(), true ) );
     }
 
-    ImGui::Text( "Memory usage: %s", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
+    TextFocused( "Memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
 
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 1.75 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
@@ -961,9 +967,12 @@ bool View::DrawConnection()
         if( sz > 1 )
         {
             const auto dt = m_worker.GetFrameTime( *m_frames, sz - 2 );
-            const auto dtm = dt / 1000000.f;
-            const auto fps = 1000.f / dtm;
-            ImGui::Text( "FPS: %6.1f  Frame time: %.2f ms", fps, dtm );
+            const auto fps = 1000000000.f / dt;
+            TextDisabledUnformatted( "FPS:" );
+            ImGui::SameLine();
+            ImGui::Text( "%6.1f", fps );
+            ImGui::SameLine();
+            TextFocused( "Frame time:", TimeToString( dt ) );
         }
     }
 

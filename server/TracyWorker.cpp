@@ -2654,6 +2654,21 @@ ThreadData* Worker::NoticeThreadReal( uint64_t thread )
     }
 }
 
+ThreadData* Worker::RetrieveThreadReal( uint64_t thread )
+{
+    auto it = m_threadMap.find( thread );
+    if( it != m_threadMap.end() )
+    {
+        m_data.threadDataLast.first = thread;
+        m_data.threadDataLast.second = it->second;
+        return it->second;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+
 const ThreadData* Worker::GetThreadData( uint64_t tid ) const
 {
     auto it = m_threadMap.find( tid );

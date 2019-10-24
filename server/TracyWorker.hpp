@@ -482,10 +482,16 @@ private:
 
     ThreadData* NoticeThreadReal( uint64_t thread );
     ThreadData* NewThread( uint64_t thread );
-    ThreadData* NoticeThread( uint64_t thread )
+    tracy_force_inline ThreadData* NoticeThread( uint64_t thread )
     {
         if( m_data.threadDataLast.first == thread ) return m_data.threadDataLast.second;
         return NoticeThreadReal( thread );
+    }
+    ThreadData* RetrieveThreadReal( uint64_t thread );
+    tracy_force_inline ThreadData* RetrieveThread( uint64_t thread )
+    {
+        if( m_data.threadDataLast.first == thread ) return m_data.threadDataLast.second;
+        return RetrieveThreadReal( thread );
     }
 
     tracy_force_inline void NewZone( ZoneEvent* zone, uint64_t thread );

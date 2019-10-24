@@ -2716,7 +2716,8 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     else
     {
         auto back = td->stack.back();
-        if( back->Child() < 0 )
+        const auto backChild = back->Child();
+        if( backChild < 0 )
         {
             back->SetChild( int32_t( m_data.zoneChildren.size() ) );
             if( m_data.zoneVectorCache.empty() )
@@ -2734,7 +2735,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
         }
         else
         {
-            m_data.zoneChildren[back->Child()].push_back( zone );
+            m_data.zoneChildren[backChild].push_back( zone );
         }
         td->stack.push_back_non_empty( zone );
     }
@@ -3470,9 +3471,10 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 
     if( m_data.lastTime < timeEnd ) m_data.lastTime = timeEnd;
 
-    if( zone->Child() >= 0 )
+    const auto child = zone->Child();
+    if( child >= 0 )
     {
-        auto& childVec = m_data.zoneChildren[zone->Child()];
+        auto& childVec = m_data.zoneChildren[child];
         const auto sz = childVec.size();
         if( sz <= 8 * 1024 )
         {

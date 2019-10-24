@@ -497,7 +497,7 @@ private:
 
     tracy_force_inline void NewZone( ZoneEvent* zone, uint64_t thread );
 
-    void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread );
+    void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread, int64_t time );
 
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );

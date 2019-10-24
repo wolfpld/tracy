@@ -2743,10 +2743,9 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     td->nextZoneId = 0;
 }
 
-void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread )
+void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread, int64_t time )
 {
-    const auto lt = lev->Time();
-    m_data.lastTime = std::max( m_data.lastTime, lt );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
 
     NoticeThread( thread );
 
@@ -2773,8 +2772,8 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread 
     }
 
     auto& range = lockmap.range[it->second];
-    if( range.start > lt ) range.start = lt;
-    if( range.end < lt ) range.end = lt;
+    if( range.start > time ) range.start = time;
+    if( range.end < time ) range.end = time;
 }
 
 void Worker::CheckString( uint64_t ptr )
@@ -3803,11 +3802,12 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     auto lev = ev.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    lev->SetTime( TscTime( refTime - m_data.baseTime ) );
+    const auto time = TscTime( refTime - m_data.baseTime );
+    lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Wait;
 
-    InsertLockEvent( *it->second, lev, ev.thread );
+    InsertLockEvent( *it->second, lev, ev.thread, time );
 }
 
 void Worker::ProcessLockObtain( const QueueLockObtain& ev )
@@ -3819,11 +3819,12 @@ void Worker::ProcessLockObtain( const QueueLockObtain& ev )
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    lev->SetTime( TscTime( refTime - m_data.baseTime ) );
+    const auto time = TscTime( refTime - m_data.baseTime );
+    lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Obtain;
 
-    InsertLockEvent( lock, lev, ev.thread );
+    InsertLockEvent( lock, lev, ev.thread, time );
 }
 
 void Worker::ProcessLockRelease( const QueueLockRelease& ev )
@@ -3835,11 +3836,12 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
     auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    lev->SetTime( TscTime( refTime - m_data.baseTime ) );
+    const auto time = TscTime( refTime - m_data.baseTime );
+    lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Release;
 
-    InsertLockEvent( lock, lev, ev.thread );
+    InsertLockEvent( lock, lev, ev.thread, time );
 }
 
 void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
@@ -3858,11 +3860,12 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
     auto lev = m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    lev->SetTime( TscTime( refTime - m_data.baseTime ) );
+    const auto time = TscTime( refTime - m_data.baseTime );
+    lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::WaitShared;
 
-    InsertLockEvent( *it->second, lev, ev.thread );
+    InsertLockEvent( *it->second, lev, ev.thread, time );
 }
 
 void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
@@ -3875,11 +3878,12 @@ void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
     auto lev = m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    lev->SetTime( TscTime( refTime - m_data.baseTime ) );
+    const auto time = TscTime( refTime - m_data.baseTime );
+    lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ObtainShared;
 
-    InsertLockEvent( lock, lev, ev.thread );
+    InsertLockEvent( lock, lev, ev.thread, time );
 }
 
 void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
@@ -3892,11 +3896,12 @@ void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
     auto lev = m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
-    lev->SetTime( TscTime( refTime - m_data.baseTime ) );
+    const auto time = TscTime( refTime - m_data.baseTime );
+    lev->SetTime( time );
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::ReleaseShared;
 
-    InsertLockEvent( lock, lev, ev.thread );
+    InsertLockEvent( lock, lev, ev.thread, time );
 }
 
 void Worker::ProcessLockMark( const QueueLockMark& ev )

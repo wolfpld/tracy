@@ -2772,7 +2772,7 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread,
     }
     else
     {
-        assert( timeline.back().ptr->Time() <= lt );
+        assert( timeline.back().ptr->Time() <= time );
         timeline.push_back_non_empty( { lev } );
         UpdateLockCount( lockmap, timeline.size() - 1 );
     }

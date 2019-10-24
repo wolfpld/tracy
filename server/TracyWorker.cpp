@@ -3381,7 +3381,7 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
     zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
     zone->SetChild( -1 );
 
-    m_data.lastTime = std::max( m_data.lastTime, start );
+    if( m_data.lastTime < start ) m_data.lastTime = start;
 
     NewZone( zone, m_threadCtx );
 }
@@ -3415,7 +3415,7 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
     zone->SetSrcLoc( it->second );
     zone->SetChild( -1 );
 
-    m_data.lastTime = std::max( m_data.lastTime, start );
+    if( m_data.lastTime < start ) m_data.lastTime = start;
 
     NewZone( zone, m_threadCtx );
 
@@ -3461,10 +3461,11 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     assert( zone->End() == -1 );
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
-    zone->SetEnd( TscTime( refTime - m_data.baseTime ) );
-    assert( zone->End() >= zone->Start() );
+    const auto timeEnd = TscTime( refTime - m_data.baseTime );
+    zone->SetEnd( timeEnd );
+    assert( timeEnd >= zone->Start() );
 
-    m_data.lastTime = std::max( m_data.lastTime, zone->End() );
+    if( m_data.lastTime < timeEnd ) m_data.lastTime = timeEnd;
 
     if( zone->Child() >= 0 )
     {
@@ -3481,7 +3482,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     }
 
 #ifndef TRACY_NO_STATISTICS
-    auto timeSpan = zone->End() - zone->Start();
+    auto timeSpan = timeEnd - zone->Start();
     if( timeSpan > 0 )
     {
         auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
@@ -3591,7 +3592,7 @@ void Worker::ProcessFrameMark( const QueueFrameMark& ev )
     const auto time = TscTime( ev.time - m_data.baseTime );
     assert( fd->frames.empty() || fd->frames.back().start <= time );
     fd->frames.push_back( FrameEvent{ time, -1, frameImage } );
-    m_data.lastTime = std::max( m_data.lastTime, time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
 
 #ifndef TRACY_NO_STATISTICS
     const auto timeSpan = GetFrameTime( *fd, fd->frames.size() - 1 );
@@ -3620,7 +3621,7 @@ void Worker::ProcessFrameMarkStart( const QueueFrameMark& ev )
     const auto time = TscTime( ev.time - m_data.baseTime );
     assert( fd->frames.empty() || ( fd->frames.back().end <= time && fd->frames.back().end != -1 ) );
     fd->frames.push_back( FrameEvent{ time, -1, -1 } );
-    m_data.lastTime = std::max( m_data.lastTime, time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
 }
 
 void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
@@ -3643,7 +3644,7 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     }
     assert( fd->frames.back().end == -1 );
     fd->frames.back().end = time;
-    m_data.lastTime = std::max( m_data.lastTime, time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
 
 #ifndef TRACY_NO_STATISTICS
     const auto timeSpan = GetFrameTime( *fd, fd->frames.size() - 1 );
@@ -3942,7 +3943,7 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
     const auto time = TscTime( refTime - m_data.baseTime );
-    m_data.lastTime = std::max( m_data.lastTime, time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
     switch( ev.type )
     {
     case PlotDataType::Double:
@@ -3965,11 +3966,12 @@ void Worker::ProcessMessage( const QueueMessage& ev )
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
     auto msg = m_slab.Alloc<MessageData>();
-    msg->time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time - m_data.baseTime );
+    msg->time = time;
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFFFFFFFF;
-    m_data.lastTime = std::max( m_data.lastTime, msg->time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg, m_threadCtx );
     m_pendingCustomStrings.erase( it );
 }
@@ -3978,11 +3980,12 @@ void Worker::ProcessMessageLiteral( const QueueMessage& ev )
 {
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
-    msg->time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time - m_data.baseTime );
+    msg->time = time;
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFFFFFFFF;
-    m_data.lastTime = std::max( m_data.lastTime, msg->time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg, m_threadCtx );
 }
 
@@ -3991,11 +3994,12 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
     auto msg = m_slab.Alloc<MessageData>();
-    msg->time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time - m_data.baseTime );
+    msg->time = time;
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
-    m_data.lastTime = std::max( m_data.lastTime, msg->time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg, m_threadCtx );
     m_pendingCustomStrings.erase( it );
 }
@@ -4004,11 +4008,12 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColor& ev )
 {
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
-    msg->time = TscTime( ev.time - m_data.baseTime );
+    const auto time = TscTime( ev.time - m_data.baseTime );
+    msg->time = time;
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
-    m_data.lastTime = std::max( m_data.lastTime, msg->time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg, m_threadCtx );
 }
 
@@ -4017,7 +4022,8 @@ void Worker::ProcessMessageAppInfo( const QueueMessage& ev )
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
     m_data.appInfo.push_back( StringRef( StringRef::Type::Idx, it->second.idx ) );
-    m_data.lastTime = std::max( m_data.lastTime, TscTime( ev.time - m_data.baseTime ) );
+    const auto time = TscTime( ev.time - m_data.baseTime );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
     m_pendingCustomStrings.erase( it );
 }
 
@@ -4066,7 +4072,8 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
         cpuTime = m_refTimeThread + ev.cpuTime;
         m_refTimeThread = cpuTime;
     }
-    zone->SetCpuStart( TscTime( cpuTime - m_data.baseTime ) );
+    const auto time = TscTime( cpuTime - m_data.baseTime );
+    zone->SetCpuStart( time );
     zone->SetCpuEnd( -1 );
     zone->gpuStart = std::numeric_limits<int64_t>::max();
     zone->gpuEnd = -1;
@@ -4089,7 +4096,7 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
         ztid = 0;
     }
 
-    m_data.lastTime = std::max( m_data.lastTime, zone->CpuStart() );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
 
     auto td = ctx->threadData.find( ztid );
     if( td == ctx->threadData.end() )
@@ -4157,8 +4164,9 @@ void Worker::ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial )
         cpuTime = m_refTimeThread + ev.cpuTime;
         m_refTimeThread = cpuTime;
     }
-    zone->SetCpuEnd( TscTime( cpuTime - m_data.baseTime ) );
-    m_data.lastTime = std::max( m_data.lastTime, zone->CpuEnd() );
+    const auto time = TscTime( cpuTime - m_data.baseTime );
+    zone->SetCpuEnd( time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
 }
 
 void Worker::ProcessGpuTime( const QueueGpuTime& ev )
@@ -4182,14 +4190,16 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 
     if( zone->gpuStart == std::numeric_limits<int64_t>::max() )
     {
-        zone->gpuStart = ctx->timeDiff + gpuTime;
-        m_data.lastTime = std::max( m_data.lastTime, zone->gpuStart );
+        const auto time = ctx->timeDiff + gpuTime;
+        zone->gpuStart = time;
+        if( m_data.lastTime < time ) m_data.lastTime = time;
         ctx->count++;
     }
     else
     {
-        zone->gpuEnd = ctx->timeDiff + gpuTime;
-        m_data.lastTime = std::max( m_data.lastTime, zone->gpuEnd );
+        const auto time = ctx->timeDiff + gpuTime;
+        zone->gpuEnd = time;
+        if( m_data.lastTime < time ) m_data.lastTime = time;
 
         if( zone->gpuEnd < zone->gpuStart )
         {
@@ -4203,7 +4213,7 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
     const auto time = TscTime( refTime - m_data.baseTime );
-    m_data.lastTime = std::max( m_data.lastTime, time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
     assert( m_data.memory.active.find( ev.ptr ) == m_data.memory.active.end() );
@@ -4256,7 +4266,7 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
     const auto time = TscTime( refTime - m_data.baseTime );
-    m_data.lastTime = std::max( m_data.lastTime, time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );
 
     m_data.memory.frees.push_back( it->second );
@@ -4430,7 +4440,7 @@ void Worker::ProcessCrashReport( const QueueCrashReport& ev )
 void Worker::ProcessSysTime( const QueueSysTime& ev )
 {
     const auto time = TscTime( ev.time - m_data.baseTime );
-    m_data.lastTime = std::max( m_data.lastTime, time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
     const auto val = ev.sysTime;
     if( !m_sysTimePlot )
     {
@@ -4455,7 +4465,7 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
 void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
 {
     const auto time = TscTime( ev.time - m_data.baseTime );
-    m_data.lastTime = std::max( m_data.lastTime, time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
 
     if( ev.cpu >= m_data.cpuDataCount ) m_data.cpuDataCount = ev.cpu + 1;
     auto& cs = m_data.cpuData[ev.cpu].cs;
@@ -4548,7 +4558,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
 void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
 {
     const auto time = TscTime( ev.time - m_data.baseTime );
-    m_data.lastTime = std::max( m_data.lastTime, time );
+    if( m_data.lastTime < time ) m_data.lastTime = time;
 
     auto it = m_data.ctxSwitch.find( ev.thread );
     if( it == m_data.ctxSwitch.end() )

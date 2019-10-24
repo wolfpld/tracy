@@ -351,6 +351,9 @@ struct ThreadData
     Vector<MessageData*> messages;
     uint32_t nextZoneId;
     Vector<uint32_t> zoneIdStack;
+#ifndef TRACY_NO_STATISTICS
+    Vector<int64_t> childTimeStack;
+#endif
 };
 
 struct GpuCtxThreadData

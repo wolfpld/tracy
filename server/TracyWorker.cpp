@@ -2741,6 +2741,10 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
 
     td->zoneIdStack.push_back( td->nextZoneId );
     td->nextZoneId = 0;
+
+#ifndef TRACY_NO_STATISTICS
+    td->childTimeStack.push_back( 0 );
+#endif
 }
 
 void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread, int64_t time )
@@ -3481,7 +3485,8 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     }
 
 #ifndef TRACY_NO_STATISTICS
-    auto timeSpan = timeEnd - zone->Start();
+    assert( !td->childTimeStack.empty() );
+    const auto timeSpan = timeEnd - zone->Start();
     if( timeSpan > 0 )
     {
         auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
@@ -3491,17 +3496,18 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         slz.max = std::max( slz.max, timeSpan );
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
-        if( zone->Child() >= 0 )
+        const auto selfSpan = timeSpan - td->childTimeStack.back_and_pop();
+        slz.selfMin = std::min( slz.selfMin, selfSpan );
+        slz.selfMax = std::max( slz.selfMax, selfSpan );
+        slz.selfTotal += selfSpan;
+        if( !td->childTimeStack.empty() )
         {
-            for( auto& v : GetZoneChildren( zone->Child() ) )
-            {
-                const auto childSpan = std::max( int64_t( 0 ), v->End() - v->Start() );
-                timeSpan -= childSpan;
-            }
+            td->childTimeStack.back() += timeSpan;
         }
-        slz.selfMin = std::min( slz.selfMin, timeSpan );
-        slz.selfMax = std::max( slz.selfMax, timeSpan );
-        slz.selfTotal += timeSpan;
+    }
+    else
+    {
+        td->childTimeStack.pop_back();
     }
 #endif
 }

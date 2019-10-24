@@ -3379,7 +3379,6 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
     zone->SetStart( start );
     zone->SetEnd( -1 );
     zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
-    zone->callstack.SetVal( 0 );
     zone->SetChild( -1 );
 
     m_data.lastTime = std::max( m_data.lastTime, start );
@@ -3414,7 +3413,6 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
     zone->SetStart( start );
     zone->SetEnd( -1 );
     zone->SetSrcLoc( it->second );
-    zone->callstack.SetVal( 0 );
     zone->SetChild( -1 );
 
     m_data.lastTime = std::max( m_data.lastTime, start );

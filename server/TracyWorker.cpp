@@ -3442,14 +3442,13 @@ void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBegin& ev )
 
 void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
-    auto tit = m_threadMap.find( m_threadCtx );
-    if( tit == m_threadMap.end() || tit->second->zoneIdStack.empty() )
+    auto td = RetrieveThread( m_threadCtx );
+    if( !td )
     {
         ZoneEndFailure( m_threadCtx );
         return;
     }
 
-    auto td = tit->second;
     auto zoneId = td->zoneIdStack.back_and_pop();
     if( zoneId != td->nextZoneId )
     {
@@ -3710,14 +3709,13 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
 void Worker::ProcessZoneText( const QueueZoneText& ev )
 {
-    auto tit = m_threadMap.find( m_threadCtx );
-    if( tit == m_threadMap.end() || tit->second->stack.empty() || tit->second->nextZoneId != tit->second->zoneIdStack.back() )
+    auto td = RetrieveThread( m_threadCtx );
+    if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
     {
         ZoneTextFailure( m_threadCtx );
         return;
     }
 
-    auto td = tit->second;
     td->nextZoneId = 0;
     auto& stack = td->stack;
     auto zone = stack.back();
@@ -3729,14 +3727,13 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
 
 void Worker::ProcessZoneName( const QueueZoneText& ev )
 {
-    auto tit = m_threadMap.find( m_threadCtx );
-    if( tit == m_threadMap.end() || tit->second->stack.empty() || tit->second->nextZoneId != tit->second->zoneIdStack.back() )
+    auto td = RetrieveThread( m_threadCtx );
+    if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
     {
         ZoneNameFailure( m_threadCtx );
         return;
     }
 
-    auto td = tit->second;
     td->nextZoneId = 0;
     auto& stack = td->stack;
     auto zone = stack.back();

@@ -2735,7 +2735,8 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
         }
         else
         {
-            m_data.zoneChildren[backChild].push_back( zone );
+            assert( !m_data.zoneChildren[backChild].empty() );
+            m_data.zoneChildren[backChild].push_back_non_empty( zone );
         }
         td->stack.push_back_non_empty( zone );
     }

@@ -1965,6 +1965,7 @@ bool Profiler::CommitData()
 
 bool Profiler::NeedDataSize( size_t len )
 {
+    assert( len <= TargetFrameSize );
     bool ret = true;
     if( m_bufferOffset - m_bufferStart + len > TargetFrameSize )
     {

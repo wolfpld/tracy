@@ -123,13 +123,13 @@ enum { SourceLocationSize = sizeof( SourceLocation ) };
 struct ZoneEvent
 {
     int64_t Start() const { return int64_t( _start_srcloc ) >> 16; }
-    void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_srcloc = ( _start_srcloc & 0xFFFF ) | ( uint64_t( start ) << 16 ); }
+    void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_srcloc)+2, &start, 6 ); }
     int64_t End() const { return int64_t( _end_child1 ) >> 16; }
-    void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end_child1 = ( _end_child1 & 0xFFFF ) | ( uint64_t( end ) << 16 ); }
+    void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_child1)+2, &end, 6 ); }
     int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
-    void SetSrcLoc( int16_t srcloc ) { _start_srcloc = ( _start_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc ); }
+    void SetSrcLoc( int16_t srcloc ) { memcpy( &_start_srcloc, &srcloc, 2 ); }
     int32_t Child() const { return int32_t( uint32_t( _end_child1 & 0xFFFF ) | ( uint32_t( _child2 ) << 16 ) ); }
-    void SetChild( int32_t child ) { _end_child1 = ( _end_child1 & 0xFFFFFFFFFFFF0000 ) | uint16_t( child ); _child2 = uint32_t( child ) >> 16; }
+    void SetChild( int32_t child ) { memcpy( &_end_child1, &child, 2 ); _child2 = uint32_t( child ) >> 16; }
 
     uint64_t _start_srcloc;
     uint64_t _end_child1;
@@ -156,9 +156,9 @@ struct LockEvent
     };
 
     int64_t Time() const { return int64_t( _time_srcloc ) >> 16; }
-    void SetTime( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); _time_srcloc = ( _time_srcloc & 0xFFFF ) | ( uint64_t( time ) << 16 ); }
+    void SetTime( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_srcloc)+2, &time, 6 ); }
     int16_t SrcLoc() const { return int16_t( _time_srcloc & 0xFFFF ); }
-    void SetSrcLoc( int16_t srcloc ) { _time_srcloc = ( _time_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc ); }
+    void SetSrcLoc( int16_t srcloc ) { memcpy( &_time_srcloc, &srcloc, 2 ); }
 
     uint64_t _time_srcloc;
     uint8_t thread;
@@ -190,13 +190,13 @@ static_assert( std::numeric_limits<decltype(LockEventPtr::lockCount)>::max() >= 
 struct GpuEvent
 {
     int64_t CpuStart() const { return int64_t( _cpuStart_srcloc ) >> 16; }
-    void SetCpuStart( int64_t cpuStart ) { assert( cpuStart < (int64_t)( 1ull << 47 ) ); _cpuStart_srcloc = ( _cpuStart_srcloc & 0xFFFF ) | ( uint64_t( cpuStart ) << 16 ); }
+    void SetCpuStart( int64_t cpuStart ) { assert( cpuStart < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuStart_srcloc)+2, &cpuStart, 6 ); }
     int64_t CpuEnd() const { return int64_t( _cpuEnd_thread ) >> 16; }
-    void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); _cpuEnd_thread = ( _cpuEnd_thread & 0xFFFF ) | ( uint64_t( cpuEnd ) << 16 ); }
+    void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuEnd_thread)+2, &cpuEnd, 6 ); }
     int16_t SrcLoc() const { return int16_t( _cpuStart_srcloc & 0xFFFF ); }
-    void SetSrcLoc( int16_t srcloc ) { _cpuStart_srcloc = ( _cpuStart_srcloc & 0xFFFFFFFFFFFF0000 ) | uint16_t( srcloc ); }
+    void SetSrcLoc( int16_t srcloc ) { memcpy( &_cpuStart_srcloc, &srcloc, 2 ); }
     uint16_t Thread() const { return uint16_t( _cpuEnd_thread & 0xFFFF ); }
-    void SetThread( uint16_t thread ) { _cpuEnd_thread = ( _cpuEnd_thread & 0xFFFFFFFFFFFF0000 ) | thread; }
+    void SetThread( uint16_t thread ) { memcpy( &_cpuEnd_thread, &thread, 2 ); }
 
     uint64_t _cpuStart_srcloc;
     uint64_t _cpuEnd_thread;
@@ -213,13 +213,13 @@ static_assert( std::is_standard_layout<GpuEvent>::value, "GpuEvent is not standa
 struct MemEvent
 {
     int64_t TimeAlloc() const { return int64_t( _time_thread_alloc ) >> 16; }
-    void SetTimeAlloc( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); _time_thread_alloc = ( _time_thread_alloc & 0xFFFF ) | ( uint64_t( time ) << 16 ); }
+    void SetTimeAlloc( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_thread_alloc)+2, &time, 6 ); }
     int64_t TimeFree() const { return int64_t( _time_thread_free ) >> 16; }
-    void SetTimeFree( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); _time_thread_free = ( _time_thread_free & 0xFFFF ) | ( uint64_t( time ) << 16 ); }
+    void SetTimeFree( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_thread_free)+2, &time, 6 ); }
     uint16_t ThreadAlloc() const { return uint16_t( _time_thread_alloc ); }
-    void SetThreadAlloc( uint16_t thread ) { _time_thread_alloc = ( _time_thread_alloc & 0xFFFFFFFFFFFF0000 ) | thread; }
+    void SetThreadAlloc( uint16_t thread ) { memcpy( &_time_thread_alloc, &thread, 2 ); }
     uint16_t ThreadFree() const { return uint16_t( _time_thread_free ); }
-    void SetThreadFree( uint16_t thread ) { _time_thread_free = ( _time_thread_free & 0xFFFFFFFFFFFF0000 ) | thread; }
+    void SetThreadFree( uint16_t thread ) { memcpy( &_time_thread_free, &thread, 2 ); }
 
     uint64_t ptr;
     uint64_t size;
@@ -294,16 +294,16 @@ struct ContextSwitchData
     enum : int8_t { NoState = 100 };
     enum : int8_t { Wakeup = -2 };
 
-    int64_t Start() const { return int64_t( _start_cpu ) >> 8; }
-    void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_cpu = ( _start_cpu & 0xFF ) | ( uint64_t( start ) << 8 ); }
+    int64_t Start() const { return int64_t( _start_cpu ) >> 16; }
+    void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_cpu)+2, &start, 6 ); }
     int64_t End() const { return int64_t( _end_reason_state ) >> 16; }
-    void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end_reason_state = ( _end_reason_state & 0xFFFF ) | ( uint64_t( end ) << 16 ); }
+    void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_reason_state)+2, &end, 6 ); }
     uint8_t Cpu() const { return uint8_t( _start_cpu & 0xFF ); }
-    void SetCpu( uint8_t cpu ) { _start_cpu = ( _start_cpu & 0xFFFFFFFFFFFFFF00 ) | uint8_t( cpu ); }
+    void SetCpu( uint8_t cpu ) { memcpy( &_start_cpu, &cpu, 1 ); }
     int8_t Reason() const { return int8_t( (_end_reason_state >> 8) & 0xFF ); }
-    void SetReason( int8_t reason ) { _end_reason_state = ( _end_reason_state & 0xFFFFFFFFFFFF00FF ) | ( uint64_t( reason ) << 8 ); }
+    void SetReason( int8_t reason ) { memcpy( ((char*)&_end_reason_state)+1, &reason, 1 ); }
     int8_t State() const { return int8_t( _end_reason_state & 0xFF ); }
-    void SetState( int8_t state ) { _end_reason_state = ( _end_reason_state & 0xFFFFFFFFFFFFFF00 ) | uint8_t( state ); }
+    void SetState( int8_t state ) { memcpy( &_end_reason_state, &state, 1 ); }
 
     uint64_t _start_cpu;
     uint64_t _end_reason_state;
@@ -316,11 +316,11 @@ enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
 struct ContextSwitchCpu
 {
     int64_t Start() const { return int64_t( _start_thread ) >> 16; }
-    void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_thread = ( _start_thread & 0xFFFF ) | ( uint64_t( start ) << 16 ); }
+    void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_thread)+2, &start, 6 ); }
     int64_t End() const { return _end; }
     void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end = end; }
     uint16_t Thread() const { return uint16_t( _start_thread ); }
-    void SetThread( uint16_t thread ) { _start_thread = ( _start_thread & 0xFFFFFFFFFFFF0000 ) | thread; }
+    void SetThread( uint16_t thread ) { memcpy( &_start_thread, &thread, 2 ); }
 
     uint64_t _start_thread;
     uint64_t _end;

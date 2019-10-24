@@ -6,6 +6,7 @@
 #include <shared_mutex>
 #include <stdexcept>
 #include <string>
+#include <string.h>
 #include <thread>
 #include <vector>
 
@@ -87,9 +88,9 @@ public:
     struct ZoneThreadData
     {
         ZoneEvent* Zone() const { return (ZoneEvent*)( _zone_thread >> 16 ); }
-        void SetZone( ZoneEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); _zone_thread = ( _zone_thread & 0xFFFF ) | ( uint64_t( zone ) << 16 ); }
+        void SetZone( ZoneEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &zone, 6 ); }
         uint16_t Thread() const { return uint16_t( _zone_thread & 0xFFFF ); }
-        void SetThread( uint16_t thread ) { _zone_thread = ( _zone_thread & 0xFFFFFFFFFFFF0000 ) | uint64_t( thread ); }
+        void SetThread( uint16_t thread ) { memcpy( &_zone_thread, &thread, 2 ); }
 
         uint64_t _zone_thread;
     };

@@ -4478,7 +4478,9 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
 
 void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto refTime = m_refTimeCtx + ev.time;
+    m_refTimeCtx = refTime;
+    const auto time = TscTime( refTime - m_data.baseTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
 
     if( ev.cpu >= m_data.cpuDataCount ) m_data.cpuDataCount = ev.cpu + 1;
@@ -4571,7 +4573,9 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
 
 void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
 {
-    const auto time = TscTime( ev.time - m_data.baseTime );
+    const auto refTime = m_refTimeCtx + ev.time;
+    m_refTimeCtx = refTime;
+    const auto time = TscTime( refTime - m_data.baseTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
 
     auto it = m_data.ctxSwitch.find( ev.thread );

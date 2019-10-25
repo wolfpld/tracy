@@ -1315,6 +1315,7 @@ void Profiler::Worker()
 
         m_threadCtx = 0;
         m_refTimeSerial = 0;
+        m_refTimeCtx = 0;
 
 #ifdef TRACY_ON_DEMAND
         OnDemandPayloadMessage onDemand;
@@ -1785,6 +1786,22 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     MemWrite( &item->plotData.time, dt );
                     break;
                 }
+                case QueueType::ContextSwitch:
+                {
+                    int64_t t = MemRead<int64_t>( &item->contextSwitch.time );
+                    int64_t dt = t - m_refTimeCtx;
+                    m_refTimeCtx = t;
+                    MemWrite( &item->contextSwitch.time, dt );
+                    break;
+                }
+                case QueueType::ThreadWakeup:
+                {
+                    int64_t t = MemRead<int64_t>( &item->threadWakeup.time );
+                    int64_t dt = t - m_refTimeCtx;
+                    m_refTimeCtx = t;
+                    MemWrite( &item->threadWakeup.time, dt );
+                    break;
+                }
                 default:
                     assert( false );
                     break;
@@ -1820,6 +1837,9 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
                     timeStop = -1;
                     return DequeueStatus::Success;
                 }
+                int64_t dt = csTime - m_refTimeCtx;
+                m_refTimeCtx = csTime;
+                MemWrite( &item->contextSwitch.time, dt );
                 if( !AppendData( item, QueueDataSize[(int)QueueType::ContextSwitch] ) ) return DequeueStatus::ConnectionLost;
             }
             else if( idx == (uint8_t)QueueType::ThreadWakeup )
@@ -1830,6 +1850,9 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
                     timeStop = -1;
                     return DequeueStatus::Success;
                 }
+                int64_t dt = csTime - m_refTimeCtx;
+                m_refTimeCtx = csTime;
+                MemWrite( &item->threadWakeup.time, dt );
                 if( !AppendData( item, QueueDataSize[(int)QueueType::ThreadWakeup] ) ) return DequeueStatus::ConnectionLost;
             }
             item++;

@@ -39,6 +39,8 @@ enum class QueueType : uint8_t
     GpuZoneBeginCallstackSerial,
     GpuZoneEndSerial,
     PlotData,
+    ContextSwitch,
+    ThreadWakeup,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -59,8 +61,6 @@ enum class QueueType : uint8_t
     CallstackFrameSize,
     CallstackFrame,
     SysTimeReport,
-    ContextSwitch,
-    ThreadWakeup,
     TidToPid,
     StringData,
     ThreadName,
@@ -417,6 +417,8 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneBegin ),    // serial, callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuZoneEnd ),      // serial
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
+    sizeof( QueueHeader ) + sizeof( QueueContextSwitch ),
+    sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
@@ -438,8 +440,6 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
-    sizeof( QueueHeader ) + sizeof( QueueContextSwitch ),
-    sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data

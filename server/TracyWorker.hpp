@@ -626,6 +626,7 @@ private:
     uint64_t m_threadCtx = 0;
     int64_t m_refTimeThread = 0;
     int64_t m_refTimeSerial = 0;
+    int64_t m_refTimeCtx = 0;
 };
 
 }

@@ -216,6 +216,9 @@ private:
         std::pair<uint64_t, ContextSwitch*> ctxSwitchLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
         uint64_t checkSrclocLast = 0;
         std::pair<uint64_t, uint16_t> shrinkSrclocLast = std::make_pair( std::numeric_limits<uint64_t>::max(), 0 );
+#ifndef TRACY_NO_STATISTICS
+        std::pair<uint16_t, SourceLocationZones*> srclocZonesLast = std::make_pair( std::numeric_limits<uint16_t>::max(), nullptr );
+#endif
     };
 
     struct MbpsBlock
@@ -497,6 +500,15 @@ private:
         if( m_data.threadDataLast.first == thread ) return m_data.threadDataLast.second;
         return RetrieveThreadReal( thread );
     }
+
+#ifndef TRACY_NO_STATISTICS
+    SourceLocationZones* GetSourceLocationZones( uint16_t srcloc )
+    {
+        if( m_data.srclocZonesLast.first == srcloc ) return m_data.srclocZonesLast.second;
+        return GetSourceLocationZonesReal( srcloc );
+    }
+    SourceLocationZones* GetSourceLocationZonesReal( uint16_t srcloc );
+#endif
 
     tracy_force_inline void NewZone( ZoneEvent* zone, uint64_t thread );
 

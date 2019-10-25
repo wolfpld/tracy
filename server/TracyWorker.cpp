@@ -2605,7 +2605,9 @@ int16_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
     const auto sz = int16_t( m_data.sourceLocationExpand.size() );
     m_data.sourceLocationExpand.push_back( srcloc );
 #ifndef TRACY_NO_STATISTICS
-    m_data.sourceLocationZones.emplace( sz, SourceLocationZones() );
+    auto res = m_data.sourceLocationZones.emplace( sz, SourceLocationZones() );
+    m_data.srclocZonesLast.first = sz;
+    m_data.srclocZonesLast.second = &res.first->second;
 #else
     m_data.sourceLocationZonesCnt.emplace( sz, 0 );
 #endif
@@ -2677,6 +2679,17 @@ ThreadData* Worker::RetrieveThreadReal( uint64_t thread )
     }
 }
 
+#ifndef TRACY_NO_STATISTICS
+Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( uint16_t srcloc )
+{
+    auto it = m_data.sourceLocationZones.find( srcloc );
+    assert( it != m_data.sourceLocationZones.end() );
+    m_data.srclocZonesLast.first = srcloc;
+    m_data.srclocZonesLast.second = &it->second;
+    return &it->second;
+}
+#endif
+
 const ThreadData* Worker::GetThreadData( uint64_t tid ) const
 {
     auto it = m_threadMap.find( tid );
@@ -2703,9 +2716,8 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     m_data.zonesCnt++;
 
 #ifndef TRACY_NO_STATISTICS
-    auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
-    assert( it != m_data.sourceLocationZones.end() );
-    auto& ztd = it->second.zones.push_next();
+    auto slz = GetSourceLocationZones( zone->SrcLoc() );
+    auto& ztd = slz->zones.push_next();
     ztd.SetZone( zone );
     ztd.SetThread( CompressThread( thread ) );
 #else
@@ -2876,7 +2888,11 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
         m_pendingSourceLocationPayload.emplace( ptr, -int16_t( idx + 1 ) );
         m_data.sourceLocationPayload.push_back( slptr );
 #ifndef TRACY_NO_STATISTICS
-        m_data.sourceLocationZones.emplace( -int16_t( idx + 1 ), SourceLocationZones() );
+        const auto key = -int16_t( idx + 1 );
+        auto res = m_data.sourceLocationZones.emplace( key, SourceLocationZones() );
+        m_data.srclocZonesLast.first = key;
+        m_data.srclocZonesLast.second = &res.first->second;
+
 #else
         m_data.sourceLocationZonesCnt.emplace( -int16_t( idx + 1 ), 0 );
 #endif
@@ -3500,17 +3516,15 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     const auto timeSpan = timeEnd - zone->Start();
     if( timeSpan > 0 )
     {
-        auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
-        assert( it != m_data.sourceLocationZones.end() );
-        auto& slz = it->second;
-        slz.min = std::min( slz.min, timeSpan );
-        slz.max = std::max( slz.max, timeSpan );
-        slz.total += timeSpan;
-        slz.sumSq += double( timeSpan ) * timeSpan;
+        auto slz = GetSourceLocationZones( zone->SrcLoc() );
+        if( slz->min > timeSpan ) slz->min = timeSpan;
+        if( slz->max < timeSpan ) slz->max = timeSpan;
+        slz->total += timeSpan;
+        slz->sumSq += double( timeSpan ) * timeSpan;
         const auto selfSpan = timeSpan - td->childTimeStack.back_and_pop();
-        slz.selfMin = std::min( slz.selfMin, selfSpan );
-        slz.selfMax = std::max( slz.selfMax, selfSpan );
-        slz.selfTotal += selfSpan;
+        if( slz->selfMin > selfSpan ) slz->selfMin = selfSpan;
+        if( slz->selfMax < selfSpan ) slz->selfMax = selfSpan;
+        slz->selfTotal += selfSpan;
         if( !td->childTimeStack.empty() )
         {
             td->childTimeStack.back() += timeSpan;

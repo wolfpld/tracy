@@ -1822,6 +1822,16 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
                 }
                 if( !AppendData( item, QueueDataSize[(int)QueueType::ContextSwitch] ) ) return DequeueStatus::ConnectionLost;
             }
+            else if( idx == (uint8_t)QueueType::ThreadWakeup )
+            {
+                const auto csTime = MemRead<int64_t>( &item->threadWakeup.time );
+                if( csTime > timeStop )
+                {
+                    timeStop = -1;
+                    return DequeueStatus::Success;
+                }
+                if( !AppendData( item, QueueDataSize[(int)QueueType::ThreadWakeup] ) ) return DequeueStatus::ConnectionLost;
+            }
             item++;
         }
     }

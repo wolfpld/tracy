@@ -2584,11 +2584,13 @@ void Worker::NewSourceLocation( uint64_t ptr )
     Query( ServerQuerySourceLocation, ptr );
 }
 
-int16_t Worker::ShrinkSourceLocation( uint64_t srcloc )
+int16_t Worker::ShrinkSourceLocationReal( uint64_t srcloc )
 {
     auto it = m_sourceLocationShrink.find( srcloc );
     if( it != m_sourceLocationShrink.end() )
     {
+        m_data.shrinkSrclocLast.first = srcloc;
+        m_data.shrinkSrclocLast.second = it->second;
         return it->second;
     }
     else
@@ -2608,6 +2610,8 @@ int16_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
     m_data.sourceLocationZonesCnt.emplace( sz, 0 );
 #endif
     m_sourceLocationShrink.emplace( srcloc, sz );
+    m_data.shrinkSrclocLast.first = srcloc;
+    m_data.shrinkSrclocLast.second = sz;
     return sz;
 }
 

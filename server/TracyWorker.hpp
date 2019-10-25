@@ -215,6 +215,7 @@ private:
         std::pair<uint64_t, ThreadData*> threadDataLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
         std::pair<uint64_t, ContextSwitch*> ctxSwitchLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
         uint64_t checkSrclocLast = 0;
+        std::pair<uint64_t, uint16_t> shrinkSrclocLast = std::make_pair( std::numeric_limits<uint64_t>::max(), 0 );
     };
 
     struct MbpsBlock
@@ -469,7 +470,12 @@ private:
 
     tracy_force_inline void CheckSourceLocation( uint64_t ptr );
     void NewSourceLocation( uint64_t ptr );
-    tracy_force_inline int16_t ShrinkSourceLocation( uint64_t srcloc );
+    tracy_force_inline int16_t ShrinkSourceLocation( uint64_t srcloc )
+    {
+        if( m_data.shrinkSrclocLast.first == srcloc ) return m_data.shrinkSrclocLast.second;
+        return ShrinkSourceLocationReal( srcloc );
+    }
+    int16_t ShrinkSourceLocationReal( uint64_t srcloc );
     int16_t NewShrinkedSourceLocation( uint64_t srcloc );
 
     tracy_force_inline void MemAllocChanged( int64_t time );

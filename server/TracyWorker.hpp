@@ -622,6 +622,7 @@ private:
     int64_t m_refTimeThread = 0;
     int64_t m_refTimeSerial = 0;
     int64_t m_refTimeCtx = 0;
+    int64_t m_refTimeGpu = 0;
 };
 
 }

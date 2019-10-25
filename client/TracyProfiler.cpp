@@ -1316,6 +1316,7 @@ void Profiler::Worker()
         m_threadCtx = 0;
         m_refTimeSerial = 0;
         m_refTimeCtx = 0;
+        m_refTimeGpu = 0;
 
 #ifdef TRACY_ON_DEMAND
         OnDemandPayloadMessage onDemand;
@@ -1802,6 +1803,14 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     MemWrite( &item->threadWakeup.time, dt );
                     break;
                 }
+                case QueueType::GpuTime:
+                {
+                    int64_t t = MemRead<int64_t>( &item->gpuTime.gpuTime );
+                    int64_t dt = t - m_refTimeGpu;
+                    m_refTimeGpu = t;
+                    MemWrite( &item->gpuTime.gpuTime, dt );
+                    break;
+                }
                 default:
                     assert( false );
                     break;
@@ -1962,6 +1971,14 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     int64_t dt = t - m_refTimeSerial;
                     m_refTimeSerial = t;
                     MemWrite( &item->gpuZoneEnd.cpuTime, dt );
+                    break;
+                }
+                case QueueType::GpuTime:
+                {
+                    int64_t t = MemRead<int64_t>( &item->gpuTime.gpuTime );
+                    int64_t dt = t - m_refTimeGpu;
+                    m_refTimeGpu = t;
+                    MemWrite( &item->gpuTime.gpuTime, dt );
                     break;
                 }
                 default:

@@ -41,6 +41,7 @@ enum class QueueType : uint8_t
     PlotData,
     ContextSwitch,
     ThreadWakeup,
+    GpuTime,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -57,7 +58,6 @@ enum class QueueType : uint8_t
     MessageLiteral,
     MessageLiteralColor,
     GpuNewContext,
-    GpuTime,
     CallstackFrameSize,
     CallstackFrame,
     SysTimeReport,
@@ -419,6 +419,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueuePlotData ),
     sizeof( QueueHeader ) + sizeof( QueueContextSwitch ),
     sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
@@ -436,7 +437,6 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // literal
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
-    sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),

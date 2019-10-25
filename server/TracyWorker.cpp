@@ -4188,14 +4188,17 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
 
+    const int64_t t = m_refTimeGpu + ev.gpuTime;
+    m_refTimeGpu = t;
+
     int64_t gpuTime;
     if( ctx->period == 1.f )
     {
-        gpuTime = ev.gpuTime;
+        gpuTime = t;
     }
     else
     {
-        gpuTime = int64_t( double( ctx->period ) * ev.gpuTime );      // precision loss
+        gpuTime = int64_t( double( ctx->period ) * t );      // precision loss
     }
 
     auto zone = ctx->query[ev.queryId];

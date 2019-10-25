@@ -546,6 +546,7 @@ private:
     int64_t m_refTimeThread;
     int64_t m_refTimeSerial;
     int64_t m_refTimeCtx;
+    int64_t m_refTimeGpu;
 
     void* m_stream;     // LZ4_stream_t*
     char* m_buffer;

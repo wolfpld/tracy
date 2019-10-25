@@ -154,11 +154,6 @@ private:
 
     struct DataBlock
     {
-        DataBlock()
-            : threadDataLast( std::numeric_limits<uint64_t>::max(), nullptr )
-            , ctxSwitchLast( std::numeric_limits<uint64_t>::max(), nullptr )
-        {}
-
         std::shared_mutex lock;
         StringDiscovery<FrameData*> frames;
         FrameData* framesBase;
@@ -217,8 +212,8 @@ private:
         flat_hash_map<uint64_t, uint64_t, nohash<uint64_t>> tidToPid;
         flat_hash_map<uint64_t, CpuThreadData, nohash<uint64_t>> cpuThreadData;
 
-        std::pair<uint64_t, ThreadData*> threadDataLast;
-        std::pair<uint64_t, ContextSwitch*> ctxSwitchLast;
+        std::pair<uint64_t, ThreadData*> threadDataLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
+        std::pair<uint64_t, ContextSwitch*> ctxSwitchLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
     };
 
     struct MbpsBlock

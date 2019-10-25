@@ -4851,8 +4851,8 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
         auto timeSpan = zone->End() - zone->Start();
         if( timeSpan > 0 )
         {
-            slz.min = std::min( slz.min, timeSpan );
-            slz.max = std::max( slz.max, timeSpan );
+            if( slz.min > timeSpan ) slz.min = timeSpan;
+            if( slz.max < timeSpan ) slz.max = timeSpan;
             slz.total += timeSpan;
             slz.sumSq += double( timeSpan ) * timeSpan;
             if( zone->Child() >= 0 )
@@ -4863,8 +4863,8 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
                     timeSpan -= childSpan;
                 }
             }
-            slz.selfMin = std::min( slz.selfMin, timeSpan );
-            slz.selfMax = std::max( slz.selfMax, timeSpan );
+            if( slz.selfMin > timeSpan ) slz.selfMin = timeSpan;
+            if( slz.selfMax < timeSpan ) slz.selfMax = timeSpan;
             slz.selfTotal += timeSpan;
         }
     }

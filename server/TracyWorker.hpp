@@ -214,6 +214,7 @@ private:
 
         std::pair<uint64_t, ThreadData*> threadDataLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
         std::pair<uint64_t, ContextSwitch*> ctxSwitchLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
+        uint64_t checkSrclocLast = 0;
     };
 
     struct MbpsBlock

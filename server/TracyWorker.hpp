@@ -199,7 +199,6 @@ private:
 
         ThreadCompress localThreadCompress;
         ThreadCompress externalThreadCompress;
-        std::pair<uint64_t, ThreadData*> threadDataLast;
 
         Vector<Vector<ZoneEvent*>> zoneChildren;
         Vector<Vector<GpuEvent*>> gpuChildren;
@@ -212,12 +211,14 @@ private:
         CrashEvent crashEvent;
 
         flat_hash_map<uint64_t, ContextSwitch*, nohash<uint64_t>> ctxSwitch;
-        std::pair<uint64_t, ContextSwitch*> ctxSwitchLast;
 
         CpuData cpuData[256];
         int cpuDataCount = 0;
         flat_hash_map<uint64_t, uint64_t, nohash<uint64_t>> tidToPid;
         flat_hash_map<uint64_t, CpuThreadData, nohash<uint64_t>> cpuThreadData;
+
+        std::pair<uint64_t, ThreadData*> threadDataLast;
+        std::pair<uint64_t, ContextSwitch*> ctxSwitchLast;
     };
 
     struct MbpsBlock

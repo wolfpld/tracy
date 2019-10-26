@@ -1241,12 +1241,12 @@ If there is no client running at the given address, the server will wait until a
 \begin{verbatim}
 % ./capture -a 127.0.0.1 -o trace
 Connecting to 127.0.0.1:8086...
-Queue delay: 9 ns
-Timer resolution: 6 ns
-   1.90 Mbps | Ratio:  40.8% | Real:    4.67 Mbps | Mem: 77.57 MB
+Queue delay: 5 ns
+Timer resolution: 3 ns
+   1.33 Mbps / 40.4% = 3.29 Mbps | Net: 64.42 MB | Mem: 283.03 MB | Time: 10.6 s
 \end{verbatim}
 
-The \emph{queue delay} and \emph{timer resolution} parameters are calibration results of timers used by the client. The next line is a status bar, which presents: network connection speed, connection compression ratio, the resulting uncompressed data rate and total memory usage of the utility.
+The \emph{queue delay} and \emph{timer resolution} parameters are calibration results of timers used by the client. The next line is a status bar, which displays: network connection speed, connection compression ratio, and the resulting uncompressed data rate; total amount of data transferred over the network; memory usage of the capture utility; time extent of the captured data.
 
 You can disconnect from the client and save the captured trace by pressing \keys{\ctrl + C}.
 

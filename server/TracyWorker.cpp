@@ -2609,7 +2609,9 @@ int16_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
     m_data.srclocZonesLast.first = sz;
     m_data.srclocZonesLast.second = &res.first->second;
 #else
-    m_data.sourceLocationZonesCnt.emplace( sz, 0 );
+    auto res = m_data.sourceLocationZonesCnt.emplace( sz, 0 );
+    m_data.srclocCntLast.first = sz;
+    m_data.srclocCntLast.second = &res.first->second;
 #endif
     m_sourceLocationShrink.emplace( srcloc, sz );
     m_data.shrinkSrclocLast.first = srcloc;
@@ -2688,6 +2690,15 @@ Worker::SourceLocationZones* Worker::GetSourceLocationZonesReal( uint16_t srcloc
     m_data.srclocZonesLast.second = &it->second;
     return &it->second;
 }
+#else
+uint64_t* Worker::GetSourceLocationZonesCntReal( uint16_t srcloc )
+{
+    auto it = m_data.sourceLocationZonesCnt.find( srcloc );
+    assert( it != m_data.sourceLocationZonesCnt.end() );
+    m_data.srclocCntLast.first = srcloc;
+    m_data.srclocCntLast.second = &it->second;
+    return &it->second;
+}
 #endif
 
 const ThreadData* Worker::GetThreadData( uint64_t tid ) const
@@ -2721,9 +2732,8 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     ztd.SetZone( zone );
     ztd.SetThread( CompressThread( thread ) );
 #else
-    auto it = m_data.sourceLocationZonesCnt.find( zone->SrcLoc() );
-    assert( it != m_data.sourceLocationZonesCnt.end() );
-    it->second++;
+    auto cnt = GetSourceLocationZonesCnt( zone->SrcLoc() );
+    (*cnt)++;
 #endif
 
     auto td = NoticeThread( thread );
@@ -2887,14 +2897,16 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
         m_data.sourceLocationPayloadMap.emplace( slptr, idx );
         m_pendingSourceLocationPayload.emplace( ptr, -int16_t( idx + 1 ) );
         m_data.sourceLocationPayload.push_back( slptr );
-#ifndef TRACY_NO_STATISTICS
         const auto key = -int16_t( idx + 1 );
+#ifndef TRACY_NO_STATISTICS
         auto res = m_data.sourceLocationZones.emplace( key, SourceLocationZones() );
         m_data.srclocZonesLast.first = key;
         m_data.srclocZonesLast.second = &res.first->second;
 
 #else
-        m_data.sourceLocationZonesCnt.emplace( -int16_t( idx + 1 ), 0 );
+        auto res = m_data.sourceLocationZonesCnt.emplace( key, 0 );
+        m_data.srclocCntLast.first = key;
+        m_data.srclocCntLast.second = &res.first->second;
 #endif
     }
     else

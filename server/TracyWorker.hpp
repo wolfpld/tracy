@@ -218,6 +218,8 @@ private:
         std::pair<uint64_t, uint16_t> shrinkSrclocLast = std::make_pair( std::numeric_limits<uint64_t>::max(), 0 );
 #ifndef TRACY_NO_STATISTICS
         std::pair<uint16_t, SourceLocationZones*> srclocZonesLast = std::make_pair( std::numeric_limits<uint16_t>::max(), nullptr );
+#else
+        std::pair<uint16_t, uint64_t*> srclocCntLast = std::make_pair( std::numeric_limits<uint16_t>::max(), nullptr );
 #endif
     };
 
@@ -508,6 +510,13 @@ private:
         return GetSourceLocationZonesReal( srcloc );
     }
     SourceLocationZones* GetSourceLocationZonesReal( uint16_t srcloc );
+#else
+    uint64_t* GetSourceLocationZonesCnt( uint16_t srcloc )
+    {
+        if( m_data.srclocCntLast.first == srcloc ) return m_data.srclocCntLast.second;
+        return GetSourceLocationZonesCntReal( srcloc );
+    }
+    uint64_t* GetSourceLocationZonesCntReal( uint16_t srcloc );
 #endif
 
     tracy_force_inline void NewZone( ZoneEvent* zone, uint64_t thread );

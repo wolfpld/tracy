@@ -27,7 +27,6 @@ The following platforms are confirmed to be working (this is not a complete list
 [New features in Tracy Profiler v0.4](https://www.youtube.com/watch?v=eAkgkaO8B9o)  
 [New features in Tracy Profiler v0.5](https://www.youtube.com/watch?v=P6E7qLMmzTQ)
 
-[A quick FAQ.](FAQ.md)  
 [List of changes.](NEWS)
 
 ### High-level overview

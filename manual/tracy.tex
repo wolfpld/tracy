@@ -1619,12 +1619,16 @@ On this combined view you will find the zones with locks and their associated th
 \draw(0.25, -3.5) node[anchor=north west] {Streaming thread};
 \draw[densely dotted] (0, -4) -- +(15, 0);
 
-\draw(0, -4) -- (6, -4) -- (6, -4.5) -- (0, -4.5);
+\draw[thick] (0, -4.25) -- (6.1, -4.25);
+\draw[dotted, thick] (6.1, -4.25) -- (9.7, -4.25);
+\draw[thick] (9.7, -4.25) -- (15, -4.25);
+
 \draw(5.5, -4) -- (5.4, -3.85) -- (5.6, -3.85) -- (5.5, -4);
-\draw(0, -4) node[anchor=north west] {Streaming job};
-\draw(15, -4) -- (10, -4) -- (10, -4.5) -- (15, -4.5);
-\draw(15, -4) node[anchor=north east] {Streaming job};
-\draw(10.4, -4.5) rectangle+(3, -0.5) node[midway] {Load image};
+\draw(0, -4.5) -- (6, -4.5) -- (6, -5) -- (0, -5);
+\draw(0, -4.5) node[anchor=north west] {Streaming job};
+\draw(15, -4.5) -- (10, -4.5) -- (10, -5) -- (15, -5);
+\draw(15, -4.5) node[anchor=north east] {Streaming job};
+\draw(10.4, -5) rectangle+(3, -0.5) node[midway] {Load image};
 \end{tikzpicture}
 \caption{Zones and locks display.}
 \label{zoneslocks}
@@ -1646,7 +1650,7 @@ Labels accompanied by the \faCaretDown{}~symbol can be collapsed out of the view
 
 In an example on figure~\ref{zoneslocks} you can see that there are two threads: \emph{Main thread} and \emph{Streaming thread}\footnote{By clicking on a thread name you can temporarily disable display of the zones in this thread.}. We can see that the \emph{Main thread} has two root level zones visible: \emph{Update} and \emph{Render}. The \emph{Update} zone is split into further sub-zones, some of which are too small to be displayed at the current zoom level. This is indicated by drawing a zig-zag pattern over the merged zones box (section~\ref{collapseditems}), with the number of collapsed zones printed in place of zone name. We can also see that the \emph{Physics} zone acquires the \emph{Physics lock} mutex for the most of its run time.
 
-The thick line between the \emph{Main thread} label and zones represents the context switch data (see section~\ref{contextswitches}). We can see that the thread, as displayed, starts in the suspended state, represented by the dotted region. Then it is woken up and starts execution of the \texttt{Update} zone. In midst of the physics processing it is preempted, which explains why there is an empty space between child zones. Then it is resumed again and continues execution into the \texttt{Render} zone, where it is preempted again, but for a shorter time. After rendering is done, the thread sleeps again, presumably waiting for the next frame.
+The thick line between the \emph{Main thread} label and zones represents the context switch data (see section~\ref{contextswitches}). We can see that the thread, as displayed, starts in the suspended state, represented by the dotted region. Then it is woken up and starts execution of the \texttt{Update} zone. In midst of the physics processing it is preempted, which explains why there is an empty space between child zones. Then it is resumed again and continues execution into the \texttt{Render} zone, where it is preempted again, but for a shorter time. After rendering is done, the thread sleeps again, presumably waiting for the next frame. Similar information is also available for the streaming thread.
 
 Context switch regions are using the following color key:
 

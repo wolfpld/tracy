@@ -117,6 +117,7 @@ int main( int argc, char** argv )
         lock.lock();
         const auto mbps = worker.GetMbpsData().back();
         const auto compRatio = worker.GetCompRatio();
+        const auto netTotal = worker.GetDataTransferred();
         lock.unlock();
 
         if( mbps < 0.1f )
@@ -127,7 +128,12 @@ int main( int argc, char** argv )
         {
             printf( "\33[2K\r\033[36;1m%7.2f Mbps", mbps );
         }
-        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| Mem: \033[31;1m%.2f MB\033[0m | \033[33mTime: %s\033[0m", compRatio * 100.f, mbps / compRatio, tracy::memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ), tracy::TimeToString( worker.GetLastTime() ) );
+        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| \033[33mNet: \033[32m%s \033[0m| \033[33mMem: \033[31;1m%.2f MB\033[0m | \033[33mTime: %s\033[0m",
+            compRatio * 100.f,
+            mbps / compRatio,
+            tracy::MemSizeToString( netTotal ),
+            tracy::memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ),
+            tracy::TimeToString( worker.GetLastTime() ) );
         fflush( stdout );
 
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );

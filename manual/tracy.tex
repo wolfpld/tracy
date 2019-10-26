@@ -97,22 +97,20 @@
 
 \section{A quick look at Tracy Profiler}
 
-Tracy is a real-time, nanosecond resolution \emph{frame profiler} that can be used for remote or embedded telemetry of applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
+Tracy is a real-time, nanosecond resolution \emph{frame profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
 
-In contrast with \emph{statistical profilers} (such as VTune, perf or Very Sleepy), Tracy does require manual markup of the source code. In return, it allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. This feat is by-design impossible to achieve in statistical profilers, which work by periodically sampling the \emph{program counter} register to see which part of the code is executing.
+In contrast with \emph{statistical profilers} (such as VTune, perf or Very Sleepy), Tracy does require manual markup of the source code. In return, it allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. While the statistical profilers may show you the hot spots in your code, they are unable to pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 
-Even though Tracy is a \emph{frame} profiler, with the emphasis on analysis of \emph{frame time} in real-time applications, it does work with utilities that do not employ the concept of a frame. There's nothing that would prohibit profiling of, for example, a compression tool, or an event-driven UI application.
+Even though Tracy is a \emph{frame} profiler, with the emphasis on analysis of \emph{frame time} in real-time applications (i.e.~games), it does work with utilities that do not employ the concept of a frame. There's nothing that would prohibit profiling of, for example, a compression tool, or an event-driven UI application.
 
-The close analogues of Tracy are: RAD Telemetry, Brofiler, microprofile.
-
-Now let's take a close look at the marketing blurb.
+The close analogues of Tracy are: RAD Telemetry, Optick, microprofile.
 
 \subsection{Real-time}
 
-This claim can be described in the following ways:
+The concept of Tracy being a real-time profiler may be explained in a couple of different ways:
 
 \begin{enumerate}
-\item The profiled application is not slowed down by profiling\footnote{See section~\ref{perfimpact} for a benchmark.}. The act of recording a profiling event has virtually zero cost -- it only takes \textasciitilde 8~\si{\nano\second}. Even on low-power mobile devices there's no perceptible impact on execution speed.
+\item The profiled application is not slowed down by profiling\footnote{See section~\ref{perfimpact} for a benchmark.}. The act of recording a profiling event has virtually zero cost -- it only takes a few nanoseconds. Even on low-power mobile devices there's no perceptible impact on execution speed.
 \item The profiler itself works in real-time, without the need to process collected data in a complex way. Actually, it is quite inefficient in the way it works, as the data it presents is calculated anew each frame. And yet it can run at 60 frames per second.
 \item The profiler has full functionality when the profiled application is running and the data is captured. You may interact with your application and then immediately switch to the profiler, when a performance drop occurs.
 \end{enumerate}
@@ -131,7 +129,7 @@ Tracy can achieve single-digit nanosecond measurement resolution, due to usage o
 
 \subsubsection{Timer accuracy}
 
-You may wonder why it is important to have a high resolution timer\footnote{Interestingly, the \texttt{std::chrono::high\_resolution\_clock} is not really a high resolution clock.}. After all, you only want to profile functions that have long execution times, and not some short-lived procedures, that have no impact on the application's run time.
+You may wonder why it is important to have a truly high resolution timer\footnote{Interestingly, the \texttt{std::chrono::high\_resolution\_clock} is not really a high resolution clock.}. After all, you only want to profile functions that have long execution times, and not some short-lived procedures, that have no impact on the application's run time.
 
 It is wrong to think so. Optimizing a function to execute in 430~\si{\nano\second}, instead of 535~\si{\nano\second} (note that there is only a 100~\si{\nano\second} difference) results in 14 \si{\milli\second} savings if the function is executed 18000 times\footnote{This is a real optimization case. The values are median function run times and do not reflect the real execution time, which explains the discrepancy in the total reported time.}. It may not seem like a big number, but this is how much time there is to render a complete frame in a 60~FPS game. Imagine that this is your particle processing loop.
 
@@ -182,7 +180,7 @@ Here you can see why it is important to use a high precision timer. While there 
 
 \subsection{Frame profiler}
 
-Tracy is aimed at understanding the inner workings of a tight loop of a game (or an interactive application). That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game (or any other program), preferably 60 times per second to achieve smooth animation. You can also think about physics update frames, audio processing frames, etc.} as a basic work-unit\footnote{Frame usage is not required. See section~\ref{markingframes} for more information.}. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.
+Tracy is aimed at understanding the inner workings of a tight loop of a game (or any other kind of an interactive application). That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game (or any other program), preferably 60 times per second to achieve smooth animation. You can also think about physics update frames, audio processing frames, etc.} as a basic work-unit\footnote{Frame usage is not required. See section~\ref{markingframes} for more information.}. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.
 
 \subsection{Remote or embedded telemetry}
 
@@ -223,6 +221,22 @@ Tracy uses the client-server model to enable a wide range of use-cases (see figu
 \end{figure}
 
 In Tracy terminology, the profiled application is a \emph{client} and the profiler itself is a \emph{server}. It was named this way because the client is a thin layer that just collects events and sends them for processing and long-term storage on the server. The fact that the server needs to connect to the client to begin the profiling session may be a bit confusing at first.
+
+\subsection{Why Tracy?}
+
+You may wonder, why should you use Tracy, when there are so many other profilers available. Here are some arguments:
+
+\begin{itemize}
+\item Tracy is free and open source (BSD license), while RAD Telemetry costs about \$8000 per year.
+\item Tracy provides out-of-the-box Lua bindings.
+\item Tracy has a wide variety of profiling options. You can profile CPU, GPU, locks, memory allocations, context switches and more.
+\item Tracy is feature rich. Statistical information and trace comparisons are not present in other profilers.
+\item Tracy focuses on performance. Many tricks are used to reduce memory requirements and network bandwidth. The impact on the client execution speed is minimal, while other profilers perform heavy data processing within the profiled application.
+\item Tracy uses low-level kernel APIs, or even raw assembly, where other profilers rely on layers of abstraction.
+\item Tracy is multi-platform right from the very beginning. Both on the client and server side. Other profilers tend to have Windows-specific graphical interfaces.
+\end{itemize}
+
+With all that being said, Tracy may not be the right choice for you, if you need to profile games targetting PS4, Xbox, or other consoles behind a NDA wall.
 
 \subsection{Performance impact}
 \label{perfimpact}
@@ -286,15 +300,7 @@ Tracy can be found at the following web addresses:
 
 \section{First steps}
 
-Tracy Profiler supports the following compilers:
-
-\begin{itemize}
-\item MSVC
-\item gcc
-\item clang
-\end{itemize}
-
-The following platforms are confirmed to be working (this is not a complete list):
+Tracy Profiler supports  MSVC, gcc and clang. A reasonably recent version of the compiler is needed, due to C++11 requirement. The following platforms are confirmed to be working (this is not a complete list):
 
 \begin{itemize}
 \item Windows (x86, x64)
@@ -304,7 +310,8 @@ The following platforms are confirmed to be working (this is not a complete list
 \item Cygwin (x64)
 \item MinGW (x64)
 \item WSL (x64)
-\item OSX (x64)\footnote{Be aware that support for Thread Local Storage is required. It is only available since Xcode 8 and not before iOS 9.}
+\item OSX (x64)
+\item iOS (ARM, ARM64)
 \end{itemize}
 
 \subsection{Initial client setup}
@@ -399,6 +406,8 @@ When using Tracy Profiler, keep in mind the following requirements:
 \subsection{Check your environment}
 \label{checkenvironment}
 
+In a multitasking operating system applications compete for system resources with each other. This has a visible effect on the measurements performed by the profiler, which you may, or may not accept.
+
 In order to get the most accurate profiling results you should minimize interference caused by other programs running on the same machine. Before starting a profile session close all web browsers, music players, instant messengers, and all other non-essential applications like Steam, Uplay, etc. Make sure you don't have the debugger hooked into the profiled program, as it also has impact on the timing results.
 
 \begin{bclogo}[
@@ -424,7 +433,7 @@ noborder=true,
 couleur=black!5,
 logo=\bcbombe
 ]{Important}
-Due to the memory requirements for data storage, Tracy server is only supposed to run on 64-bit platforms. While there is nothing preventing the program from building and executing in a 32-bit environment, there is no support for doing so.
+Due to the memory requirements for data storage, Tracy server is only supposed to run on 64-bit platforms. While there is nothing preventing the program from building and executing in a 32-bit environment, doing so is not supported.
 \end{bclogo}
 
 \subsubsection{Required libraries}
@@ -582,7 +591,7 @@ logo=\bcattention
 ]{Caveats}
 \begin{itemize}
 \item Frame images are compressed on a second client profiler thread\footnote{Small part of compression task is performed on the server.}, to reduce memory usage of queued images. This might have impact on the performance of the profiled application.
-\item Due to implementation details of the network buffer, single frame image cannot be greater than 256 KB after compression. Note that $\frac{960\times540}{2} \approx 253$ KB.
+\item Due to implementation details of the network buffer, single frame image cannot be greater than 256 KB after compression. Note that a $960\times540$ image fits in this limit.
 \end{itemize}
 \end{bclogo}
 

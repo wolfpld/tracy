@@ -1771,6 +1771,9 @@ Worker::~Worker()
         v->stack.~Vector();
         v->messages.~Vector();
         v->zoneIdStack.~Vector();
+#ifndef TRACY_NO_STATISTICS
+        v->childTimeStack.~Vector();
+#endif
     }
     for( auto& v : m_data.gpuData )
     {

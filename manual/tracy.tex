@@ -1308,7 +1308,9 @@ You can pass trace file name as an argument to the profiler application to open 
 
 \subsection{Connection speed}
 
-Tracy will happily saturate a 1~Gbps network connection, as it can process up to 6~Gbps of uncompressed data. Note that at such data rates, the resulting capture will need to allocate about 1~GB of RAM per second.
+Tracy network bandwidth requirements depend on the amount of data collection the profiled application is performing. In typical use case scenarios, you may expect anything between 1~Mbps and 100~Mbps data transfer rate.
+
+The maximum attainable connection speed is determined by the ability of the client to provide data and the ability of the server to process the received data. In an extreme conditions test performed on an i7~8700K, the maximum transfer rate peaked at 750~Mbps. In each second the profiler was able to process 21~million zones and consume 800~MB of RAM.
 
 \subsection{Memory usage}
 

@@ -2170,6 +2170,8 @@ Let's say you are looking at the call stack of some function called within \text
 
 At the first glance it may look like \texttt{unique\_ptr::reset} was the \emph{call site} of the \texttt{Application::Run}, which would make no sense, but this is not the case here. When you remember these are the \emph{function return points}, it becomes much more clear what is happening. As an optimization, \texttt{Application::Run} is returning directly into \texttt{unique\_ptr::reset}, skipping the return to \texttt{main} and an unnecessary \texttt{reset} function call.
 
+In rare cases, the linker may determine that some two functions in your program are identical\footnote{For example if all they do is zero-initialize a region of memory. As some constructors would do.}. As a result, only one copy of the binary code will be provided in the executable for both functions to share. While this optimization produces more compact programs, it also means that there's no way to distinguish the two functions apart. In effect, some call stacks may look nonsensical until you perform a small investigation.
+
 \subsection{Source file view window}
 \label{sourceview}
 

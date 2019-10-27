@@ -3399,6 +3399,12 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::TidToPid:
         ProcessTidToPid( ev.tidToPid );
         break;
+    case QueueType::SysCallEnter:
+        ProcessSysCallEnter( ev.sysCallEnter );
+        break;
+    case QueueType::SysCallExit:
+        ProcessSysCallExit( ev.sysCallExit );
+        break;
     default:
         assert( false );
         break;
@@ -4639,6 +4645,38 @@ void Worker::ProcessTidToPid( const QueueTidToPid& ev )
 {
     assert( m_data.tidToPid.find( ev.tid ) == m_data.tidToPid.end() );
     m_data.tidToPid.emplace( ev.tid, ev.pid );
+}
+
+void Worker::ProcessSysCallEnter( const QueueSysCallEnter& ev )
+{
+    auto td = RetrieveThread( ev.thread );
+    if( !td ) return;
+    if( td->sysCalls.empty() )
+    {
+        const auto refTime = m_refTimeCtx + ev.time;
+        m_refTimeCtx = refTime;
+        const auto time = TscTime( refTime - m_data.baseTime );
+        td->sysCalls.push_back( SysCall { time, -1, ev.address } );
+    }
+    else
+    {
+        if( td->sysCalls.back().end < 0 ) return;
+        const auto refTime = m_refTimeCtx + ev.time;
+        m_refTimeCtx = refTime;
+        const auto time = TscTime( refTime - m_data.baseTime );
+        td->sysCalls.push_back_non_empty( SysCall { time, -1, ev.address } );
+    }
+}
+
+void Worker::ProcessSysCallExit( const QueueSysCallExit& ev )
+{
+    auto td = RetrieveThread( ev.thread );
+    if( !td || td->sysCalls.empty() ) return;
+    if( td->sysCalls.back().end >= 0 ) return;
+    const auto refTime = m_refTimeCtx + ev.time;
+    m_refTimeCtx = refTime;
+    const auto time = TscTime( refTime - m_data.baseTime );
+    td->sysCalls.back().end = time;
 }
 
 void Worker::MemAllocChanged( int64_t time )

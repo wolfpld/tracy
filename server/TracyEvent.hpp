@@ -339,6 +339,16 @@ struct MessageData
 
 enum { MessageDataSize = sizeof( MessageData ) };
 
+
+struct SysCall
+{
+    int64_t begin;
+    int64_t end;
+    uint64_t ptr;
+};
+
+enum { SysCallSize = sizeof( SysCall ) };
+
 #pragma pack()
 
 
@@ -354,6 +364,7 @@ struct ThreadData
 #ifndef TRACY_NO_STATISTICS
     Vector<int64_t> childTimeStack;
 #endif
+    Vector<SysCall> sysCalls;
 };
 
 struct GpuCtxThreadData

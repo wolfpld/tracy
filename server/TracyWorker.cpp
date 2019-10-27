@@ -1840,6 +1840,16 @@ uint64_t Worker::GetContextSwitchPerCpuCount() const
     return cnt;
 }
 
+uint64_t Worker::GetSysCallCount() const
+{
+    uint64_t cnt = 0;
+    for( auto& td : m_data.threads )
+    {
+        cnt += td->sysCalls.size();
+    }
+    return cnt;
+}
+
 uint64_t Worker::GetPidFromTid( uint64_t tid ) const
 {
     auto it = m_data.tidToPid.find( tid );

@@ -1810,6 +1810,22 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     MemWrite( &item->gpuTime.gpuTime, dt );
                     break;
                 }
+                case QueueType::SysCallEnter:
+                {
+                    int64_t t = MemRead<int64_t>( &item->sysCallEnter.time );
+                    int64_t dt = t - m_refTimeCtx;
+                    m_refTimeCtx = t;
+                    MemWrite( &item->sysCallEnter.time, dt );
+                    break;
+                }
+                case QueueType::SysCallExit:
+                {
+                    int64_t t = MemRead<int64_t>( &item->sysCallExit.time );
+                    int64_t dt = t - m_refTimeCtx;
+                    m_refTimeCtx = t;
+                    MemWrite( &item->sysCallExit.time, dt );
+                    break;
+                }
                 default:
                     assert( false );
                     break;

@@ -9,7 +9,7 @@
 namespace tracy
 {
 
-enum : uint32_t { ProtocolVersion = 21 };
+enum : uint32_t { ProtocolVersion = 22 };
 enum : uint32_t { BroadcastVersion = 0 };
 
 using lz4sz_t = uint32_t;

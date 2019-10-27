@@ -54,7 +54,46 @@ struct ReadyThread
     int8_t      reserverd;
 };
 
+#ifdef TRACY_SYSCALLS
+struct SysCallEnter
+{
+    // Official MSDN documentation is bullshitting here
+    // This is corroborated by tracerpt displaying address as 64-bit
+#if defined __x86_64__ || defined _M_X64
+    uint64_t sysCallAddress;
+#else
+    uint32_t sysCallAddress;
+#endif
+};
+
+struct TraceThread
+{
+    uint32_t ProcessId;
+    uint32_t TThreadId;
+    uint32_t StackBase;
+    uint32_t StackLimit;
+    uint32_t UserStackBase;
+    uint32_t UserStackLimit;
+    uint32_t Affinity;
+    uint32_t Win32StartAddr;
+    uint32_t TebBase;
+    uint32_t SubProcessTag;
+    uint8_t  BasePriority;
+    uint8_t  PagePriority;
+    uint8_t  IoPriority;
+    uint8_t  ThreadFlags;
+};
+
 uint64_t coreThread[256] = {};
+
+// We need to know which thread ids are in our process. A hash map would be the best solution here,
+// but there is no solution ready to use right now. Instead, let's store a thread bit map. Note that
+// this is only an approximation, there are no guarantees about thread ids returned by the kernel, as
+// Raymond Chen said on multiple occasions. In the false positive case, we will be reporting system
+// calls belonging to some other process, and that's no big deal.
+enum { TidCapacity = 8192 };
+uint64_t processThreads[TidCapacity] = {};
+#endif
 
 void WINAPI EventRecordCallback( PEVENT_RECORD record )
 {
@@ -83,7 +122,9 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         MemWrite( &item->contextSwitch.state, cswitch->oldThreadState );
         tail.store( magic + 1, std::memory_order_release );
 
+#ifdef TRACY_SYSCALLS
         coreThread[cpu] = cswitch->newThreadId;
+#endif
     }
     else if( hdr.EventDescriptor.Opcode == 50 )
     {
@@ -99,6 +140,70 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         memset( ((char*)&item->threadWakeup.thread)+4, 0, 4 );
         tail.store( magic + 1, std::memory_order_release );
     }
+#ifdef TRACY_SYSCALLS
+    else if( hdr.EventDescriptor.Opcode == 51 )
+    {
+        const auto cpu = record->BufferContext.ProcessorNumber;
+        const auto thread = coreThread[cpu];
+
+        if( thread != 0 )
+        {
+            const auto tid = thread / 4;
+            const auto entry = ( tid / 64 ) % TidCapacity;
+            const auto bit = tid % 64;
+            if( processThreads[entry] & ( 1ull << bit ) )
+            {
+                const auto syscall = (const SysCallEnter*)record->UserData;
+                uint64_t addr = syscall->sysCallAddress;
+
+                Magic magic;
+                auto token = GetToken();
+                auto& tail = token->get_tail_index();
+                auto item = token->enqueue_begin( magic );
+                MemWrite( &item->hdr.type, QueueType::SysCallEnter );
+                MemWrite( &item->sysCallEnter.time, hdr.TimeStamp.QuadPart );
+                MemWrite( &item->sysCallEnter.thread, thread );
+                MemWrite( &item->sysCallEnter.address, addr );
+                tail.store( magic + 1, std::memory_order_release );
+            }
+        }
+    }
+    else if( hdr.EventDescriptor.Opcode == 52 )
+    {
+        const auto cpu = record->BufferContext.ProcessorNumber;
+        const auto thread = coreThread[cpu];
+
+        if( thread != 0 )
+        {
+            const auto tid = thread / 4;
+            const auto entry = ( tid / 64 ) % TidCapacity;
+            const auto bit = tid % 64;
+            if( processThreads[entry] & ( 1ull << bit ) )
+            {
+                Magic magic;
+                auto token = GetToken();
+                auto& tail = token->get_tail_index();
+                auto item = token->enqueue_begin( magic );
+                MemWrite( &item->hdr.type, QueueType::SysCallExit );
+                MemWrite( &item->sysCallExit.time, hdr.TimeStamp.QuadPart );
+                MemWrite( &item->sysCallExit.thread, thread );
+                tail.store( magic + 1, std::memory_order_release );
+            }
+        }
+    }
+    else if( hdr.EventDescriptor.Opcode == 1 || hdr.EventDescriptor.Opcode == 3 )
+    {
+        const auto tt = (const TraceThread*)record->UserData;
+        if( tt->ProcessId == GetProfiler().Pid() && tt->TThreadId != GetProfiler().GetProfilerTid() && tt->TThreadId != GetCurrentThreadId() )
+        {
+            // Thread ids are (currently) multiples of 4, but its not a part of the contract.
+            const uint32_t tid = tt->TThreadId / 4;
+            const auto entry = ( tid / 64 ) % TidCapacity;
+            const auto bit = tid % 64;
+            processThreads[entry] |= ( 1ull << bit );
+        }
+    }
+#endif
 }
 
 bool SysTraceStart()
@@ -119,7 +224,11 @@ bool SysTraceStart()
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + sizeof( KERNEL_LOGGER_NAME );
     s_prop = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
     memset( s_prop, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
+#ifdef TRACY_SYSCALLS
+    s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER | EVENT_TRACE_FLAG_SYSTEMCALL | EVENT_TRACE_FLAG_THREAD;
+#else
     s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER;
+#endif
     s_prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
     s_prop->Wnode.BufferSize = psz;
     s_prop->Wnode.Flags = WNODE_FLAG_TRACED_GUID;

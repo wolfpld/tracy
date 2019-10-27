@@ -42,6 +42,8 @@ enum class QueueType : uint8_t
     ContextSwitch,
     ThreadWakeup,
     GpuTime,
+    SysCallEnter,
+    SysCallExit,
     Terminate,
     KeepAlive,
     ThreadContext,
@@ -330,6 +332,19 @@ struct QueueTidToPid
     uint64_t pid;
 };
 
+struct QueueSysCallEnter
+{
+    int64_t time;
+    uint64_t thread;
+    uint64_t address;
+};
+
+struct QueueSysCallExit
+{
+    int64_t time;
+    uint64_t thread;
+};
+
 struct QueueHeader
 {
     union
@@ -378,6 +393,8 @@ struct QueueItem
         QueueContextSwitch contextSwitch;
         QueueThreadWakeup threadWakeup;
         QueueTidToPid tidToPid;
+        QueueSysCallEnter sysCallEnter;
+        QueueSysCallExit sysCallExit;
     };
 };
 #pragma pack()
@@ -420,6 +437,8 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueContextSwitch ),
     sizeof( QueueHeader ) + sizeof( QueueThreadWakeup ),
     sizeof( QueueHeader ) + sizeof( QueueGpuTime ),
+    sizeof( QueueHeader ) + sizeof( QueueSysCallEnter ),
+    sizeof( QueueHeader ) + sizeof( QueueSysCallExit ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive

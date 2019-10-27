@@ -9,6 +9,7 @@
 #    define NOMINMAX
 #  endif
 #  include <windows.h>
+#  include <winternl.h>
 #  ifdef _MSC_VER
 #    pragma warning( push )
 #    pragma warning( disable : 4091 )
@@ -37,6 +38,29 @@ int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 
 extern "C" { t_RtlWalkFrameChain RtlWalkFrameChain = 0; }
+extern "C" typedef NTSTATUS (WINAPI *t_ZwQuerySystemInformation)( int, PVOID, ULONG, PULONG );
+
+extern "C" {
+typedef struct _SYSTEM_MODULE_ENTRY
+{
+    HANDLE Section;
+    PVOID MappedBase;
+    PVOID ImageBase;
+    ULONG ImageSize;
+    ULONG Flags;
+    USHORT LoadOrderIndex;
+    USHORT InitOrderIndex;
+    USHORT LoadCount;
+    USHORT OffsetToFileName;
+    UCHAR FullPathName[256];
+} SYSTEM_MODULE_ENTRY;
+
+typedef struct _SYSTEM_MODULE_INFORMATION
+{
+    ULONG Count;
+    SYSTEM_MODULE_ENTRY Module[1];
+} SYSTEM_MODULE_INFORMATION;
+}
 
 #if defined __MINGW32__ && API_VERSION_NUMBER < 12
 extern "C" {
@@ -58,11 +82,36 @@ void InitCallstack()
     currentProcess = GetCurrentProcess();
 #ifdef UNICODE
     RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "RtlWalkFrameChain" );
+    t_ZwQuerySystemInformation ZwQuerySystemInformation = (t_ZwQuerySystemInformation)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "ZwQuerySystemInformation" );
 #else
     RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "RtlWalkFrameChain" );
+    t_ZwQuerySystemInformation ZwQuerySystemInformation = (t_ZwQuerySystemInformation)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "ZwQuerySystemInformation" );
 #endif
     SymInitialize( currentProcess, nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
+
+    if( ZwQuerySystemInformation )
+    {
+        char sysroot[1024];
+        const auto rootlen = ExpandEnvironmentStringsA( "%SystemRoot%", sysroot, 1024 ) - 1;
+        ULONG size = 0;
+        ZwQuerySystemInformation( 11 /*SystemModuleInformation*/, 0, size, &size );
+        auto modules = (SYSTEM_MODULE_INFORMATION*)tracy_malloc( size );
+        ZwQuerySystemInformation( 11 /*SystemModuleInformation*/, modules, size, &size );
+        for( ULONG i=0; i<modules->Count; i++ )
+        {
+            char buf[1024];
+            const char* name = (char*)modules->Module[i].FullPathName;
+            if( strncmp( "\\SystemRoot", name, 11 ) == 0 )
+            {
+                memcpy( buf, sysroot, rootlen );
+                strcpy( buf + rootlen, name+11 );
+                name = buf;
+            }
+            auto res = SymLoadModuleEx( currentProcess, nullptr, name, nullptr, (DWORD64)modules->Module[i].ImageBase, modules->Module[i].ImageSize, nullptr, 0 );
+        }
+        tracy_free( modules );
+    }
 }
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )

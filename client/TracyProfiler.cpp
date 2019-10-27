@@ -2054,7 +2054,9 @@ void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
             type == QueueType::PlotName ||
             type == QueueType::FrameName ||
             type == QueueType::ExternalName ||
-            type == QueueType::ExternalThreadName );
+            type == QueueType::ExternalThreadName ||
+            type == QueueType::CodeLocationString
+    );
 
     QueueItem item;
     MemWrite( &item.hdr.type, type );
@@ -2258,6 +2260,16 @@ bool Profiler::HandleServerQuery()
         SysTraceSendExternalName( ptr );
         break;
 #endif
+    case ServerQueryCodeLocationString:
+    {
+#ifdef TRACY_HAS_CALLSTACK
+        const auto name = DecodeCallstackPtrFast( ptr );
+#else
+        const auto name = "???";
+#endif
+        SendString( ptr, name, QueueType::CodeLocationString );
+        break;
+    }
     default:
         assert( false );
         break;

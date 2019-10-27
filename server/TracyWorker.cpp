@@ -247,6 +247,7 @@ Worker::Worker( const char* addr, int port )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
     , m_pendingCallstackSubframes( 0 )
+    , m_pendingCodeLocationStrings( 0 )
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
@@ -2158,6 +2159,19 @@ std::pair<const char*, const char*> Worker::GetExternalName( uint64_t id ) const
     }
 }
 
+const char* Worker::GetCodeLocationName( uint64_t ptr ) const
+{
+    const auto it = m_data.codeLocationNames.find( ptr );
+    if( it == m_data.codeLocationNames.end() )
+    {
+        return "???";
+    }
+    else
+    {
+        return it->second;
+    }
+}
+
 const char* Worker::GetZoneName( const SourceLocation& srcloc ) const
 {
     if( srcloc.name.active )
@@ -2458,7 +2472,8 @@ void Worker::Exec()
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
                 !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
-                m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() )
+                m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() ||
+                m_pendingCodeLocationStrings != 0 )
             {
                 continue;
             }
@@ -2558,6 +2573,9 @@ bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
                 break;
             case QueueType::ExternalThreadName:
                 AddExternalThreadName( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            case QueueType::CodeLocationString:
+                AddCodeLocationString( ev.stringTransfer.ptr, ptr, sz );
                 break;
             default:
                 assert( false );
@@ -2856,6 +2874,16 @@ void Worker::CheckExternalName( uint64_t id )
     Query( ServerQueryExternalName, id );
 }
 
+void Worker::CheckCodeLocationString( uint64_t id )
+{
+    if( m_data.codeLocationNames.find( id ) != m_data.codeLocationNames.end() ) return;
+
+    m_data.codeLocationNames.emplace( id, "???" );
+    m_pendingCodeLocationStrings++;
+
+    Query( ServerQueryCodeLocationString, id );
+}
+
 void Worker::AddSourceLocation( const QueueSourceLocation& srcloc )
 {
     assert( m_pendingSourceLocation > 0 );
@@ -2972,6 +3000,16 @@ void Worker::AddExternalThreadName( uint64_t ptr, char* str, size_t sz )
     assert( it != m_data.externalNames.end() && strcmp( it->second.second, "???" ) == 0 );
     const auto sl = StoreString( str, sz );
     it->second.second = sl.ptr;
+}
+
+void Worker::AddCodeLocationString( uint64_t ptr, char* str, size_t sz )
+{
+    assert( m_pendingCodeLocationStrings > 0 );
+    m_pendingCodeLocationStrings--;
+    auto it = m_data.codeLocationNames.find( ptr );
+    assert( it != m_data.codeLocationNames.end() && strcmp( it->second, "???" ) == 0 );
+    const auto sl = StoreString( str, sz );
+    it->second = sl.ptr;
 }
 
 static const uint8_t DxtcIndexTable[256] = {
@@ -4663,6 +4701,7 @@ void Worker::ProcessSysCallEnter( const QueueSysCallEnter& ev )
     if( !td ) return;
     if( td->sysCalls.empty() )
     {
+        CheckCodeLocationString( ev.address );
         const auto refTime = m_refTimeCtx + ev.time;
         m_refTimeCtx = refTime;
         const auto time = TscTime( refTime - m_data.baseTime );
@@ -4671,6 +4710,7 @@ void Worker::ProcessSysCallEnter( const QueueSysCallEnter& ev )
     else
     {
         if( td->sysCalls.back().end < 0 ) return;
+        CheckCodeLocationString( ev.address );
         const auto refTime = m_refTimeCtx + ev.time;
         m_refTimeCtx = refTime;
         const auto time = TscTime( refTime - m_data.baseTime );

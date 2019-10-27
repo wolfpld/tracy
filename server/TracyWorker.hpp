@@ -173,6 +173,7 @@ private:
         flat_hash_map<charutil::StringKey, uint32_t, charutil::StringKey::HasherPOT, charutil::StringKey::Comparator> stringMap;
         flat_hash_map<uint64_t, const char*, nohash<uint64_t>> threadNames;
         flat_hash_map<uint64_t, std::pair<const char*, const char*>, nohash<uint64_t>> externalNames;
+        flat_hash_map<uint64_t, const char*, nohash<uint64_t>> codeLocationNames;
 
         flat_hash_map<uint64_t, SourceLocation, nohash<uint64_t>> sourceLocation;
         Vector<SourceLocation*> sourceLocationPayload;
@@ -355,6 +356,7 @@ public:
     bool IsThreadLocal( uint64_t id ) const;
     const SourceLocation& GetSourceLocation( int16_t srcloc ) const;
     std::pair<const char*, const char*> GetExternalName( uint64_t id ) const;
+    const char* GetCodeLocationName( uint64_t ptr ) const;
 
     const char* GetZoneName( const SourceLocation& srcloc ) const;
     const char* GetZoneName( const ZoneEvent& ev ) const;
@@ -529,6 +531,7 @@ private:
     void CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
     void CheckExternalName( uint64_t id );
+    void CheckCodeLocationString( uint64_t id );
 
     void AddSourceLocation( const QueueSourceLocation& srcloc );
     void AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz );
@@ -538,6 +541,7 @@ private:
     void AddCustomString( uint64_t ptr, char* str, size_t sz );
     void AddExternalName( uint64_t ptr, char* str, size_t sz );
     void AddExternalThreadName( uint64_t ptr, char* str, size_t sz );
+    void AddCodeLocationString( uint64_t ptr, char* str, size_t sz );
     void AddFrameImageData( uint64_t ptr, char* data, size_t sz );
 
     tracy_force_inline void AddCallstackPayload( uint64_t ptr, char* data, size_t sz );
@@ -618,6 +622,7 @@ private:
     uint32_t m_pendingSourceLocation;
     uint32_t m_pendingCallstackFrames;
     uint8_t m_pendingCallstackSubframes;
+    uint32_t m_pendingCodeLocationStrings;
 
     CallstackFrameData* m_callstackFrameStaging;
     uint64_t m_callstackFrameStagingPtr;

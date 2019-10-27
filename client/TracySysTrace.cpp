@@ -54,6 +54,8 @@ struct ReadyThread
     int8_t      reserverd;
 };
 
+uint64_t coreThread[256] = {};
+
 void WINAPI EventRecordCallback( PEVENT_RECORD record )
 {
 #ifdef TRACY_ON_DEMAND
@@ -64,6 +66,7 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
     if( hdr.EventDescriptor.Opcode == 36 )
     {
         const auto cswitch = (const CSwitch*)record->UserData;
+        const auto cpu = record->BufferContext.ProcessorNumber;
 
         Magic magic;
         auto token = GetToken();
@@ -75,10 +78,12 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         memcpy( &item->contextSwitch.newThread, &cswitch->newThreadId, sizeof( cswitch->newThreadId ) );
         memset( ((char*)&item->contextSwitch.oldThread)+4, 0, 4 );
         memset( ((char*)&item->contextSwitch.newThread)+4, 0, 4 );
-        MemWrite( &item->contextSwitch.cpu, record->BufferContext.ProcessorNumber );
+        MemWrite( &item->contextSwitch.cpu, cpu );
         MemWrite( &item->contextSwitch.reason, cswitch->oldThreadWaitReason );
         MemWrite( &item->contextSwitch.state, cswitch->oldThreadState );
         tail.store( magic + 1, std::memory_order_release );
+
+        coreThread[cpu] = cswitch->newThreadId;
     }
     else if( hdr.EventDescriptor.Opcode == 50 )
     {

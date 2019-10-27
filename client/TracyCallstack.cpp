@@ -51,28 +51,30 @@ BOOL IMAGEAPI SymGetLineFromInlineContext(HANDLE hProcess, DWORD64 qwAddr, ULONG
 };
 #endif
 
+static HANDLE currentProcess;
+
 void InitCallstack()
 {
+    currentProcess = GetCurrentProcess();
 #ifdef UNICODE
     RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "RtlWalkFrameChain" );
 #else
     RtlWalkFrameChain = (t_RtlWalkFrameChain)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "RtlWalkFrameChain" );
 #endif
-    SymInitialize( GetCurrentProcess(), nullptr, true );
+    SymInitialize( currentProcess, nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
 }
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
     static char ret[1024];
-    const auto proc = GetCurrentProcess();
 
     char buf[sizeof( SYMBOL_INFO ) + 1024];
     auto si = (SYMBOL_INFO*)buf;
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = 1024;
 
-    if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
+    if( SymFromAddr( currentProcess, ptr, nullptr, si ) == 0 )
     {
         *ret = '\0';
     }
@@ -87,13 +89,12 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     int write;
-    const auto proc = GetCurrentProcess();
 #ifndef __CYGWIN__
-    const auto inlineNum = std::min<DWORD>( MaxCbTrace - 1, SymAddrIncludeInlineTrace( proc, ptr ) );
+    const auto inlineNum = std::min<DWORD>( MaxCbTrace - 1, SymAddrIncludeInlineTrace( currentProcess, ptr ) );
     DWORD ctx = 0;
     DWORD idx;
     BOOL doInline = FALSE;
-    if( inlineNum != 0 ) doInline = SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
+    if( inlineNum != 0 ) doInline = SymQueryInlineTrace( currentProcess, ptr, 0, ptr, ptr, &ctx, &idx );
     if( doInline )
     {
         write = inlineNum;
@@ -111,7 +112,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = 1024;
 
-    if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
+    if( SymFromAddr( currentProcess, ptr, nullptr, si ) == 0 )
     {
         memcpy( si->Name, "[unknown]", 10 );
         si->NameLen = 9;
@@ -129,7 +130,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         cb_data[write].name = name;
 
         const char* filename;
-        if (SymGetLineFromAddr64(proc, ptr, &displacement, &line) == 0)
+        if( SymGetLineFromAddr64( currentProcess, ptr, &displacement, &line ) == 0 )
         {
             filename = "[unknown]";
             cb_data[write].line = 0;
@@ -155,7 +156,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         {
             auto& cb = cb_data[i];
 
-            if( SymFromInlineContext( proc, ptr, ctx, nullptr, si ) == 0 )
+            if( SymFromInlineContext( currentProcess, ptr, ctx, nullptr, si ) == 0 )
             {
                 memcpy( si->Name, "[unknown]", 10 );
                 si->NameLen = 9;
@@ -167,7 +168,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             cb.name = name;
 
             const char* filename;
-            if( SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) == 0 )
+            if( SymGetLineFromInlineContext( currentProcess, ptr, ctx, 0, &displacement, &line ) == 0 )
             {
                 filename = "[unknown]";
                 cb.line = 0;

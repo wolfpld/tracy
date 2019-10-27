@@ -2481,6 +2481,11 @@ void Profiler::ProcessSysTime()
 }
 #endif
 
+uint64_t Profiler::GetProfilerTid() const
+{
+    return s_profilerThreadId;
+}
+
 }
 
 #ifdef __cplusplus

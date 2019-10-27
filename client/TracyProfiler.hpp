@@ -447,6 +447,7 @@ public:
     void SendString( uint64_t ptr, const char* str, QueueType type );
 
     uint64_t Pid() const { return m_pid; }
+    uint64_t GetProfilerTid() const;
 
 private:
     enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };

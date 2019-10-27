@@ -446,6 +446,8 @@ public:
 
     void SendString( uint64_t ptr, const char* str, QueueType type );
 
+    uint64_t Pid() const { return m_pid; }
+
 private:
     enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };
 
@@ -541,6 +543,7 @@ private:
     UdpBroadcast* m_broadcast;
     bool m_noExit;
     std::atomic<uint32_t> m_zoneId;
+    uint64_t m_pid;
 
     uint64_t m_threadCtx;
     int64_t m_refTimeThread;

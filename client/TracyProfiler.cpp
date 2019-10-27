@@ -1017,6 +1017,7 @@ Profiler::Profiler()
     , m_broadcast( nullptr )
     , m_noExit( false )
     , m_zoneId( 1 )
+    , m_pid( GetPid() )
     , m_stream( LZ4_createStream() )
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
@@ -1172,8 +1173,6 @@ void Profiler::Worker()
     const auto hostinfo = GetHostInfo();
     const auto hisz = std::min<size_t>( strlen( hostinfo ), WelcomeMessageHostInfoSize - 1 );
 
-    const uint64_t pid = GetPid();
-
 #ifdef TRACY_ON_DEMAND
     uint8_t onDemand = 1;
 #else
@@ -1193,7 +1192,7 @@ void Profiler::Worker()
     MemWrite( &welcome.delay, m_delay );
     MemWrite( &welcome.resolution, m_resolution );
     MemWrite( &welcome.epoch, m_epoch );
-    MemWrite( &welcome.pid, pid );
+    MemWrite( &welcome.pid, m_pid );
     MemWrite( &welcome.onDemand, onDemand );
     MemWrite( &welcome.isApple, isApple );
     memcpy( welcome.programName, procname, pnsz );

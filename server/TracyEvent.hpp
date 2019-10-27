@@ -342,7 +342,7 @@ enum { MessageDataSize = sizeof( MessageData ) };
 
 struct SysCall
 {
-    int64_t begin;
+    int64_t start;
     int64_t end;
     uint64_t ptr;
 };

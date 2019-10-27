@@ -2337,6 +2337,13 @@ void View::DrawZones()
                 offset += ostep * lockDepth;
                 depth += lockDepth;
             }
+
+            if( !v->sysCalls.empty() )
+            {
+                const auto sysCallDepth = DrawSysCalls( v->sysCalls, hover, pxns, nspx, wpos, offset, yMin, yMax );
+                offset += ostep * sysCallDepth;
+                depth += sysCallDepth;
+            }
         }
         offset += ostep * 0.2f;
 
@@ -4369,6 +4376,119 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         }
     }
     return cnt;
+}
+
+int View::DrawSysCalls( const Vector<SysCall>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, float yMin, float yMax )
+{
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+    if( it == vec.end() ) return 0;
+
+    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.start < r; } );
+    if( it == zitend ) return 0;
+    if( it->end < 0 ) return 0;
+
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto ty = ImGui::GetFontSize();
+    const auto ostep = ty + 1;
+    auto draw = ImGui::GetWindowDrawList();
+
+    while( it < zitend )
+    {
+        const auto color = 0xFFDD7777;
+        const auto zsz = std::max( ( it->end - it->start ) * pxns, pxns * 0.5 );
+        if( zsz < MinVisSize )
+        {
+            const auto origStart = it->start;
+            int num = 0;
+            const auto px0 = ( it->start - m_vd.zvStart ) * pxns;
+            auto px1 = ( it->end - m_vd.zvStart ) * pxns;
+            auto rend = it->end;
+            auto nextTime = it->end + MinVisSize;
+            for(;;)
+            {
+                const auto prevIt = it;
+                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l.end < (uint64_t)r; } );
+                if( it == prevIt ) ++it;
+                num += std::distance( prevIt, it );
+                if( it == zitend ) break;
+                const auto nend = it->end < 0 ? m_worker.GetLastTime() : it->end;
+                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
+                if( pxnext - px1 >= MinVisSize * 2 ) break;
+                px1 = pxnext;
+                rend = nend;
+                nextTime = nend + nspx;
+            }
+            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
+            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ) ) )
+            {
+                if( num > 1 )
+                {
+                    ImGui::BeginTooltip();
+                    TextFocused( "Sys calls too small to display:", RealToString( num, true ) );
+                    ImGui::Separator();
+                    TextFocused( "Execution time:", TimeToString( rend - origStart ) );
+                    ImGui::EndTooltip();
+
+                    if( ImGui::IsMouseClicked( 2 ) && rend - origStart > 0 )
+                    {
+                        ZoomToRange( origStart, rend );
+                    }
+                }
+                else if( ImGui::IsMouseClicked( 2 ) && rend - origStart > 0 )
+                {
+                    ZoomToRange( origStart, it->end );
+                }
+            }
+        }
+        else
+        {
+            const auto name = "???";
+            const auto tsz = ImGui::CalcTextSize( name );
+
+            const auto pr0 = ( it->start - m_vd.zvStart ) * pxns;
+            const auto pr1 = ( it->end - m_vd.zvStart ) * pxns;
+            const auto px0 = std::max( pr0, -10.0 );
+            const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
+            draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), HighlightColor( color ) );
+            if( tsz.x < zsz )
+            {
+                const auto x = ( it->start - m_vd.zvStart ) * pxns + ( ( it->end - it->start ) * pxns - tsz.x ) / 2;
+                if( x < 0 || x > w - tsz.x )
+                {
+                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                    DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, name );
+                    ImGui::PopClipRect();
+                }
+                else if( it->start == it->end )
+                {
+                    DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), 0xFFFFFFFF, name );
+                }
+                else
+                {
+                    DrawTextContrast( draw, wpos + ImVec2( x, offset ), 0xFFFFFFFF, name );
+                }
+            }
+            else
+            {
+                ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                DrawTextContrast( draw, wpos + ImVec2( ( it->start - m_vd.zvStart ) * pxns, offset ), 0xFFFFFFFF, name );
+                ImGui::PopClipRect();
+            }
+
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
+            {
+                if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToRange( it->start, it->end );
+                }
+            }
+
+            ++it;
+        }
+    }
+    return 1;
 }
 
 int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax )

@@ -4443,7 +4443,7 @@ int View::DrawSysCalls( const Vector<SysCall>& vec, bool hover, double pxns, int
         }
         else
         {
-            const auto name = "???";
+            const auto name = m_worker.GetCodeLocationName( it->ptr );
             const auto tsz = ImGui::CalcTextSize( name );
 
             const auto pr0 = ( it->start - m_vd.zvStart ) * pxns;

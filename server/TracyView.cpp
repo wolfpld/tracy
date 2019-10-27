@@ -10508,6 +10508,7 @@ void View::DrawInfo()
         TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount(), true ) );
         ImGui::SameLine();
         TextFocused( "+", RealToString( m_worker.GetContextSwitchPerCpuCount(), true ) );
+        TextFocused( "System calls:", RealToString( m_worker.GetSysCallCount(), true ) );
         ImGui::TreePop();
     }
 

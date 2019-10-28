@@ -2392,7 +2392,7 @@ void Worker::Exec()
         if( m_shutdown.load( std::memory_order_relaxed ) )
         {
             QueryTerminate();
-            return;
+            goto close;
         }
 
         auto buf = m_buffer + m_bufferOffset;

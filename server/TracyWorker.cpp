@@ -262,6 +262,7 @@ Worker::Worker( const char* addr, int port )
 #endif
 
     m_thread = std::thread( [this] { SetThreadName( "Tracy Worker" ); Exec(); } );
+    m_threadNet = std::thread( [this] { SetThreadName( "Tracy Network" ); Network(); } );
 }
 
 Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
@@ -1757,6 +1758,7 @@ Worker::~Worker()
 {
     Shutdown();
 
+    if( m_threadNet.joinable() ) m_threadNet.join();
     if( m_thread.joinable() ) m_thread.join();
     if( m_threadBackground.joinable() ) m_threadBackground.join();
 
@@ -2277,6 +2279,10 @@ const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t sr
     return it != m_data.sourceLocationZones.end() ? it->second : empty;
 }
 #endif
+
+void Worker::Network()
+{
+}
 
 void Worker::Exec()
 {

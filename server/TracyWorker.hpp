@@ -406,6 +406,7 @@ public:
     const char* UnpackFrameImage( const FrameImage& image );
 
 private:
+    void Network();
     void Exec();
     void Query( ServerQuery type, uint64_t data );
     void QueryTerminate();
@@ -574,6 +575,7 @@ private:
     int m_port;
 
     std::thread m_thread;
+    std::thread m_threadNet;
     std::atomic<bool> m_connected { false };
     std::atomic<bool> m_hasData;
     std::atomic<bool> m_shutdown { false };

@@ -316,9 +316,24 @@ Tracy Profiler supports  MSVC, gcc and clang. A reasonably recent version of the
 
 \subsection{Initial client setup}
 
-The recommended way to integrate Tracy into an application is to create a git submodule in the repository (assuming that git is used for version control). This way it is very easy to update Tracy to newly released versions.
+The recommended way to integrate Tracy into an application is to create a git submodule in the repository (assuming that git is used for version control). This way it is very easy to update Tracy to newly released versions. If that's not an option, copy all files from the Tracy checkout directory to your project.
 
-If that's not an option, copy all files from the Tracy checkout directory to your project. Next, add the \texttt{tracy/TracyClient.cpp} source file to the IDE project and/or makefile. That's all. Tracy is now integrated into the application.
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{What revision should I use?}
+When deciding on the Tracy Profiler version you want to use, you have basically two options. Take into consideration the following pros and cons:
+
+\begin{itemize}
+\item Using the last-version-tagged revision will give you a stable platform to work with. You won't experience any breakages, major UI overhauls or network protocol changes. Unfortunately, you also won't be getting any bug fixes.
+\item Working with the bleeding edge \texttt{master} development branch will give you access to all the new improvements and features added to the profiler. While it is generally expected that \texttt{master} should always be usable, \textbf{there are no guarantees that it will be so.}
+\end{itemize}
+
+Do note that all bug fixes and pull requests are made against the \texttt{master} branch.
+\end{bclogo}
+
+With the source code included in your project, add the \texttt{tracy/TracyClient.cpp} source file to the IDE project and/or makefile. You're done. Tracy is now integrated into the application.
 
 In the default configuration Tracy is disabled. This way you don't have to worry that the production builds will perform collection of profiling data. You will probably want to create a separate build configuration, with the \texttt{TRACY\_ENABLE} define, which enables profiling.
 

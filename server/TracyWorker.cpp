@@ -2286,10 +2286,7 @@ void Worker::Network()
 
 void Worker::Exec()
 {
-    auto ShouldExit = [this]
-    {
-        return m_shutdown.load( std::memory_order_relaxed );
-    };
+    auto ShouldExit = [this] { return m_shutdown.load( std::memory_order_relaxed ); };
 
     for(;;)
     {

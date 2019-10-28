@@ -2326,7 +2326,7 @@ void Worker::Exec()
 
     for(;;)
     {
-        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+        if( m_shutdown.load( std::memory_order_relaxed ) ) { m_netWriteCv.notify_one(); return; };
         if( m_sock.Connect( m_addr.c_str(), m_port ) ) break;
     }
 

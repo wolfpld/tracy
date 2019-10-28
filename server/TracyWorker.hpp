@@ -2,7 +2,9 @@
 #define __TRACYWORKER_HPP__
 
 #include <atomic>
+#include <condition_variable>
 #include <limits>
+#include <mutex>
 #include <shared_mutex>
 #include <stdexcept>
 #include <string>
@@ -653,6 +655,23 @@ private:
     int64_t m_refTimeSerial = 0;
     int64_t m_refTimeCtx = 0;
     int64_t m_refTimeGpu = 0;
+
+    std::atomic<uint64_t> m_bytes { 0 };
+    std::atomic<uint64_t> m_decBytes { 0 };
+
+    struct NetBuffer
+    {
+        int bufferOffset;
+        int size;
+    };
+
+    std::vector<NetBuffer> m_netRead;
+    std::mutex m_netReadLock;
+    std::condition_variable m_netReadCv;
+
+    int m_netWriteCnt = 0;
+    std::mutex m_netWriteLock;
+    std::condition_variable m_netWriteCv;
 };
 
 }

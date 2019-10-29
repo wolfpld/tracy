@@ -15,6 +15,8 @@
 #include "CompiledVertexShader.h"
 #include "CompiledPixelShader.h"
 
+#include "../../../Tracy.hpp"
+
 static HINSTANCE g_HInstance;
 static HWND g_Wnd;
 
@@ -226,6 +228,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ LPWSTR,
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
+    ZoneScoped;
+
     WNDCLASSEXW wcex;
     memset(&wcex, 0, sizeof(wcex));
     wcex.cbSize = sizeof(WNDCLASSEX);
@@ -242,6 +246,8 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
+    ZoneScoped;
+
     g_HInstance = hInstance;
     RECT rc = { 0, 0, kBackbufferWidth, kBackbufferHeight };
     DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
@@ -264,6 +270,8 @@ static int s_FrameCount = 0;
 
 static void RenderFrame()
 {
+    ZoneScoped;
+
     LARGE_INTEGER time1;
 
 #if DO_COMPUTE_GPU
@@ -368,6 +376,8 @@ static void RenderFrame()
     g_D3D11Ctx->Draw(3, 0);
     g_D3D11SwapChain->Present(0, 0);
 
+    FrameMark;
+
 #if DO_COMPUTE_GPU
     g_D3D11Ctx->End(g_QueryDisjoint);
 
@@ -443,6 +453,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 static HRESULT InitD3DDevice()
 {
+    ZoneScoped;
+
     HRESULT hr = S_OK;
 
     RECT rc;
@@ -534,6 +546,8 @@ static HRESULT InitD3DDevice()
 
 static void ShutdownD3DDevice()
 {
+    ZoneScoped;
+
     if (g_D3D11Ctx) g_D3D11Ctx->ClearState();
 
     if (g_D3D11RenderTarget) g_D3D11RenderTarget->Release();

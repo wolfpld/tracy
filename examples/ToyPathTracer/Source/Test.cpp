@@ -7,6 +7,8 @@
 #endif
 #include <atomic>
 
+#include "../../../Tracy.hpp"
+
 // 46 spheres (2 emissive) when enabled; 9 spheres (1 emissive) when disabled
 #define DO_BIG_SCENE 1
 
@@ -82,6 +84,7 @@ bool HitWorld(const Ray& r, float tMin, float tMax, Hit& outHit, int& outID)
 
 static bool Scatter(const Material& mat, const Ray& r_in, const Hit& rec, float3& attenuation, Ray& scattered, float3& outLightE, int& inoutRayCount, uint32_t& state)
 {
+    ZoneScoped;
     outLightE = float3(0,0,0);
     if (mat.type == Material::Lambert)
     {
@@ -190,6 +193,7 @@ static bool Scatter(const Material& mat, const Ray& r_in, const Hit& rec, float3
 
 static float3 Trace(const Ray& r, int depth, int& inoutRayCount, uint32_t& state, bool doMaterialE = true)
 {
+    ZoneScoped;
     Hit rec;
     int id = 0;
     ++inoutRayCount;
@@ -235,6 +239,7 @@ static enkiTaskScheduler* g_TS;
 
 void InitializeTest()
 {
+    ZoneScoped;
     #if CPU_CAN_DO_THREADS
     g_TS = enkiNewTaskScheduler();
     enkiInitTaskScheduler(g_TS);
@@ -243,6 +248,7 @@ void InitializeTest()
 
 void ShutdownTest()
 {
+    ZoneScoped;
     #if CPU_CAN_DO_THREADS
     enkiDeleteTaskScheduler(g_TS);
     #endif
@@ -261,6 +267,7 @@ struct JobData
 
 static void TraceRowJob(uint32_t start, uint32_t end, uint32_t threadnum, void* data_)
 {
+    ZoneScoped;
     JobData& data = *(JobData*)data_;
     float* backbuffer = data.backbuffer + start * data.screenWidth * 4;
     float invWidth = 1.0f / data.screenWidth;
@@ -297,6 +304,7 @@ static void TraceRowJob(uint32_t start, uint32_t end, uint32_t threadnum, void* 
 
 void UpdateTest(float time, int frameCount, int screenWidth, int screenHeight, unsigned testFlags)
 {
+    ZoneScoped;
     if (testFlags & kFlagAnimate)
     {
         s_Spheres[1].center.setY(cosf(time) + 1.0f);
@@ -339,6 +347,7 @@ void UpdateTest(float time, int frameCount, int screenWidth, int screenHeight, u
 
 void DrawTest(float time, int frameCount, int screenWidth, int screenHeight, float* backbuffer, int& outRayCount, unsigned testFlags)
 {
+    ZoneScoped;
     JobData args;
     args.time = time;
     args.frameCount = frameCount;
@@ -364,6 +373,7 @@ void DrawTest(float time, int frameCount, int screenWidth, int screenHeight, flo
 
 void GetObjectCount(int& outCount, int& outObjectSize, int& outMaterialSize, int& outCamSize)
 {
+    ZoneScoped;
     outCount = kSphereCount;
     outObjectSize = sizeof(Sphere);
     outMaterialSize = sizeof(Material);
@@ -372,6 +382,7 @@ void GetObjectCount(int& outCount, int& outObjectSize, int& outMaterialSize, int
 
 void GetSceneDesc(void* outObjects, void* outMaterials, void* outCam, void* outEmissives, int* outEmissiveCount)
 {
+    ZoneScoped;
     memcpy(outObjects, s_Spheres, kSphereCount * sizeof(s_Spheres[0]));
     memcpy(outMaterials, s_SphereMats, kSphereCount * sizeof(s_SphereMats[0]));
     memcpy(outCam, &s_Cam, sizeof(s_Cam));

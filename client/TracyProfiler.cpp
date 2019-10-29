@@ -2461,6 +2461,7 @@ void Profiler::CutCallstack( void* callstack, const char* skipBefore )
 #ifdef TRACY_HAS_SYSTIME
 void Profiler::ProcessSysTime()
 {
+    if( m_shutdown.load( std::memory_order_relaxed ) ) return;
     auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     if( t - m_sysTimeLast > 100000000 )    // 100 ms
     {

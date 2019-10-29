@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="TestWin.cpp" />
+    <ClCompile Include="..\Source\Test.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\enkiTS\TaskScheduler.cpp">
+      <Filter>Source\enkiTS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\enkiTS\TaskScheduler_c.cpp">
+      <Filter>Source\enkiTS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Maths.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{5f19f217-c1c7-4eeb-be61-8b986fee9375}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\enkiTS">
+      <UniqueIdentifier>{38c448a8-1dcc-4116-9410-a9f8d068caff}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Source\Test.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\stb_image.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\enkiTS\Atomics.h">
+      <Filter>Source\enkiTS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\enkiTS\LockLessMultiReadPipe.h">
+      <Filter>Source\enkiTS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\enkiTS\TaskScheduler.h">
+      <Filter>Source\enkiTS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\enkiTS\TaskScheduler_c.h">
+      <Filter>Source\enkiTS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\enkiTS\Threads.h">
+      <Filter>Source\enkiTS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Maths.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Config.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\MathSimd.h">
+      <Filter>Source</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\.editorconfig" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="VertexShader.hlsl" />
+    <FxCompile Include="PixelShader.hlsl" />
+    <FxCompile Include="ComputeShader.hlsl" />
+  </ItemGroup>
+</Project>

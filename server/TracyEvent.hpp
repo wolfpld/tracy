@@ -10,6 +10,7 @@
 #include "TracyCharUtil.hpp"
 #include "TracyVector.hpp"
 #include "tracy_flat_hash_map.hpp"
+#include "../common/TracyForceInline.hpp"
 
 namespace tracy
 {
@@ -20,8 +21,8 @@ struct StringRef
 {
     enum Type { Ptr, Idx };
 
-    StringRef() : str( 0 ), __data( 0 ) {}
-    StringRef( Type t, uint64_t data )
+    tracy_force_inline StringRef() : str( 0 ), __data( 0 ) {}
+    tracy_force_inline StringRef( Type t, uint64_t data )
         : str( data )
         , __data( 0 )
     {
@@ -45,19 +46,19 @@ struct StringRef
 class StringIdx
 {
 public:
-    StringIdx() { memset( m_idx, 0, sizeof( m_idx ) ); }
-    StringIdx( uint32_t idx )
+    tracy_force_inline StringIdx() { memset( m_idx, 0, sizeof( m_idx ) ); }
+    tracy_force_inline StringIdx( uint32_t idx )
     {
         SetIdx( idx );
     }
 
-    void SetIdx( uint32_t idx )
+    tracy_force_inline void SetIdx( uint32_t idx )
     {
         idx++;
         memcpy( m_idx, &idx, 3 );
     }
 
-    uint32_t Idx() const
+    tracy_force_inline uint32_t Idx() const
     {
         uint32_t idx = 0;
         memcpy( &idx, m_idx, 3 );
@@ -65,7 +66,7 @@ public:
         return idx - 1;
     }
 
-    bool Active() const
+    tracy_force_inline bool Active() const
     {
         uint32_t zero = 0;
         return memcmp( m_idx, &zero, 3 ) != 0;
@@ -85,18 +86,18 @@ struct __StringIdxOld
 class Int24
 {
 public:
-    Int24() { memset( m_val, 0, sizeof( m_val ) ); }
-    Int24( uint32_t val )
+    tracy_force_inline Int24() { memset( m_val, 0, sizeof( m_val ) ); }
+    tracy_force_inline Int24( uint32_t val )
     {
         SetVal( val );
     }
 
-    void SetVal( uint32_t val )
+    tracy_force_inline void SetVal( uint32_t val )
     {
         memcpy( m_val, &val, 3 );
     }
 
-    uint32_t Val() const
+    tracy_force_inline uint32_t Val() const
     {
         uint32_t val = 0;
         memcpy( &val, m_val, 3 );
@@ -122,14 +123,16 @@ enum { SourceLocationSize = sizeof( SourceLocation ) };
 
 struct ZoneEvent
 {
-    int64_t Start() const { return int64_t( _start_srcloc ) >> 16; }
-    void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_srcloc)+2, &start, 4 ); memcpy( ((char*)&_start_srcloc)+6, ((char*)&start)+4, 2 ); }
-    int64_t End() const { return int64_t( _end_child1 ) >> 16; }
-    void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_child1)+2, &end, 4 ); memcpy( ((char*)&_end_child1)+6, ((char*)&end)+4, 2 ); }
-    int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
-    void SetSrcLoc( int16_t srcloc ) { memcpy( &_start_srcloc, &srcloc, 2 ); }
-    int32_t Child() const { return int32_t( uint32_t( _end_child1 & 0xFFFF ) | ( uint32_t( _child2 ) << 16 ) ); }
-    void SetChild( int32_t child ) { memcpy( &_end_child1, &child, 2 ); _child2 = uint32_t( child ) >> 16; }
+    tracy_force_inline ZoneEvent() {};
+
+    tracy_force_inline int64_t Start() const { return int64_t( _start_srcloc ) >> 16; }
+    tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_srcloc)+2, &start, 4 ); memcpy( ((char*)&_start_srcloc)+6, ((char*)&start)+4, 2 ); }
+    tracy_force_inline int64_t End() const { return int64_t( _end_child1 ) >> 16; }
+    tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_child1)+2, &end, 4 ); memcpy( ((char*)&_end_child1)+6, ((char*)&end)+4, 2 ); }
+    tracy_force_inline int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
+    tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_start_srcloc, &srcloc, 2 ); }
+    tracy_force_inline int32_t Child() const { return int32_t( uint32_t( _end_child1 & 0xFFFF ) | ( uint32_t( _child2 ) << 16 ) ); }
+    tracy_force_inline void SetChild( int32_t child ) { memcpy( &_end_child1, &child, 2 ); _child2 = uint32_t( child ) >> 16; }
 
     uint64_t _start_srcloc;
     uint64_t _end_child1;
@@ -155,10 +158,10 @@ struct LockEvent
         ReleaseShared
     };
 
-    int64_t Time() const { return int64_t( _time_srcloc ) >> 16; }
-    void SetTime( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_srcloc)+2, &time, 4 ); memcpy( ((char*)&_time_srcloc)+6, ((char*)&time)+4, 2 ); }
-    int16_t SrcLoc() const { return int16_t( _time_srcloc & 0xFFFF ); }
-    void SetSrcLoc( int16_t srcloc ) { memcpy( &_time_srcloc, &srcloc, 2 ); }
+    tracy_force_inline int64_t Time() const { return int64_t( _time_srcloc ) >> 16; }
+    tracy_force_inline void SetTime( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_srcloc)+2, &time, 4 ); memcpy( ((char*)&_time_srcloc)+6, ((char*)&time)+4, 2 ); }
+    tracy_force_inline int16_t SrcLoc() const { return int16_t( _time_srcloc & 0xFFFF ); }
+    tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_time_srcloc, &srcloc, 2 ); }
 
     uint64_t _time_srcloc;
     uint8_t thread;
@@ -189,14 +192,14 @@ static_assert( std::numeric_limits<decltype(LockEventPtr::lockCount)>::max() >= 
 
 struct GpuEvent
 {
-    int64_t CpuStart() const { return int64_t( _cpuStart_srcloc ) >> 16; }
-    void SetCpuStart( int64_t cpuStart ) { assert( cpuStart < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuStart_srcloc)+2, &cpuStart, 4 ); memcpy( ((char*)&_cpuStart_srcloc)+6, ((char*)&cpuStart)+4, 2 ); }
-    int64_t CpuEnd() const { return int64_t( _cpuEnd_thread ) >> 16; }
-    void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuEnd_thread)+2, &cpuEnd, 4 ); memcpy( ((char*)&_cpuEnd_thread)+6, ((char*)&cpuEnd)+4, 2 ); }
-    int16_t SrcLoc() const { return int16_t( _cpuStart_srcloc & 0xFFFF ); }
-    void SetSrcLoc( int16_t srcloc ) { memcpy( &_cpuStart_srcloc, &srcloc, 2 ); }
-    uint16_t Thread() const { return uint16_t( _cpuEnd_thread & 0xFFFF ); }
-    void SetThread( uint16_t thread ) { memcpy( &_cpuEnd_thread, &thread, 2 ); }
+    tracy_force_inline int64_t CpuStart() const { return int64_t( _cpuStart_srcloc ) >> 16; }
+    tracy_force_inline void SetCpuStart( int64_t cpuStart ) { assert( cpuStart < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuStart_srcloc)+2, &cpuStart, 4 ); memcpy( ((char*)&_cpuStart_srcloc)+6, ((char*)&cpuStart)+4, 2 ); }
+    tracy_force_inline int64_t CpuEnd() const { return int64_t( _cpuEnd_thread ) >> 16; }
+    tracy_force_inline void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuEnd_thread)+2, &cpuEnd, 4 ); memcpy( ((char*)&_cpuEnd_thread)+6, ((char*)&cpuEnd)+4, 2 ); }
+    tracy_force_inline int16_t SrcLoc() const { return int16_t( _cpuStart_srcloc & 0xFFFF ); }
+    tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_cpuStart_srcloc, &srcloc, 2 ); }
+    tracy_force_inline uint16_t Thread() const { return uint16_t( _cpuEnd_thread & 0xFFFF ); }
+    tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_cpuEnd_thread, &thread, 2 ); }
 
     uint64_t _cpuStart_srcloc;
     uint64_t _cpuEnd_thread;
@@ -212,14 +215,14 @@ static_assert( std::is_standard_layout<GpuEvent>::value, "GpuEvent is not standa
 
 struct MemEvent
 {
-    int64_t TimeAlloc() const { return int64_t( _time_thread_alloc ) >> 16; }
-    void SetTimeAlloc( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_thread_alloc)+2, &time, 4 ); memcpy( ((char*)&_time_thread_alloc)+6, ((char*)&time)+4, 2 ); }
-    int64_t TimeFree() const { return int64_t( _time_thread_free ) >> 16; }
-    void SetTimeFree( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_thread_free)+2, &time, 4 ); memcpy( ((char*)&_time_thread_free)+6, ((char*)&time)+4, 2 ); }
-    uint16_t ThreadAlloc() const { return uint16_t( _time_thread_alloc ); }
-    void SetThreadAlloc( uint16_t thread ) { memcpy( &_time_thread_alloc, &thread, 2 ); }
-    uint16_t ThreadFree() const { return uint16_t( _time_thread_free ); }
-    void SetThreadFree( uint16_t thread ) { memcpy( &_time_thread_free, &thread, 2 ); }
+    tracy_force_inline int64_t TimeAlloc() const { return int64_t( _time_thread_alloc ) >> 16; }
+    tracy_force_inline void SetTimeAlloc( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_thread_alloc)+2, &time, 4 ); memcpy( ((char*)&_time_thread_alloc)+6, ((char*)&time)+4, 2 ); }
+    tracy_force_inline int64_t TimeFree() const { return int64_t( _time_thread_free ) >> 16; }
+    tracy_force_inline void SetTimeFree( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_thread_free)+2, &time, 4 ); memcpy( ((char*)&_time_thread_free)+6, ((char*)&time)+4, 2 ); }
+    tracy_force_inline uint16_t ThreadAlloc() const { return uint16_t( _time_thread_alloc ); }
+    tracy_force_inline void SetThreadAlloc( uint16_t thread ) { memcpy( &_time_thread_alloc, &thread, 2 ); }
+    tracy_force_inline uint16_t ThreadFree() const { return uint16_t( _time_thread_free ); }
+    tracy_force_inline void SetThreadFree( uint16_t thread ) { memcpy( &_time_thread_free, &thread, 2 ); }
 
     uint64_t ptr;
     uint64_t size;
@@ -294,16 +297,16 @@ struct ContextSwitchData
     enum : int8_t { NoState = 100 };
     enum : int8_t { Wakeup = -2 };
 
-    int64_t Start() const { return int64_t( _start_cpu ) >> 16; }
-    void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_cpu)+2, &start, 4 ); memcpy( ((char*)&_start_cpu)+6, ((char*)&start)+4, 2 ); }
-    int64_t End() const { return int64_t( _end_reason_state ) >> 16; }
-    void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_reason_state)+2, &end, 4 ); memcpy( ((char*)&_end_reason_state)+6, ((char*)&end)+4, 2 ); }
-    uint8_t Cpu() const { return uint8_t( _start_cpu & 0xFF ); }
-    void SetCpu( uint8_t cpu ) { memcpy( &_start_cpu, &cpu, 1 ); }
-    int8_t Reason() const { return int8_t( (_end_reason_state >> 8) & 0xFF ); }
-    void SetReason( int8_t reason ) { memcpy( ((char*)&_end_reason_state)+1, &reason, 1 ); }
-    int8_t State() const { return int8_t( _end_reason_state & 0xFF ); }
-    void SetState( int8_t state ) { memcpy( &_end_reason_state, &state, 1 ); }
+    tracy_force_inline int64_t Start() const { return int64_t( _start_cpu ) >> 16; }
+    tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_cpu)+2, &start, 4 ); memcpy( ((char*)&_start_cpu)+6, ((char*)&start)+4, 2 ); }
+    tracy_force_inline int64_t End() const { return int64_t( _end_reason_state ) >> 16; }
+    tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_reason_state)+2, &end, 4 ); memcpy( ((char*)&_end_reason_state)+6, ((char*)&end)+4, 2 ); }
+    tracy_force_inline uint8_t Cpu() const { return uint8_t( _start_cpu & 0xFF ); }
+    tracy_force_inline void SetCpu( uint8_t cpu ) { memcpy( &_start_cpu, &cpu, 1 ); }
+    tracy_force_inline int8_t Reason() const { return int8_t( (_end_reason_state >> 8) & 0xFF ); }
+    tracy_force_inline void SetReason( int8_t reason ) { memcpy( ((char*)&_end_reason_state)+1, &reason, 1 ); }
+    tracy_force_inline int8_t State() const { return int8_t( _end_reason_state & 0xFF ); }
+    tracy_force_inline void SetState( int8_t state ) { memcpy( &_end_reason_state, &state, 1 ); }
 
     uint64_t _start_cpu;
     uint64_t _end_reason_state;
@@ -315,12 +318,12 @@ enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
 
 struct ContextSwitchCpu
 {
-    int64_t Start() const { return int64_t( _start_thread ) >> 16; }
-    void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_thread)+2, &start, 4 ); memcpy( ((char*)&_start_thread)+6, ((char*)&start)+4, 2 ); }
-    int64_t End() const { return _end; }
-    void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end = end; }
-    uint16_t Thread() const { return uint16_t( _start_thread ); }
-    void SetThread( uint16_t thread ) { memcpy( &_start_thread, &thread, 2 ); }
+    tracy_force_inline int64_t Start() const { return int64_t( _start_thread ) >> 16; }
+    tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_thread)+2, &start, 4 ); memcpy( ((char*)&_start_thread)+6, ((char*)&start)+4, 2 ); }
+    tracy_force_inline int64_t End() const { return _end; }
+    tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end = end; }
+    tracy_force_inline uint16_t Thread() const { return uint16_t( _start_thread ); }
+    tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_start_thread, &thread, 2 ); }
 
     uint64_t _start_thread;
     uint64_t _end;

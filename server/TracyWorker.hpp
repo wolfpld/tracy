@@ -89,10 +89,10 @@ public:
 #pragma pack( 1 )
     struct ZoneThreadData
     {
-        ZoneEvent* Zone() const { return (ZoneEvent*)( _zone_thread >> 16 ); }
-        void SetZone( ZoneEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &zone, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&zone)+4, 2 ); }
-        uint16_t Thread() const { return uint16_t( _zone_thread & 0xFFFF ); }
-        void SetThread( uint16_t thread ) { memcpy( &_zone_thread, &thread, 2 ); }
+        tracy_force_inline ZoneEvent* Zone() const { return (ZoneEvent*)( _zone_thread >> 16 ); }
+        tracy_force_inline void SetZone( ZoneEvent* zone ) { assert( ( uint64_t( zone ) & 0xFFFF000000000000 ) == 0 ); memcpy( ((char*)&_zone_thread)+2, &zone, 4 ); memcpy( ((char*)&_zone_thread)+6, ((char*)&zone)+4, 2 ); }
+        tracy_force_inline uint16_t Thread() const { return uint16_t( _zone_thread & 0xFFFF ); }
+        tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_zone_thread, &thread, 2 ); }
 
         uint64_t _zone_thread;
     };

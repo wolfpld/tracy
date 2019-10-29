@@ -4,6 +4,7 @@
 #include <algorithm>
 #if CPU_CAN_DO_THREADS
 #include "enkiTS/TaskScheduler_c.h"
+#include <thread>
 #endif
 #include <atomic>
 
@@ -242,7 +243,7 @@ void InitializeTest()
     ZoneScoped;
     #if CPU_CAN_DO_THREADS
     g_TS = enkiNewTaskScheduler();
-    enkiInitTaskScheduler(g_TS);
+    enkiInitTaskSchedulerNumThreads(g_TS, std::max<int>( 2, std::thread::hardware_concurrency() - 2));
     #endif
 }
 

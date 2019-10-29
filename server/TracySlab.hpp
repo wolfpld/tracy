@@ -44,7 +44,7 @@ public:
     }
 
     template<typename T>
-    T* AllocInit()
+    tracy_force_inline T* AllocInit()
     {
         const auto size = sizeof( T );
         assert( size <= BlockSize );
@@ -59,7 +59,7 @@ public:
     }
 
     template<typename T>
-    T* AllocInit( size_t sz )
+    tracy_force_inline T* AllocInit( size_t sz )
     {
         const auto size = sizeof( T ) * sz;
         assert( size <= BlockSize );

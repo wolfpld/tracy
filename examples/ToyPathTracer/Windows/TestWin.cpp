@@ -199,6 +199,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ LPWSTR,
 #endif // #if DO_COMPUTE_GPU
 
 
+    static int framesLeft = 10;
+
     // Main message loop
     MSG msg = { 0 };
     while (msg.message != WM_QUIT)
@@ -211,6 +213,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE, _In_ LPWSTR,
         else
         {
             RenderFrame();
+            if( --framesLeft == 0 ) break;
         }
     }
 

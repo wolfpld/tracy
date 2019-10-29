@@ -54,6 +54,7 @@ v0.6 (xxxx-xx-xx)
 - Annotations can be now added to the timeline.
 - Server now performs network data retrieval and decompression on a dedicated
   thread.
+- Added examples of Tracy integration.
 
 v0.5 (2019-08-10)
 -----------------

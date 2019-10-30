@@ -2106,9 +2106,9 @@ void View::DrawZones()
                 for( auto& td : v->threadData )
                 {
                     assert( !td.second.timeline.empty() );
-                    if( td.second.timeline.front()->gpuStart >= 0 )
+                    if( td.second.timeline.front()->GpuStart() >= 0 )
                     {
-                        const auto begin = td.second.timeline.front()->gpuStart;
+                        const auto begin = td.second.timeline.front()->GpuStart();
                         const auto drift = GpuDrift( v );
                         if( !singleThread ) offset += sstep;
                         const auto partDepth = DispatchGpuZoneLevel( td.second.timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, v->thread, yMin, yMax, begin, drift );
@@ -2176,7 +2176,7 @@ void View::DrawZones()
                         int64_t t1 = std::numeric_limits<int64_t>::min();
                         for( auto& td : v->threadData )
                         {
-                            const auto _t0 = td.second.timeline.front()->gpuStart;
+                            const auto _t0 = td.second.timeline.front()->GpuStart();
                             if( _t0 >= 0 )
                             {
                                 // FIXME
@@ -2241,7 +2241,7 @@ void View::DrawZones()
                         int64_t t0 = std::numeric_limits<int64_t>::max();
                         for( auto& td : v->threadData )
                         {
-                            const auto _t0 = td.second.timeline.front()->gpuStart;
+                            const auto _t0 = td.second.timeline.front()->GpuStart();
                             if( _t0 >= 0 )
                             {
                                 t0 = std::min( t0, _t0 );
@@ -3318,10 +3318,10 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->GpuEnd(), begin, drift ) < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), std::max<int64_t>( 0, m_vd.zvEnd + resolution ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuStart, begin, drift ) < (uint64_t)r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), std::max<int64_t>( 0, m_vd.zvEnd + resolution ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->GpuStart(), begin, drift ) < (uint64_t)r; } );
     if( it == zitend ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
@@ -3339,7 +3339,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         const auto color = GetZoneColor( ev );
         auto end = m_worker.GetZoneEnd( ev );
         if( end == std::numeric_limits<int64_t>::max() ) break;
-        const auto start = AdjustGpuTime( ev.gpuStart, begin, drift );
+        const auto start = AdjustGpuTime( ev.GpuStart(), begin, drift );
         end = AdjustGpuTime( end, begin, drift );
         const auto zsz = std::max( ( end - start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
@@ -3352,7 +3352,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             for(;;)
             {
                 const auto prevIt = it;
-                it = std::lower_bound( it, zitend, std::max<int64_t>( 0, nextTime ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
+                it = std::lower_bound( it, zitend, std::max<int64_t>( 0, nextTime ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->GpuEnd(), begin, drift ) < (uint64_t)r; } );
                 if( it == prevIt ) ++it;
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;
@@ -3409,9 +3409,9 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         }
         else
         {
-            if( ev.child >= 0 )
+            if( ev.Child() >= 0 )
             {
-                const auto d = DispatchGpuZoneLevel( m_worker.GetGpuChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, thread, yMin, yMax, begin, drift );
+                const auto d = DispatchGpuZoneLevel( m_worker.GetGpuChildren( ev.Child() ), hover, pxns, nspx, wpos, _offset, depth, thread, yMin, yMax, begin, drift );
                 if( d > maxdepth ) maxdepth = d;
             }
 
@@ -3433,7 +3433,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
                     DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), 0xFFFFFFFF, zoneName );
                     ImGui::PopClipRect();
                 }
-                else if( ev.gpuStart == ev.gpuEnd )
+                else if( ev.GpuStart() == ev.GpuEnd() )
                 {
                     DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), 0xFFFFFFFF, zoneName );
                 }
@@ -3478,10 +3478,10 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->GpuEnd(), begin, drift ) < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), std::max<int64_t>( 0, m_vd.zvEnd + resolution ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuStart, begin, drift ) < (uint64_t)r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), std::max<int64_t>( 0, m_vd.zvEnd + resolution ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->GpuStart(), begin, drift ) < (uint64_t)r; } );
     if( it == zitend ) return depth;
 
     depth++;
@@ -3492,7 +3492,7 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         auto& ev = **it;
         auto end = m_worker.GetZoneEnd( ev );
         if( end == std::numeric_limits<int64_t>::max() ) break;
-        const auto start = AdjustGpuTime( ev.gpuStart, begin, drift );
+        const auto start = AdjustGpuTime( ev.GpuStart(), begin, drift );
         end = AdjustGpuTime( end, begin, drift );
         const auto zsz = std::max( ( end - start ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
@@ -3502,7 +3502,7 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             for(;;)
             {
                 const auto prevIt = it;
-                it = std::lower_bound( it, zitend, nextTime, [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
+                it = std::lower_bound( it, zitend, nextTime, [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->GpuEnd(), begin, drift ) < (uint64_t)r; } );
                 if( it == prevIt ) ++it;
                 if( it == zitend ) break;
                 const auto nend = AdjustGpuTime( m_worker.GetZoneEnd( **it ), begin, drift );
@@ -3514,9 +3514,9 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         }
         else
         {
-            if( ev.child >= 0 )
+            if( ev.Child() >= 0 )
             {
-                const auto d = DispatchGpuZoneLevel( m_worker.GetGpuChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, thread, yMin, yMax, begin, drift );
+                const auto d = DispatchGpuZoneLevel( m_worker.GetGpuChildren( ev.Child() ), hover, pxns, nspx, wpos, _offset, depth, thread, yMin, yMax, begin, drift );
                 if( d > maxdepth ) maxdepth = d;
             }
             ++it;
@@ -6489,9 +6489,9 @@ void View::DrawGpuInfoWindow()
     ImGui::BeginChild( "##gpuinfo" );
 
     const auto end = m_worker.GetZoneEnd( ev );
-    const auto ztime = end - ev.gpuStart;
+    const auto ztime = end - ev.GpuStart();
     const auto selftime = GetZoneSelfTime( ev );
-    TextFocused( "Time from start of program:", TimeToString( ev.gpuStart ) );
+    TextFocused( "Time from start of program:", TimeToString( ev.GpuStart() ) );
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );
     if( ztime != 0 )
@@ -6503,15 +6503,15 @@ void View::DrawGpuInfoWindow()
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
     {
-        TextFocused( "Delay to execution:", TimeToString( ev.gpuStart - ev.CpuStart() ) );
+        TextFocused( "Delay to execution:", TimeToString( ev.GpuStart() - ev.CpuStart() ) );
     }
     else
     {
         const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
         assert( td != ctx->threadData.end() );
-        const auto begin = td->second.timeline.front()->gpuStart;
+        const auto begin = td->second.timeline.front()->GpuStart();
         const auto drift = GpuDrift( ctx );
-        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.CpuStart() ) );
+        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
     }
 
     ImGui::Separator();
@@ -6542,7 +6542,7 @@ void View::DrawGpuInfoWindow()
         {
             ImGui::SameLine();
         }
-        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->gpuStart ), fileName, srcloc.line );
+        ImGui::TextDisabled( "(%s) %s:%i", TimeToString( m_worker.GetZoneEnd( *v ) - v->GpuStart() ), fileName, srcloc.line );
         ImGui::PopID();
         if( ImGui::IsItemClicked( 1 ) )
         {
@@ -6570,9 +6570,9 @@ void View::DrawGpuInfoWindow()
         }
     } );
 
-    if( ev.child >= 0 )
+    if( ev.Child() >= 0 )
     {
-        const auto& children = m_worker.GetGpuChildren( ev.child );
+        const auto& children = m_worker.GetGpuChildren( ev.Child() );
         bool expand = ImGui::TreeNode( "Child zones" );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( children.size(), true ) );
@@ -6599,7 +6599,7 @@ void View::DrawGpuInfoWindow()
                 {
                     const auto& child = *children[i];
                     const auto cend = m_worker.GetZoneEnd( child );
-                    const auto ct = cend - child.gpuStart;
+                    const auto ct = cend - child.GpuStart();
                     const auto srcloc = child.SrcLoc();
                     ctime += ct;
 
@@ -6689,7 +6689,7 @@ void View::DrawGpuInfoWindow()
                         {
                             const auto& child = *children[cgr.v[i]];
                             const auto cend = m_worker.GetZoneEnd( child );
-                            const auto ct = cend - child.gpuStart;
+                            const auto ct = cend - child.GpuStart();
                             ctt[i] = ct;
                             cti[i] = uint32_t( i );
                         }
@@ -6739,7 +6739,7 @@ void View::DrawGpuInfoWindow()
                 {
                     const auto& child = *children[i];
                     const auto cend = m_worker.GetZoneEnd( child );
-                    const auto ct = cend - child.gpuStart;
+                    const auto ct = cend - child.GpuStart();
                     ctime += ct;
                     ctt[i] = ct;
                     cti[i] = uint32_t( i );
@@ -6902,7 +6902,7 @@ void View::DrawOptions()
                         size_t lastidx = 0;
                         for( size_t j=timeline.size()-1; j > 0; j-- )
                         {
-                            if( timeline[j]->gpuEnd >= 0 )
+                            if( timeline[j]->GpuEnd() >= 0 )
                             {
                                 lastidx = j;
                                 break;
@@ -6921,7 +6921,7 @@ void View::DrawOptions()
                             const auto p1 = dist( gen );
                             if( p0 != p1 )
                             {
-                                slopes[idx++] = float( 1.0 - double( timeline[p1]->gpuStart - timeline[p0]->gpuStart ) / double( timeline[p1]->CpuStart() - timeline[p0]->CpuStart() ) );
+                                slopes[idx++] = float( 1.0 - double( timeline[p1]->GpuStart() - timeline[p0]->GpuStart() ) / double( timeline[p1]->CpuStart() - timeline[p0]->CpuStart() ) );
                             }
                         }
                         while( idx < NumSlopes );
@@ -12903,19 +12903,19 @@ void View::ZoomToZone( const ZoneEvent& ev )
 void View::ZoomToZone( const GpuEvent& ev )
 {
     const auto end = m_worker.GetZoneEnd( ev );
-    if( end - ev.gpuStart <= 0 ) return;
+    if( end - ev.GpuStart() <= 0 ) return;
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
     {
-        ZoomToRange( ev.gpuStart, end );
+        ZoomToRange( ev.GpuStart(), end );
     }
     else
     {
         const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
         assert( td != ctx->threadData.end() );
-        const auto begin = td->second.timeline.front()->gpuStart;
+        const auto begin = td->second.timeline.front()->GpuStart();
         const auto drift = GpuDrift( ctx );
-        ZoomToRange( AdjustGpuTime( ev.gpuStart, begin, drift ), AdjustGpuTime( end, begin, drift ) );
+        ZoomToRange( AdjustGpuTime( ev.GpuStart(), begin, drift ), AdjustGpuTime( end, begin, drift ) );
     }
 }
 
@@ -13096,7 +13096,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
     const auto tid = GetZoneThread( ev );
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
     const auto end = m_worker.GetZoneEnd( ev );
-    const auto ztime = end - ev.gpuStart;
+    const auto ztime = end - ev.GpuStart();
     const auto selftime = GetZoneSelfTime( ev );
 
     ImGui::BeginTooltip();
@@ -13121,15 +13121,15 @@ void View::ZoneTooltip( const GpuEvent& ev )
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
     {
-        TextFocused( "Delay to execution:", TimeToString( ev.gpuStart - ev.CpuStart() ) );
+        TextFocused( "Delay to execution:", TimeToString( ev.GpuStart() - ev.CpuStart() ) );
     }
     else
     {
         const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
         assert( td != ctx->threadData.end() );
-        const auto begin = td->second.timeline.front()->gpuStart;
+        const auto begin = td->second.timeline.front()->GpuStart();
         const auto drift = GpuDrift( ctx );
-        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.gpuStart, begin, drift ) - ev.CpuStart() ) );
+        TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
     }
 
     ImGui::EndTooltip();
@@ -13248,13 +13248,13 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
             if( timeline->empty() ) continue;
             for(;;)
             {
-                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->gpuStart; } );
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.GpuStart(), [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->GpuStart(); } );
                 if( it != timeline->begin() ) --it;
-                if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
+                if( zone.GpuEnd() >= 0 && (*it)->GpuStart() > zone.GpuEnd() ) break;
                 if( *it == &zone ) return parent;
-                if( (*it)->child < 0 ) break;
+                if( (*it)->Child() < 0 ) break;
                 parent = *it;
-                timeline = &m_worker.GetGpuChildren( parent->child );
+                timeline = &m_worker.GetGpuChildren( parent->Child() );
             }
         }
     }
@@ -13297,12 +13297,12 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
             if( timeline->empty() ) continue;
             for(;;)
             {
-                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->gpuStart; } );
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.GpuStart(), [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->GpuStart(); } );
                 if( it != timeline->begin() ) --it;
-                if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
+                if( zone.GpuEnd() >= 0 && (*it)->GpuStart() > zone.GpuEnd() ) break;
                 if( *it == &zone ) return ctx->thread;
-                if( (*it)->child < 0 ) break;
-                timeline = &m_worker.GetGpuChildren( (*it)->child );
+                if( (*it)->Child() < 0 ) break;
+                timeline = &m_worker.GetGpuChildren( (*it)->Child() );
             }
         }
         return 0;
@@ -13323,12 +13323,12 @@ const GpuCtxData* View::GetZoneCtx( const GpuEvent& zone ) const
             if( timeline->empty() ) continue;
             for(;;)
             {
-                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->gpuStart; } );
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.GpuStart(), [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->GpuStart(); } );
                 if( it != timeline->begin() ) --it;
-                if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
+                if( zone.GpuEnd() >= 0 && (*it)->GpuStart() > zone.GpuEnd() ) break;
                 if( *it == &zone ) return ctx;
-                if( (*it)->child < 0 ) break;
-                timeline = &m_worker.GetGpuChildren( (*it)->child );
+                if( (*it)->Child() < 0 ) break;
+                timeline = &m_worker.GetGpuChildren( (*it)->Child() );
             }
         }
     }
@@ -13476,11 +13476,11 @@ int64_t View::GetZoneChildTime( const ZoneEvent& zone )
 int64_t View::GetZoneChildTime( const GpuEvent& zone )
 {
     int64_t time = 0;
-    if( zone.child >= 0 )
+    if( zone.Child() >= 0 )
     {
-        for( auto& v : m_worker.GetGpuChildren( zone.child ) )
+        for( auto& v : m_worker.GetGpuChildren( zone.Child() ) )
         {
-            const auto childSpan = std::max( int64_t( 0 ), v->gpuEnd - v->gpuStart );
+            const auto childSpan = std::max( int64_t( 0 ), v->GpuEnd() - v->GpuStart() );
             time += childSpan;
         }
     }
@@ -13519,9 +13519,9 @@ int64_t View::GetZoneSelfTime( const GpuEvent& zone )
 {
     if( m_cache.gpuSelfTime.first == &zone ) return m_cache.gpuSelfTime.second;
     if( m_cache.gpuSelfTime2.first == &zone ) return m_cache.gpuSelfTime2.second;
-    const auto ztime = m_worker.GetZoneEnd( zone ) - zone.gpuStart;
+    const auto ztime = m_worker.GetZoneEnd( zone ) - zone.GpuStart();
     const auto selftime = ztime - GetZoneChildTime( zone );
-    if( zone.gpuEnd >= 0 )
+    if( zone.GpuEnd() >= 0 )
     {
         m_cache.gpuSelfTime2 = m_cache.gpuSelfTime;
         m_cache.gpuSelfTime = std::make_pair( &zone, selftime );

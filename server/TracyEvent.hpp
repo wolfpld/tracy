@@ -222,17 +222,22 @@ struct GpuEvent
     tracy_force_inline void SetCpuStart( int64_t cpuStart ) { assert( cpuStart < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuStart_srcloc)+2, &cpuStart, 4 ); memcpy( ((char*)&_cpuStart_srcloc)+6, ((char*)&cpuStart)+4, 2 ); }
     tracy_force_inline int64_t CpuEnd() const { return int64_t( _cpuEnd_thread ) >> 16; }
     tracy_force_inline void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuEnd_thread)+2, &cpuEnd, 4 ); memcpy( ((char*)&_cpuEnd_thread)+6, ((char*)&cpuEnd)+4, 2 ); }
+    tracy_force_inline int64_t GpuStart() const { return int64_t( _gpuStart_child1 ) >> 16; }
+    tracy_force_inline void SetGpuStart( int64_t gpuStart ) { assert( gpuStart < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_gpuStart_child1)+2, &gpuStart, 4 ); memcpy( ((char*)&_gpuStart_child1)+6, ((char*)&gpuStart)+4, 2 ); }
+    tracy_force_inline int64_t GpuEnd() const { return int64_t( _gpuEnd_child2 ) >> 16; }
+    tracy_force_inline void SetGpuEnd( int64_t gpuEnd ) { assert( gpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_gpuEnd_child2)+2, &gpuEnd, 4 ); memcpy( ((char*)&_gpuEnd_child2)+6, ((char*)&gpuEnd)+4, 2 ); }
     tracy_force_inline int16_t SrcLoc() const { return int16_t( _cpuStart_srcloc & 0xFFFF ); }
     tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_cpuStart_srcloc, &srcloc, 2 ); }
     tracy_force_inline uint16_t Thread() const { return uint16_t( _cpuEnd_thread & 0xFFFF ); }
     tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_cpuEnd_thread, &thread, 2 ); }
+    tracy_force_inline int32_t Child() const { return int32_t( uint32_t( _gpuStart_child1 & 0xFFFF ) | ( uint32_t( _gpuEnd_child2 & 0xFFFF ) << 16 ) ); }
+    tracy_force_inline void SetChild( int32_t child ) { memcpy( &_gpuStart_child1, &child, 2 ); memcpy( &_gpuEnd_child2, ((char*)&child)+2, 2 ); }
 
     uint64_t _cpuStart_srcloc;
     uint64_t _cpuEnd_thread;
-    int64_t gpuStart;
-    int64_t gpuEnd;
+    uint64_t _gpuStart_child1;
+    uint64_t _gpuEnd_child2;
     Int24 callstack;
-    int32_t child;
 };
 
 enum { GpuEventSize = sizeof( GpuEvent ) };

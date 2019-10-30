@@ -2106,7 +2106,7 @@ void View::DrawZones()
                 for( auto& td : v->threadData )
                 {
                     assert( !td.second.timeline.empty() );
-                    if( td.second.timeline.front()->gpuStart != std::numeric_limits<int64_t>::max() )
+                    if( td.second.timeline.front()->gpuStart >= 0 )
                     {
                         const auto begin = td.second.timeline.front()->gpuStart;
                         const auto drift = GpuDrift( v );
@@ -2177,7 +2177,7 @@ void View::DrawZones()
                         for( auto& td : v->threadData )
                         {
                             const auto _t0 = td.second.timeline.front()->gpuStart;
-                            if( _t0 != std::numeric_limits<int64_t>::max() )
+                            if( _t0 >= 0 )
                             {
                                 // FIXME
                                 t0 = std::min( t0, _t0 );
@@ -2242,7 +2242,7 @@ void View::DrawZones()
                         for( auto& td : v->threadData )
                         {
                             const auto _t0 = td.second.timeline.front()->gpuStart;
-                            if( _t0 != std::numeric_limits<int64_t>::max() )
+                            if( _t0 >= 0 )
                             {
                                 t0 = std::min( t0, _t0 );
                             }
@@ -3308,7 +3308,7 @@ int View::DispatchGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double
 
 static int64_t AdjustGpuTime( int64_t time, int64_t begin, int drift )
 {
-    if( time < 0 || time == std::numeric_limits<int64_t>::max() ) return time;
+    if( time < 0 ) return time;
     const auto t = time - begin;
     return time + t / 1000000000 * drift;
 }
@@ -3321,7 +3321,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [begin, drift] ( const auto& l, const auto& r ) { return AdjustGpuTime( l->gpuStart, begin, drift ) < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), std::max<int64_t>( 0, m_vd.zvEnd + resolution ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuStart, begin, drift ) < (uint64_t)r; } );
     if( it == zitend ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
@@ -3352,13 +3352,13 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             for(;;)
             {
                 const auto prevIt = it;
-                it = std::lower_bound( it, zitend, nextTime, [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
+                it = std::lower_bound( it, zitend, std::max<int64_t>( 0, nextTime ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
                 if( it == prevIt ) ++it;
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;
                 const auto nend = AdjustGpuTime( m_worker.GetZoneEnd( **it ), begin, drift );
                 const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
-                if( pxnext - px1 >= MinVisSize * 2 ) break;
+                if( pxnext < 0 || pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
                 rend = nend;
                 nextTime = nend + nspx;
@@ -3481,7 +3481,7 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuEnd, begin, drift ) < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [begin, drift] ( const auto& l, const auto& r ) { return AdjustGpuTime( l->gpuStart, begin, drift ) < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), std::max<int64_t>( 0, m_vd.zvEnd + resolution ), [begin, drift] ( const auto& l, const auto& r ) { return (uint64_t)AdjustGpuTime( l->gpuStart, begin, drift ) < (uint64_t)r; } );
     if( it == zitend ) return depth;
 
     depth++;
@@ -13248,7 +13248,7 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
             if( timeline->empty() ) continue;
             for(;;)
             {
-                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->gpuStart; } );
                 if( it != timeline->begin() ) --it;
                 if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
                 if( *it == &zone ) return parent;
@@ -13297,7 +13297,7 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
             if( timeline->empty() ) continue;
             for(;;)
             {
-                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->gpuStart; } );
                 if( it != timeline->begin() ) --it;
                 if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
                 if( *it == &zone ) return ctx->thread;
@@ -13323,7 +13323,7 @@ const GpuCtxData* View::GetZoneCtx( const GpuEvent& zone ) const
             if( timeline->empty() ) continue;
             for(;;)
             {
-                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return l < r->gpuStart; } );
+                auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.gpuStart, [] ( const auto& l, const auto& r ) { return (uint64_t)l < (uint64_t)r->gpuStart; } );
                 if( it != timeline->begin() ) --it;
                 if( zone.gpuEnd >= 0 && (*it)->gpuStart > zone.gpuEnd ) break;
                 if( *it == &zone ) return ctx;

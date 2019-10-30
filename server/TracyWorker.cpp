@@ -2060,7 +2060,7 @@ int64_t Worker::GetZoneEnd( const GpuEvent& ev )
     for(;;)
     {
         if( ptr->gpuEnd >= 0 ) return ptr->gpuEnd;
-        if( ptr->child < 0 ) return ptr->gpuStart;
+        if( ptr->child < 0 ) return ptr->gpuStart >= 0 ? ptr->gpuStart : m_data.lastTime;
         ptr = GetGpuChildren( ptr->child ).back();
     }
 }
@@ -4198,7 +4198,7 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     const auto time = TscTime( cpuTime - m_data.baseTime );
     zone->SetCpuStart( time );
     zone->SetCpuEnd( -1 );
-    zone->gpuStart = std::numeric_limits<int64_t>::max();
+    zone->gpuStart = -1;
     zone->gpuEnd = -1;
     zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
     zone->callstack.SetVal( 0 );
@@ -4315,7 +4315,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     assert( zone );
     ctx->query[ev.queryId] = nullptr;
 
-    if( zone->gpuStart == std::numeric_limits<int64_t>::max() )
+    if( zone->gpuStart < 0 )
     {
         const auto time = ctx->timeDiff + gpuTime;
         zone->gpuStart = time;

@@ -4856,14 +4856,15 @@ void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_
     }
     else
     {
-        zone->SetChild( m_data.zoneChildren.size() );
+        const auto child = m_data.zoneChildren.size();
+        zone->SetChild( child );
         // Put placeholder to have proper size of zone children in nested calls
         m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         // Real data buffer. Can't use placeholder, as the vector can be reallocated
         // and the buffer address will change, but the reference won't.
         Vector<ZoneEvent*> tmp;
         ReadTimeline( f, tmp, thread, sz, refTime );
-        m_data.zoneChildren[zone->Child()] = std::move( tmp );
+        m_data.zoneChildren[child] = std::move( tmp );
     }
 }
 
@@ -4877,11 +4878,12 @@ void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     }
     else
     {
-        zone->SetChild( m_data.zoneChildren.size() );
+        const auto child = m_data.zoneChildren.size();
+        zone->SetChild( child );
         m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         Vector<ZoneEvent*> tmp;
         ReadTimelinePre042( f, tmp, thread, sz, fileVer );
-        m_data.zoneChildren[zone->Child()] = std::move( tmp );
+        m_data.zoneChildren[child] = std::move( tmp );
     }
 }
 
@@ -4895,11 +4897,12 @@ void Worker::ReadTimelinePre059( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     }
     else
     {
-        zone->SetChild( m_data.zoneChildren.size() );
+        const auto child = m_data.zoneChildren.size();
+        zone->SetChild( child );
         m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
         Vector<ZoneEvent*> tmp;
         ReadTimelinePre059( f, tmp, thread, sz, refTime, fileVer );
-        m_data.zoneChildren[zone->Child()] = std::move( tmp );
+        m_data.zoneChildren[child] = std::move( tmp );
     }
 }
 
@@ -4913,11 +4916,12 @@ void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_
     }
     else
     {
-        zone->SetChild( m_data.gpuChildren.size() );
+        const auto child = m_data.gpuChildren.size();
+        zone->SetChild( child );
         m_data.gpuChildren.push_back( Vector<GpuEvent*>() );
         Vector<GpuEvent*> tmp;
         ReadTimeline( f, tmp, sz, refTime, refGpuTime );
-        m_data.gpuChildren[zone->Child()] = std::move( tmp );
+        m_data.gpuChildren[child] = std::move( tmp );
     }
 }
 
@@ -4931,11 +4935,12 @@ void Worker::ReadTimelinePre059( FileRead& f, GpuEvent* zone, int64_t& refTime, 
     }
     else
     {
-        zone->SetChild( m_data.gpuChildren.size() );
+        const auto child = m_data.gpuChildren.size();
+        zone->SetChild( child );
         m_data.gpuChildren.push_back( Vector<GpuEvent*>() );
         Vector<GpuEvent*> tmp;
         ReadTimelinePre059( f, tmp, sz, refTime, refGpuTime, fileVer );
-        m_data.gpuChildren[zone->Child()] = std::move( tmp );
+        m_data.gpuChildren[child] = std::move( tmp );
     }
 }
 

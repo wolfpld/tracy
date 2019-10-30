@@ -3308,7 +3308,7 @@ int View::DispatchGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double
 
 static int64_t AdjustGpuTime( int64_t time, int64_t begin, int drift )
 {
-    if( time == -1 || time == std::numeric_limits<int64_t>::max() ) return time;
+    if( time < 0 || time == std::numeric_limits<int64_t>::max() ) return time;
     const auto t = time - begin;
     return time + t / 1000000000 * drift;
 }

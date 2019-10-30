@@ -2928,7 +2928,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             const auto px0 = std::max( ( ev.Start() - m_vd.zvStart ) * pxns, -10.0 );
             auto px1 = ( end - m_vd.zvStart ) * pxns;
             auto rend = end;
-            auto nextTime = end + MinCtxSize;
+            auto nextTime = end + MinCtxSize * nspx;
             for(;;)
             {
                 const auto prevIt = it;
@@ -3056,7 +3056,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             const auto px0 = ( ev.Start() - m_vd.zvStart ) * pxns;
             auto px1 = ( end - m_vd.zvStart ) * pxns;
             auto rend = end;
-            auto nextTime = end + MinVisSize;
+            auto nextTime = end + MinVisSize * nspx;
             for(;;)
             {
                 const auto prevIt = it;
@@ -3262,7 +3262,7 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         if( zsz < MinVisSize )
         {
             auto px1 = ( end - m_vd.zvStart ) * pxns;
-            auto nextTime = end + MinVisSize;
+            auto nextTime = end + MinVisSize * nspx;
             for(;;)
             {
                 const auto prevIt = it;
@@ -3348,7 +3348,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
             const auto px0 = ( start - m_vd.zvStart ) * pxns;
             auto px1 = ( end - m_vd.zvStart ) * pxns;
             auto rend = end;
-            auto nextTime = end + MinVisSize;
+            auto nextTime = end + MinVisSize * nspx;
             for(;;)
             {
                 const auto prevIt = it;
@@ -3498,7 +3498,7 @@ int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
         if( zsz < MinVisSize )
         {
             auto px1 = ( end - m_vd.zvStart ) * pxns;
-            auto nextTime = end;
+            auto nextTime = end + MinVisSize * nspx;
             for(;;)
             {
                 const auto prevIt = it;
@@ -4494,7 +4494,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 const auto px0 = ( start - m_vd.zvStart ) * pxns;
                                 auto px1 = ( end - m_vd.zvStart ) * pxns;
                                 auto rend = end;
-                                auto nextTime = end + MinVisSize;
+                                auto nextTime = end + MinVisSize * nspx;
                                 for(;;)
                                 {
                                     const auto prevIt = it;

@@ -4297,8 +4297,9 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     auto ctx = m_gpuCtxMap[ev.context];
     assert( ctx );
 
-    const int64_t t = m_refTimeGpu + ev.gpuTime;
-    m_refTimeGpu = t;
+    const int64_t tref = m_refTimeGpu + ev.gpuTime;
+    m_refTimeGpu = tref;
+    const int64_t t = std::max<int64_t>( 0, tref );
 
     int64_t gpuTime;
     if( ctx->period == 1.f )

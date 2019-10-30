@@ -5194,7 +5194,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     ImGui::Separator();
                     TextDisabledUnformatted( "Address:" );
                     ImGui::SameLine();
-                    ImGui::Text( "0x%" PRIx64, ev->ptr );
+                    ImGui::Text( "0x%" PRIx64, ev->Ptr() );
                     TextFocused( "Appeared at", TimeToString( ev->TimeAlloc() ) );
                     if( change > 0 )
                     {
@@ -5861,7 +5861,7 @@ void View::DrawZoneInfoWindow()
                 {
                     if( ait->ThreadAlloc() == thread )
                     {
-                        cAlloc += ait->size;
+                        cAlloc += ait->Size();
                         nAlloc++;
                     }
                     ait++;
@@ -5870,7 +5870,7 @@ void View::DrawZoneInfoWindow()
                 {
                     if( mem.data[*fit].ThreadFree() == thread )
                     {
-                        cFree += mem.data[*fit].size;
+                        cFree += mem.data[*fit].Size();
                         nFree++;
                     }
                     fit++;
@@ -5929,7 +5929,7 @@ void View::DrawZoneInfoWindow()
                         pdqsort_branchless( v.begin(), v.end(), [] ( const auto& l, const auto& r ) { return l->TimeAlloc() < r->TimeAlloc(); } );
 
                         ListMemData<decltype( v.begin() )>( v.begin(), v.end(), []( auto& v ) {
-                            ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+                            ImGui::Text( "0x%" PRIx64, (*v)->Ptr() );
                         }, nullptr, m_allocTimeRelativeToZone ? ev.Start() : -1 );
                         ImGui::TreePop();
                     }
@@ -10343,13 +10343,13 @@ void View::DrawMemoryAllocWindow()
     }
 
     char buf[64];
-    sprintf( buf, "0x%" PRIx64, ev.ptr );
+    sprintf( buf, "0x%" PRIx64, ev.Ptr() );
     TextFocused( "Address:", buf );
-    TextFocused( "Size:", MemSizeToString( ev.size ) );
-    if( ev.size >= 10000ll )
+    TextFocused( "Size:", MemSizeToString( ev.Size() ) );
+    if( ev.Size() >= 10000ll )
     {
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s bytes)", RealToString( ev.size, true ) );
+        ImGui::TextDisabled( "(%s bytes)", RealToString( ev.Size(), true ) );
     }
     ImGui::Separator();
     TextFocused( "Appeared at", TimeToString( ev.TimeAlloc() ) );
@@ -10360,10 +10360,10 @@ void View::DrawMemoryAllocWindow()
     ImGui::TextDisabled( "(%s)", RealToString( tidAlloc, true ) );
     ImGui::SameLine();
     SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
-    if( ev.csAlloc.Val() != 0 )
+    if( ev.CsAlloc() != 0 )
     {
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-        SmallCallstackButton( "Call stack", ev.csAlloc.Val(), idx );
+        SmallCallstackButton( "Call stack", ev.CsAlloc(), idx );
     }
     if( ev.TimeFree() < 0 )
     {
@@ -11818,7 +11818,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             m_memoryAllocHoverWait = 2;
         }
         ImGui::NextColumn();
-        ImGui::TextUnformatted( MemSizeToString( v->size ) );
+        ImGui::TextUnformatted( MemSizeToString( v->Size() ) );
         ImGui::NextColumn();
         ImGui::PushID( idx++ );
         if( ImGui::Selectable( TimeToString( v->TimeAlloc() - startTime ) ) )
@@ -11941,13 +11941,13 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
             }
         }
         ImGui::NextColumn();
-        if( v->csAlloc.Val() == 0 )
+        if( v->CsAlloc() == 0 )
         {
             TextDisabledUnformatted( "[alloc]" );
         }
         else
         {
-            SmallCallstackButton( "alloc", v->csAlloc.Val(), idx );
+            SmallCallstackButton( "alloc", v->CsAlloc(), idx );
         }
         ImGui::SameLine();
         ImGui::Spacing();
@@ -12002,19 +12002,19 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
     {
         for( auto& ev : mem.data )
         {
-            if( ev.csAlloc.Val() == 0 ) continue;
+            if( ev.CsAlloc() == 0 ) continue;
             if( ev.TimeAlloc() >= zvMid ) continue;
             if( onlyActive && ev.TimeFree() >= 0 && ev.TimeFree() < zvMid ) continue;
 
-            auto it = pathSum.find( ev.csAlloc.Val() );
+            auto it = pathSum.find( ev.CsAlloc() );
             if( it == pathSum.end() )
             {
-                pathSum.emplace( ev.csAlloc.Val(), PathData { 1, ev.size } );
+                pathSum.emplace( ev.CsAlloc(), PathData { 1, ev.Size() } );
             }
             else
             {
                 it->second.cnt++;
-                it->second.mem += ev.size;
+                it->second.mem += ev.Size();
             }
         }
     }
@@ -12022,18 +12022,18 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
     {
         for( auto& ev : mem.data )
         {
-            if( ev.csAlloc.Val() == 0 ) continue;
+            if( ev.CsAlloc() == 0 ) continue;
             if( onlyActive && ev.TimeFree() >= 0 ) continue;
 
-            auto it = pathSum.find( ev.csAlloc.Val() );
+            auto it = pathSum.find( ev.CsAlloc() );
             if( it == pathSum.end() )
             {
-                pathSum.emplace( ev.csAlloc.Val(), PathData { 1, ev.size } );
+                pathSum.emplace( ev.CsAlloc(), PathData { 1, ev.Size() } );
             }
             else
             {
                 it->second.cnt++;
-                it->second.mem += ev.size;
+                it->second.mem += ev.Size();
             }
         }
     }
@@ -12254,8 +12254,8 @@ std::vector<MemoryPage> View::GetMemoryPages() const
         {
             auto& alloc = *it;
 
-            const auto a0 = alloc.ptr - memlow;
-            const auto a1 = a0 + alloc.size;
+            const auto a0 = alloc.Ptr() - memlow;
+            const auto a1 = a0 + alloc.Size();
             int8_t val = alloc.TimeFree() < 0 ?
                 int8_t( std::max( int64_t( 1 ), 127 - ( ( zvMid - alloc.TimeAlloc() ) >> 24 ) ) ) :
                 ( alloc.TimeFree() > zvMid ?
@@ -12273,8 +12273,8 @@ std::vector<MemoryPage> View::GetMemoryPages() const
         const auto lastTime = m_worker.GetLastTime();
         for( auto& alloc : mem.data )
         {
-            const auto a0 = alloc.ptr - memlow;
-            const auto a1 = a0 + alloc.size;
+            const auto a0 = alloc.Ptr() - memlow;
+            const auto a1 = a0 + alloc.Size();
             const int8_t val = alloc.TimeFree() < 0 ?
                 int8_t( std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.TimeAlloc() ) ) >> 24 ) ) ) :
                 int8_t( -std::max( int64_t( 1 ), 127 - ( ( lastTime - std::min( lastTime, alloc.TimeFree() ) ) >> 24 ) ) );
@@ -12375,7 +12375,7 @@ void View::DrawMemory()
             {
                 for( auto& v : mem.data )
                 {
-                    if( v.ptr <= m_memInfo.ptrFind && v.ptr + v.size > m_memInfo.ptrFind && v.TimeAlloc() < zvMid )
+                    if( v.Ptr() <= m_memInfo.ptrFind && v.Ptr() + v.Size() > m_memInfo.ptrFind && v.TimeAlloc() < zvMid )
                     {
                         match.emplace_back( &v );
                     }
@@ -12385,7 +12385,7 @@ void View::DrawMemory()
             {
                 for( auto& v : mem.data )
                 {
-                    if( v.ptr <= m_memInfo.ptrFind && v.ptr + v.size > m_memInfo.ptrFind )
+                    if( v.Ptr() <= m_memInfo.ptrFind && v.Ptr() + v.Size() > m_memInfo.ptrFind )
                     {
                         match.emplace_back( &v );
                     }
@@ -12400,13 +12400,13 @@ void View::DrawMemory()
             {
                 ListMemData<decltype( match.begin() )>( match.begin(), match.end(), [this]( auto& it ) {
                     auto& v = *it;
-                    if( v->ptr == m_memInfo.ptrFind )
+                    if( v->Ptr() == m_memInfo.ptrFind )
                     {
                         ImGui::Text( "0x%" PRIx64, m_memInfo.ptrFind );
                     }
                     else
                     {
-                        ImGui::Text( "0x%" PRIx64 "+%" PRIu64, v->ptr, m_memInfo.ptrFind - v->ptr );
+                        ImGui::Text( "0x%" PRIx64 "+%" PRIu64, v->Ptr(), m_memInfo.ptrFind - v->Ptr() );
                     }
                 }, "##allocations" );
             }
@@ -12431,7 +12431,7 @@ void View::DrawMemory()
                 if( v.TimeAlloc() < zvMid && ( v.TimeFree() > zvMid || v.TimeFree() < 0 ) )
                 {
                     items.emplace_back( &v );
-                    total += v.size;
+                    total += v.Size();
                 }
             }
         }
@@ -12456,7 +12456,7 @@ void View::DrawMemory()
         if( !items.empty() )
         {
             ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto& v ) {
-                ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+                ImGui::Text( "0x%" PRIx64, (*v)->Ptr() );
             }, "##activeMem" );
         }
         else
@@ -12649,7 +12649,7 @@ void View::DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree,
             m_memInfo.allocList.clear();
             for( size_t i=0; i<sz; i++ )
             {
-                if( v.callstacks.find( mem[i].csAlloc.Val() ) != v.callstacks.end() )
+                if( v.callstacks.find( mem[i].CsAlloc() ) != v.callstacks.end() )
                 {
                     m_memInfo.allocList.emplace_back( i );
                 }
@@ -12722,7 +12722,7 @@ void View::DrawAllocList()
     ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size(), true ) );
     ListMemData<decltype( data.begin() )>( data.begin(), data.end(), []( auto& v ) {
-        ImGui::Text( "0x%" PRIx64, (*v)->ptr );
+        ImGui::Text( "0x%" PRIx64, (*v)->Ptr() );
     }, "##allocations" );
     ImGui::End();
 }

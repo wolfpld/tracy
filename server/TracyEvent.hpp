@@ -215,6 +215,12 @@ static_assert( std::is_standard_layout<GpuEvent>::value, "GpuEvent is not standa
 
 struct MemEvent
 {
+    tracy_force_inline uint64_t Ptr() const { return uint64_t( int64_t( _ptr_csalloc1 ) >> 8 ); }
+    tracy_force_inline void SetPtr( uint64_t ptr ) { memcpy( ((char*)&_ptr_csalloc1)+1, &ptr, 4 ); memcpy( ((char*)&_ptr_csalloc1)+5, ((char*)&ptr)+4, 2 ); memcpy( ((char*)&_ptr_csalloc1)+7, ((char*)&ptr)+6, 1 ); }
+    tracy_force_inline uint64_t Size() const { return _size_csalloc2 >> 16; }
+    tracy_force_inline void SetSize( uint64_t size ) { assert( size < ( 1ull << 47 ) ); memcpy( ((char*)&_size_csalloc2)+2, &size, 4 ); memcpy( ((char*)&_size_csalloc2)+6, ((char*)&size)+4, 2 ); }
+    tracy_force_inline uint32_t CsAlloc() const { return uint8_t( _ptr_csalloc1 ) | ( uint16_t( _size_csalloc2 ) << 8 ); }
+    tracy_force_inline void SetCsAlloc( uint32_t csAlloc ) { memcpy( &_ptr_csalloc1, &csAlloc, 1 ); memcpy( &_size_csalloc2, ((char*)&csAlloc)+1, 2 ); }
     tracy_force_inline int64_t TimeAlloc() const { return int64_t( _time_thread_alloc ) >> 16; }
     tracy_force_inline void SetTimeAlloc( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_thread_alloc)+2, &time, 4 ); memcpy( ((char*)&_time_thread_alloc)+6, ((char*)&time)+4, 2 ); }
     tracy_force_inline int64_t TimeFree() const { return int64_t( _time_thread_free ) >> 16; }
@@ -224,9 +230,8 @@ struct MemEvent
     tracy_force_inline uint16_t ThreadFree() const { return uint16_t( _time_thread_free ); }
     tracy_force_inline void SetThreadFree( uint16_t thread ) { memcpy( &_time_thread_free, &thread, 2 ); }
 
-    uint64_t ptr;
-    uint64_t size;
-    Int24 csAlloc;
+    uint64_t _ptr_csalloc1;
+    uint64_t _size_csalloc2;
     Int24 csFree;
     uint64_t _time_thread_alloc;
     uint64_t _time_thread_free;

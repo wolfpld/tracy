@@ -2855,7 +2855,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         {
             const bool migration = pit->Cpu() != ev.Cpu();
             const auto px0 = std::max( { ( pit->End() - m_vd.zvStart ) * pxns, -10.0, minpx } );
-            const auto pxw = ( ev.wakeup - m_vd.zvStart ) * pxns;
+            const auto pxw = ( ev.WakeupVal() - m_vd.zvStart ) * pxns;
             const auto px1 = std::min( ( ev.Start() - m_vd.zvStart ) * pxns, w + 10.0 );
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
             if( m_vd.darkenContextSwitches )
@@ -2863,7 +2863,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 draw->AddRectFilled( wpos + ImVec2( px0, round( offset + ty * 0.5 ) ), wpos + ImVec2( px1, endOffset ), 0x661C2321 );
             }
             draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( std::min( pxw, w+10.0 ), round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
-            if( ev.wakeup != ev.Start() )
+            if( ev.WakeupVal() != ev.Start() )
             {
                 draw->AddLine( wpos + ImVec2( std::max( pxw, 10.0 ), round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), 0xFF2280A0, 2 );
             }
@@ -2874,7 +2874,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 {
                     ImGui::BeginTooltip();
                     TextFocused( "Thread is", migration ? "migrating CPUs" : "waiting" );
-                    TextFocused( "Waiting time:", TimeToString( ev.wakeup - pit->End() ) );
+                    TextFocused( "Waiting time:", TimeToString( ev.WakeupVal() - pit->End() ) );
                     if( migration )
                     {
                         TextFocused( "CPU:", RealToString( pit->Cpu(), true ) );
@@ -2902,18 +2902,18 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
 
                     if( ImGui::IsMouseClicked( 2 ) )
                     {
-                        ZoomToRange( pit->End(), ev.wakeup );
+                        ZoomToRange( pit->End(), ev.WakeupVal() );
                     }
                 }
-                else if( ev.wakeup != ev.Start() && ImGui::IsMouseHoveringRect( wpos + ImVec2( pxw, offset ), wpos + ImVec2( px1, offset + ty ) ) )
+                else if( ev.WakeupVal() != ev.Start() && ImGui::IsMouseHoveringRect( wpos + ImVec2( pxw, offset ), wpos + ImVec2( px1, offset + ty ) ) )
                 {
                     ImGui::BeginTooltip();
                     TextFocused( "Thread is", "waking up" );
-                    TextFocused( "Scheduling delay:", TimeToString( ev.Start() - ev.wakeup ) );
+                    TextFocused( "Scheduling delay:", TimeToString( ev.Start() - ev.WakeupVal() ) );
                     TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
                     if( ImGui::IsMouseClicked( 2 ) )
                     {
-                        ZoomToRange( pit->End(), ev.wakeup );
+                        ZoomToRange( pit->End(), ev.WakeupVal() );
                     }
                     ImGui::EndTooltip();
                 }
@@ -5751,7 +5751,7 @@ void View::DrawZoneInfoWindow()
                         const auto cpu0 = bit->Cpu();
                         ++bit;
                         const auto cstart = bit->Start();
-                        const auto cwakeup = bit->wakeup;
+                        const auto cwakeup = bit->WakeupVal();
                         const auto cpu1 = bit->Cpu();
 
                         if( ImGui::Selectable( TimeToString( cend - adjust ) ) )

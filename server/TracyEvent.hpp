@@ -108,6 +108,32 @@ private:
     uint8_t m_val[3];
 };
 
+class Int48
+{
+public:
+    tracy_force_inline Int48() { memset( m_val, 0, sizeof( m_val ) ); }
+    tracy_force_inline Int48( int64_t val )
+    {
+        SetVal( val );
+    }
+
+    tracy_force_inline void SetVal( int64_t val )
+    {
+        memcpy( m_val, &val, 6 );
+    }
+
+    tracy_force_inline int64_t Val() const
+    {
+        int64_t val = 0;
+        memcpy( ((char*)&val)+2, m_val, 6 );
+        val >>= 16;
+        return val;
+    }
+
+private:
+    uint8_t m_val[6];
+};
+
 
 struct SourceLocation
 {
@@ -312,10 +338,12 @@ struct ContextSwitchData
     tracy_force_inline void SetReason( int8_t reason ) { memcpy( ((char*)&_end_reason_state)+1, &reason, 1 ); }
     tracy_force_inline int8_t State() const { return int8_t( _end_reason_state & 0xFF ); }
     tracy_force_inline void SetState( int8_t state ) { memcpy( &_end_reason_state, &state, 1 ); }
+    tracy_force_inline int64_t WakeupVal() const { return _wakeup.Val(); }
+    tracy_force_inline void SetWakeup( int64_t wakeup ) { assert( wakeup < (int64_t)( 1ull << 47 ) ); _wakeup.SetVal( wakeup ); }
 
     uint64_t _start_cpu;
     uint64_t _end_reason_state;
-    int64_t wakeup;
+    Int48 _wakeup;
 };
 
 enum { ContextSwitchDataSize = sizeof( ContextSwitchData ) };
@@ -325,13 +353,13 @@ struct ContextSwitchCpu
 {
     tracy_force_inline int64_t Start() const { return int64_t( _start_thread ) >> 16; }
     tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_thread)+2, &start, 4 ); memcpy( ((char*)&_start_thread)+6, ((char*)&start)+4, 2 ); }
-    tracy_force_inline int64_t End() const { return _end; }
-    tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end = end; }
+    tracy_force_inline int64_t End() const { return _end.Val(); }
+    tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end.SetVal( end ); }
     tracy_force_inline uint16_t Thread() const { return uint16_t( _start_thread ); }
     tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_start_thread, &thread, 2 ); }
 
     uint64_t _start_thread;
-    uint64_t _end;
+    Int48 _end;
 };
 
 enum { ContextSwitchCpuSize = sizeof( ContextSwitchCpu ) };

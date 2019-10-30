@@ -1631,7 +1631,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 auto ptr = data->v.data();
                 for( uint64_t j=0; j<csz; j++ )
                 {
-                    ptr->wakeup = ReadTimeOffset( f, refTime );
+                    ptr->SetWakeup( ReadTimeOffset( f, refTime ) );
                     ptr->SetStart( ReadTimeOffset( f, refTime ) );
                     int64_t diff;
                     f.Read( diff );
@@ -4656,7 +4656,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
                 migration = data.back().Cpu() != ev.cpu;
             }
             item = &data.push_next();
-            item->wakeup = time;
+            item->SetWakeup( time );
         }
         item->SetStart( time );
         item->SetEnd( -1 );
@@ -4699,7 +4699,7 @@ void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
     auto& data = it->second->v;
     if( !data.empty() && data.back().End() < 0 ) return;        // wakeup of a running thread
     auto& item = data.push_next();
-    item.wakeup = time;
+    item.SetWakeup( time );
     item.SetStart( time );
     item.SetEnd( -1 );
     item.SetCpu( 0 );
@@ -5638,7 +5638,7 @@ void Worker::Write( FileWrite& f )
         int64_t refTime = 0;
         for( auto& cs : ctx->second->v )
         {
-            WriteTimeOffset( f, refTime, cs.wakeup );
+            WriteTimeOffset( f, refTime, cs.WakeupVal() );
             WriteTimeOffset( f, refTime, cs.Start() );
             WriteTimeOffset( f, refTime, cs.End() );
             uint8_t cpu = cs.Cpu();

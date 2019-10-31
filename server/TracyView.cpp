@@ -7601,6 +7601,11 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
         return ev.Zone()->text.Active() ? ev.Zone()->text.Idx() : std::numeric_limits<uint64_t>::max();
     case FindZone::GroupBy::Callstack:
         return ev.Zone()->callstack.Val();
+    case FindZone::GroupBy::Parent:
+    {
+        const auto parent = GetZoneParent( *ev.Zone(), m_worker.DecompressThread( ev.Thread() ) );
+        return parent ? uint64_t( parent->SrcLoc() ) : 0;
+    }
     case FindZone::GroupBy::NoGrouping:
         return 0;
     default:
@@ -8561,6 +8566,8 @@ void View::DrawFindZone()
         ImGui::SameLine();
         groupChanged |= ImGui::RadioButton( "Call stacks", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Callstack );
         ImGui::SameLine();
+        groupChanged |= ImGui::RadioButton( "Parent", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Parent );
+        ImGui::SameLine();
         groupChanged |= ImGui::RadioButton( "No grouping", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::NoGrouping );
         if( groupChanged )
         {
@@ -8635,6 +8642,19 @@ void View::DrawFindZone()
             case FindZone::GroupBy::Callstack:
                 group = &m_findZone.groups[ev.Zone()->callstack.Val()];
                 break;
+            case FindZone::GroupBy::Parent:
+            {
+                const auto parent = GetZoneParent( *ev.Zone(), m_worker.DecompressThread( ev.Thread() ) );
+                if( parent )
+                {
+                    group = &m_findZone.groups[uint64_t( parent->SrcLoc() )];
+                }
+                else
+                {
+                    group = &m_findZone.groups[0];
+                }
+                break;
+            }
             case FindZone::GroupBy::NoGrouping:
                 group = &m_findZone.groups[0];
                 break;
@@ -8826,6 +8846,17 @@ void View::DrawFindZone()
                         auto& callstack = m_worker.GetCallstack( v->first );
                         auto& frameData = *m_worker.GetCallstackFrame( *callstack.begin() );
                         hdrString = m_worker.GetString( frameData.data[frameData.size-1].name );
+                    }
+                    break;
+                case FindZone::GroupBy::Parent:
+                    if( v->first == 0 )
+                    {
+                        hdrString = "<no parent>";
+                    }
+                    else
+                    {
+                        auto srcloc = m_worker.GetSourceLocation( int16_t( v->first ) );
+                        hdrString = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
                     }
                     break;
                 case FindZone::GroupBy::NoGrouping:

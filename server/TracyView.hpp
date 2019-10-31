@@ -191,6 +191,7 @@ private:
 
     int GetZoneDepth( const ZoneEvent& zone, uint64_t tid ) const;
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
+    const ZoneEvent* GetZoneParent( const ZoneEvent& zone, uint64_t tid ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
     const ThreadData* GetZoneThreadData( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const ZoneEvent& zone ) const;

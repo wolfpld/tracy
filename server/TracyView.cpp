@@ -13237,6 +13237,25 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
     return nullptr;
 }
 
+const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone, uint64_t tid ) const
+{
+    const auto thread = m_worker.GetThreadData( tid );
+    const ZoneEvent* parent = nullptr;
+    const Vector<ZoneEvent*>* timeline = &thread->timeline;
+    if( timeline->empty() ) return nullptr;
+    for(;;)
+    {
+        auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
+        if( it != timeline->begin() ) --it;
+        if( zone.End() >= 0 && (*it)->Start() > zone.End() ) break;
+        if( *it == &zone ) return parent;
+        if( (*it)->Child() < 0 ) break;
+        parent = *it;
+        timeline = &m_worker.GetZoneChildren( parent->Child() );
+    }
+    return nullptr;
+}
+
 const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
 {
     for( const auto& ctx : m_worker.GetGpuData() )

@@ -1740,6 +1740,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             std::function<void(const Vector<ZoneEvent*>&, uint16_t)> ProcessTimeline;
             ProcessTimeline = [this, &ProcessTimeline] ( const Vector<ZoneEvent*>& vec, uint16_t thread )
             {
+                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 for( auto& zone : vec )
                 {
                     ReadTimelineUpdateStatistics( zone, thread );
@@ -1752,6 +1753,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
             for( auto& t : m_data.threads )
             {
+                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 if( !t->timeline.empty() )
                 {
                     // Don't touch thread compression cache in a thread.
@@ -1760,6 +1762,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             }
             for( auto& v : m_data.sourceLocationZones )
             {
+                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 auto& zones = v.second.zones;
 #ifdef MY_LIBCPP_SUCKS
                 pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
@@ -1771,6 +1774,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 std::lock_guard<std::shared_mutex> lock( m_data.lock );
                 m_data.sourceLocationZonesReady = true;
             }
+            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
             if( reconstructMemAllocPlot ) ReconstructMemAllocPlot();
             m_backgroundDone.store( true, std::memory_order_relaxed );
         } );

@@ -55,6 +55,8 @@ v0.6 (xxxx-xx-xx)
 - Server now performs network data retrieval and decompression on a dedicated
   thread.
 - Added examples of Tracy integration.
+- Allow grouping of zones in the find zone menu by zone parent or with no
+  grouping.
 
 v0.5 (2019-08-10)
 -----------------

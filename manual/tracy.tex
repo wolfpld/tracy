@@ -1928,7 +1928,8 @@ The \emph{found zones} section displays the individual zones grouped according t
 \begin{itemize}
 \item \emph{Thread} -- In this mode you can see which threads were executing the zone.
 \item \emph{User text} -- Splits the zones according to the custom user text (see section~\ref{markingzones}).
-\item \emph{Call stacks} -- Zones are grouped by the originating call stack (see section~\ref{collectingcallstacks}). Note that two call stacks may sometimes appear identical, even if they not, due to an easy to overlook difference in the source line numbers.
+\item \emph{Call stacks} -- Zones are grouped by the originating call stack (see section~\ref{collectingcallstacks}). Note that two call stacks may sometimes appear identical, even if they are not, due to an easy to overlook difference in the source line numbers.
+\item \emph{Parent} -- Groups zones according to the parent zone. This mode relies on the zone hierarchy, and \emph{not} on the call stack information.
 \item \emph{No grouping} -- Disables zone grouping. May be useful in cases when you just want to see zones in order as they appeared.
 \end{itemize}
 

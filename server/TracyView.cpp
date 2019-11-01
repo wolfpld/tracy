@@ -10073,20 +10073,40 @@ void View::DrawStatistics()
         return;
     }
 
+    m_statisticsFilter.Draw( "Filter zones", 200 );
+    ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_CLOCK " Show self times", &m_statSelf );
+    if( ImGui::Button( ICON_FA_BAN " Clear" ) )
 #else
-    ImGui::Checkbox( "Show self times", &m_statSelf );
+    if( ImGui::Button( "Clear" ) )
 #endif
+    {
+        m_statisticsFilter.Clear();
+    }
 
+    const auto filterActive = m_statisticsFilter.IsActive();
     auto& slz = m_worker.GetSourceLocationZones();
     Vector<decltype(slz.begin())> srcloc;
     srcloc.reserve( slz.size() );
+    uint32_t slzcnt = 0;
     for( auto it = slz.begin(); it != slz.end(); ++it )
     {
         if( it->second.total != 0 )
         {
-            srcloc.push_back_no_space_check( it );
+            slzcnt++;
+            if( !filterActive )
+            {
+                srcloc.push_back_no_space_check( it );
+            }
+            else
+            {
+                auto& sl = m_worker.GetSourceLocation( it->first );
+                auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
+                if( m_statisticsFilter.PassFilter( name ) )
+                {
+                    srcloc.push_back_no_space_check( it );
+                }
+            }
         }
     }
 
@@ -10120,10 +10140,25 @@ void View::DrawStatistics()
         break;
     }
 
-    TextFocused( "Recorded source locations:", RealToString( srcloc.size(), true ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextFocused( "Total zone count:", RealToString( slzcnt, true ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextFocused( "Visible zones:", RealToString( srcloc.size(), true ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_CLOCK " Show self times", &m_statSelf );
+#else
+    ImGui::Checkbox( "Show self times", &m_statSelf );
+#endif
 
     ImGui::Separator();
-    ImGui::BeginChild( "##messages" );
+    ImGui::BeginChild( "##statistics" );
     const auto w = ImGui::GetWindowWidth();
     static bool widthSet = false;
     ImGui::Columns( 5 );

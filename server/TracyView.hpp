@@ -287,6 +287,7 @@ private:
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
     ImGuiTextFilter m_messageFilter;
+    ImGuiTextFilter m_statisticsFilter;
     int m_visibleMessages = 0;
     bool m_disconnectIssued = false;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;

@@ -1818,7 +1818,12 @@ In this window you can set various trace-related options. The timeline view migh
 \item \emph{\faSignature{} Draw CPU usage graph} -- You can disable drawing of the CPU usage graph here.
 \item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
 \item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed.
-\item \emph{\faPalette{} Dynamic thread colors} -- Zones with no user-set color may be colored according to the thread they belong to and depth level. A constant color (blue) will be used if this option is disabled.
+\item \emph{\faPalette{} Zone colors} -- Zones with no user-set color may be colored according to the following schemes:
+\begin{itemize}
+\item \emph{Disabled} -- A constant color (blue) will be used.
+\item \emph{Thread dynamic} -- Zones are colored according to a thread they belong to and depth level.
+\item \emph{Source location dynamic} -- Zone color is determined by source location and depth level.
+\end{itemize}
 \item The \emph{Namespaces} drop-down controls the display behavior of long zone names:
 \begin{itemize}
 \item \emph{Full} -- Zone names are always fully displayed (e.g.\ \texttt{std::sort}).

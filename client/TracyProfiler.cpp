@@ -1625,7 +1625,6 @@ static void FreeAssociatedMemory( const QueueItem& item )
         break;
 #endif
     default:
-        assert( false );
         break;
     }
 }

@@ -4569,7 +4569,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
 
                                 uint32_t color, highlight;
-                                if( m_vd.dynamicColors )
+                                if( m_vd.dynamicColors != 0 )
                                 {
                                     color = local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
                                 }
@@ -6942,14 +6942,23 @@ void View::DrawOptions()
 #else
     ImGui::Checkbox( "Draw CPU zones", &val );
 #endif
+    ImGui::Indent();
     m_vd.drawZones = val;
-    val = m_vd.dynamicColors;
+    int ival = m_vd.dynamicColors;
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_PALETTE " Dynamic thread colors", &val );
+    ImGui::TextUnformatted( ICON_FA_PALETTE " Zone colors" );
 #else
-    ImGui::Checkbox( "Dynamic thread colors", &val );
+    ImGui::TextUnformatted( "Zone colors" );
 #endif
-    m_vd.dynamicColors = val;
+    ImGui::Indent();
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+    ImGui::RadioButton( "Static", &ival, 0 );
+    ImGui::RadioButton( "Thread dynamic", &ival, 1 );
+    ImGui::RadioButton( "Source location dynamic", &ival, 2 );
+    ImGui::PopStyleVar();
+    ImGui::Unindent();
+    ImGui::Unindent();
+    m_vd.dynamicColors = ival;
     int ns = (int)m_namespace;
     ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None\0" );
     m_namespace = (Namespace)ns;
@@ -12804,7 +12813,7 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
 
 uint32_t View::GetThreadColor( uint64_t thread, int depth )
 {
-    if( !m_vd.dynamicColors ) return 0xFFCC5555;
+    if( m_vd.dynamicColors == 0 ) return 0xFFCC5555;
 
     const uint8_t h = ( thread * 11400714819323198485ull ) & 0xFF;
     const uint8_t s = 96;
@@ -12834,10 +12843,18 @@ uint32_t View::GetThreadColor( uint64_t thread, int depth )
 
 uint32_t View::GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
 {
-    const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
+    const auto sl = ev.SrcLoc();
+    const auto& srcloc = m_worker.GetSourceLocation( sl );
     const auto color = srcloc.color;
     if( color != 0 ) return color | 0xFF000000;
-    return GetThreadColor( thread, depth );
+    if( m_vd.dynamicColors == 2 )
+    {
+        return GetThreadColor( sl, depth );
+    }
+    else
+    {
+        return GetThreadColor( thread, depth );
+    }
 }
 
 uint32_t View::GetZoneColor( const GpuEvent& ev )

@@ -25,7 +25,7 @@ struct ViewData
     uint8_t darkenContextSwitches = true;
     uint8_t drawCpuData = true;
     uint8_t drawCpuUsageGraph = true;
-    uint8_t dynamicColors = true;
+    uint8_t dynamicColors = 1;
 };
 
 struct Annotation

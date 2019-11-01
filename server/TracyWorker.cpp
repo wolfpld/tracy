@@ -541,7 +541,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         uint64_t ptr;
         f.Read( ptr );
         SourceLocation srcloc;
-        f.Read( srcloc );
+        f.Read( &srcloc, sizeof( SourceLocationBase ) );
+        srcloc.namehash = 0;
         m_data.sourceLocation.emplace( ptr, srcloc );
     }
 
@@ -555,7 +556,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto srcloc = m_slab.Alloc<SourceLocation>();
-        f.Read( srcloc, sizeof( *srcloc ) );
+        f.Read( srcloc, sizeof( SourceLocationBase ) );
+        srcloc->namehash = 0;
         m_data.sourceLocationPayload[i] = srcloc;
         m_data.sourceLocationPayloadMap.emplace( srcloc, int16_t( i ) );
     }
@@ -5424,7 +5426,7 @@ void Worker::Write( FileWrite& f )
     for( auto& v : m_data.sourceLocation )
     {
         f.Write( &v.first, sizeof( v.first ) );
-        f.Write( &v.second, sizeof( v.second ) );
+        f.Write( &v.second, sizeof( SourceLocationBase ) );
     }
 
     sz = m_data.sourceLocationExpand.size();

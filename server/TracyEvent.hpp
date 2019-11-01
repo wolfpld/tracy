@@ -135,13 +135,18 @@ private:
 };
 
 
-struct SourceLocation
+struct SourceLocationBase
 {
     StringRef name;
     StringRef function;
     StringRef file;
     uint32_t line;
     uint32_t color;
+};
+
+struct SourceLocation : public SourceLocationBase
+{
+    mutable uint32_t namehash;
 };
 
 enum { SourceLocationSize = sizeof( SourceLocation ) };
@@ -510,7 +515,7 @@ struct SourceLocationHasher
 {
     size_t operator()( const SourceLocation* ptr ) const
     {
-        return charutil::hash( (const char*)ptr, sizeof( SourceLocation ) );
+        return charutil::hash( (const char*)ptr, sizeof( SourceLocationBase ) );
     }
     typedef tracy::power_of_two_hash_policy hash_policy;
 };
@@ -519,7 +524,7 @@ struct SourceLocationComparator
 {
     bool operator()( const SourceLocation* lhs, const SourceLocation* rhs ) const
     {
-        return memcmp( lhs, rhs, sizeof( SourceLocation ) ) == 0;
+        return memcmp( lhs, rhs, sizeof( SourceLocationBase ) ) == 0;
     }
 };
 

@@ -12849,7 +12849,22 @@ uint32_t View::GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth 
     if( color != 0 ) return color | 0xFF000000;
     if( m_vd.dynamicColors == 2 )
     {
-        return GetThreadColor( sl, depth );
+        auto namehash = srcloc.namehash;
+        if( namehash == 0 && srcloc.function.active )
+        {
+            const auto f = m_worker.GetString( srcloc.function );
+            namehash = charutil::hash( f );
+            if( namehash == 0 ) namehash++;
+            srcloc.namehash = namehash;
+        }
+        if( namehash == 0 )
+        {
+            return GetThreadColor( sl, depth );
+        }
+        else
+        {
+            return GetThreadColor( namehash, depth );
+        }
     }
     else
     {

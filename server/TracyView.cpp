@@ -6957,11 +6957,22 @@ void View::DrawOptions()
     ImGui::RadioButton( "Source location dynamic", &ival, 2 );
     ImGui::PopStyleVar();
     ImGui::Unindent();
-    ImGui::Unindent();
     m_vd.dynamicColors = ival;
-    int ns = (int)m_namespace;
-    ImGui::Combo( "Namespaces", &ns, "Full\0Shortened\0None\0" );
-    m_namespace = (Namespace)ns;
+    ival = (int)m_namespace;
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::TextUnformatted( ICON_FA_BOX_OPEN " Namespaces" );
+#else
+    ImGui::TextUnformatted( "Namespaces" );
+#endif
+    ImGui::Indent();
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+    ImGui::RadioButton( "Full", &ival, 0 );
+    ImGui::RadioButton( "Shortened", &ival, 1 );
+    ImGui::RadioButton( "None", &ival, 2 );
+    ImGui::PopStyleVar();
+    ImGui::Unindent();
+    m_namespace = (Namespace)ival;
+    ImGui::Unindent();
 
     if( !m_worker.GetLockMap().empty() )
     {

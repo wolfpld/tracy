@@ -552,19 +552,19 @@ private:
     StringLocation StoreString( char* str, size_t sz );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
-    tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime );
+    tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int32_t& childIdx );
     tracy_force_inline void ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer );
-    tracy_force_inline void ReadTimelinePre059( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer );
-    tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime );
-    tracy_force_inline void ReadTimelinePre059( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int fileVer );
+    tracy_force_inline void ReadTimelinePre0510( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer );
+    tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx );
+    tracy_force_inline void ReadTimelinePre0510( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int fileVer );
 
     tracy_force_inline void ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread );
 
-    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime );
+    void ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int32_t& childIdx );
     void ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer );
-    void ReadTimelinePre059( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer );
-    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime );
-    void ReadTimelinePre059( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer );
+    void ReadTimelinePre0510( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer );
+    void ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx );
+    void ReadTimelinePre0510( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer );
 
     void WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t& refTime );
     void WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t& refTime, int64_t& refGpuTime );

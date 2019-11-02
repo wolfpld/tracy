@@ -10197,9 +10197,10 @@ void View::DrawStatistics()
     for( auto& v : srcloc )
     {
         ImGui::PushID( v->first );
-
         auto& srcloc = m_worker.GetSourceLocation( v->first );
         auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+        SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+        ImGui::SameLine();
         if( ImGui::Selectable( name, m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == v->first, ImGuiSelectableFlags_SpanAllColumns ) )
         {
             m_findZone.ShowZone( v->first, name );

@@ -6277,7 +6277,6 @@ void View::DrawZoneInfoWindow()
 
     if( ev.Child() >= 0 )
     {
-        const auto& children = m_worker.GetZoneChildren( ev.Child() );
         bool expand = ImGui::TreeNode( "Time distribution" );
         if( expand )
         {

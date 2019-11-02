@@ -3004,7 +3004,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
     }
 }
 
-int View::DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
+int View::DispatchZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
@@ -3021,7 +3021,7 @@ int View::DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double p
     }
 }
 
-int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
+int View::DrawZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
@@ -3240,7 +3240,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     return maxdepth;
 }
 
-int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
+int View::SkipZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
@@ -13330,7 +13330,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
     for( const auto& thread : m_worker.GetThreadData() )
     {
         const ZoneEvent* parent = nullptr;
-        const Vector<ZoneEvent*>* timeline = &thread->timeline;
+        const Vector<short_ptr<ZoneEvent>>* timeline = &thread->timeline;
         if( timeline->empty() ) continue;
         for(;;)
         {
@@ -13350,7 +13350,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone, uint64_t tid ) cons
 {
     const auto thread = m_worker.GetThreadData( tid );
     const ZoneEvent* parent = nullptr;
-    const Vector<ZoneEvent*>* timeline = &thread->timeline;
+    const Vector<short_ptr<ZoneEvent>>* timeline = &thread->timeline;
     if( timeline->empty() ) return nullptr;
     for(;;)
     {
@@ -13393,7 +13393,7 @@ const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
 {
     for( const auto& thread : m_worker.GetThreadData() )
     {
-        const Vector<ZoneEvent*>* timeline = &thread->timeline;
+        const Vector<short_ptr<ZoneEvent>>* timeline = &thread->timeline;
         if( timeline->empty() ) continue;
         for(;;)
         {
@@ -13477,9 +13477,9 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
     }
     if( !td ) return nullptr;
 
-    const Vector<ZoneEvent*>* timeline = &td->timeline;
+    const Vector<short_ptr<ZoneEvent>>* timeline = &td->timeline;
     if( timeline->empty() ) return nullptr;
-    ZoneEvent* ret = nullptr;
+    const ZoneEvent* ret = nullptr;
     for(;;)
     {
         auto it = std::upper_bound( timeline->begin(), timeline->end(), time, [] ( const auto& l, const auto& r ) { return l < r->Start(); } );

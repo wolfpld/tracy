@@ -393,9 +393,9 @@ struct ThreadData
 {
     uint64_t id;
     uint64_t count;
-    Vector<ZoneEvent*> timeline;
-    Vector<ZoneEvent*> stack;
-    Vector<MessageData*> messages;
+    Vector<short_ptr<ZoneEvent>> timeline;
+    Vector<short_ptr<ZoneEvent>> stack;
+    Vector<short_ptr<MessageData>> messages;
     uint32_t nextZoneId;
     Vector<uint32_t> zoneIdStack;
 #ifndef TRACY_NO_STATISTICS

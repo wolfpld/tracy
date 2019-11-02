@@ -896,7 +896,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         f.Read( sz );
         m_data.zoneChildren.reserve_exact( sz, m_slab );
-        memset( m_data.zoneChildren.data(), 0, sizeof( Vector<ZoneEvent*> ) * sz );
+        memset( m_data.zoneChildren.data(), 0, sizeof( Vector<short_ptr<ZoneEvent>> ) * sz );
     }
     int32_t childIdx = 0;
     f.Read( sz );
@@ -1746,8 +1746,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         m_backgroundDone.store( false, std::memory_order_relaxed );
 #ifndef TRACY_NO_STATISTICS
         m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
-            std::function<void(const Vector<ZoneEvent*>&, uint16_t)> ProcessTimeline;
-            ProcessTimeline = [this, &ProcessTimeline] ( const Vector<ZoneEvent*>& vec, uint16_t thread )
+            std::function<void(Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
+            ProcessTimeline = [this, &ProcessTimeline] ( Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread )
             {
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 for( auto& zone : vec )
@@ -1755,7 +1755,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     ReadTimelineUpdateStatistics( zone, thread );
                     if( zone->Child() >= 0 )
                     {
-                        ProcessTimeline( GetZoneChildren( zone->Child() ), thread );
+                        ProcessTimeline( GetZoneChildrenMutable( zone->Child() ), thread );
                     }
                 }
             };
@@ -2840,11 +2840,11 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
             back->SetChild( int32_t( m_data.zoneChildren.size() ) );
             if( m_data.zoneVectorCache.empty() )
             {
-                m_data.zoneChildren.push_back( Vector<ZoneEvent*>( zone ) );
+                m_data.zoneChildren.push_back( Vector<short_ptr<ZoneEvent>>( zone ) );
             }
             else
             {
-                Vector<ZoneEvent*> vze = std::move( m_data.zoneVectorCache.back_and_pop() );
+                Vector<short_ptr<ZoneEvent>> vze = std::move( m_data.zoneVectorCache.back_and_pop() );
                 assert( !vze.empty() );
                 vze.clear();
                 vze.push_back_non_empty( zone );
@@ -3603,9 +3603,9 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         const auto sz = childVec.size();
         if( sz <= 8 * 1024 )
         {
-            Vector<ZoneEvent*> fitVec;
+            Vector<short_ptr<ZoneEvent>> fitVec;
             fitVec.reserve_exact( sz, m_slab );
-            memcpy( fitVec.data(), childVec.data(), sz * sizeof( ZoneEvent* ) );
+            memcpy( fitVec.data(), childVec.data(), sz * sizeof( short_ptr<ZoneEvent> ) );
             fitVec.swap( childVec );
             m_data.zoneVectorCache.push_back( std::move( fitVec ) );
         }
@@ -4888,8 +4888,8 @@ void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, 
     {
         const auto child = m_data.zoneChildren.size();
         zone->SetChild( child );
-        m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
-        Vector<ZoneEvent*> tmp;
+        m_data.zoneChildren.push_back( Vector<short_ptr<ZoneEvent>>() );
+        Vector<short_ptr<ZoneEvent>> tmp;
         ReadTimelinePre042( f, tmp, thread, sz, fileVer );
         m_data.zoneChildren[child] = std::move( tmp );
     }
@@ -4907,8 +4907,8 @@ void Worker::ReadTimelinePre0510( FileRead& f, ZoneEvent* zone, uint16_t thread,
     {
         const auto child = m_data.zoneChildren.size();
         zone->SetChild( child );
-        m_data.zoneChildren.push_back( Vector<ZoneEvent*>() );
-        Vector<ZoneEvent*> tmp;
+        m_data.zoneChildren.push_back( Vector<short_ptr<ZoneEvent>>() );
+        Vector<short_ptr<ZoneEvent>> tmp;
         ReadTimelinePre0510( f, tmp, thread, sz, refTime, fileVer );
         m_data.zoneChildren[child] = std::move( tmp );
     }
@@ -4989,7 +4989,7 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
 #endif
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int32_t& childIdx )
+void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int32_t& childIdx )
 {
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
@@ -5022,7 +5022,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread
     while( ++zone != zptr );
 }
 
-void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int fileVer )
+void Worker::ReadTimelinePre042( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread, uint64_t size, int fileVer )
 {
     assert( fileVer <= FileVersion( 0, 4, 1 ) );
     assert( size != 0 );
@@ -5073,7 +5073,7 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t 
     }
 }
 
-void Worker::ReadTimelinePre0510( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer )
 {
     assert( fileVer <= FileVersion( 0, 5, 9 ) );
     assert( size != 0 );
@@ -5531,7 +5531,7 @@ void Worker::Write( FileWrite& f )
         f.Write( &sz, sizeof( sz ) );
         for( auto& v : thread->messages )
         {
-            auto ptr = uint64_t( v );
+            auto ptr = uint64_t( (MessageData*)v );
             f.Write( &ptr, sizeof( ptr ) );
         }
     }
@@ -5713,7 +5713,7 @@ void Worker::Write( FileWrite& f )
     }
 }
 
-void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t& refTime )
+void Worker::WriteTimeline( FileWrite& f, const Vector<short_ptr<ZoneEvent>>& vec, int64_t& refTime )
 {
     uint64_t sz = vec.size();
     f.Write( &sz, sizeof( sz ) );

@@ -6361,7 +6361,10 @@ void View::DrawZoneInfoWindow()
                 }
                 for( auto& v : vec )
                 {
-                    ImGui::TextUnformatted( m_worker.GetZoneName( m_worker.GetSourceLocation( v->first ) ) );
+                    const auto& sl = m_worker.GetSourceLocation( v->first );
+                    SmallColorBox( GetSrcLocColor( sl, 0 ) );
+                    ImGui::SameLine();
+                    ImGui::TextUnformatted( m_worker.GetZoneName( sl ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v->second.count, true ) );
                     ImGui::NextColumn();

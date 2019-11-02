@@ -208,7 +208,7 @@ struct LockEventShared : public LockEvent
 
 struct LockEventPtr
 {
-    LockEvent* ptr;
+    short_ptr<LockEvent> ptr;
     uint8_t lockingThread;
     uint8_t lockCount;
     uint64_t waitList;

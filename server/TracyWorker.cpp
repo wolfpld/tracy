@@ -137,7 +137,7 @@ static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
     else
     {
         const auto& tl = timeline[pos-1];
-        const auto tlp = (LockEventShared*)tl.ptr;
+        const auto tlp = (const LockEventShared*)(const LockEvent*)tl.ptr;
         lockingThread = tl.lockingThread;
         lockCount = tl.lockCount;
         waitShared = tlp->waitShared;
@@ -151,7 +151,7 @@ static void UpdateLockCountSharedLockable( LockMap& lockmap, size_t pos )
     while( pos != end )
     {
         auto& tl = timeline[pos];
-        const auto tlp = (LockEventShared*)tl.ptr;
+        const auto tlp = (LockEventShared*)(LockEvent*)tl.ptr;
         const auto tbit = uint64_t( 1 ) << tlp->thread;
         switch( (LockEvent::Type)tlp->type )
         {

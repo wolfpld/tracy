@@ -3626,7 +3626,7 @@ static Vector<LockEventPtr>::const_iterator GetNextLockEvent( const Vector<LockE
 
 static Vector<LockEventPtr>::const_iterator GetNextLockEventShared( const Vector<LockEventPtr>::const_iterator& it, const Vector<LockEventPtr>::const_iterator& end, LockState& nextState, uint64_t threadBit )
 {
-    const auto itptr = (const LockEventShared*)it->ptr;
+    const auto itptr = (const LockEventShared*)(const LockEvent*)it->ptr;
     auto next = it;
     next++;
 
@@ -3635,7 +3635,7 @@ static Vector<LockEventPtr>::const_iterator GetNextLockEventShared( const Vector
     case LockState::Nothing:
         while( next < end )
         {
-            const auto ptr = (const LockEventShared*)next->ptr;
+            const auto ptr = (const LockEventShared*)(const LockEvent*)next->ptr;
             if( next->lockCount != 0 )
             {
                 const auto wait = next->waitList | ptr->waitShared;
@@ -3666,7 +3666,7 @@ static Vector<LockEventPtr>::const_iterator GetNextLockEventShared( const Vector
     case LockState::HasLock:
         while( next < end )
         {
-            const auto ptr = (const LockEventShared*)next->ptr;
+            const auto ptr = (const LockEventShared*)(const LockEvent*)next->ptr;
             if( next->lockCount == 0 && !IsThreadWaiting( ptr->sharedList, threadBit ) )
             {
                 nextState = LockState::Nothing;
@@ -3695,7 +3695,7 @@ static Vector<LockEventPtr>::const_iterator GetNextLockEventShared( const Vector
     case LockState::HasBlockingLock:
         while( next < end )
         {
-            const auto ptr = (const LockEventShared*)next->ptr;
+            const auto ptr = (const LockEventShared*)(const LockEvent*)next->ptr;
             if( next->lockCount == 0 && !IsThreadWaiting( ptr->sharedList, threadBit ) )
             {
                 nextState = LockState::Nothing;
@@ -3711,7 +3711,7 @@ static Vector<LockEventPtr>::const_iterator GetNextLockEventShared( const Vector
     case LockState::WaitLock:
         while( next < end )
         {
-            const auto ptr = (const LockEventShared*)next->ptr;
+            const auto ptr = (const LockEventShared*)(const LockEvent*)next->ptr;
             if( GetThreadBit( next->lockingThread ) == threadBit )
             {
                 const auto wait = next->waitList | ptr->waitShared;
@@ -3902,7 +3902,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
         }
         else
         {
-            auto ptr = (const LockEventShared*)vbegin->ptr;
+            auto ptr = (const LockEventShared*)(const LockEvent*)vbegin->ptr;
             if( vbegin->lockCount != 0 )
             {
                 if( vbegin->lockingThread == thread )
@@ -4177,7 +4177,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         }
                         else
                         {
-                            const auto ptr = (const LockEventShared*)vbegin->ptr;
+                            const auto ptr = (const LockEventShared*)(const LockEvent*)vbegin->ptr;
                             switch( drawState )
                             {
                             case LockState::HasLock:

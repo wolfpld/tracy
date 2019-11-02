@@ -417,8 +417,10 @@ struct GpuCtxData
     uint8_t accuracyBits;
     float period;
     flat_hash_map<uint64_t, GpuCtxThreadData, nohash<uint64_t>> threadData;
-    GpuEvent* query[64*1024];
+    short_ptr<GpuEvent> query[64*1024];
 };
+
+enum { GpuCtxDataSize = sizeof( GpuCtxData ) };
 
 struct LockMap
 {

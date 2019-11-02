@@ -9229,8 +9229,12 @@ void View::DrawCompare()
             {
                 auto& srcloc = m_worker.GetSourceLocation( v );
                 auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
+                SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+                ImGui::SameLine();
                 ImGui::PushID( idx );
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                 ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[0], idx++ );
+                ImGui::PopStyleVar();
                 ImGui::SameLine();
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_worker.GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
@@ -9244,7 +9248,9 @@ void View::DrawCompare()
                 auto& srcloc = m_compare.second->GetSourceLocation( v );
                 auto& zones = m_compare.second->GetZonesForSourceLocation( v ).zones;
                 ImGui::PushID( -1 - idx );
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                 ImGui::RadioButton( m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[1], idx++ );
+                ImGui::PopStyleVar();
                 ImGui::SameLine();
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_compare.second->GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();

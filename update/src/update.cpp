@@ -12,6 +12,12 @@
 #include "../../server/TracyVersion.hpp"
 #include "../../server/TracyWorker.hpp"
 
+#ifdef __CYGWIN__
+#  define ftello64(x) ftello(x)
+#elif defined _WIN32
+#  define ftello64(x) _ftelli64(x)
+#endif
+
 void Usage()
 {
     printf( "Usage: update [--hc|--extreme] input.tracy output.tracy\n\n" );
@@ -86,12 +92,12 @@ int main( int argc, char** argv )
 
         FILE* in = fopen( input, "rb" );
         fseek( in, 0, SEEK_END );
-        const auto inSize = ftell( in );
+        const auto inSize = ftello64( in );
         fclose( in );
 
         FILE* out = fopen( output, "rb" );
         fseek( out, 0, SEEK_END );
-        const auto outSize = ftell( out );
+        const auto outSize = ftello64( out );
         fclose( out );
 
         printf( "%s (%i.%i.%i) {%zu KB} -> %s (%i.%i.%i) {%zu KB}  %.2f%% size change\n", input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, size_t( inSize / 1024 ), output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, size_t( outSize / 1024 ), float( outSize ) / inSize * 100 );

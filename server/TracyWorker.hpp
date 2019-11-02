@@ -189,7 +189,7 @@ private:
 #endif
 
         flat_hash_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasherPOT<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
-        Vector<VarArray<CallstackFrameId>*> callstackPayload;
+        Vector<short_ptr<VarArray<CallstackFrameId>>> callstackPayload;
         flat_hash_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameMap;
         flat_hash_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revFrameMap;
 

@@ -7723,8 +7723,12 @@ void View::DrawFindZone()
             {
                 auto& srcloc = m_worker.GetSourceLocation( v );
                 auto& zones = m_worker.GetZonesForSourceLocation( v ).zones;
+                SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+                ImGui::SameLine();
                 ImGui::PushID( idx );
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                 ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_findZone.selMatch, idx++ );
+                ImGui::PopStyleVar();
                 if( m_findZoneBuzzAnim.Match( idx ) )
                 {
                     const auto time = m_findZoneBuzzAnim.Time();

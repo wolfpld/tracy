@@ -228,7 +228,7 @@ struct GpuEvent
     tracy_force_inline int64_t CpuEnd() const { return int64_t( _cpuEnd_thread ) >> 16; }
     tracy_force_inline void SetCpuEnd( int64_t cpuEnd ) { assert( cpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_cpuEnd_thread)+2, &cpuEnd, 4 ); memcpy( ((char*)&_cpuEnd_thread)+6, ((char*)&cpuEnd)+4, 2 ); }
     tracy_force_inline int64_t GpuStart() const { return int64_t( _gpuStart_child1 ) >> 16; }
-    tracy_force_inline void SetGpuStart( int64_t gpuStart ) { assert( gpuStart < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_gpuStart_child1)+2, &gpuStart, 4 ); memcpy( ((char*)&_gpuStart_child1)+6, ((char*)&gpuStart)+4, 2 ); }
+    tracy_force_inline void SetGpuStart( int64_t gpuStart ) { /*assert( gpuStart < (int64_t)( 1ull << 47 ) );*/ memcpy( ((char*)&_gpuStart_child1)+2, &gpuStart, 4 ); memcpy( ((char*)&_gpuStart_child1)+6, ((char*)&gpuStart)+4, 2 ); }
     tracy_force_inline int64_t GpuEnd() const { return int64_t( _gpuEnd_child2 ) >> 16; }
     tracy_force_inline void SetGpuEnd( int64_t gpuEnd ) { assert( gpuEnd < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_gpuEnd_child2)+2, &gpuEnd, 4 ); memcpy( ((char*)&_gpuEnd_child2)+6, ((char*)&gpuEnd)+4, 2 ); }
     tracy_force_inline int16_t SrcLoc() const { return int16_t( _cpuStart_srcloc & 0xFFFF ); }

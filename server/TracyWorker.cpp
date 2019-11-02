@@ -5446,7 +5446,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.sourceLocationPayload )
     {
-        f.Write( v, sizeof( *v ) );
+        f.Write( v, sizeof( SourceLocationBase ) );
     }
 
 #ifndef TRACY_NO_STATISTICS

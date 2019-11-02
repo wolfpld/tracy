@@ -605,7 +605,7 @@ private:
     bool m_onDemand;
     bool m_ignoreMemFreeFaults;
 
-    GpuCtxData* m_gpuCtxMap[256];
+    short_ptr<GpuCtxData> m_gpuCtxMap[256];
     flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
     uint64_t m_pendingCallstackPtr = 0;
     uint32_t m_pendingCallstackId;

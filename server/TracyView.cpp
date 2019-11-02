@@ -6129,6 +6129,8 @@ void View::DrawZoneInfoWindow()
                         auto& cev = *children[cgr.v.front()];
                         const auto txt = m_worker.GetZoneName( cev );
                         bool b = false;
+                        SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+                        ImGui::SameLine();
                         ImGui::PushID( (int)cgr.v.front() );
                         if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                         {
@@ -6147,6 +6149,8 @@ void View::DrawZoneInfoWindow()
                     }
                     else
                     {
+                        SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+                        ImGui::SameLine();
                         ImGui::PushID( cgr.srcloc );
                         expandGroup = ImGui::TreeNode( txt );
                         ImGui::PopID();
@@ -6249,6 +6253,8 @@ void View::DrawZoneInfoWindow()
                     auto& cev = *children[cti[i]];
                     const auto txt = m_worker.GetZoneName( cev );
                     bool b = false;
+                    SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( cev.SrcLoc() ), 0 ) );
+                    ImGui::SameLine();
                     ImGui::PushID( (int)i );
                     if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                     {

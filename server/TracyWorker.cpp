@@ -4665,7 +4665,7 @@ void Worker::ProcessContextSwitch( const QueueContextSwitch& ev )
         }
         else
         {
-            assert( data.empty() || (uint64_t)data.back().End() <= time );
+            assert( data.empty() || (uint64_t)data.back().End() <= (uint64_t)time );
             if( !data.empty() )
             {
                 migration = data.back().Cpu() != ev.cpu;

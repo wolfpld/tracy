@@ -10,6 +10,7 @@
 #include "../common/TracyForceInline.hpp"
 #include "TracyMemory.hpp"
 #include "TracyPopcnt.hpp"
+#include "TracyShortPtr.hpp"
 #include "TracySlab.hpp"
 
 namespace tracy
@@ -51,14 +52,14 @@ public:
         if( m_capacity != std::numeric_limits<uint8_t>::max() )
         {
             memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
-            delete[] m_ptr;
+            delete[] (T*)m_ptr;
         }
     }
 
     Vector& operator=( const Vector& ) = delete;
     tracy_force_inline Vector& operator=( Vector&& src ) noexcept
     {
-        delete[] m_ptr;
+        delete[] (T*)m_ptr;
         memcpy( this, &src, sizeof( Vector<T> ) );
         memset( &src, 0, sizeof( Vector<T> ) );
         return *this;
@@ -289,7 +290,7 @@ private:
                     ptr[i] = std::move( m_ptr[i] );
                 }
             }
-            delete[] m_ptr;
+            delete[] (T*)m_ptr;
         }
         m_ptr = ptr;
     }
@@ -304,11 +305,13 @@ private:
         return 1 << m_capacity;
     }
 
-    T* m_ptr;
+    short_ptr<T> m_ptr;
     uint32_t m_size;
     uint8_t m_capacity;
 };
 #pragma pack()
+
+enum { VectorSize = sizeof( Vector<int> ) };
 
 }
 

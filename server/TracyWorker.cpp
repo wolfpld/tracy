@@ -2303,7 +2303,7 @@ std::vector<int16_t> Worker::GetMatchingSourceLocation( const char* query, bool 
         }
         if( found )
         {
-            auto it = m_data.sourceLocationPayloadMap.find( srcloc );
+            auto it = m_data.sourceLocationPayloadMap.find( (const SourceLocation*)srcloc );
             assert( it != m_data.sourceLocationPayloadMap.end() );
             match.push_back( -int16_t( it->second + 1 ) );
         }

@@ -178,8 +178,8 @@ private:
         flat_hash_map<uint64_t, std::pair<const char*, const char*>, nohash<uint64_t>> externalNames;
 
         flat_hash_map<uint64_t, SourceLocation, nohash<uint64_t>> sourceLocation;
-        Vector<SourceLocation*> sourceLocationPayload;
-        flat_hash_map<SourceLocation*, int16_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
+        Vector<short_ptr<SourceLocation>> sourceLocationPayload;
+        flat_hash_map<const SourceLocation*, int16_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
         Vector<uint64_t> sourceLocationExpand;
 #ifndef TRACY_NO_STATISTICS
         flat_hash_map<int16_t, SourceLocationZones, nohash<int16_t>> sourceLocationZones;

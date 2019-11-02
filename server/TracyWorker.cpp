@@ -966,7 +966,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         f.Read( sz );
         m_data.gpuChildren.reserve_exact( sz, m_slab );
-        memset( m_data.zoneChildren.data(), 0, sizeof( Vector<GpuEvent*> ) * sz );
+        memset( m_data.zoneChildren.data(), 0, sizeof( Vector<short_ptr<GpuEvent>> ) * sz );
     }
     childIdx = 0;
     f.Read( sz );
@@ -4247,7 +4247,7 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
         if( back->Child() < 0 )
         {
             back->SetChild( int32_t( m_data.gpuChildren.size() ) );
-            m_data.gpuChildren.push_back( Vector<GpuEvent*>() );
+            m_data.gpuChildren.push_back( Vector<short_ptr<GpuEvent>>() );
         }
         timeline = &m_data.gpuChildren[back->Child()];
     }
@@ -4943,8 +4943,8 @@ void Worker::ReadTimelinePre0510( FileRead& f, GpuEvent* zone, int64_t& refTime,
     {
         const auto child = m_data.gpuChildren.size();
         zone->SetChild( child );
-        m_data.gpuChildren.push_back( Vector<GpuEvent*>() );
-        Vector<GpuEvent*> tmp;
+        m_data.gpuChildren.push_back( Vector<short_ptr<GpuEvent>>() );
+        Vector<short_ptr<GpuEvent>> tmp;
         ReadTimelinePre0510( f, tmp, sz, refTime, refGpuTime, fileVer );
         m_data.gpuChildren[child] = std::move( tmp );
     }
@@ -5158,7 +5158,7 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<ZoneEvent*>& vec, uint16_t
     while( ++zone != zptr );
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx )
+void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx )
 {
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
@@ -5199,7 +5199,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, i
     while( ++zone != zptr );
 }
 
-void Worker::ReadTimelinePre0510( FileRead& f, Vector<GpuEvent*>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer )
+void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<GpuEvent>>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer )
 {
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
@@ -5742,7 +5742,7 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t
     }
 }
 
-void Worker::WriteTimeline( FileWrite& f, const Vector<GpuEvent*>& vec, int64_t& refTime, int64_t& refGpuTime )
+void Worker::WriteTimeline( FileWrite& f, const Vector<short_ptr<GpuEvent>>& vec, int64_t& refTime, int64_t& refGpuTime )
 {
     uint64_t sz = vec.size();
     f.Write( &sz, sizeof( sz ) );

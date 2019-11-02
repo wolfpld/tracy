@@ -3289,7 +3289,7 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
     return maxdepth;
 }
 
-int View::DispatchGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift )
+int View::DispatchGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift )
 {
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
@@ -3313,7 +3313,7 @@ static int64_t AdjustGpuTime( int64_t time, int64_t begin, int drift )
     return time + t / 1000000000 * drift;
 }
 
-int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift )
+int View::DrawGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift )
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
@@ -3473,7 +3473,7 @@ int View::DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxn
     return maxdepth;
 }
 
-int View::SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift )
+int View::SkipGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift )
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
@@ -13372,7 +13372,7 @@ const GpuEvent* View::GetZoneParent( const GpuEvent& zone ) const
         for( const auto& td : ctx->threadData )
         {
             const GpuEvent* parent = nullptr;
-            const Vector<GpuEvent*>* timeline = &td.second.timeline;
+            const Vector<short_ptr<GpuEvent>>* timeline = &td.second.timeline;
             if( timeline->empty() ) continue;
             for(;;)
             {
@@ -13421,7 +13421,7 @@ uint64_t View::GetZoneThread( const GpuEvent& zone ) const
         for( const auto& ctx : m_worker.GetGpuData() )
         {
             assert( ctx->threadData.size() == 1 );
-            const Vector<GpuEvent*>* timeline = &ctx->threadData.begin()->second.timeline;
+            const Vector<short_ptr<GpuEvent>>* timeline = &ctx->threadData.begin()->second.timeline;
             if( timeline->empty() ) continue;
             for(;;)
             {
@@ -13447,7 +13447,7 @@ const GpuCtxData* View::GetZoneCtx( const GpuEvent& zone ) const
     {
         for( const auto& td : ctx->threadData )
         {
-            const Vector<GpuEvent*>* timeline = &td.second.timeline;
+            const Vector<short_ptr<GpuEvent>>* timeline = &td.second.timeline;
             if( timeline->empty() ) continue;
             for(;;)
             {

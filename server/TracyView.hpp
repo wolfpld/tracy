@@ -156,7 +156,7 @@ private:
     flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
     flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
     void DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, int& idx );
-    void DrawZoneList( const Vector<ZoneEvent*>& zones );
+    void DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
@@ -388,7 +388,7 @@ private:
 
         struct Group
         {
-            Vector<ZoneEvent*> zones;
+            Vector<short_ptr<ZoneEvent>> zones;
             int64_t time = 0;
         };
 

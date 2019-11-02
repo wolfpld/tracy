@@ -8915,7 +8915,7 @@ void View::DrawFindZone()
     ImGui::End();
 }
 
-void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
+void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
 {
     ImGui::Columns( 3 );
     ImGui::Separator();
@@ -8929,8 +8929,8 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
     ImGui::NextColumn();
     ImGui::Separator();
 
-    const Vector<ZoneEvent*>* zonesToIterate = &zones;
-    Vector<ZoneEvent*> sortedZones;
+    const Vector<short_ptr<ZoneEvent>>* zonesToIterate = &zones;
+    Vector<short_ptr<ZoneEvent>> sortedZones;
 
     if( m_findZone.tableSortBy != FindZone::TableSortBy::Starttime )
     {

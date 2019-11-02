@@ -12856,13 +12856,11 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
     }
 }
 
-uint32_t View::GetThreadColor( uint64_t thread, int depth )
+static uint32_t GetHsvColor( uint64_t hue, int value )
 {
-    if( m_vd.dynamicColors == 0 ) return 0xFFCC5555;
-
-    const uint8_t h = ( thread * 11400714819323198485ull ) & 0xFF;
+    const uint8_t h = ( hue * 11400714819323198485ull ) & 0xFF;
     const uint8_t s = 96;
-    const uint8_t v = std::max( 96, 170 - depth * 8 );
+    const uint8_t v = std::max( 96, 170 - value * 8 );
 
     const uint8_t reg = h / 43;
     const uint8_t rem = ( h - ( reg * 43 ) ) * 6;
@@ -12886,34 +12884,57 @@ uint32_t View::GetThreadColor( uint64_t thread, int depth )
     return 0xFF000000 | ( r << 16 ) | ( g << 8 ) | b;
 }
 
+uint32_t View::GetThreadColor( uint64_t thread, int depth )
+{
+    if( m_vd.dynamicColors == 0 ) return 0xFFCC5555;
+    return GetHsvColor( thread, depth );
+}
+
+uint32_t View::GetRawSrcLocColor( const SourceLocation& srcloc, int depth )
+{
+    auto namehash = srcloc.namehash;
+    if( namehash == 0 && srcloc.function.active )
+    {
+        const auto f = m_worker.GetString( srcloc.function );
+        namehash = charutil::hash( f );
+        if( namehash == 0 ) namehash++;
+        srcloc.namehash = namehash;
+    }
+    if( namehash == 0 )
+    {
+        return GetHsvColor( uint64_t( &srcloc ), depth );
+    }
+    else
+    {
+        return GetHsvColor( namehash, depth );
+    }
+}
+
+uint32_t View::GetSrcLocColor( const SourceLocation& srcloc, int depth )
+{
+    const auto color = srcloc.color;
+    if( color != 0 ) return color | 0xFF000000;
+    if( m_vd.dynamicColors == 0 ) return 0xFFCC5555;
+    return GetRawSrcLocColor( srcloc, depth );
+}
+
 uint32_t View::GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
 {
     const auto sl = ev.SrcLoc();
     const auto& srcloc = m_worker.GetSourceLocation( sl );
     const auto color = srcloc.color;
     if( color != 0 ) return color | 0xFF000000;
-    if( m_vd.dynamicColors == 2 )
+    switch( m_vd.dynamicColors )
     {
-        auto namehash = srcloc.namehash;
-        if( namehash == 0 && srcloc.function.active )
-        {
-            const auto f = m_worker.GetString( srcloc.function );
-            namehash = charutil::hash( f );
-            if( namehash == 0 ) namehash++;
-            srcloc.namehash = namehash;
-        }
-        if( namehash == 0 )
-        {
-            return GetThreadColor( sl, depth );
-        }
-        else
-        {
-            return GetThreadColor( namehash, depth );
-        }
-    }
-    else
-    {
-        return GetThreadColor( thread, depth );
+    case 0:
+        return 0xFFCC5555;
+    case 1:
+        return GetHsvColor( thread, depth );
+    case 2:
+        return GetRawSrcLocColor( srcloc, depth );
+    default:
+        assert( false );
+        return 0;
     }
 }
 

@@ -165,6 +165,8 @@ private:
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
     uint32_t GetThreadColor( uint64_t thread, int depth );
+    uint32_t GetSrcLocColor( const SourceLocation& srcloc, int depth );
+    uint32_t GetRawSrcLocColor( const SourceLocation& srcloc, int depth );
     uint32_t GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetZoneColor( const GpuEvent& ev );
     uint32_t GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );

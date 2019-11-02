@@ -6015,6 +6015,8 @@ void View::DrawZoneInfoWindow()
         ImGui::TextDisabled( "%i.", fidx++ );
         ImGui::SameLine();
         const auto& srcloc = m_worker.GetSourceLocation( v->SrcLoc() );
+        SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+        ImGui::SameLine();
         const auto txt = m_worker.GetZoneName( *v, srcloc );
         ImGui::PushID( idx++ );
         auto sel = ImGui::Selectable( txt, false );

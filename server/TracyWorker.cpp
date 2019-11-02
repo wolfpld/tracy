@@ -5506,7 +5506,7 @@ void Worker::Write( FileWrite& f )
         f.Write( &sz, sizeof( sz ) );
         for( auto& v : m_data.messages )
         {
-            const auto ptr = (uint64_t)v;
+            const auto ptr = (uint64_t)(MessageData*)v;
             f.Write( &ptr, sizeof( ptr ) );
             WriteTimeOffset( f, refTime, v->time );
             f.Write( &v->ref, sizeof( v->ref ) );

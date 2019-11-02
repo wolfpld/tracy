@@ -161,7 +161,7 @@ private:
         StringDiscovery<FrameData*> frames;
         FrameData* framesBase;
         Vector<GpuCtxData*> gpuData;
-        Vector<MessageData*> messages;
+        Vector<short_ptr<MessageData>> messages;
         StringDiscovery<PlotData*> plots;
         Vector<ThreadData*> threads;
         MemData memory;
@@ -326,7 +326,7 @@ public:
     std::pair<int, int> GetFrameRange( const FrameData& fd, int64_t from, int64_t to );
 
     const flat_hash_map<uint32_t, LockMap*, nohash<uint32_t>>& GetLockMap() const { return m_data.lockMap; }
-    const Vector<MessageData*>& GetMessages() const { return m_data.messages; }
+    const Vector<short_ptr<MessageData>>& GetMessages() const { return m_data.messages; }
     const Vector<GpuCtxData*>& GetGpuData() const { return m_data.gpuData; }
     const Vector<PlotData*>& GetPlots() const { return m_data.plots.Data(); }
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }

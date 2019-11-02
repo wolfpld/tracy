@@ -966,7 +966,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         f.Read( sz );
         m_data.gpuChildren.reserve_exact( sz, m_slab );
-        memset( m_data.zoneChildren.data(), 0, sizeof( Vector<short_ptr<GpuEvent>> ) * sz );
+        memset( m_data.gpuChildren.data(), 0, sizeof( Vector<short_ptr<GpuEvent>> ) * sz );
     }
     childIdx = 0;
     f.Read( sz );

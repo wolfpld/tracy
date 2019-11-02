@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "TracyCharUtil.hpp"
+#include "TracyShortPtr.hpp"
 #include "TracyVector.hpp"
 #include "tracy_flat_hash_map.hpp"
 #include "../common/TracyForceInline.hpp"
@@ -288,7 +289,7 @@ enum { CallstackFrameSize = sizeof( CallstackFrame ) };
 
 struct CallstackFrameData
 {
-    CallstackFrame* data;
+    short_ptr<CallstackFrame> data;
     uint8_t size;
 };
 

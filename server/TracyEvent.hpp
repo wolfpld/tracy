@@ -112,7 +112,7 @@ private:
 class Int48
 {
 public:
-    tracy_force_inline Int48() { memset( m_val, 0, sizeof( m_val ) ); }
+    tracy_force_inline Int48() {}
     tracy_force_inline Int48( int64_t val )
     {
         SetVal( val );

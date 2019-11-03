@@ -4812,8 +4812,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 ImGui::Text( "Plot \"%s\"", txt );
                 ImGui::Separator();
 
-                const auto first = v->data.front().time;
-                const auto last = v->data.back().time;
+                const auto first = v->data.front().time.Val();
+                const auto last = v->data.back().time.Val();
                 const auto activity = last - first;
                 const auto traceLen = m_worker.GetLastTime();
 
@@ -4829,8 +4829,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 TextFocused( "Max value:", FormatPlotValue( v->max, v->type ) );
                 TextFocused( "Data/second:", RealToString( double( v->data.size() ) / activity * 1000000000ll, true ) );
 
-                const auto it = std::lower_bound( v->data.begin(), v->data.end(), last - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time < r; } );
-                const auto tr10 = last - it->time;
+                const auto it = std::lower_bound( v->data.begin(), v->data.end(), last - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                const auto tr10 = last - it->time.Val();
                 if( tr10 != 0 )
                 {
                     TextFocused( "D/s (10s):", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ll, true ) );
@@ -4896,8 +4896,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     }
                 }
 
-                auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart - m_worker.GetDelay(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
-                auto end = std::lower_bound( it, vec.end(), m_vd.zvEnd + m_worker.GetResolution(), [] ( const auto& l, const auto& r ) { return l.time < r; } );
+                auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart - m_worker.GetDelay(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                auto end = std::lower_bound( it, vec.end(), m_vd.zvEnd + m_worker.GetResolution(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
 
                 if( end != vec.end() ) end++;
                 if( it != vec.begin() ) it--;
@@ -4915,42 +4915,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     auto tmp = it;
                     ++tmp;
                     const auto sz = end - tmp;
-#ifdef __AVX2__
-                    __m256d vmin = _mm256_set1_pd( min );
-                    __m256d vmax = vmin;
-                    const auto ssz = sz / 4;
-                    for( ptrdiff_t i=0; i<ssz; i++ )
-                    {
-                        __m256d v0 = _mm256_loadu_pd( (const double*)(tmp+0) );
-                        __m256d v1 = _mm256_loadu_pd( (const double*)(tmp+2) );
-                        __m256d v = _mm256_unpackhi_pd( v0, v1 );
-                        vmin = _mm256_min_pd( vmin, v );
-                        vmax = _mm256_max_pd( vmax, v );
-                        tmp += 4;
-                    }
-                    __m256d min0 = _mm256_shuffle_pd( vmin, vmin, 5 );
-                    __m256d max0 = _mm256_shuffle_pd( vmax, vmax, 5 );
-                    __m256d min1 = _mm256_min_pd( vmin, min0 );
-                    __m256d max1 = _mm256_max_pd( vmax, max0 );
-                    __m256d min2 = _mm256_permute4x64_pd( min1, _MM_SHUFFLE( 0, 0, 2, 2 ) );
-                    __m256d max2 = _mm256_permute4x64_pd( max1, _MM_SHUFFLE( 0, 0, 2, 2 ) );
-                    __m256d min3 = _mm256_min_pd( min1, min2 );
-                    __m256d max3 = _mm256_max_pd( max1, max2 );
-                    min = _mm256_cvtsd_f64( min3 );
-                    max = _mm256_cvtsd_f64( max3 );
-                    const auto lsz = sz % 4;
-                    for( ptrdiff_t i=0; i<lsz; i++ )
-                    {
-                        min = tmp[i].val < min ? tmp[i].val : min;
-                        max = tmp[i].val > max ? tmp[i].val : max;
-                    }
-#else
                     for( ptrdiff_t i=0; i<sz; i++ )
                     {
                         min = tmp[i].val < min ? tmp[i].val : min;
                         max = tmp[i].val > max ? tmp[i].val : max;
                     }
-#endif
                 }
                 if( min == max )
                 {
@@ -4987,7 +4956,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
                 if( it == vec.begin() )
                 {
-                    const auto x = ( it->time - m_vd.zvStart ) * pxns;
+                    const auto x = ( it->time.Val() - m_vd.zvStart ) * pxns;
                     const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
                     DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type, PlotHeight );
                 }
@@ -4998,8 +4967,8 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 ptrdiff_t skip = 0;
                 while( it < end )
                 {
-                    const auto x0 = ( prevx->time - m_vd.zvStart ) * pxns;
-                    const auto x1 = ( it->time - m_vd.zvStart ) * pxns;
+                    const auto x0 = ( prevx->time.Val() - m_vd.zvStart ) * pxns;
+                    const auto x1 = ( it->time.Val() - m_vd.zvStart ) * pxns;
                     const auto y0 = PlotHeight - ( prevy->val - min ) * revrange * PlotHeight;
                     const auto y1 = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
 
@@ -5007,7 +4976,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
 
                     const auto rx = skip == 0 ? 2.0 : ( skip == 1 ? 2.5 : 4.0 );
 
-                    auto range = std::upper_bound( it, end, int64_t( it->time + nspx * rx ), [] ( const auto& l, const auto& r ) { return l < r.time; } );
+                    auto range = std::upper_bound( it, end, int64_t( it->time.Val() + nspx * rx ), [] ( const auto& l, const auto& r ) { return l < r.time.Val(); } );
                     assert( range > it );
                     const auto rsz = std::distance( it, range );
                     if( rsz == 1 )
@@ -5174,8 +5143,8 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                 const MemEvent* ev = nullptr;
                 if( change > 0 )
                 {
-                    auto it = std::lower_bound( mem.data.begin(), mem.data.end(), item->time, [] ( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
-                    if( it != mem.data.end() && it->TimeAlloc() == item->time )
+                    auto it = std::lower_bound( mem.data.begin(), mem.data.end(), item->time.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs.TimeAlloc() < rhs; } );
+                    if( it != mem.data.end() && it->TimeAlloc() == item->time.Val() )
                     {
                         ev = it;
                     }
@@ -5183,8 +5152,8 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                 else
                 {
                     const auto& data = mem.data;
-                    auto it = std::lower_bound( mem.frees.begin(), mem.frees.end(), item->time, [&data] ( const auto& lhs, const auto& rhs ) { return data[lhs].TimeFree() < rhs; } );
-                    if( it != mem.frees.end() && data[*it].TimeFree() == item->time )
+                    auto it = std::lower_bound( mem.frees.begin(), mem.frees.end(), item->time.Val(), [&data] ( const auto& lhs, const auto& rhs ) { return data[lhs].TimeFree() < rhs; } );
+                    if( it != mem.frees.end() && data[*it].TimeFree() == item->time.Val() )
                     {
                         ev = &data[*it];
                     }

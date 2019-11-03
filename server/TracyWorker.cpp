@@ -1062,7 +1062,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 int64_t refTime = 0;
                 for( uint64_t j=0; j<psz; j++ )
                 {
-                    pd->data[j].time = ReadTimeOffset( f, refTime );
+                    pd->data[j].time.SetVal( ReadTimeOffset( f, refTime ) );
                     f.Read( pd->data[j].val );
                 }
             }
@@ -1071,16 +1071,19 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 int64_t refTime = -m_data.baseTime;
                 for( uint64_t j=0; j<psz; j++ )
                 {
-                    pd->data[j].time = ReadTimeOffset( f, refTime );
+                    pd->data[j].time.SetVal( ReadTimeOffset( f, refTime ) );
                     f.Read( pd->data[j].val );
                 }
             }
             else
             {
-                f.Read( pd->data.data(), psz * sizeof( PlotItem ) );
                 for( uint64_t j=0; j<psz; j++ )
                 {
-                    pd->data[j].time -= m_data.baseTime;
+                    uint64_t t;
+                    f.Read( t );
+                    t -= m_data.baseTime;
+                    pd->data[j].time.SetVal( t );
+                    f.Read( pd->data[j].val );
                 }
             }
             m_data.plots.Data().push_back_no_space_check( pd );
@@ -1100,7 +1103,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             }
             uint64_t psz;
             f.Read( psz );
-            f.Skip( psz * sizeof( PlotItem ) );
+            f.Skip( psz * ( sizeof( uint64_t ) + sizeof( double ) ) );
         }
     }
 
@@ -3223,13 +3226,13 @@ void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
     {
         plot->min = val;
         plot->max = val;
-        plot->data.push_back( { time, val } );
+        plot->data.push_back( { Int48( time ), val } );
     }
-    else if( plot->data.back().time < time )
+    else if( plot->data.back().time.Val() < time )
     {
         if( plot->min > val ) plot->min = val;
         else if( plot->max < val ) plot->max = val;
-        plot->data.push_back_non_empty( { time, val } );
+        plot->data.push_back_non_empty( { Int48( time ), val } );
     }
     else
     {
@@ -3238,11 +3241,11 @@ void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
         if( plot->postpone.empty() )
         {
             plot->postponeTime = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-            plot->postpone.push_back( { time, val } );
+            plot->postpone.push_back( { Int48( time ), val } );
         }
         else
         {
-            plot->postpone.push_back_non_empty( { time, val } );
+            plot->postpone.push_back_non_empty( { Int48( time ), val } );
         }
     }
 }
@@ -3253,7 +3256,7 @@ void Worker::HandlePlotName( uint64_t name, char* str, size_t sz )
     m_data.plots.StringDiscovered( name, sl, m_data.strings, [this] ( PlotData* dst, PlotData* src ) {
         for( auto& v : src->data )
         {
-            InsertPlot( dst, v.time, v.val );
+            InsertPlot( dst, v.time.Val(), v.val );
         }
     } );
 }
@@ -3277,16 +3280,16 @@ void Worker::HandlePostponedPlots()
         if( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count() - plot->postponeTime < 100 ) continue;
         auto& dst = plot->data;
 #ifdef MY_LIBCPP_SUCKS
-        pdqsort_branchless( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
+        pdqsort_branchless( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
 #else
-        std::sort( std::execution::par_unseq, src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
+        std::sort( std::execution::par_unseq, src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
 #endif
-        const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+        const auto ds = std::lower_bound( dst.begin(), dst.end(), src.front().time.Val(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
         const auto dsd = std::distance( dst.begin(), ds ) ;
-        const auto de = std::lower_bound( ds, dst.end(), src.back().time, [] ( const auto& l, const auto& r ) { return l.time < r; } );
+        const auto de = std::lower_bound( ds, dst.end(), src.back().time.Val(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
         const auto ded = std::distance( dst.begin(), de );
         dst.insert( de, src.begin(), src.end() );
-        std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l.time < r.time; } );
+        std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
         src.clear();
     }
 }
@@ -4596,7 +4599,7 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
     else
     {
         assert( !m_sysTimePlot->data.empty() );
-        assert( m_sysTimePlot->data.back().time <= time );
+        assert( m_sysTimePlot->data.back().time.Val() <= time );
         if( m_sysTimePlot->min > val ) m_sysTimePlot->min = val;
         else if( m_sysTimePlot->max < val ) m_sysTimePlot->max = val;
         m_sysTimePlot->data.push_back_non_empty( { time, val } );
@@ -4741,7 +4744,7 @@ void Worker::MemAllocChanged( int64_t time )
     else
     {
         assert( !m_data.memory.plot->data.empty() );
-        assert( m_data.memory.plot->data.back().time <= time );
+        assert( m_data.memory.plot->data.back().time.Val() <= time );
         if( m_data.memory.plot->min > val ) m_data.memory.plot->min = val;
         else if( m_data.memory.plot->max < val ) m_data.memory.plot->max = val;
         m_data.memory.plot->data.push_back_non_empty( { time, val } );
@@ -5576,7 +5579,7 @@ void Worker::Write( FileWrite& f )
         f.Write( &sz, sizeof( sz ) );
         for( auto& v : plot->data )
         {
-            WriteTimeOffset( f, refTime, v.time );
+            WriteTimeOffset( f, refTime, v.time.Val() );
             f.Write( &v.val, sizeof( v.val ) );
         }
     }

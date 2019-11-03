@@ -386,6 +386,15 @@ struct MessageData
 
 enum { MessageDataSize = sizeof( MessageData ) };
 
+
+struct PlotItem
+{
+    Int48 time;
+    double val;
+};
+
+enum { PlotItemSize = sizeof( PlotItem ) };
+
 #pragma pack()
 
 
@@ -450,12 +459,6 @@ struct LockHighlight
     int64_t end;
     uint8_t thread;
     bool blocked;
-};
-
-struct PlotItem
-{
-    int64_t time;
-    double val;
 };
 
 enum class PlotType : uint8_t

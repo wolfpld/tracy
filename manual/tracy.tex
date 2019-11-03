@@ -288,6 +288,12 @@ mov         qword ptr [rdi+28h],rax         ; write buffer counter
 
 The second code block, responsible for ending a zone, is similar, but smaller, as it can reuse some variables retrieved in the above code.
 
+\subsubsection{Superscalar out-of-order speculative execution}
+
+You must be aware that modern processors \emph{do not} execute machine code in a linear way, as laid out in the source code. This can lead to counterintuivive timing results reported by Tracy. Trying to get more 'reliable' readings\footnote{And by saying 'reliable' you do in reality mean: behaving in a way you expect it to.} would require a change in the behavior of the code and this is not a thing a profiler should do. Instead, Tracy shows you what the hardware is \emph{really} doing.
+
+This is a complex subject and the details vary from one CPU to another. You can read a brief rundown of the topic at the following address: \url{https://travisdowns.github.io/blog/2019/06/11/speed-limits.html}.
+
 \subsection{Examples}
 
 To see how Tracy can be integrated into an application, you may look at example programs in the \texttt{examples} directory. Looking at the commit history might be the best way to do that.
@@ -309,7 +315,7 @@ Tracy Profiler supports  MSVC, gcc and clang. A reasonably recent version of the
 \begin{itemize}
 \item Windows (x86, x64)
 \item Linux (x86, x64, ARM, ARM64)
-\item Android (ARM, x86)
+\item Android (ARM, ARM64, x86)
 \item FreeBSD (x64)
 \item Cygwin (x64)
 \item MinGW (x64)

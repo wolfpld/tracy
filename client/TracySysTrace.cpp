@@ -353,6 +353,7 @@ static const char TraceOptions[] = "trace_options";
 static const char TraceClock[] = "trace_clock";
 static const char SchedSwitch[] = "events/sched/sched_switch/enable";
 static const char SchedWakeup[] = "events/sched/sched_wakeup/enable";
+static const char BufferSizeKb[] = "buffer_size_kb";
 static const char TracePipe[] = "trace_pipe";
 
 #ifdef __ANDROID__
@@ -442,6 +443,7 @@ bool SysTraceStart()
 #endif
     if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
     if( !TraceWrite( SchedWakeup, sizeof( SchedWakeup ), "1", 2 ) ) return false;
+    if( !TraceWrite( BufferSizeKb, sizeof( BufferSizeKb ), "512", 4 ) ) return false;
 
 #if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
     SysTraceInjectPayload();

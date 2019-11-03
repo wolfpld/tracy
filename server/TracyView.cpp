@@ -8860,12 +8860,15 @@ void View::DrawFindZone()
                     if( v->first == 0 )
                     {
                         hdrString = "<no parent>";
+                        SmallColorBox( 0 );
                     }
                     else
                     {
-                        auto srcloc = m_worker.GetSourceLocation( int16_t( v->first ) );
+                        auto& srcloc = m_worker.GetSourceLocation( int16_t( v->first ) );
                         hdrString = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                        SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                     }
+                    ImGui::SameLine();
                     break;
                 case FindZone::GroupBy::NoGrouping:
                     hdrString = "Zone list";

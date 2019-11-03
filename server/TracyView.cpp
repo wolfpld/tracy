@@ -12059,7 +12059,10 @@ static tracy_force_inline CallstackFrameTree* GetFrameTreeItemNoGroup( flat_hash
 
 static tracy_force_inline CallstackFrameTree* GetFrameTreeItemGroup( flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, CallstackFrameId idx, const Worker& worker )
 {
-    auto& frameData = *worker.GetCallstackFrame( idx );
+    auto frameDataPtr = worker.GetCallstackFrame( idx );
+    if( !frameDataPtr ) return nullptr;
+
+    auto& frameData = *frameDataPtr;
     auto& frame = frameData.data[frameData.size-1];
     auto fidx = frame.name.Idx();
 
@@ -12132,16 +12135,19 @@ flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstack
 
             auto base = cs.back();
             auto treePtr = GetFrameTreeItemGroup( root, base, m_worker );
-            treePtr->count += path.second.cnt;
-            treePtr->alloc += path.second.mem;
-            treePtr->callstacks.emplace( path.first );
-
-            for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+            if( treePtr )
             {
-                treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
                 treePtr->count += path.second.cnt;
                 treePtr->alloc += path.second.mem;
                 treePtr->callstacks.emplace( path.first );
+                for( int i = int( cs.size() ) - 2; i >= 0; i-- )
+                {
+                    treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
+                    if( !treePtr ) break;
+                    treePtr->count += path.second.cnt;
+                    treePtr->alloc += path.second.mem;
+                    treePtr->callstacks.emplace( path.first );
+                }
             }
         }
     }
@@ -12182,16 +12188,20 @@ flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstack
 
             auto base = cs.front();
             auto treePtr = GetFrameTreeItemGroup( root, base, m_worker );
-            treePtr->count += path.second.cnt;
-            treePtr->alloc += path.second.mem;
-            treePtr->callstacks.emplace( path.first );
-
-            for( int i = 1; i < cs.size(); i++ )
+            if( treePtr )
             {
-                treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
                 treePtr->count += path.second.cnt;
                 treePtr->alloc += path.second.mem;
                 treePtr->callstacks.emplace( path.first );
+
+                for( int i = 1; i < cs.size(); i++ )
+                {
+                    treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
+                    if( !treePtr ) break;
+                    treePtr->count += path.second.cnt;
+                    treePtr->alloc += path.second.mem;
+                    treePtr->callstacks.emplace( path.first );
+                }
             }
         }
     }
@@ -12698,92 +12708,96 @@ void View::DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree,
     {
         auto& v = _v->second;
         idx++;
-        auto& frameData = *m_worker.GetCallstackFrame( v.frame );
-        auto frame = frameData.data[frameData.size-1];
-        bool expand = false;
-        if( v.children.empty() )
+        auto frameDataPtr = m_worker.GetCallstackFrame( v.frame );
+        if( frameDataPtr )
         {
-            ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
-            ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
-            ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
-        }
-        else
-        {
-            ImGui::PushID( lidx++ );
-            if( tree.size() == 1 )
+            auto& frameData = *frameDataPtr;
+            auto frame = frameData.data[frameData.size-1];
+            bool expand = false;
+            if( v.children.empty() )
             {
-                expand = ImGui::TreeNodeEx( m_worker.GetString( frame.name ), ImGuiTreeNodeFlags_DefaultOpen );
+                ImGui::Indent( ImGui::GetTreeNodeToLabelSpacing() );
+                ImGui::TextUnformatted( m_worker.GetString( frame.name ) );
+                ImGui::Unindent( ImGui::GetTreeNodeToLabelSpacing() );
             }
             else
             {
-                expand = ImGui::TreeNode( m_worker.GetString( frame.name ) );
-            }
-            ImGui::PopID();
-        }
-
-        if( ImGui::IsItemClicked( 1 ) )
-        {
-            auto& mem = m_worker.GetMemData().data;
-            const auto sz = mem.size();
-            m_memInfo.showAllocList = true;
-            m_memInfo.allocList.clear();
-            for( size_t i=0; i<sz; i++ )
-            {
-                if( v.callstacks.find( mem[i].CsAlloc() ) != v.callstacks.end() )
+                ImGui::PushID( lidx++ );
+                if( tree.size() == 1 )
                 {
-                    m_memInfo.allocList.emplace_back( i );
+                    expand = ImGui::TreeNodeEx( m_worker.GetString( frame.name ), ImGuiTreeNodeFlags_DefaultOpen );
+                }
+                else
+                {
+                    expand = ImGui::TreeNode( m_worker.GetString( frame.name ) );
+                }
+                ImGui::PopID();
+            }
+
+            if( ImGui::IsItemClicked( 1 ) )
+            {
+                auto& mem = m_worker.GetMemData().data;
+                const auto sz = mem.size();
+                m_memInfo.showAllocList = true;
+                m_memInfo.allocList.clear();
+                for( size_t i=0; i<sz; i++ )
+                {
+                    if( v.callstacks.find( mem[i].CsAlloc() ) != v.callstacks.end() )
+                    {
+                        m_memInfo.allocList.emplace_back( i );
+                    }
                 }
             }
-        }
 
-        if( io.KeyCtrl && ImGui::IsItemHovered() )
-        {
-            ImGui::BeginTooltip();
-            TextFocused( "Allocations size:", MemSizeToString( v.alloc ) );
-            TextFocused( "Allocations count:", RealToString( v.count, true ) );
-            TextFocused( "Average allocation size:", MemSizeToString( v.alloc / v.count ) );
-            ImGui::SameLine();
-            ImGui::EndTooltip();
-        }
-
-        if( m_callstackTreeBuzzAnim.Match( idx ) )
-        {
-            const auto time = m_callstackTreeBuzzAnim.Time();
-            const auto indentVal = sin( time * 60.f ) * 10.f * time;
-            ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
-        }
-        else
-        {
-            ImGui::SameLine();
-        }
-        const auto fileName = m_worker.GetString( frame.file );
-        ImGui::TextDisabled( "%s:%i", fileName, frame.line );
-        if( ImGui::IsItemClicked( 1 ) )
-        {
-            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+            if( io.KeyCtrl && ImGui::IsItemHovered() )
             {
-                SetTextEditorFile( fileName, frame.line );
+                ImGui::BeginTooltip();
+                TextFocused( "Allocations size:", MemSizeToString( v.alloc ) );
+                TextFocused( "Allocations count:", RealToString( v.count, true ) );
+                TextFocused( "Average allocation size:", MemSizeToString( v.alloc / v.count ) );
+                ImGui::SameLine();
+                ImGui::EndTooltip();
+            }
+
+            if( m_callstackTreeBuzzAnim.Match( idx ) )
+            {
+                const auto time = m_callstackTreeBuzzAnim.Time();
+                const auto indentVal = sin( time * 60.f ) * 10.f * time;
+                ImGui::SameLine( 0, ImGui::GetStyle().ItemSpacing.x + indentVal );
             }
             else
             {
-                m_callstackTreeBuzzAnim.Enable( idx, 0.5f );
+                ImGui::SameLine();
             }
-        }
+            const auto fileName = m_worker.GetString( frame.file );
+            ImGui::TextDisabled( "%s:%i", fileName, frame.line );
+            if( ImGui::IsItemClicked( 1 ) )
+            {
+                if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+                {
+                    SetTextEditorFile( fileName, frame.line );
+                }
+                else
+                {
+                    m_callstackTreeBuzzAnim.Enable( idx, 0.5f );
+                }
+            }
 
-        ImGui::SameLine();
-        if( v.children.empty() )
-        {
-            ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count, true ) );
-        }
-        else
-        {
-            ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count, true ) );
-        }
+            ImGui::SameLine();
+            if( v.children.empty() )
+            {
+                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count, true ) );
+            }
+            else
+            {
+                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count, true ) );
+            }
 
-        if( expand )
-        {
-            DrawFrameTreeLevel( v.children, idx );
-            ImGui::TreePop();
+            if( expand )
+            {
+                DrawFrameTreeLevel( v.children, idx );
+                ImGui::TreePop();
+            }
         }
     }
 }

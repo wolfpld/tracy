@@ -7,8 +7,9 @@
 #include "../common/TracyForceInline.hpp"
 #include "tracy_flat_hash_map.hpp"
 #include "TracyCharUtil.hpp"
-#include "TracyMemory.hpp"
 #include "TracyEvent.hpp"
+#include "TracyMemory.hpp"
+#include "TracyShortPtr.hpp"
 
 namespace tracy
 {
@@ -51,9 +52,12 @@ private:
 
     uint8_t m_size;
     uint32_t m_hash;
-    const T* m_ptr;
+    const short_ptr<T> m_ptr;
 };
 #pragma pack()
+
+enum { VarArraySize = sizeof( VarArray<int> ) };
+
 
 template<typename T>
 inline void VarArray<T>::CalcHash()

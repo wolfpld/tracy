@@ -16,7 +16,7 @@ class short_ptr
 {
 public:
     tracy_force_inline short_ptr() {}
-    tracy_force_inline short_ptr( T* ptr ) { Set( ptr ); }
+    tracy_force_inline short_ptr( const T* ptr ) { Set( ptr ); }
 
     tracy_force_inline operator T*() { return Get(); }
     tracy_force_inline operator const T*() const { return Get(); }
@@ -26,7 +26,7 @@ public:
     tracy_force_inline const T* operator->() const { return Get(); }
 
 private:
-    tracy_force_inline void Set( T* ptr )
+    tracy_force_inline void Set( const T* ptr )
     {
         assert( ( uint64_t( ptr ) & 0xFFFF000000000000 ) == 0 );
         memcpy( m_ptr, &ptr, 4 );

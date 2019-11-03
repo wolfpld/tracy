@@ -8565,6 +8565,7 @@ void View::DrawFindZone()
         DrawHelpMarker( "Left click to highlight entry. Right click to clear selection." );
 
         bool groupChanged = false;
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
         ImGui::TextUnformatted( "Group by:" );
         ImGui::SameLine();
         groupChanged |= ImGui::RadioButton( "Thread", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Thread );
@@ -8591,6 +8592,7 @@ void View::DrawFindZone()
         ImGui::RadioButton( "Time", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Time );
         ImGui::SameLine();
         ImGui::RadioButton( "MTPC", (int*)( &m_findZone.sortBy ), (int)FindZone::SortBy::Mtpc );
+        ImGui::PopStyleVar();
         ImGui::SameLine();
         DrawHelpMarker( "Mean time per call" );
 

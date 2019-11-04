@@ -4416,7 +4416,11 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         const auto cpuCnt = m_worker.GetCpuDataCpuCount();
         assert( cpuCnt != 0 );
 
+#ifdef TRACY_NO_STATISTICS
         if( m_vd.drawCpuUsageGraph )
+#else
+        if( m_vd.drawCpuUsageGraph && m_worker.IsCpuUsageReady() )
+#endif
         {
             const auto cpuUsageHeight = floor( 30.f * ImGui::GetTextLineHeight() / 15.f );
             if( wpos.y + offset + cpuUsageHeight + 3 >= yMin && wpos.y + offset <= yMax )

@@ -4446,7 +4446,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                 }
                 draw->AddLine( wpos + ImVec2( 0, offset+cpuUsageHeight+2 ), wpos + ImVec2( w, offset+cpuUsageHeight+2 ), 0x22DD88DD );
 
-                if( ImGui::IsMouseHoveringRect( ImVec2( wpos.x, wpos.y + offset ), ImVec2( wpos.x + w, wpos.y + offset + cpuUsageHeight ), true ) )
+                if( hover && ImGui::IsMouseHoveringRect( ImVec2( wpos.x, wpos.y + offset ), ImVec2( wpos.x + w, wpos.y + offset + cpuUsageHeight ), true ) )
                 {
                     int usageOwn, usageOther;
                     m_worker.GetCpuUsageAtTime( m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx, usageOwn, usageOther );

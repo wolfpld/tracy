@@ -259,6 +259,7 @@ Worker::Worker( const char* addr, int port )
 
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = true;
+    m_data.ctxUsageReady = true;
 #endif
 
     m_thread = std::thread( [this] { SetThreadName( "Tracy Worker" ); Exec(); } );
@@ -1786,6 +1787,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 std::lock_guard<std::shared_mutex> lock( m_data.lock );
                 m_data.sourceLocationZonesReady = true;
             }
+            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+            if( !m_data.ctxSwitch.empty() ) ReconstructContextSwitchUsage();
             if( m_shutdown.load( std::memory_order_relaxed ) ) return;
             if( reconstructMemAllocPlot ) ReconstructMemAllocPlot();
             m_backgroundDone.store( true, std::memory_order_relaxed );
@@ -4861,6 +4864,14 @@ void Worker::ReconstructMemAllocPlot()
     m_data.plots.Data().insert( m_data.plots.Data().begin(), plot );
     m_data.memory.plot = plot;
 }
+
+#ifndef TRACY_NO_STATISTICS
+void Worker::ReconstructContextSwitchUsage()
+{
+    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+    m_data.ctxUsageReady = true;
+}
+#endif
 
 void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int32_t& childIdx )
 {

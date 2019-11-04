@@ -224,6 +224,11 @@ private:
 #else
         std::pair<uint16_t, uint64_t*> srclocCntLast = std::make_pair( std::numeric_limits<uint16_t>::max(), nullptr );
 #endif
+
+#ifndef TRACY_NO_STATISTICS
+        Vector<ContextSwitchUsage> ctxUsage;
+        bool ctxUsageReady = false;
+#endif
     };
 
     struct MbpsBlock
@@ -373,6 +378,7 @@ public:
     const SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc ) const;
     const flat_hash_map<int16_t, SourceLocationZones, nohash<int16_t>>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
+    bool IsCpuUsageReady() const { return m_data.ctxUsageReady; }
 #endif
 
     tracy_force_inline uint16_t CompressThread( uint64_t thread ) { return m_data.localThreadCompress.CompressThread( thread ); }
@@ -554,6 +560,10 @@ private:
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
     tracy_force_inline Vector<short_ptr<ZoneEvent>>& GetZoneChildrenMutable( int32_t idx ) { return m_data.zoneChildren[idx]; }
+
+#ifndef TRACY_NO_STATISTICS
+    void ReconstructContextSwitchUsage();
+#endif
 
     tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int32_t& childIdx );
     tracy_force_inline void ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer );

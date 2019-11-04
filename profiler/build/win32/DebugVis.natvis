@@ -35,4 +35,7 @@
   <Type Name="tracy::ContextSwitchCpu">
     <DisplayString>{{ start={int64_t( _start_thread ) >> 16} end={_end} thread={uint16_t( _start_thread )} }}</DisplayString>
   </Type>
+  <Type Name="tracy::ContextSwitchUsage">
+    <DisplayString>{{ time={int64_t( _time_other_own ) >> 16} own={uint8_t( _time_other_own >> 8 )} other={uint8_t( _time_other_own )} }}</DisplayString>
+  </Type>
 </AutoVisualizer>

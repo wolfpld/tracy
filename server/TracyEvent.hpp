@@ -376,6 +376,24 @@ struct ContextSwitchCpu
 enum { ContextSwitchCpuSize = sizeof( ContextSwitchCpu ) };
 
 
+struct ContextSwitchUsage
+{
+    ContextSwitchUsage() {}
+    ContextSwitchUsage( int64_t time, uint8_t other, uint8_t own ) { SetTime( time ); SetOther( other ); SetOwn( own ); }
+
+    tracy_force_inline int64_t Time() const { return int64_t( _time_other_own ) >> 16; }
+    tracy_force_inline void SetTime( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_other_own)+2, &time, 4 ); memcpy( ((char*)&_time_other_own)+6, ((char*)&time)+4, 2 ); }
+    tracy_force_inline uint8_t Other() const { return uint8_t( _time_other_own ); }
+    tracy_force_inline void SetOther( uint8_t other ) { memcpy( &_time_other_own, &other, 1 ); }
+    tracy_force_inline uint8_t Own() const { return uint8_t( _time_other_own >> 8 ); }
+    tracy_force_inline void SetOwn( uint8_t own ) { memcpy( ((char*)&_time_other_own)+1, &own, 1 ); }
+
+    uint64_t _time_other_own;
+};
+
+enum { ContextSwitchUsageSize = sizeof( ContextSwitchUsage ) };
+
+
 struct MessageData
 {
     int64_t time;

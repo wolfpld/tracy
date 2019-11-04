@@ -59,7 +59,7 @@ class short_ptr
 {
 public:
     tracy_force_inline short_ptr() {}
-    tracy_force_inline short_ptr( T* ptr ) : m_ptr( ptr ) {}
+    tracy_force_inline short_ptr( const T* ptr ) { memcpy( &m_ptr, &ptr, sizeof( T* ) ); }
 
     tracy_force_inline operator T*() { return m_ptr; }
     tracy_force_inline operator const T*() const { return m_ptr; }

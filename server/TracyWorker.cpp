@@ -1044,13 +1044,36 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
             auto pd = m_slab.AllocInit<PlotData>();
-            if( fileVer >= FileVersion( 0, 4, 5 ) )
+            if( fileVer >= FileVersion( 0, 5, 11 ) )
             {
                 f.Read( pd->type );
+                f.Read( pd->format );
             }
             else
             {
-                pd->type = PlotType::User;
+                if( fileVer >= FileVersion( 0, 4, 5 ) )
+                {
+                    f.Read( pd->type );
+                }
+                else
+                {
+                    pd->type = PlotType::User;
+                }
+                switch( pd->type )
+                {
+                case PlotType::User:
+                    pd->format = PlotValueFormatting::Number;
+                    break;
+                case PlotType::Memory:
+                    pd->format = PlotValueFormatting::Memory;
+                    break;
+                case PlotType::SysTime:
+                    pd->format = PlotValueFormatting::Percentage;
+                    break;
+                default:
+                    assert( false );
+                    break;
+                }
             }
             f.Read( pd->name );
             f.Read( pd->min );
@@ -1094,7 +1117,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         for( uint64_t i=0; i<sz; i++ )
         {
-            if( fileVer >= FileVersion( 0, 4, 5 ) )
+            if( fileVer >= FileVersion( 0, 5, 11 ) )
+            {
+                f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) + sizeof( PlotData::type ) + sizeof( PlotData::format ) );
+            }
+            else if( fileVer >= FileVersion( 0, 4, 5 ) )
             {
                 f.Skip( sizeof( PlotData::name ) + sizeof( PlotData::min ) + sizeof( PlotData::max ) + sizeof( PlotData::type ) );
             }
@@ -3414,6 +3441,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::PlotData:
         ProcessPlotData( ev.plotData );
         break;
+    case QueueType::PlotConfig:
+        ProcessPlotConfig( ev.plotConfig );
+        break;
     case QueueType::Message:
         ProcessMessage( ev.message );
         break;
@@ -4091,6 +4121,7 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
         auto plot = m_slab.AllocInit<PlotData>();
         plot->name = name;
         plot->type = PlotType::User;
+        plot->format = PlotValueFormatting::Number;
         return plot;
     }, [this]( uint64_t name ) {
         Query( ServerQueryPlotName, name );
@@ -4115,6 +4146,20 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
         assert( false );
         break;
     }
+}
+
+void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )
+{
+    PlotData* plot = m_data.plots.Retrieve( ev.name, [this, &ev] ( uint64_t name ) {
+        auto plot = m_slab.AllocInit<PlotData>();
+        plot->name = name;
+        plot->type = PlotType::User;
+        return plot;
+    }, [this]( uint64_t name ) {
+        Query( ServerQueryPlotName, name );
+    } );
+
+    plot->format = (PlotValueFormatting)ev.type;
 }
 
 void Worker::ProcessMessage( const QueueMessage& ev )
@@ -4608,6 +4653,7 @@ void Worker::ProcessSysTime( const QueueSysTime& ev )
         m_sysTimePlot = m_slab.AllocInit<PlotData>();
         m_sysTimePlot->name = 0;
         m_sysTimePlot->type = PlotType::SysTime;
+        m_sysTimePlot->format = PlotValueFormatting::Percentage;
         m_sysTimePlot->min = val;
         m_sysTimePlot->max = val;
         m_sysTimePlot->data.push_back( { time, val } );
@@ -4774,6 +4820,7 @@ void Worker::CreateMemAllocPlot()
     m_data.memory.plot = m_slab.AllocInit<PlotData>();
     m_data.memory.plot->name = 0;
     m_data.memory.plot->type = PlotType::Memory;
+    m_data.memory.plot->format = PlotValueFormatting::Memory;
     m_data.memory.plot->data.push_back( { GetFrameBegin( *m_data.framesBase, 0 ), 0. } );
     m_data.plots.Data().push_back( m_data.memory.plot );
 }
@@ -4797,6 +4844,7 @@ void Worker::ReconstructMemAllocPlot()
 
     plot->name = 0;
     plot->type = PlotType::Memory;
+    plot->format = PlotValueFormatting::Memory;
     plot->data.reserve_exact( psz, m_slab );
 
     auto aptr = mem.data.begin();
@@ -5684,6 +5732,7 @@ void Worker::Write( FileWrite& f )
     {
         if( plot->type == PlotType::Memory ) continue;
         f.Write( &plot->type, sizeof( plot->type ) );
+        f.Write( &plot->format, sizeof( plot->format ) );
         f.Write( &plot->name, sizeof( plot->name ) );
         f.Write( &plot->min, sizeof( plot->min ) );
         f.Write( &plot->max, sizeof( plot->max ) );

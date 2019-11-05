@@ -486,6 +486,13 @@ enum class PlotType : uint8_t
     SysTime
 };
 
+enum class PlotValueFormatting : uint8_t
+{
+    Number,
+    Memory,
+    Percentage
+};
+
 struct PlotData
 {
     uint64_t name;
@@ -495,6 +502,7 @@ struct PlotData
     Vector<PlotItem> postpone;
     uint64_t postponeTime;
     PlotType type;
+    PlotValueFormatting format;
 };
 
 struct MemData

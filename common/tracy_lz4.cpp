@@ -318,7 +318,7 @@ static const int      dec64table[8] = {0, 0, 0, -1, -4,  1, 2, 3};
 
 
 #ifndef LZ4_FAST_DEC_LOOP
-#  if defined(__i386__) || defined(__x86_64__)
+#  if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
 #    define LZ4_FAST_DEC_LOOP 1
 #  else
 #    define LZ4_FAST_DEC_LOOP 0

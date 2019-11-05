@@ -867,6 +867,14 @@ If using the \texttt{TracyLockable} or \texttt{TracySharedLockable} wrappers doe
 
 Tracy is able to capture and draw numeric value changes over time. You may use it to analyze draw call counts, number of performed queries, etc. To report data, use the \texttt{TracyPlot(name, value)} macro.
 
+To configure how plot values are presented by the profiler, you may use the \texttt{TracyPlotConfig(name, format)} macro, where \texttt{format} is one of the following options:
+
+\begin{itemize}
+\item \texttt{tracy::PlotFormatType::Number} -- values will be displayed as plain numbers.
+\item \texttt{tracy::PlotFormatType::Memory} -- treats the values as memory sizes. Will display kilobytes, megabytes, etc.
+\item \texttt{tracy::PlotFormatType::Percentage} -- values will be displayed as percentage (with value $100$ being equal to $100\%$).
+\end{itemize}
+
 \subsection{Message log}
 \label{messagelog}
 

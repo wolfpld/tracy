@@ -13,6 +13,8 @@
 #include "TracyShortPtr.hpp"
 #include "TracySlab.hpp"
 
+//#define TRACY_VECTOR_DEBUG
+
 namespace tracy
 {
 
@@ -305,7 +307,11 @@ private:
         return 1 << m_capacity;
     }
 
+#ifdef TRACY_VECTOR_DEBUG
+    T* m_ptr;
+#else
     short_ptr<T> m_ptr;
+#endif
     uint32_t m_size;
     uint8_t m_capacity;
 };

@@ -1901,6 +1901,20 @@ void Worker::GetCpuUsageAtTime( int64_t time, int& own, int& other ) const
 {
     own = other = 0;
     if( time < 0 || time > m_data.lastTime ) return;
+
+#ifndef TRACY_NO_STATISTICS
+    // Remove this check when real-time ctxUsage contruction is implemented.
+    if( !m_data.ctxUsage.empty() )
+    {
+        auto it = std::upper_bound( m_data.ctxUsage.begin(), m_data.ctxUsage.end(), time, [] ( const auto& l, const auto& r ) { return l < r.Time(); } );
+        if( it == m_data.ctxUsage.begin() || it == m_data.ctxUsage.end() ) return;
+        --it;
+        own = it->Own();
+        other = it->Other();
+        return;
+    }
+#endif
+
     for( int i=0; i<m_data.cpuDataCount; i++ )
     {
         auto& cs = m_data.cpuData[i].cs;

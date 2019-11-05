@@ -23,8 +23,9 @@
 #endif
 
 #ifdef __linux__
-#  include <signal.h>
 #  include <dirent.h>
+#  include <signal.h>
+#  include <pthread.h>
 #  include <sys/types.h>
 #  include <sys/syscall.h>
 #endif
@@ -34,12 +35,12 @@
 #  include <sys/sysctl.h>
 #endif
 
-#include <atomic>
+#include <algorithm>
 #include <assert.h>
+#include <atomic>
 #include <chrono>
 #include <limits>
-#include <memory>
-#include <mutex>
+#include <new>
 #include <stdlib.h>
 #include <string.h>
 #include <thread>

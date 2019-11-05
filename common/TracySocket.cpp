@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <assert.h>
 #include <new>
 #include <stdio.h>
@@ -192,7 +191,7 @@ int Socket::RecvBuffered( void* buf, int len, int timeout )
     m_bufLeft = Recv( m_buf, BufSize, timeout );
     if( m_bufLeft <= 0 ) return m_bufLeft;
 
-    const auto sz = std::min( len, m_bufLeft );
+    const auto sz = len < m_bufLeft ? len : m_bufLeft;
     memcpy( buf, m_buf, sz );
     m_bufPtr = m_buf + sz;
     m_bufLeft -= sz;

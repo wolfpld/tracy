@@ -3,20 +3,17 @@
 
 #include <assert.h>
 #include <atomic>
-#include <chrono>
 #include <stdint.h>
 #include <string.h>
 
 #include "tracy_concurrentqueue.h"
 #include "TracyCallstack.hpp"
 #include "TracySysTime.hpp"
-#include "TracySysTrace.hpp"
 #include "TracyFastVector.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyMutex.hpp"
-#include "../common/TracySystem.hpp"
 
 #if defined _WIN32 || defined __CYGWIN__
 #  include <intrin.h>
@@ -28,6 +25,10 @@
 
 #if defined _WIN32 || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __ANDROID__ ) || __ARM_ARCH >= 6
 #  define TRACY_HW_TIMER
+#endif
+
+#if !defined TRACY_HW_TIMER || ( __ARM_ARCH >= 6 && !defined CLOCK_MONOTONIC_RAW )
+  #include <chrono>
 #endif
 
 #ifndef TracyConcat

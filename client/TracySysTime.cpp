@@ -5,7 +5,6 @@
 #  if defined _WIN32 || defined __CYGWIN__
 #    include <windows.h>
 #  elif defined __linux__
-#    include <assert.h>
 #    include <stdio.h>
 #    include <inttypes.h>
 #  elif defined __APPLE__

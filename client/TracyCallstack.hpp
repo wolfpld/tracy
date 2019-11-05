@@ -20,7 +20,6 @@ extern "C"
 
 #include <assert.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyForceInline.hpp"

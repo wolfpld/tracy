@@ -5,7 +5,7 @@
 #  ifndef _WINDOWS_
 extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void);
 #  endif
-#else
+#elif defined __APPLE__ || ( !defined __ANDROID__ && !defined __linux__ )
 #  include <pthread.h>
 #endif
 

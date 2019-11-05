@@ -4868,6 +4868,94 @@ void Worker::ReconstructMemAllocPlot()
 #ifndef TRACY_NO_STATISTICS
 void Worker::ReconstructContextSwitchUsage()
 {
+    assert( m_data.cpuDataCount != 0 );
+    const auto cpucnt = m_data.cpuDataCount;
+
+    auto& vec = m_data.ctxUsage;
+    vec.push_back( ContextSwitchUsage( 0, 0, 0 ) );
+
+    struct Cpu
+    {
+        bool startDone;
+        Vector<ContextSwitchCpu>::iterator it;
+        Vector<ContextSwitchCpu>::iterator end;
+    };
+    std::vector<Cpu> cpus;
+    cpus.reserve( cpucnt );
+    for( int i=0; i<cpucnt; i++ )
+    {
+        cpus.emplace_back( Cpu { false, m_data.cpuData[i].cs.begin(), m_data.cpuData[i].cs.end() } );
+    }
+
+    uint8_t other = 0;
+    uint8_t own = 0;
+    for(;;)
+    {
+        int64_t nextTime = std::numeric_limits<int64_t>::max();
+        bool atEnd = true;
+        for( int i=0; i<cpucnt; i++ )
+        {
+            if( cpus[i].it != cpus[i].end )
+            {
+                atEnd = false;
+                const auto ct = !cpus[i].startDone ? cpus[i].it->Start() : cpus[i].it->End();
+                if( ct < nextTime ) nextTime = ct;
+            }
+        }
+        if( atEnd ) break;
+        for( int i=0; i<cpucnt; i++ )
+        {
+            while( cpus[i].it != cpus[i].end )
+            {
+                const auto ct = !cpus[i].startDone ? cpus[i].it->Start() : cpus[i].it->End();
+                if( nextTime != ct ) break;
+                const auto isOwn = GetPidFromTid( DecompressThreadExternal( cpus[i].it->Thread() ) ) == m_pid;
+                if( !cpus[i].startDone )
+                {
+                    if( isOwn )
+                    {
+                        own++;
+                        assert( own <= cpucnt );
+                    }
+                    else
+                    {
+                        other++;
+                        assert( other <= cpucnt );
+                    }
+                    if( cpus[i].it->End() < 0 )
+                    {
+                        cpus[i].it++;
+                        assert( cpus[i].it = cpus[i].end );
+                    }
+                    else
+                    {
+                        cpus[i].startDone = true;
+                    }
+                }
+                else
+                {
+                    if( isOwn )
+                    {
+                        assert( own > 0 );
+                        own--;
+                    }
+                    else
+                    {
+                        assert( other > 0 );
+                        other--;
+                    }
+                    cpus[i].startDone = false;
+                    cpus[i].it++;
+                }
+            }
+        }
+        const auto& back = vec.back();
+        if( back.Other() != other || back.Own() != own )
+        {
+            vec.push_back( ContextSwitchUsage( nextTime, other, own ) );
+        }
+    }
+
     std::lock_guard<std::shared_mutex> lock( m_data.lock );
     m_data.ctxUsageReady = true;
 }

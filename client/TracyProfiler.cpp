@@ -94,6 +94,10 @@ extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
 #  include <cpuid.h>
 #endif
 
+#if !( ( ( defined _WIN32 || defined __CYGWIN__ ) && _WIN32_WINNT >= _WIN32_WINNT_VISTA ) || defined __linux__ )
+#  include <mutex>
+#endif
+
 namespace tracy
 {
 

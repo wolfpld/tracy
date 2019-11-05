@@ -35,6 +35,7 @@
 #define LockMark(x) (void)x;
 
 #define TracyPlot(x,y)
+#define TracyPlotConfig(x,y)
 
 #define TracyMessage(x,y)
 #define TracyMessageL(x)
@@ -100,6 +101,7 @@
 #define LockMark( varname ) static const tracy::SourceLocationData __tracy_lock_location_##varname { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; varname.Mark( &__tracy_lock_location_##varname );
 
 #define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val );
+#define TracyPlotConfig( name, type ) tracy::Profiler::ConfigurePlot( name, type );
 
 #define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size );
 #define TracyMessageL( txt ) tracy::Profiler::Message( txt );

@@ -62,6 +62,7 @@ enum class QueueType : uint8_t
     CallstackFrame,
     SysTimeReport,
     TidToPid,
+    PlotConfig,
     StringData,
     ThreadName,
     CustomStringData,
@@ -330,6 +331,19 @@ struct QueueTidToPid
     uint64_t pid;
 };
 
+enum class PlotFormatType : uint8_t
+{
+    Number,
+    Memory,
+    Percentage
+};
+
+struct QueuePlotConfig
+{
+    uint64_t name;      // ptr
+    uint8_t type;
+};
+
 struct QueueHeader
 {
     union
@@ -378,6 +392,7 @@ struct QueueItem
         QueueContextSwitch contextSwitch;
         QueueThreadWakeup threadWakeup;
         QueueTidToPid tidToPid;
+        QueuePlotConfig plotConfig;
     };
 };
 #pragma pack()
@@ -441,6 +456,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
+    sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

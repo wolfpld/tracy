@@ -244,6 +244,23 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    static tracy_force_inline void ConfigurePlot( const char* name, PlotFormatType type )
+    {
+        Magic magic;
+        auto token = GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::PlotConfig );
+        MemWrite( &item->plotConfig.name, (uint64_t)name );
+        MemWrite( &item->plotConfig.type, (uint8_t)type );
+
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     static tracy_force_inline void Message( const char* txt, size_t size )
     {
 #ifdef TRACY_ON_DEMAND

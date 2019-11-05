@@ -4744,18 +4744,18 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
     return offset;
 }
 
-static const char* FormatPlotValue( double val, PlotType type )
+static const char* FormatPlotValue( double val, PlotValueFormatting format )
 {
     static char buf[64];
-    switch( type )
+    switch( format )
     {
-    case PlotType::User:
+    case PlotValueFormatting::Number:
         return RealToString( val, true );
         break;
-    case PlotType::Memory:
+    case PlotValueFormatting::Memory:
         return MemSizeToString( val );
         break;
-    case PlotType::SysTime:
+    case PlotValueFormatting::Percentage:
         sprintf( buf, "%.2f%%", val );
         break;
     default:
@@ -4828,9 +4828,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 ImGui::TextDisabled( "(%.2f%%)", activity / double( traceLen ) * 100 );
                 ImGui::Separator();
                 TextFocused( "Data points:", RealToString( v->data.size(), true ) );
-                TextFocused( "Data range:", FormatPlotValue( v->max - v->min, v->type ) );
-                TextFocused( "Min value:", FormatPlotValue( v->min, v->type ) );
-                TextFocused( "Max value:", FormatPlotValue( v->max, v->type ) );
+                TextFocused( "Data range:", FormatPlotValue( v->max - v->min, v->format ) );
+                TextFocused( "Min value:", FormatPlotValue( v->min, v->format ) );
+                TextFocused( "Max value:", FormatPlotValue( v->max, v->format ) );
                 TextFocused( "Data/second:", RealToString( double( v->data.size() ) / activity * 1000000000ll, true ) );
 
                 const auto it = std::lower_bound( v->data.begin(), v->data.end(), last - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
@@ -4962,7 +4962,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 {
                     const auto x = ( it->time.Val() - m_vd.zvStart ) * pxns;
                     const auto y = PlotHeight - ( it->val - min ) * revrange * PlotHeight;
-                    DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type, PlotHeight );
+                    DrawPlotPoint( wpos, x, y, offset, 0xFF44DDDD, hover, false, it, 0, false, v->type, v->format, PlotHeight );
                 }
 
                 auto prevx = it;
@@ -4985,7 +4985,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     const auto rsz = std::distance( it, range );
                     if( rsz == 1 )
                     {
-                        DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it, prevy->val, false, v->type, PlotHeight );
+                        DrawPlotPoint( wpos, x1, y1, offset, 0xFF44DDDD, hover, true, it, prevy->val, false, v->type, v->format, PlotHeight );
                         prevx = it;
                         prevy = it;
                         ++it;
@@ -5019,9 +5019,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                                 TextFocused( "Number of values:", RealToString( rsz, true ) );
                                 TextDisabledUnformatted( "Estimated range:" );
                                 ImGui::SameLine();
-                                ImGui::Text( "%s - %s", FormatPlotValue( tmpvec[0], v->type ), FormatPlotValue( dst[-1], v->type ) );
+                                ImGui::Text( "%s - %s", FormatPlotValue( tmpvec[0], v->format ), FormatPlotValue( dst[-1], v->format ) );
                                 ImGui::SameLine();
-                                ImGui::TextDisabled( "(%s)", FormatPlotValue( dst[-1] - tmpvec[0], v->type ) );
+                                ImGui::TextDisabled( "(%s)", FormatPlotValue( dst[-1] - tmpvec[0], v->format ) );
                                 ImGui::EndTooltip();
                             }
                         }
@@ -5036,11 +5036,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                                 assert( vrange > vit );
                                 if( std::distance( vit, vrange ) == 1 )
                                 {
-                                    DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, false, v->type, PlotHeight );
+                                    DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, false, v->format, PlotHeight );
                                 }
                                 else
                                 {
-                                    DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, true, v->type, PlotHeight );
+                                    DrawPlotPoint( wpos, x1, PlotHeight - ( *vit - min ) * revrange * PlotHeight, offset, 0xFF44DDDD, hover, false, *vit, 0, true, v->format, PlotHeight );
                                 }
                                 vit = vrange;
                             }
@@ -5053,13 +5053,13 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 char tmp[64];
                 if( yPos + ty >= yMin && yPos <= yMax )
                 {
-                    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( max - min, v->type ), RealToString( num, true ) );
+                    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( max - min, v->format ), RealToString( num, true ) );
                     draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0x8844DDDD, tmp );
                 }
-                sprintf( tmp, "%s", FormatPlotValue( max, v->type ) );
+                sprintf( tmp, "%s", FormatPlotValue( max, v->format ) );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
                 offset += PlotHeight - ty;
-                sprintf( tmp, "%s", FormatPlotValue( min, v->type ) );
+                sprintf( tmp, "%s", FormatPlotValue( min, v->format ) );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
 
                 draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
@@ -5078,7 +5078,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
     return offset;
 }
 
-void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged, PlotType type, float PlotHeight )
+void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged, PlotValueFormatting format, float PlotHeight )
 {
     auto draw = ImGui::GetWindowDrawList();
     if( merged )
@@ -5093,16 +5093,16 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
     {
         ImGui::BeginTooltip();
-        TextFocused( "Value:", FormatPlotValue( val, type ) );
+        TextFocused( "Value:", FormatPlotValue( val, format ) );
         if( hasPrev )
         {
-            TextFocused( "Change:", FormatPlotValue( val - prev, type ) );
+            TextFocused( "Change:", FormatPlotValue( val - prev, format ) );
         }
         ImGui::EndTooltip();
     }
 }
 
-void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type, float PlotHeight )
+void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type, PlotValueFormatting format, float PlotHeight )
 {
     auto draw = ImGui::GetWindowDrawList();
     if( merged )
@@ -5134,12 +5134,12 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
         }
         else
         {
-            TextFocused( "Value:", FormatPlotValue( item->val, type ) );
+            TextFocused( "Value:", FormatPlotValue( item->val, format ) );
         }
         if( hasPrev )
         {
             const auto change = item->val - prev;
-            TextFocused( "Change:", FormatPlotValue( change, type ) );
+            TextFocused( "Change:", FormatPlotValue( change, format ) );
 
             if( type == PlotType::Memory )
             {

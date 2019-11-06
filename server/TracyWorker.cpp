@@ -3,10 +3,6 @@
 #endif
 
 #ifdef _WIN32
-#  include <winsock2.h>
-#endif
-
-#ifdef _WIN32
 #  include <malloc.h>
 #else
 #  include <alloca.h>
@@ -14,7 +10,6 @@
 
 #include <cctype>
 #include <chrono>
-#include <mutex>
 #include <string.h>
 #include <inttypes.h>
 

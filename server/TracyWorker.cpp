@@ -1597,7 +1597,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
                     data[idx].state.store( JobData::InProgress, std::memory_order_release );
                     td->Queue( [this, &data, idx, fi] {
-                        PackFrameImage( data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w, fi->h, fi->csz );
+                        PackFrameImage( data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w * fi->h / 2, fi->csz );
                         data[idx].state.store( JobData::DataReady, std::memory_order_release );
                     } );
 
@@ -3858,7 +3858,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     }
 
     auto fi = m_slab.Alloc<FrameImage>();
-    fi->ptr = PackFrameImage( (const char*)it->second, ev.w, ev.h, fi->csz );
+    fi->ptr = PackFrameImage( (const char*)it->second, ev.w * ev.h / 2, fi->csz );
     fi->w = ev.w;
     fi->h = ev.h;
     fi->frameRef = uint32_t( fidx );
@@ -5958,31 +5958,29 @@ const char* Worker::GetFailureString( Worker::Failure failure )
     return s_failureReasons[(int)failure];
 }
 
-void Worker::PackFrameImage( char*& buf, size_t& bufsz, const char* image, uint16_t w, uint16_t h, uint32_t& csz ) const
+void Worker::PackFrameImage( char*& buf, size_t& bufsz, const char* image, uint32_t inBytes, uint32_t& csz ) const
 {
-    const auto insz = size_t( w ) * size_t( h ) / 2;
-    const auto maxout = LZ4_COMPRESSBOUND( insz );
+    const auto maxout = LZ4_COMPRESSBOUND( inBytes );
     if( bufsz < maxout )
     {
         bufsz = maxout;
         delete[] buf;
         buf = new char[maxout];
     }
-    const auto outsz = LZ4_compress_default( image, buf, insz, maxout );
+    const auto outsz = LZ4_compress_default( image, buf, inBytes, maxout );
     csz = uint32_t( outsz );
 }
 
-const char* Worker::PackFrameImage( const char* image, uint16_t w, uint16_t h, uint32_t& csz )
+const char* Worker::PackFrameImage( const char* image, uint32_t inBytes, uint32_t& csz )
 {
-    const auto insz = size_t( w ) * size_t( h ) / 2;
-    const auto maxout = LZ4_COMPRESSBOUND( insz );
+    const auto maxout = LZ4_COMPRESSBOUND( inBytes );
     if( m_frameImageBufferSize < maxout )
     {
         m_frameImageBufferSize = maxout;
         delete[] m_frameImageBuffer;
         m_frameImageBuffer = new char[maxout];
     }
-    const auto outsz = LZ4_compress_default( image, m_frameImageBuffer, insz, maxout );
+    const auto outsz = LZ4_compress_default( image, m_frameImageBuffer, inBytes, maxout );
     csz = uint32_t( outsz );
     auto ptr = (char*)m_slab.AllocBig( outsz );
     memcpy( ptr, m_frameImageBuffer, outsz );

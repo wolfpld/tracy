@@ -26,9 +26,6 @@
 #  endif
 #endif
 
-#include "../common/TracyMutex.hpp"
-#include "../common/TracyProtocol.hpp"
-#include "../common/TracySystem.hpp"
 #include "tracy_pdqsort.h"
 #include "TracyBadVersion.hpp"
 #include "TracyFileRead.hpp"

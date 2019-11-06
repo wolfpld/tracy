@@ -1867,6 +1867,10 @@ Worker::~Worker()
     {
         v.second->~LockMap();
     }
+    for( auto& v : m_pendingFrameImageData )
+    {
+        delete[] (char*)v.second;
+    }
 }
 
 uint64_t Worker::GetLockCount() const
@@ -3113,7 +3117,7 @@ static const uint8_t DxtcIndexTable[256] = {
 void Worker::AddFrameImageData( uint64_t ptr, char* data, size_t sz )
 {
     assert( m_pendingFrameImageData.find( ptr ) == m_pendingFrameImageData.end() );
-    auto image = m_slab.AllocBig( sz );
+    auto image = new char[sz];
     auto src = (uint8_t*)data;
     auto dst = (uint8_t*)image;
     assert( sz % 8 == 0 );
@@ -3842,11 +3846,13 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     const auto fidx = int64_t( ev.frame ) - int64_t( m_data.frameOffset ) + 1;
     if( m_onDemand && fidx <= 1 )
     {
+        delete[] (char*)it->second;
         m_pendingFrameImageData.erase( it );
         return;
     }
     else if( fidx <= 0 )
     {
+        delete[] (char*)it->second;
         FrameImageIndexFailure();
         return;
     }
@@ -3860,6 +3866,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
     const auto idx = m_data.frameImage.size();
     m_data.frameImage.push_back( fi );
+    delete[] it->second;
     m_pendingFrameImageData.erase( it );
 
     if( fidx >= frames.size() )

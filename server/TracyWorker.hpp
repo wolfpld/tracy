@@ -12,7 +12,6 @@
 #include <thread>
 #include <vector>
 
-#include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyProtocol.hpp"
@@ -610,7 +609,7 @@ private:
     bool m_terminate = false;
     bool m_crashed = false;
     bool m_disconnect = false;
-    LZ4_streamDecode_t* m_stream;
+    void* m_stream;     // LZ4_streamDecode_t*
     char* m_buffer;
     int m_bufferOffset;
     bool m_onDemand;

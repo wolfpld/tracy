@@ -1838,7 +1838,7 @@ Worker::~Worker()
     if( m_threadBackground.joinable() ) m_threadBackground.join();
 
     delete[] m_buffer;
-    LZ4_freeStreamDecode( m_stream );
+    LZ4_freeStreamDecode( (LZ4_streamDecode_t*)m_stream );
 
     delete[] m_frameImageBuffer;
 
@@ -2389,7 +2389,7 @@ void Worker::Network()
         if( !m_sock.Read( lz4buf.get(), lz4sz, 10, ShouldExit ) ) goto close;
         m_bytes.fetch_add( sizeof( lz4sz ) + lz4sz, std::memory_order_relaxed );
 
-        auto sz = LZ4_decompress_safe_continue( m_stream, lz4buf.get(), buf, lz4sz, TargetFrameSize );
+        auto sz = LZ4_decompress_safe_continue( (LZ4_streamDecode_t*)m_stream, lz4buf.get(), buf, lz4sz, TargetFrameSize );
         assert( sz >= 0 );
         m_decBytes.fetch_add( sz, std::memory_order_relaxed );
 
@@ -2499,7 +2499,7 @@ void Worker::Exec()
     m_serverQuerySpaceLeft = ( m_sock.GetSendBufSize() / ServerQueryPacketSize ) - ServerQueryPacketSize;   // leave space for terminate request
     m_hasData.store( true, std::memory_order_release );
 
-    LZ4_setStreamDecode( m_stream, nullptr, 0 );
+    LZ4_setStreamDecode( (LZ4_streamDecode_t*)m_stream, nullptr, 0 );
     m_connected.store( true, std::memory_order_relaxed );
     {
         std::lock_guard<std::mutex> lock( m_netWriteLock );

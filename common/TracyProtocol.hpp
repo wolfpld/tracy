@@ -4,10 +4,10 @@
 #include <limits>
 #include <stdint.h>
 
-#include "../common/tracy_lz4.hpp"
-
 namespace tracy
 {
+
+constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
 enum : uint32_t { ProtocolVersion = 22 };
 enum : uint32_t { BroadcastVersion = 0 };
@@ -15,7 +15,7 @@ enum : uint32_t { BroadcastVersion = 0 };
 using lz4sz_t = uint32_t;
 
 enum { TargetFrameSize = 256 * 1024 };
-enum { LZ4Size = LZ4_COMPRESSBOUND( TargetFrameSize ) };
+enum { LZ4Size = Lz4CompressBound( TargetFrameSize ) };
 static_assert( LZ4Size <= std::numeric_limits<lz4sz_t>::max(), "LZ4Size greater than lz4sz_t" );
 static_assert( TargetFrameSize * 2 >= 64 * 1024, "Not enough space for LZ4 stream buffer" );
 

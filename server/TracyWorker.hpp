@@ -264,6 +264,12 @@ private:
         int16_t srcloc;
     };
 
+    struct FrameImagePending
+    {
+        const char* image;
+        uint32_t csz;
+    };
+
 public:
     enum class Failure
     {
@@ -624,7 +630,7 @@ private:
     flat_hash_map<uint64_t, int16_t, nohash<uint64_t>> m_sourceLocationShrink;
     flat_hash_map<uint64_t, ThreadData*, nohash<uint64_t>> m_threadMap;
     flat_hash_map<uint64_t, NextCallstack, nohash<uint64_t>> m_nextCallstack;
-    flat_hash_map<uint64_t, void*, nohash<uint64_t>> m_pendingFrameImageData;
+    flat_hash_map<uint64_t, FrameImagePending, nohash<uint64_t>> m_pendingFrameImageData;
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;
@@ -662,6 +668,8 @@ private:
     flat_hash_map<uint64_t, int32_t> m_frameImageStaging;
     char* m_frameImageBuffer = nullptr;
     size_t m_frameImageBufferSize = 0;
+    char* m_frameImageCompressedBuffer = nullptr;
+    size_t m_frameImageCompressedBufferSize = 0;
 
     uint64_t m_threadCtx = 0;
     int64_t m_refTimeThread = 0;

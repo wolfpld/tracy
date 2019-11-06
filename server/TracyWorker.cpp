@@ -1836,6 +1836,7 @@ Worker::~Worker()
     LZ4_freeStreamDecode( (LZ4_streamDecode_t*)m_stream );
 
     delete[] m_frameImageBuffer;
+    delete[] m_frameImageCompressedBuffer;
 
     for( auto& v : m_data.threads )
     {
@@ -1866,10 +1867,6 @@ Worker::~Worker()
     for( auto& v : m_data.lockMap )
     {
         v.second->~LockMap();
-    }
-    for( auto& v : m_pendingFrameImageData )
-    {
-        delete[] (char*)v.second;
     }
 }
 
@@ -3117,18 +3114,26 @@ static const uint8_t DxtcIndexTable[256] = {
 void Worker::AddFrameImageData( uint64_t ptr, char* data, size_t sz )
 {
     assert( m_pendingFrameImageData.find( ptr ) == m_pendingFrameImageData.end() );
-    auto image = new char[sz];
-    auto src = (uint8_t*)data;
-    auto dst = (uint8_t*)image;
     assert( sz % 8 == 0 );
+    // Input data buffer cannot be changed, as it is used as LZ4 dictionary.
+    if( m_frameImageBufferSize < sz )
+    {
+        m_frameImageBufferSize = sz;
+        delete[] m_frameImageBuffer;
+        m_frameImageBuffer = new char[sz];
+    }
+    auto src = (uint8_t*)data;
+    auto dst = (uint8_t*)m_frameImageBuffer;
     for( size_t i=0; i<sz; i+=8 )
     {
         memcpy( dst, src, 4 );
-        dst += 4;
-        src += 4;
-        for( int j=0; j<4; j++ ) *dst++ = DxtcIndexTable[*src++];
+        for( int j=4; j<8; j++ ) dst[j] = DxtcIndexTable[src[j]];
+        src += 8;
+        dst += 8;
     }
-    m_pendingFrameImageData.emplace( ptr, image );
+    uint32_t csz;
+    auto image = PackFrameImage( m_frameImageBuffer, sz, csz );
+    m_pendingFrameImageData.emplace( ptr, FrameImagePending { image, csz } );
 }
 
 uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
@@ -3846,19 +3851,18 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     const auto fidx = int64_t( ev.frame ) - int64_t( m_data.frameOffset ) + 1;
     if( m_onDemand && fidx <= 1 )
     {
-        delete[] (char*)it->second;
         m_pendingFrameImageData.erase( it );
         return;
     }
     else if( fidx <= 0 )
     {
-        delete[] (char*)it->second;
         FrameImageIndexFailure();
         return;
     }
 
     auto fi = m_slab.Alloc<FrameImage>();
-    fi->ptr = PackFrameImage( (const char*)it->second, ev.w * ev.h / 2, fi->csz );
+    fi->ptr = it->second.image;
+    fi->csz = it->second.csz;
     fi->w = ev.w;
     fi->h = ev.h;
     fi->frameRef = uint32_t( fidx );
@@ -3866,7 +3870,6 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
     const auto idx = m_data.frameImage.size();
     m_data.frameImage.push_back( fi );
-    delete[] it->second;
     m_pendingFrameImageData.erase( it );
 
     if( fidx >= frames.size() )
@@ -5974,30 +5977,30 @@ void Worker::PackFrameImage( char*& buf, size_t& bufsz, const char* image, uint3
 const char* Worker::PackFrameImage( const char* image, uint32_t inBytes, uint32_t& csz )
 {
     const auto maxout = LZ4_COMPRESSBOUND( inBytes );
-    if( m_frameImageBufferSize < maxout )
+    if( m_frameImageCompressedBufferSize < maxout )
     {
-        m_frameImageBufferSize = maxout;
-        delete[] m_frameImageBuffer;
-        m_frameImageBuffer = new char[maxout];
+        m_frameImageCompressedBufferSize = maxout;
+        delete[] m_frameImageCompressedBuffer;
+        m_frameImageCompressedBuffer = new char[maxout];
     }
-    const auto outsz = LZ4_compress_default( image, m_frameImageBuffer, inBytes, maxout );
+    const auto outsz = LZ4_compress_default( image, m_frameImageCompressedBuffer, inBytes, maxout );
     csz = uint32_t( outsz );
     auto ptr = (char*)m_slab.AllocBig( outsz );
-    memcpy( ptr, m_frameImageBuffer, outsz );
+    memcpy( ptr, m_frameImageCompressedBuffer, outsz );
     return ptr;
 }
 
 const char* Worker::UnpackFrameImage( const FrameImage& image )
 {
     const auto outsz = size_t( image.w ) * size_t( image.h ) / 2;
-    if( m_frameImageBufferSize < outsz )
+    if( m_frameImageCompressedBufferSize < outsz )
     {
-        m_frameImageBufferSize = outsz;
-        delete[] m_frameImageBuffer;
-        m_frameImageBuffer = new char[outsz];
+        m_frameImageCompressedBufferSize = outsz;
+        delete[] m_frameImageCompressedBuffer;
+        m_frameImageCompressedBuffer = new char[outsz];
     }
-    LZ4_decompress_safe( image.ptr, m_frameImageBuffer, image.csz, outsz );
-    return m_frameImageBuffer;
+    LZ4_decompress_safe( image.ptr, m_frameImageCompressedBuffer, image.csz, outsz );
+    return m_frameImageCompressedBuffer;
 }
 
 }

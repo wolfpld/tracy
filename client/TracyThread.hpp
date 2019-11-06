@@ -1,7 +1,7 @@
 #ifndef __TRACYTHREAD_HPP__
 #define __TRACYTHREAD_HPP__
 
-#ifdef _MSC_VER
+#if defined _WIN32 || defined __CYGWIN__
 #  include <windows.h>
 #else
 #  include <pthread.h>
@@ -10,7 +10,7 @@
 namespace tracy
 {
 
-#ifdef _MSC_VER
+#if defined _WIN32 || defined __CYGWIN__
 
 class Thread
 {

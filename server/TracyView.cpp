@@ -4785,7 +4785,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             vis.offset = 0;
             continue;
         }
-        assert( !v->data.empty() );
+        if( v->data.empty() ) continue;
         bool& showFull = vis.showFull;
 
         float txtx = 0;

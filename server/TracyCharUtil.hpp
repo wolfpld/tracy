@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#define XXH_STATIC_LINKING_ONLY
+#include "tracy_xxh3.h"
 #include "tracy_flat_hash_map.hpp"
 
 namespace tracy
@@ -12,32 +14,15 @@ namespace tracy
 namespace charutil
 {
 
-static inline uint32_t hash( const char* str )
+static inline size_t hash( const char* str )
 {
-    uint32_t hash = 5381;
-    int c;
-
-    while( ( c = *str++ ) != 0 )
-    {
-        hash = ( ( hash << 5 ) + hash ) ^ c;
-    }
-
-    return hash;
+    const auto sz = strlen( str );
+    return XXH3_64bits( str, sz );
 }
 
-static inline uint32_t hash( const char* str, size_t sz )
+static inline size_t hash( const char* str, size_t sz )
 {
-    uint32_t hash = 5381;
-    int c;
-
-    while( sz > 0 )
-    {
-        c = *str++;
-        hash = ( ( hash << 5 ) + hash ) ^ c;
-        sz--;
-    }
-
-    return hash;
+    return XXH3_64bits( str, sz );
 }
 
 struct Hasher

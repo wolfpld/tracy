@@ -4459,6 +4459,9 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
 
 bool Worker::ProcessMemFree( const QueueMemFree& ev )
 {
+    const auto refTime = m_refTimeSerial + ev.time;
+    m_refTimeSerial = refTime;
+
     if( ev.ptr == 0 ) return false;
 
     auto it = m_data.memory.active.find( ev.ptr );
@@ -4471,8 +4474,6 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
         return false;
     }
 
-    const auto refTime = m_refTimeSerial + ev.time;
-    m_refTimeSerial = refTime;
     const auto time = TscTime( refTime - m_data.baseTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     NoticeThread( ev.thread );

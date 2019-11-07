@@ -508,7 +508,7 @@ struct PlotData
 struct MemData
 {
     Vector<MemEvent> data;
-    Vector<uint64_t> frees;
+    Vector<uint32_t> frees;
     flat_hash_map<uint64_t, size_t, nohash<uint64_t>> active;
     uint64_t high = std::numeric_limits<uint64_t>::min();
     uint64_t low = std::numeric_limits<uint64_t>::max();

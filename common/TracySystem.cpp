@@ -51,12 +51,12 @@ TRACY_API void InitRPMallocThread();
 
 void SetThreadName( const char* name )
 {
-#if defined _WIN32 && !defined PTW32_VERSION && !defined __WINPTHREADS_VERSION
+#if defined _WIN32 || defined __CYGWIN__
 #  if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2
     wchar_t buf[256];
     mbstowcs( buf, name, 256 );
     SetThreadDescription( GetCurrentThread(), buf );
-#  else
+#  elif defined _MSC_VER
     const DWORD MS_VC_EXCEPTION=0x406D1388;
 #    pragma pack( push, 8 )
     struct THREADNAME_INFO
@@ -129,7 +129,7 @@ const char* GetThreadName( uint64_t id )
         ptr = ptr->next;
     }
 #else
-#  ifdef _WIN32
+#  if defined _WIN32 || defined __CYGWIN__
 #    if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2
     auto hnd = OpenThread( THREAD_QUERY_LIMITED_INFORMATION, FALSE, (DWORD)id );
     if( hnd != 0 )

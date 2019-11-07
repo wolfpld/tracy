@@ -413,6 +413,16 @@ struct PlotItem
 
 enum { PlotItemSize = sizeof( PlotItem ) };
 
+
+struct FrameEvent
+{
+    int64_t start;
+    int64_t end;
+    int32_t frameImage;
+};
+
+enum { FrameEventSize = sizeof( FrameEvent ) };
+
 #pragma pack()
 
 
@@ -515,15 +525,6 @@ struct MemData
     uint64_t usage = 0;
     PlotData* plot = nullptr;
 };
-
-struct FrameEvent
-{
-    int64_t start;
-    int64_t end;
-    int32_t frameImage;
-};
-
-enum { FrameEventSize = sizeof( FrameEvent ) };
 
 struct FrameData
 {

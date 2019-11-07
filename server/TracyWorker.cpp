@@ -2522,7 +2522,7 @@ void Worker::Exec()
         }
         if( netbuf.bufferOffset < 0 ) goto close;
 
-        char* ptr = m_buffer + netbuf.bufferOffset;
+        const char* ptr = m_buffer + netbuf.bufferOffset;
         const char* end = ptr + netbuf.size;
 
         {
@@ -2623,7 +2623,7 @@ void Worker::QueryTerminate()
     m_sock.Send( &query, ServerQueryPacketSize );
 }
 
-bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
+bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
 {
     if( ev.hdr.idx >= (int)QueueType::StringData )
     {
@@ -2991,7 +2991,7 @@ void Worker::AddSourceLocation( const QueueSourceLocation& srcloc )
     it->second = SourceLocation { srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color };
 }
 
-void Worker::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
+void Worker::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz )
 {
     const auto start = data;
 
@@ -3046,7 +3046,7 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz )
     }
 }
 
-void Worker::AddString( uint64_t ptr, char* str, size_t sz )
+void Worker::AddString( uint64_t ptr, const char* str, size_t sz )
 {
     assert( m_pendingStrings > 0 );
     m_pendingStrings--;
@@ -3056,7 +3056,7 @@ void Worker::AddString( uint64_t ptr, char* str, size_t sz )
     it->second = sl.ptr;
 }
 
-void Worker::AddThreadString( uint64_t id, char* str, size_t sz )
+void Worker::AddThreadString( uint64_t id, const char* str, size_t sz )
 {
     assert( m_pendingThreads > 0 );
     m_pendingThreads--;
@@ -3066,13 +3066,13 @@ void Worker::AddThreadString( uint64_t id, char* str, size_t sz )
     it->second = sl.ptr;
 }
 
-void Worker::AddCustomString( uint64_t ptr, char* str, size_t sz )
+void Worker::AddCustomString( uint64_t ptr, const char* str, size_t sz )
 {
     assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
 }
 
-void Worker::AddExternalName( uint64_t ptr, char* str, size_t sz )
+void Worker::AddExternalName( uint64_t ptr, const char* str, size_t sz )
 {
     assert( m_pendingExternalNames > 0 );
     m_pendingExternalNames--;
@@ -3082,7 +3082,7 @@ void Worker::AddExternalName( uint64_t ptr, char* str, size_t sz )
     it->second.first = sl.ptr;
 }
 
-void Worker::AddExternalThreadName( uint64_t ptr, char* str, size_t sz )
+void Worker::AddExternalThreadName( uint64_t ptr, const char* str, size_t sz )
 {
     assert( m_pendingExternalNames > 0 );
     m_pendingExternalNames--;
@@ -3111,7 +3111,7 @@ static const uint8_t DxtcIndexTable[256] = {
     5,      7,      6,      4,      13,     15,     14,     12,     9,      11,     10,     8,      1,      3,      2,      0
 };
 
-void Worker::AddFrameImageData( uint64_t ptr, char* data, size_t sz )
+void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
 {
     assert( m_pendingFrameImageData.find( ptr ) == m_pendingFrameImageData.end() );
     assert( sz % 8 == 0 );
@@ -3142,7 +3142,7 @@ uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
     return ( id.idx & 0x7FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x4000000000000000 ) << 1 );
 }
 
-void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t _sz )
+void Worker::AddCallstackPayload( uint64_t ptr, const char* _data, size_t _sz )
 {
     assert( m_pendingCallstackPtr == 0 );
 
@@ -3189,7 +3189,7 @@ void Worker::AddCallstackPayload( uint64_t ptr, char* _data, size_t _sz )
     m_pendingCallstackId = idx;
 }
 
-void Worker::AddCallstackAllocPayload( uint64_t ptr, char* data, size_t _sz )
+void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _sz )
 {
     assert( m_pendingCallstackPtr != 0 );
 
@@ -3298,7 +3298,7 @@ void Worker::InsertPlot( PlotData* plot, int64_t time, double val )
     }
 }
 
-void Worker::HandlePlotName( uint64_t name, char* str, size_t sz )
+void Worker::HandlePlotName( uint64_t name, const char* str, size_t sz )
 {
     const auto sl = StoreString( str, sz );
     m_data.plots.StringDiscovered( name, sl, m_data.strings, [this] ( PlotData* dst, PlotData* src ) {
@@ -3309,7 +3309,7 @@ void Worker::HandlePlotName( uint64_t name, char* str, size_t sz )
     } );
 }
 
-void Worker::HandleFrameName( uint64_t name, char* str, size_t sz )
+void Worker::HandleFrameName( uint64_t name, const char* str, size_t sz )
 {
     const auto sl = StoreString( str, sz );
     m_data.frames.StringDiscovered( name, sl, m_data.strings, [] ( FrameData* dst, FrameData* src ) {
@@ -3342,7 +3342,7 @@ void Worker::HandlePostponedPlots()
     }
 }
 
-StringLocation Worker::StoreString( char* str, size_t sz )
+StringLocation Worker::StoreString( const char* str, size_t sz )
 {
     StringLocation ret;
     charutil::StringKey key = { str, sz };

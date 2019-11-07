@@ -425,7 +425,7 @@ private:
     void Query( ServerQuery type, uint64_t data );
     void QueryTerminate();
 
-    tracy_force_inline bool DispatchProcess( const QueueItem& ev, char*& ptr );
+    tracy_force_inline bool DispatchProcess( const QueueItem& ev, const char*& ptr );
     tracy_force_inline bool Process( const QueueItem& ev );
     tracy_force_inline void ProcessThreadContext( const QueueThreadContext& ev );
     tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
@@ -544,25 +544,25 @@ private:
     void CheckExternalName( uint64_t id );
 
     void AddSourceLocation( const QueueSourceLocation& srcloc );
-    void AddSourceLocationPayload( uint64_t ptr, char* data, size_t sz );
+    void AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz );
 
-    void AddString( uint64_t ptr, char* str, size_t sz );
-    void AddThreadString( uint64_t id, char* str, size_t sz );
-    void AddCustomString( uint64_t ptr, char* str, size_t sz );
-    void AddExternalName( uint64_t ptr, char* str, size_t sz );
-    void AddExternalThreadName( uint64_t ptr, char* str, size_t sz );
-    void AddFrameImageData( uint64_t ptr, char* data, size_t sz );
+    void AddString( uint64_t ptr, const char* str, size_t sz );
+    void AddThreadString( uint64_t id, const char* str, size_t sz );
+    void AddCustomString( uint64_t ptr, const char* str, size_t sz );
+    void AddExternalName( uint64_t ptr, const char* str, size_t sz );
+    void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );
+    void AddFrameImageData( uint64_t ptr, const char* data, size_t sz );
 
-    tracy_force_inline void AddCallstackPayload( uint64_t ptr, char* data, size_t sz );
-    tracy_force_inline void AddCallstackAllocPayload( uint64_t ptr, char* data, size_t sz );
+    tracy_force_inline void AddCallstackPayload( uint64_t ptr, const char* data, size_t sz );
+    tracy_force_inline void AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t sz );
 
     void InsertPlot( PlotData* plot, int64_t time, double val );
-    void HandlePlotName( uint64_t name, char* str, size_t sz );
-    void HandleFrameName( uint64_t name, char* str, size_t sz );
+    void HandlePlotName( uint64_t name, const char* str, size_t sz );
+    void HandleFrameName( uint64_t name, const char* str, size_t sz );
 
     void HandlePostponedPlots();
 
-    StringLocation StoreString( char* str, size_t sz );
+    StringLocation StoreString( const char* str, size_t sz );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
     tracy_force_inline Vector<short_ptr<ZoneEvent>>& GetZoneChildrenMutable( int32_t idx ) { return m_data.zoneChildren[idx]; }

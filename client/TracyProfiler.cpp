@@ -16,6 +16,7 @@
 #ifdef __CYGWIN__
 #  include <windows.h>
 #  include <unistd.h>
+#  include <tlhelp32.h>
 #endif
 
 #ifdef _GNU_SOURCE
@@ -523,7 +524,7 @@ static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz,
     return msg;
 }
 
-#ifdef _WIN32
+#if defined _WIN32 || defined __CYGWIN__
 static DWORD s_profilerThreadId = 0;
 static char s_crashText[1024];
 
@@ -1085,7 +1086,7 @@ Profiler::Profiler()
     }
 #endif
 
-#if defined _WIN32
+#if defined _WIN32 || defined __CYGWIN__
     s_profilerThreadId = GetThreadId( s_thread->Handle() );
     AddVectoredExceptionHandler( 1, CrashFilter );
 #endif

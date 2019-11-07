@@ -3345,8 +3345,6 @@ void Worker::HandlePostponedPlots()
 StringLocation Worker::StoreString( char* str, size_t sz )
 {
     StringLocation ret;
-    const char backup = str[sz];
-    str[sz] = '\0';
     charutil::StringKey key = { str, sz };
     auto sit = m_data.stringMap.find( key );
     if( sit == m_data.stringMap.end() )
@@ -3364,7 +3362,6 @@ StringLocation Worker::StoreString( char* str, size_t sz )
         ret.ptr = sit->first.ptr;
         ret.idx = sit->second;
     }
-    str[sz] = backup;
     return ret;
 }
 

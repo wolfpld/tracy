@@ -1085,14 +1085,8 @@ Profiler::Profiler()
     }
 #endif
 
-#if defined PTW32_VERSION
-    s_profilerThreadId = pthread_getw32threadid_np( s_thread->Handle() );
-#elif defined __WINPTHREADS_VERSION
-    s_profilerThreadId = GetThreadId( (HANDLE)pthread_gethandle( s_thread->Handle() ) );
-#elif defined _MSC_VER
-    s_profilerThreadId = GetThreadId( s_thread->Handle() );
-#endif
 #if defined _WIN32
+    s_profilerThreadId = GetThreadId( s_thread->Handle() );
     AddVectoredExceptionHandler( 1, CrashFilter );
 #endif
 

@@ -104,6 +104,7 @@ int main( int argc, char** argv )
 
     auto& lock = worker.GetMbpsDataLock();
 
+    const auto t0 = std::chrono::high_resolution_clock::now();
     while( worker.IsConnected() )
     {
 #ifndef _MSC_VER
@@ -138,6 +139,7 @@ int main( int argc, char** argv )
 
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
+    const auto t1 = std::chrono::high_resolution_clock::now();
 
     const auto& failure = worker.GetFailureType();
     if( failure != tracy::Worker::Failure::None )
@@ -145,7 +147,9 @@ int main( int argc, char** argv )
         printf( "\n\033[31;1mInstrumentation failure: %s\033[0m", tracy::Worker::GetFailureString( failure ) );
     }
 
-    printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nSaving trace...", worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() ), tracy::RealToString( worker.GetZoneCount(), true ) );
+    printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nElapsed time: %s\nSaving trace...",
+        worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() ), tracy::RealToString( worker.GetZoneCount(), true ),
+        tracy::TimeToString( std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count() ) );
     fflush( stdout );
     auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );
     if( f )

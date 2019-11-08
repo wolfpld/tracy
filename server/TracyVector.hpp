@@ -71,9 +71,10 @@ public:
 
     tracy_force_inline void swap( Vector& other )
     {
-        std::swap( m_ptr, other.m_ptr );
-        std::swap( m_size, other.m_size );
-        std::swap( m_capacity, other.m_capacity );
+        uint8_t tmp[sizeof( Vector<T> )];
+        memcpy( tmp, &other, sizeof( Vector<T> ) );
+        memcpy( &other, this, sizeof( Vector<T> ) );
+        memcpy( this, tmp, sizeof( Vector<T> ) );
     }
 
     tracy_force_inline bool empty() const { return m_size == 0; }

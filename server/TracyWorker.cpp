@@ -1319,10 +1319,11 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
                 uint64_t t0, t1;
                 f.Read2( t0, t1 );
-                mem->SetThreadAlloc( CompressThread( t0 ) );
+                const auto ct0 = CompressThread( t0 );
+                mem->SetThreadAlloc( ct0 );
                 if( t0 == t1 )
                 {
-                    mem->SetThreadFree( mem->ThreadAlloc() );
+                    mem->SetThreadFree( ct0 );
                 }
                 else
                 {

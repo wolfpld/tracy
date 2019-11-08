@@ -2863,8 +2863,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     ztd.SetZone( zone );
     ztd.SetThread( CompressThread( thread ) );
 #else
-    auto cnt = GetSourceLocationZonesCnt( zone->SrcLoc() );
-    (*cnt)++;
+    CountZoneStatistics( zone );
 #endif
 
     auto td = NoticeThread( thread );
@@ -5153,9 +5152,8 @@ void Worker::ReconstructZoneStatistics( ZoneEvent* zone, uint16_t thread )
 #else
 void Worker::CountZoneStatistics( ZoneEvent* zone )
 {
-    auto it = m_data.sourceLocationZonesCnt.find( zone->SrcLoc() );
-    assert( it != m_data.sourceLocationZonesCnt.end() );
-    it->second++;
+    auto cnt = GetSourceLocationZonesCnt( zone->SrcLoc() );
+    (*cnt)++;
 }
 #endif
 

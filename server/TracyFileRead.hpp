@@ -77,21 +77,21 @@ public:
 
     }
 
-    template<class T>
-    tracy_force_inline void Read2( T& v0, T& v1 )
+    template<class T, class U>
+    tracy_force_inline void Read2( T& v0, U& v1 )
     {
-        if( sizeof( T ) * 2 < BufSize - m_offset )
+        if( sizeof( T ) + sizeof( U ) < BufSize - m_offset )
         {
             memcpy( &v0, m_buf + m_offset, sizeof( T ) );
-            memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( T ) );
-            m_offset += sizeof( T ) * 2;
+            memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
+            m_offset += sizeof( T ) + sizeof( U );
         }
         else
         {
-            T tmp[2];
-            ReadBig( tmp, sizeof( T ) * 2 );
+            char tmp[sizeof( T ) + sizeof( U )];
+            ReadBig( tmp, sizeof( T ) + sizeof( U ) );
             memcpy( &v0, tmp, sizeof( T ) );
-            memcpy( &v1, tmp+1, sizeof( T ) );
+            memcpy( &v1, tmp + sizeof( T ), sizeof( U ) );
         }
     }
 

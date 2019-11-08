@@ -5176,9 +5176,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint6
         f.Read( srcloc );
         zone->SetSrcLoc( srcloc );
         // Use zone->_end_child1 as scratch buffer for zone start time offset.
-        f.Read( &zone->_end_child1, sizeof( zone->_end_child1 ) + sizeof( zone->text ) );
-        f.Read( &zone->callstack, sizeof( zone->callstack ) );
-        f.Read( &zone->name, sizeof( zone->name ) );
+        f.Read( &zone->_end_child1, sizeof( zone->_end_child1 ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
         refTime += int64_t( zone->_end_child1 );
         zone->SetStart( refTime );
         ReadTimeline( f, zone, refTime, childIdx );

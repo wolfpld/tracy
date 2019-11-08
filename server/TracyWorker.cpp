@@ -313,10 +313,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( LoadProgress::Initialization, std::memory_order_relaxed );
-    f.Read( m_resolution );
-    f.Read( m_timerMul );
-    f.Read( m_data.lastTime );
-    f.Read( m_data.frameOffset );
+    f.Read4( m_resolution, m_timerMul, m_data.lastTime, m_data.frameOffset );
 
     if( fileVer >= FileVersion( 0, 5, 5 ) )
     {
@@ -358,10 +355,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto ptr = m_slab.AllocInit<FrameData>();
-        f.Read( &ptr->name, sizeof( ptr->name ) );
-        f.Read( &ptr->continuous, sizeof( ptr->continuous ) );
         uint64_t fsz;
-        f.Read( &fsz, sizeof( fsz ) );
+        f.Read3( ptr->name, ptr->continuous, fsz );
         ptr->frames.reserve_exact( fsz, m_slab );
         if( fileVer >= FileVersion( 0, 4, 9 ) )
         {
@@ -422,8 +417,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             {
                 for( uint64_t j=0; j<fsz; j++ )
                 {
-                    f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
-                    f.Read( &ptr->frames[j].end, sizeof( int64_t ) );
+                    f.Read2( ptr->frames[j].start, ptr->frames[j].end );
                     ptr->frames[j].frameImage = -1;
                 }
             }
@@ -514,8 +508,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         for( uint64_t i=0; i<sz; i++ )
         {
             uint64_t id, ptr, ptr2;
-            f.Read2( id, ptr );
-            f.Read( ptr2 );
+            f.Read3( id, ptr, ptr2 );
             auto it = pointerMap.find( ptr );
             auto it2 = pointerMap.find( ptr2 );
             if( it != pointerMap.end() && it2 != pointerMap.end() )
@@ -569,8 +562,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             int16_t id;
             uint64_t cnt;
-            f.Read( id );
-            f.Read( cnt );
+            f.Read2( id, cnt );
             auto status = m_data.sourceLocationZones.emplace( id, SourceLocationZones() );
             assert( status.second );
             status.first->second.zones.reserve( cnt );
@@ -582,8 +574,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             int32_t id;
             uint64_t cnt;
-            f.Read( id );
-            f.Read( cnt );
+            f.Read2( id, cnt );
             auto status = m_data.sourceLocationZones.emplace( int16_t( id ), SourceLocationZones() );
             assert( status.second );
             status.first->second.zones.reserve( cnt );
@@ -636,8 +627,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 f.Read( srcloc );
                 lockmap.srcloc = int16_t( srcloc );
             }
-            f.Read( lockmap.type );
-            f.Read( lockmap.valid );
+            f.Read2( lockmap.type, lockmap.valid );
             lockmap.isContended = false;
             if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
@@ -737,10 +727,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
                         int64_t time;
-                        f.Read( time );
-                        lev->SetTime( time - m_data.baseTime );
                         int32_t srcloc;
-                        f.Read( srcloc );
+                        f.Read2( time, srcloc );
+                        lev->SetTime( time - m_data.baseTime );
                         lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = { lev };
@@ -753,10 +742,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
                         int64_t time;
-                        f.Read( time );
-                        lev->SetTime( time - m_data.baseTime );
                         int32_t srcloc;
-                        f.Read( srcloc );
+                        f.Read2( time, srcloc );
+                        lev->SetTime( time - m_data.baseTime );
                         lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = { lev };
@@ -818,8 +806,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 f.Read( ptr );
                 auto msgdata = m_slab.Alloc<MessageData>();
                 msgdata->time = ReadTimeOffset( f, refTime );
-                f.Read( msgdata->ref );
-                f.Read( msgdata->color );
+                f.Read2( msgdata->ref, msgdata->color );
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
             }
@@ -833,8 +820,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 f.Read( ptr );
                 auto msgdata = m_slab.Alloc<MessageData>();
                 msgdata->time = ReadTimeOffset( f, refTime );
-                f.Read( msgdata->ref );
-                f.Read( msgdata->color );
+                f.Read2( msgdata->ref, msgdata->color );
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
             }
@@ -900,12 +886,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto td = m_slab.AllocInit<ThreadData>();
-        uint64_t tid;
-        f.Read( tid );
+        uint64_t tid, tsz;
+        f.Read3( tid, td->count, tsz );
         td->id = tid;
-        f.Read( td->count );
-        uint64_t tsz;
-        f.Read( tsz );
         if( fileVer < FileVersion( 0, 4, 7 ) )
         {
             s_loadProgress.subTotal.store( td->count, std::memory_order_relaxed );
@@ -970,16 +953,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto ctx = m_slab.AllocInit<GpuCtxData>();
-        f.Read( ctx->thread );
-        f.Read( ctx->accuracyBits );
-        f.Read( ctx->count );
+        f.Read4( ctx->thread, ctx->accuracyBits, ctx->count, ctx->period );
         if( fileVer < FileVersion( 0, 4, 7 ) )
         {
             s_loadProgress.subTotal.store( ctx->count, std::memory_order_relaxed );
             s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
         }
-        f.Read( ctx->period );
-        if( fileVer >= FileVersion( 0, 5, 10 ) )
+        else if( fileVer >= FileVersion( 0, 5, 10 ) )
         {
             uint64_t tdsz;
             f.Read( tdsz );
@@ -995,7 +975,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     ReadTimeline( f, td->second.timeline, tsz, refTime, refGpuTime, childIdx );
                 }
             }
-
         }
         else if( fileVer >= FileVersion( 0, 5, 7 ) )
         {
@@ -1041,8 +1020,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             auto pd = m_slab.AllocInit<PlotData>();
             if( fileVer >= FileVersion( 0, 5, 11 ) )
             {
-                f.Read( pd->type );
-                f.Read( pd->format );
+                f.Read2( pd->type, pd->format );
             }
             else
             {
@@ -1070,11 +1048,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     break;
                 }
             }
-            f.Read( pd->name );
-            f.Read( pd->min );
-            f.Read( pd->max );
             uint64_t psz;
-            f.Read( psz );
+            f.Read4( pd->name, pd->min, pd->max, psz );
             pd->data.reserve_exact( psz, m_slab );
             if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
@@ -1099,10 +1074,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 for( uint64_t j=0; j<psz; j++ )
                 {
                     uint64_t t;
-                    f.Read( t );
+                    f.Read2( t, pd->data[j].val );
                     t -= m_data.baseTime;
                     pd->data[j].time.SetVal( t );
-                    f.Read( pd->data[j].val );
                 }
             }
             m_data.plots.Data().push_back_no_space_check( pd );
@@ -1156,16 +1130,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 uint64_t ptr, size;
                 Int24 csAlloc;
-                f.Read2( ptr, size );
-                f.Read( &csAlloc, sizeof( csAlloc ) );
+                f.Read4( ptr, size, csAlloc, mem->csFree );
                 mem->SetPtr( ptr );
                 mem->SetSize( size );
                 mem->SetCsAlloc( csAlloc.Val() );
-                f.Read( &mem->csFree, sizeof( mem->csFree ) );
                 int64_t timeAlloc, timeFree;
                 uint16_t threadAlloc, threadFree;
-                f.Read2( timeAlloc, timeFree );
-                f.Read2( threadAlloc, threadFree );
+                f.Read4( timeAlloc, timeFree, threadAlloc, threadFree );
                 refTime += timeAlloc;
                 mem->SetTimeAlloc( refTime );
                 if( timeFree >= 0 )
@@ -1193,8 +1164,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 uint64_t ptr, size;
                 Int24 csAlloc;
-                f.Read2( ptr, size );
-                f.Read( &csAlloc, sizeof( csAlloc ) );
+                f.Read3( ptr, size, csAlloc );
                 mem->SetPtr( ptr );
                 mem->SetSize( size );
                 mem->SetCsAlloc( csAlloc.Val() );
@@ -1203,8 +1173,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 f.Skip( 1 );
                 int64_t timeAlloc, timeFree;
                 uint16_t threadAlloc, threadFree;
-                f.Read2( timeAlloc, timeFree );
-                f.Read2( threadAlloc, threadFree );
+                f.Read4( timeAlloc, timeFree, threadAlloc, threadFree );
                 refTime += timeAlloc;
                 mem->SetTimeAlloc( refTime );
                 if( timeFree >= 0 )
@@ -1231,11 +1200,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             {
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 uint64_t ptr, size;
-                f.Read2( ptr, size );
+                int64_t timeAlloc, timeFree;
+                f.Read4( ptr, size, timeAlloc, timeFree );
                 mem->SetPtr( ptr );
                 mem->SetSize( size );
-                int64_t timeAlloc, timeFree;
-                f.Read2( timeAlloc, timeFree );
                 Int24 csAlloc;
                 f.Read( &csAlloc, sizeof( csAlloc ) );
                 mem->SetCsAlloc( csAlloc.Val() );
@@ -1270,11 +1238,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 if( fileVer > FileVersion( 0, 4, 1 ) )
                 {
                     uint64_t size;
-                    f.Read2( ptr, size );
+                    int64_t timeAlloc, timeFree;
+                    f.Read4( ptr, size, timeAlloc, timeFree );
                     mem->SetPtr( ptr );
                     mem->SetSize( size );
-                    int64_t timeAlloc, timeFree;
-                    f.Read2( timeAlloc, timeFree );
                     Int24 csAlloc;
                     f.Read( &csAlloc, sizeof( csAlloc ) );
                     mem->SetCsAlloc( csAlloc.Val() );
@@ -1295,11 +1262,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 else
                 {
                     uint64_t ptr, size;
-                    f.Read2( ptr, size );
+                    int64_t timeAlloc, timeFree;
+                    f.Read4( ptr, size, timeAlloc, timeFree );
                     mem->SetPtr( ptr );
                     mem->SetSize( size );
-                    int64_t timeAlloc, timeFree;
-                    f.Read2( timeAlloc, timeFree );
                     Int24 csAlloc;
                     f.Read( &csAlloc, sizeof( csAlloc ) );
                     mem->SetCsAlloc( csAlloc.Val() );
@@ -1343,9 +1309,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             }
         }
 
-        f.Read( m_data.memory.high );
-        f.Read( m_data.memory.low );
-        f.Read( m_data.memory.usage );
+        f.Read3( m_data.memory.high, m_data.memory.low, m_data.memory.usage );
 
         if( sz != 0 )
         {
@@ -1431,10 +1395,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         for( uint64_t i=0; i<sz; i++ )
         {
             CallstackFrameId id;
-            f.Read( id );
-
             auto frameData = m_slab.Alloc<CallstackFrameData>();
-            f.Read( frameData->size );
+            f.Read2( id, frameData->size );
 
             frameData->data = m_slab.Alloc<CallstackFrame>( frameData->size );
             f.Read( frameData->data, sizeof( CallstackFrame ) * frameData->size );
@@ -1450,10 +1412,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             __StringIdxOld str;
             CallstackFrameId id;
-            f.Read( id );
-
             auto frameData = m_slab.Alloc<CallstackFrameData>();
-            f.Read( frameData->size );
+            f.Read2( id, frameData->size );
 
             frameData->data = m_slab.AllocInit<CallstackFrame>( frameData->size );
             for( uint8_t j=0; j<frameData->size; j++ )
@@ -1476,10 +1436,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             __StringIdxOld str;
             uint64_t ptr;
-            f.Read( ptr );
-
             auto frameData = m_slab.Alloc<CallstackFrameData>();
-            f.Read( frameData->size );
+            f.Read2( ptr, frameData->size );
 
             frameData->data = m_slab.AllocInit<CallstackFrame>( frameData->size );
             for( uint8_t j=0; j<frameData->size; j++ )
@@ -1561,8 +1519,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 {
                     s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                     auto fi = m_slab.Alloc<FrameImage>();
-                    f.Read2( fi->w, fi->h );
-                    f.Read( fi->flip );
+                    f.Read3( fi->w, fi->h, fi->flip );
                     const auto sz = size_t( fi->w * fi->h / 2 );
 
                     int idx = -1;
@@ -1677,9 +1634,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     uint8_t cpu;
                     int8_t reason;
                     int8_t state;
-                    f.Read( cpu );
-                    f.Read( reason );
-                    f.Read( state );
+                    f.Read3( cpu, reason, state );
                     ptr->SetCpu( cpu );
                     ptr->SetReason( reason );
                     ptr->SetState( state );
@@ -1755,8 +1710,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             uint64_t tid;
             CpuThreadData data;
-            f.Read( tid );
-            f.Read( data );
+            f.Read2( tid, data );
             m_data.cpuThreadData.emplace( tid, data );
         }
     }
@@ -5342,13 +5296,11 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& vec, uint64
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
 
         int64_t tcpu, tgpu;
-        f.Read2( tcpu, tgpu );
         int16_t srcloc;
-        f.Read( srcloc );
+        f.Read3( tcpu, tgpu, srcloc );
         zone->SetSrcLoc( srcloc );
-        f.Read( &zone->callstack, sizeof( zone->callstack ) );
         uint16_t thread;
-        f.Read( thread );
+        f.Read2( zone->callstack, thread );
         zone->SetThread( thread );
         refTime += tcpu;
         refGpuTime += tgpu;

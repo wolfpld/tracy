@@ -1778,7 +1778,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 for( auto& zone : vec )
                 {
-                    ReadTimelineUpdateStatistics( zone, thread );
+                    ReconstructZoneStatistics( zone, thread );
                     if( zone->Child() >= 0 )
                     {
                         ProcessTimeline( GetZoneChildrenMutable( zone->Child() ), thread );
@@ -5117,9 +5117,9 @@ void Worker::ReadTimelinePre0510( FileRead& f, GpuEvent* zone, int64_t& refTime,
     }
 }
 
-void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
-{
 #ifndef TRACY_NO_STATISTICS
+void Worker::ReconstructZoneStatistics( ZoneEvent* zone, uint16_t thread )
+{
     auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
     assert( it != m_data.sourceLocationZones.end() );
     auto& slz = it->second;
@@ -5149,12 +5149,15 @@ void Worker::ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread )
             slz.selfTotal += timeSpan;
         }
     }
+}
 #else
+void Worker::CountZoneStatistics( ZoneEvent* zone )
+{
     auto it = m_data.sourceLocationZonesCnt.find( zone->SrcLoc() );
     assert( it != m_data.sourceLocationZonesCnt.end() );
     it->second++;
-#endif
 }
+#endif
 
 void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int32_t& childIdx )
 {
@@ -5183,7 +5186,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint1
         ReadTimeline( f, zone, thread, refTime, childIdx );
         zone->SetEnd( ReadTimeOffset( f, refTime ) );
 #ifdef TRACY_NO_STATISTICS
-        ReadTimelineUpdateStatistics( zone, thread );
+        CountZoneStatistics( zone );
 #endif
     }
     while( ++zone != zptr );
@@ -5235,7 +5238,7 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec,
         }
         ReadTimelinePre042( f, zone, thread, fileVer );
 #ifdef TRACY_NO_STATISTICS
-        ReadTimelineUpdateStatistics( zone, thread );
+        CountZoneStatistics( zone );
 #endif
     }
 }
@@ -5319,7 +5322,7 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec
         if( end >= 0 ) end -= m_data.baseTime;
         zone->SetEnd( end );
 #ifdef TRACY_NO_STATISTICS
-        ReadTimelineUpdateStatistics( zone, thread );
+        CountZoneStatistics( zone );
 #endif
     }
     while( ++zone != zptr );

@@ -577,7 +577,11 @@ private:
     tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx );
     tracy_force_inline void ReadTimelinePre0510( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int fileVer );
 
-    tracy_force_inline void ReadTimelineUpdateStatistics( ZoneEvent* zone, uint16_t thread );
+#ifndef TRACY_NO_STATISTICS
+    tracy_force_inline void ReconstructZoneStatistics( ZoneEvent* zone, uint16_t thread );
+#else
+    tracy_force_inline void CountZoneStatistics( ZoneEvent* zone );
+#endif
 
     void ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int32_t& childIdx );
     void ReadTimelinePre042( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread, uint64_t size, int fileVer );

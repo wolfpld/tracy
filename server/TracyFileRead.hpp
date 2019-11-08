@@ -112,7 +112,6 @@ private:
     FileRead( FILE* f, const char* fn )
         : m_stream( LZ4_createStreamDecode() )
         , m_file( f )
-        , m_filename( fn )
         , m_buf( m_bufData[1] )
         , m_second( m_bufData[0] )
         , m_offset( 0 )
@@ -120,6 +119,7 @@ private:
         , m_signalSwitch( false )
         , m_signalAvailable( false )
         , m_exit( false )
+        , m_filename( fn )
     {
         char hdr[4];
         if( fread( hdr, 1, sizeof( hdr ), m_file ) != sizeof( hdr ) ) throw NotTracyDump();
@@ -219,8 +219,6 @@ private:
 
     LZ4_streamDecode_t* m_stream;
     FILE* m_file;
-    std::string m_filename;
-    char m_bufData[2][BufSize];
     char* m_buf;
     char* m_second;
     size_t m_offset;
@@ -231,6 +229,9 @@ private:
     std::atomic<bool> m_exit;
 
     std::thread m_decThread;
+
+    std::string m_filename;
+    char m_bufData[2][BufSize];
 };
 
 }

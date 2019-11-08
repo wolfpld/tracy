@@ -95,6 +95,48 @@ public:
         }
     }
 
+    template<class T, class U, class V>
+    tracy_force_inline void Read3( T& v0, U& v1, V& v2 )
+    {
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) < BufSize - m_offset )
+        {
+            memcpy( &v0, m_buf + m_offset, sizeof( T ) );
+            memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, m_buf + m_offset + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            m_offset += sizeof( T ) + sizeof( U ) + sizeof( V );
+        }
+        else
+        {
+            char tmp[sizeof( T ) + sizeof( U ) + sizeof( V )];
+            ReadBig( tmp, sizeof( T ) + sizeof( U ) + sizeof( V ) );
+            memcpy( &v0, tmp, sizeof( T ) );
+            memcpy( &v1, tmp + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, tmp + sizeof( T ) + sizeof( U ), sizeof( V ) );
+        }
+    }
+
+    template<class T, class U, class V, class W>
+    tracy_force_inline void Read4( T& v0, U& v1, V& v2, W& v3 )
+    {
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) < BufSize - m_offset )
+        {
+            memcpy( &v0, m_buf + m_offset, sizeof( T ) );
+            memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, m_buf + m_offset + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+            m_offset += sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W );
+        }
+        else
+        {
+            char tmp[sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W )];
+            ReadBig( tmp, sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) );
+            memcpy( &v0, tmp, sizeof( T ) );
+            memcpy( &v1, tmp + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, tmp + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+        }
+    }
+
     bool IsEOF()
     {
         if( m_lastBlock != BufSize && m_offset == m_lastBlock ) return true;

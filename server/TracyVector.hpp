@@ -63,7 +63,11 @@ public:
     Vector& operator=( const Vector& ) = delete;
     tracy_force_inline Vector& operator=( Vector&& src ) noexcept
     {
-        delete[] (T*)m_ptr;
+        if( m_capacity != MaxCapacity() )
+        {
+            memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
+            delete[] (T*)m_ptr;
+        }
         memcpy( this, &src, sizeof( Vector<T> ) );
         memset( &src, 0, sizeof( Vector<T> ) );
         return *this;

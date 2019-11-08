@@ -915,17 +915,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             if( fileVer <= FileVersion( 0, 4, 1 ) )
             {
-                ReadTimelinePre042( f, td->timeline, CompressThread( tid ), tsz, fileVer );
+                ReadTimelinePre042( f, td->timeline, tsz, fileVer );
             }
             else if( fileVer <= FileVersion( 0, 5, 9 ) )
             {
                 int64_t refTime = 0;
-                ReadTimelinePre0510( f, td->timeline, CompressThread( tid ), tsz, refTime, fileVer );
+                ReadTimelinePre0510( f, td->timeline, tsz, refTime, fileVer );
             }
             else
             {
                 int64_t refTime = 0;
-                ReadTimeline( f, td->timeline, CompressThread( tid ), tsz, refTime, childIdx );
+                ReadTimeline( f, td->timeline, tsz, refTime, childIdx );
             }
         }
         uint64_t msz;
@@ -5026,7 +5026,7 @@ void Worker::ReconstructContextSwitchUsage()
 }
 #endif
 
-void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int32_t& childIdx )
+void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32_t& childIdx )
 {
     uint64_t sz;
     f.Read( sz );
@@ -5039,11 +5039,11 @@ void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_
         const auto idx = childIdx;
         childIdx++;
         zone->SetChild( idx );
-        ReadTimeline( f, m_data.zoneChildren[idx], thread, sz, refTime, childIdx );
+        ReadTimeline( f, m_data.zoneChildren[idx], sz, refTime, childIdx );
     }
 }
 
-void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, int fileVer )
+void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, int fileVer )
 {
     uint64_t sz;
     f.Read( sz );
@@ -5057,12 +5057,12 @@ void Worker::ReadTimelinePre042( FileRead& f, ZoneEvent* zone, uint16_t thread, 
         zone->SetChild( child );
         m_data.zoneChildren.push_back( Vector<short_ptr<ZoneEvent>>() );
         Vector<short_ptr<ZoneEvent>> tmp;
-        ReadTimelinePre042( f, tmp, thread, sz, fileVer );
+        ReadTimelinePre042( f, tmp, sz, fileVer );
         m_data.zoneChildren[child] = std::move( tmp );
     }
 }
 
-void Worker::ReadTimelinePre0510( FileRead& f, ZoneEvent* zone, uint16_t thread, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre0510( FileRead& f, ZoneEvent* zone, int64_t& refTime, int fileVer )
 {
     uint64_t sz;
     f.Read( sz );
@@ -5076,7 +5076,7 @@ void Worker::ReadTimelinePre0510( FileRead& f, ZoneEvent* zone, uint16_t thread,
         zone->SetChild( child );
         m_data.zoneChildren.push_back( Vector<short_ptr<ZoneEvent>>() );
         Vector<short_ptr<ZoneEvent>> tmp;
-        ReadTimelinePre0510( f, tmp, thread, sz, refTime, fileVer );
+        ReadTimelinePre0510( f, tmp, sz, refTime, fileVer );
         m_data.zoneChildren[child] = std::move( tmp );
     }
 }
@@ -5159,7 +5159,7 @@ void Worker::CountZoneStatistics( ZoneEvent* zone )
 }
 #endif
 
-void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int32_t& childIdx )
+void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint64_t size, int64_t& refTime, int32_t& childIdx )
 {
     assert( size != 0 );
     vec.reserve_exact( size, m_slab );
@@ -5183,7 +5183,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint1
         f.Read( &zone->name, sizeof( zone->name ) );
         refTime += int64_t( zone->_end_child1 );
         zone->SetStart( refTime );
-        ReadTimeline( f, zone, thread, refTime, childIdx );
+        ReadTimeline( f, zone, refTime, childIdx );
         zone->SetEnd( ReadTimeOffset( f, refTime ) );
 #ifdef TRACY_NO_STATISTICS
         CountZoneStatistics( zone );
@@ -5192,7 +5192,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint1
     while( ++zone != zptr );
 }
 
-void Worker::ReadTimelinePre042( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread, uint64_t size, int fileVer )
+void Worker::ReadTimelinePre042( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint64_t size, int fileVer )
 {
     assert( fileVer <= FileVersion( 0, 4, 1 ) );
     assert( size != 0 );
@@ -5236,14 +5236,14 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec,
         {
             new ( &zone->name ) StringIdx();
         }
-        ReadTimelinePre042( f, zone, thread, fileVer );
+        ReadTimelinePre042( f, zone, fileVer );
 #ifdef TRACY_NO_STATISTICS
         CountZoneStatistics( zone );
 #endif
     }
 }
 
-void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread, uint64_t size, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint64_t size, int64_t& refTime, int fileVer )
 {
     assert( fileVer <= FileVersion( 0, 5, 9 ) );
     assert( size != 0 );
@@ -5317,7 +5317,7 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec
         }
         refTime += zone->_end_child1;
         zone->SetStart( refTime - m_data.baseTime );
-        ReadTimelinePre0510( f, zone, thread, refTime, fileVer );
+        ReadTimelinePre0510( f, zone, refTime, fileVer );
         int64_t end = ReadTimeOffset( f, refTime );
         if( end >= 0 ) end -= m_data.baseTime;
         zone->SetEnd( end );

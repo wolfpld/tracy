@@ -959,7 +959,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             s_loadProgress.subTotal.store( ctx->count, std::memory_order_relaxed );
             s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
         }
-        else if( fileVer >= FileVersion( 0, 5, 10 ) )
+        if( fileVer >= FileVersion( 0, 5, 10 ) )
         {
             uint64_t tdsz;
             f.Read( tdsz );

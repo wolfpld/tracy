@@ -22,7 +22,7 @@ namespace tracy
 template<typename T>
 class Vector
 {
-    constexpr uint8_t MaxCapacity() { return std::numeric_limits<uint8_t>::max(); }
+    constexpr uint8_t MaxCapacity() { return 0x7F; }
 
 public:
     using iterator = T*;
@@ -32,6 +32,7 @@ public:
         : m_ptr( nullptr )
         , m_size( 0 )
         , m_capacity( 0 )
+        , m_magic( 0 )
     {
     }
 
@@ -46,6 +47,7 @@ public:
         : m_ptr( new T[1] )
         , m_size( 1 )
         , m_capacity( 0 )
+        , m_magic( 0 )
     {
         memUsage.fetch_add( sizeof( T ), std::memory_order_relaxed );
         m_ptr[0] = value;
@@ -264,6 +266,9 @@ public:
         m_size = 0;
     }
 
+    tracy_force_inline bool is_magic() const { return m_magic; }
+    tracy_force_inline void set_magic() { assert( !m_magic ); m_magic = 1; }
+
 private:
     tracy_no_inline void AllocMore()
     {
@@ -320,7 +325,8 @@ private:
     short_ptr<T> m_ptr;
 #endif
     uint32_t m_size;
-    uint8_t m_capacity;
+    uint8_t m_capacity : 7;
+    uint8_t m_magic : 1;
 };
 
 

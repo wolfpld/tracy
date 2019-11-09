@@ -3010,11 +3010,25 @@ int View::DispatchZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover
     const auto yPos = wpos.y + offset;
     if( yPos + ostep >= yMin && yPos <= yMax )
     {
-        return DrawZoneLevel<VectorAdapterPointer<ZoneEvent>>( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+        if( vec.is_magic() )
+        {
+            return DrawZoneLevel<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &vec ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+        }
+        else
+        {
+            return DrawZoneLevel<VectorAdapterPointer<ZoneEvent>>( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+        }
     }
     else
     {
-        return SkipZoneLevel<VectorAdapterPointer<ZoneEvent>>( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+        if( vec.is_magic() )
+        {
+            return SkipZoneLevel<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &vec ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+        }
+        else
+        {
+            return SkipZoneLevel<VectorAdapterPointer<ZoneEvent>>( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+        }
     }
 }
 

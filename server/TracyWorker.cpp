@@ -5112,18 +5112,15 @@ void Worker::CountZoneStatistics( ZoneEvent* zone )
 }
 #endif
 
-void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint64_t size, int64_t& refTime, int32_t& childIdx )
+void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint64_t size, int64_t& refTime, int32_t& childIdx )
 {
     assert( size != 0 );
+    auto& vec = *(Vector<ZoneEvent>*)( &_vec );
+    vec.set_magic();
     vec.reserve_exact( size, m_slab );
     m_data.zonesCnt += size;
-    auto zone = (ZoneEvent*)m_slab.AllocBig( sizeof( ZoneEvent ) * size );
-    auto zptr = zone;
-    auto vptr = vec.data();
-    for( uint64_t i=0; i<size; i++ )
-    {
-        *vptr++ = zptr++;
-    }
+    auto zone = vec.begin();
+    auto end = vec.end();
     do
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
@@ -5140,21 +5137,22 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint6
         CountZoneStatistics( zone );
 #endif
     }
-    while( ++zone != zptr );
+    while( ++zone != end );
 }
 
-void Worker::ReadTimelinePre042( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint64_t size, int fileVer )
+void Worker::ReadTimelinePre042( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint64_t size, int fileVer )
 {
     assert( fileVer <= FileVersion( 0, 4, 1 ) );
     assert( size != 0 );
+    auto& vec = *(Vector<ZoneEvent>*)( &_vec );
+    vec.set_magic();
     vec.reserve_exact( size, m_slab );
     m_data.zonesCnt += size;
-
-    for( uint64_t i=0; i<size; i++ )
+    auto zone = vec.begin();
+    auto end = vec.end();
+    do
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
-        auto zone = m_slab.Alloc<ZoneEvent>();
-        vec[i] = zone;
         int64_t start;
         f.Read( start );
         zone->SetStart( start - m_data.baseTime );
@@ -5192,21 +5190,19 @@ void Worker::ReadTimelinePre042( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec,
         CountZoneStatistics( zone );
 #endif
     }
+    while( ++zone != end );
 }
 
-void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint64_t size, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint64_t size, int64_t& refTime, int fileVer )
 {
     assert( fileVer <= FileVersion( 0, 5, 9 ) );
     assert( size != 0 );
+    auto& vec = *(Vector<ZoneEvent>*)( &_vec );
+    vec.set_magic();
     vec.reserve_exact( size, m_slab );
     m_data.zonesCnt += size;
-    auto zone = (ZoneEvent*)m_slab.AllocBig( sizeof( ZoneEvent ) * size );
-    auto zptr = zone;
-    auto vptr = vec.data();
-    for( uint64_t i=0; i<size; i++ )
-    {
-        *vptr++ = zptr++;
-    }
+    auto zone = vec.begin();
+    auto end = vec.end();
     do
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
@@ -5276,7 +5272,7 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec
         CountZoneStatistics( zone );
 #endif
     }
-    while( ++zone != zptr );
+    while( ++zone != end );
 }
 
 void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx )

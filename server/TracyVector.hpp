@@ -322,6 +322,11 @@ private:
     uint32_t m_size;
     uint8_t m_capacity;
 };
+
+
+template<typename T> struct VectorAdapterDirect { const T& operator()( const T& it ) const { return it; } };
+template<typename T> struct VectorAdapterPointer { const T& operator()( const short_ptr<T>& it ) const { return *it; } };
+
 #pragma pack()
 
 enum { VectorSize = sizeof( Vector<int> ) };

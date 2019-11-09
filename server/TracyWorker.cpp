@@ -1728,15 +1728,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 #ifndef TRACY_NO_STATISTICS
         m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
             std::function<void(Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
-            ProcessTimeline = [this, &ProcessTimeline] ( Vector<short_ptr<ZoneEvent>>& vec, uint16_t thread )
+            ProcessTimeline = [this, &ProcessTimeline] ( Vector<short_ptr<ZoneEvent>>& _vec, uint16_t thread )
             {
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                assert( _vec.is_magic() );
+                auto& vec = *(Vector<ZoneEvent>*)( &_vec );
                 for( auto& zone : vec )
                 {
                     ReconstructZoneStatistics( zone, thread );
-                    if( zone->Child() >= 0 )
+                    if( zone.Child() >= 0 )
                     {
-                        ProcessTimeline( GetZoneChildrenMutable( zone->Child() ), thread );
+                        ProcessTimeline( GetZoneChildrenMutable( zone.Child() ), thread );
                     }
                 }
             };
@@ -5072,29 +5074,32 @@ void Worker::ReadTimelinePre0510( FileRead& f, GpuEvent* zone, int64_t& refTime,
 }
 
 #ifndef TRACY_NO_STATISTICS
-void Worker::ReconstructZoneStatistics( ZoneEvent* zone, uint16_t thread )
+void Worker::ReconstructZoneStatistics( ZoneEvent& zone, uint16_t thread )
 {
-    auto it = m_data.sourceLocationZones.find( zone->SrcLoc() );
+    auto it = m_data.sourceLocationZones.find( zone.SrcLoc() );
     assert( it != m_data.sourceLocationZones.end() );
     auto& slz = it->second;
     auto& ztd = slz.zones.push_next();
-    ztd.SetZone( zone );
+    ztd.SetZone( &zone );
     ztd.SetThread( thread );
 
-    if( zone->End() >= 0 )
+    if( zone.End() >= 0 )
     {
-        auto timeSpan = zone->End() - zone->Start();
+        auto timeSpan = zone.End() - zone.Start();
         if( timeSpan > 0 )
         {
             if( slz.min > timeSpan ) slz.min = timeSpan;
             if( slz.max < timeSpan ) slz.max = timeSpan;
             slz.total += timeSpan;
             slz.sumSq += double( timeSpan ) * timeSpan;
-            if( zone->Child() >= 0 )
+            if( zone.Child() >= 0 )
             {
-                for( auto& v : GetZoneChildren( zone->Child() ) )
+                auto& children = GetZoneChildren( zone.Child() );
+                assert( children.is_magic() );
+                auto& c = *(Vector<ZoneEvent>*)( &children );
+                for( auto& v : c )
                 {
-                    const auto childSpan = std::max( int64_t( 0 ), v->End() - v->Start() );
+                    const auto childSpan = std::max( int64_t( 0 ), v.End() - v.Start() );
                     timeSpan -= childSpan;
                 }
             }

@@ -3010,25 +3010,27 @@ int View::DispatchZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover
     const auto yPos = wpos.y + offset;
     if( yPos + ostep >= yMin && yPos <= yMax )
     {
-        return DrawZoneLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+        return DrawZoneLevel<VectorAdapterPointer<ZoneEvent>>( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
     }
     else
     {
-        return SkipZoneLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+        return SkipZoneLevel<VectorAdapterPointer<ZoneEvent>>( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
     }
 }
 
-int View::DrawZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
+template<typename Adapter, typename V>
+int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [] ( const auto& l, const auto& r ) { return (uint64_t)l->End() < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
     if( it == zitend ) return depth;
-    if( (*it)->End() < 0 && m_worker.GetZoneEnd( **it ) < m_vd.zvStart ) return depth;
+    Adapter a;
+    if( a(*it).End() < 0 && m_worker.GetZoneEnd( a(*it) ) < m_vd.zvStart ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
@@ -3043,7 +3045,7 @@ int View::DrawZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, do
 
     while( it < zitend )
     {
-        auto& ev = **it;
+        auto& ev = a(*it);
         const auto end = m_worker.GetZoneEnd( ev );
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
@@ -3057,11 +3059,11 @@ int View::DrawZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, do
             for(;;)
             {
                 const auto prevIt = it;
-                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l->End() < (uint64_t)r; } );
+                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
                 if( it == prevIt ) ++it;
                 num += std::distance( prevIt, it );
                 if( it == zitend ) break;
-                const auto nend = m_worker.GetZoneEnd( **it );
+                const auto nend = m_worker.GetZoneEnd( a(*it) );
                 const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;
@@ -3237,23 +3239,25 @@ int View::DrawZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, do
     return maxdepth;
 }
 
-int View::SkipZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
+template<typename Adapter, typename V>
+int View::SkipZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
     const auto delay = m_worker.GetDelay();
     const auto resolution = m_worker.GetResolution();
     // cast to uint64_t, so that unended zones (end = -1) are still drawn
-    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [] ( const auto& l, const auto& r ) { return (uint64_t)l->End() < (uint64_t)r; } );
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart - delay ), [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
     if( it == vec.end() ) return depth;
 
-    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
     if( it == zitend ) return depth;
 
     depth++;
     int maxdepth = depth;
 
+    Adapter a;
     while( it < zitend )
     {
-        auto& ev = **it;
+        auto& ev = a(*it);
         const auto end = m_worker.GetZoneEnd( ev );
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinVisSize )
@@ -3263,10 +3267,10 @@ int View::SkipZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, do
             for(;;)
             {
                 const auto prevIt = it;
-                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { return (uint64_t)l->End() < (uint64_t)r; } );
+                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { Adapter a; return (uint64_t)a(l).End() < (uint64_t)r; } );
                 if( it == prevIt ) ++it;
                 if( it == zitend ) break;
-                const auto nend = m_worker.GetZoneEnd( **it );
+                const auto nend = m_worker.GetZoneEnd( a(*it) );
                 const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                 if( pxnext - px1 >= MinVisSize * 2 ) break;
                 px1 = pxnext;

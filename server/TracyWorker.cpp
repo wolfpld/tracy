@@ -4106,7 +4106,7 @@ void Worker::ProcessPlotData( const QueuePlotData& ev )
 
 void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )
 {
-    PlotData* plot = m_data.plots.Retrieve( ev.name, [this, &ev] ( uint64_t name ) {
+    PlotData* plot = m_data.plots.Retrieve( ev.name, [this] ( uint64_t name ) {
         auto plot = m_slab.AllocInit<PlotData>();
         plot->name = name;
         plot->type = PlotType::User;

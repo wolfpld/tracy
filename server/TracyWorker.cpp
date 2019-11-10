@@ -3714,7 +3714,8 @@ void Worker::FrameImageTwiceFailure()
 
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
-    auto td = NoticeThread( m_threadCtx );
+    auto td = m_threadCtxData;
+    if( !td ) td = m_threadCtxData = NoticeThread( m_threadCtx );
     td->nextZoneId = ev.id;
 }
 

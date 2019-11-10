@@ -55,7 +55,7 @@ public:
 
     tracy_force_inline ~Vector()
     {
-        if( m_capacity != MaxCapacity() )
+        if( m_capacity != MaxCapacity() && m_ptr )
         {
             memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
             delete[] (T*)m_ptr;
@@ -65,7 +65,7 @@ public:
     Vector& operator=( const Vector& ) = delete;
     tracy_force_inline Vector& operator=( Vector&& src ) noexcept
     {
-        if( m_capacity != MaxCapacity() )
+        if( m_capacity != MaxCapacity() && m_ptr )
         {
             memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
             delete[] (T*)m_ptr;

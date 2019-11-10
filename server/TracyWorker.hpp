@@ -475,6 +475,7 @@ private:
     tracy_force_inline void ProcessThreadWakeup( const QueueThreadWakeup& ev );
     tracy_force_inline void ProcessTidToPid( const QueueTidToPid& ev );
 
+    tracy_force_inline ZoneEvent* AllocZoneEvent();
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev, bool serial );
@@ -700,6 +701,8 @@ private:
     int m_netWriteCnt = 0;
     std::mutex m_netWriteLock;
     std::condition_variable m_netWriteCv;
+
+    Vector<ZoneEvent*> m_zoneEventPool;
 };
 
 }

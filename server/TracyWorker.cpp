@@ -3547,15 +3547,30 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
     NewZone( zone, m_threadCtx );
 }
 
+ZoneEvent* Worker::AllocZoneEvent()
+{
+    ZoneEvent* ret;
+    if( m_zoneEventPool.empty() )
+    {
+        ret = m_slab.Alloc<ZoneEvent>();
+    }
+    else
+    {
+        ret = m_zoneEventPool.back_and_pop();
+    }
+    memset( &ret->text, 0, sizeof( ZoneEvent::text ) + sizeof( ZoneEvent::callstack ) + sizeof( ZoneEvent::name ) );
+    return ret;
+}
+
 void Worker::ProcessZoneBegin( const QueueZoneBegin& ev )
 {
-    auto zone = m_slab.AllocInit<ZoneEvent>();
+    auto zone = AllocZoneEvent();
     ProcessZoneBeginImpl( zone, ev );
 }
 
 void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
 {
-    auto zone = m_slab.AllocInit<ZoneEvent>();
+    auto zone = AllocZoneEvent();
     ProcessZoneBeginImpl( zone, ev );
 
     auto& next = m_nextCallstack[m_threadCtx];
@@ -3585,13 +3600,13 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
 
 void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
 {
-    auto zone = m_slab.AllocInit<ZoneEvent>();
+    auto zone = AllocZoneEvent();
     ProcessZoneBeginAllocSrcLocImpl( zone, ev );
 }
 
 void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBegin& ev )
 {
-    auto zone = m_slab.AllocInit<ZoneEvent>();
+    auto zone = AllocZoneEvent();
     ProcessZoneBeginAllocSrcLocImpl( zone, ev );
 
     auto& next = m_nextCallstack[m_threadCtx];

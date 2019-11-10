@@ -1777,6 +1777,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             m_threadBackground = std::thread( [this] { ReconstructMemAllocPlot(); m_backgroundDone.store( true, std::memory_order_relaxed ); } );
         }
+        m_backgroundDone.store( true, std::memory_order_relaxed );
 #endif
     }
 }

@@ -7039,12 +7039,27 @@ void View::DrawOptions()
 #endif
                     {
                         size_t lastidx = 0;
-                        for( size_t j=timeline.size()-1; j > 0; j-- )
+                        if( timeline.is_magic() )
                         {
-                            if( timeline[j]->GpuEnd() >= 0 )
+                            auto& tl = *((Vector<GpuEvent>*)&timeline);
+                            for( size_t j=tl.size()-1; j > 0; j-- )
                             {
-                                lastidx = j;
-                                break;
+                                if( tl[j].GpuEnd() >= 0 )
+                                {
+                                    lastidx = j;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for( size_t j=timeline.size()-1; j > 0; j-- )
+                            {
+                                if( timeline[j]->GpuEnd() >= 0 )
+                                {
+                                    lastidx = j;
+                                    break;
+                                }
                             }
                         }
 
@@ -7054,16 +7069,33 @@ void View::DrawOptions()
                         std::uniform_int_distribution<size_t> dist( 0, lastidx - 1 );
                         float slopes[NumSlopes];
                         size_t idx = 0;
-                        do
+                        if( timeline.is_magic() )
                         {
-                            const auto p0 = dist( gen );
-                            const auto p1 = dist( gen );
-                            if( p0 != p1 )
+                            auto& tl = *((Vector<GpuEvent>*)&timeline);
+                            do
                             {
-                                slopes[idx++] = float( 1.0 - double( timeline[p1]->GpuStart() - timeline[p0]->GpuStart() ) / double( timeline[p1]->CpuStart() - timeline[p0]->CpuStart() ) );
+                                const auto p0 = dist( gen );
+                                const auto p1 = dist( gen );
+                                if( p0 != p1 )
+                                {
+                                    slopes[idx++] = float( 1.0 - double( tl[p1].GpuStart() - tl[p0].GpuStart() ) / double( tl[p1].CpuStart() - tl[p0].CpuStart() ) );
+                                }
                             }
+                            while( idx < NumSlopes );
                         }
-                        while( idx < NumSlopes );
+                        else
+                        {
+                            do
+                            {
+                                const auto p0 = dist( gen );
+                                const auto p1 = dist( gen );
+                                if( p0 != p1 )
+                                {
+                                    slopes[idx++] = float( 1.0 - double( timeline[p1]->GpuStart() - timeline[p0]->GpuStart() ) / double( timeline[p1]->CpuStart() - timeline[p0]->CpuStart() ) );
+                                }
+                            }
+                            while( idx < NumSlopes );
+                        }
                         std::sort( slopes, slopes+NumSlopes );
                         drift = int( 1000000000 * -slopes[NumSlopes/2] );
                     }

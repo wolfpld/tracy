@@ -164,6 +164,9 @@ private:
     void DrawZoneInfoWindow();
     void DrawGpuInfoWindow();
 
+    template<typename Adapter, typename V>
+    void DrawZoneInfoChildren( const V& children, int64_t ztime );
+
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
     uint32_t GetThreadColor( uint64_t thread, int depth );

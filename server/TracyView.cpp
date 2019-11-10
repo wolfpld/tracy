@@ -6601,7 +6601,15 @@ void View::DrawGpuInfoWindow()
     {
         const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
         assert( td != ctx->threadData.end() );
-        const auto begin = td->second.timeline.front()->GpuStart();
+        int64_t begin;
+        if( td->second.timeline.is_magic() )
+        {
+            begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
+        }
+        else
+        {
+            begin = td->second.timeline.front()->GpuStart();
+        }
         const auto drift = GpuDrift( ctx );
         TextFocused( "Delay to execution:", TimeToString( AdjustGpuTime( ev.GpuStart(), begin, drift ) - ev.CpuStart() ) );
     }

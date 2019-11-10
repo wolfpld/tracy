@@ -5855,28 +5855,42 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<short_ptr<ZoneEvent>>& ve
 {
     uint64_t sz = vec.size();
     f.Write( &sz, sizeof( sz ) );
-
-    for( auto& v : vec )
+    if( vec.is_magic() )
     {
-        int16_t srcloc = v->SrcLoc();
-        f.Write( &srcloc, sizeof( srcloc ) );
-        int64_t start = v->Start();
-        WriteTimeOffset( f, refTime, start );
-        f.Write( &v->text, sizeof( v->text ) );
-        f.Write( &v->callstack, sizeof( v->callstack ) );
-        f.Write( &v->name, sizeof( v->name ) );
+        WriteTimelineImpl<VectorAdapterDirect<ZoneEvent>>( f, *(Vector<ZoneEvent>*)( &vec ), refTime );
+    }
+    else
+    {
+        WriteTimelineImpl<VectorAdapterPointer<ZoneEvent>>( f, vec, refTime );
+    }
+}
 
-        if( v->Child() < 0 )
+template<typename Adapter, typename V>
+void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime )
+{
+    Adapter a;
+    for( auto& val : vec )
+    {
+        auto& v = a(val);
+        int16_t srcloc = v.SrcLoc();
+        f.Write( &srcloc, sizeof( srcloc ) );
+        int64_t start = v.Start();
+        WriteTimeOffset( f, refTime, start );
+        f.Write( &v.text, sizeof( v.text ) );
+        f.Write( &v.callstack, sizeof( v.callstack ) );
+        f.Write( &v.name, sizeof( v.name ) );
+
+        if( v.Child() < 0 )
         {
-            sz = 0;
+            const uint64_t sz = 0;
             f.Write( &sz, sizeof( sz ) );
         }
         else
         {
-            WriteTimeline( f, GetZoneChildren( v->Child() ), refTime );
+            WriteTimeline( f, GetZoneChildren( v.Child() ), refTime );
         }
 
-        WriteTimeOffset( f, refTime, v->End() );
+        WriteTimeOffset( f, refTime, v.End() );
     }
 }
 
@@ -5884,29 +5898,43 @@ void Worker::WriteTimeline( FileWrite& f, const Vector<short_ptr<GpuEvent>>& vec
 {
     uint64_t sz = vec.size();
     f.Write( &sz, sizeof( sz ) );
-
-    for( auto& v : vec )
+    if( vec.is_magic() )
     {
-        WriteTimeOffset( f, refTime, v->CpuStart() );
-        WriteTimeOffset( f, refGpuTime, v->GpuStart() );
-        const int16_t srcloc = v->SrcLoc();
+        WriteTimelineImpl<VectorAdapterDirect<GpuEvent>>( f, *(Vector<GpuEvent>*)( &vec ), refTime, refGpuTime );
+    }
+    else
+    {
+        WriteTimelineImpl<VectorAdapterPointer<GpuEvent>>( f, vec, refTime, refGpuTime );
+    }
+}
+
+template<typename Adapter, typename V>
+void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime, int64_t& refGpuTime )
+{
+    Adapter a;
+    for( auto& val : vec )
+    {
+        auto& v = a(val);
+        WriteTimeOffset( f, refTime, v.CpuStart() );
+        WriteTimeOffset( f, refGpuTime, v.GpuStart() );
+        const int16_t srcloc = v.SrcLoc();
         f.Write( &srcloc, sizeof( srcloc ) );
-        f.Write( &v->callstack, sizeof( v->callstack ) );
-        const uint16_t thread = v->Thread();
+        f.Write( &v.callstack, sizeof( v.callstack ) );
+        const uint16_t thread = v.Thread();
         f.Write( &thread, sizeof( thread ) );
 
-        if( v->Child() < 0 )
+        if( v.Child() < 0 )
         {
-            sz = 0;
+            const uint64_t sz = 0;
             f.Write( &sz, sizeof( sz ) );
         }
         else
         {
-            WriteTimeline( f, GetGpuChildren( v->Child() ), refTime, refGpuTime );
+            WriteTimeline( f, GetGpuChildren( v.Child() ), refTime, refGpuTime );
         }
 
-        WriteTimeOffset( f, refTime, v->CpuEnd() );
-        WriteTimeOffset( f, refGpuTime, v->GpuEnd() );
+        WriteTimeOffset( f, refTime, v.CpuEnd() );
+        WriteTimeOffset( f, refGpuTime, v.GpuEnd() );
     }
 }
 

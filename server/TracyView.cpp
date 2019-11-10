@@ -2205,7 +2205,15 @@ void View::DrawZones()
                         int64_t t1 = std::numeric_limits<int64_t>::min();
                         for( auto& td : v->threadData )
                         {
-                            const auto _t0 = td.second.timeline.front()->GpuStart();
+                            int64_t _t0;
+                            if( td.second.timeline.is_magic() )
+                            {
+                                _t0 = ((Vector<GpuEvent>*)&td.second.timeline)->front().GpuStart();
+                            }
+                            else
+                            {
+                                _t0 = td.second.timeline.front()->GpuStart();
+                            }
                             if( _t0 >= 0 )
                             {
                                 // FIXME
@@ -2270,7 +2278,15 @@ void View::DrawZones()
                         int64_t t0 = std::numeric_limits<int64_t>::max();
                         for( auto& td : v->threadData )
                         {
-                            const auto _t0 = td.second.timeline.front()->GpuStart();
+                            int64_t _t0;
+                            if( td.second.timeline.is_magic() )
+                            {
+                                _t0 = ((Vector<GpuEvent>*)&td.second.timeline)->front().GpuStart();
+                            }
+                            else
+                            {
+                                _t0 = td.second.timeline.front()->GpuStart();
+                            }
                             if( _t0 >= 0 )
                             {
                                 t0 = std::min( t0, _t0 );
@@ -2539,8 +2555,17 @@ void View::DrawZones()
                 }
                 if( !v->timeline.empty() )
                 {
-                    first = std::min( first, v->timeline.front()->Start() );
-                    last = std::max( last, m_worker.GetZoneEnd( *v->timeline.back() ) );
+                    if( v->timeline.is_magic() )
+                    {
+                        auto& tl = *((Vector<ZoneEvent>*)&v->timeline);
+                        first = std::min( first, tl.front().Start() );
+                        last = std::max( last, m_worker.GetZoneEnd( tl.back() ) );
+                    }
+                    else
+                    {
+                        first = std::min( first, v->timeline.front()->Start() );
+                        last = std::max( last, m_worker.GetZoneEnd( *v->timeline.back() ) );
+                    }
                 }
                 if( !v->messages.empty() )
                 {
@@ -13186,7 +13211,15 @@ void View::ZoomToZone( const GpuEvent& ev )
     {
         const auto td = ctx->threadData.size() == 1 ? ctx->threadData.begin() : ctx->threadData.find( m_worker.DecompressThread( ev.Thread() ) );
         assert( td != ctx->threadData.end() );
-        const auto begin = td->second.timeline.front()->GpuStart();
+        int64_t begin;
+        if( td->second.timeline.is_magic() )
+        {
+            begin = ((Vector<GpuEvent>*)&td->second.timeline)->front().GpuStart();
+        }
+        else
+        {
+            begin = td->second.timeline.front()->GpuStart();
+        }
         const auto drift = GpuDrift( ctx );
         ZoomToRange( AdjustGpuTime( ev.GpuStart(), begin, drift ), AdjustGpuTime( end, begin, drift ) );
     }

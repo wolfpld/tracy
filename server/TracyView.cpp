@@ -953,7 +953,7 @@ bool View::DrawConnection()
         TextFocused( "Query backlog:", RealToString( m_worker.GetSendQueueSize(), true ) );
     }
 
-    TextFocused( "Memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
+    TextFocused( "Memory usage:", MemSizeToString( memUsage ) );
 
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 1.75 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
@@ -10761,7 +10761,7 @@ void View::DrawInfo()
 
     if( ImGui::TreeNode( "Profiler statistics" ) )
     {
-        TextFocused( "Profiler memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
+        TextFocused( "Profiler memory usage:", MemSizeToString( memUsage ) );
         TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ), true ) );
         ImGui::TreePop();
     }

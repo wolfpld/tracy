@@ -49,7 +49,7 @@ public:
         , m_capacity( 0 )
         , m_magic( 0 )
     {
-        memUsage.fetch_add( sizeof( T ), std::memory_order_relaxed );
+        memUsage += sizeof( T );
         m_ptr[0] = value;
     }
 
@@ -57,7 +57,7 @@ public:
     {
         if( m_capacity != MaxCapacity() && m_ptr )
         {
-            memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
+            memUsage -= Capacity() * sizeof( T );
             delete[] (T*)m_ptr;
         }
     }
@@ -67,7 +67,7 @@ public:
     {
         if( m_capacity != MaxCapacity() && m_ptr )
         {
-            memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
+            memUsage -= Capacity() * sizeof( T );
             delete[] (T*)m_ptr;
         }
         memcpy( this, &src, sizeof( Vector<T> ) );
@@ -239,7 +239,7 @@ public:
         cap |= cap >> 8;
         cap |= cap >> 16;
         cap = TracyCountBits( cap );
-        memUsage.fetch_add( ( ( 1 << cap ) - Capacity() ) * sizeof( T ), std::memory_order_relaxed );
+        memUsage += ( ( 1 << cap ) - Capacity() ) * sizeof( T );
         m_capacity = cap;
         Realloc();
     }
@@ -276,13 +276,13 @@ private:
 
         if( m_ptr == nullptr )
         {
-            memUsage.fetch_add( sizeof( T ), std::memory_order_relaxed );
+            memUsage += sizeof( T );
             m_ptr = new T[1];
             m_capacity = 0;
         }
         else
         {
-            memUsage.fetch_add( Capacity() * sizeof( T ), std::memory_order_relaxed );
+            memUsage += Capacity() * sizeof( T );
             m_capacity++;
             Realloc();
         }

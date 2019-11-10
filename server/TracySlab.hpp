@@ -113,7 +113,7 @@ public:
         }
         else
         {
-            memUsage.fetch_add( size );
+            memUsage.fetch_add( size, std::memory_order_relaxed );
             m_usage += size;
             auto ret = new char[size];
             m_buffer.emplace_back( ret );

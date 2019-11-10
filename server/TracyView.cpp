@@ -5407,16 +5407,29 @@ void View::CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_
 {
     assert( zone.Child() >= 0 );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
+    if( children.is_magic() )
+    {
+        CalcZoneTimeDataImpl<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), data, zit, zone );
+    }
+    else
+    {
+        CalcZoneTimeDataImpl<VectorAdapterPointer<ZoneEvent>>( children, data, zit, zone );
+    }
+}
 
+template<typename Adapter, typename V>
+void View::CalcZoneTimeDataImpl( const V& children, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
+{
+    Adapter a;
     for( auto& child : children )
     {
-        const auto t = m_worker.GetZoneEnd( *child ) - child->Start();
+        const auto t = m_worker.GetZoneEnd( a(child) ) - a(child).Start();
         zit->second.time -= t;
     }
     for( auto& child : children )
     {
-        const auto srcloc = child->SrcLoc();
-        const auto t = m_worker.GetZoneEnd( *child ) - child->Start();
+        const auto srcloc = a(child).SrcLoc();
+        const auto t = m_worker.GetZoneEnd( a(child) ) - a(child).Start();
         auto it = data.find( srcloc );
         if( it == data.end() )
         {
@@ -5427,7 +5440,7 @@ void View::CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_
             it->second.time += t;
             it->second.count++;
         }
-        if( child->Child() >= 0 ) CalcZoneTimeData( data, it, *child );
+        if( a(child).Child() >= 0 ) CalcZoneTimeData( data, it, a(child) );
     }
 }
 
@@ -5435,21 +5448,34 @@ void View::CalcZoneTimeData( const ContextSwitch* ctx, flat_hash_map<int16_t, Zo
 {
     assert( zone.Child() >= 0 );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
+    if( children.is_magic() )
+    {
+        CalcZoneTimeDataImpl<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), ctx, data, zit, zone );
+    }
+    else
+    {
+        CalcZoneTimeDataImpl<VectorAdapterPointer<ZoneEvent>>( children, ctx, data, zit, zone );
+    }
+}
 
+template<typename Adapter, typename V>
+void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
+{
+    Adapter a;
     for( auto& child : children )
     {
         int64_t t;
         uint64_t cnt;
-        const auto res = GetZoneRunningTime( ctx, *child, t, cnt );
+        const auto res = GetZoneRunningTime( ctx, a(child), t, cnt );
         assert( res );
         zit->second.time -= t;
     }
     for( auto& child : children )
     {
-        const auto srcloc = child->SrcLoc();
+        const auto srcloc = a(child).SrcLoc();
         int64_t t;
         uint64_t cnt;
-        const auto res = GetZoneRunningTime( ctx, *child, t, cnt );
+        const auto res = GetZoneRunningTime( ctx, a(child), t, cnt );
         assert( res );
         auto it = data.find( srcloc );
         if( it == data.end() )
@@ -5461,7 +5487,7 @@ void View::CalcZoneTimeData( const ContextSwitch* ctx, flat_hash_map<int16_t, Zo
             it->second.time += t;
             it->second.count++;
         }
-        if( child->Child() >= 0 ) CalcZoneTimeData( ctx, data, it, *child );
+        if( a(child).Child() >= 0 ) CalcZoneTimeData( ctx, data, it, a(child) );
     }
 }
 

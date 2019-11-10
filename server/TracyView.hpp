@@ -168,6 +168,8 @@ private:
 
     template<typename Adapter, typename V>
     void DrawZoneInfoChildren( const V& children, int64_t ztime );
+    template<typename Adapter, typename V>
+    void DrawGpuInfoChildren( const V& children, int64_t ztime );
 
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 

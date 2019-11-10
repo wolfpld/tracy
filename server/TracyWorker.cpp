@@ -2063,7 +2063,16 @@ int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
     {
         if( ptr->End() >= 0 ) return ptr->End();
         if( ptr->Child() < 0 ) return ptr->Start();
-        ptr = GetZoneChildren( ptr->Child() ).back();
+        auto& children = GetZoneChildren( ptr->Child() );
+        if( children.is_magic() )
+        {
+            auto& c = *(Vector<ZoneEvent>*)&children;
+            ptr = &c.back();
+        }
+        else
+        {
+            ptr = children.back();
+        }
     }
 }
 
@@ -2074,7 +2083,16 @@ int64_t Worker::GetZoneEnd( const GpuEvent& ev )
     {
         if( ptr->GpuEnd() >= 0 ) return ptr->GpuEnd();
         if( ptr->Child() < 0 ) return ptr->GpuStart() >= 0 ? ptr->GpuStart() : m_data.lastTime;
-        ptr = GetGpuChildren( ptr->Child() ).back();
+        auto& children = GetGpuChildren( ptr->Child() );
+        if( children.is_magic() )
+        {
+            auto& c = *(Vector<GpuEvent>*)&children;
+            ptr = &c.back();
+        }
+        else
+        {
+            ptr = children.back();
+        }
     }
 }
 

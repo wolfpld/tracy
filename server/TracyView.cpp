@@ -2248,7 +2248,15 @@ void View::DrawZones()
                                 {
                                     if( !it->second.timeline.empty() )
                                     {
-                                        tid = m_worker.DecompressThread( (*it->second.timeline.begin())->Thread() );
+                                        if( it->second.timeline.is_magic() )
+                                        {
+                                            auto& tl = *(Vector<GpuEvent>*)&it->second.timeline;
+                                            tid = m_worker.DecompressThread( tl.begin()->Thread() );
+                                        }
+                                        else
+                                        {
+                                            tid = m_worker.DecompressThread( (*it->second.timeline.begin())->Thread() );
+                                        }
                                     }
                                 }
                                 TextFocused( "Thread:", m_worker.GetThreadName( tid ) );

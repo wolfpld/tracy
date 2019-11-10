@@ -3647,8 +3647,16 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
         if( sz <= 8 * 1024 )
         {
             Vector<short_ptr<ZoneEvent>> fitVec;
-            fitVec.reserve_exact( sz, m_slab );
-            memcpy( fitVec.data(), childVec.data(), sz * sizeof( short_ptr<ZoneEvent> ) );
+            fitVec.set_magic();
+            auto& fv = *((Vector<ZoneEvent>*)&fitVec);
+            fv.reserve_exact( sz, m_slab );
+            auto dst = fv.data();
+            for( auto& ze : childVec )
+            {
+                ZoneEvent* src = ze;
+                memcpy( dst++, src, sizeof( ZoneEvent ) );
+                m_zoneEventPool.push_back( src );
+            }
             fitVec.swap( childVec );
             m_data.zoneVectorCache.push_back( std::move( fitVec ) );
         }

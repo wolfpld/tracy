@@ -2841,7 +2841,8 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     CountZoneStatistics( zone );
 #endif
 
-    auto td = NoticeThread( thread );
+    auto td = m_threadCtxData;
+    if( !td ) td = m_threadCtxData = NoticeThread( thread );
     td->count++;
     if( td->stack.empty() )
     {
@@ -3519,8 +3520,12 @@ bool Worker::Process( const QueueItem& ev )
 
 void Worker::ProcessThreadContext( const QueueThreadContext& ev )
 {
-    m_threadCtx = ev.thread;
     m_refTimeThread = 0;
+    if( m_threadCtx != ev.thread )
+    {
+        m_threadCtx = ev.thread;
+        m_threadCtxData = RetrieveThread( ev.thread );
+    }
 }
 
 void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
@@ -3594,12 +3599,8 @@ void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBegin& ev )
 
 void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
-    auto td = RetrieveThread( m_threadCtx );
-    if( !td )
-    {
-        ZoneEndFailure( m_threadCtx );
-        return;
-    }
+    auto td = m_threadCtxData;
+    assert( td );
 
     auto zoneId = td->zoneIdStack.back_and_pop();
     if( zoneId != td->nextZoneId )
@@ -3669,13 +3670,6 @@ void Worker::ZoneStackFailure( uint64_t thread, const ZoneEvent* ev )
     m_failureData.srcloc = ev->SrcLoc();
 }
 
-void Worker::ZoneEndFailure( uint64_t thread )
-{
-    m_failure = Failure::ZoneEnd;
-    m_failureData.thread = thread;
-    m_failureData.srcloc = 0;
-}
-
 void Worker::ZoneTextFailure( uint64_t thread )
 {
     m_failure = Failure::ZoneText;
@@ -3699,7 +3693,7 @@ void Worker::MemFreeFailure( uint64_t thread )
 
 void Worker::FrameEndFailure()
 {
-    m_failure = Failure::ZoneEnd;
+    m_failure = Failure::FrameEnd;
     m_failureData.thread = 0;
     m_failureData.srcloc = 0;
 }
@@ -5941,7 +5935,6 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime, in
 static const char* s_failureReasons[] = {
     "<unknown reason>",
     "Invalid order of zone begin and end events.",
-    "Received zone end event without a matching zone begin event.",
     "Zone text transfer destination doesn't match active zone.",
     "Zone name transfer destination doesn't match active zone.",
     "Memory free event without a matching allocation.",

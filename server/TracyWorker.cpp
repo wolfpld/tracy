@@ -2853,7 +2853,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     }
     else
     {
-        auto back = td->stack.back();
+        auto& back = td->stack.back();
         const auto backChild = back->Child();
         if( backChild < 0 )
         {

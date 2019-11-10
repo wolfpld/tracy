@@ -501,7 +501,7 @@ private:
     void CreateMemAllocPlot();
     void ReconstructMemAllocPlot();
 
-    void InsertMessageData( MessageData* msg, uint64_t thread );
+    void InsertMessageData( MessageData* msg );
 
     ThreadData* NoticeThreadReal( uint64_t thread );
     ThreadData* NewThread( uint64_t thread );

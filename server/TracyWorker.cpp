@@ -2725,7 +2725,7 @@ int16_t Worker::NewShrinkedSourceLocation( uint64_t srcloc )
     return sz;
 }
 
-void Worker::InsertMessageData( MessageData* msg, uint64_t thread )
+void Worker::InsertMessageData( MessageData* msg )
 {
     if( m_data.messages.empty() )
     {
@@ -2741,7 +2741,9 @@ void Worker::InsertMessageData( MessageData* msg, uint64_t thread )
         m_data.messages.insert( mit, msg );
     }
 
-    auto vec = &NoticeThread( thread )->messages;
+    auto td = m_threadCtxData;
+    if( !td ) td = m_threadCtxData = NoticeThread( m_threadCtx );
+    auto vec = &td->messages;
     if( vec->empty() )
     {
         vec->push_back( msg );
@@ -4144,7 +4146,7 @@ void Worker::ProcessMessage( const QueueMessage& ev )
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFFFFFFFF;
     if( m_data.lastTime < time ) m_data.lastTime = time;
-    InsertMessageData( msg, m_threadCtx );
+    InsertMessageData( msg );
     m_pendingCustomStrings.erase( it );
 }
 
@@ -4158,7 +4160,7 @@ void Worker::ProcessMessageLiteral( const QueueMessage& ev )
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFFFFFFFF;
     if( m_data.lastTime < time ) m_data.lastTime = time;
-    InsertMessageData( msg, m_threadCtx );
+    InsertMessageData( msg );
 }
 
 void Worker::ProcessMessageColor( const QueueMessageColor& ev )
@@ -4172,7 +4174,7 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     if( m_data.lastTime < time ) m_data.lastTime = time;
-    InsertMessageData( msg, m_threadCtx );
+    InsertMessageData( msg );
     m_pendingCustomStrings.erase( it );
 }
 
@@ -4186,7 +4188,7 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColor& ev )
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     if( m_data.lastTime < time ) m_data.lastTime = time;
-    InsertMessageData( msg, m_threadCtx );
+    InsertMessageData( msg );
 }
 
 void Worker::ProcessMessageAppInfo( const QueueMessage& ev )

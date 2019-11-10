@@ -5280,18 +5280,15 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& _ve
     while( ++zone != end );
 }
 
-void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx )
+void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx )
 {
     assert( size != 0 );
+    auto& vec = *(Vector<GpuEvent>*)( &_vec );
+    vec.set_magic();
     vec.reserve_exact( size, m_slab );
     m_data.gpuCnt += size;
-    auto zone = (GpuEvent*)m_slab.AllocBig( sizeof( GpuEvent ) * size );
-    auto zptr = zone;
-    auto vptr = vec.data();
-    for( uint64_t i=0; i<size; i++ )
-    {
-        *vptr++ = zptr++;
-    }
+    auto zone = vec.begin();
+    auto end = vec.end();
     do
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
@@ -5316,20 +5313,21 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& vec, uint64
         zone->SetCpuEnd( refTime );
         zone->SetGpuEnd( refGpuTime );
     }
-    while( ++zone != zptr );
+    while( ++zone != end );
 }
 
-void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<GpuEvent>>& vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer )
+void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer )
 {
     assert( size != 0 );
+    auto& vec = *(Vector<GpuEvent>*)( &_vec );
+    vec.set_magic();
     vec.reserve_exact( size, m_slab );
     m_data.gpuCnt += size;
-
-    for( uint64_t i=0; i<size; i++ )
+    auto zone = vec.begin();
+    auto end = vec.end();
+    do
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
-        auto zone = m_slab.Alloc<GpuEvent>();
-        vec[i] = zone;
 
         if( fileVer <= FileVersion( 0, 4, 1 ) )
         {
@@ -5441,6 +5439,7 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<GpuEvent>>& vec,
             zone->SetGpuEnd( gpuEnd );
         }
     }
+    while( ++zone != end );
 }
 
 void Worker::Disconnect()

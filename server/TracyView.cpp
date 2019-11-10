@@ -1303,7 +1303,7 @@ void View::DrawFrames()
 
     int i = 0, idx = 0;
 #ifndef TRACY_NO_STATISTICS
-    if( m_worker.AreSourceLocationZonesReady() && m_findZone.show && !m_findZone.match.empty() )
+    if( m_worker.AreSourceLocationZonesReady() && m_findZone.show && m_findZone.showZoneInFrames && !m_findZone.match.empty() )
     {
         auto& zoneData = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] );
         auto begin = zoneData.zones.begin();
@@ -8755,6 +8755,8 @@ void View::DrawFindZone()
             ImGui::TreePop();
         }
 
+        ImGui::Separator();
+        SmallCheckbox( "Show zone time in frames", &m_findZone.showZoneInFrames );
         ImGui::Separator();
         ImGui::TextUnformatted( "Found zones:" );
         ImGui::SameLine();

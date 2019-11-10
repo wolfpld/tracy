@@ -438,6 +438,7 @@ private:
         int selCs = 0;
         int minBinVal = 1;
         int64_t tmin, tmax;
+        bool showZoneInFrames = false;
 
         struct
         {

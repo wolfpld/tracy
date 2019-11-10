@@ -2102,29 +2102,61 @@ void View::DrawZones()
             {
                 for( auto& td : v->threadData )
                 {
-                    assert( !td.second.timeline.empty() );
-                    if( td.second.timeline.front()->GpuStart() >= 0 )
+                    auto& tl = td.second.timeline;
+                    assert( !tl.empty() );
+                    if( tl.is_magic() )
                     {
-                        const auto begin = td.second.timeline.front()->GpuStart();
-                        const auto drift = GpuDrift( v );
-                        if( !singleThread ) offset += sstep;
-                        const auto partDepth = DispatchGpuZoneLevel( td.second.timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, v->thread, yMin, yMax, begin, drift );
-                        if( partDepth != 0 )
+                        auto& tlm = *(Vector<GpuEvent>*)&tl;
+                        if( tlm.front().GpuStart() >= 0 )
                         {
-                            if( !singleThread )
+                            const auto begin = tlm.front().GpuStart();
+                            const auto drift = GpuDrift( v );
+                            if( !singleThread ) offset += sstep;
+                            const auto partDepth = DispatchGpuZoneLevel( tl, hover, pxns, int64_t( nspx ), wpos, offset, 0, v->thread, yMin, yMax, begin, drift );
+                            if( partDepth != 0 )
                             {
-                                ImGui::PushFont( m_smallFont );
-                                DrawTextContrast( draw, wpos + ImVec2( ty, offset-1-sstep ), 0xFFFFAAAA, m_worker.GetThreadName( td.first ) );
-                                draw->AddLine( wpos + ImVec2( 0, offset+sty-sstep ), wpos + ImVec2( w, offset+sty-sstep ), 0x22FFAAAA );
-                                ImGui::PopFont();
-                            }
+                                if( !singleThread )
+                                {
+                                    ImGui::PushFont( m_smallFont );
+                                    DrawTextContrast( draw, wpos + ImVec2( ty, offset-1-sstep ), 0xFFFFAAAA, m_worker.GetThreadName( td.first ) );
+                                    draw->AddLine( wpos + ImVec2( 0, offset+sty-sstep ), wpos + ImVec2( w, offset+sty-sstep ), 0x22FFAAAA );
+                                    ImGui::PopFont();
+                                }
 
-                            offset += ostep * partDepth;
-                            depth += partDepth;
+                                offset += ostep * partDepth;
+                                depth += partDepth;
+                            }
+                            else if( !singleThread )
+                            {
+                                offset -= sstep;
+                            }
                         }
-                        else if( !singleThread )
+                    }
+                    else
+                    {
+                        if( tl.front()->GpuStart() >= 0 )
                         {
-                            offset -= sstep;
+                            const auto begin = tl.front()->GpuStart();
+                            const auto drift = GpuDrift( v );
+                            if( !singleThread ) offset += sstep;
+                            const auto partDepth = DispatchGpuZoneLevel( tl, hover, pxns, int64_t( nspx ), wpos, offset, 0, v->thread, yMin, yMax, begin, drift );
+                            if( partDepth != 0 )
+                            {
+                                if( !singleThread )
+                                {
+                                    ImGui::PushFont( m_smallFont );
+                                    DrawTextContrast( draw, wpos + ImVec2( ty, offset-1-sstep ), 0xFFFFAAAA, m_worker.GetThreadName( td.first ) );
+                                    draw->AddLine( wpos + ImVec2( 0, offset+sty-sstep ), wpos + ImVec2( w, offset+sty-sstep ), 0x22FFAAAA );
+                                    ImGui::PopFont();
+                                }
+
+                                offset += ostep * partDepth;
+                                depth += partDepth;
+                            }
+                            else if( !singleThread )
+                            {
+                                offset -= sstep;
+                            }
                         }
                     }
                 }

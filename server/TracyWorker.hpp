@@ -703,6 +703,10 @@ private:
     std::condition_variable m_netWriteCv;
 
     Vector<ZoneEvent*> m_zoneEventPool;
+
+#ifndef TRACY_NO_STATISTICS
+    flat_hash_map<ZoneEvent*, size_t, nohash<ZoneEvent*>> m_slzPointerMap;
+#endif
 };
 
 }

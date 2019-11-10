@@ -2834,8 +2834,16 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
 {
     m_data.zonesCnt++;
 
+    auto td = m_threadCtxData;
+    if( !td ) td = m_threadCtxData = NoticeThread( thread );
+
 #ifndef TRACY_NO_STATISTICS
     auto slz = GetSourceLocationZones( zone->SrcLoc() );
+    if( !td->stack.empty() )
+    {
+        assert( m_slzPointerMap.find( zone ) == m_slzPointerMap.end() );
+        m_slzPointerMap.emplace( zone, slz->zones.size() );
+    }
     auto& ztd = slz->zones.push_next();
     ztd.SetZone( zone );
     ztd.SetThread( CompressThread( thread ) );
@@ -2843,8 +2851,6 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     CountZoneStatistics( zone );
 #endif
 
-    auto td = m_threadCtxData;
-    if( !td ) td = m_threadCtxData = NoticeThread( thread );
     td->count++;
     if( td->stack.empty() )
     {
@@ -3654,12 +3660,28 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
             for( auto& ze : childVec )
             {
                 ZoneEvent* src = ze;
+#ifndef TRACY_NO_STATISTICS
+                auto slz = GetSourceLocationZones( src->SrcLoc() );
+                auto slzit = m_slzPointerMap.find( src );
+                assert( slzit != m_slzPointerMap.end() );
+                slz->zones[slzit->second].SetZone( dst );
+                m_slzPointerMap.erase( slzit );
+#endif
                 memcpy( dst++, src, sizeof( ZoneEvent ) );
                 m_zoneEventPool.push_back( src );
             }
             fitVec.swap( childVec );
             m_data.zoneVectorCache.push_back( std::move( fitVec ) );
         }
+#ifndef TRACY_NO_STATISTICS
+        else
+        {
+            for( auto& z : childVec )
+            {
+                m_slzPointerMap.erase( z );
+            }
+        }
+#endif
     }
 
 #ifndef TRACY_NO_STATISTICS

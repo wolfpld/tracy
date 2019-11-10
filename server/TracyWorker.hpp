@@ -702,10 +702,8 @@ private:
     std::mutex m_netWriteLock;
     std::condition_variable m_netWriteCv;
 
+#ifdef TRACY_NO_STATISTICS
     Vector<ZoneEvent*> m_zoneEventPool;
-
-#ifndef TRACY_NO_STATISTICS
-    flat_hash_map<ZoneEvent*, size_t, nohash<ZoneEvent*>> m_slzPointerMap;
 #endif
 };
 

@@ -231,9 +231,10 @@ You may wonder, why should you use Tracy, when there are so many other profilers
 \item Tracy provides out-of-the-box Lua bindings.
 \item Tracy has a wide variety of profiling options. You can profile CPU, GPU, locks, memory allocations, context switches and more.
 \item Tracy is feature rich. Statistical information and trace comparisons are not present in other profilers.
-\item Tracy focuses on performance. Many tricks are used to reduce memory requirements and network bandwidth. The impact on the client execution speed is minimal, while other profilers perform heavy data processing within the profiled application.
+\item Tracy focuses on performance. Many tricks are used to reduce memory requirements and network bandwidth. The impact on the client execution speed is minimal, while other profilers perform heavy data processing within the profiled application (and then claim to be lightweight).
 \item Tracy uses low-level kernel APIs, or even raw assembly, where other profilers rely on layers of abstraction.
 \item Tracy is multi-platform right from the very beginning. Both on the client and server side. Other profilers tend to have Windows-specific graphical interfaces.
+\item Tracy can handle millions of frames, zones, memory events, and so on, while other profilers tend to target very short captures.
 \end{itemize}
 
 With all that being said, Tracy may not be the right choice for you, if you need to profile games targetting PS4, Xbox, or other consoles behind a NDA wall.

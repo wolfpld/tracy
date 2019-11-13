@@ -3864,11 +3864,11 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             int64_t timeTerminate = lockmap.timeTerminate;
             if( !lockmap.timeline.empty() )
             {
-                if( timeAnnounce == 0 )
+                if( timeAnnounce <= 0 )
                 {
                     timeAnnounce = lockmap.timeline.front().ptr->Time();
                 }
-                if( timeTerminate == 0 )
+                if( timeTerminate <= 0 )
                 {
                     timeTerminate = lockmap.timeline.back().ptr->Time();
                 }
@@ -11427,11 +11427,11 @@ void View::DrawLockInfoWindow()
     int64_t timeTerminate = lock.timeTerminate;
     if( !lock.timeline.empty() )
     {
-        if( timeAnnounce == 0 )
+        if( timeAnnounce <= 0 )
         {
             timeAnnounce = lock.timeline.front().ptr->Time();
         }
-        if( timeTerminate == 0 )
+        if( timeTerminate <= 0 )
         {
             timeTerminate = lock.timeline.back().ptr->Time();
         }

@@ -164,6 +164,19 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #  define TracyCMessageLS( txt, depth ) ___tracy_emit_messageL( txt, depth );
 #  define TracyCMessageCS( txt, size, color, depth ) ___tracy_emit_messageC( txt, size, color, depth );
 #  define TracyCMessageLCS( txt, color, depth ) ___tracy_emit_messageLC( txt, color, depth );
+#else
+#  define TracyCZoneS( ctx, depth, active ) TracyCZone( ctx, active )
+#  define TracyCZoneNS( ctx, name, depth, active ) TracyCZoneN( ctx, name, active )
+#  define TracyCZoneCS( ctx, color, depth, active ) TracyCZoneC( ctx, color, active )
+#  define TracyCZoneNCS( ctx, name, color, depth, active ) TracyCZoneNC( ctx, name, color, active )
+
+#  define TracyCAllocS( ptr, size, depth ) TracyCAlloc( ptr, size )
+#  define TracyCFreeS( ptr, depth ) TracyCFree( ptr )
+
+#  define TracyCMessageS( txt, size, depth ) TracyCMessage( txt, size )
+#  define TracyCMessageLS( txt, depth ) TracyCMessageL( txt )
+#  define TracyCMessageCS( txt, size, color, depth ) TracyCMessageC( txt, size, color )
+#  define TracyCMessageLCS( txt, color, depth ) TracyCMessageLC( txt, color )
 #endif
 
 #endif

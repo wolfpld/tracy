@@ -117,17 +117,17 @@ TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_
 
 
 TRACY_API void ___tracy_emit_plot( const char* name, double val );
-TRACY_API void ___tracy_emit_message( const char* txt, size_t size );
-TRACY_API void ___tracy_emit_messageL( const char* txt );
-TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color );
-TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color );
+TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int callstack );
+TRACY_API void ___tracy_emit_messageL( const char* txt, int callstack );
+TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color, int callstack );
+TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int callstack );
 TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 #define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
-#define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size );
-#define TracyCMessageL( txt ) ___tracy_emit_messageL( txt );
-#define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color );
-#define TracyCMessageLC( txt, color ) ___tracy_emit_messageLC( txt, color );
+#define TracyCMessage( txt, size ) ___tracy_emit_message( txt, size, 0 );
+#define TracyCMessageL( txt ) ___tracy_emit_messageL( txt, 0 );
+#define TracyCMessageC( txt, size, color ) ___tracy_emit_messageC( txt, size, color, 0 );
+#define TracyCMessageLC( txt, color ) ___tracy_emit_messageLC( txt, color, 0 );
 #define TracyCAppInfo( txt, color ) ___tracy_emit_message_appinfo( txt, color );
 
 

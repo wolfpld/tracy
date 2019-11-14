@@ -1599,6 +1599,8 @@ static void FreeAssociatedMemory( const QueueItem& item )
         break;
     case QueueType::Message:
     case QueueType::MessageColor:
+    case QueueType::MessageCallstack:
+    case QueueType::MessageColorCallstack:
 #ifndef TRACY_ON_DEMAND
     case QueueType::MessageAppInfo:
 #endif
@@ -1706,6 +1708,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     break;
                 case QueueType::Message:
                 case QueueType::MessageColor:
+                case QueueType::MessageCallstack:
+                case QueueType::MessageColorCallstack:
                     ptr = MemRead<uint64_t>( &item->message.text );
                     SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                     tracy_free( (void*)ptr );
@@ -2665,10 +2669,10 @@ TRACY_API void ___tracy_emit_frame_mark_start( const char* name ) { tracy::Profi
 TRACY_API void ___tracy_emit_frame_mark_end( const char* name ) { tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgEnd ); }
 TRACY_API void ___tracy_emit_frame_image( const void* image, uint16_t w, uint16_t h, uint8_t offset, int flip ) { tracy::Profiler::SendFrameImage( image, w, h, offset, flip ); }
 TRACY_API void ___tracy_emit_plot( const char* name, double val ) { tracy::Profiler::PlotData( name, val ); }
-TRACY_API void ___tracy_emit_message( const char* txt, size_t size ) { tracy::Profiler::Message( txt, size ); }
-TRACY_API void ___tracy_emit_messageL( const char* txt ) { tracy::Profiler::Message( txt ); }
-TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color ) { tracy::Profiler::MessageColor( txt, size, color ); }
-TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color ) { tracy::Profiler::MessageColor( txt, color ); }
+TRACY_API void ___tracy_emit_message( const char* txt, size_t size, int callstack ) { tracy::Profiler::Message( txt, size, callstack ); }
+TRACY_API void ___tracy_emit_messageL( const char* txt, int callstack ) { tracy::Profiler::Message( txt, callstack ); }
+TRACY_API void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color, int callstack ) { tracy::Profiler::MessageColor( txt, size, color, callstack ); }
+TRACY_API void ___tracy_emit_messageLC( const char* txt, uint32_t color, int callstack ) { tracy::Profiler::MessageColor( txt, color, callstack ); }
 TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size ) { tracy::Profiler::MessageAppInfo( txt, size ); }
 
 #ifdef __cplusplus

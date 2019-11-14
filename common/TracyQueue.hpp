@@ -12,6 +12,8 @@ enum class QueueType : uint8_t
     ZoneName,
     Message,
     MessageColor,
+    MessageCallstack,
+    MessageColorCallstack,
     MessageAppInfo,
     ZoneBeginAllocSrcLoc,
     ZoneBeginAllocSrcLocCallstack,
@@ -57,6 +59,8 @@ enum class QueueType : uint8_t
     LockMark,
     MessageLiteral,
     MessageLiteralColor,
+    MessageLiteralCallstack,
+    MessageLiteralColorCallstack,
     GpuNewContext,
     CallstackFrameSize,
     CallstackFrame,
@@ -405,6 +409,8 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),        // zone name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),
+    sizeof( QueueHeader ) + sizeof( QueueMessage ),         // callstack
+    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // app info
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location, callstack
@@ -451,6 +457,8 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // literal
+    sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal, callstack
+    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // literal, callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),

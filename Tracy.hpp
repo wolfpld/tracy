@@ -103,10 +103,10 @@
 #define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val );
 #define TracyPlotConfig( name, type ) tracy::Profiler::ConfigurePlot( name, type );
 
-#define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size );
-#define TracyMessageL( txt ) tracy::Profiler::Message( txt );
-#define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color );
-#define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color );
+#define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size, 0 );
+#define TracyMessageL( txt ) tracy::Profiler::Message( txt, 0 );
+#define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, 0 );
+#define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, 0 );
 #define TracyAppInfo( txt, size ) tracy::Profiler::MessageAppInfo( txt, size );
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK

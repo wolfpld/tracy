@@ -262,7 +262,7 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
-    static tracy_force_inline void Message( const char* txt, size_t size )
+    static tracy_force_inline void Message( const char* txt, size_t size, int callstack )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -274,13 +274,15 @@ public:
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::Message );
+        MemWrite( &item->hdr.type, callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
+
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
-    static tracy_force_inline void Message( const char* txt )
+    static tracy_force_inline void Message( const char* txt, int callstack )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -289,13 +291,15 @@ public:
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::MessageLiteral );
+        MemWrite( &item->hdr.type, callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)txt );
         tail.store( magic + 1, std::memory_order_release );
+
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
-    static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color )
+    static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int callstack )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -307,16 +311,18 @@ public:
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::MessageColor );
+        MemWrite( &item->hdr.type, callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.text, (uint64_t)ptr );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
         tail.store( magic + 1, std::memory_order_release );
+
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
-    static tracy_force_inline void MessageColor( const char* txt, uint32_t color )
+    static tracy_force_inline void MessageColor( const char* txt, uint32_t color, int callstack )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
@@ -325,13 +331,15 @@ public:
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::MessageLiteralColor );
+        MemWrite( &item->hdr.type, callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.text, (uint64_t)txt );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
         tail.store( magic + 1, std::memory_order_release );
+
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
     static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )

@@ -400,6 +400,7 @@ struct MessageData
     StringRef ref;
     uint16_t thread;
     uint32_t color;
+    Int24 callstack;
 };
 
 enum { MessageDataSize = sizeof( MessageData ) };

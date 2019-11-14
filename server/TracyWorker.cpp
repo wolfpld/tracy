@@ -797,7 +797,22 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     if( eventMask & EventType::Messages )
     {
         m_data.messages.reserve_exact( sz, m_slab );
-        if( fileVer >= FileVersion( 0, 5, 2 ) )
+        if( fileVer >= FileVersion( 0, 5, 12 ) )
+        {
+            int64_t refTime = 0;
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint64_t ptr;
+                f.Read( ptr );
+                auto msgdata = m_slab.Alloc<MessageData>();
+                msgdata->time = ReadTimeOffset( f, refTime );
+                f.Read3( msgdata->ref, msgdata->color, msgdata->callstack );
+                m_data.messages[i] = msgdata;
+                msgMap.emplace( ptr, msgdata );
+            }
+
+        }
+        else if( fileVer >= FileVersion( 0, 5, 2 ) )
         {
             int64_t refTime = 0;
             for( uint64_t i=0; i<sz; i++ )
@@ -807,6 +822,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 auto msgdata = m_slab.Alloc<MessageData>();
                 msgdata->time = ReadTimeOffset( f, refTime );
                 f.Read2( msgdata->ref, msgdata->color );
+                msgdata->callstack.SetVal( 0 );
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
             }
@@ -821,6 +837,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 auto msgdata = m_slab.Alloc<MessageData>();
                 msgdata->time = ReadTimeOffset( f, refTime );
                 f.Read2( msgdata->ref, msgdata->color );
+                msgdata->callstack.SetVal( 0 );
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
             }
@@ -836,6 +853,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 msgdata->time = ReadTimeOffset( f, refTime );
                 f.Read( msgdata->ref );
                 msgdata->color = 0xFFFFFFFF;
+                msgdata->callstack.SetVal( 0 );
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
             }
@@ -850,6 +868,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 f.Read( msgdata, sizeof( MessageData::time ) + sizeof( MessageData::ref ) );
                 msgdata->time -= m_data.baseTime;
                 msgdata->color = 0xFFFFFFFF;
+                msgdata->callstack.SetVal( 0 );
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
             }
@@ -857,13 +876,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     }
     else
     {
-        if( fileVer <= FileVersion( 0, 4, 7 ) )
+        if( fileVer >= FileVersion( 0, 5, 12 ) )
         {
-            f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) ) );
+            f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) + sizeof( MessageData::color ) + sizeof( MessageData::callstack ) ) );
+        }
+        else if( fileVer >= FileVersion( 0, 4, 8 ) )
+        {
+            f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) + sizeof( MessageData::color ) ) );
         }
         else
         {
-            f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) + sizeof( MessageData::color ) ) );
+            f.Skip( sz * ( sizeof( uint64_t ) + sizeof( MessageData::time ) + sizeof( MessageData::ref ) ) );
         }
     }
 
@@ -3435,6 +3458,18 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MessageLiteralColor:
         ProcessMessageLiteralColor( ev.messageColor );
         break;
+    case QueueType::MessageCallstack:
+        ProcessMessageCallstack( ev.message );
+        break;
+    case QueueType::MessageLiteralCallstack:
+        ProcessMessageLiteralCallstack( ev.message );
+        break;
+    case QueueType::MessageColorCallstack:
+        ProcessMessageColorCallstack( ev.messageColor );
+        break;
+    case QueueType::MessageLiteralColorCallstack:
+        ProcessMessageLiteralColorCallstack( ev.messageColor );
+        break;
     case QueueType::MessageAppInfo:
         ProcessMessageAppInfo( ev.message );
         break;
@@ -4178,6 +4213,7 @@ void Worker::ProcessMessage( const QueueMessage& ev )
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFFFFFFFF;
+    msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
     m_pendingCustomStrings.erase( it );
@@ -4192,6 +4228,7 @@ void Worker::ProcessMessageLiteral( const QueueMessage& ev )
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFFFFFFFF;
+    msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
 }
@@ -4206,6 +4243,7 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
+    msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
     m_pendingCustomStrings.erase( it );
@@ -4220,8 +4258,41 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColor& ev )
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
+    msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
+}
+
+void Worker::ProcessMessageCallstack( const QueueMessage& ev )
+{
+    ProcessMessage( ev );
+
+    auto& next = m_nextCallstack[m_threadCtx];
+    next.type = NextCallstackType::Message;
+}
+
+void Worker::ProcessMessageLiteralCallstack( const QueueMessage& ev )
+{
+    ProcessMessageLiteral( ev );
+
+    auto& next = m_nextCallstack[m_threadCtx];
+    next.type = NextCallstackType::Message;
+}
+
+void Worker::ProcessMessageColorCallstack( const QueueMessageColor& ev )
+{
+    ProcessMessageColor( ev );
+
+    auto& next = m_nextCallstack[m_threadCtx];
+    next.type = NextCallstackType::Message;
+}
+
+void Worker::ProcessMessageLiteralColorCallstack( const QueueMessageColor& ev )
+{
+    ProcessMessageLiteralColor( ev );
+
+    auto& next = m_nextCallstack[m_threadCtx];
+    next.type = NextCallstackType::Message;
 }
 
 void Worker::ProcessMessageAppInfo( const QueueMessage& ev )
@@ -4552,6 +4623,14 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
     case NextCallstackType::Crash:
         m_data.crashEvent.callstack = m_pendingCallstackId;
         break;
+    case NextCallstackType::Message:
+    {
+        auto td = m_threadCtxData;
+        if( !td ) td = m_threadCtxData = RetrieveThread( m_threadCtx );
+        assert( td );
+        td->messages.back()->callstack.SetVal( m_pendingCallstackId );
+        break;
+    }
     default:
         assert( false );
         break;
@@ -4578,6 +4657,14 @@ void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
     case NextCallstackType::Crash:
         m_data.crashEvent.callstack = m_pendingCallstackId;
         break;
+    case NextCallstackType::Message:
+    {
+        auto td = m_threadCtxData;
+        if( !td ) td = m_threadCtxData = RetrieveThread( m_threadCtx );
+        assert( td );
+        td->messages.back()->callstack.SetVal( m_pendingCallstackId );
+        break;
+    }
     default:
         assert( false );
         break;
@@ -5678,6 +5765,7 @@ void Worker::Write( FileWrite& f )
             WriteTimeOffset( f, refTime, v->time );
             f.Write( &v->ref, sizeof( v->ref ) );
             f.Write( &v->color, sizeof( v->color ) );
+            f.Write( &v->callstack, sizeof( v->callstack ) );
         }
     }
 

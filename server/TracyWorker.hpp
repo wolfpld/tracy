@@ -245,7 +245,8 @@ private:
     {
         Zone,
         Gpu,
-        Crash
+        Crash,
+        Message
     };
 
     struct NextCallstack
@@ -454,6 +455,10 @@ private:
     tracy_force_inline void ProcessMessageLiteral( const QueueMessage& ev );
     tracy_force_inline void ProcessMessageColor( const QueueMessageColor& ev );
     tracy_force_inline void ProcessMessageLiteralColor( const QueueMessageColor& ev );
+    tracy_force_inline void ProcessMessageCallstack( const QueueMessage& ev );
+    tracy_force_inline void ProcessMessageLiteralCallstack( const QueueMessage& ev );
+    tracy_force_inline void ProcessMessageColorCallstack( const QueueMessageColor& ev );
+    tracy_force_inline void ProcessMessageLiteralColorCallstack( const QueueMessageColor& ev );
     tracy_force_inline void ProcessMessageAppInfo( const QueueMessage& ev );
     tracy_force_inline void ProcessGpuNewContext( const QueueGpuNewContext& ev );
     tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev, bool serial );

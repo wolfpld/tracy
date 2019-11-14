@@ -38,6 +38,19 @@ typedef const void* TracyCZoneCtx;
 #define TracyCMessageLC(x,y)
 #define TracyCAppInfo(x,y)
 
+#define TracyCZoneS(x,y,z)
+#define TracyCZoneNS(x,y,z,w)
+#define TracyCZoneCS(x,y,z,w)
+#define TracyCZoneNCS(x,y,z,w,a)
+
+#define TracyCAllocS(x,y,z)
+#define TracyCFreeS(x,y)
+
+#define TracyCMessageS(x,y,z)
+#define TracyCMessageLS(x,y)
+#define TracyCMessageCS(x,y,z,w)
+#define TracyCMessageLCS(x,y,z)
+
 #else
 
 #ifndef TracyConcat

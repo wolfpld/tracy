@@ -1497,8 +1497,8 @@ void Profiler::Worker()
                     return;
                 }
             }
-            while( Dequeue( token ) == DequeueStatus::Success ) {}
-            while( DequeueSerial() == DequeueStatus::Success ) {}
+            while( Dequeue( token ) == DequeueStatus::DataDequeued ) {}
+            while( DequeueSerial() == DequeueStatus::DataDequeued ) {}
             if( m_bufferOffset != m_bufferStart )
             {
                 if( !CommitData() )
@@ -1832,7 +1832,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
     {
         return DequeueStatus::QueueEmpty;
     }
-    return DequeueStatus::Success;
+    return DequeueStatus::DataDequeued;
 }
 
 Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::ConsumerToken& token, int64_t& timeStop )
@@ -1852,7 +1852,7 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
                 if( csTime > timeStop )
                 {
                     timeStop = -1;
-                    return DequeueStatus::Success;
+                    return DequeueStatus::DataDequeued;
                 }
                 int64_t dt = csTime - m_refTimeCtx;
                 m_refTimeCtx = csTime;
@@ -1865,7 +1865,7 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
                 if( csTime > timeStop )
                 {
                     timeStop = -1;
-                    return DequeueStatus::Success;
+                    return DequeueStatus::DataDequeued;
                 }
                 int64_t dt = csTime - m_refTimeCtx;
                 m_refTimeCtx = csTime;
@@ -1879,7 +1879,7 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
     {
         return DequeueStatus::QueueEmpty;
     }
-    return DequeueStatus::Success;
+    return DequeueStatus::DataDequeued;
 }
 
 Profiler::DequeueStatus Profiler::DequeueSerial()
@@ -2003,7 +2003,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
     {
         return DequeueStatus::QueueEmpty;
     }
-    return DequeueStatus::Success;
+    return DequeueStatus::DataDequeued;
 }
 
 bool Profiler::AppendData( const void* data, size_t len )

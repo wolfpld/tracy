@@ -465,7 +465,7 @@ public:
     void SendString( uint64_t ptr, const char* str, QueueType type );
 
 private:
-    enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };
+    enum class DequeueStatus { DataDequeued, ConnectionLost, QueueEmpty };
 
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();

@@ -7784,7 +7784,7 @@ void View::DrawMessages()
 #ifdef TRACY_EXTENDED_FONT
                     SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
 #else
-                    SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY " Show", cs, idx );
+                    SmallCallstackButton( "Show", cs, idx );
 #endif
                     ImGui::SameLine();
                     const auto& csdata = m_worker.GetCallstack( cs );

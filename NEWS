@@ -60,6 +60,7 @@ v0.6 (xxxx-xx-xx)
   grouping.
 - Zone list in the statistics window can be now filtered.
 - Implemented configuration of plots.
+- Messages can now collect call stacks.
 
 v0.5 (2019-08-10)
 -----------------

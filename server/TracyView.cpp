@@ -10660,8 +10660,14 @@ void View::DrawMemoryAllocWindow()
     SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
     if( ev.CsAlloc() != 0 )
     {
-        ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-        SmallCallstackButton( "Call stack", ev.CsAlloc(), idx );
+        const auto cs = ev.CsAlloc();
+#ifdef TRACY_EXTENDED_FONT
+        SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
+#else
+        SmallCallstackButton( "Call stack", cs, idx );
+#endif
+        ImGui::SameLine();
+        DrawCallstackCalls( cs, 2 );
     }
     if( ev.TimeFree() < 0 )
     {
@@ -10679,8 +10685,14 @@ void View::DrawMemoryAllocWindow()
         SmallColorBox( GetThreadColor( tidFree, 0 ) );
         if( ev.csFree.Val() != 0 )
         {
-            ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
-            SmallCallstackButton( "Call stack", ev.csFree.Val(), idx );
+            const auto cs = ev.csFree.Val();
+#ifdef TRACY_EXTENDED_FONT
+            SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
+#else
+            SmallCallstackButton( "Call stack", cs, idx );
+#endif
+            ImGui::SameLine();
+            DrawCallstackCalls( cs, 2 );
         }
         TextFocused( "Duration:", TimeToString( ev.TimeFree() - ev.TimeAlloc() ) );
     }

@@ -5701,16 +5701,16 @@ void View::DrawZoneInfoWindow()
         TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
         if( m_bigFont ) ImGui::PopFont();
     }
+    SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( ev.SrcLoc() ), 0 ) );
+    ImGui::SameLine();
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
-    SmallColorBox( GetRawZoneColor( ev, tid, GetZoneDepth( ev, tid ) ) );
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
-    ImGui::SameLine();
-    SmallColorBox( GetThreadColor( tid, 0 ) );
     if( ev.text.Active() )
     {
         TextFocused( "User text:", m_worker.GetString( ev.text ) );
@@ -6599,16 +6599,16 @@ void View::DrawGpuInfoWindow()
     TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
     if( m_bigFont ) ImGui::PopFont();
     TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+    SmallColorBox( GetRawZoneColor( ev ) );
+    ImGui::SameLine();
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
-    SmallColorBox( GetRawZoneColor( ev ) );
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
-    ImGui::SameLine();
-    SmallColorBox( GetThreadColor( tid, 0 ) );
 
     ImGui::Separator();
     ImGui::BeginChild( "##gpuinfo" );

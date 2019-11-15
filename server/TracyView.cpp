@@ -10697,11 +10697,12 @@ void View::DrawMemoryAllocWindow()
         TextFocused( "Duration:", TimeToString( ev.TimeFree() - ev.TimeAlloc() ) );
     }
 
-    ImGui::Separator();
-
+    bool sep = false;
     auto zoneAlloc = FindZoneAtTime( tidAlloc, ev.TimeAlloc() );
     if( zoneAlloc )
     {
+        ImGui::Separator();
+        sep = true;
         const auto& srcloc = m_worker.GetSourceLocation( zoneAlloc->SrcLoc() );
         const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
         ImGui::PushID( idx++ );
@@ -10728,6 +10729,7 @@ void View::DrawMemoryAllocWindow()
         auto zoneFree = FindZoneAtTime( tidFree, ev.TimeFree() );
         if( zoneFree )
         {
+            if( !sep ) ImGui::Separator();
             const auto& srcloc = m_worker.GetSourceLocation( zoneFree->SrcLoc() );
             const auto txt = srcloc.name.active ? m_worker.GetString( srcloc.name ) : m_worker.GetString( srcloc.function );
             TextFocused( "Zone free:", txt );
@@ -10745,12 +10747,11 @@ void View::DrawMemoryAllocWindow()
                 }
                 ZoneTooltip( *zoneFree );
             }
-        }
-
-        if( zoneAlloc != 0 && zoneAlloc == zoneFree )
-        {
-            ImGui::SameLine();
-            TextDisabledUnformatted( "(same zone)" );
+            if( zoneAlloc != 0 && zoneAlloc == zoneFree )
+            {
+                ImGui::SameLine();
+                TextDisabledUnformatted( "(same zone)" );
+            }
         }
     }
 

@@ -7721,13 +7721,14 @@ void View::DrawMessages()
     ImGui::BeginChild( "##messages" );
     const auto w = ImGui::GetWindowWidth();
     static bool widthSet = false;
-    ImGui::Columns( 3 );
+    ImGui::Columns( 4 );
     if( !widthSet )
     {
         widthSet = true;
         ImGui::SetColumnWidth( 0, w * 0.07f );
         ImGui::SetColumnWidth( 1, w * 0.13f );
-        ImGui::SetColumnWidth( 2, w * 0.8f );
+        ImGui::SetColumnWidth( 2, w * 0.6f );
+        ImGui::SetColumnWidth( 3, w * 0.2f );
     }
     ImGui::TextUnformatted( "Time" );
     ImGui::SameLine();
@@ -7737,10 +7738,13 @@ void View::DrawMessages()
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Message" );
     ImGui::NextColumn();
+    ImGui::TextUnformatted( "Call stack" );
+    ImGui::NextColumn();
     ImGui::Separator();
 
     int msgcnt = 0;
     const auto filterActive = m_messageFilter.IsActive();
+    int idx = 0;
     for( const auto& v : msgs )
     {
         const auto tid = m_worker.DecompressThread( v->thread );
@@ -7750,7 +7754,7 @@ void View::DrawMessages()
             if( !filterActive || m_messageFilter.PassFilter( text ) )
             {
                 ImGui::PushID( v );
-                if( ImGui::Selectable( TimeToString( v->time ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns ) )
+                if( ImGui::Selectable( TimeToString( v->time ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap ) )
                 {
                     CenterAtTime( v->time );
                 }
@@ -7773,6 +7777,42 @@ void View::DrawMessages()
                 ImGui::PushStyleColor( ImGuiCol_Text, v->color );
                 ImGui::TextWrapped( "%s", text );
                 ImGui::PopStyleColor();
+                ImGui::NextColumn();
+                const auto cs = v->callstack.Val();
+                if( cs != 0 )
+                {
+#ifdef TRACY_EXTENDED_FONT
+                    SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
+#else
+                    SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY " Show", cs, idx );
+#endif
+                    ImGui::SameLine();
+                    const auto& csdata = m_worker.GetCallstack( cs );
+                    const auto cssz = std::min<int>( csdata.size(), 4 );
+                    bool first = true;
+                    for( int i=0; i<cssz; i++ )
+                    {
+                        const auto frameData = m_worker.GetCallstackFrame( csdata[i] );
+                        if( !frameData ) break;
+                        if( first )
+                        {
+                            first = false;
+                        }
+                        else
+                        {
+                            ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                            TextDisabledUnformatted( ICON_FA_LONG_ARROW_ALT_LEFT );
+#else
+                            TextDisabledUnformatted( "<-" );
+#endif
+                            ImGui::SameLine();
+                        }
+                        const auto& frame = frameData->data[frameData->size - 1];
+                        auto txt = m_worker.GetString( frame.name );
+                        ImGui::TextUnformatted( txt );
+                    }
+                }
                 ImGui::NextColumn();
                 msgcnt++;
             }

@@ -219,9 +219,8 @@ static tracy_force_inline int64_t ReadTimeOffset( FileRead& f, int64_t& refTime 
     return refTime;
 }
 
-static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEvent& ev )
+static tracy_force_inline void UpdateLockRange( LockMap& lockmap, const LockEvent& ev, int64_t lt )
 {
-    const auto lt = ev.Time();
     auto& range = lockmap.range[ev.thread];
     if( range.start > lt ) range.start = lt;
     if( range.end < lt ) range.end = lt;
@@ -665,13 +664,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
-                        lev->SetTime( ReadTimeOffset( f, refTime ) );
+                        const auto lt = ReadTimeOffset( f, refTime );
+                        lev->SetTime( lt );
                         int16_t srcloc;
                         f.Read( srcloc );
                         lev->SetSrcLoc( srcloc );
                         f.Read( &lev->thread, sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = { lev };
-                        UpdateLockRange( lockmap, *lev );
+                        UpdateLockRange( lockmap, *lev, lt );
                     }
                 }
                 else
@@ -679,13 +679,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
-                        lev->SetTime( ReadTimeOffset( f, refTime ) );
+                        const auto lt = ReadTimeOffset( f, refTime );
+                        lev->SetTime( lt );
                         int16_t srcloc;
                         f.Read( srcloc );
                         lev->SetSrcLoc( srcloc );
                         f.Read( &lev->thread, sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = { lev };
-                        UpdateLockRange( lockmap, *lev );
+                        UpdateLockRange( lockmap, *lev, lt );
                     }
                 }
             }
@@ -697,13 +698,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEvent>();
-                        lev->SetTime( ReadTimeOffset( f, refTime ) );
+                        const auto lt = ReadTimeOffset( f, refTime );
+                        lev->SetTime( lt );
                         int32_t srcloc;
                         f.Read( srcloc );
                         lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = { lev };
-                        UpdateLockRange( lockmap, *lev );
+                        UpdateLockRange( lockmap, *lev, lt );
                     }
                 }
                 else
@@ -711,13 +713,14 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     for( uint64_t i=0; i<tsz; i++ )
                     {
                         auto lev = m_slab.Alloc<LockEventShared>();
-                        lev->SetTime( ReadTimeOffset( f, refTime ) );
+                        const auto lt = ReadTimeOffset( f, refTime );
+                        lev->SetTime( lt );
                         int32_t srcloc;
                         f.Read( srcloc );
                         lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = { lev };
-                        UpdateLockRange( lockmap, *lev );
+                        UpdateLockRange( lockmap, *lev, lt );
                     }
                 }
             }
@@ -731,11 +734,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         int64_t time;
                         int32_t srcloc;
                         f.Read2( time, srcloc );
-                        lev->SetTime( time - m_data.baseTime );
+                        const auto lt = time - m_data.baseTime;
+                        lev->SetTime( lt );
                         lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEvent::thread ) + sizeof( LockEvent::type ) );
                         *ptr++ = { lev };
-                        UpdateLockRange( lockmap, *lev );
+                        UpdateLockRange( lockmap, *lev, lt );
                     }
                 }
                 else
@@ -746,11 +750,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         int64_t time;
                         int32_t srcloc;
                         f.Read2( time, srcloc );
-                        lev->SetTime( time - m_data.baseTime );
+                        const auto lt = time - m_data.baseTime;
+                        lev->SetTime( lt );
                         lev->SetSrcLoc( int16_t( srcloc ) );
                         f.Read( &lev->thread, sizeof( LockEventShared::thread ) + sizeof( LockEventShared::type ) );
                         *ptr++ = { lev };
-                        UpdateLockRange( lockmap, *lev );
+                        UpdateLockRange( lockmap, *lev, lt );
                     }
                 }
             }

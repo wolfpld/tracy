@@ -198,8 +198,6 @@ static inline int LuaZoneBeginS( lua_State* L )
     if( !GetLuaZoneState().active ) return 0;
 #endif
 
-    const uint32_t color = Color::DeepSkyBlue3;
-
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
@@ -220,7 +218,7 @@ static inline int LuaZoneBeginS( lua_State* L )
     const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 );
     auto ptr = (char*)tracy_malloc( sz );
     memcpy( ptr, &sz, 4 );
-    memcpy( ptr + 4, &color, 4 );
+    memset( ptr + 4, 0, 4 );
     memcpy( ptr + 8, &line, 4 );
     memcpy( ptr + 12, func, fsz+1 );
     memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
@@ -253,8 +251,6 @@ static inline int LuaZoneBeginNS( lua_State* L )
     if( !GetLuaZoneState().active ) return 0;
 #endif
 
-    const uint32_t color = Color::DeepSkyBlue3;
-
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
@@ -278,7 +274,7 @@ static inline int LuaZoneBeginNS( lua_State* L )
     const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 + nsz );
     auto ptr = (char*)tracy_malloc( sz );
     memcpy( ptr, &sz, 4 );
-    memcpy( ptr + 4, &color, 4 );
+    memset( ptr + 4, 0, 4 );
     memcpy( ptr + 8, &line, 4 );
     memcpy( ptr + 12, func, fsz+1 );
     memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
@@ -316,8 +312,6 @@ static inline int LuaZoneBegin( lua_State* L )
     if( !GetLuaZoneState().active ) return 0;
 #endif
 
-    const uint32_t color = Color::DeepSkyBlue3;
-
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
@@ -338,7 +332,7 @@ static inline int LuaZoneBegin( lua_State* L )
     const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 );
     auto ptr = (char*)tracy_malloc( sz );
     memcpy( ptr, &sz, 4 );
-    memcpy( ptr + 4, &color, 4 );
+    memset( ptr + 4, 0, 4 );
     memcpy( ptr + 8, &line, 4 );
     memcpy( ptr + 12, func, fsz+1 );
     memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
@@ -367,8 +361,6 @@ static inline int LuaZoneBeginN( lua_State* L )
     if( !GetLuaZoneState().active ) return 0;
 #endif
 
-    const uint32_t color = Color::DeepSkyBlue3;
-
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
@@ -392,7 +384,7 @@ static inline int LuaZoneBeginN( lua_State* L )
     const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 + nsz );
     auto ptr = (char*)tracy_malloc( sz );
     memcpy( ptr, &sz, 4 );
-    memcpy( ptr + 4, &color, 4 );
+    memset( ptr + 4, 0, 4 );
     memcpy( ptr + 8, &line, 4 );
     memcpy( ptr + 12, func, fsz+1 );
     memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );

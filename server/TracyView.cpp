@@ -7787,31 +7787,7 @@ void View::DrawMessages()
                     SmallCallstackButton( "Show", cs, idx );
 #endif
                     ImGui::SameLine();
-                    const auto& csdata = m_worker.GetCallstack( cs );
-                    const auto cssz = std::min<int>( csdata.size(), 4 );
-                    bool first = true;
-                    for( int i=0; i<cssz; i++ )
-                    {
-                        const auto frameData = m_worker.GetCallstackFrame( csdata[i] );
-                        if( !frameData ) break;
-                        if( first )
-                        {
-                            first = false;
-                        }
-                        else
-                        {
-                            ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-                            TextDisabledUnformatted( ICON_FA_LONG_ARROW_ALT_LEFT );
-#else
-                            TextDisabledUnformatted( "<-" );
-#endif
-                            ImGui::SameLine();
-                        }
-                        const auto& frame = frameData->data[frameData->size - 1];
-                        auto txt = m_worker.GetString( frame.name );
-                        ImGui::TextUnformatted( txt );
-                    }
+                    DrawCallstackCalls( cs, 4 );
                 }
                 ImGui::NextColumn();
                 msgcnt++;
@@ -13964,6 +13940,35 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx,
     if( tooltip && ImGui::IsItemHovered() )
     {
         CallstackTooltip( callstack );
+    }
+}
+
+void View::DrawCallstackCalls( uint32_t callstack, uint8_t limit ) const
+{
+    const auto& csdata = m_worker.GetCallstack( callstack );
+    const auto cssz = std::min( csdata.size(), limit );
+    bool first = true;
+    for( uint8_t i=0; i<cssz; i++ )
+    {
+        const auto frameData = m_worker.GetCallstackFrame( csdata[i] );
+        if( !frameData ) break;
+        if( first )
+        {
+            first = false;
+        }
+        else
+        {
+            ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+            TextDisabledUnformatted( ICON_FA_LONG_ARROW_ALT_LEFT );
+#else
+            TextDisabledUnformatted( "<-" );
+#endif
+            ImGui::SameLine();
+        }
+        const auto& frame = frameData->data[frameData->size - 1];
+        auto txt = m_worker.GetString( frame.name );
+        ImGui::TextUnformatted( txt );
     }
 }
 

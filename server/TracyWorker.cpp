@@ -645,6 +645,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 lockmap.timeAnnounce = lockmap.timeTerminate = 0;
             }
             f.Read( tsz );
+            lockmap.threadMap.reserve( tsz );
+            lockmap.threadList.reserve( tsz );
             for( uint64_t i=0; i<tsz; i++ )
             {
                 uint64_t t;

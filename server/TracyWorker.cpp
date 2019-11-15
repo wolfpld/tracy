@@ -651,7 +651,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             {
                 uint64_t t;
                 f.Read( t );
-                lockmap.threadMap.emplace( t, lockmap.threadList.size() );
+                lockmap.threadMap.emplace( t, i );
                 lockmap.threadList.emplace_back( t );
             }
             f.Read( tsz );

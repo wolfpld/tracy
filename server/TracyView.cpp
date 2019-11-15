@@ -7717,18 +7717,23 @@ void View::DrawMessages()
         ImGui::TreePop();
     }
 
+    bool hasCallstack = m_worker.GetCallstackFrameCount() != 0;
     ImGui::Separator();
     ImGui::BeginChild( "##messages" );
     const auto w = ImGui::GetWindowWidth();
-    static bool widthSet = false;
-    ImGui::Columns( 4 );
-    if( !widthSet )
+    static int widthSet = 0;
+    const int colNum = hasCallstack ? 4 : 3;
+    ImGui::Columns( colNum );
+    if( widthSet != colNum )
     {
-        widthSet = true;
+        widthSet = colNum;
         ImGui::SetColumnWidth( 0, w * 0.07f );
         ImGui::SetColumnWidth( 1, w * 0.13f );
-        ImGui::SetColumnWidth( 2, w * 0.6f );
-        ImGui::SetColumnWidth( 3, w * 0.2f );
+        ImGui::SetColumnWidth( 2, w * ( hasCallstack ? 0.6f : 0.8f ) );
+        if( hasCallstack )
+        {
+            ImGui::SetColumnWidth( 3, w * 0.2f );
+        }
     }
     ImGui::TextUnformatted( "Time" );
     ImGui::SameLine();
@@ -7738,8 +7743,11 @@ void View::DrawMessages()
     ImGui::NextColumn();
     ImGui::TextUnformatted( "Message" );
     ImGui::NextColumn();
-    ImGui::TextUnformatted( "Call stack" );
-    ImGui::NextColumn();
+    if( hasCallstack )
+    {
+        ImGui::TextUnformatted( "Call stack" );
+        ImGui::NextColumn();
+    }
     ImGui::Separator();
 
     int msgcnt = 0;
@@ -7778,18 +7786,21 @@ void View::DrawMessages()
                 ImGui::TextWrapped( "%s", text );
                 ImGui::PopStyleColor();
                 ImGui::NextColumn();
-                const auto cs = v->callstack.Val();
-                if( cs != 0 )
+                if( hasCallstack )
                 {
+                    const auto cs = v->callstack.Val();
+                    if( cs != 0 )
+                    {
 #ifdef TRACY_EXTENDED_FONT
-                    SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
+                        SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
 #else
-                    SmallCallstackButton( "Show", cs, idx );
+                        SmallCallstackButton( "Show", cs, idx );
 #endif
-                    ImGui::SameLine();
-                    DrawCallstackCalls( cs, 4 );
+                        ImGui::SameLine();
+                        DrawCallstackCalls( cs, 4 );
+                    }
+                    ImGui::NextColumn();
                 }
-                ImGui::NextColumn();
                 msgcnt++;
             }
         }

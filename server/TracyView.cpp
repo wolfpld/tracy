@@ -1102,7 +1102,8 @@ void View::DrawFrames()
 {
     assert( m_worker.GetFrameCount( *m_frames ) != 0 );
 
-    const auto Height = 50 * ImGui::GetTextLineHeight() / 15.f;
+    const auto scale = ImGui::GetTextLineHeight() / 15.f;
+    const auto Height = 50 * scale;
 
     enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
 
@@ -1252,11 +1253,11 @@ void View::DrawFrames()
                     ImGui::Separator();
                     if( fi->flip )
                     {
-                        ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                        ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
                     }
                     else
                     {
-                        ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+                        ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ) );
                     }
                 }
                 ImGui::EndTooltip();
@@ -1795,6 +1796,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
             auto fi = m_worker.GetFrameImage( frames, i );
             if( fi )
             {
+                const auto scale = ImGui::GetTextLineHeight() / 15.f;
                 if( fi != m_frameTexturePtr )
                 {
                     if( !m_frameTexture ) m_frameTexture = MakeTexture();
@@ -1804,11 +1806,11 @@ bool View::DrawZoneFrames( const FrameData& frames )
                 ImGui::Separator();
                 if( fi->flip )
                 {
-                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                    ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
                 }
                 else
                 {
-                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+                    ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ) );
                 }
 
                 if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 0 ) )

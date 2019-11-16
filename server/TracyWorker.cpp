@@ -817,7 +817,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 m_data.messages[i] = msgdata;
                 msgMap.emplace( ptr, msgdata );
             }
-
         }
         else if( fileVer >= FileVersion( 0, 5, 2 ) )
         {

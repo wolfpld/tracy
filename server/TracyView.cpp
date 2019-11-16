@@ -11644,6 +11644,7 @@ enum { PlaybackWindowButtonsCount = sizeof( PlaybackWindowButtons ) / sizeof( *P
 
 void View::DrawPlayback()
 {
+    const auto scale = ImGui::GetTextLineHeight() / 15.f;
     const auto frameSet = m_worker.GetFramesBase();
     const auto& frameImages = m_worker.GetFrameImages();
     const auto fi = frameImages[m_playback.frame];
@@ -11693,22 +11694,22 @@ void View::DrawPlayback()
     {
         if( fi->flip )
         {
-            ImGui::Image( m_playback.texture, ImVec2( fi->w * 2, fi->h * 2 ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+            ImGui::Image( m_playback.texture, ImVec2( fi->w * 2 * scale, fi->h * 2 * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
         }
         else
         {
-            ImGui::Image( m_playback.texture, ImVec2( fi->w * 2, fi->h * 2 ) );
+            ImGui::Image( m_playback.texture, ImVec2( fi->w * 2 * scale, fi->h * 2 * scale ) );
         }
     }
     else
     {
         if( fi->flip )
         {
-            ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+            ImGui::Image( m_playback.texture, ImVec2( fi->w * scale, fi->h * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
         }
         else
         {
-            ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ) );
+            ImGui::Image( m_playback.texture, ImVec2( fi->w * scale, fi->h * scale ) );
         }
     }
     int tmp = m_playback.frame + 1;

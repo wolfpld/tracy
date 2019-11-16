@@ -32,8 +32,8 @@ update utility to convert your old traces now!
     programs.
   - Thread migrations across CPU cores can be graphed.
   - System-wide workload distribution is now plotted on the timeline.
-- Added "CPU data" window (accessible from the trace info window), showing
-  programs competing for CPU during the capture.
+- Added "CPU data" window showing programs competing for CPU during the
+  capture.
 - Switched to using native thread identifiers (relatively small numbers), as
   opposed to pthreads identifiers, which in reality were pointers.
 - Improved thread name discovery if context switch capture is enabled.

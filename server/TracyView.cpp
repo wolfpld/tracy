@@ -13449,6 +13449,8 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     }
     ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
+    SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+    ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
@@ -13507,6 +13509,8 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::TextUnformatted( m_worker.GetString( srcloc.name ) );
     ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
+    SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
+    ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();

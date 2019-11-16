@@ -13129,7 +13129,7 @@ uint32_t View::GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth )
 static uint32_t GetHsvColor( uint64_t hue, int value )
 {
     const uint8_t h = ( hue * 11400714819323198485ull ) & 0xFF;
-    const uint8_t s = 96;
+    const uint8_t s = 108;
     const uint8_t v = std::max( 96, 170 - value * 8 );
 
     const uint8_t reg = h / 43;

@@ -2232,9 +2232,9 @@ void View::DrawZones()
                     ImGui::Separator();
                     if( !isVulkan )
                     {
-                        TextFocused( "Thread:", m_worker.GetThreadName( v->thread ) );
-                        ImGui::SameLine();
                         SmallColorBox( GetThreadColor( v->thread, 0 ) );
+                        ImGui::SameLine();
+                        TextFocused( "Thread:", m_worker.GetThreadName( v->thread ) );
                     }
                     else
                     {
@@ -2259,11 +2259,11 @@ void View::DrawZones()
                                         }
                                     }
                                 }
+                                SmallColorBox( GetThreadColor( tid, 0 ) );
+                                ImGui::SameLine();
                                 TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                                 ImGui::SameLine();
                                 ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
-                                ImGui::SameLine();
-                                SmallColorBox( GetThreadColor( tid, 0 ) );
                             }
                             else
                             {
@@ -2271,11 +2271,11 @@ void View::DrawZones()
                                 ImGui::Indent();
                                 for( auto& td : v->threadData )
                                 {
+                                    SmallColorBox( GetThreadColor( td.first, 0 ) );
+                                    ImGui::SameLine();
                                     ImGui::TextUnformatted( m_worker.GetThreadName( td.first ) );
                                     ImGui::SameLine();
                                     ImGui::TextDisabled( "(%s)", RealToString( td.first, true ) );
-                                    ImGui::SameLine();
-                                    SmallColorBox( GetThreadColor( td.first, 0 ) );
                                 }
                                 ImGui::Unindent();
                             }
@@ -4728,11 +4728,11 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
                                         ImGui::SameLine();
                                         TextDisabledUnformatted( "(profiled program)" );
+                                        SmallColorBox( GetThreadColor( thread, 0 ) );
+                                        ImGui::SameLine();
                                         TextFocused( "Thread:", m_worker.GetThreadName( thread ) );
                                         ImGui::SameLine();
                                         ImGui::TextDisabled( "(%s)", RealToString( thread, true ) );
-                                        ImGui::SameLine();
-                                        SmallColorBox( GetThreadColor( thread, 0 ) );
                                         m_drawThreadMigrations = thread;
                                     }
                                     else
@@ -5295,11 +5295,11 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     {
                         tid = m_worker.DecompressThread( ev->ThreadFree() );
                     }
+                    SmallColorBox( GetThreadColor( tid, 0 ) );
+                    ImGui::SameLine();
                     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
-                    ImGui::SameLine();
-                    SmallColorBox( GetThreadColor( tid, 0 ) );
 
                     m_memoryAllocHover = std::distance( mem.data.begin(), ev );
                     m_memoryAllocHoverWait = 2;
@@ -10664,11 +10664,11 @@ void View::DrawMemoryAllocWindow()
     TextFocused( "Appeared at", TimeToString( ev.TimeAlloc() ) );
     if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeAlloc() );
     ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
+    SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
+    ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tidAlloc ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tidAlloc, true ) );
-    ImGui::SameLine();
-    SmallColorBox( GetThreadColor( tidAlloc, 0 ) );
     if( ev.CsAlloc() != 0 )
     {
         const auto cs = ev.CsAlloc();
@@ -10689,11 +10689,11 @@ void View::DrawMemoryAllocWindow()
         TextFocused( "Freed at", TimeToString( ev.TimeFree() ) );
         if( ImGui::IsItemClicked() ) CenterAtTime( ev.TimeFree() );
         ImGui::SameLine(); ImGui::Spacing(); ImGui::SameLine();
+        SmallColorBox( GetThreadColor( tidFree, 0 ) );
+        ImGui::SameLine();
         TextFocused( "Thread:", m_worker.GetThreadName( tidFree ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( tidFree, true ) );
-        ImGui::SameLine();
-        SmallColorBox( GetThreadColor( tidFree, 0 ) );
         if( ev.csFree.Val() != 0 )
         {
             const auto cs = ev.csFree.Val();
@@ -11352,11 +11352,11 @@ void View::DrawInfo()
         TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Application has crashed." );
 #endif
         TextFocused( "Time of crash:", TimeToString( crash.time ) );
+        SmallColorBox( GetThreadColor( crash.thread, 0 ) );
+        ImGui::SameLine();
         TextFocused( "Thread:", m_worker.GetThreadName( crash.thread ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", RealToString( crash.thread, true ) );
-        ImGui::SameLine();
-        SmallColorBox( GetThreadColor( crash.thread, 0 ) );
         TextDisabledUnformatted( "Reason:" );
         ImGui::SameLine();
         ImGui::TextWrapped( "%s", m_worker.GetString( crash.message ) );
@@ -11858,7 +11858,11 @@ void View::DrawCpuDataWindow()
         }
         const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first, true );
         const auto expand = ImGui::TreeNode( pidtxt );
-        if( ImGui::IsItemHovered() ) m_drawThreadHighlight = pid.first;
+        if( ImGui::IsItemHovered() )
+        {
+            if( pidMatch ) m_drawThreadMigrations = pid.first;
+            m_drawThreadHighlight = pid.first;
+        }
         const auto tsz = pid.second.tids.size();
         if( tsz > 1 )
         {
@@ -11867,7 +11871,11 @@ void View::DrawCpuDataWindow()
         }
         ImGui::NextColumn();
         ImGui::TextUnformatted( pid.first == 0 ? "???" : name );
-        if( ImGui::IsItemHovered() ) m_drawThreadHighlight = pid.first;
+        if( ImGui::IsItemHovered() )
+        {
+            if( pidMatch ) m_drawThreadMigrations = pid.first;
+            m_drawThreadHighlight = pid.first;
+        }
         ImGui::NextColumn();
         sprintf( buf, "%s (%.2f%%)", TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
         ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
@@ -11906,14 +11914,22 @@ void View::DrawCpuDataWindow()
                 const auto& tit = ctd.find( tid );
                 assert( tit != ctd.end() );
                 ImGui::TextUnformatted( RealToString( tid, true ) );
-                if( ImGui::IsItemHovered() ) m_drawThreadHighlight = tid;
+                if( ImGui::IsItemHovered() )
+                {
+                    if( tidMatch ) m_drawThreadMigrations = tid;
+                    m_drawThreadHighlight = tid;
+                }
                 ImGui::NextColumn();
-                ImGui::TextUnformatted( tname );
-                if( ImGui::IsItemHovered() ) m_drawThreadHighlight = tid;
                 if( tidMatch )
                 {
-                    ImGui::SameLine();
                     SmallColorBox( GetThreadColor( tid, 0 ) );
+                    ImGui::SameLine();
+                }
+                ImGui::TextUnformatted( tname );
+                if( ImGui::IsItemHovered() )
+                {
+                    if( tidMatch ) m_drawThreadMigrations = tid;
+                    m_drawThreadHighlight = tid;
                 }
                 ImGui::NextColumn();
                 sprintf( buf, "%s (%.2f%%)", TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
@@ -13434,11 +13450,11 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    SmallColorBox( GetThreadColor( tid, 0 ) );
+    ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
-    ImGui::SameLine();
-    SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
 #ifndef TRACY_NO_STATISTICS
@@ -13492,11 +13508,11 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::TextUnformatted( m_worker.GetString( srcloc.function ) );
     ImGui::Separator();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    SmallColorBox( GetThreadColor( tid, 0 ) );
+    ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
-    ImGui::SameLine();
-    SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::Separator();
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );

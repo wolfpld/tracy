@@ -209,6 +209,12 @@ struct ConcurrentQueueDefaultTraits
 	// internal queue.
 	static const std::uint32_t EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE = 256;
 	
+	// The maximum number of elements (inclusive) that can be enqueued to a sub-queue.
+	// Enqueue operations that would cause this limit to be surpassed will fail. Note
+	// that this limit is enforced at the block level (for performance reasons), i.e.
+	// it's rounded up to the nearest block size.
+	static const size_t MAX_SUBQUEUE_SIZE = details::const_numeric_max<size_t>::value;
+	
 	
 	// Memory allocation can be customized if needed.
 	// malloc should return nullptr on failure, and handle alignment like std::malloc.
@@ -291,6 +297,63 @@ namespace details
 		++x;
 		return x;
 	}
+	
+	template<typename T>
+	static inline void swap_relaxed(std::atomic<T>& left, std::atomic<T>& right)
+	{
+		T temp = std::move(left.load(std::memory_order_relaxed));
+		left.store(std::move(right.load(std::memory_order_relaxed)), std::memory_order_relaxed);
+		right.store(std::move(temp), std::memory_order_relaxed);
+	}
+	
+	template<typename T>
+	static inline T const& nomove(T const& x)
+	{
+		return x;
+	}
+	
+	template<bool Enable>
+	struct nomove_if
+	{
+		template<typename T>
+		static inline T const& eval(T const& x)
+		{
+			return x;
+		}
+	};
+	
+	template<>
+	struct nomove_if<false>
+	{
+		template<typename U>
+		static inline auto eval(U&& x)
+			-> decltype(std::forward<U>(x))
+		{
+			return std::forward<U>(x);
+		}
+	};
+	
+	template<typename It>
+	static inline auto deref_noexcept(It& it) MOODYCAMEL_NOEXCEPT -> decltype(*it)
+	{
+		return *it;
+	}
+	
+#if defined(__clang__) || !defined(__GNUC__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+	template<typename T> struct is_trivially_destructible : std::is_trivially_destructible<T> { };
+#else
+	template<typename T> struct is_trivially_destructible : std::has_trivial_destructor<T> { };
+#endif
+	
+	template<typename T> struct static_is_lock_free_num { enum { value = 0 }; };
+	template<> struct static_is_lock_free_num<signed char> { enum { value = ATOMIC_CHAR_LOCK_FREE }; };
+	template<> struct static_is_lock_free_num<short> { enum { value = ATOMIC_SHORT_LOCK_FREE }; };
+	template<> struct static_is_lock_free_num<int> { enum { value = ATOMIC_INT_LOCK_FREE }; };
+	template<> struct static_is_lock_free_num<long> { enum { value = ATOMIC_LONG_LOCK_FREE }; };
+	template<> struct static_is_lock_free_num<long long> { enum { value = ATOMIC_LLONG_LOCK_FREE }; };
+	template<typename T> struct static_is_lock_free : static_is_lock_free_num<typename std::make_signed<T>::type> {  };
+	template<> struct static_is_lock_free<bool> { enum { value = ATOMIC_BOOL_LOCK_FREE }; };
+	template<typename U> struct static_is_lock_free<U*> { enum { value = ATOMIC_POINTER_LOCK_FREE }; };
 }
 
 
@@ -325,6 +388,16 @@ struct ProducerToken
 		}
 	}
 	
+	// A token is always valid unless:
+	//     1) Memory allocation failed during construction
+	//     2) It was moved via the move constructor
+	//        (Note: assignment does a swap, leaving both potentially valid)
+	//     3) The associated queue was destroyed
+	// Note that if valid() returns true, that only indicates
+	// that the token is valid for use with a specific queue,
+	// but not which one; that's up to the user to track.
+	inline bool valid() const { return producer != nullptr; }
+	
 	~ProducerToken()
 	{
 		if (producer != nullptr) {
@@ -350,8 +423,25 @@ struct ConsumerToken
 	template<typename T, typename Traits>
 	explicit ConsumerToken(ConcurrentQueue<T, Traits>& q);
 	
-	ConsumerToken(ConsumerToken&& other) MOODYCAMEL_DELETE_FUNCTION;
-	ConsumerToken& operator=(ConsumerToken&& other) MOODYCAMEL_DELETE_FUNCTION;
+	ConsumerToken(ConsumerToken&& other) MOODYCAMEL_NOEXCEPT
+		: initialOffset(other.initialOffset), lastKnownGlobalOffset(other.lastKnownGlobalOffset), itemsConsumedFromCurrent(other.itemsConsumedFromCurrent), currentProducer(other.currentProducer), desiredProducer(other.desiredProducer)
+	{
+	}
+	
+	inline ConsumerToken& operator=(ConsumerToken&& other) MOODYCAMEL_NOEXCEPT
+	{
+		swap(other);
+		return *this;
+	}
+	
+	void swap(ConsumerToken& other) MOODYCAMEL_NOEXCEPT
+	{
+		std::swap(initialOffset, other.initialOffset);
+		std::swap(lastKnownGlobalOffset, other.lastKnownGlobalOffset);
+		std::swap(itemsConsumedFromCurrent, other.itemsConsumedFromCurrent);
+		std::swap(currentProducer, other.currentProducer);
+		std::swap(desiredProducer, other.desiredProducer);
+	}
 	
 	// Disable copying and assignment
 	ConsumerToken(ConsumerToken const&) MOODYCAMEL_DELETE_FUNCTION;
@@ -385,6 +475,15 @@ public:
 	static const size_t EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD = static_cast<size_t>(Traits::EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD);
 	static const size_t EXPLICIT_INITIAL_INDEX_SIZE = static_cast<size_t>(Traits::EXPLICIT_INITIAL_INDEX_SIZE);
 	static const std::uint32_t EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE = static_cast<std::uint32_t>(Traits::EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE);
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4307)		// + integral constant overflow (that's what the ternary expression is for!)
+#pragma warning(disable: 4309)		// static_cast: Truncation of constant value
+#endif
+	static const size_t MAX_SUBQUEUE_SIZE = (details::const_numeric_max<size_t>::value - static_cast<size_t>(Traits::MAX_SUBQUEUE_SIZE) < BLOCK_SIZE) ? details::const_numeric_max<size_t>::value : ((static_cast<size_t>(Traits::MAX_SUBQUEUE_SIZE) + (BLOCK_SIZE - 1)) / BLOCK_SIZE * BLOCK_SIZE);
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 	static_assert(!std::numeric_limits<size_t>::is_signed && std::is_integral<size_t>::value, "Traits::size_t must be an unsigned integral type");
 	static_assert(!std::numeric_limits<index_t>::is_signed && std::is_integral<index_t>::value, "Traits::index_t must be an unsigned integral type");
@@ -583,6 +682,20 @@ public:
 		}
 		return size;
 	}
+	
+	
+	// Returns true if the underlying atomic variables used by
+	// the queue are lock-free (they should be on most platforms).
+	// Thread-safe.
+	static bool is_lock_free()
+	{
+		return
+			details::static_is_lock_free<bool>::value == 2 &&
+			details::static_is_lock_free<size_t>::value == 2 &&
+			details::static_is_lock_free<std::uint32_t>::value == 2 &&
+			details::static_is_lock_free<index_t>::value == 2 &&
+			details::static_is_lock_free<void*>::value == 2;
+	}
 
 
 private:
@@ -657,6 +770,7 @@ private:
 	{
 		FreeList() : freeListHead(nullptr) { }
 		FreeList(FreeList&& other) : freeListHead(other.freeListHead.load(std::memory_order_relaxed)) { other.freeListHead.store(nullptr, std::memory_order_relaxed); }
+		void swap(FreeList& other) { details::swap_relaxed(freeListHead, other.freeListHead); }
 		
 		FreeList(FreeList const&) MOODYCAMEL_DELETE_FUNCTION;
 		FreeList& operator=(FreeList const&) MOODYCAMEL_DELETE_FUNCTION;
@@ -781,6 +895,23 @@ private:
 			}
 		}
 		
+		// Returns true if the block is now empty (does not apply in explicit context)
+		inline bool set_empty(index_t i)
+		{
+			if (BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) {
+				// Set flag
+				assert(!emptyFlags[BLOCK_SIZE - 1 - static_cast<size_t>(i & static_cast<index_t>(BLOCK_SIZE - 1))].load(std::memory_order_relaxed));
+				emptyFlags[BLOCK_SIZE - 1 - static_cast<size_t>(i & static_cast<index_t>(BLOCK_SIZE - 1))].store(true, std::memory_order_release);
+				return false;
+			}
+			else {
+				// Increment counter
+				auto prevVal = elementsCompletelyDequeued.fetch_add(1, std::memory_order_release);
+				assert(prevVal < BLOCK_SIZE);
+				return prevVal == BLOCK_SIZE - 1;
+			}
+		}
+		
 		// Sets multiple contiguous item statuses to 'empty' (assumes no wrapping and count > 0).
 		// Returns true if the block is now empty (does not apply in explicit context).
 		inline bool set_many_empty(index_t i, size_t count)
@@ -800,6 +931,20 @@ private:
 				auto prevVal = elementsCompletelyDequeued.fetch_add(count, std::memory_order_release);
 				assert(prevVal + count <= BLOCK_SIZE);
 				return prevVal + count == BLOCK_SIZE;
+			}
+		}
+		
+		inline void set_all_empty()
+		{
+			if (BLOCK_SIZE <= EXPLICIT_BLOCK_EMPTY_COUNTER_THRESHOLD) {
+				// Set all flags
+				for (size_t i = 0; i != BLOCK_SIZE; ++i) {
+					emptyFlags[i].store(true, std::memory_order_relaxed);
+				}
+			}
+			else {
+				// Reset counter
+				elementsCompletelyDequeued.store(BLOCK_SIZE, std::memory_order_relaxed);
 			}
 		}
 		
@@ -1043,6 +1188,68 @@ private:
             return this->tailIndex;
         }
 		
+		template<typename It>
+		size_t dequeue_bulk(It& itemFirst, size_t max)
+		{
+			auto tail = this->tailIndex.load(std::memory_order_relaxed);
+			auto overcommit = this->dequeueOvercommit.load(std::memory_order_relaxed);
+			auto desiredCount = static_cast<size_t>(tail - (this->dequeueOptimisticCount.load(std::memory_order_relaxed) - overcommit));
+			if (details::circular_less_than<size_t>(0, desiredCount)) {
+				desiredCount = desiredCount < max ? desiredCount : max;
+				std::atomic_thread_fence(std::memory_order_acquire);
+				
+				auto myDequeueCount = this->dequeueOptimisticCount.fetch_add(desiredCount, std::memory_order_relaxed);
+				assert(overcommit <= myDequeueCount);
+				
+				tail = this->tailIndex.load(std::memory_order_acquire);
+				auto actualCount = static_cast<size_t>(tail - (myDequeueCount - overcommit));
+				if (details::circular_less_than<size_t>(0, actualCount)) {
+					actualCount = desiredCount < actualCount ? desiredCount : actualCount;
+					if (actualCount < desiredCount) {
+						this->dequeueOvercommit.fetch_add(desiredCount - actualCount, std::memory_order_release);
+					}
+					
+					// Get the first index. Note that since there's guaranteed to be at least actualCount elements, this
+					// will never exceed tail.
+					auto firstIndex = this->headIndex.fetch_add(actualCount, std::memory_order_acq_rel);
+					
+					// Determine which block the first element is in
+					auto localBlockIndex = blockIndex.load(std::memory_order_acquire);
+					auto localBlockIndexHead = localBlockIndex->front.load(std::memory_order_acquire);
+					
+					auto headBase = localBlockIndex->entries[localBlockIndexHead].base;
+					auto firstBlockBaseIndex = firstIndex & ~static_cast<index_t>(BLOCK_SIZE - 1);
+					auto offset = static_cast<size_t>(static_cast<typename std::make_signed<index_t>::type>(firstBlockBaseIndex - headBase) / BLOCK_SIZE);
+					auto indexIndex = (localBlockIndexHead + offset) & (localBlockIndex->size - 1);
+					
+					// Iterate the blocks and dequeue
+					auto index = firstIndex;
+					do {
+						auto firstIndexInBlock = index;
+						auto endIndex = (index & ~static_cast<index_t>(BLOCK_SIZE - 1)) + static_cast<index_t>(BLOCK_SIZE);
+						endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex) ? firstIndex + static_cast<index_t>(actualCount) : endIndex;
+						auto block = localBlockIndex->entries[indexIndex].block;
+
+                        const auto sz = endIndex - index;
+                        memcpy( itemFirst, (*block)[index], sizeof( T ) * sz );
+                        index += sz;
+                        itemFirst += sz;
+
+						block->ConcurrentQueue::Block::set_many_empty(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
+						indexIndex = (indexIndex + 1) & (localBlockIndex->size - 1);
+					} while (index != firstIndex + actualCount);
+					
+					return actualCount;
+				}
+				else {
+					// Wasn't anything to dequeue after all; make the effective dequeue count eventually consistent
+					this->dequeueOvercommit.fetch_add(desiredCount, std::memory_order_release);
+				}
+			}
+			
+			return 0;
+		}
+
 	private:
 		struct BlockIndexEntry
 		{
@@ -1153,6 +1360,15 @@ private:
 		freeList.add(block);
 	}
 	
+	inline void add_blocks_to_free_list(Block* block)
+	{
+		while (block != nullptr) {
+			auto next = block->next;
+			add_block_to_free_list(block);
+			block = next;
+		}
+	}
+	
 	inline Block* try_get_block_from_free_list()
 	{
 		return freeList.try_get();
@@ -1177,9 +1393,15 @@ private:
 	
 	//////////////////////////////////
 	// Producer list manipulation
-	//////////////////////////////////
+	//////////////////////////////////	
 	
-    ProducerBase* recycle_or_create_producer()
+	ProducerBase* recycle_or_create_producer()
+	{
+		bool recycled;
+		return recycle_or_create_producer(recycled);
+	}
+	
+    ProducerBase* recycle_or_create_producer(bool& recycled)
     {
         // Try to re-use one first
         for (auto ptr = producerListTail.load(std::memory_order_acquire); ptr != nullptr; ptr = ptr->next_prod()) {
@@ -1189,12 +1411,14 @@ private:
                     bool expected = true;
                     if (ptr->inactive.compare_exchange_strong(expected, /* desired */ false, std::memory_order_acquire, std::memory_order_relaxed)) {
                         // We caught one! It's been marked as activated, the caller can have it
+                        recycled = true;
                         return ptr;
                     }
                 }
             }
         }
 
+        recycled = false;
         return add_producer(static_cast<ProducerBase*>(create<ExplicitProducer>(this)));
     }
 	
@@ -1214,6 +1438,16 @@ private:
 		} while (!producerListTail.compare_exchange_weak(prevTail, producer, std::memory_order_release, std::memory_order_relaxed));
 		
 		return producer;
+	}
+	
+	void reown_producers()
+	{
+		// After another instance is moved-into/swapped-with this one, all the
+		// producers we stole still think their parents are the other queue.
+		// So fix them up!
+		for (auto ptr = producerListTail.load(std::memory_order_relaxed); ptr != nullptr; ptr = ptr->next_prod()) {
+			ptr->parent = this;
+		}
 	}
 	
 	//////////////////////////////////
@@ -1291,6 +1525,22 @@ ConsumerToken::ConsumerToken(ConcurrentQueue<T, Traits>& queue)
 {
 	initialOffset = queue.nextExplicitConsumerId.fetch_add(1, std::memory_order_release);
 	lastKnownGlobalOffset = static_cast<std::uint32_t>(-1);
+}
+
+template<typename T, typename Traits>
+inline void swap(ConcurrentQueue<T, Traits>& a, ConcurrentQueue<T, Traits>& b) MOODYCAMEL_NOEXCEPT
+{
+	a.swap(b);
+}
+
+inline void swap(ProducerToken& a, ProducerToken& b) MOODYCAMEL_NOEXCEPT
+{
+	a.swap(b);
+}
+
+inline void swap(ConsumerToken& a, ConsumerToken& b) MOODYCAMEL_NOEXCEPT
+{
+	a.swap(b);
 }
 
 }

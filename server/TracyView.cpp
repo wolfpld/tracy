@@ -4569,7 +4569,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         }
 
         ImGui::PushFont( m_smallFont );
-        const auto sty = ImGui::GetFontSize();
+        const auto sty = round( ImGui::GetFontSize() );
         const auto sstep = sty + 1;
 
         const auto origOffset = offset;

@@ -6,8 +6,8 @@ namespace tracy
 namespace Version
 {
 enum { Major = 0 };
-enum { Minor = 5 };
-enum { Patch = 12 };
+enum { Minor = 6 };
+enum { Patch = 0 };
 }
 }
 

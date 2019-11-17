@@ -432,6 +432,10 @@ int main( int argc, char** argv )
                 {
                     OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
                 }
+                if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.6" ) )
+                {
+                    OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
+                }
                 ImGui::EndPopup();
             }
             ImGui::Separator();

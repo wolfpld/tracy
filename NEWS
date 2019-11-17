@@ -6,7 +6,7 @@ Note: Release numbers are nothing more than numbers. There are some
 "missing" versions due to trace file changes during development. This is not
 a mistake.
 
-v0.6 (xxxx-xx-xx)
+v0.6 (2019-11-17)
 -----------------
 
 This is the last release which will be able to load pre-v0.5 traces. Use the

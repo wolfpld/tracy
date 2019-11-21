@@ -6,6 +6,11 @@ Note: Release numbers are nothing more than numbers. There are some
 "missing" versions due to trace file changes during development. This is not
 a mistake.
 
+v0.7 (xxxx-xx-xx)
+-----------------
+
+- Improve BSD support.
+
 v0.6 (2019-11-17)
 -----------------
 

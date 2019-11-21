@@ -3,6 +3,12 @@
 
 #if defined _WIN32 || defined __CYGWIN__ || defined __linux__ || defined __APPLE__
 #  define TRACY_HAS_SYSTIME
+#else
+#  include <sys/param.h>
+#endif
+
+#ifdef BSD
+#  define TRACY_HAS_SYSTIME
 #endif
 
 #ifdef TRACY_HAS_SYSTIME

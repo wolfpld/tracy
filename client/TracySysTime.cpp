@@ -10,6 +10,9 @@
 #  elif defined __APPLE__
 #    include <mach/mach_host.h>
 #    include <mach/host_info.h>
+#  elif defined BSD
+#    include <sys/types.h>
+#    include <sys/sysctl.h>
 #  endif
 
 namespace tracy
@@ -61,6 +64,17 @@ void SysTime::ReadTimes()
     idle = info.cpu_ticks[CPU_STATE_IDLE];
 }
 
+#  elif defined BSD
+
+void SysTime::ReadTimes()
+{
+    u_long data[5];
+    size_t sz = sizeof( data );
+    sysctlbyname( "kern.cp_time", &data, &sz, nullptr, 0 );
+    used = data[0] + data[1] + data[2] + data[3];
+    idle = data[4];
+}
+
 #endif
 
 SysTime::SysTime()
@@ -80,7 +94,7 @@ float SysTime::Get()
 
 #if defined _WIN32 || defined __CYGWIN__
     return diffUsed == 0 ? -1 : ( diffUsed - diffIdle ) * 100.f / diffUsed;
-#elif defined __linux__ || defined __APPLE__
+#elif defined __linux__ || defined __APPLE__ || defined BSD
     const auto total = diffUsed + diffIdle;
     return total == 0 ? -1 : diffUsed * 100.f / total;
 #endif

@@ -34,16 +34,49 @@ POSSIBILITY OF SUCH DAMAGE.  */
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/param.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#ifdef BSD
+#  include <sys/sysctl.h>
+#  include <limits.h>
+#endif
+
 #include "backtrace.hpp"
 #include "internal.hpp"
 
-#ifndef HAVE_GETEXECNAME
-#define getexecname() NULL
+#ifdef BSD
+#  if !defined HAVE_GETEXECNAME && defined KERN_PROC_PATHNAME
+#    define HAVE_GETEXECNAME
+static char execname[PATH_MAX + 1];
+static const char *
+getexecname(void)
+{
+  size_t path_len = sizeof(execname);
+  int mib[] = {
+    CTL_KERN,
+#if defined(__NetBSD__)
+    KERN_PROC_ARGS,
+    -1,
+    KERN_PROC_PATHNAME,
+#else
+    KERN_PROC,
+    KERN_PROC_PATHNAME,
+    -1,
+#endif
+  };
+  u_int miblen = sizeof(mib) / sizeof(mib[0]);
+  int rc = sysctl(mib, miblen, execname, &path_len, NULL, 0);
+  return rc ? NULL : execname;
+}
+#  endif
+#else
+#  ifndef HAVE_GETEXECNAME
+#    define getexecname() NULL
+#  endif
 #endif
 
 namespace tracy

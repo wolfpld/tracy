@@ -57,8 +57,10 @@ static double s_time = 0;
 
 static const char* s_tracyStackFrames[] = {
     "tracy::Callstack",
+    "tracy::Callstack(int)",
     "tracy::GpuCtxScope::{ctor}",
     "tracy::Profiler::SendCallstack",
+    "tracy::Profiler::SendCallstack(int)",
     "tracy::Profiler::SendCallstack(int, unsigned long)",
     "tracy::Profiler::MemAllocCallstack",
     "tracy::Profiler::MemAllocCallstack(void const*, unsigned long, int)",

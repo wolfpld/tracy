@@ -16,6 +16,12 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 #  else
 #    include <sys/syscall.h>
 #  endif
+#elif defined __FreeBSD__
+#  include <sys/thr.h>
+#elif defined __NetBSD__ || defined __DragonFly__
+#  include <sys/lwp.h>
+#elif defined __OpenBSD__
+#  include <unistd.h>
 #endif
 
 #include <stdint.h>
@@ -40,6 +46,16 @@ static inline uint64_t GetThreadHandleImpl()
     return (uint64_t)gettid();
 #elif defined __linux__
     return (uint64_t)syscall( SYS_gettid );
+#elif defined __FreeBSD__
+    long id;
+    thr_self( &id );
+    return id;
+#elif defined __NetBSD__
+    return _lwp_self();
+#elif defined __DragonFly__
+    return lwp_gettid();
+#elif defined __OpenBSD__
+    return getthrid();
 #else
     static_assert( sizeof( decltype( pthread_self() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
     return uint64_t( pthread_self() );

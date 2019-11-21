@@ -17,7 +17,7 @@
 #  ifdef _MSC_VER
 #    pragma warning( pop )
 #  endif
-#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3
+#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 6
 #  include "../libbacktrace/backtrace.hpp"
 #  include <dlfcn.h>
 #  include <cxxabi.h>
@@ -312,7 +312,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     return { &cb, 1 };
 }
 
-#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3
+#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 6
 
 enum { MaxCbTrace = 16 };
 

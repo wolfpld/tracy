@@ -19,8 +19,10 @@
 #  else
 #    define TRACY_HAS_CALLSTACK 2
 #  endif
-#elif defined __APPLE__ || defined BSD
+#elif defined __APPLE__
 #  define TRACY_HAS_CALLSTACK 4
+#elif defined BSD
+#  define TRACY_HAS_CALLSTACK 6
 #endif
 
 #endif

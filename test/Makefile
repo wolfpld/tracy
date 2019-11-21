@@ -16,6 +16,9 @@ OBJ := $(SRC:%.cpp=%.o)
 ifeq ($(shell uname -o),Cygwin)
 LIBS += -ldbghelp
 endif
+ifeq ($(shell uname -o),FreeBSD)
+LIBS += -lexecinfo
+endif
 
 all: $(IMAGE)
 

@@ -22,6 +22,7 @@
 #else
 #  include <arpa/inet.h>
 #  include <sys/socket.h>
+#  include <sys/param.h>
 #  include <netinet/in.h>
 #  include <netdb.h>
 #  include <unistd.h>
@@ -305,6 +306,9 @@ bool ListenSocket::Listen( int port, int backlog )
     m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
 #if defined _WIN32 || defined __CYGWIN__
     unsigned long val = 0;
+    setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
+#elif defined BSD
+    int val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
 #else
     int val = 1;

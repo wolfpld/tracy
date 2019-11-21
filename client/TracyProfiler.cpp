@@ -11,6 +11,7 @@
 #  include <intrin.h>
 #else
 #  include <sys/time.h>
+#  include <sys/param.h>
 #endif
 
 #ifdef __CYGWIN__
@@ -31,7 +32,7 @@
 #  include <sys/syscall.h>
 #endif
 
-#ifdef __APPLE__
+#if defined __APPLE__ || defined BSD
 #  include <sys/types.h>
 #  include <sys/sysctl.h>
 #endif
@@ -493,6 +494,11 @@ static const char* GetHostInfo()
     size_t memSize;
     size_t sz = sizeof( memSize );
     sysctlbyname( "hw.memsize", &memSize, &sz, nullptr, 0 );
+    ptr += sprintf( ptr, "RAM: %zu MB\n", memSize / 1024 / 1024 );
+#elif defined BSD
+    size_t memSize;
+    size_t sz = sizeof( memSize );
+    sysctlbyname( "hw.physmem", &memSize, &sz, nullptr, 0 );
     ptr += sprintf( ptr, "RAM: %zu MB\n", memSize / 1024 / 1024 );
 #else
     ptr += sprintf( ptr, "RAM: unknown\n" );

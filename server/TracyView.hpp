@@ -314,6 +314,7 @@ private:
     Region m_highlight;
     Region m_highlightZoom;
 
+    DecayValue<uint64_t> m_cpuDataThread = 0;
     uint64_t m_gpuThread = 0;
     int64_t m_gpuStart = 0;
     int64_t m_gpuEnd = 0;

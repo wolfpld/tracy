@@ -2008,6 +2008,7 @@ void View::DrawZones()
     m_lockHoverHighlight.Decay( InvalidId );
     m_drawThreadMigrations.Decay( 0 );
     m_drawThreadHighlight.Decay( 0 );
+    m_cpuDataThread.Decay( 0 );
     m_zoneHover = nullptr;
 
     if( m_vd.zvStart == m_vd.zvEnd ) return;
@@ -2531,6 +2532,11 @@ void View::DrawZones()
             {
                 draw->AddRectFilled( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x2288DD88 );
                 draw->AddRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x4488DD88 );
+            }
+            if( m_cpuDataThread == v->id )
+            {
+                draw->AddRectFilled( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x2DFF8888 );
+                draw->AddRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( w, offset ), 0x4DFF8888 );
             }
             DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), labelColor, txt );
 
@@ -4740,6 +4746,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         ImGui::SameLine();
                                         ImGui::TextDisabled( "(%s)", RealToString( thread, true ) );
                                         m_drawThreadMigrations = thread;
+                                        m_cpuDataThread = thread;
                                     }
                                     else
                                     {
@@ -11867,7 +11874,11 @@ void View::DrawCpuDataWindow()
         const auto expand = ImGui::TreeNode( pidtxt );
         if( ImGui::IsItemHovered() )
         {
-            if( pidMatch ) m_drawThreadMigrations = pid.first;
+            if( pidMatch )
+            {
+                m_drawThreadMigrations = pid.first;
+                m_cpuDataThread = pid.first;
+            }
             m_drawThreadHighlight = pid.first;
         }
         const auto tsz = pid.second.tids.size();
@@ -11880,7 +11891,11 @@ void View::DrawCpuDataWindow()
         ImGui::TextUnformatted( pid.first == 0 ? "???" : name );
         if( ImGui::IsItemHovered() )
         {
-            if( pidMatch ) m_drawThreadMigrations = pid.first;
+            if( pidMatch )
+            {
+                m_drawThreadMigrations = pid.first;
+                m_cpuDataThread = pid.first;
+            }
             m_drawThreadHighlight = pid.first;
         }
         ImGui::NextColumn();
@@ -11923,7 +11938,11 @@ void View::DrawCpuDataWindow()
                 ImGui::TextUnformatted( RealToString( tid, true ) );
                 if( ImGui::IsItemHovered() )
                 {
-                    if( tidMatch ) m_drawThreadMigrations = tid;
+                    if( tidMatch )
+                    {
+                        m_drawThreadMigrations = tid;
+                        m_cpuDataThread = tid;
+                    }
                     m_drawThreadHighlight = tid;
                 }
                 ImGui::NextColumn();
@@ -11935,7 +11954,11 @@ void View::DrawCpuDataWindow()
                 ImGui::TextUnformatted( tname );
                 if( ImGui::IsItemHovered() )
                 {
-                    if( tidMatch ) m_drawThreadMigrations = tid;
+                    if( tidMatch )
+                    {
+                        m_drawThreadMigrations = tid;
+                        m_cpuDataThread = tid;
+                    }
                     m_drawThreadHighlight = tid;
                 }
                 ImGui::NextColumn();

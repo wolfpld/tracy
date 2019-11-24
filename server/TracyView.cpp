@@ -7652,7 +7652,7 @@ void View::DrawMessages()
     m_messageFilter.Draw( "Filter messages", 200 );
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_BAN " Clear" ) )
+    if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
 #else
     if( ImGui::Button( "Clear" ) )
 #endif
@@ -10302,7 +10302,7 @@ void View::DrawStatistics()
     m_statisticsFilter.Draw( "Filter zones", 200 );
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_BAN " Clear" ) )
+    if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
 #else
     if( ImGui::Button( "Clear" ) )
 #endif
@@ -12711,7 +12711,7 @@ void View::DrawMemory()
         }
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-        if( ImGui::Button( ICON_FA_BAN " Clear" ) )
+        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
 #else
         if( ImGui::Button( "Clear" ) )
 #endif

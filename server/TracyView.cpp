@@ -3482,6 +3482,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                 }
                 else
                 {
+                    const auto zoneThread = thread != 0 ? thread : m_worker.DecompressThread( ev.Thread() );
                     ZoneTooltip( ev );
 
                     if( ImGui::IsMouseClicked( 2 ) && rend - start > 0 )
@@ -3490,10 +3491,10 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                     }
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
-                        ShowZoneInfo( ev, thread );
+                        ShowZoneInfo( ev, zoneThread );
                     }
 
-                    m_gpuThread = thread;
+                    m_gpuThread = zoneThread;
                     m_gpuStart = ev.CpuStart();
                     m_gpuEnd = ev.CpuEnd();
                 }
@@ -3551,6 +3552,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
             {
+                const auto zoneThread = thread != 0 ? thread : m_worker.DecompressThread( ev.Thread() );
                 ZoneTooltip( ev );
 
                 if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
@@ -3559,10 +3561,10 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                 }
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
-                    ShowZoneInfo( ev, thread );
+                    ShowZoneInfo( ev, zoneThread );
                 }
 
-                m_gpuThread = thread;
+                m_gpuThread = zoneThread;
                 m_gpuStart = ev.CpuStart();
                 m_gpuEnd = ev.CpuEnd();
             }

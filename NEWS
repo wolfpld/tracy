@@ -11,6 +11,9 @@ v0.7 (xxxx-xx-xx)
 
 - Dropped support for pre-v0.5 traces.
 - Improve BSD support.
+- GPU zone CPU thread highlight will now highlight whole thread, not only
+  the thread name.
+- Added CPU thread highlight for CPU data items.
 
 v0.6 (2019-11-17)
 -----------------

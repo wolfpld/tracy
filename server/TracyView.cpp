@@ -1070,46 +1070,49 @@ bool View::DrawConnection()
         ImGui::EndPopup();
     }
 
-    const auto& params = m_worker.GetParameters();
-    if( !params.empty() )
+    if( m_worker.IsConnected() )
     {
-        ImGui::Separator();
-        if( ImGui::TreeNode( "Trace parameters" ) )
+        const auto& params = m_worker.GetParameters();
+        if( !params.empty() )
         {
-            ImGui::Columns( 2 );
-            ImGui::TextUnformatted( "Name" );
-            ImGui::NextColumn();
-            ImGui::TextUnformatted( "Value" );
-            ImGui::NextColumn();
             ImGui::Separator();
-            size_t idx = 0;
-            for( auto& p : params )
+            if( ImGui::TreeNode( "Trace parameters" ) )
             {
-                ImGui::TextUnformatted( m_worker.GetString( p.name ) );
+                ImGui::Columns( 2 );
+                ImGui::TextUnformatted( "Name" );
                 ImGui::NextColumn();
-                ImGui::PushID( idx );
-                if( p.isBool )
-                {
-                    bool val = p.val;
-                    if( ImGui::Checkbox( "", &val ) )
-                    {
-                        m_worker.SetParameter( idx, int32_t( val ) );
-                    }
-                }
-                else
-                {
-                    auto val = int( p.val );
-                    if( ImGui::InputInt( "", &val, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue ) )
-                    {
-                        m_worker.SetParameter( idx, int32_t( val ) );
-                    }
-                }
-                ImGui::PopID();
+                ImGui::TextUnformatted( "Value" );
                 ImGui::NextColumn();
-                idx++;
+                ImGui::Separator();
+                size_t idx = 0;
+                for( auto& p : params )
+                {
+                    ImGui::TextUnformatted( m_worker.GetString( p.name ) );
+                    ImGui::NextColumn();
+                    ImGui::PushID( idx );
+                    if( p.isBool )
+                    {
+                        bool val = p.val;
+                        if( ImGui::Checkbox( "", &val ) )
+                        {
+                            m_worker.SetParameter( idx, int32_t( val ) );
+                        }
+                    }
+                    else
+                    {
+                        auto val = int( p.val );
+                        if( ImGui::InputInt( "", &val, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue ) )
+                        {
+                            m_worker.SetParameter( idx, int32_t( val ) );
+                        }
+                    }
+                    ImGui::PopID();
+                    ImGui::NextColumn();
+                    idx++;
+                }
+                ImGui::EndColumns();
+                ImGui::TreePop();
             }
-            ImGui::EndColumns();
-            ImGui::TreePop();
         }
     }
 

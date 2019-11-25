@@ -419,6 +419,9 @@ public:
     const char* PackFrameImage( const char* image, uint32_t inBytes, uint32_t& csz );
     const char* UnpackFrameImage( const FrameImage& image );
 
+    const Vector<Parameter>& GetParameters() const { return m_params; }
+    void SetParameter( size_t paramIdx, int32_t val );
+
 private:
     void Network();
     void Exec();
@@ -479,6 +482,7 @@ private:
     tracy_force_inline void ProcessContextSwitch( const QueueContextSwitch& ev );
     tracy_force_inline void ProcessThreadWakeup( const QueueThreadWakeup& ev );
     tracy_force_inline void ProcessTidToPid( const QueueTidToPid& ev );
+    tracy_force_inline void ProcessParamSetup( const QueueParamSetup& ev );
 
     tracy_force_inline ZoneEvent* AllocZoneEvent();
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );
@@ -708,6 +712,8 @@ private:
 #ifdef TRACY_NO_STATISTICS
     Vector<ZoneEvent*> m_zoneEventPool;
 #endif
+
+    Vector<Parameter> m_params;
 };
 
 }

@@ -3235,6 +3235,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::TidToPid:
         ProcessTidToPid( ev.tidToPid );
         break;
+    case QueueType::ParamSetup:
+        ProcessParamSetup( ev.paramSetup );
+        break;
     default:
         assert( false );
         break;
@@ -4575,6 +4578,12 @@ void Worker::ProcessTidToPid( const QueueTidToPid& ev )
     m_data.tidToPid.emplace( ev.tid, ev.pid );
 }
 
+void Worker::ProcessParamSetup( const QueueParamSetup& ev )
+{
+    CheckString( ev.name );
+    m_params.push_back( Parameter { ev.idx, StringRef( StringRef::Ptr, ev.name ), bool( ev.isBool ), ev.val } );
+}
+
 void Worker::MemAllocChanged( int64_t time )
 {
     const auto val = (double)m_data.memory.usage;
@@ -5668,6 +5677,15 @@ const char* Worker::UnpackFrameImage( const FrameImage& image )
     }
     LZ4_decompress_safe( image.ptr, m_frameImageCompressedBuffer, image.csz, outsz );
     return m_frameImageCompressedBuffer;
+}
+
+void Worker::SetParameter( size_t paramIdx, int32_t val )
+{
+    assert( paramIdx < m_params.size() );
+    m_params[paramIdx].val = val;
+    const auto idx = uint64_t( m_params[paramIdx].idx );
+    const auto v = uint64_t( uint32_t( val ) );
+    Query( ServerQueryParameter, ( idx << 32 ) | val );
 }
 
 }

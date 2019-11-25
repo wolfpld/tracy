@@ -80,6 +80,8 @@ struct LuaZoneState
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
 
+typedef void(*ParameterCallback)( uint32_t idx, int32_t val );
+
 class Profiler
 {
     struct FrameImageQueueItem
@@ -442,6 +444,9 @@ public:
 #endif
     }
 
+    static void ParameterRegister( ParameterCallback cb ) { GetProfiler().m_paramCallback = cb; }
+    static void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val );
+
     void SendCallstack( int depth, const char* skipBefore );
     static void CutCallstack( void* callstack, const char* skipBefore );
 
@@ -506,6 +511,7 @@ private:
 
     bool HandleServerQuery();
     void HandleDisconnect();
+    void HandleParameter( uint64_t payload );
 
     void CalibrateTimer();
     void CalibrateDelay();
@@ -605,6 +611,8 @@ private:
 #else
     void ProcessSysTime() {}
 #endif
+
+    ParameterCallback m_paramCallback;
 };
 
 };

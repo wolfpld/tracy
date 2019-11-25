@@ -64,6 +64,9 @@
 #define TracyMessageCS(x,y,z,w)
 #define TracyMessageLCS(x,y,z)
 
+#define TracyParameterRegister(x)
+#define TracyParameterSetup(x,y,z,w)
+
 #else
 
 #include "client/TracyLock.hpp"
@@ -165,6 +168,9 @@
 #  define TracyMessageCS( txt, size, color, depth ) TracyMessageC( txt, size, color )
 #  define TracyMessageLCS( txt, color, depth ) TracyMessageLC( txt, color )
 #endif
+
+#define TracyParameterRegister( cb ) tracy::Profiler::ParameterRegister( cb );
+#define TracyParameterSetup( idx, name, isBool, val ) tracy::Profiler::ParameterSetup( idx, name, isBool, val );
 
 #endif
 

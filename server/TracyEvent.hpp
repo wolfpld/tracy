@@ -593,6 +593,15 @@ struct CpuThreadData
 
 enum { CpuThreadDataSize = sizeof( CpuThreadData ) };
 
+
+struct Parameter
+{
+    uint32_t idx;
+    StringRef name;
+    bool isBool;
+    int32_t val;
+};
+
 }
 
 #endif

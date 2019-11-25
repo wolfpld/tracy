@@ -1054,6 +1054,7 @@ Profiler::Profiler()
     , m_connectionId( 0 )
     , m_deferredQueue( 64*1024 )
 #endif
+    , m_paramCallback( nullptr )
 {
     assert( !s_instance );
     s_instance = this;
@@ -2264,6 +2265,9 @@ bool Profiler::HandleServerQuery()
         SysTraceSendExternalName( ptr );
         break;
 #endif
+    case ServerQueryParameter:
+        HandleParameter( ptr );
+        break;
     default:
         assert( false );
         break;
@@ -2507,6 +2511,33 @@ void Profiler::ProcessSysTime()
     }
 }
 #endif
+
+void Profiler::ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val )
+{
+    tracy::Magic magic;
+    auto token = tracy::GetToken();
+    auto& tail = token->get_tail_index();
+    auto item = token->enqueue_begin( magic );
+    tracy::MemWrite( &item->hdr.type, tracy::QueueType::ParamSetup );
+    tracy::MemWrite( &item->paramSetup.idx, idx );
+    tracy::MemWrite( &item->paramSetup.name, (uint64_t)name );
+    tracy::MemWrite( &item->paramSetup.isBool, (uint8_t)isBool );
+    tracy::MemWrite( &item->paramSetup.val, val );
+
+#ifdef TRACY_ON_DEMAND
+    DeferItem( *item );
+#endif
+
+    tail.store( magic + 1, std::memory_order_release );
+}
+
+void Profiler::HandleParameter( uint64_t payload )
+{
+    assert( m_paramCallback );
+    const auto idx = uint32_t( payload >> 32 );
+    const auto val = int32_t( payload & 0xFFFFFFFF );
+    m_paramCallback( idx, val );
+}
 
 }
 

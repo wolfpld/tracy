@@ -2867,8 +2867,6 @@ void Worker::AddCallstackPayload( uint64_t ptr, const char* _data, size_t _sz )
 
 void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _sz )
 {
-    assert( m_pendingCallstackPtr != 0 );
-
     CallstackFrameId stack[64];
     const auto sz = *(uint32_t*)data; data += 4;
     assert( sz <= 64 );
@@ -2904,17 +2902,31 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _s
         stack[i] = id;
     }
 
-    const auto nativeCs = m_data.callstackPayload[m_pendingCallstackId];
-    const auto nsz = nativeCs->size();
-    const auto tsz = sz + nsz;
+    VarArray<CallstackFrameId>* arr;
+    size_t memsize;
+    if( m_pendingCallstackPtr != 0 )
+    {
+        const auto nativeCs = m_data.callstackPayload[m_pendingCallstackId];
+        const auto nsz = nativeCs->size();
+        const auto tsz = sz + nsz;
 
-    const auto memsize = sizeof( VarArray<CallstackFrameId> ) + tsz * sizeof( CallstackFrameId );
-    auto mem = (char*)m_slab.AllocRaw( memsize );
-    memcpy( mem, stack, sizeof( CallstackFrameId ) * sz );
-    memcpy( mem + sizeof( CallstackFrameId ) * sz, nativeCs->data(), sizeof( CallstackFrameId ) * nsz );
+        memsize = sizeof( VarArray<CallstackFrameId> ) + tsz * sizeof( CallstackFrameId );
+        auto mem = (char*)m_slab.AllocRaw( memsize );
+        memcpy( mem, stack, sizeof( CallstackFrameId ) * sz );
+        memcpy( mem + sizeof( CallstackFrameId ) * sz, nativeCs->data(), sizeof( CallstackFrameId ) * nsz );
 
-    auto arr = (VarArray<CallstackFrameId>*)( mem + tsz * sizeof( CallstackFrameId ) );
-    new(arr) VarArray<CallstackFrameId>( tsz, (CallstackFrameId*)mem );
+        arr = (VarArray<CallstackFrameId>*)( mem + tsz * sizeof( CallstackFrameId ) );
+        new(arr) VarArray<CallstackFrameId>( tsz, (CallstackFrameId*)mem );
+    }
+    else
+    {
+        memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
+        auto mem = (char*)m_slab.AllocRaw( memsize );
+        memcpy( mem, stack, sizeof( CallstackFrameId ) * sz );
+
+        arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
+        new(arr) VarArray<CallstackFrameId>( sz, (CallstackFrameId*)mem );
+    }
 
     uint32_t idx;
     auto it = m_data.callstackMap.find( arr );

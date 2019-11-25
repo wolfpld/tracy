@@ -1258,6 +1258,27 @@ logo=\bcattention
 \end{itemize}
 \end{bclogo}
 
+\subsection{Trace parameters}
+\label{traceparameters}
+
+Sometimes it is desired to change how the profiled application is behaving during the profiling run, for example you may want to enable or disable capture of frame images without recompiling and restarting your program. To be able to do so you must register a callback function using the \texttt{TracyParameterRegister(callback)} macro, where \texttt{callback} is a function conforming to the following signature:
+
+\begin{lstlisting}
+void Callback(uint32_t idx, int32_t val)
+\end{lstlisting}
+
+The \texttt{idx} argument is an user-defined parameter index and \texttt{val} is the value set in the profiler user interface.
+
+To specify individual parameters, use the \texttt{TracyParameterSetup(idx, name, isBool, val)} macro. The \texttt{idx} value will be passed to the callback function for identification purposes (Tracy doesn't care what it's set to). \texttt{Name} is the parameter label,  displayed on the list of parameters. Finally, \texttt{isBool} determines if \texttt{val} should be interpreted as a boolean value, or as an integer number.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Usage of trace parameters makes profiling runs dependent on user interaction with the profiler, and thus it's not recommended to be employed if a consistent profiling environment is desired. Furthermore, interaction with the parameters is only possible in the graphical profiling application, and not in the command line capture utility.
+\end{bclogo}
+
 \section{Capturing the data}
 \label{capturing}
 
@@ -1347,6 +1368,8 @@ You can use the \faSave{}~\emph{Save trace} button to save the current profile d
 \caption{Connection information pop-up.}
 \label{connectioninfo}
 \end{figure}
+
+If the profiled application opted to provide trace parameters (see section~\ref{traceparameters}) and the connection is still active, this pop-up will also contain a \emph{trace parameters} section, listing all the provided options. When you change any value here, a callback function will be executed on the client.
 
 \subsubsection{Automatic loading or connecting}
 

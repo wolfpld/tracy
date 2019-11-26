@@ -2525,7 +2525,7 @@ void Profiler::ParameterSetup( uint32_t idx, const char* name, bool isBool, int3
     tracy::MemWrite( &item->paramSetup.val, val );
 
 #ifdef TRACY_ON_DEMAND
-    DeferItem( *item );
+    GetProfiler().DeferItem( *item );
 #endif
 
     tail.store( magic + 1, std::memory_order_release );

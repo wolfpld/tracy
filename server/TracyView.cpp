@@ -6117,6 +6117,8 @@ void View::DrawZoneInfoWindow()
                 ImGui::TextDisabled( "(%s)", RealToString( dist, true ) );
                 if( expand )
                 {
+                    ImGui::SameLine();
+                    SmallCheckbox( "Time relative to zone start", &m_messageTimeRelativeToZone );
                     static bool widthSet = false;
                     ImGui::Columns( 2 );
                     if( !widthSet )
@@ -6134,7 +6136,7 @@ void View::DrawZoneInfoWindow()
                     do
                     {
                         ImGui::PushID( *msgit );
-                        if( ImGui::Selectable( TimeToString( (*msgit)->time - ev.Start() ), m_msgHighlight == *msgit, ImGuiSelectableFlags_SpanAllColumns ) )
+                        if( ImGui::Selectable( TimeToString( m_messageTimeRelativeToZone ? (*msgit)->time - ev.Start() : (*msgit)->time ), m_msgHighlight == *msgit, ImGuiSelectableFlags_SpanAllColumns ) )
                         {
                             CenterAtTime( (*msgit)->time );
                         }

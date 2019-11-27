@@ -346,6 +346,7 @@ private:
     bool m_groupChildrenLocations = false;
     bool m_allocTimeRelativeToZone = true;
     bool m_ctxSwitchTimeRelativeToZone = true;
+    bool m_messageTimeRelativeToZone = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
     Namespace m_namespace = Namespace::Short;

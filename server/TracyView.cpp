@@ -7837,6 +7837,8 @@ void View::DrawMessages()
                 }
                 ImGui::PopID();
                 ImGui::NextColumn();
+                SmallColorBox( GetThreadColor( tid, 0 ) );
+                ImGui::SameLine();
                 ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );

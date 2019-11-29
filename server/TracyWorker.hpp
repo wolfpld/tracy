@@ -228,6 +228,8 @@ private:
         Vector<ContextSwitchUsage> ctxUsage;
         bool ctxUsageReady = false;
 #endif
+
+        flat_hash_map<uint32_t, flat_hash_map<uint32_t, std::vector<uint32_t>>> cpuTopology;
     };
 
     struct MbpsBlock
@@ -422,6 +424,8 @@ public:
     const Vector<Parameter>& GetParameters() const { return m_params; }
     void SetParameter( size_t paramIdx, int32_t val );
 
+    const decltype(DataBlock::cpuTopology)& GetCpuTopology() const { return m_data.cpuTopology; }
+
 private:
     void Network();
     void Exec();
@@ -483,6 +487,7 @@ private:
     tracy_force_inline void ProcessThreadWakeup( const QueueThreadWakeup& ev );
     tracy_force_inline void ProcessTidToPid( const QueueTidToPid& ev );
     tracy_force_inline void ProcessParamSetup( const QueueParamSetup& ev );
+    tracy_force_inline void ProcessCpuTopology( const QueueCpuTopology& ev );
 
     tracy_force_inline ZoneEvent* AllocZoneEvent();
     tracy_force_inline void ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev );

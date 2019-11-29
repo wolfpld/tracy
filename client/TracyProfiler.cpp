@@ -2450,6 +2450,13 @@ void Profiler::CalibrateDelay()
 
 void Profiler::ReportTopology()
 {
+    struct CpuData
+    {
+        uint32_t package;
+        uint32_t core;
+        uint32_t thread;
+    };
+
 #if defined _WIN32 || defined __CYGWIN__
 #  ifdef UNICODE
     t_GetLogicalProcessorInformationEx _GetLogicalProcessorInformationEx = (t_GetLogicalProcessorInformationEx)GetProcAddress( GetModuleHandle( L"kernel32" ), "GetLogicalProcessorInformationEx" );
@@ -2474,13 +2481,6 @@ void Profiler::ReportTopology()
     SYSTEM_INFO sysinfo;
     GetSystemInfo( &sysinfo );
     const uint32_t numcpus = sysinfo.dwNumberOfProcessors;
-
-    struct CpuData
-    {
-        uint32_t package;
-        uint32_t core;
-        uint32_t thread;
-    };
 
     auto cpuData = (CpuData*)tracy_malloc( sizeof( CpuData ) * numcpus );
     for( uint32_t i=0; i<numcpus; i++ ) cpuData[i].thread = i;
@@ -2519,6 +2519,26 @@ void Profiler::ReportTopology()
         }
         ptr = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(((char*)ptr) + ptr->Size);
         idx++;
+    }
+
+    Magic magic;
+    auto token = GetToken();
+    for( uint32_t i=0; i<numcpus; i++ )
+    {
+        auto& data = cpuData[i];
+
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::CpuTopology );
+        MemWrite( &item->cpuTopology.package, data.package );
+        MemWrite( &item->cpuTopology.core, data.core );
+        MemWrite( &item->cpuTopology.thread, data.thread );
+
+#ifdef TRACY_ON_DEMAND
+        DeferItem( *item );
+#endif
+
+        tail.store( magic + 1, std::memory_order_release );
     }
 
     tracy_free( cpuData );

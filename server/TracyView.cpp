@@ -11390,6 +11390,59 @@ void View::DrawInfo()
         ImGui::TreePop();
     }
 
+    auto& topology = m_worker.GetCpuTopology();
+    if( !topology.empty() )
+    {
+        if( ImGui::TreeNode( "CPU topology" ) )
+        {
+            std::vector<decltype(topology.begin())> tsort;
+            tsort.reserve( topology.size() );
+            for( auto it = topology.begin(); it != topology.end(); ++it ) tsort.emplace_back( it );
+            std::sort( tsort.begin(), tsort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+            char buf[128];
+            for( auto& package : tsort )
+            {
+#ifdef TRACY_EXTENDED_FONT
+                sprintf( buf, ICON_FA_BOX " Package %i", package->first );
+#else
+                sprintf( buf, "Package %i", package->first );
+#endif
+                if( ImGui::TreeNodeEx( buf, ImGuiTreeNodeFlags_DefaultOpen ) )
+                {
+                    std::vector<decltype(package->second.begin())> csort;
+                    csort.reserve( package->second.size() );
+                    for( auto it = package->second.begin(); it != package->second.end(); ++it ) csort.emplace_back( it );
+                    std::sort( csort.begin(), csort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
+                    for( auto& core : csort )
+                    {
+#ifdef TRACY_EXTENDED_FONT
+                        sprintf( buf, ICON_FA_MICROCHIP " Core %i", core->first );
+#else
+                        sprintf( buf, "Core %i", core->first );
+#endif
+                        if( ImGui::TreeNodeEx( buf, ImGuiTreeNodeFlags_DefaultOpen ) )
+                        {
+                            ImGui::Indent();
+                            for( auto& thread : core->second )
+                            {
+#ifdef TRACY_EXTENDED_FONT
+                                sprintf( buf, ICON_FA_RANDOM " Thread %i", thread );
+#else
+                                sprintf( buf, "Thread %i", thread );
+#endif
+                                ImGui::TextUnformatted( buf );
+                            }
+                            ImGui::Unindent();
+                            ImGui::TreePop();
+                        }
+                    }
+                    ImGui::TreePop();
+                }
+            }
+            ImGui::TreePop();
+        }
+    }
+
     ImGui::Separator();
     TextFocused( "PID:", RealToString( m_worker.GetPid(), true ) );
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );

@@ -343,6 +343,34 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         m_hostInfo = std::string( tmp, tmp+sz );
     }
 
+    if( fileVer >= FileVersion( 0, 6, 2 ) )
+    {
+        f.Read( sz );
+        m_data.cpuTopology.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint32_t packageId;
+            uint64_t psz;
+            f.Read2( packageId, psz );
+            auto& package = *m_data.cpuTopology.emplace( packageId, flat_hash_map<uint32_t, std::vector<uint32_t>> {} ).first;
+            package.second.reserve( psz );
+            for( uint64_t j=0; j<psz; j++ )
+            {
+                uint32_t coreId;
+                uint64_t csz;
+                f.Read2( coreId, csz );
+                auto& core = *package.second.emplace( coreId, std::vector<uint32_t> {} ).first;
+                core.second.reserve( csz );
+                for( uint64_t k=0; k<csz; k++ )
+                {
+                    uint32_t thread;
+                    f.Read( thread );
+                    core.second.emplace_back( thread );
+                }
+            }
+        }
+    }
+
     f.Read( &m_data.crashEvent, sizeof( m_data.crashEvent ) );
 
     f.Read( sz );
@@ -3238,6 +3266,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ParamSetup:
         ProcessParamSetup( ev.paramSetup );
         break;
+    case QueueType::CpuTopology:
+        ProcessCpuTopology( ev.cpuTopology );
+        break;
     default:
         assert( false );
         break;
@@ -4584,6 +4615,15 @@ void Worker::ProcessParamSetup( const QueueParamSetup& ev )
     m_params.push_back( Parameter { ev.idx, StringRef( StringRef::Ptr, ev.name ), bool( ev.isBool ), ev.val } );
 }
 
+void Worker::ProcessCpuTopology( const QueueCpuTopology& ev )
+{
+    auto package = m_data.cpuTopology.find( ev.package );
+    if( package == m_data.cpuTopology.end() ) package = m_data.cpuTopology.emplace( ev.package, flat_hash_map<uint32_t, std::vector<uint32_t>> {} ).first;
+    auto core = package->second.find( ev.core );
+    if( core == package->second.end() ) core = package->second.emplace( ev.core, std::vector<uint32_t> {} ).first;
+    core->second.emplace_back( ev.thread );
+}
+
 void Worker::MemAllocChanged( int64_t time )
 {
     const auto val = (double)m_data.memory.usage;
@@ -5170,6 +5210,25 @@ void Worker::Write( FileWrite& f )
     sz = m_hostInfo.size();
     f.Write( &sz, sizeof( sz ) );
     f.Write( m_hostInfo.c_str(), sz );
+
+    sz = m_data.cpuTopology.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& package : m_data.cpuTopology )
+    {
+        sz = package.second.size();
+        f.Write( &package.first, sizeof( package.first ) );
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& core : package.second )
+        {
+            sz = core.second.size();
+            f.Write( &core.first, sizeof( core.first ) );
+            f.Write( &sz, sizeof( sz ) );
+            for( auto& thread : core.second )
+            {
+                f.Write( &thread, sizeof( thread ) );
+            }
+        }
+    }
 
     f.Write( &m_data.crashEvent, sizeof( m_data.crashEvent ) );
 

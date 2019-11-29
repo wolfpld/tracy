@@ -68,6 +68,7 @@ enum class QueueType : uint8_t
     TidToPid,
     PlotConfig,
     ParamSetup,
+    CpuTopology,
     StringData,
     ThreadName,
     CustomStringData,
@@ -357,6 +358,13 @@ struct QueueParamSetup
     int32_t val;
 };
 
+struct QueueCpuTopology
+{
+    uint32_t package;
+    uint32_t core;
+    uint32_t thread;
+};
+
 struct QueueHeader
 {
     union
@@ -407,6 +415,7 @@ struct QueueItem
         QueueTidToPid tidToPid;
         QueuePlotConfig plotConfig;
         QueueParamSetup paramSetup;
+        QueueCpuTopology cpuTopology;
     };
 };
 #pragma pack()
@@ -476,6 +485,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
+    sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

@@ -5992,6 +5992,21 @@ void View::DrawZoneInfoWindow()
 #else
                             ImGui::Text( "%i -> %i", cpu0, cpu1 );
 #endif
+                            const auto tt0 = m_worker.GetThreadTopology( cpu0 );
+                            const auto tt1 = m_worker.GetThreadTopology( cpu1 );
+                            if( tt0 && tt1 )
+                            {
+                                if( tt0->package != tt1->package )
+                                {
+                                    ImGui::SameLine();
+                                    TextDisabledUnformatted( "P" );
+                                }
+                                else if( tt0->core != tt1->core )
+                                {
+                                    ImGui::SameLine();
+                                    TextDisabledUnformatted( "C" );
+                                }
+                            }
                         }
                         ImGui::NextColumn();
                         const char* desc;

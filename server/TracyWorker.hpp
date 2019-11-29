@@ -100,6 +100,12 @@ public:
     enum { ZoneThreadDataSize = sizeof( ZoneThreadData ) };
 #pragma pack()
 
+    struct CpuThreadTopology
+    {
+        uint32_t package;
+        uint32_t core;
+    };
+
 private:
     struct SourceLocationZones
     {
@@ -230,6 +236,7 @@ private:
 #endif
 
         flat_hash_map<uint32_t, flat_hash_map<uint32_t, std::vector<uint32_t>>> cpuTopology;
+        flat_hash_map<uint32_t, CpuThreadTopology, nohash<uint32_t>> cpuTopologyMap;
     };
 
     struct MbpsBlock
@@ -425,6 +432,7 @@ public:
     void SetParameter( size_t paramIdx, int32_t val );
 
     const decltype(DataBlock::cpuTopology)& GetCpuTopology() const { return m_data.cpuTopology; }
+    const CpuThreadTopology* GetThreadTopology( uint32_t cpuThread ) const;
 
 private:
     void Network();

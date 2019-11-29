@@ -366,6 +366,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     uint32_t thread;
                     f.Read( thread );
                     core.second.emplace_back( thread );
+
+                    m_data.cpuTopologyMap.emplace( thread, CpuThreadTopology { packageId, coreId } );
                 }
             }
         }
@@ -4622,6 +4624,9 @@ void Worker::ProcessCpuTopology( const QueueCpuTopology& ev )
     auto core = package->second.find( ev.core );
     if( core == package->second.end() ) core = package->second.emplace( ev.core, std::vector<uint32_t> {} ).first;
     core->second.emplace_back( ev.thread );
+
+    assert( m_data.cpuTopologyMap.find( ev.thread ) == m_data.cpuTopologyMap.end() );
+    m_data.cpuTopologyMap.emplace( ev.thread, CpuThreadTopology { ev.package, ev.core } );
 }
 
 void Worker::MemAllocChanged( int64_t time )
@@ -5745,6 +5750,13 @@ void Worker::SetParameter( size_t paramIdx, int32_t val )
     const auto idx = uint64_t( m_params[paramIdx].idx );
     const auto v = uint64_t( uint32_t( val ) );
     Query( ServerQueryParameter, ( idx << 32 ) | val );
+}
+
+const Worker::CpuThreadTopology* Worker::GetThreadTopology( uint32_t cpuThread ) const
+{
+    auto it = m_data.cpuTopologyMap.find( cpuThread );
+    if( it == m_data.cpuTopologyMap.end() ) return nullptr;
+    return &it->second;
 }
 
 }

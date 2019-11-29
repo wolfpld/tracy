@@ -6,3 +6,4 @@ Rokas Kupstys <rokups@zoho.com>                     (compatibility fixes, initia
 Till Rathmann <till.rathmann@gmx.de>                (DLL support)
 Sherief Farouk <sherief.personal@gmail.com>         (compatibility fixes)
 Dedmen Miller <dedmen@dedmen.de>                    (find zone bug fixes, improvements)
+Michał Cichoń <michcic@gmail.com>                   (OSX call stack decoding backport)

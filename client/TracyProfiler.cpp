@@ -80,6 +80,7 @@
 #if defined _WIN32 || defined __CYGWIN__
 #  include <lmcons.h>
 extern "C" typedef LONG (WINAPI *t_RtlGetVersion)( PRTL_OSVERSIONINFOW );
+extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PROCESSOR_RELATIONSHIP, PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, PDWORD );
 #else
 #  include <unistd.h>
 #  include <limits.h>
@@ -1070,6 +1071,7 @@ Profiler::Profiler()
 
     CalibrateTimer();
     CalibrateDelay();
+    ReportTopology();
 
 #ifndef TRACY_NO_EXIT
     const char* noExitEnv = getenv( "TRACY_NO_EXIT" );
@@ -2443,6 +2445,85 @@ void Profiler::CalibrateDelay()
         left -= (int)sz;
     }
     assert( GetQueue().size_approx() == 0 );
+#endif
+}
+
+void Profiler::ReportTopology()
+{
+#if defined _WIN32 || defined __CYGWIN__
+#  ifdef UNICODE
+    t_GetLogicalProcessorInformationEx _GetLogicalProcessorInformationEx = (t_GetLogicalProcessorInformationEx)GetProcAddress( GetModuleHandle( L"kernel32" ), "GetLogicalProcessorInformationEx" );
+#  else
+    t_GetLogicalProcessorInformationEx _GetLogicalProcessorInformationEx = (t_GetLogicalProcessorInformationEx)GetProcAddress( GetModuleHandle( "kernel32" ), "GetLogicalProcessorInformationEx" );
+#  endif
+
+    if( !_GetLogicalProcessorInformationEx ) return;
+
+    DWORD psz = 0;
+    _GetLogicalProcessorInformationEx( RelationProcessorPackage, nullptr, &psz );
+    auto packageInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( psz );
+    auto res = _GetLogicalProcessorInformationEx( RelationProcessorPackage, packageInfo, &psz );
+    assert( res );
+
+    DWORD csz = 0;
+    _GetLogicalProcessorInformationEx( RelationProcessorCore, nullptr, &csz );
+    auto coreInfo = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)tracy_malloc( csz );
+    res = _GetLogicalProcessorInformationEx( RelationProcessorCore, coreInfo, &csz );
+    assert( res );
+
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo( &sysinfo );
+    const uint32_t numcpus = sysinfo.dwNumberOfProcessors;
+
+    struct CpuData
+    {
+        uint32_t package;
+        uint32_t core;
+        uint32_t thread;
+    };
+
+    auto cpuData = (CpuData*)tracy_malloc( sizeof( CpuData ) * numcpus );
+    for( uint32_t i=0; i<numcpus; i++ ) cpuData[i].thread = i;
+
+    int idx = 0;
+    auto ptr = packageInfo;
+    while( (char*)ptr < ((char*)packageInfo) + psz )
+    {
+        assert( ptr->Relationship == RelationProcessorPackage );
+        // FIXME account for GroupCount
+        auto mask = ptr->Processor.GroupMask[0].Mask;
+        int core = 0;
+        while( mask != 0 )
+        {
+            if( mask & 1 ) cpuData[core].package = idx;
+            core++;
+            mask >>= 1;
+        }
+        ptr = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(((char*)ptr) + ptr->Size);
+        idx++;
+    }
+
+    idx = 0;
+    ptr = coreInfo;
+    while( (char*)ptr < ((char*)coreInfo) + csz )
+    {
+        assert( ptr->Relationship == RelationProcessorCore );
+        // FIXME account for GroupCount
+        auto mask = ptr->Processor.GroupMask[0].Mask;
+        int core = 0;
+        while( mask != 0 )
+        {
+            if( mask & 1 ) cpuData[core].core = idx;
+            core++;
+            mask >>= 1;
+        }
+        ptr = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX*)(((char*)ptr) + ptr->Size);
+        idx++;
+    }
+
+    tracy_free( cpuData );
+    tracy_free( coreInfo );
+    tracy_free( packageInfo );
 #endif
 }
 

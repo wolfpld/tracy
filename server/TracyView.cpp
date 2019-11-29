@@ -4638,6 +4638,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     draw->AddLine( wpos + ImVec2( 0, offset+sty ), wpos + ImVec2( w, offset+sty ), 0x22DD88DD );
 
                     auto& cs = cpuData[i].cs;
+                    auto tt = m_worker.GetThreadTopology( i );
 
                     auto it = std::lower_bound( cs.begin(), cs.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
                     if( it != cs.end() )
@@ -4675,6 +4676,12 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 {
                                     ImGui::PopFont();
                                     ImGui::BeginTooltip();
+                                    if( tt )
+                                    {
+                                        TextFocused( "Package:", RealToString( tt->package, true ) );
+                                        ImGui::SameLine();
+                                        TextFocused( "Core:", RealToString( tt->core, true ) );
+                                    }
                                     TextFocused( "CPU:", RealToString( i, true ) );
                                     TextFocused( "Context switch regions:", RealToString( num, true ) );
                                     ImGui::Separator();
@@ -4780,6 +4787,12 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     m_drawThreadHighlight = thread;
                                     ImGui::PopFont();
                                     ImGui::BeginTooltip();
+                                    if( tt )
+                                    {
+                                        TextFocused( "Package:", RealToString( tt->package, true ) );
+                                        ImGui::SameLine();
+                                        TextFocused( "Core:", RealToString( tt->core, true ) );
+                                    }
                                     TextFocused( "CPU:", RealToString( i, true ) );
                                     if( local )
                                     {
@@ -4834,14 +4847,27 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                         }
                     }
 
-                    char buf[32];
-                    sprintf( buf, "CPU %i", i );
+                    char buf[64];
+                    if( tt )
+                    {
+                        sprintf( buf, "[%i:%i] CPU %i", tt->package, tt->core, i );
+                    }
+                    else
+                    {
+                        sprintf( buf, "CPU %i", i );
+                    }
                     const auto txtx = ImGui::CalcTextSize( buf ).x;
                     DrawTextContrast( draw, wpos + ImVec2( ty, offset-1 ), 0xFFDD88DD, buf );
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset-1 ), wpos + ImVec2( sty + txtx, offset + sty - 1 ) ) )
                     {
                         ImGui::PopFont();
                         ImGui::BeginTooltip();
+                        if( tt )
+                        {
+                            TextFocused( "Package:", RealToString( tt->package, true ) );
+                            ImGui::SameLine();
+                            TextFocused( "Core:", RealToString( tt->core, true ) );
+                        }
                         TextFocused( "CPU:", RealToString( i, true ) );
                         TextFocused( "Context switch regions:", RealToString( cs.size(), true ) );
                         ImGui::EndTooltip();

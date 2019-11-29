@@ -45,6 +45,10 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #  include <limits.h>
 #endif
 
+#ifdef __APPLE__
+#  include <mach-o/dyld.h>
+#endif
+
 #include "backtrace.hpp"
 #include "internal.hpp"
 
@@ -73,10 +77,24 @@ getexecname(void)
   return rc ? NULL : execname;
 }
 #  endif
-#else
-#  ifndef HAVE_GETEXECNAME
-#    define getexecname() NULL
-#  endif
+#endif
+
+#if !defined HAVE_GETEXECNAME && defined __APPLE__
+#  define HAVE_GETEXECNAME
+static char execname[PATH_MAX + 1];
+static const char *
+getexecname(void)
+{
+  uint32_t size = sizeof(execname);
+  if (_NSGetExecutablePath(execname, &size) == 0)
+    return execname;
+  else
+    return NULL;
+}
+#endif
+
+#ifndef HAVE_GETEXECNAME
+#  define getexecname() NULL
 #endif
 
 namespace tracy

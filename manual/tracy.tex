@@ -1258,6 +1258,29 @@ logo=\bcattention
 \end{itemize}
 \end{bclogo}
 
+\subsubsection{CPU topology}
+\label{cputopology}
+
+Tracy may perform discovery of CPU topology data in order to provide further information about program performance characteristics. It is very useful when combined with context switches (section~\ref{contextswitches}).
+
+In essence, the topology information gives you context about what any given \emph{logical CPU} really is and how it relates to other logical CPUs. The topology hierarchy consists of packages, cores and threads.
+
+Packages contain cores and shared resources, such as memory controller, L3 cache, etc. A store-bought CPU is an example of a package. While you may think that multi-package configurations would be a domain of servers, they are actually quite common in the mobile devices world, with many platforms using the \emph{big.LITTLE} arrangement of two packages.
+
+Cores contain at least one thread and shared resources: execution units, L1 and L2 cache, etc.
+
+Threads (or \emph{logical CPUs}; not to be confused with program threads) are basically the processor instruction pipelines. A pipeline might become stalled, for example due to pending memory access, leaving core resources unused. To reduce this bottleneck, some CPUs may use simultaneous multithreading\footnote{Commonly known as Hyper-threading.}, in which more than one pipeline will be using a single physical core resources.
+
+Knowing which package and core any logical CPU belongs to enables many insights. For example, two threads scheduled to run on the same core will compete for shared execution units and cache, resulting in reduced performance. Or, a migration of a program thread from one core to another core will invalidate L1 and L2 cache, which is less costly than a migration from one package to another, which also invalidates L3 cache.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+In this manual, the word \emph{core} is typically used as a short term for \emph{logical CPU}. Do not confuse it with physical processor cores.
+\end{bclogo}
+
 \subsection{Trace parameters}
 \label{traceparameters}
 
@@ -1764,7 +1787,7 @@ This label is only available if context switch data was collected. It is split i
 
 The CPU load graph is showing how much CPU resources were used at any given time during program execution. The green part of the graph represents threads belonging to the profiled application and the gray part of the graph shows all other programs running in the system.
 
-Each line in the thread execution display represents a separate CPU core. When a core is busy executing a thread, a zone will be drawn at the appropriate time. Zones are colored according to the following key:
+Each line in the thread execution display represents a separate logical CPU thread. If CPU topology data is available (see section~\ref{cputopology}), package and core assignment will be displayed in brackets, in addition to numerical processor identifier. When a core is busy executing a thread, a zone will be drawn at the appropriate time. Zones are colored according to the following key:
 
 \begin{itemize}
 \item \emph{Bright color} or \emph{orange} if dynamic thread colors are disabled -- Thread tracked by the profiler.
@@ -2175,6 +2198,8 @@ Open the \emph{Trace statistics} section to see information about the trace, suc
 
 There's also a section containing the selected frame set timing statistics and histogram\footnote{See section~\ref{findzone} for a description of the histogram. Note that there are subtle differences in the available functionality.}. As a convenience you can switch the active frame set here and limit the displayed frame statistics to the frame range visible on the screen.
 
+If CPU topology data is available (see section~\ref{cputopology}), you will be able to view the package, core and thread hierarchy.
+
 In this window you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, amount of total available RAM, etc. If application information was provided (see section~\ref{appinfo}), it will also be displayed here.
 
 If an application should crash during profiling (section~\ref{crashhandling}), the crash information will be displayed in this window. It provides you information about the thread that has crashed, the crash reason and the crash call stack (section~\ref{callstackwindow}).
@@ -2187,7 +2212,7 @@ The zone information window displays detailed information about a single zone. T
 \begin{itemize}
 \item Basic source location information: function name, source file location and the thread name.
 \item Timing information.
-\item If context switch capture was performed (section~\ref{contextswitches}) and a thread was suspended during zone execution, a list of wait regions will be displayed, with complete information about timing, CPU migrations and wait reasons. In some cases context switch data might be incomplete\footnote{For example, when a capture is ongoing and context switch information has not yet been received.}, in which case a warning message will be displayed.
+\item If context switch capture was performed (section~\ref{contextswitches}) and a thread was suspended during zone execution, a list of wait regions will be displayed, with complete information about timing, CPU migrations and wait reasons. If CPU topology data is available (section~\ref{cputopology}), zone migrations across cores will be marked with 'C', and migrations across packages -- with 'P'. In some cases context switch data might be incomplete\footnote{For example, when a capture is ongoing and context switch information has not yet been received.}, in which case a warning message will be displayed.
 \item Memory events list, both summarized and a list of individual allocation/free events (see section~\ref{memorywindow} for more information on the memory events list).
 \item List of messages that were logged in the zone's scope (including its children).
 \item Zone trace, taking into account the zone tree and call stack information (section~\ref{collectingcallstacks}), trying to reconstruct a combined zone + call stack trace\footnote{Reconstruction is only possible, if all zones have full call stack capture data available. In case where that's not available, an \emph{unknown frames} entry will be present.}. Captured zones are displayed as normal text, while functions that were not instrumented are dimmed. Hovering the \faMousePointer{}~mouse pointer over a zone will highlight it on the timeline view with a red outline. Clicking the \LMB{}~left mouse button on a zone will switch the zone info window to that zone. Clicking the \MMB{}~middle mouse button on a zone will zoom the timeline view to the zone's extent. Clicking the \RMB{}~right mouse button on a source file location will open the source file view window (if applicable, see section~\ref{sourceview}).

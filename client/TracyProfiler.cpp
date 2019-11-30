@@ -2544,6 +2544,53 @@ void Profiler::ReportTopology()
     tracy_free( cpuData );
     tracy_free( coreInfo );
     tracy_free( packageInfo );
+#elif defined __linux__
+    const int numcpus = std::thread::hardware_concurrency();
+    auto cpuData = (CpuData*)tracy_malloc( sizeof( CpuData ) * numcpus );
+    memset( cpuData, 0, sizeof( CpuData ) * numcpus );
+
+    const char* basePath = "/sys/devices/system/cpu/cpu";
+    for( int i=0; i<numcpus; i++ )
+    {
+        char path[1024];
+        sprintf( path, "%s%i/topology/physical_package_id", basePath, i );
+        char buf[1024];
+        FILE* f = fopen( path, "rb" );
+        auto read = fread( buf, 1, 1024, f );
+        buf[read] = '\0';
+        fclose( f );
+        cpuData[i].package = uint32_t( atoi( buf ) );
+        cpuData[i].thread = i;
+
+        sprintf( path, "%s%i/topology/core_id", basePath, i );
+        f = fopen( path, "rb" );
+        read = fread( buf, 1, 1024, f );
+        buf[read] = '\0';
+        fclose( f );
+        cpuData[i].core = uint32_t( atoi( buf ) );
+    }
+
+    Magic magic;
+    auto token = GetToken();
+    for( uint32_t i=0; i<numcpus; i++ )
+    {
+        auto& data = cpuData[i];
+
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::CpuTopology );
+        MemWrite( &item->cpuTopology.package, data.package );
+        MemWrite( &item->cpuTopology.core, data.core );
+        MemWrite( &item->cpuTopology.thread, data.thread );
+
+#ifdef TRACY_ON_DEMAND
+        DeferItem( *item );
+#endif
+
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    tracy_free( cpuData );
 #endif
 }
 

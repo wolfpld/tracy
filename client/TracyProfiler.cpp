@@ -2767,6 +2767,80 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
     return ctx;
 }
 
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int active )
+{
+    ___tracy_c_zone_context ctx;
+#ifdef TRACY_ON_DEMAND
+    ctx.active = active && tracy::GetProfiler().IsConnected();
+#else
+    ctx.active = active;
+#endif
+    if( !ctx.active ) return ctx;
+    const auto id = tracy::GetProfiler().GetNextZoneId();
+    ctx.id = id;
+
+#ifndef TRACY_NO_VERIFY
+    {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        tracy::MemWrite( &item->zoneValidation.id, id );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+#endif
+    {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginAllocSrcLoc );
+        tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
+        tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+    return ctx;
+}
+
+TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srcloc, int depth, int active )
+{
+    ___tracy_c_zone_context ctx;
+#ifdef TRACY_ON_DEMAND
+    ctx.active = active && tracy::GetProfiler().IsConnected();
+#else
+    ctx.active = active;
+#endif
+    if( !ctx.active ) return ctx;
+    const auto id = tracy::GetProfiler().GetNextZoneId();
+    ctx.id = id;
+
+#ifndef TRACY_NO_VERIFY
+    {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        tracy::MemWrite( &item->zoneValidation.id, id );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+#endif
+    {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
+        tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
+        tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    tracy::GetProfiler().SendCallstack( depth );
+    return ctx;
+}
+
 TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 {
     if( !ctx.active ) return;

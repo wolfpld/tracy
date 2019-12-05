@@ -2775,7 +2775,11 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int act
 #else
     ctx.active = active;
 #endif
-    if( !ctx.active ) return ctx;
+    if( !ctx.active )
+    {
+        tracy::tracy_free( (void*)srcloc );
+        return ctx;
+    }
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
@@ -2811,7 +2815,11 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
 #else
     ctx.active = active;
 #endif
-    if( !ctx.active ) return ctx;
+    if( !ctx.active )
+    {
+        tracy::tracy_free( (void*)srcloc );
+        return ctx;
+    }
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 

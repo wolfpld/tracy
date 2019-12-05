@@ -477,6 +477,46 @@ public:
 
     void SendString( uint64_t ptr, const char* str, QueueType type );
 
+
+    // Allocated source location data layout:
+    //  4b  payload size
+    //  4b  color
+    //  4b  source line
+    //  fsz function name
+    //  1b  null terminator
+    //  ssz source file name
+    //  1b  null terminator
+    //  nsz zone name (optional)
+
+    static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, const char* function )
+    {
+        const auto fsz = strlen( function );
+        const auto ssz = strlen( source );
+        const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 );
+        auto ptr = (char*)tracy_malloc( sz );
+        memcpy( ptr, &sz, 4 );
+        memset( ptr + 4, 0, 4 );
+        memcpy( ptr + 8, &line, 4 );
+        memcpy( ptr + 12, function, fsz+1 );
+        memcpy( ptr + 12 + fsz + 1, source, ssz + 1 );
+        return uint64_t( ptr );
+    }
+
+    static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, const char* function, const char* name, size_t nameSz )
+    {
+        const auto fsz = strlen( function );
+        const auto ssz = strlen( source );
+        const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 + nameSz );
+        auto ptr = (char*)tracy_malloc( sz );
+        memcpy( ptr, &sz, 4 );
+        memset( ptr + 4, 0, 4 );
+        memcpy( ptr + 8, &line, 4 );
+        memcpy( ptr + 12, function, fsz+1 );
+        memcpy( ptr + 12 + fsz + 1, source, ssz + 1 );
+        memcpy( ptr + 12 + fsz + 1 + ssz + 1, name, nameSz );
+        return uint64_t( ptr );
+    }
+
 private:
     enum class DequeueStatus { DataDequeued, ConnectionLost, QueueEmpty };
 

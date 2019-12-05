@@ -201,27 +201,7 @@ static inline int LuaZoneBeginS( lua_State* L )
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
-
-    const uint32_t line = dbg.currentline;
-    const auto func = dbg.name ? dbg.name : dbg.short_src;
-    const auto fsz = strlen( func );
-    const auto ssz = strlen( dbg.source );
-
-    // Data layout:
-    //  4b  payload size
-    //  4b  color
-    //  4b  source line
-    //  fsz function name
-    //  1b  null terminator
-    //  ssz source file name
-    //  1b  null terminator
-    const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 );
-    auto ptr = (char*)tracy_malloc( sz );
-    memcpy( ptr, &sz, 4 );
-    memset( ptr + 4, 0, 4 );
-    memcpy( ptr + 8, &line, 4 );
-    memcpy( ptr + 12, func, fsz+1 );
-    memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
+    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src );
 
     Magic magic;
     auto token = GetToken();
@@ -229,7 +209,7 @@ static inline int LuaZoneBeginS( lua_State* L )
     auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLocCallstack );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
-    MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
+    MemWrite( &item->zoneBegin.srcloc, srcloc );
     tail.store( magic + 1, std::memory_order_release );
 
 #ifdef TRACY_CALLSTACK
@@ -254,31 +234,9 @@ static inline int LuaZoneBeginNS( lua_State* L )
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
-
-    const uint32_t line = dbg.currentline;
-    const auto func = dbg.name ? dbg.name : dbg.short_src;
     size_t nsz;
     const auto name = lua_tolstring( L, 1, &nsz );
-    const auto fsz = strlen( func );
-    const auto ssz = strlen( dbg.source );
-
-    // Data layout:
-    //  4b  payload size
-    //  4b  color
-    //  4b  source line
-    //  fsz function name
-    //  1b  null terminator
-    //  ssz source file name
-    //  1b  null terminator
-    //  nsz zone name
-    const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 + nsz );
-    auto ptr = (char*)tracy_malloc( sz );
-    memcpy( ptr, &sz, 4 );
-    memset( ptr + 4, 0, 4 );
-    memcpy( ptr + 8, &line, 4 );
-    memcpy( ptr + 12, func, fsz+1 );
-    memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
-    memcpy( ptr + 12 + fsz + 1 + ssz + 1, name, nsz );
+    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src, name, nsz );
 
     Magic magic;
     auto token = GetToken();
@@ -286,7 +244,7 @@ static inline int LuaZoneBeginNS( lua_State* L )
     auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLocCallstack );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
-    MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
+    MemWrite( &item->zoneBegin.srcloc, srcloc );
     tail.store( magic + 1, std::memory_order_release );
 
 #ifdef TRACY_CALLSTACK
@@ -315,27 +273,7 @@ static inline int LuaZoneBegin( lua_State* L )
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
-
-    const uint32_t line = dbg.currentline;
-    const auto func = dbg.name ? dbg.name : dbg.short_src;
-    const auto fsz = strlen( func );
-    const auto ssz = strlen( dbg.source );
-
-    // Data layout:
-    //  4b  payload size
-    //  4b  color
-    //  4b  source line
-    //  fsz function name
-    //  1b  null terminator
-    //  ssz source file name
-    //  1b  null terminator
-    const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 );
-    auto ptr = (char*)tracy_malloc( sz );
-    memcpy( ptr, &sz, 4 );
-    memset( ptr + 4, 0, 4 );
-    memcpy( ptr + 8, &line, 4 );
-    memcpy( ptr + 12, func, fsz+1 );
-    memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
+    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src );
 
     Magic magic;
     auto token = GetToken();
@@ -343,7 +281,7 @@ static inline int LuaZoneBegin( lua_State* L )
     auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
-    MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
+    MemWrite( &item->zoneBegin.srcloc, srcloc );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
 #endif
@@ -364,31 +302,9 @@ static inline int LuaZoneBeginN( lua_State* L )
     lua_Debug dbg;
     lua_getstack( L, 1, &dbg );
     lua_getinfo( L, "Snl", &dbg );
-
-    const uint32_t line = dbg.currentline;
-    const auto func = dbg.name ? dbg.name : dbg.short_src;
     size_t nsz;
     const auto name = lua_tolstring( L, 1, &nsz );
-    const auto fsz = strlen( func );
-    const auto ssz = strlen( dbg.source );
-
-    // Data layout:
-    //  4b  payload size
-    //  4b  color
-    //  4b  source line
-    //  fsz function name
-    //  1b  null terminator
-    //  ssz source file name
-    //  1b  null terminator
-    //  nsz zone name
-    const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 + nsz );
-    auto ptr = (char*)tracy_malloc( sz );
-    memcpy( ptr, &sz, 4 );
-    memset( ptr + 4, 0, 4 );
-    memcpy( ptr + 8, &line, 4 );
-    memcpy( ptr + 12, func, fsz+1 );
-    memcpy( ptr + 12 + fsz + 1, dbg.source, ssz + 1 );
-    memcpy( ptr + 12 + fsz + 1 + ssz + 1, name, nsz );
+    const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src, name, nsz );
 
     Magic magic;
     auto token = GetToken();
@@ -396,7 +312,7 @@ static inline int LuaZoneBeginN( lua_State* L )
     auto item = token->enqueue_begin( magic );
     MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
-    MemWrite( &item->zoneBegin.srcloc, (uint64_t)ptr );
+    MemWrite( &item->zoneBegin.srcloc, srcloc );
     tail.store( magic + 1, std::memory_order_release );
     return 0;
 #endif

@@ -1160,6 +1160,7 @@ To mark frames, as described in section~\ref{markingframes}, use the following m
 \end{itemize}
 
 \subsubsection{Zone markup}
+\label{czonemarkup}
 
 The following macros mark the beginning of a zone:
 
@@ -1177,6 +1178,7 @@ Unlike C++, there's no automatic destruction mechanism in C, so you will need to
 Zone text and name may be set by using the \texttt{TracyCZoneText(ctx, txt, size)} and \texttt{TracyCZoneName(ctx, txt, size)} macros. Make sure you are following the zone stack rules, as described in section~\ref{multizone}!
 
 \paragraph{Zone context data structure}
+\label{zonectx}
 
 In typical use cases the zone context data structure is hidden from your view, requiring only to specify its name for the \texttt{TracyCZone} and \texttt{TracyCZoneEnd} macros. However, it is possible to use it in advanced scenarios, for example if you want to start a zone in one function, then end it in another one. To do so you will need to forward the data structure either through a function parameter, or as a return value. To accomplish this you need to keep in mind the following rules:
 
@@ -1192,6 +1194,30 @@ In typical use cases the zone context data structure is hidden from your view, r
 Since all instrumentation using the C API has to be done by hand, it is possible to miss some code paths where a zone should be started or ended. Tracy will perform additional validation of instrumentation correctness to prevent bad profiling runs. Read section~\ref{instrumentationfailures} for more information.
 
 The validation comes with a performance cost though, which you may not want to pay. If you are \emph{completely sure} that the instrumentation is not broken in any way, you may use the \texttt{TRACY\_NO\_VERIFY} macro, which will disable the validation code.
+
+\paragraph{Allocated source locations}
+
+Sometimes you might want to provide your own source location data to a zone. For example, you may be integrating Tracy with another programming language, one where there are no guarantees about object lifetime, or how data structures will be laid out in the memory.
+
+To do so, you need to create an \emph{allocated source location}, by calling one of the following functions:
+
+\begin{itemize}
+\item \texttt{\_\_\_tracy\_alloc\_srcloc(uint32\_t line, const char* source, const char* function)}
+\item \texttt{\_\_\_tracy\_alloc\_srcloc\_name(uint32\_t line, const char* source, const char* function, const char* name, size\_t nameSz)}
+\end{itemize}
+
+Where \texttt{line} is line number in the \texttt{source} source file and \texttt{function} is the name of a function in which zone is created. Both \texttt{source} and \texttt{function} must be null-terminated strings. You may additionally specify an optional zone name, by providing it in the \texttt{name} variable, and specifying its size in \texttt{nameSz}. None of the provided text strings has to be kept in memory after source location is allocated.
+
+Both functions return an \texttt{uint64\_t} source location value, which then must be passed to one of the zone begin functions:
+
+\begin{itemize}
+\item \texttt{\_\_\_tracy\_emit\_zone\_begin\_alloc(srcloc, active)}
+\item \texttt{\_\_\_tracy\_emit\_zone\_begin\_alloc\_callstack(srcloc, depth, active)}
+\end{itemize}
+
+These functions return a \texttt{TracyCZoneCtx} context value, which must be handled, as described in sections~\ref{czonemarkup} and~\ref{zonectx}.
+
+The variable representing an allocated source location is of an opaque type. After it is passed to one of the zone begin functions, its value \emph{cannot be reused}. You must allocate a new source location for each zone begin event.
 
 \subsubsection{Memory profiling}
 

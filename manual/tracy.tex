@@ -1219,6 +1219,14 @@ These functions return a \texttt{TracyCZoneCtx} context value, which must be han
 
 The variable representing an allocated source location is of an opaque type. After it is passed to one of the zone begin functions, its value \emph{cannot be reused}. You must allocate a new source location for each zone begin event.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Since you are directly calling the profiler functions here, you will need to take care of manually disabling the code, if the \texttt{TRACY\_ENABLE} macro is not defined.
+\end{bclogo}
+
 \subsubsection{Memory profiling}
 
 Use the following macros in your implementations of \texttt{malloc} and \texttt{free}:

@@ -14,8 +14,6 @@ void InitWinSock();
 
 class Socket
 {
-    enum { BufSize = 128 * 1024 };
-
 public:
     Socket();
     Socket( int sock );

@@ -62,6 +62,9 @@ void InitWinSock()
 }
 #endif
 
+
+enum { BufSize = 128 * 1024 };
+
 Socket::Socket()
     : m_buf( (char*)tracy_malloc( BufSize ) )
     , m_bufPtr( nullptr )

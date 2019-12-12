@@ -18,10 +18,8 @@
 #    include <intrin.h>
 #  else
 #    include <x86intrin.h>
-#    ifdef __CYGWIN__
-#      ifndef _mm256_cvtsi256_si32
-#        define _mm256_cvtsi256_si32( v ) ( _mm_cvtsi128_si32( _mm256_castsi256_si128( v ) ) )
-#      endif
+#    ifndef _mm256_cvtsi256_si32
+#      define _mm256_cvtsi256_si32( v ) ( _mm_cvtsi128_si32( _mm256_castsi256_si128( v ) ) )
 #    endif
 #  endif
 #endif

@@ -144,11 +144,6 @@ const char* GetThreadName( uint64_t id )
         }
     }
 #    endif
-#  elif defined __GLIBC__ && !defined __ANDROID__ && !defined __EMSCRIPTEN__ && !defined __CYGWIN__
-    if( pthread_getname_np( (pthread_t)id, buf, 256 ) == 0 )
-    {
-        return buf;
-    }
 #  elif defined __linux__
     int cs, fd;
     char path[32];

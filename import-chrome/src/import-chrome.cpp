@@ -56,6 +56,17 @@ int main( int argc, char** argv )
     std::vector<tracy::Worker::ImportEventTimeline> timeline;
     std::vector<tracy::Worker::ImportEventMessages> messages;
 
+    if( j.is_object() && j.contains( "traceEvents" ) )
+    {
+        j = j["traceEvents"];
+    }
+
+    if( !j.is_array() )
+    {
+        fprintf( stderr, "Input must be either an array of events or an object containing an array of events under \"traceEvents\" key.\n" );
+        exit( 1 );
+    }
+
     for( auto& v : j )
     {
         const auto type = v["ph"].get<std::string>();

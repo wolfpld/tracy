@@ -86,6 +86,21 @@ struct LoadProgress
 class Worker
 {
 public:
+    struct ImportEventTimeline
+    {
+        uint64_t tid;
+        uint64_t timestamp;
+        std::string name;
+        bool isEnd;
+    };
+
+    struct ImportEventMessages
+    {
+        uint64_t tid;
+        uint64_t timestamp;
+        std::string message;
+    };
+
 #pragma pack( 1 )
     struct ZoneThreadData
     {
@@ -296,6 +311,7 @@ public:
     };
 
     Worker( const char* addr, int port );
+    Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All, bool bgTasks = true );
     ~Worker();
 

@@ -260,6 +260,116 @@ Worker::Worker( const char* addr, int port )
     m_threadNet = std::thread( [this] { SetThreadName( "Tracy Network" ); Network(); } );
 }
 
+Worker::Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages )
+    : m_hasData( true )
+    , m_stream( nullptr )
+    , m_buffer( nullptr )
+    , m_traceVersion( CurrentVersion )
+    , m_captureProgram( program )
+{
+    m_data.sourceLocationExpand.push_back( 0 );
+    m_data.localThreadCompress.InitZero();
+    m_data.callstackPayload.push_back( nullptr );
+
+    m_data.lastTime = 0;
+    if( !timeline.empty() )
+    {
+        m_data.lastTime = timeline.back().timestamp;
+    }
+    if( !messages.empty() )
+    {
+        if( m_data.lastTime < messages.back().timestamp ) m_data.lastTime = messages.back().timestamp;
+    }
+
+    for( auto& v : timeline )
+    {
+        if( !v.isEnd )
+        {
+            SourceLocation srcloc {
+                StringRef(),
+                StringRef( StringRef::Idx, StoreString( v.name.c_str(), v.name.size() ).idx ),
+                StringRef(),
+                0,
+                0
+            };
+            int key;
+            auto it = m_data.sourceLocationPayloadMap.find( &srcloc );
+            if( it == m_data.sourceLocationPayloadMap.end() )
+            {
+                auto slptr = m_slab.Alloc<SourceLocation>();
+                memcpy( slptr, &srcloc, sizeof( srcloc ) );
+                uint32_t idx = m_data.sourceLocationPayload.size();
+                m_data.sourceLocationPayloadMap.emplace( slptr, idx );
+                m_data.sourceLocationPayload.push_back( slptr );
+                key = -int16_t( idx + 1 );
+#ifndef TRACY_NO_STATISTICS
+                auto res = m_data.sourceLocationZones.emplace( key, SourceLocationZones() );
+                m_data.srclocZonesLast.first = key;
+                m_data.srclocZonesLast.second = &res.first->second;
+
+#else
+                auto res = m_data.sourceLocationZonesCnt.emplace( key, 0 );
+                m_data.srclocCntLast.first = key;
+                m_data.srclocCntLast.second = &res.first->second;
+#endif
+            }
+            else
+            {
+                key = -int16_t( it->second + 1 );
+            }
+
+            auto zone = AllocZoneEvent();
+            zone->SetStart( v.timestamp );
+            zone->SetEnd( -1 );
+            zone->SetSrcLoc( key );
+            zone->SetChild( -1 );
+
+            m_threadCtxData = NoticeThread( v.tid );
+            NewZone( zone, v.tid );
+        }
+        else
+        {
+            auto td = NoticeThread( v.tid );
+            td->zoneIdStack.back_and_pop();
+            auto& stack = td->stack;
+            auto zone = stack.back_and_pop();
+            zone->SetEnd( v.timestamp );
+        }
+    }
+
+    for( auto& v : messages )
+    {
+        auto msg = m_slab.Alloc<MessageData>();
+        msg->time = v.timestamp;
+        msg->ref = StringRef( StringRef::Type::Idx, StoreString( v.message.c_str(), v.message.size() ).idx );
+        msg->thread = CompressThread( v.tid );
+        msg->color = 0xFFFFFFFF;
+        msg->callstack.SetVal( 0 );
+        InsertMessageData( msg );
+    }
+
+    for( auto& t : m_threadMap )
+    {
+        char buf[64];
+        sprintf( buf, "%i", t.first );
+        AddThreadString( t.first, buf, strlen( buf ) );
+    }
+
+    m_data.framesBase = m_data.frames.Retrieve( 0, [this] ( uint64_t name ) {
+        auto fd = m_slab.AllocInit<FrameData>();
+        fd->name = name;
+        fd->continuous = 1;
+        return fd;
+    }, [this] ( uint64_t name ) {
+        assert( name == 0 );
+        char tmp[6] = "Frame";
+        HandleFrameName( name, tmp, 5 );
+    } );
+
+    m_data.framesBase->frames.push_back( FrameEvent{ 0, -1, -1 } );
+    m_data.framesBase->frames.push_back( FrameEvent{ 0, -1, -1 } );
+}
+
 Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     : m_hasData( true )
     , m_stream( nullptr )

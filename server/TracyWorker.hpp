@@ -240,9 +240,9 @@ private:
         uint64_t checkSrclocLast = 0;
         std::pair<uint64_t, uint16_t> shrinkSrclocLast = std::make_pair( std::numeric_limits<uint64_t>::max(), 0 );
 #ifndef TRACY_NO_STATISTICS
-        std::pair<uint16_t, SourceLocationZones*> srclocZonesLast = std::make_pair( std::numeric_limits<uint16_t>::max(), nullptr );
+        std::pair<uint16_t, SourceLocationZones*> srclocZonesLast = std::make_pair( 0, nullptr );
 #else
-        std::pair<uint16_t, uint64_t*> srclocCntLast = std::make_pair( std::numeric_limits<uint16_t>::max(), nullptr );
+        std::pair<uint16_t, uint64_t*> srclocCntLast = std::make_pair( 0, nullptr );
 #endif
 
 #ifndef TRACY_NO_STATISTICS

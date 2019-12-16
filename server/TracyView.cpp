@@ -14221,6 +14221,10 @@ void View::SetViewToLastFrames()
     {
         m_vd.zvEnd = m_worker.GetFrameBegin( *m_frames, total - 1 );
     }
+    if( m_vd.zvEnd == m_vd.zvStart )
+    {
+        m_vd.zvEnd = m_worker.GetLastTime();
+    }
 }
 
 int64_t View::GetZoneChildTime( const ZoneEvent& zone )

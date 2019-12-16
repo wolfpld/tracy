@@ -2,27 +2,21 @@
 #  include <windows.h>
 #endif
 
-#include <chrono>
+#include <fstream>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../server/TracyFileRead.hpp"
+#include "json.hpp"
+
 #include "../../server/TracyFileWrite.hpp"
-#include "../../server/TracyVersion.hpp"
 #include "../../server/TracyWorker.hpp"
 
-#ifdef __CYGWIN__
-#  define ftello64(x) ftello(x)
-#elif defined _WIN32
-#  define ftello64(x) _ftelli64(x)
-#endif
+using json = nlohmann::json;
 
 void Usage()
 {
-    printf( "Usage: update [--hc|--extreme] input.tracy output.tracy\n\n" );
-    printf( "  --hc: enable LZ4HC compression\n" );
-    printf( "  --extreme: enable extreme LZ4HC compression (very slow)\n" );
+    printf( "Usage: import-chrome input.json output.tracy\n\n" );
     exit( 1 );
 }
 
@@ -38,85 +32,103 @@ int main( int argc, char** argv )
 
     tracy::FileWrite::Compression clev = tracy::FileWrite::Compression::Fast;
 
-    if( argc != 3 && argc != 4 ) Usage();
-    if( argc == 4 )
-    {
-        if( strcmp( argv[1], "--hc" ) == 0 )
-        {
-            clev = tracy::FileWrite::Compression::Slow;
-        }
-        else if( strcmp( argv[1], "--extreme" ) == 0 )
-        {
-            clev = tracy::FileWrite::Compression::Extreme;
-        }
-        else
-        {
-            Usage();
-        }
-        argv++;
-    }
+    if( argc != 3 ) Usage();
 
     const char* input = argv[1];
     const char* output = argv[2];
 
     printf( "Loading...\r" );
     fflush( stdout );
-    auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( input ) );
-    if( !f )
+
+    std::ifstream is( input );
+    if( !is.is_open() )
     {
         fprintf( stderr, "Cannot open input file!\n" );
         exit( 1 );
     }
+    json j;
+    is >> j;
+    is.close();
 
-    try
+    printf( "\33[2KParsing...\r" );
+    fflush( stdout );
+
+    std::vector<tracy::Worker::ImportEventTimeline> timeline;
+    std::vector<tracy::Worker::ImportEventMessages> messages;
+
+    for( auto& v : j )
     {
-        int inVer;
+        const auto type = v["ph"].get<std::string>();
+        if( type == "B" )
         {
-            tracy::Worker worker( *f, tracy::EventType::All, false );
-
-#ifndef TRACY_NO_STATISTICS
-            while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-#endif
-
-            auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev ) );
-            if( !w )
-            {
-                fprintf( stderr, "Cannot open output file!\n" );
-                exit( 1 );
-            }
-            printf( "Saving... \r" );
-            fflush( stdout );
-            worker.Write( *w );
-            inVer = worker.GetTraceVersion();
+            timeline.emplace_back( tracy::Worker::ImportEventTimeline {
+                v["tid"].get<uint64_t>(),
+                uint64_t( v["ts"].get<double>() * 1000. ),
+                v["name"].get<std::string>(),
+                false
+            } );
         }
-
-        FILE* in = fopen( input, "rb" );
-        fseek( in, 0, SEEK_END );
-        const auto inSize = ftello64( in );
-        fclose( in );
-
-        FILE* out = fopen( output, "rb" );
-        fseek( out, 0, SEEK_END );
-        const auto outSize = ftello64( out );
-        fclose( out );
-
-        printf( "%s (%i.%i.%i) {%zu KB} -> %s (%i.%i.%i) {%zu KB}  %.2f%% size change\n", input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, size_t( inSize / 1024 ), output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, size_t( outSize / 1024 ), float( outSize ) / inSize * 100 );
+        else if( type == "E" )
+        {
+            timeline.emplace_back( tracy::Worker::ImportEventTimeline {
+                v["tid"].get<uint64_t>(),
+                uint64_t( v["ts"].get<double>() * 1000. ),
+                "",
+                true
+            } );
+        }
+        else if( type == "X" )
+        {
+            const auto tid = v["tid"].get<uint64_t>();
+            const auto ts0 = uint64_t( v["ts"].get<double>() * 1000. );
+            const auto ts1 = v["dur"].is_object() ? ts0 + uint64_t( v["dur"].get<double>() * 1000. ) : ts0;
+            const auto name = v["name"].get<std::string>();
+            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts0, name, false } );
+            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts1, "", true } );
+        }
+        else if( type == "i" || type == "I" )
+        {
+            messages.emplace_back( tracy::Worker::ImportEventMessages {
+                v["tid"].get<uint64_t>(),
+                uint64_t( v["ts"].get<double>() * 1000. ),
+                v["name"].get<std::string>()
+            } );
+        }
     }
-    catch( const tracy::UnsupportedVersion& e )
+
+    std::stable_sort( timeline.begin(), timeline.end(), [] ( const auto& l, const auto& r ) { return l.timestamp < r.timestamp; } );
+    std::stable_sort( messages.begin(), messages.end(), [] ( const auto& l, const auto& r ) { return l.timestamp < r.timestamp; } );
+
+    uint64_t mts = 0;
+    if( !timeline.empty() )
     {
-        fprintf( stderr, "The file you are trying to open is from the future version.\n" );
+        mts = timeline[0].timestamp;
+    }
+    if( !messages.empty() )
+    {
+        if( mts > messages[0].timestamp ) mts = messages[0].timestamp;
+    }
+    for( auto& v : timeline ) v.timestamp -= mts;
+    for( auto& v : messages ) v.timestamp -= mts;
+
+    printf( "\33[2KProcessing...\r" );
+    fflush( stdout );
+
+    auto program = input;
+    while( *program ) program++;
+    program--;
+    while( program > input && ( *program != '/' || *program != '\\' ) ) program--;
+    tracy::Worker worker( program, timeline, messages );
+
+    auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev ) );
+    if( !w )
+    {
+        fprintf( stderr, "Cannot open output file!\n" );
         exit( 1 );
     }
-    catch( const tracy::NotTracyDump& e )
-    {
-        fprintf( stderr, "The file you are trying to open is not a tracy dump.\n" );
-        exit( 1 );
-    }
-    catch( const tracy::LegacyVersion& e )
-    {
-        fprintf( stderr, "The file you are trying to open is from a legacy version.\n" );
-        exit( 1 );
-    }
+    printf( "\33[2KSaving... \r" );
+    fflush( stdout );
+    worker.Write( *w );
 
     return 0;
 }

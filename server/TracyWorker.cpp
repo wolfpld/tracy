@@ -266,6 +266,10 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
     , m_buffer( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_captureProgram( program )
+    , m_captureTime( 0 )
+    , m_resolution( 0 )
+    , m_delay( 0 )
+    , m_pid( 0 )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();

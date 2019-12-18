@@ -3778,7 +3778,22 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
     auto zone = stack.back();
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
-    zone->text = StringIdx( it->second.idx );
+    if( !zone->text.Active() )
+    {
+        zone->text = StringIdx( it->second.idx );
+    }
+    else
+    {
+        const auto str0 = GetString( zone->text );
+        const auto str1 = it->second.ptr;
+        const auto len0 = strlen( str0 );
+        const auto len1 = strlen( str1 );
+        char* buf = (char*)alloca( len0+len1+1 );
+        memcpy( buf, str0, len0 );
+        buf[len0] = '\n';
+        memcpy( buf+len0+1, str1, len1 );
+        zone->text = StringIdx( StoreString( buf, len0+len1+1 ).idx );
+    }
     m_pendingCustomStrings.erase( it );
 }
 

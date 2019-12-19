@@ -11985,6 +11985,7 @@ void View::DrawCpuDataWindow()
         it->second.data.migrations += v.second.migrations;
     }
 
+    ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "CPU data", &m_showCpuDataWindow );
     TextFocused( "Tracked threads:", RealToString( ctd.size(), true ) );
     ImGui::SameLine();

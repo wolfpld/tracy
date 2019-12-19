@@ -47,7 +47,7 @@ void ThreadCompress::Save( FileWrite& f ) const
 {
     uint64_t sz = m_threadExpand.size();
     f.Write( &sz, sizeof( sz ) );
-    f.Write( m_threadExpand.data(), sz * sizeof( uint64_t ) );
+    if( sz != 0 ) f.Write( m_threadExpand.data(), sz * sizeof( uint64_t ) );
 }
 
 uint16_t ThreadCompress::CompressThreadReal( uint64_t thread )

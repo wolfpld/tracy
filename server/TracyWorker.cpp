@@ -5647,7 +5647,7 @@ void Worker::Write( FileWrite& f )
 
     sz = m_data.appInfo.size();
     f.Write( &sz, sizeof( sz ) );
-    f.Write( m_data.appInfo.data(), sizeof( m_data.appInfo[0] ) * sz );
+    if( sz != 0 ) f.Write( m_data.appInfo.data(), sizeof( m_data.appInfo[0] ) * sz );
 
     sz = m_data.frameImage.size();
     f.Write( &sz, sizeof( sz ) );

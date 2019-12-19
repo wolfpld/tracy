@@ -137,9 +137,12 @@ int main( int argc, char** argv )
         fprintf( stderr, "Cannot open output file!\n" );
         exit( 1 );
     }
-    printf( "\33[2KSaving... \r" );
+    printf( "\33[2KSaving...\r" );
     fflush( stdout );
     worker.Write( *w );
+
+    printf( "\33[2KCleanup...\n" );
+    fflush( stdout );
 
     return 0;
 }

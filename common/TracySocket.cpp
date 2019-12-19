@@ -275,6 +275,11 @@ bool Socket::HasData()
     return poll( &fd, 1, 0 ) > 0;
 }
 
+bool Socket::IsValid() const
+{
+    return m_sock >= 0;
+}
+
 
 ListenSocket::ListenSocket()
     : m_sock( -1 )

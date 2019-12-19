@@ -2781,7 +2781,7 @@ void Worker::CheckThreadString( uint64_t id )
     m_data.threadNames.emplace( id, "???" );
     m_pendingThreads++;
 
-    Query( ServerQueryThreadString, id );
+    if( m_sock.IsValid() ) Query( ServerQueryThreadString, id );
 }
 
 void Worker::CheckExternalName( uint64_t id )

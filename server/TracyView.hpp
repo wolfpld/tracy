@@ -603,6 +603,7 @@ private:
         enum class SortBy : int { Count, Time, Mtpc };
         SortBy sortBy = SortBy::Time;
         bool runningTime = false;
+        bool exclusiveTime = true;
         flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>> data;
         const ZoneEvent* dataValidFor = nullptr;
         float fztime;

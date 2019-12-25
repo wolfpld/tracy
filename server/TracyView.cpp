@@ -5589,10 +5589,13 @@ template<typename Adapter, typename V>
 void View::CalcZoneTimeDataImpl( const V& children, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
 {
     Adapter a;
-    for( auto& child : children )
+    if( m_timeDist.exclusiveTime )
     {
-        const auto t = m_worker.GetZoneEnd( a(child) ) - a(child).Start();
-        zit->second.time -= t;
+        for( auto& child : children )
+        {
+            const auto t = m_worker.GetZoneEnd( a(child) ) - a(child).Start();
+            zit->second.time -= t;
+        }
     }
     for( auto& child : children )
     {
@@ -5630,13 +5633,16 @@ template<typename Adapter, typename V>
 void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
 {
     Adapter a;
-    for( auto& child : children )
+    if( m_timeDist.exclusiveTime )
     {
-        int64_t t;
-        uint64_t cnt;
-        const auto res = GetZoneRunningTime( ctx, a(child), t, cnt );
-        assert( res );
-        zit->second.time -= t;
+        for( auto& child : children )
+        {
+            int64_t t;
+            uint64_t cnt;
+            const auto res = GetZoneRunningTime( ctx, a(child), t, cnt );
+            assert( res );
+            zit->second.time -= t;
+        }
     }
     for( auto& child : children )
     {
@@ -6302,6 +6308,8 @@ void View::DrawZoneInfoWindow()
         bool expand = ImGui::TreeNode( "Time distribution" );
         if( expand )
         {
+            ImGui::SameLine();
+            if( SmallCheckbox( "Exclusive time", &m_timeDist.exclusiveTime ) ) m_timeDist.dataValidFor = nullptr;
             if( ctx )
             {
                 ImGui::SameLine();

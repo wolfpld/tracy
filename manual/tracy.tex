@@ -2107,6 +2107,10 @@ logo=\bcattention
 The displayed data might not be calculated correctly and some zones may not be included in the reported times.
 \end{bclogo}
 
+\subsubsection{Limiting zone time range}
+
+If the \emph{limit range} option is selected, only the zones within the specified time range will be included in the data. To indicate that the display is locked to a subset of all zones, a \faLock{}~lock icon will be displayed, and a yellow highlight matching the specified range will be present on the timeline view.
+
 \subsection{Compare traces window}
 \label{compare}
 
@@ -2251,7 +2255,7 @@ The zone information window displays detailed information about a single zone. T
 \item List of messages that were logged in the zone's scope (including its children).
 \item Zone trace, taking into account the zone tree and call stack information (section~\ref{collectingcallstacks}), trying to reconstruct a combined zone + call stack trace\footnote{Reconstruction is only possible, if all zones have full call stack capture data available. In case where that's not available, an \emph{unknown frames} entry will be present.}. Captured zones are displayed as normal text, while functions that were not instrumented are dimmed. Hovering the \faMousePointer{}~mouse pointer over a zone will highlight it on the timeline view with a red outline. Clicking the \LMB{}~left mouse button on a zone will switch the zone info window to that zone. Clicking the \MMB{}~middle mouse button on a zone will zoom the timeline view to the zone's extent. Clicking the \RMB{}~right mouse button on a source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 \item Child zones list, showing how the current zone's execution time was used. Zones on this list can be grouped according to their source location. Each group can be expanded to show individual entries. All the controls from the zone trace are also available here.
-\item Time distribution in child zones, which expands the information provided in the child zones list by processing \emph{all} zone children (including multiple levels of grandchildren). This results in a statistical list of zones that were really doing the work in the current zone's time span.
+\item Time distribution in child zones, which expands the information provided in the child zones list by processing \emph{all} zone children (including multiple levels of grandchildren). This results in a statistical list of zones that were really doing the work in the current zone's time span. If a group of zones is selected on this list, the find zone window (section~\ref{findzone}) will open, with time range limited to show only the children of the current zone.
 \end{itemize}
 
 The zone information window has the following controls available:

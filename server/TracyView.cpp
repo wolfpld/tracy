@@ -2056,6 +2056,7 @@ void View::DrawZones()
     m_drawThreadHighlight.Decay( 0 );
     m_cpuDataThread.Decay( 0 );
     m_zoneHover = nullptr;
+    m_zoneHover2.Decay( nullptr );
 
     if( m_vd.zvStart == m_vd.zvEnd ) return;
     assert( m_vd.zvStart < m_vd.zvEnd );
@@ -9051,9 +9052,10 @@ void View::DrawFindZone()
                             draw->PopClipRect();
                         }
 
-                        if( m_zoneHover && m_findZone.match[m_findZone.selMatch] == m_zoneHover->SrcLoc() )
+                        if( ( m_zoneHover && m_findZone.match[m_findZone.selMatch] == m_zoneHover->SrcLoc() ) ||
+                            ( m_zoneHover2 && m_findZone.match[m_findZone.selMatch] == m_zoneHover2->SrcLoc() ) )
                         {
-                            const auto zoneTime = m_worker.GetZoneEnd( *m_zoneHover ) - m_zoneHover->Start();
+                            const auto zoneTime = m_zoneHover ? ( m_worker.GetZoneEnd( *m_zoneHover ) - m_zoneHover->Start() ) : ( m_worker.GetZoneEnd( *m_zoneHover2 ) - m_zoneHover2->Start() );
                             float zonePos;
                             if( m_findZone.logTime )
                             {
@@ -9527,6 +9529,7 @@ void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
                 ZoomToZone( *ev );
             }
             ZoneTooltip( *ev );
+            m_zoneHover2 = ev;
         }
 
         ImGui::NextColumn();

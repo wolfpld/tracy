@@ -301,6 +301,7 @@ private:
     const FrameData* m_frames;
     uint32_t m_lockInfoWindow = InvalidId;
     const ZoneEvent* m_zoneHover = nullptr;
+    DecayValue<const ZoneEvent*> m_zoneHover2 = nullptr;
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
     ImGuiTextFilter m_messageFilter;

@@ -15,6 +15,7 @@ v0.7 (xxxx-xx-xx)
 - Added chrome:tracing importer.
 - Allow merging of ZoneText() strings.
 - Time distribution can now show both exclusive and inclusive times.
+- Display proper value of selection time in find zone menu.
 
 v0.6.1 (2019-11-28)
 -------------------

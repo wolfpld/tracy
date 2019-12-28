@@ -481,6 +481,7 @@ private:
             groups.clear();
             processed = 0;
             selCs = 0;
+            selGroup = Unselected;
         }
 
         void ResetSelection()

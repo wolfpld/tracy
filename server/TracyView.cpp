@@ -8057,6 +8057,10 @@ void View::DrawFindZone()
     }
     if( m_findZone.limitRange )
     {
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::TextUnformatted( ICON_FA_LOCK );
+        ImGui::SameLine();
+#endif
         TextFocused( "Zone time range:", TimeToString( m_findZone.rangeMin ) );
         ImGui::SameLine();
         TextFocused( "-", TimeToString( m_findZone.rangeMax ) );

@@ -11092,7 +11092,32 @@ void View::DrawInfo()
     TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
     if( m_bigFont ) ImGui::PopFont();
     TextFocused( "Capture time:", dtmp );
-    if( !m_filename.empty() ) TextFocused( "File:", m_filename.c_str() );
+    if( !m_filename.empty() )
+    {
+        TextFocused( "File:", m_filename.c_str() );
+        if( m_userData.Valid() )
+        {
+            const auto save = m_userData.GetConfigLocation();
+            if( save )
+            {
+                ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                if( ImGui::SmallButton( ICON_FA_FOLDER ) )
+#else
+                if( ImGui::SmallButton( "Settings" ) )
+#endif
+                {
+                    ImGui::SetClipboardText( save );
+                }
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Copy user settings location to clipboard." );
+                    ImGui::EndTooltip();
+                }
+            }
+        }
+    }
     {
         const auto& desc = m_userData.GetDescription();
         const auto descsz = std::min<size_t>( 255, desc.size() );

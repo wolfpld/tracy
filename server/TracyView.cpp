@@ -8294,7 +8294,6 @@ void View::DrawFindZone()
                     const auto numBins = int64_t( w - 4 );
                     if( numBins > 1 )
                     {
-                        int64_t selectionTime = 0;
                         const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
                         const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
 
@@ -8381,6 +8380,8 @@ void View::DrawFindZone()
                             memset( bins.get(), 0, sizeof( int64_t ) * numBins );
                             memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
                             memset( selBin.get(), 0, sizeof( int64_t ) * numBins );
+
+                            int64_t selectionTime = 0;
 
                             if( m_findZone.logTime )
                             {
@@ -8473,6 +8474,8 @@ void View::DrawFindZone()
                                     }
                                 }
                             }
+
+                            m_findZone.selTime = selectionTime;
                         }
 
                         int64_t maxVal;
@@ -8542,7 +8545,7 @@ void View::DrawFindZone()
                         DrawHelpMarker( "Left draw on histogram to select range. Right click to clear selection." );
                         if( m_findZone.highlight.active )
                         {
-                            TextFocused( "Selection time:", TimeToString( selectionTime ) );
+                            TextFocused( "Selection time:", TimeToString( m_findZone.selTime ) );
                         }
                         else
                         {

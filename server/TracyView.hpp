@@ -435,6 +435,7 @@ private:
         float average, selAverage;
         float median, selMedian;
         int64_t total, selTotal;
+        int64_t selTime;
         bool drawAvgMed = true;
         bool drawSelAvgMed = true;
         bool scheduleResetMatch = false;
@@ -487,6 +488,7 @@ private:
             selAverage = 0;
             selMedian = 0;
             selTotal = 0;
+            selTime = 0;
             binCache.numBins = -1;
         }
 

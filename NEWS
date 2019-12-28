@@ -18,6 +18,7 @@ v0.7 (xxxx-xx-xx)
 - Display proper value of selection time in find zone menu.
 - Implemented limiting find zone search to a specified time range.
 - Highlight hovered zone from find zone menu zone list on the histogram.
+- Allow copying user data directory location to the clipboard.
 
 v0.6.1 (2019-11-28)
 -------------------

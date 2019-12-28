@@ -8036,8 +8036,30 @@ void View::DrawFindZone()
         m_findZone.Reset();
     }
     ImGui::SameLine();
-
     ImGui::Checkbox( "Ignore case", &m_findZone.ignoreCase );
+    ImGui::SameLine();
+    if( ImGui::Checkbox( "Limit range", &m_findZone.limitRange ) )
+    {
+        if( m_findZone.limitRange )
+        {
+            m_findZone.rangeMin = m_vd.zvStart;
+            m_findZone.rangeMax = m_vd.zvEnd;
+        }
+    }
+    if( m_findZone.limitRange )
+    {
+        TextFocused( "Zone time range:", TimeToString( m_findZone.rangeMin ) );
+        ImGui::SameLine();
+        TextFocused( "-", TimeToString( m_findZone.rangeMax ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", TimeToString( m_findZone.rangeMax - m_findZone.rangeMin ) );
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Limit to view" ) )
+        {
+            m_findZone.rangeMin = m_vd.zvStart;
+            m_findZone.rangeMax = m_vd.zvEnd;
+        }
+    }
 
     if( findClicked )
     {

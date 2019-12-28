@@ -443,6 +443,8 @@ private:
         int minBinVal = 1;
         int64_t tmin, tmax;
         bool showZoneInFrames = false;
+        bool limitRange = false;
+        int64_t rangeMin, rangeMax;
 
         struct
         {

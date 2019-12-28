@@ -24,7 +24,7 @@ class GpuCtxScope
 {
 public:
     GpuCtxScope( const SourceLocationData* ) {}
-    GpuCtxScope( const SourceLocationData*, int depth ) {}
+    GpuCtxScope( const SourceLocationData*, int ) {}
 };
 }
 

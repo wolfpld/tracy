@@ -9459,7 +9459,7 @@ void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
     {
         zonesToIterate = &sortedZones;
         sortedZones.reserve_and_use( zones.size() );
-        memcpy( sortedZones.data(), zones.data(), zones.size() * sizeof( ZoneEvent* ) );
+        memcpy( sortedZones.data(), zones.data(), zones.size() * sizeof( decltype( *zones.begin() ) ) );
 
         switch( m_findZone.tableSortBy )
         {

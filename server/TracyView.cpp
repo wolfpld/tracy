@@ -6397,7 +6397,7 @@ void View::DrawZoneInfoWindow()
                     const auto name = m_worker.GetZoneName( sl );
                     if( ImGui::Selectable( name, false, ImGuiSelectableFlags_SpanAllColumns ) )
                     {
-                        m_findZone.ShowZone( v->first, name );
+                        m_findZone.ShowZone( v->first, name, ev.Start(), m_worker.GetZoneEnd( ev ) );
                     }
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v->second.count, true ) );

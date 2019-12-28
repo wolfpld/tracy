@@ -497,6 +497,19 @@ private:
         void ShowZone( int16_t srcloc, const char* name )
         {
             show = true;
+            limitRange = false;
+            Reset();
+            match.emplace_back( srcloc );
+            strcpy( pattern, name );
+        }
+
+        void ShowZone( int16_t srcloc, const char* name, int64_t limitMin, int64_t limitMax )
+        {
+            assert( limitMin <= limitMax );
+            show = true;
+            limitRange = true;
+            rangeMin = limitMin;
+            rangeMax = limitMax;
             Reset();
             match.emplace_back( srcloc );
             strcpy( pattern, name );

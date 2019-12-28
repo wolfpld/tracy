@@ -8040,6 +8040,7 @@ void View::DrawFindZone()
     ImGui::SameLine();
     if( ImGui::Checkbox( "Limit range", &m_findZone.limitRange ) )
     {
+        m_findZone.ResetMatch();
         if( m_findZone.limitRange )
         {
             m_findZone.rangeMin = m_vd.zvStart;
@@ -8056,6 +8057,7 @@ void View::DrawFindZone()
         ImGui::SameLine();
         if( ImGui::SmallButton( "Limit to view" ) )
         {
+            m_findZone.ResetMatch();
             m_findZone.rangeMin = m_vd.zvStart;
             m_findZone.rangeMax = m_vd.zvEnd;
         }
@@ -8069,6 +8071,9 @@ void View::DrawFindZone()
 
     if( !m_findZone.match.empty() )
     {
+        const auto rangeMin = m_findZone.rangeMin;
+        const auto rangeMax = m_findZone.rangeMax;
+
         ImGui::Separator();
         ImGui::BeginChild( "##findzone" );
         bool expand = ImGui::TreeNodeEx( "Matched source locations", ImGuiTreeNodeFlags_DefaultOpen );
@@ -8141,61 +8146,124 @@ void View::DrawFindZone()
             if( m_findZone.sortedNum != zsz )
             {
                 auto& vec = m_findZone.sorted;
+                const auto vszorig = vec.size();
                 vec.reserve( zsz );
                 size_t i;
                 if( m_findZone.runningTime )
                 {
-                    for( i=m_findZone.sortedNum; i<zsz; i++ )
+                    if( m_findZone.limitRange )
                     {
-                        auto& zone = *zones[i].Zone();
-                        if( zone.End() < 0 ) break;
-                        const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
-                        if( !ctx ) break;
-                        int64_t t;
-                        uint64_t cnt;
-                        if( !GetZoneRunningTime( ctx, zone, t, cnt ) ) break;
-                        vec.emplace_back( t );
-                        total += t;
-                        if( t < tmin ) tmin = t;
-                        else if( t > tmax ) tmax = t;
+                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        {
+                            auto& zone = *zones[i].Zone();
+                            const auto end = zone.End();
+                            if( end < 0 ) break;
+                            if( end > rangeMax || zone.Start() < rangeMin ) continue;
+                            const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
+                            if( !ctx ) break;
+                            int64_t t;
+                            uint64_t cnt;
+                            if( !GetZoneRunningTime( ctx, zone, t, cnt ) ) break;
+                            vec.emplace_back( t );
+                            total += t;
+                            if( t < tmin ) tmin = t;
+                            else if( t > tmax ) tmax = t;
+                        }
+                    }
+                    else
+                    {
+                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        {
+                            auto& zone = *zones[i].Zone();
+                            if( zone.End() < 0 ) break;
+                            const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
+                            if( !ctx ) break;
+                            int64_t t;
+                            uint64_t cnt;
+                            if( !GetZoneRunningTime( ctx, zone, t, cnt ) ) break;
+                            vec.emplace_back( t );
+                            total += t;
+                            if( t < tmin ) tmin = t;
+                            else if( t > tmax ) tmax = t;
+                        }
                     }
                 }
                 else if( m_findZone.selfTime )
                 {
                     tmin = zoneData.selfMin;
                     tmax = zoneData.selfMax;
-                    for( i=m_findZone.sortedNum; i<zsz; i++ )
+                    if( m_findZone.limitRange )
                     {
-                        auto& zone = *zones[i].Zone();
-                        if( zone.End() < 0 ) break;
-                        const auto t = zone.End() - zone.Start() - GetZoneChildTimeFast( zone );
-                        vec.emplace_back( t );
-                        total += t;
+                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        {
+                            auto& zone = *zones[i].Zone();
+                            const auto end = zone.End();
+                            if( end < 0 ) break;
+                            const auto start = zone.Start();
+                            if( end > rangeMax || start < rangeMin ) continue;
+                            const auto t = end - start - GetZoneChildTimeFast( zone );
+                            vec.emplace_back( t );
+                            total += t;
+                        }
+                    }
+                    else
+                    {
+                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        {
+                            auto& zone = *zones[i].Zone();
+                            const auto end = zone.End();
+                            if( end < 0 ) break;
+                            const auto t = end - zone.Start() - GetZoneChildTimeFast( zone );
+                            vec.emplace_back( t );
+                            total += t;
+                        }
                     }
                 }
                 else
                 {
                     tmin = zoneData.min;
                     tmax = zoneData.max;
-                    for( i=m_findZone.sortedNum; i<zsz; i++ )
+                    if( m_findZone.limitRange )
                     {
-                        auto& zone = *zones[i].Zone();
-                        if( zone.End() < 0 ) break;
-                        const auto t = zone.End() - zone.Start();
-                        vec.emplace_back( t );
-                        total += t;
+                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        {
+                            auto& zone = *zones[i].Zone();
+                            const auto end = zone.End();
+                            if( end < 0 ) break;
+                            const auto start = zone.Start();
+                            if( end > rangeMax || start < rangeMin ) continue;
+                            const auto t = end - start;
+                            vec.emplace_back( t );
+                            total += t;
+                        }
+                    }
+                    else
+                    {
+                        for( i=m_findZone.sortedNum; i<zsz; i++ )
+                        {
+                            auto& zone = *zones[i].Zone();
+                            const auto end = zone.End();
+                            if( end < 0 ) break;
+                            const auto t = end - zone.Start();
+                            vec.emplace_back( t );
+                            total += t;
+                        }
                     }
                 }
-                auto mid = vec.begin() + m_findZone.sortedNum;
+                auto mid = vec.begin() + vszorig;
                 pdqsort_branchless( mid, vec.end() );
                 std::inplace_merge( vec.begin(), mid, vec.end() );
 
-                m_findZone.average = float( total ) / i;
-                m_findZone.median = vec[i/2];
-                m_findZone.total = total;
-                m_findZone.sortedNum = i;
-                m_findZone.tmin = tmin;
-                m_findZone.tmax = tmax;
+                const auto vsz = vec.size();
+                if( vsz != 0 )
+                {
+                    m_findZone.average = float( total ) / vsz;
+                    m_findZone.median = vec[vsz/2];
+                    m_findZone.total = total;
+                    m_findZone.sortedNum = i;
+                    m_findZone.tmin = tmin;
+                    m_findZone.tmax = tmax;
+                }
             }
 
             if( m_findZone.selGroup != m_findZone.Unselected )
@@ -8211,47 +8279,103 @@ void View::DrawFindZone()
                     int64_t total = m_findZone.selTotal;
                     if( m_findZone.runningTime )
                     {
-                        for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                        if( m_findZone.limitRange )
                         {
-                            auto& ev = zones[i];
-                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                            for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                             {
-                                const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
-                                int64_t t;
-                                uint64_t cnt;
-                                GetZoneRunningTime( ctx, *ev.Zone(), t, cnt );
-                                vec.emplace_back( t );
-                                act++;
-                                total += t;
+                                auto& ev = zones[i];
+                                if( ev.Zone()->End() > rangeMax || ev.Zone()->Start() < rangeMin ) continue;
+                                if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                                {
+                                    const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
+                                    int64_t t;
+                                    uint64_t cnt;
+                                    GetZoneRunningTime( ctx, *ev.Zone(), t, cnt );
+                                    vec.emplace_back( t );
+                                    act++;
+                                    total += t;
+                                }
                             }
                         }
-
+                        else
+                        {
+                            for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                            {
+                                auto& ev = zones[i];
+                                if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                                {
+                                    const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
+                                    int64_t t;
+                                    uint64_t cnt;
+                                    GetZoneRunningTime( ctx, *ev.Zone(), t, cnt );
+                                    vec.emplace_back( t );
+                                    act++;
+                                    total += t;
+                                }
+                            }
+                        }
                     }
                     else if( m_findZone.selfTime )
                     {
-                        for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                        if( m_findZone.limitRange )
                         {
-                            auto& ev = zones[i];
-                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                            for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                             {
-                                const auto t = ev.Zone()->End() - ev.Zone()->Start() - GetZoneChildTimeFast( *ev.Zone() );
-                                vec.emplace_back( t );
-                                act++;
-                                total += t;
+                                auto& ev = zones[i];
+                                if( ev.Zone()->End() > rangeMax || ev.Zone()->Start() < rangeMin ) continue;
+                                if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                                {
+                                    const auto t = ev.Zone()->End() - ev.Zone()->Start() - GetZoneChildTimeFast( *ev.Zone() );
+                                    vec.emplace_back( t );
+                                    act++;
+                                    total += t;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                            {
+                                auto& ev = zones[i];
+                                if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                                {
+                                    const auto t = ev.Zone()->End() - ev.Zone()->Start() - GetZoneChildTimeFast( *ev.Zone() );
+                                    vec.emplace_back( t );
+                                    act++;
+                                    total += t;
+                                }
                             }
                         }
                     }
                     else
                     {
-                        for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                        if( m_findZone.limitRange )
                         {
-                            auto& ev = zones[i];
-                            if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                            for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                             {
-                                const auto t = ev.Zone()->End() - ev.Zone()->Start();
-                                vec.emplace_back( t );
-                                act++;
-                                total += t;
+                                auto& ev = zones[i];
+                                if( ev.Zone()->End() > rangeMax || ev.Zone()->Start() < rangeMin ) continue;
+                                if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                                {
+                                    const auto t = ev.Zone()->End() - ev.Zone()->Start();
+                                    vec.emplace_back( t );
+                                    act++;
+                                    total += t;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
+                            {
+                                auto& ev = zones[i];
+                                if( selGroup == GetSelectionTarget( ev, groupBy ) )
+                                {
+                                    const auto t = ev.Zone()->End() - ev.Zone()->Start();
+                                    vec.emplace_back( t );
+                                    act++;
+                                    total += t;
+                                }
                             }
                         }
                     }
@@ -8267,7 +8391,7 @@ void View::DrawFindZone()
                 }
             }
 
-            if( tmin != std::numeric_limits<int64_t>::max() )
+            if( tmin != std::numeric_limits<int64_t>::max() && !m_findZone.sorted.empty() )
             {
                 TextDisabledUnformatted( "Minimum values in bin:" );
                 ImGui::SameLine();
@@ -8325,7 +8449,7 @@ void View::DrawFindZone()
                         auto sortedEnd = sorted.end();
                         while( sortedBegin != sortedEnd && *sortedBegin == 0 ) ++sortedBegin;
 
-                        if( m_findZone.minBinVal > 1 )
+                        if( m_findZone.minBinVal > 1 || m_findZone.limitRange )
                         {
                             if( m_findZone.logTime )
                             {
@@ -8371,9 +8495,12 @@ void View::DrawFindZone()
                                 }
                             }
 
-                            tmin = *sortedBegin;
-                            tmax = *(sortedEnd-1);
-                            total = tmax - tmin;
+                            if( sortedBegin != sorted.end() )
+                            {
+                                tmin = *sortedBegin;
+                                tmax = *(sortedEnd-1);
+                                total = tmax - tmin;
+                            }
                         }
 
                         if( numBins > m_findZone.numBins )
@@ -8528,7 +8655,7 @@ void View::DrawFindZone()
                         ImGui::Spacing();
                         ImGui::SameLine();
                         TextFocused( "Median time:", TimeToString( m_findZone.median ) );
-                        if( m_findZone.sorted.size() > 1 )
+                        if( !m_findZone.limitRange && m_findZone.sorted.size() > 1 )
                         {
                             const auto sz = m_findZone.sorted.size();
                             const auto avg = m_findZone.average;
@@ -8976,20 +9103,27 @@ void View::DrawFindZone()
         ImGui::SameLine();
         DrawHelpMarker( "Mean time per call" );
 
-        auto& zones = m_worker.GetZonesForSourceLocation( m_findZone.match[m_findZone.selMatch] ).zones;
+        auto& zones = zoneData.zones;
         auto sz = zones.size();
         auto processed = m_findZone.processed;
         const auto hmin = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
         const auto hmax = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
         const auto groupBy = m_findZone.groupBy;
         const auto highlightActive = m_findZone.highlight.active;
+        const auto limitRange = m_findZone.limitRange;
         while( processed < sz )
         {
             auto& ev = zones[processed];
             if( ev.Zone()->End() < 0 ) break;
 
             const auto end = m_worker.GetZoneEndDirect( *ev.Zone() );
-            auto timespan = end - ev.Zone()->Start();
+            const auto start = ev.Zone()->Start();
+            if( limitRange && ( start < rangeMin || end > rangeMax ) )
+            {
+                processed++;
+                continue;
+            }
+            auto timespan = end - start;
             if( timespan == 0 )
             {
                 processed++;

@@ -236,4 +236,10 @@ void UserData::Remove( const char* filename )
     unlink( path );
 }
 
+const char* UserData::GetConfigLocation() const
+{
+    assert( Valid() );
+    return GetSavePath( m_program.c_str(), m_time, nullptr, false );
+}
+
 }

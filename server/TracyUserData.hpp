@@ -32,6 +32,8 @@ public:
     void LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data );
     void SaveAnnotations( const std::vector<std::unique_ptr<Annotation>>& data );
 
+    const char* GetConfigLocation() const;
+
 private:
     FILE* OpenFile( const char* filename, bool write );
     void Remove( const char* filename );

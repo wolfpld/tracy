@@ -117,7 +117,6 @@ const char* GetSavePath( const char* file )
 
 const char* GetSavePath( const char* program, uint64_t time, const char* file, bool create )
 {
-    assert( file && *file );
     assert( program && *program );
 
     enum { Pool = 8 };
@@ -195,9 +194,16 @@ const char* GetSavePath( const char* program, uint64_t time, const char* file, b
         assert( status );
     }
 
-    const auto fsz = strlen( file );
-    assert( sz + fsz < MaxPath );
-    memcpy( buf+sz, file, fsz+1 );
+    if( file )
+    {
+        const auto fsz = strlen( file );
+        assert( sz + fsz < MaxPath );
+        memcpy( buf+sz, file, fsz+1 );
+    }
+    else
+    {
+        buf[sz] = '\0';
+    }
 
     return buf;
 }

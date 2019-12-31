@@ -184,6 +184,7 @@
     <ClInclude Include="..\..\..\server\TracyView.hpp" />
     <ClInclude Include="..\..\..\server\TracyViewData.hpp" />
     <ClInclude Include="..\..\..\server\TracyWorker.hpp" />
+    <ClInclude Include="..\..\..\server\TracyYield.hpp" />
     <ClInclude Include="..\..\..\server\tracy_flat_hash_map.hpp" />
     <ClInclude Include="..\..\..\server\tracy_pdqsort.h" />
     <ClInclude Include="..\..\..\server\tracy_xxh3.h" />

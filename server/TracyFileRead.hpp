@@ -10,6 +10,7 @@
 #include <thread>
 
 #include "TracyFileHeader.hpp"
+#include "TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
 
@@ -188,7 +189,7 @@ private:
             {
                 if( m_exit.load( std::memory_order_relaxed ) == true ) return;
                 if( m_signalSwitch.load( std::memory_order_relaxed ) == true ) break;
-                std::this_thread::yield();
+                YieldThread();
             }
             m_signalSwitch.store( false, std::memory_order_relaxed );
             std::swap( m_buf, m_second );
@@ -212,7 +213,7 @@ private:
             if( m_offset == BufSize )
             {
                 m_signalSwitch.store( true, std::memory_order_relaxed );
-                while( m_signalAvailable.load( std::memory_order_acquire ) == false ) { std::this_thread::yield(); }
+                while( m_signalAvailable.load( std::memory_order_acquire ) == false ) { YieldThread(); }
                 m_signalAvailable.store( false, std::memory_order_relaxed );
             }
 
@@ -231,7 +232,7 @@ private:
             if( m_offset == BufSize )
             {
                 m_signalSwitch.store( true, std::memory_order_relaxed );
-                while( m_signalAvailable.load( std::memory_order_acquire ) == false ) { std::this_thread::yield(); }
+                while( m_signalAvailable.load( std::memory_order_acquire ) == false ) { YieldThread(); }
                 m_signalAvailable.store( false, std::memory_order_relaxed );
             }
 

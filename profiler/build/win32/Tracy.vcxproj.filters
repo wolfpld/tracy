@@ -302,6 +302,9 @@
     <ClInclude Include="..\..\..\server\tracy_xxh3.h">
       <Filter>server</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyYield.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="DebugVis.natvis" />

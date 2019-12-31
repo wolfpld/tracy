@@ -34,6 +34,7 @@
 #include "TracyTaskDispatch.hpp"
 #include "TracyVersion.hpp"
 #include "TracyWorker.hpp"
+#include "TracyYield.hpp"
 
 #include "tracy_flat_hash_map.hpp"
 
@@ -1384,7 +1385,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         }
                     }
                     if( idx >= 0 ) break;
-                    std::this_thread::yield();
+                    YieldThread();
                 }
 
                 if( data[idx].bufsz < sz )

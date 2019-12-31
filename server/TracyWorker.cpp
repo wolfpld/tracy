@@ -1349,7 +1349,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 size_t bufsz = 0;
                 char* outbuf = nullptr;
                 size_t outsz = 0;
-                std::atomic<State> state = Available;
+                alignas(64) std::atomic<State> state = Available;
             };
 
             // Leave one thread for file reader, second thread for dispatch (this thread)

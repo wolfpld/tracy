@@ -266,9 +266,9 @@ private:
     size_t m_offset;
     size_t m_lastBlock;
 
-    std::atomic<bool> m_signalSwitch;
-    std::atomic<bool> m_signalAvailable;
-    std::atomic<bool> m_exit;
+    alignas(64) std::atomic<bool> m_signalSwitch;
+    alignas(64) std::atomic<bool> m_signalAvailable;
+    alignas(64) std::atomic<bool> m_exit;
 
     std::thread m_decThread;
 

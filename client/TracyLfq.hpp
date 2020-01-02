@@ -94,6 +94,8 @@ public:
 
     tracy_no_inline LfqBlock* NextBlock( LfqBlock* tailBlk );
 
+    inline void FlushDataImpl();
+
     std::atomic<LfqProducerImpl*> m_next;
     std::atomic<bool> m_active, m_available;
 
@@ -144,6 +146,11 @@ public:
     static tracy_force_inline void CommitNext( char* nextPtr )
     {
         lfq.tail->store( nextPtr, std::memory_order_release );
+    }
+
+    static tracy_force_inline void FlushData()
+    {
+        GetProducer().m_prod->FlushDataImpl();
     }
 
 
@@ -364,6 +371,13 @@ tracy_force_inline void LfqProducerImpl::CleanupThread()
     while( !m_head.compare_exchange_weak( blk, nullptr ) ) {}
     assert( blk );
     m_queue->ReleaseBlocks( blk );
+}
+
+void LfqProducerImpl::FlushDataImpl()
+{
+    auto blk = m_head.load();
+    m_queue->FreeBlocks( blk );
+    PrepareThread();
 }
 
 }

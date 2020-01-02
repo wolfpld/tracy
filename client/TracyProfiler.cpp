@@ -583,11 +583,10 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 
     {
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::CrashReport );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.text = (uint64_t)s_crashText;
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
 
         GetProfiler().SendCallstack( 60, "KiUserExceptionDispatcher" );
     }
@@ -622,9 +621,8 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
 
     {
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::Crash );
-        prod.CommitNext( nextPtr );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::Crash );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
@@ -815,11 +813,10 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 
     {
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::CrashReport );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.text = (uint64_t)s_crashText;
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
 
         GetProfiler().SendCallstack( 60, "__kernel_rt_sigreturn" );
     }
@@ -843,9 +840,8 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 
     {
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::Crash );
-        prod.CommitNext( nextPtr );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::Crash );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
@@ -856,6 +852,9 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 }
 #endif
 
+
+thread_local const char* lfq_dataEnd;
+thread_local std::atomic<char*>* lfq_tail;
 
 static Profiler* s_instance;
 static Thread* s_thread;
@@ -1547,15 +1546,14 @@ void Profiler::CompressWorker()
                 tracy_free( fi->image );
 
                 char* nextPtr;
-                auto& prod = GetProducer();
-                auto item = prod.PrepareNext( nextPtr, QueueType::FrameImage );
+                auto item = LfqProducer::PrepareNext( nextPtr, QueueType::FrameImage );
                 MemWrite( &item->frameImage.image, (uint64_t)etc1buf );
                 MemWrite( &item->frameImage.frame, fi->frame );
                 MemWrite( &item->frameImage.w, w );
                 MemWrite( &item->frameImage.h, h );
                 uint8_t flip = fi->flip;
                 MemWrite( &item->frameImage.flip, flip );
-                prod.CommitNext( nextPtr );
+                LfqProducer::CommitNext( nextPtr );
 
                 fi++;
             }
@@ -2513,13 +2511,12 @@ void Profiler::ReportTopology()
         idx++;
     }
 
-    auto& prod = GetProducer();
     for( uint32_t i=0; i<numcpus; i++ )
     {
         auto& data = cpuData[i];
 
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, QueueType::CpuTopology );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::CpuTopology );
         MemWrite( &item->cpuTopology.package, data.package );
         MemWrite( &item->cpuTopology.core, data.core );
         MemWrite( &item->cpuTopology.thread, data.thread );
@@ -2528,7 +2525,7 @@ void Profiler::ReportTopology()
         DeferItem( *item );
 #endif
 
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     tracy_free( cpuData );
@@ -2560,13 +2557,12 @@ void Profiler::ReportTopology()
         cpuData[i].core = uint32_t( atoi( buf ) );
     }
 
-    auto& prod = GetProducer();
     for( uint32_t i=0; i<numcpus; i++ )
     {
         auto& data = cpuData[i];
 
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, QueueType::CpuTopology );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::CpuTopology );
         MemWrite( &item->cpuTopology.package, data.package );
         MemWrite( &item->cpuTopology.core, data.core );
         MemWrite( &item->cpuTopology.thread, data.thread );
@@ -2575,7 +2571,7 @@ void Profiler::ReportTopology()
         DeferItem( *item );
 #endif
 
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     tracy_free( cpuData );
@@ -2590,10 +2586,9 @@ void Profiler::SendCallstack( int depth, const char* skipBefore )
     CutCallstack( ptr, skipBefore );
 
     char* nextPtr;
-    auto& prod = GetProducer();
-    auto item = prod.PrepareNext( nextPtr, QueueType::Callstack );
+    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::Callstack );
     MemWrite( &item->callstack.ptr, ptr );
-    prod.CommitNext( nextPtr );
+    LfqProducer::CommitNext( nextPtr );
 #endif
 }
 
@@ -2635,11 +2630,10 @@ void Profiler::ProcessSysTime()
             m_sysTimeLast = t;
 
             char* nextPtr;
-            auto& prod = GetProducer();
-            auto item = prod.PrepareNext( nextPtr, QueueType::SysTimeReport );
+            auto item = LfqProducer::PrepareNext( nextPtr, QueueType::SysTimeReport );
             MemWrite( &item->sysTime.time, GetTime() );
             MemWrite( &item->sysTime.sysTime, sysTime );
-            prod.CommitNext( nextPtr );
+            LfqProducer::CommitNext( nextPtr );
         }
     }
 }
@@ -2648,8 +2642,7 @@ void Profiler::ProcessSysTime()
 void Profiler::ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val )
 {
     char* nextPtr;
-    auto& prod = GetProducer();
-    auto item = prod.PrepareNext( nextPtr, QueueType::ParamSetup );
+    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ParamSetup );
     tracy::MemWrite( &item->paramSetup.idx, idx );
     tracy::MemWrite( &item->paramSetup.name, (uint64_t)name );
     tracy::MemWrite( &item->paramSetup.isBool, (uint8_t)isBool );
@@ -2659,7 +2652,7 @@ void Profiler::ParameterSetup( uint32_t idx, const char* name, bool isBool, int3
     GetProfiler().DeferItem( *item );
 #endif
 
-    prod.CommitNext( nextPtr );
+    LfqProducer::CommitNext( nextPtr );
 }
 
 void Profiler::HandleParameter( uint64_t payload )
@@ -2688,21 +2681,20 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_l
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 #endif
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneBegin );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneBegin );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
     return ctx;
 }
@@ -2719,21 +2711,20 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 #endif
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneBeginCallstack );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneBeginCallstack );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 
     tracy::GetProfiler().SendCallstack( depth );
@@ -2756,21 +2747,20 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int act
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 #endif
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneBeginAllocSrcLoc );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneBeginAllocSrcLoc );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
     return ctx;
 }
@@ -2791,21 +2781,20 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 #endif
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 
     tracy::GetProfiler().SendCallstack( depth );
@@ -2815,20 +2804,19 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
 TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 {
     if( !ctx.active ) return;
-    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 #endif
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneEnd );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneEnd );
         tracy::MemWrite( &item->zoneEnd.time, tracy::Profiler::GetTime() );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 }
 
@@ -2838,20 +2826,19 @@ TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 #endif
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneText );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneText );
         tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 }
 
@@ -2861,20 +2848,19 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 #endif
     {
         char* nextPtr;
-        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneName );
+        auto item = tracy::LfqProducer::PrepareNext( nextPtr, tracy::QueueType::ZoneName );
         tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        prod.CommitNext( nextPtr );
+        tracy::LfqProducer::CommitNext( nextPtr );
     }
 }
 

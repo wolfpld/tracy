@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <thread>
 
+#include "../common/TracyApi.h"
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyForceInline.hpp"
@@ -15,7 +16,11 @@
 namespace tracy
 {
 
+
 class LockFreeQueue;
+class LfqProducer;
+
+TRACY_API LfqProducer& GetProducer();
 
 
 class LfqBlock
@@ -54,6 +59,9 @@ public:
 };
 
 
+extern thread_local const char* lfq_dataEnd;
+extern thread_local std::atomic<char*>* lfq_tail;
+
 class LfqProducerImpl
 {
 public:
@@ -72,28 +80,10 @@ public:
 
     tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
     {
-        auto tailBlk = m_tail.load();
+        auto tailBlk = NextBlock( m_tail.load() );
         auto tail = tailBlk->tail.load();
-        assert( tail >= tailBlk->data );
-        auto np = tail + sz;
-        if( np <= tailBlk->dataEnd )
-        {
-            nextPtr = np;
-            return tail;
-        }
-        else
-        {
-            tailBlk = NextBlock( tailBlk );
-            tail = tailBlk->tail.load();
-            nextPtr = tail + sz;
-            return tail;
-        }
-    }
-
-    tracy_force_inline void CommitNext( char* nextPtr )
-    {
-        auto tailBlk = m_tail.load();
-        tailBlk->tail.store( nextPtr );
+        nextPtr = tail + sz;
+        return tail;
     }
 
     inline LfqBlock* NextBlock( LfqBlock* tailBlk );
@@ -123,21 +113,31 @@ public:
 
     inline LfqProducer& operator=( LfqProducer&& ) noexcept;
 
-    tracy_force_inline QueueItem* PrepareNext( char*& nextPtr, QueueType type )
+    static tracy_force_inline QueueItem* PrepareNext( char*& nextPtr, QueueType type )
     {
         auto item = (QueueItem*)PrepareNext( nextPtr, QueueDataSize[(uint8_t)type] );
         MemWrite( &item->hdr.type, type );
         return item;
     }
 
-    tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
+    static tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
     {
-        return m_prod->PrepareNext( nextPtr, sz );
+        auto tail = lfq_tail->load();
+        auto np = tail + sz;
+        if( np <= lfq_dataEnd )
+        {
+            nextPtr = np;
+            return tail;
+        }
+        else
+        {
+            return GetProducer().m_prod->PrepareNext( nextPtr, sz );
+        }
     }
 
-    tracy_force_inline void CommitNext( char* nextPtr )
+    static tracy_force_inline void CommitNext( char* nextPtr )
     {
-        m_prod->CommitNext( nextPtr );
+        lfq_tail->store( nextPtr );
     }
 
 
@@ -331,6 +331,8 @@ tracy_force_inline void LfqProducerImpl::PrepareThread()
     assert( blk );
     assert( blk->next.load() == nullptr );
     blk->thread = m_thread;
+    lfq_dataEnd = blk->dataEnd;
+    lfq_tail = &blk->tail;
     m_head.store( blk );
     m_tail.store( blk );
 }
@@ -353,6 +355,8 @@ inline LfqBlock* LfqProducerImpl::NextBlock( LfqBlock* tailBlk )
     next->thread = m_thread;
     tailBlk->next.store( next );
     m_tail.store( next );
+    lfq_dataEnd = next->dataEnd;
+    lfq_tail = &next->tail;
     return next;
 }
 

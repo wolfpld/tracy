@@ -25,11 +25,10 @@ public:
     {
         if( !m_active ) return;
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneBegin );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneBegin );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active = true )
@@ -42,11 +41,10 @@ public:
     {
         if( !m_active ) return;
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneBeginCallstack );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneBeginCallstack );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
 
         GetProfiler().SendCallstack( depth );
     }
@@ -58,10 +56,9 @@ public:
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneEnd );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneEnd );
         MemWrite( &item->zoneEnd.time, Profiler::GetTime() );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     tracy_force_inline void Text( const char* txt, size_t size )
@@ -74,10 +71,9 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneText );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneText );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     tracy_force_inline void Name( const char* txt, size_t size )
@@ -90,10 +86,9 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneName );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneName );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
 private:

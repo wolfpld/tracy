@@ -151,11 +151,10 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::FrameMarkMsg );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         MemWrite( &item->frameMark.name, uint64_t( name ) );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     static tracy_force_inline void SendFrameMark( const char* name, QueueType type )
@@ -198,13 +197,12 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::PlotData );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
         MemWrite( &item->plotData.type, PlotDataType::Int );
         MemWrite( &item->plotData.data.i, val );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     static tracy_force_inline void PlotData( const char* name, float val )
@@ -213,13 +211,12 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::PlotData );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
         MemWrite( &item->plotData.type, PlotDataType::Float );
         MemWrite( &item->plotData.data.f, val );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     static tracy_force_inline void PlotData( const char* name, double val )
@@ -228,20 +225,18 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::PlotData );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
         MemWrite( &item->plotData.type, PlotDataType::Double );
         MemWrite( &item->plotData.data.d, val );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     static tracy_force_inline void ConfigurePlot( const char* name, PlotFormatType type )
     {
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::PlotConfig );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::PlotConfig );
         MemWrite( &item->plotConfig.name, (uint64_t)name );
         MemWrite( &item->plotConfig.type, (uint8_t)type );
 
@@ -249,7 +244,7 @@ public:
         GetProfiler().DeferItem( *item );
 #endif
 
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     static tracy_force_inline void Message( const char* txt, size_t size, int callstack )
@@ -261,11 +256,10 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
+        auto item = LfqProducer::PrepareNext( nextPtr, callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)ptr );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
@@ -276,11 +270,10 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
+        auto item = LfqProducer::PrepareNext( nextPtr, callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)txt );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
@@ -294,14 +287,13 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
+        auto item = LfqProducer::PrepareNext( nextPtr, callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.text, (uint64_t)ptr );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
@@ -312,14 +304,13 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
+        auto item = LfqProducer::PrepareNext( nextPtr, callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.text, (uint64_t)txt );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
@@ -330,8 +321,7 @@ public:
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::MessageAppInfo );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::MessageAppInfo );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)ptr );
 
@@ -339,7 +329,7 @@ public:
         GetProfiler().DeferItem( *item );
 #endif
 
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
@@ -413,10 +403,9 @@ public:
 #ifdef TRACY_HAS_CALLSTACK
         auto ptr = Callstack( depth );
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::Callstack );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::Callstack );
         MemWrite( &item->callstack.ptr, ptr );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
 #endif
     }
 

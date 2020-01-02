@@ -67,8 +67,7 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         const auto cswitch = (const CSwitch*)record->UserData;
 
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::ContextSwitch );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ContextSwitch );
         MemWrite( &item->contextSwitch.time, hdr.TimeStamp.QuadPart );
         memcpy( &item->contextSwitch.oldThread, &cswitch->oldThreadId, sizeof( cswitch->oldThreadId ) );
         memcpy( &item->contextSwitch.newThread, &cswitch->newThreadId, sizeof( cswitch->newThreadId ) );
@@ -77,19 +76,18 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         MemWrite( &item->contextSwitch.cpu, record->BufferContext.ProcessorNumber );
         MemWrite( &item->contextSwitch.reason, cswitch->oldThreadWaitReason );
         MemWrite( &item->contextSwitch.state, cswitch->oldThreadState );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
     else if( hdr.EventDescriptor.Opcode == 50 )
     {
         const auto rt = (const ReadyThread*)record->UserData;
 
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::ThreadWakeup );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ThreadWakeup );
         MemWrite( &item->threadWakeup.time, hdr.TimeStamp.QuadPart );
         memcpy( &item->threadWakeup.thread, &rt->threadId, sizeof( rt->threadId ) );
         memset( ((char*)&item->threadWakeup.thread)+4, 0, 4 );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 }
 
@@ -277,11 +275,10 @@ void SysTraceSendExternalName( uint64_t thread )
             {
                 uint64_t _pid = pid;
                 char* nextPtr;
-                auto& prod = GetProducer();
-                auto item = prod.PrepareNext( nextPtr, QueueType::TidToPid );
+                auto item = LfqProducer::PrepareNext( nextPtr, QueueType::TidToPid );
                 MemWrite( &item->tidToPid.tid, thread );
                 MemWrite( &item->tidToPid.pid, _pid );
-                prod.CommitNext( nextPtr );
+                LfqProducer::CommitNext( nextPtr );
             }
             if( pid == 4 )
             {
@@ -603,15 +600,14 @@ static void HandleTraceLine( const char* line )
         uint8_t reason = 100;
 
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::ContextSwitch );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ContextSwitch );
         MemWrite( &item->contextSwitch.time, time );
         MemWrite( &item->contextSwitch.oldThread, oldPid );
         MemWrite( &item->contextSwitch.newThread, newPid );
         MemWrite( &item->contextSwitch.cpu, cpu );
         MemWrite( &item->contextSwitch.reason, reason );
         MemWrite( &item->contextSwitch.state, oldState );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
     else if( memcmp( line, "sched_wakeup", 12 ) == 0 )
     {
@@ -623,11 +619,10 @@ static void HandleTraceLine( const char* line )
         const auto pid = ReadNumber( line );
 
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::ThreadWakeup );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ThreadWakeup );
         MemWrite( &item->threadWakeup.time, time );
         MemWrite( &item->threadWakeup.thread, pid );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 }
 
@@ -822,11 +817,10 @@ void SysTraceSendExternalName( uint64_t thread )
             {
                 uint64_t _pid = pid;
                 char* nextPtr;
-                auto& prod = GetProducer();
-                auto item = prod.PrepareNext( nextPtr, QueueType::TidToPid );
+                auto item = LfqProducer::PrepareNext( nextPtr, QueueType::TidToPid );
                 MemWrite( &item->tidToPid.tid, thread );
                 MemWrite( &item->tidToPid.pid, _pid );
-                prod.CommitNext( nextPtr );
+                LfqProducer::CommitNext( nextPtr );
             }
             sprintf( fn, "/proc/%i/comm", pid );
             f = fopen( fn, "rb" );

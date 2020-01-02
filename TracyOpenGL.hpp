@@ -103,8 +103,7 @@ public:
         const float period = 1.f;
         const auto thread = GetThreadHandle();
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::GpuNewContext );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::GpuNewContext );
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
         MemWrite( &item->gpuNewContext.thread, thread );
@@ -116,7 +115,7 @@ public:
         GetProfiler().DeferItem( *item );
 #endif
 
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     void Collect()
@@ -133,7 +132,6 @@ public:
         }
 #endif
 
-        auto& prod = GetProducer();
         while( m_tail != m_head )
         {
             GLint available;
@@ -144,11 +142,11 @@ public:
             glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
 
             char* nextPtr;
-            auto item = prod.PrepareNext( nextPtr, QueueType::GpuTime );
+            auto item = LfqProducer::PrepareNext( nextPtr, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, (int64_t)time );
             MemWrite( &item->gpuTime.queryId, (uint16_t)m_tail );
             MemWrite( &item->gpuTime.context, m_context );
-            prod.CommitNext( nextPtr );
+            LfqProducer::CommitNext( nextPtr );
 
             m_tail = ( m_tail + 1 ) % QueryCount;
         }
@@ -195,14 +193,13 @@ public:
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::GpuZoneBegin );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::GpuZoneBegin );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         memset( &item->gpuZoneBegin.thread, 0, sizeof( item->gpuZoneBegin.thread ) );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, GetGpuCtx().ptr->GetId() );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
     tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc, int depth )
@@ -218,14 +215,13 @@ public:
 
         const auto thread = GetThreadHandle();
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::GpuZoneBeginCallstack );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::GpuZoneBeginCallstack );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
         MemWrite( &item->gpuZoneBegin.thread, thread );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, GetGpuCtx().ptr->GetId() );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
 
         GetProfiler().SendCallstack( depth );
     }
@@ -239,13 +235,12 @@ public:
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
         char* nextPtr;
-        auto& prod = GetProducer();
-        auto item = prod.PrepareNext( nextPtr, QueueType::GpuZoneEnd );
+        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::GpuZoneEnd );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
         memset( &item->gpuZoneEnd.thread, 0, sizeof( item->gpuZoneEnd.thread ) );
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneEnd.context, GetGpuCtx().ptr->GetId() );
-        prod.CommitNext( nextPtr );
+        LfqProducer::CommitNext( nextPtr );
     }
 
 private:

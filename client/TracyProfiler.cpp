@@ -2450,6 +2450,7 @@ void Profiler::CalibrateDelay()
 
 void Profiler::ReportTopology()
 {
+#ifndef TRACY_DELAYED_INIT
     struct CpuData
     {
         uint32_t package;
@@ -2591,6 +2592,7 @@ void Profiler::ReportTopology()
     }
 
     tracy_free( cpuData );
+#endif
 #endif
 }
 

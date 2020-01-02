@@ -68,6 +68,34 @@ public:
     tracy_force_inline void PrepareThread();
     tracy_force_inline void CleanupThread();
 
+    tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
+    {
+        auto tailBlk = m_tail.load();
+        auto tail = tailBlk->tail.load();
+        assert( tail >= tailBlk->data );
+        auto np = tail + sz;
+        if( np <= tailBlk->dataEnd )
+        {
+            nextPtr = np;
+            return tail;
+        }
+        else
+        {
+            tailBlk = NextBlock( tailBlk );
+            tail = tailBlk->tail.load();
+            nextPtr = tail + sz;
+            return tail;
+        }
+    }
+
+    tracy_force_inline void CommitNext( char* nextPtr )
+    {
+        auto tailBlk = m_tail.load();
+        tailBlk->tail.store( nextPtr );
+    }
+
+    tracy_no_inline LfqBlock* NextBlock( LfqBlock* tailBlk );
+
     std::atomic<LfqProducerImpl*> m_next;
     std::atomic<bool> m_active, m_available;
 
@@ -92,6 +120,17 @@ public:
     ~LfqProducer();
 
     LfqProducer& operator=( LfqProducer&& ) noexcept;
+
+
+    tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
+    {
+        return m_prod->PrepareNext( nextPtr, sz );
+    }
+
+    tracy_force_inline void CommitNext( char* nextPtr )
+    {
+        m_prod->CommitNext( nextPtr );
+    }
 
 
     LfqProducer( const LfqProducer& ) = delete;
@@ -296,6 +335,19 @@ tracy_force_inline void LfqProducerImpl::CleanupThread()
     assert( blk );
     m_queue->ReleaseBlocks( blk );
 }
+
+tracy_no_inline LfqBlock* LfqProducerImpl::NextBlock( LfqBlock* tailBlk )
+{
+    auto next = m_queue->GetFreeBlock();
+    assert( next );
+    assert( next->next.load() == nullptr );
+    assert( tailBlk->next.load() == nullptr );
+    next->thread = m_thread;
+    tailBlk->next.store( next );
+    m_tail.store( next );
+    return next;
+}
+
 
 }
 

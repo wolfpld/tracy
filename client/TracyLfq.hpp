@@ -143,7 +143,7 @@ public:
 
     static tracy_force_inline void CommitNext( char* nextPtr )
     {
-        lfq.tail->store( nextPtr );
+        lfq.tail->store( nextPtr, std::memory_order_release );
     }
 
 

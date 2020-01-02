@@ -240,6 +240,20 @@ public:
         }
     }
 
+    void FreeBlocks( LfqBlock* blk )
+    {
+        auto tail = blk;
+        for(;;)
+        {
+            auto next = tail->next.load();
+            if( !next ) break;
+            tail = next;
+        }
+        auto head = m_freeBlocks.load();
+        tail->next.store( head );
+        while( !m_freeBlocks.compare_exchange_weak( head, blk ) ) tail->next.store( head );
+    }
+
     LfqProducerImpl* GetIdleProducer()
     {
         LfqProducerImpl* prod = m_producers.load();

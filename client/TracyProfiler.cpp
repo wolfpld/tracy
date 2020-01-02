@@ -149,11 +149,6 @@ struct InitTimeWrapper
     int64_t val;
 };
 
-struct ProducerWrapper
-{
-    tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
-};
-
 struct ThreadHandleWrapper
 {
     uint64_t val;
@@ -587,14 +582,12 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     }
 
     {
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::CrashReport );
+        char* nextPtr;
+        auto& prod = GetProducer();
+        auto item = prod.PrepareNext( nextPtr, QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.text = (uint64_t)s_crashText;
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
 
         GetProfiler().SendCallstack( 60, "KiUserExceptionDispatcher" );
     }
@@ -628,12 +621,10 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     CloseHandle( h );
 
     {
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::Crash );
-        tail.store( magic + 1, std::memory_order_release );
+        char* nextPtr;
+        auto& prod = GetProducer();
+        auto item = prod.PrepareNext( nextPtr, QueueType::Crash );
+        prod.CommitNext( nextPtr );
     }
 
     std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
@@ -823,14 +814,12 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     }
 
     {
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::CrashReport );
+        char* nextPtr;
+        auto& prod = GetProducer();
+        auto item = prod.PrepareNext( nextPtr, QueueType::CrashReport );
         item->crashReport.time = Profiler::GetTime();
         item->crashReport.text = (uint64_t)s_crashText;
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
 
         GetProfiler().SendCallstack( 60, "__kernel_rt_sigreturn" );
     }
@@ -853,12 +842,10 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     closedir( dp );
 
     {
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::Crash );
-        tail.store( magic + 1, std::memory_order_release );
+        char* nextPtr;
+        auto& prod = GetProducer();
+        auto item = prod.PrepareNext( nextPtr, QueueType::Crash );
+        prod.CommitNext( nextPtr );
     }
 
     std::this_thread::sleep_for( std::chrono::milliseconds( 500 ) );
@@ -870,8 +857,6 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 #endif
 
 
-enum { QueuePrealloc = 256 * 1024 };
-
 static Profiler* s_instance;
 static Thread* s_thread;
 static Thread* s_compressThread;
@@ -882,7 +867,7 @@ static Thread* s_sysTraceThread = nullptr;
 
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
-TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
+TRACY_API LockFreeQueue& GetQueue();
 
 struct RPMallocInit { RPMallocInit() { rpmalloc_initialize(); } };
 
@@ -896,25 +881,18 @@ struct ProfilerData
 {
     int64_t initTime = SetupHwTimer();
     RPMallocInit rpmalloc_init;
-    moodycamel::ConcurrentQueue<QueueItem> queue;
+    LockFreeQueue queue;
     Profiler profiler;
     std::atomic<uint32_t> lockCounter { 0 };
     std::atomic<uint8_t> gpuCtxCounter { 0 };
     std::atomic<ThreadNameData*> threadNameData { nullptr };
 };
 
-struct ProducerWrapper
-{
-    ProducerWrapper( ProfilerData& data ) : detail( data.queue ), ptr( data.queue.get_explicit_producer( detail ) ) {}
-    moodycamel::ProducerToken detail;
-    tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
-};
-
 struct ProfilerThreadData
 {
-    ProfilerThreadData( ProfilerData& data ) : token( data ), gpuCtx( { nullptr } ) {}
+    ProfilerThreadData( ProfilerData& data ) : producer( data.queue ), gpuCtx( { nullptr } ) {}
     RPMallocInit rpmalloc_init;
-    ProducerWrapper token;
+    LfqProducer producer;
     GpuCtxWrapper gpuCtx;
 #  ifdef TRACY_ON_DEMAND
     LuaZoneState luaZoneState;
@@ -949,9 +927,9 @@ static ProfilerThreadData& GetProfilerThreadData()
     return data;
 }
 
-TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetProfilerThreadData().token.ptr; }
+TRACY_API LfqProducer& GetProducer() { return GetProfilerThreadData().producer; }
 TRACY_API Profiler& GetProfiler() { return GetProfilerData().profiler; }
-TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return GetProfilerData().queue; }
+TRACY_API LockFreeQueue& GetQueue() { return GetProfilerData().queue; }
 TRACY_API int64_t GetInitTime() { return GetProfilerData().initTime; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
@@ -972,13 +950,12 @@ TRACY_API void InitRPMallocThread()
 // MSVC static initialization order solution. gcc/clang uses init_order() to avoid all this.
 
 // 1a. But s_queue is needed for initialization of variables in point 2.
-extern moodycamel::ConcurrentQueue<QueueItem> s_queue;
+extern LockFreeQueue s_lfq;
 
 thread_local RPMallocInit init_order(106) s_rpmalloc_thread_init;
 
 // 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
-thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
-thread_local ProducerWrapper init_order(108) s_token { s_queue.get_explicit_producer( s_token_detail ) };
+thread_local LfqProducer init_order(107) s_producer( s_lfq );
 thread_local ThreadHandleWrapper init_order(104) s_threadHandle { detail::GetThreadHandleImpl() };
 
 #  ifdef _MSC_VER
@@ -989,7 +966,7 @@ thread_local ThreadHandleWrapper init_order(104) s_threadHandle { detail::GetThr
 
 static InitTimeWrapper init_order(101) s_initTime { SetupHwTimer() };
 static RPMallocInit init_order(102) s_rpmalloc_init;
-moodycamel::ConcurrentQueue<QueueItem> init_order(103) s_queue( QueuePrealloc );
+LockFreeQueue init_order(103) s_lfq;
 std::atomic<uint32_t> init_order(104) s_lockCounter( 0 );
 std::atomic<uint8_t> init_order(104) s_gpuCtxCounter( 0 );
 
@@ -1005,9 +982,9 @@ thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 
 static Profiler init_order(105) s_profiler;
 
-TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
+TRACY_API LfqProducer& GetProducer() { return s_producer; }
 TRACY_API Profiler& GetProfiler() { return s_profiler; }
-TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
+TRACY_API LockFreeQueue& GetQueue() { return s_lfq; }
 TRACY_API int64_t GetInitTime() { return s_initTime.val; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
@@ -1063,8 +1040,7 @@ Profiler::Profiler()
 #ifndef TRACY_DELAYED_INIT
 #  ifdef _MSC_VER
     // 3. But these variables need to be initialized in main thread within the .CRT$XCB section. Do it here.
-    s_token_detail = moodycamel::ProducerToken( s_queue );
-    s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
+    s_producer = LfqProducer( s_lfq );
     s_threadHandle = ThreadHandleWrapper { m_mainThread };
 #  endif
 #endif
@@ -1219,8 +1195,6 @@ void Profiler::Worker()
     memcpy( welcome.hostInfo, hostinfo, hisz );
     memset( welcome.hostInfo + hisz, 0, WelcomeMessageHostInfoSize - hisz );
 
-    moodycamel::ConsumerToken token( GetQueue() );
-
     ListenSocket listen;
     if( !listen.Listen( port, 8 ) )
     {
@@ -1232,7 +1206,8 @@ void Profiler::Worker()
                 return;
             }
 
-            ClearQueues( token );
+            // !!!
+            //ClearQueues( token );
         }
     }
 
@@ -1362,7 +1337,9 @@ void Profiler::Worker()
         for(;;)
         {
             ProcessSysTime();
-            const auto status = Dequeue( token );
+            //!!!
+            //const auto status = Dequeue( token );
+            const auto status = DequeueStatus::QueueEmpty;
             const auto serialStatus = DequeueSerial();
             if( status == DequeueStatus::ConnectionLost || serialStatus == DequeueStatus::ConnectionLost )
             {
@@ -1424,7 +1401,8 @@ void Profiler::Worker()
                 return;
             }
 
-            ClearQueues( token );
+            // !!!
+            //ClearQueues( token );
 
             m_sock = listen.Accept();
             if( m_sock )
@@ -1462,7 +1440,9 @@ void Profiler::Worker()
     // Client is exiting. Send items remaining in queues.
     for(;;)
     {
-        const auto status = Dequeue( token );
+        // !!!
+        //const auto status = Dequeue( token );
+        const auto status = DequeueStatus::QueueEmpty;
         const auto serialStatus = DequeueSerial();
         if( status == DequeueStatus::ConnectionLost || serialStatus == DequeueStatus::ConnectionLost )
         {
@@ -1506,7 +1486,8 @@ void Profiler::Worker()
                     return;
                 }
             }
-            while( Dequeue( token ) == DequeueStatus::DataDequeued ) {}
+            // !!!
+            //while( Dequeue( token ) == DequeueStatus::DataDequeued ) {}
             while( DequeueSerial() == DequeueStatus::DataDequeued ) {}
             if( m_bufferOffset != m_bufferStart )
             {
@@ -1565,18 +1546,16 @@ void Profiler::CompressWorker()
                 CompressImageDxt1( (const char*)fi->image, etc1buf, w, h );
                 tracy_free( fi->image );
 
-                Magic magic;
-                auto token = GetToken();
-                auto& tail = token->get_tail_index();
-                auto item = token->enqueue_begin( magic );
-                MemWrite( &item->hdr.type, QueueType::FrameImage );
+                char* nextPtr;
+                auto& prod = GetProducer();
+                auto item = prod.PrepareNext( nextPtr, QueueType::FrameImage );
                 MemWrite( &item->frameImage.image, (uint64_t)etc1buf );
                 MemWrite( &item->frameImage.frame, fi->frame );
                 MemWrite( &item->frameImage.w, w );
                 MemWrite( &item->frameImage.h, h );
                 uint8_t flip = fi->flip;
                 MemWrite( &item->frameImage.flip, flip );
-                tail.store( magic + 1, std::memory_order_release );
+                prod.CommitNext( nextPtr );
 
                 fi++;
             }
@@ -1649,6 +1628,8 @@ static void FreeAssociatedMemory( const QueueItem& item )
     }
 }
 
+// !!!
+/*
 void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 {
     for(;;)
@@ -1660,6 +1641,7 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 
     ClearSerial();
 }
+*/
 
 void Profiler::ClearSerial()
 {
@@ -1683,6 +1665,8 @@ void Profiler::ClearSerial()
     m_serialDequeue.clear();
 }
 
+// !!!
+/*
 Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 {
     uint64_t threadId;
@@ -1850,7 +1834,10 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
     }
     return DequeueStatus::DataDequeued;
 }
+*/
 
+// !!!
+/*
 Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::ConsumerToken& token, int64_t& timeStop )
 {
     const auto sz = GetQueue().try_dequeue_bulk( token, m_itemBuf, BulkSize );
@@ -1897,6 +1884,7 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
     }
     return DequeueStatus::DataDequeued;
 }
+*/
 
 Profiler::DequeueStatus Profiler::DequeueSerial()
 {
@@ -2151,7 +2139,7 @@ void Profiler::SendCallstackPayload( uint64_t _ptr )
     AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::CallstackPayload] );
     AppendDataUnsafe( &l16, sizeof( l16 ) );
 
-    if( compile_time_condition<sizeof( uintptr_t ) == sizeof( uint64_t )>::value )
+    if( sizeof( uintptr_t ) == sizeof( uint64_t ) )
     {
         AppendDataUnsafe( ptr, sizeof( uint64_t ) * sz );
     }
@@ -2280,6 +2268,8 @@ bool Profiler::HandleServerQuery()
 
 void Profiler::HandleDisconnect()
 {
+    // !!!
+    /*
     moodycamel::ConsumerToken token( GetQueue() );
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
@@ -2358,6 +2348,7 @@ void Profiler::HandleDisconnect()
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
         }
     }
+    */
 }
 
 void Profiler::CalibrateTimer()
@@ -2404,36 +2395,35 @@ void Profiler::CalibrateDelay()
     m_delay = m_resolution;
 #else
     enum { Events = Iterations * 2 };   // start + end
-    static_assert( Events < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
-    moodycamel::ProducerToken ptoken_detail( GetQueue() );
-    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = GetQueue().get_explicit_producer( ptoken_detail );
+    //moodycamel::ProducerToken ptoken_detail( GetQueue() );
+    //moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = GetQueue().get_explicit_producer( ptoken_detail );
     static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
         {
-            Magic magic;
-            auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin( magic );
+            char* nextPtr;
+            auto item = s_producer.PrepareNext( nextPtr, QueueType::ZoneBegin );
             MemWrite( &item->hdr.type, QueueType::ZoneBegin );
             MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
             MemWrite( &item->zoneBegin.srcloc, (uint64_t)&__tracy_source_location );
-            tail.store( magic + 1, std::memory_order_release );
+            s_producer.CommitNext( nextPtr );
         }
         {
-            Magic magic;
-            auto& tail = ptoken->get_tail_index();
-            auto item = ptoken->enqueue_begin( magic );
+            char* nextPtr;
+            auto item = s_producer.PrepareNext( nextPtr, QueueType::ZoneEnd );
             MemWrite( &item->hdr.type, QueueType::ZoneEnd );
             MemWrite( &item->zoneEnd.time, GetTime() );
-            tail.store( magic + 1, std::memory_order_release );
+            s_producer.CommitNext( nextPtr );
         }
     }
     const auto t1 = GetTime();
     const auto dt = t1 - t0;
     m_delay = dt / Events;
 
+    // !!!
+    /*
     enum { Bulk = 1000 };
     moodycamel::ConsumerToken token( GetQueue() );
     int left = Events;
@@ -2445,6 +2435,7 @@ void Profiler::CalibrateDelay()
         left -= (int)sz;
     }
     assert( GetQueue().size_approx() == 0 );
+    */
 #endif
 }
 
@@ -2521,15 +2512,13 @@ void Profiler::ReportTopology()
         idx++;
     }
 
-    Magic magic;
-    auto token = GetToken();
+    auto& prod = GetProducer();
     for( uint32_t i=0; i<numcpus; i++ )
     {
         auto& data = cpuData[i];
 
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::CpuTopology );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, QueueType::CpuTopology );
         MemWrite( &item->cpuTopology.package, data.package );
         MemWrite( &item->cpuTopology.core, data.core );
         MemWrite( &item->cpuTopology.thread, data.thread );
@@ -2538,7 +2527,7 @@ void Profiler::ReportTopology()
         DeferItem( *item );
 #endif
 
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 
     tracy_free( cpuData );
@@ -2570,15 +2559,13 @@ void Profiler::ReportTopology()
         cpuData[i].core = uint32_t( atoi( buf ) );
     }
 
-    Magic magic;
-    auto token = GetToken();
+    auto& prod = GetProducer();
     for( uint32_t i=0; i<numcpus; i++ )
     {
         auto& data = cpuData[i];
 
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::CpuTopology );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, QueueType::CpuTopology );
         MemWrite( &item->cpuTopology.package, data.package );
         MemWrite( &item->cpuTopology.core, data.core );
         MemWrite( &item->cpuTopology.thread, data.thread );
@@ -2587,7 +2574,7 @@ void Profiler::ReportTopology()
         DeferItem( *item );
 #endif
 
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 
     tracy_free( cpuData );
@@ -2600,13 +2587,11 @@ void Profiler::SendCallstack( int depth, const char* skipBefore )
     auto ptr = Callstack( depth );
     CutCallstack( ptr, skipBefore );
 
-    Magic magic;
-    auto token = GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::Callstack );
+    char* nextPtr;
+    auto& prod = GetProducer();
+    auto item = prod.PrepareNext( nextPtr, QueueType::Callstack );
     MemWrite( &item->callstack.ptr, ptr );
-    tail.store( magic + 1, std::memory_order_release );
+    prod.CommitNext( nextPtr );
 #endif
 }
 
@@ -2647,14 +2632,12 @@ void Profiler::ProcessSysTime()
         {
             m_sysTimeLast = t;
 
-            Magic magic;
-            auto token = GetToken();
-            auto& tail = token->get_tail_index();
-            auto item = token->enqueue_begin( magic );
-            MemWrite( &item->hdr.type, QueueType::SysTimeReport );
+            char* nextPtr;
+            auto& prod = GetProducer();
+            auto item = prod.PrepareNext( nextPtr, QueueType::SysTimeReport );
             MemWrite( &item->sysTime.time, GetTime() );
             MemWrite( &item->sysTime.sysTime, sysTime );
-            tail.store( magic + 1, std::memory_order_release );
+            prod.CommitNext( nextPtr );
         }
     }
 }
@@ -2662,11 +2645,9 @@ void Profiler::ProcessSysTime()
 
 void Profiler::ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val )
 {
-    tracy::Magic magic;
-    auto token = tracy::GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    tracy::MemWrite( &item->hdr.type, tracy::QueueType::ParamSetup );
+    char* nextPtr;
+    auto& prod = GetProducer();
+    auto item = prod.PrepareNext( nextPtr, QueueType::ParamSetup );
     tracy::MemWrite( &item->paramSetup.idx, idx );
     tracy::MemWrite( &item->paramSetup.name, (uint64_t)name );
     tracy::MemWrite( &item->paramSetup.isBool, (uint8_t)isBool );
@@ -2676,7 +2657,7 @@ void Profiler::ParameterSetup( uint32_t idx, const char* name, bool isBool, int3
     GetProfiler().DeferItem( *item );
 #endif
 
-    tail.store( magic + 1, std::memory_order_release );
+    prod.CommitNext( nextPtr );
 }
 
 void Profiler::HandleParameter( uint64_t payload )
@@ -2705,26 +2686,21 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_l
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
+    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 #endif
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBegin );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneBegin );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
     return ctx;
 }
@@ -2741,26 +2717,21 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___trac
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
+    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 #endif
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginCallstack );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneBeginCallstack );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 
     tracy::GetProfiler().SendCallstack( depth );
@@ -2783,26 +2754,21 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc( uint64_t srcloc, int act
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
+    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 #endif
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginAllocSrcLoc );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneBeginAllocSrcLoc );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
     return ctx;
 }
@@ -2823,26 +2789,21 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
+    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, id );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 #endif
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneBeginAllocSrcLocCallstack );
         tracy::MemWrite( &item->zoneBegin.time, tracy::Profiler::GetTime() );
         tracy::MemWrite( &item->zoneBegin.srcloc, srcloc );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 
     tracy::GetProfiler().SendCallstack( depth );
@@ -2852,25 +2813,20 @@ TRACY_API TracyCZoneCtx ___tracy_emit_zone_begin_alloc_callstack( uint64_t srclo
 TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 {
     if( !ctx.active ) return;
+    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 #endif
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneEnd );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneEnd );
         tracy::MemWrite( &item->zoneEnd.time, tracy::Profiler::GetTime() );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 }
 
@@ -2880,25 +2836,20 @@ TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
+    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 #endif
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneText );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneText );
         tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 }
 
@@ -2908,25 +2859,20 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
+    auto& prod = tracy::GetProducer();
 #ifndef TRACY_NO_VERIFY
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.id, ctx.id );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 #endif
     {
-        tracy::Magic magic;
-        auto token = tracy::GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneName );
+        char* nextPtr;
+        auto item = prod.PrepareNext( nextPtr, tracy::QueueType::ZoneName );
         tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 }
 

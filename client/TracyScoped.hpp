@@ -24,14 +24,12 @@ public:
 #endif
     {
         if( !m_active ) return;
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ZoneBegin );
+        char* nextPtr;
+        auto& prod = GetProducer();
+        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneBegin );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active = true )
@@ -43,14 +41,12 @@ public:
 #endif
     {
         if( !m_active ) return;
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ZoneBeginCallstack );
+        char* nextPtr;
+        auto& prod = GetProducer();
+        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneBeginCallstack );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
 
         GetProfiler().SendCallstack( depth );
     }
@@ -61,13 +57,11 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ZoneEnd );
+        char* nextPtr;
+        auto& prod = GetProducer();
+        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneEnd );
         MemWrite( &item->zoneEnd.time, Profiler::GetTime() );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 
     tracy_force_inline void Text( const char* txt, size_t size )
@@ -76,16 +70,14 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ZoneText );
+        char* nextPtr;
+        auto& prod = GetProducer();
+        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneText );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 
     tracy_force_inline void Name( const char* txt, size_t size )
@@ -94,16 +86,14 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ZoneName );
+        char* nextPtr;
+        auto& prod = GetProducer();
+        auto item = prod.PrepareNext( nextPtr, QueueType::ZoneName );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        tail.store( magic + 1, std::memory_order_release );
+        prod.CommitNext( nextPtr );
     }
 
 private:

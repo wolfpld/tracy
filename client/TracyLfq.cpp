@@ -12,8 +12,8 @@ LfqBlock* LfqProducerImpl::NextBlock( LfqBlock* tailBlk )
     next->thread = m_thread;
     tailBlk->next.store( next );
     m_tail.store( next );
-    lfq_dataEnd = next->dataEnd;
-    lfq_tail = &next->tail;
+    lfq.dataEnd = next->dataEnd;
+    lfq.tail = &next->tail;
     return next;
 }
 

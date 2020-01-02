@@ -59,8 +59,14 @@ public:
 };
 
 
-extern thread_local const char* lfq_dataEnd;
-extern thread_local std::atomic<char*>* lfq_tail;
+struct LfqData
+{
+    const char* dataEnd;
+    std::atomic<char*>* tail;
+};
+
+extern thread_local LfqData lfq;
+
 
 class LfqProducerImpl
 {
@@ -122,9 +128,9 @@ public:
 
     static tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
     {
-        auto tail = lfq_tail->load();
+        auto tail = lfq.tail->load();
         auto np = tail + sz;
-        if( np <= lfq_dataEnd )
+        if( np <= lfq.dataEnd )
         {
             nextPtr = np;
             return tail;
@@ -137,7 +143,7 @@ public:
 
     static tracy_force_inline void CommitNext( char* nextPtr )
     {
-        lfq_tail->store( nextPtr );
+        lfq.tail->store( nextPtr );
     }
 
 
@@ -331,8 +337,8 @@ tracy_force_inline void LfqProducerImpl::PrepareThread()
     assert( blk );
     assert( blk->next.load() == nullptr );
     blk->thread = m_thread;
-    lfq_dataEnd = blk->dataEnd;
-    lfq_tail = &blk->tail;
+    lfq.dataEnd = blk->dataEnd;
+    lfq.tail = &blk->tail;
     m_head.store( blk );
     m_tail.store( blk );
 }

@@ -853,8 +853,7 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 #endif
 
 
-thread_local const char* lfq_dataEnd;
-thread_local std::atomic<char*>* lfq_tail;
+thread_local LfqData lfq;
 
 static Profiler* s_instance;
 static Thread* s_thread;

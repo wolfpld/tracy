@@ -86,7 +86,7 @@ public:
         return tail;
     }
 
-    inline LfqBlock* NextBlock( LfqBlock* tailBlk );
+    tracy_no_inline LfqBlock* NextBlock( LfqBlock* tailBlk );
 
     std::atomic<LfqProducerImpl*> m_next;
     std::atomic<bool> m_active, m_available;
@@ -345,21 +345,6 @@ tracy_force_inline void LfqProducerImpl::CleanupThread()
     assert( blk );
     m_queue->ReleaseBlocks( blk );
 }
-
-inline LfqBlock* LfqProducerImpl::NextBlock( LfqBlock* tailBlk )
-{
-    auto next = m_queue->GetFreeBlock();
-    assert( next );
-    assert( next->next.load() == nullptr );
-    assert( tailBlk->next.load() == nullptr );
-    next->thread = m_thread;
-    tailBlk->next.store( next );
-    m_tail.store( next );
-    lfq_dataEnd = next->dataEnd;
-    lfq_tail = &next->tail;
-    return next;
-}
-
 
 }
 

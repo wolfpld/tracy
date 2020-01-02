@@ -6,8 +6,10 @@
 #include <stdint.h>
 #include <thread>
 
+#include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyForceInline.hpp"
+#include "../common/TracyQueue.hpp"
 #include "../common/TracySystem.hpp"
 
 namespace tracy
@@ -121,6 +123,12 @@ public:
 
     inline LfqProducer& operator=( LfqProducer&& ) noexcept;
 
+    tracy_force_inline QueueItem* PrepareNext( char*& nextPtr, QueueType type )
+    {
+        auto item = (QueueItem*)PrepareNext( nextPtr, QueueDataSize[(uint8_t)type] );
+        MemWrite( &item->hdr.type, type );
+        return item;
+    }
 
     tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
     {

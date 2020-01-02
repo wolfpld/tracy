@@ -55,7 +55,7 @@ public:
 class LfqProducerImpl
 {
 public:
-    LfqProducerImpl( LockFreeQueue* queue )
+    tracy_force_inline LfqProducerImpl( LockFreeQueue* queue )
         : m_head( nullptr )
         , m_tail( nullptr )
         , m_active( false )
@@ -94,7 +94,7 @@ public:
         tailBlk->tail.store( nextPtr );
     }
 
-    tracy_no_inline LfqBlock* NextBlock( LfqBlock* tailBlk );
+    inline LfqBlock* NextBlock( LfqBlock* tailBlk );
 
     std::atomic<LfqProducerImpl*> m_next;
     std::atomic<bool> m_active, m_available;
@@ -116,10 +116,10 @@ private:
 class LfqProducer
 {
 public:
-    LfqProducer( LockFreeQueue& queue );
-    ~LfqProducer();
+    inline LfqProducer( LockFreeQueue& queue );
+    inline ~LfqProducer();
 
-    LfqProducer& operator=( LfqProducer&& ) noexcept;
+    inline LfqProducer& operator=( LfqProducer&& ) noexcept;
 
 
     tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
@@ -283,7 +283,7 @@ private:
 };
 
 
-LfqProducer::LfqProducer( LockFreeQueue& queue )
+inline LfqProducer::LfqProducer( LockFreeQueue& queue )
     : m_prod( queue.GetIdleProducer() )
     , m_queue( &queue )
 {
@@ -293,7 +293,7 @@ LfqProducer::LfqProducer( LockFreeQueue& queue )
     m_prod->m_active.store( true );
 }
 
-LfqProducer::~LfqProducer()
+inline LfqProducer::~LfqProducer()
 {
     if( m_prod )
     {
@@ -304,7 +304,7 @@ LfqProducer::~LfqProducer()
     }
 }
 
-LfqProducer& LfqProducer::operator=( LfqProducer&& other ) noexcept
+inline LfqProducer& LfqProducer::operator=( LfqProducer&& other ) noexcept
 {
     m_prod = other.m_prod;
     m_queue = other.m_queue;
@@ -336,7 +336,7 @@ tracy_force_inline void LfqProducerImpl::CleanupThread()
     m_queue->ReleaseBlocks( blk );
 }
 
-tracy_no_inline LfqBlock* LfqProducerImpl::NextBlock( LfqBlock* tailBlk )
+inline LfqBlock* LfqProducerImpl::NextBlock( LfqBlock* tailBlk )
 {
     auto next = m_queue->GetFreeBlock();
     assert( next );

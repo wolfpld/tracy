@@ -2393,46 +2393,31 @@ void Profiler::CalibrateDelay()
 #else
     enum { Events = Iterations * 2 };   // start + end
 
-    //moodycamel::ProducerToken ptoken_detail( GetQueue() );
-    //moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = GetQueue().get_explicit_producer( ptoken_detail );
     static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
     {
         {
             char* nextPtr;
-            auto item = s_producer.PrepareNext( nextPtr, QueueType::ZoneBegin );
+            auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneBegin );
             MemWrite( &item->hdr.type, QueueType::ZoneBegin );
             MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
             MemWrite( &item->zoneBegin.srcloc, (uint64_t)&__tracy_source_location );
-            s_producer.CommitNext( nextPtr );
+            LfqProducer::CommitNext( nextPtr );
         }
         {
             char* nextPtr;
-            auto item = s_producer.PrepareNext( nextPtr, QueueType::ZoneEnd );
+            auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneEnd );
             MemWrite( &item->hdr.type, QueueType::ZoneEnd );
             MemWrite( &item->zoneEnd.time, GetTime() );
-            s_producer.CommitNext( nextPtr );
+            LfqProducer::CommitNext( nextPtr );
         }
     }
     const auto t1 = GetTime();
     const auto dt = t1 - t0;
     m_delay = dt / Events;
 
-    // !!!
-    /*
-    enum { Bulk = 1000 };
-    moodycamel::ConsumerToken token( GetQueue() );
-    int left = Events;
-    QueueItem item[Bulk];
-    while( left != 0 )
-    {
-        const auto sz = GetQueue().try_dequeue_bulk( token, item, std::min( left, (int)Bulk ) );
-        assert( sz > 0 );
-        left -= (int)sz;
-    }
-    assert( GetQueue().size_approx() == 0 );
-    */
+    LfqProducer::FlushData();
 #endif
 }
 

@@ -312,6 +312,12 @@ public:
         prod->m_available.store( true );
     }
 
+    tracy_force_inline size_t Dequeue( char* ptr, size_t sz, uint64_t& thread )
+    {
+        return 0;
+    }
+
+
     LockFreeQueue( const LockFreeQueue& ) = delete;
     LockFreeQueue( LockFreeQueue&& ) = delete;
 

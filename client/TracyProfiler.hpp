@@ -480,11 +480,10 @@ private:
     static void LaunchCompressWorker( void* ptr ) { ((Profiler*)ptr)->CompressWorker(); }
     void CompressWorker();
 
-    // !!!
-    //void ClearQueues( tracy::moodycamel::ConsumerToken& token );
+    void ClearQueues();
     void ClearSerial();
-    //DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
-    //DequeueStatus DequeueContextSwitches( tracy::moodycamel::ConsumerToken& token, int64_t& timeStop );
+    DequeueStatus Dequeue();
+    DequeueStatus DequeueContextSwitches( int64_t& timeStop );
     DequeueStatus DequeueSerial();
     bool AppendData( const void* data, size_t len );
     bool CommitData();
@@ -581,7 +580,7 @@ private:
     int m_bufferOffset;
     int m_bufferStart;
 
-    QueueItem* m_itemBuf;
+    char* m_itemBuf;
     char* m_lz4Buf;
 
     FastVector<QueueItem> m_serialQueue, m_serialDequeue;

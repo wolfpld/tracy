@@ -239,12 +239,19 @@ public:
 
     void ReleaseBlocks( LfqBlock* blk )
     {
+        auto blkTail = blk;
+        for(;;)
+        {
+            auto next = blkTail->next.load();
+            if( !next ) break;
+            blkTail = next;
+        }
         auto tail = m_blocksTail.load();
         for(;;)
         {
             if( !tail )
             {
-                if( m_blocksTail.compare_exchange_strong( tail, blk ) )
+                if( m_blocksTail.compare_exchange_strong( tail, blkTail ) )
                 {
                     assert( m_blocksHead.load() == nullptr );
                     m_blocksHead.store( blk );
@@ -258,7 +265,7 @@ public:
                 {
                     if( tail->next.compare_exchange_strong( next, blk ) )
                     {
-                        m_blocksTail.store( blk );
+                        m_blocksTail.store( blkTail );
                         assert( m_blocksHead.load() != nullptr );
                         return;
                     }

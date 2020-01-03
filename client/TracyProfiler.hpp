@@ -150,11 +150,10 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::FrameMarkMsg );
+        TracyLfqPrepare( QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         MemWrite( &item->frameMark.name, uint64_t( name ) );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void SendFrameMark( const char* name, QueueType type )
@@ -196,13 +195,12 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::PlotData );
+        TracyLfqPrepare( QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
         MemWrite( &item->plotData.type, PlotDataType::Int );
         MemWrite( &item->plotData.data.i, val );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void PlotData( const char* name, float val )
@@ -210,13 +208,12 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::PlotData );
+        TracyLfqPrepare( QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
         MemWrite( &item->plotData.type, PlotDataType::Float );
         MemWrite( &item->plotData.data.f, val );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void PlotData( const char* name, double val )
@@ -224,19 +221,17 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::PlotData );
+        TracyLfqPrepare( QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
         MemWrite( &item->plotData.type, PlotDataType::Double );
         MemWrite( &item->plotData.data.d, val );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void ConfigurePlot( const char* name, PlotFormatType type )
     {
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::PlotConfig );
+        TracyLfqPrepare( QueueType::PlotConfig );
         MemWrite( &item->plotConfig.name, (uint64_t)name );
         MemWrite( &item->plotConfig.type, (uint8_t)type );
 
@@ -244,7 +239,7 @@ public:
         GetProfiler().DeferItem( *item );
 #endif
 
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void Message( const char* txt, size_t size, int callstack )
@@ -255,11 +250,10 @@ public:
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
+        TracyLfqPrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)ptr );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
@@ -269,11 +263,10 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
+        TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)txt );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
@@ -286,14 +279,13 @@ public:
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
+        TracyLfqPrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.text, (uint64_t)ptr );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
@@ -303,14 +295,13 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
+        TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.text, (uint64_t)txt );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
@@ -320,8 +311,7 @@ public:
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::MessageAppInfo );
+        TracyLfqPrepare( QueueType::MessageAppInfo );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)ptr );
 
@@ -329,7 +319,7 @@ public:
         GetProfiler().DeferItem( *item );
 #endif
 
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
@@ -402,10 +392,9 @@ public:
     {
 #ifdef TRACY_HAS_CALLSTACK
         auto ptr = Callstack( depth );
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::Callstack );
+        TracyLfqPrepare( QueueType::Callstack );
         MemWrite( &item->callstack.ptr, ptr );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
 #endif
     }
 

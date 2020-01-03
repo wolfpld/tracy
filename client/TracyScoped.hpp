@@ -24,11 +24,10 @@ public:
 #endif
     {
         if( !m_active ) return;
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneBegin );
+        TracyLfqPrepare( QueueType::ZoneBegin );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active = true )
@@ -40,11 +39,10 @@ public:
 #endif
     {
         if( !m_active ) return;
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneBeginCallstack );
+        TracyLfqPrepare( QueueType::ZoneBeginCallstack );
         MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
 
         GetProfiler().SendCallstack( depth );
     }
@@ -55,10 +53,9 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneEnd );
+        TracyLfqPrepare( QueueType::ZoneEnd );
         MemWrite( &item->zoneEnd.time, Profiler::GetTime() );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     tracy_force_inline void Text( const char* txt, size_t size )
@@ -70,10 +67,9 @@ public:
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneText );
+        TracyLfqPrepare( QueueType::ZoneText );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     tracy_force_inline void Name( const char* txt, size_t size )
@@ -85,10 +81,9 @@ public:
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneName );
+        TracyLfqPrepare( QueueType::ZoneName );
         MemWrite( &item->zoneText.text, (uint64_t)ptr );
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
 private:

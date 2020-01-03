@@ -13,6 +13,23 @@
 #include "../common/TracyQueue.hpp"
 #include "../common/TracySystem.hpp"
 
+
+#define TracyLfqPrepare( type ) \
+    char* __nextPtr; \
+    QueueItem* item; \
+    auto& __tail = LfqProducer::PrepareNext( item, __nextPtr, type );
+
+#define TracyLfqCommit \
+    LfqProducer::CommitNext( __tail, __nextPtr );
+
+#define TracyLfqPrepareC( type ) \
+    char* nextPtr; \
+    tracy::QueueItem* item; \
+    auto& tail = tracy::LfqProducer::PrepareNext( item, nextPtr, type );
+
+#define TracyLfqCommitC \
+    tracy::LfqProducer::CommitNext( tail, nextPtr );
+
 namespace tracy
 {
 
@@ -84,11 +101,12 @@ public:
     tracy_force_inline void PrepareThread();
     tracy_force_inline void CleanupThread();
 
-    tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
+    tracy_force_inline std::atomic<char*>& PrepareNext( char*& ptr, char*& nextPtr, size_t sz )
     {
         auto tailBlk = NextBlock( m_tail.load() );
-        auto tail = tailBlk->tail.load();
-        nextPtr = tail + sz;
+        auto& tail = tailBlk->tail;
+        ptr = tail.load();
+        nextPtr = ptr + sz;
         return tail;
     }
 
@@ -121,17 +139,20 @@ public:
 
     inline LfqProducer& operator=( LfqProducer&& ) noexcept;
 
-    static tracy_force_inline QueueItem* PrepareNext( char*& nextPtr, QueueType type )
+    static tracy_force_inline std::atomic<char*>& PrepareNext( QueueItem*& item, char*& nextPtr, QueueType type )
     {
-        auto item = (QueueItem*)PrepareNext( nextPtr, QueueDataSize[(uint8_t)type] );
+        char* ptr;
+        auto& ret = PrepareNext( ptr, nextPtr, QueueDataSize[(uint8_t)type] );
+        item = (QueueItem*)ptr;
         MemWrite( &item->hdr.type, type );
-        return item;
+        return ret;
     }
 
-    static tracy_force_inline char* PrepareNext( char*& nextPtr, size_t sz )
+    static tracy_force_inline std::atomic<char*>& PrepareNext( char*& ptr, char*& nextPtr, size_t sz )
     {
-        auto tail = lfq.tail->load();
-        auto np = tail + sz;
+        auto& tail = *lfq.tail;
+        ptr = tail.load();
+        auto np = ptr + sz;
         if( np <= lfq.dataEnd )
         {
             nextPtr = np;
@@ -139,13 +160,13 @@ public:
         }
         else
         {
-            return GetProducer().m_prod->PrepareNext( nextPtr, sz );
+            return GetProducer().m_prod->PrepareNext( ptr, nextPtr, sz );
         }
     }
 
-    static tracy_force_inline void CommitNext( char* nextPtr )
+    static tracy_force_inline void CommitNext( std::atomic<char*>& tail, char* nextPtr )
     {
-        lfq.tail->store( nextPtr, std::memory_order_release );
+        tail.store( nextPtr, std::memory_order_release );
     }
 
     static tracy_force_inline void FlushData()

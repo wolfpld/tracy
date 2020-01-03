@@ -179,11 +179,10 @@ static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
     }
     assert( dst - ptr == spaceNeeded + 4 );
 
-    char* nextPtr;
-    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::CallstackAlloc );
+    TracyLfqPrepare( QueueType::CallstackAlloc );
     MemWrite( &item->callstackAlloc.ptr, (uint64_t)ptr );
     MemWrite( &item->callstackAlloc.nativePtr, (uint64_t)Callstack( depth ) );
-    LfqProducer::CommitNext( nextPtr );
+    TracyLfqCommit;
 }
 
 static inline int LuaZoneBeginS( lua_State* L )
@@ -200,11 +199,10 @@ static inline int LuaZoneBeginS( lua_State* L )
     lua_getinfo( L, "Snl", &dbg );
     const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src );
 
-    char* nextPtr;
-    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneBeginAllocSrcLocCallstack );
+    TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
-    LfqProducer::CommitNext( nextPtr );
+    TracyLfqCommit;
 
 #ifdef TRACY_CALLSTACK
     const uint32_t depth = TRACY_CALLSTACK;
@@ -232,11 +230,10 @@ static inline int LuaZoneBeginNS( lua_State* L )
     const auto name = lua_tolstring( L, 1, &nsz );
     const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src, name, nsz );
 
-    char* nextPtr;
-    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneBeginAllocSrcLocCallstack );
+    TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
-    LfqProducer::CommitNext( nextPtr );
+    TracyLfqCommit;
 
 #ifdef TRACY_CALLSTACK
     const uint32_t depth = TRACY_CALLSTACK;
@@ -266,11 +263,10 @@ static inline int LuaZoneBegin( lua_State* L )
     lua_getinfo( L, "Snl", &dbg );
     const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src );
 
-    char* nextPtr;
-    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneBeginAllocSrcLoc );
+    TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLoc );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
-    LfqProducer::CommitNext( nextPtr );
+    TracyLfqCommit;
     return 0;
 #endif
 }
@@ -294,11 +290,10 @@ static inline int LuaZoneBeginN( lua_State* L )
     const auto name = lua_tolstring( L, 1, &nsz );
     const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src, name, nsz );
 
-    char* nextPtr;
-    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneBeginAllocSrcLoc );
+    TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLoc );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
-    LfqProducer::CommitNext( nextPtr );
+    TracyLfqCommit;
     return 0;
 #endif
 }
@@ -316,10 +311,9 @@ static inline int LuaZoneEnd( lua_State* L )
     }
 #endif
 
-    char* nextPtr;
-    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneEnd );
+    TracyLfqPrepare( QueueType::ZoneEnd );
     MemWrite( &item->zoneEnd.time, Profiler::GetTime() );
-    LfqProducer::CommitNext( nextPtr );
+    TracyLfqCommit;
     return 0;
 }
 
@@ -340,10 +334,9 @@ static inline int LuaZoneText( lua_State* L )
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    char* nextPtr;
-    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneText );
+    TracyLfqPrepare( QueueType::ZoneText );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
-    LfqProducer::CommitNext( nextPtr );
+    TracyLfqCommit;
     return 0;
 }
 
@@ -364,10 +357,9 @@ static inline int LuaZoneName( lua_State* L )
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    char* nextPtr;
-    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::ZoneName );
+    TracyLfqPrepare( QueueType::ZoneName );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
-    LfqProducer::CommitNext( nextPtr );
+    TracyLfqCommit;
     return 0;
 }
 
@@ -383,11 +375,10 @@ static inline int LuaMessage( lua_State* L )
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    char* nextPtr;
-    auto item = LfqProducer::PrepareNext( nextPtr, QueueType::Message );
+    TracyLfqPrepare( QueueType::Message );
     MemWrite( &item->message.time, Profiler::GetTime() );
     MemWrite( &item->message.text, (uint64_t)ptr );
-    LfqProducer::CommitNext( nextPtr );
+    TracyLfqCommit;
     return 0;
 }
 

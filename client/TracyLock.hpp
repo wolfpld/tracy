@@ -23,8 +23,7 @@ public:
     {
         assert( m_id != std::numeric_limits<uint32_t>::max() );
 
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::LockAnnounce );
+        TracyLfqPrepare( QueueType::LockAnnounce );
         MemWrite( &item->lockAnnounce.id, m_id );
         MemWrite( &item->lockAnnounce.time, Profiler::GetTime() );
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
@@ -32,7 +31,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );
 #endif
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     LockableCtx( const LockableCtx& ) = delete;
@@ -40,15 +39,14 @@ public:
 
     tracy_force_inline ~LockableCtx()
     {
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::LockTerminate );
+        TracyLfqPrepare( QueueType::LockTerminate );
         MemWrite( &item->lockTerminate.id, m_id );
         MemWrite( &item->lockTerminate.time, Profiler::GetTime() );
         MemWrite( &item->lockTerminate.type, LockType::Lockable );
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );
 #endif
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     tracy_force_inline bool BeforeLock()
@@ -219,8 +217,7 @@ public:
     {
         assert( m_id != std::numeric_limits<uint32_t>::max() );
 
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::LockAnnounce );
+        TracyLfqPrepare( QueueType::LockAnnounce );
         MemWrite( &item->lockAnnounce.id, m_id );
         MemWrite( &item->lockAnnounce.time, Profiler::GetTime() );
         MemWrite( &item->lockAnnounce.lckloc, (uint64_t)srcloc );
@@ -230,7 +227,7 @@ public:
         GetProfiler().DeferItem( *item );
 #endif
 
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     SharedLockableCtx( const SharedLockableCtx& ) = delete;
@@ -238,8 +235,7 @@ public:
 
     tracy_force_inline ~SharedLockableCtx()
     {
-        char* nextPtr;
-        auto item = LfqProducer::PrepareNext( nextPtr, QueueType::LockTerminate );
+        TracyLfqPrepare( QueueType::LockTerminate );
         MemWrite( &item->lockTerminate.id, m_id );
         MemWrite( &item->lockTerminate.time, Profiler::GetTime() );
         MemWrite( &item->lockTerminate.type, LockType::SharedLockable );
@@ -248,7 +244,7 @@ public:
         GetProfiler().DeferItem( *item );
 #endif
 
-        LfqProducer::CommitNext( nextPtr );
+        TracyLfqCommit;
     }
 
     tracy_force_inline bool BeforeLock()

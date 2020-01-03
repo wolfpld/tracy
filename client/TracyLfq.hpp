@@ -311,8 +311,34 @@ public:
         prod->m_available.store( true );
     }
 
-    tracy_force_inline size_t Dequeue( char* ptr, size_t sz, uint64_t& thread )
+    inline size_t Dequeue( char* ptr, size_t sz, uint64_t& thread )
     {
+        for(;;)
+        {
+            auto blk = m_blocksHead.load();
+            if( blk != nullptr )
+            {
+                auto next = blk->next.load();
+                if( m_blocksHead.compare_exchange_strong( blk, next ) )
+                {
+                    auto head = blk->head.load();
+                    auto tail = blk->tail.load();
+                    const auto datasz = tail - head;
+                    if( datasz > 0 )
+                    {
+                        thread = blk->thread;
+                        memcpy( ptr, head, datasz );
+                        FreeBlocks( blk, blk );
+                        return datasz;
+                    }
+                    FreeBlocks( blk, blk );
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
         return 0;
     }
 

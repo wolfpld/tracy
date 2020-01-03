@@ -271,18 +271,14 @@ public:
         }
     }
 
-    void FreeBlocks( LfqBlock* blk )
+    void FreeBlocks( LfqBlock* blk, LfqBlock* blkTail )
     {
-        auto tail = blk;
-        for(;;)
-        {
-            auto next = tail->next.load();
-            if( !next ) break;
-            tail = next;
-        }
+        assert( blk );
+        assert( blkTail );
+
         auto head = m_freeBlocks.load();
-        tail->next.store( head );
-        while( !m_freeBlocks.compare_exchange_weak( head, blk ) ) tail->next.store( head );
+        blkTail->next.store( head );
+        while( !m_freeBlocks.compare_exchange_weak( head, blk ) ) blkTail->next.store( head );
     }
 
     LfqProducerImpl* GetIdleProducer()
@@ -407,7 +403,8 @@ tracy_force_inline void LfqProducerImpl::CleanupThread()
 void LfqProducerImpl::FlushDataImpl()
 {
     auto blk = m_head.load();
-    m_queue->FreeBlocks( blk );
+    auto tail = m_tail.load();
+    m_queue->FreeBlocks( blk, tail );
     PrepareThread();
 }
 

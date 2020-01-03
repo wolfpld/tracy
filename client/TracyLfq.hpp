@@ -239,6 +239,9 @@ public:
 
     void ReleaseBlocks( LfqBlock* blk, LfqBlock* blkTail )
     {
+        assert( blk );
+        assert( blkTail );
+
         auto tail = m_blocksTail.load();
         for(;;)
         {

@@ -237,15 +237,8 @@ public:
         }
     }
 
-    void ReleaseBlocks( LfqBlock* blk )
+    void ReleaseBlocks( LfqBlock* blk, LfqBlock* blkTail )
     {
-        auto blkTail = blk;
-        for(;;)
-        {
-            auto next = blkTail->next.load();
-            if( !next ) break;
-            blkTail = next;
-        }
         auto tail = m_blocksTail.load();
         for(;;)
         {
@@ -398,7 +391,8 @@ tracy_force_inline void LfqProducerImpl::CleanupThread()
     assert( blk );
     while( !m_head.compare_exchange_weak( blk, nullptr ) ) {}
     assert( blk );
-    m_queue->ReleaseBlocks( blk );
+    auto blkTail = m_tail.load();
+    m_queue->ReleaseBlocks( blk, blkTail );
 }
 
 void LfqProducerImpl::FlushDataImpl()

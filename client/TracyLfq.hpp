@@ -241,32 +241,35 @@ public:
     {
         assert( blk );
         assert( blkTail );
+        assert( blkTail->next.load() == nullptr );
 
         auto tail = m_blocksTail.load();
         for(;;)
         {
             if( !tail )
             {
-                if( m_blocksTail.compare_exchange_strong( tail, blkTail ) )
+                auto head = m_blocksHead.load();
+                if( !head )
                 {
-                    assert( m_blocksHead.load() == nullptr );
-                    m_blocksHead.store( blk );
-                    return;
+                    if( m_blocksHead.compare_exchange_strong( head, blk ) )
+                    {
+                        assert( m_blocksTail.load() == nullptr );
+                        m_blocksTail.store( blkTail );
+                        return;
+                    }
                 }
             }
             else
             {
                 auto next = tail->next.load();
-                if( next == nullptr )
+                if( !next )
                 {
                     if( tail->next.compare_exchange_strong( next, blk ) )
                     {
                         m_blocksTail.store( blkTail );
-                        assert( m_blocksHead.load() != nullptr );
                         return;
                     }
                 }
-                tail = m_blocksTail.load();
             }
         }
     }
@@ -321,6 +324,10 @@ public:
                 auto next = blk->next.load();
                 if( m_blocksHead.compare_exchange_strong( blk, next ) )
                 {
+                    if( next == nullptr )
+                    {
+                        m_blocksTail.store( nullptr );
+                    }
                     auto head = blk->head.load();
                     auto tail = blk->tail.load();
                     const auto datasz = tail - head;

@@ -116,6 +116,7 @@ public:
 
     std::atomic<LfqProducerImpl*> m_next;
     std::atomic<bool> m_active, m_available;
+    std::atomic<LfqBlock*> m_head, m_tail;
 
 
     LfqProducerImpl( const LfqProducerImpl& ) = delete;
@@ -126,7 +127,6 @@ public:
 
 private:
     uint64_t m_thread;
-    std::atomic<LfqBlock*> m_head, m_tail;
     LockFreeQueue* m_queue;
 };
 
@@ -194,6 +194,7 @@ public:
         , m_blocksHead( nullptr )
         , m_blocksTail( nullptr )
         , m_producers( nullptr )
+        , m_currentProducer( nullptr )
     {
         const auto numCpus = std::thread::hardware_concurrency();
 
@@ -316,7 +317,6 @@ public:
 
     inline size_t Dequeue( char* ptr, size_t sz, uint64_t& thread )
     {
-        for(;;)
         {
             auto blk = m_blocksHead.load();
             if( blk != nullptr )
@@ -341,11 +341,46 @@ public:
                     FreeBlocks( blk, blk );
                 }
             }
-            else
+        }
+
+        {
+            LfqBlock* blk = nullptr;
+            char* head;
+            char* tail;
+            auto prod = m_currentProducer;
+            if( !prod ) prod = m_producers.load();
+            while( prod )
             {
-                break;
+                if( prod->m_active.load() == true )
+                {
+                    blk = prod->m_head.load();
+                    head = blk->head.load();
+                    tail = blk->tail.load();
+                    if( tail - head != 0 )
+                    {
+                        break;
+                    }
+                }
+                prod = prod->m_next.load();
+            }
+            m_currentProducer = prod;
+
+            if( prod )
+            {
+                const auto datasz = tail - head;
+                assert( datasz != 0 );
+                thread = blk->thread;
+                memcpy( ptr, head, datasz );
+                blk->head.store( tail );
+                auto next = blk->next.load();
+                if( next && prod->m_head.compare_exchange_strong( blk, next ) )
+                {
+                    FreeBlocks( blk, blk );
+                }
+                return datasz;
             }
         }
+
         return 0;
     }
 
@@ -374,6 +409,7 @@ private:
     std::atomic<LfqBlock*> m_freeBlocks;
     std::atomic<LfqBlock*> m_blocksHead, m_blocksTail;
     std::atomic<LfqProducerImpl*> m_producers;
+    LfqProducerImpl* m_currentProducer;
 };
 
 

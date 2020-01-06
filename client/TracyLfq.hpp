@@ -69,9 +69,10 @@ public:
     LfqBlock& operator=( const LfqBlock& ) = delete;
     LfqBlock& operator=( LfqBlock&& ) = delete;
 
-    std::atomic<char*> head, tail;
-    std::atomic<LfqBlock*> next;
-    const char* dataEnd;
+    alignas(64) std::atomic<char*> head;
+    alignas(64) std::atomic<char*> tail;
+    alignas(64) std::atomic<LfqBlock*> next;
+    alignas(64) const char* dataEnd;
     uint64_t thread;
     char data[BlockSize];
 };
@@ -114,9 +115,10 @@ public:
 
     inline void FlushDataImpl();
 
-    std::atomic<LfqProducerImpl*> m_next;
-    std::atomic<bool> m_active, m_available;
-    std::atomic<LfqBlock*> m_block;
+    alignas(64) std::atomic<LfqProducerImpl*> m_next;
+    alignas(64) std::atomic<bool> m_active;
+    alignas(64) std::atomic<bool> m_available;
+    alignas(64) std::atomic<LfqBlock*> m_block;
 
 
     LfqProducerImpl( const LfqProducerImpl& ) = delete;
@@ -397,10 +399,11 @@ private:
         return prod;
     }
 
-    std::atomic<LfqBlock*> m_freeBlocks;
-    std::atomic<LfqBlock*> m_blocksHead, m_blocksTail;
-    std::atomic<LfqProducerImpl*> m_producers;
-    LfqProducerImpl* m_currentProducer;
+    alignas(64) std::atomic<LfqBlock*> m_freeBlocks;
+    alignas(64) std::atomic<LfqBlock*> m_blocksHead;
+    alignas(64) std::atomic<LfqBlock*> m_blocksTail;
+    alignas(64) std::atomic<LfqProducerImpl*> m_producers;
+    alignas(64) LfqProducerImpl* m_currentProducer;
 };
 
 

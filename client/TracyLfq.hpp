@@ -52,15 +52,15 @@ public:
         , next( nullptr )
         , thread( 0 )
     {
-        head.store( data );
-        tail.store( data );
         dataEnd = data + BlockSize;
+        head.store( data, std::memory_order_relaxed );
+        tail.store( data, std::memory_order_release );
     }
 
     tracy_force_inline void Reset()
     {
-        head.store( data );
-        tail.store( data );
+        head.store( data, std::memory_order_relaxed );
+        tail.store( data, std::memory_order_release );
     }
 
     LfqBlock( const LfqBlock& ) = delete;
@@ -105,7 +105,7 @@ public:
     {
         auto blk = NextBlock();
         auto& tail = blk->tail;
-        ptr = tail.load();
+        ptr = tail.load( std::memory_order_relaxed );
         nextPtr = ptr + sz;
         return tail;
     }
@@ -151,7 +151,7 @@ public:
     static tracy_force_inline std::atomic<char*>& PrepareNext( char*& ptr, char*& nextPtr, size_t sz )
     {
         auto& tail = *lfq.tail;
-        ptr = tail.load();
+        ptr = tail.load( std::memory_order_relaxed );
         auto np = ptr + sz;
         if( np <= lfq.dataEnd )
         {
@@ -202,19 +202,19 @@ public:
         for( unsigned int i=0; i<numCpus; i++ )
         {
             auto blk = AllocNewBlock();
-            blk->next.store( prev );
+            blk->next.store( prev, std::memory_order_relaxed );
             prev = blk;
         }
-        m_freeBlocks.store( prev );
+        m_freeBlocks.store( prev, std::memory_order_release );
 
         LfqProducerImpl* prevProd = nullptr;
         for( unsigned int i=0; i<numCpus; i++ )
         {
             auto prod = AllocNewProducer();
-            prod->m_next.store( prevProd );
+            prod->m_next.store( prevProd, std::memory_order_relaxed );
             prevProd = prod;
         }
-        m_producers.store( prevProd );
+        m_producers.store( prevProd, std::memory_order_release );
     }
 
     // Don't free anything, application is shutting down anyway
@@ -224,14 +224,14 @@ public:
 
     LfqBlock* GetFreeBlock()
     {
-        LfqBlock* ptr = m_freeBlocks.load();
+        LfqBlock* ptr = m_freeBlocks.load( std::memory_order_acquire );
         for(;;)
         {
             if( !ptr ) return AllocNewBlock();
-            auto next = ptr->next.load();
-            if( m_freeBlocks.compare_exchange_strong( ptr, next ) )
+            auto next = ptr->next.load( std::memory_order_acquire );
+            if( m_freeBlocks.compare_exchange_strong( ptr, next, std::memory_order_release, std::memory_order_relaxed ) )
             {
-                ptr->next.store( nullptr );
+                ptr->next.store( nullptr, std::memory_order_relaxed );
                 ptr->Reset();
                 return ptr;
             }
@@ -241,31 +241,31 @@ public:
     void ReleaseBlock( LfqBlock* blk )
     {
         assert( blk );
-        assert( blk->next.load() == nullptr );
-        auto tail = m_blocksTail.load();
+        assert( blk->next.load( std::memory_order_relaxed ) == nullptr );
+        auto tail = m_blocksTail.load( std::memory_order_acquire );
         for(;;)
         {
             if( !tail )
             {
-                auto head = m_blocksHead.load();
+                auto head = m_blocksHead.load( std::memory_order_acquire );
                 if( !head )
                 {
-                    if( m_blocksHead.compare_exchange_strong( head, blk ) )
+                    if( m_blocksHead.compare_exchange_strong( head, blk, std::memory_order_release, std::memory_order_relaxed ) )
                     {
-                        assert( m_blocksTail.load() == nullptr );
-                        m_blocksTail.store( blk );
+                        assert( m_blocksTail.load( std::memory_order_relaxed ) == nullptr );
+                        m_blocksTail.store( blk, std::memory_order_release );
                         return;
                     }
                 }
             }
             else
             {
-                auto next = tail->next.load();
+                auto next = tail->next.load( std::memory_order_acquire );
                 if( !next )
                 {
-                    if( tail->next.compare_exchange_strong( next, blk ) )
+                    if( tail->next.compare_exchange_strong( next, blk, std::memory_order_release, std::memory_order_relaxed ) )
                     {
-                        m_blocksTail.store( blk );
+                        m_blocksTail.store( blk, std::memory_order_release );
                         return;
                     }
                 }
@@ -276,30 +276,30 @@ public:
     void FreeBlock( LfqBlock* blk )
     {
         assert( blk );
-        auto head = m_freeBlocks.load();
-        blk->next.store( head );
-        while( !m_freeBlocks.compare_exchange_weak( head, blk ) ) { blk->next.store( head ); YieldThread(); }
+        auto head = m_freeBlocks.load( std::memory_order_relaxed );
+        blk->next.store( head, std::memory_order_relaxed );
+        while( !m_freeBlocks.compare_exchange_weak( head, blk, std::memory_order_release, std::memory_order_relaxed ) ) { blk->next.store( head, std::memory_order_relaxed ); YieldThread(); }
     }
 
     LfqProducerImpl* GetIdleProducer()
     {
-        LfqProducerImpl* prod = m_producers.load();
+        LfqProducerImpl* prod = m_producers.load( std::memory_order_acquire );
         assert( prod );
         for(;;)
         {
-            bool available = prod->m_available.load();
+            bool available = prod->m_available.load( std::memory_order_acquire );
             if( available )
             {
-                if( prod->m_available.compare_exchange_strong( available, false ) ) return prod;
+                if( prod->m_available.compare_exchange_strong( available, false, std::memory_order_release, std::memory_order_relaxed ) ) return prod;
             }
-            prod = prod->m_next.load();
+            prod = prod->m_next.load( std::memory_order_acquire );
             if( !prod )
             {
                 prod = AllocNewProducer();
-                prod->m_available.store( false );
-                auto head = m_producers.load();
-                prod->m_next.store( head );
-                while( !m_producers.compare_exchange_weak( head, prod ) ) { prod->m_next.store( head ); YieldThread(); }
+                prod->m_available.store( false, std::memory_order_release );
+                auto head = m_producers.load( std::memory_order_relaxed );
+                prod->m_next.store( head, std::memory_order_relaxed );
+                while( !m_producers.compare_exchange_weak( head, prod, std::memory_order_release, std::memory_order_relaxed ) ) { prod->m_next.store( head, std::memory_order_relaxed ); YieldThread(); }
                 return prod;
             }
         }
@@ -307,25 +307,25 @@ public:
 
     void ReleaseProducer( LfqProducerImpl* prod )
     {
-        assert( prod->m_available.load() == false );
-        prod->m_available.store( true );
+        assert( prod->m_available.load( std::memory_order_relaxed ) == false );
+        prod->m_available.store( true, std::memory_order_release );
     }
 
     size_t Dequeue( char* ptr, size_t sz, uint64_t& thread )
     {
         {
-            auto blk = m_blocksHead.load();
+            auto blk = m_blocksHead.load( std::memory_order_acquire );
             if( blk != nullptr )
             {
-                auto next = blk->next.load();
-                if( m_blocksHead.compare_exchange_strong( blk, next ) )
+                auto next = blk->next.load( std::memory_order_acquire );
+                if( m_blocksHead.compare_exchange_strong( blk, next, std::memory_order_release, std::memory_order_relaxed ) )
                 {
                     if( next == nullptr )
                     {
-                        m_blocksTail.store( nullptr );
+                        m_blocksTail.store( nullptr, std::memory_order_release );
                     }
-                    auto head = blk->head.load();
-                    auto tail = blk->tail.load();
+                    auto head = blk->head.load( std::memory_order_relaxed );
+                    auto tail = blk->tail.load( std::memory_order_acquire );
                     const auto datasz = tail - head;
                     if( datasz > 0 )
                     {
@@ -344,20 +344,20 @@ public:
             char* head;
             char* tail;
             auto prod = m_currentProducer;
-            if( !prod ) prod = m_producers.load();
+            if( !prod ) prod = m_producers.load( std::memory_order_acquire );
             while( prod )
             {
-                if( prod->m_active.load() == true )
+                if( prod->m_active.load( std::memory_order_acquire ) == true )
                 {
-                    blk = prod->m_block.load();
-                    head = blk->head.load();
-                    tail = blk->tail.load();
+                    blk = prod->m_block.load( std::memory_order_acquire );
+                    head = blk->head.load( std::memory_order_relaxed );
+                    tail = blk->tail.load( std::memory_order_acquire );
                     if( tail - head != 0 )
                     {
                         break;
                     }
                 }
-                prod = prod->m_next.load();
+                prod = prod->m_next.load( std::memory_order_acquire );
             }
             m_currentProducer = prod;
 
@@ -367,7 +367,7 @@ public:
                 assert( datasz != 0 );
                 thread = blk->thread;
                 memcpy( ptr, head, datasz );
-                blk->head.store( tail );
+                blk->head.store( tail, std::memory_order_release );
                 return datasz;
             }
         }
@@ -410,16 +410,16 @@ inline LfqProducer::LfqProducer( LockFreeQueue& queue )
 {
     assert( m_queue );
     m_prod->PrepareThread();
-    assert( m_prod->m_active.load() == false );
-    m_prod->m_active.store( true );
+    assert( m_prod->m_active.load( std::memory_order_relaxed ) == false );
+    m_prod->m_active.store( true, std::memory_order_release );
 }
 
 inline LfqProducer::~LfqProducer()
 {
     if( m_prod )
     {
-        assert( m_prod->m_active.load() == true );
-        m_prod->m_active.store( false );
+        assert( m_prod->m_active.load( std::memory_order_relaxed ) == true );
+        m_prod->m_active.store( false, std::memory_order_release );
         m_prod->CleanupThread();
         m_queue->ReleaseProducer( m_prod );
     }
@@ -442,20 +442,20 @@ tracy_force_inline void LfqProducerImpl::PrepareThread()
     m_thread = detail::GetThreadHandleImpl();
     auto blk = m_queue->GetFreeBlock();
     assert( blk );
-    assert( blk->next.load() == nullptr );
+    assert( blk->next.load( std::memory_order_relaxed ) == nullptr );
     blk->thread = m_thread;
     lfq.dataEnd = blk->dataEnd;
     lfq.tail = &blk->tail;
-    m_block.store( blk );
+    m_block.store( blk, std::memory_order_release );
 }
 
 tracy_force_inline void LfqProducerImpl::CleanupThread()
 {
-    auto blk = m_block.load();
+    auto blk = m_block.load( std::memory_order_relaxed );
     assert( blk );
-    while( !m_block.compare_exchange_weak( blk, nullptr ) ) { YieldThread(); }
-    auto head = blk->head.load();
-    auto tail = blk->tail.load();
+    while( !m_block.compare_exchange_weak( blk, nullptr, std::memory_order_release, std::memory_order_relaxed ) ) { YieldThread(); }
+    auto head = blk->head.load( std::memory_order_relaxed );
+    auto tail = blk->tail.load( std::memory_order_acquire );
     if( head == tail )
     {
         m_queue->FreeBlock( blk );
@@ -468,8 +468,8 @@ tracy_force_inline void LfqProducerImpl::CleanupThread()
 
 void LfqProducerImpl::FlushDataImpl()
 {
-    LfqBlock* blk = m_block.load();
-    m_block.store( nullptr );
+    LfqBlock* blk = m_block.load( std::memory_order_acquire );
+    m_block.store( nullptr, std::memory_order_release );
     if( blk ) m_queue->FreeBlock( blk );
     PrepareThread();
 }

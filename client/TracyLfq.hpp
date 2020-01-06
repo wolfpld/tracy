@@ -454,7 +454,16 @@ tracy_force_inline void LfqProducerImpl::CleanupThread()
     auto blk = m_block.load();
     assert( blk );
     while( !m_block.compare_exchange_weak( blk, nullptr ) ) { YieldThread(); }
-    m_queue->ReleaseBlock( blk );
+    auto head = blk->head.load();
+    auto tail = blk->tail.load();
+    if( head == tail )
+    {
+        m_queue->FreeBlock( blk );
+    }
+    else
+    {
+        m_queue->ReleaseBlock( blk );
+    }
 }
 
 void LfqProducerImpl::FlushDataImpl()

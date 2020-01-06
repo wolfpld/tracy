@@ -10,9 +10,9 @@
 #include <thread>
 
 #include "TracyFileHeader.hpp"
-#include "TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
+#include "../common/TracyYield.hpp"
 
 namespace tracy
 {

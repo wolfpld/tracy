@@ -310,7 +310,7 @@ public:
         prod->m_available.store( true );
     }
 
-    inline size_t Dequeue( char* ptr, size_t sz, uint64_t& thread )
+    size_t Dequeue( char* ptr, size_t sz, uint64_t& thread )
     {
         {
             auto blk = m_blocksHead.load();

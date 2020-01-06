@@ -2371,7 +2371,7 @@ void Profiler::CalibrateTimer()
 
 void Profiler::CalibrateDelay()
 {
-    enum { Iterations = 50000 };
+    enum { Iterations = LfqBlock::BlockSize / ( QueueDataSize[(uint8_t)QueueType::ZoneBegin] + QueueDataSize[(uint8_t)QueueType::ZoneEnd] ) };
 
     auto mindiff = std::numeric_limits<int64_t>::max();
     for( int i=0; i<Iterations * 10; i++ )

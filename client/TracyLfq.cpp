@@ -3,18 +3,18 @@
 namespace tracy
 {
 
-LfqBlock* LfqProducerImpl::NextBlock( LfqBlock* tailBlk )
+LfqBlock* LfqProducerImpl::NextBlock()
 {
-    auto next = m_queue->GetFreeBlock();
-    assert( next );
-    assert( next->next.load() == nullptr );
-    assert( tailBlk->next.load() == nullptr );
-    next->thread = m_thread;
-    tailBlk->next.store( next );
-    m_tail.store( next );
-    lfq.dataEnd = next->dataEnd;
-    lfq.tail = &next->tail;
-    return next;
+    LfqBlock* blk = m_queue->GetFreeBlock();
+    assert( blk );
+    assert( blk->next.load() == nullptr );
+    blk->thread = m_thread;
+    lfq.dataEnd = blk->dataEnd;
+    lfq.tail = &blk->tail;
+    LfqBlock* oldBlk = m_block.load();
+    m_block.store( blk );
+    m_queue->ReleaseBlock( oldBlk );
+    return blk;
 }
 
 }

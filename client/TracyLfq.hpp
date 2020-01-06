@@ -42,9 +42,9 @@ TRACY_API LfqProducer& GetProducer();
 
 class LfqBlock
 {
+public:
     enum { BlockSize = 64*1024 };
 
-public:
     tracy_force_inline LfqBlock()
         : head( nullptr )
         , tail( nullptr )
@@ -89,8 +89,7 @@ class LfqProducerImpl
 {
 public:
     tracy_force_inline LfqProducerImpl( LockFreeQueue* queue )
-        : m_head( nullptr )
-        , m_tail( nullptr )
+        : m_block( nullptr )
         , m_active( false )
         , m_available( true )
         , m_queue( queue )
@@ -103,20 +102,20 @@ public:
 
     tracy_force_inline std::atomic<char*>& PrepareNext( char*& ptr, char*& nextPtr, size_t sz )
     {
-        auto tailBlk = NextBlock( m_tail.load() );
-        auto& tail = tailBlk->tail;
+        auto blk = NextBlock();
+        auto& tail = blk->tail;
         ptr = tail.load();
         nextPtr = ptr + sz;
         return tail;
     }
 
-    tracy_no_inline LfqBlock* NextBlock( LfqBlock* tailBlk );
+    tracy_no_inline LfqBlock* NextBlock();
 
     inline void FlushDataImpl();
 
     std::atomic<LfqProducerImpl*> m_next;
     std::atomic<bool> m_active, m_available;
-    std::atomic<LfqBlock*> m_head, m_tail;
+    std::atomic<LfqBlock*> m_block;
 
 
     LfqProducerImpl( const LfqProducerImpl& ) = delete;
@@ -238,12 +237,10 @@ public:
         }
     }
 
-    void ReleaseBlocks( LfqBlock* blk, LfqBlock* blkTail )
+    void ReleaseBlock( LfqBlock* blk )
     {
         assert( blk );
-        assert( blkTail );
-        assert( blkTail->next.load() == nullptr );
-
+        assert( blk->next.load() == nullptr );
         auto tail = m_blocksTail.load();
         for(;;)
         {
@@ -255,7 +252,7 @@ public:
                     if( m_blocksHead.compare_exchange_strong( head, blk ) )
                     {
                         assert( m_blocksTail.load() == nullptr );
-                        m_blocksTail.store( blkTail );
+                        m_blocksTail.store( blk );
                         return;
                     }
                 }
@@ -267,7 +264,7 @@ public:
                 {
                     if( tail->next.compare_exchange_strong( next, blk ) )
                     {
-                        m_blocksTail.store( blkTail );
+                        m_blocksTail.store( blk );
                         return;
                     }
                 }
@@ -275,14 +272,12 @@ public:
         }
     }
 
-    void FreeBlocks( LfqBlock* blk, LfqBlock* blkTail )
+    void FreeBlock( LfqBlock* blk )
     {
         assert( blk );
-        assert( blkTail );
-
         auto head = m_freeBlocks.load();
-        blkTail->next.store( head );
-        while( !m_freeBlocks.compare_exchange_weak( head, blk ) ) blkTail->next.store( head );
+        blk->next.store( head );
+        while( !m_freeBlocks.compare_exchange_weak( head, blk ) ) blk->next.store( head );
     }
 
     LfqProducerImpl* GetIdleProducer()
@@ -335,10 +330,10 @@ public:
                     {
                         thread = blk->thread;
                         memcpy( ptr, head, datasz );
-                        FreeBlocks( blk, blk );
+                        FreeBlock( blk );
                         return datasz;
                     }
-                    FreeBlocks( blk, blk );
+                    FreeBlock( blk );
                 }
             }
         }
@@ -353,7 +348,7 @@ public:
             {
                 if( prod->m_active.load() == true )
                 {
-                    blk = prod->m_head.load();
+                    blk = prod->m_block.load();
                     head = blk->head.load();
                     tail = blk->tail.load();
                     if( tail - head != 0 )
@@ -372,11 +367,6 @@ public:
                 thread = blk->thread;
                 memcpy( ptr, head, datasz );
                 blk->head.store( tail );
-                auto next = blk->next.load();
-                if( next && prod->m_head.compare_exchange_strong( blk, next ) )
-                {
-                    FreeBlocks( blk, blk );
-                }
                 return datasz;
             }
         }
@@ -455,25 +445,22 @@ tracy_force_inline void LfqProducerImpl::PrepareThread()
     blk->thread = m_thread;
     lfq.dataEnd = blk->dataEnd;
     lfq.tail = &blk->tail;
-    m_head.store( blk );
-    m_tail.store( blk );
+    m_block.store( blk );
 }
 
 tracy_force_inline void LfqProducerImpl::CleanupThread()
 {
-    auto blk = m_head.load();
+    auto blk = m_block.load();
     assert( blk );
-    while( !m_head.compare_exchange_weak( blk, nullptr ) ) {}
-    assert( blk );
-    auto blkTail = m_tail.load();
-    m_queue->ReleaseBlocks( blk, blkTail );
+    while( !m_block.compare_exchange_weak( blk, nullptr ) ) {}
+    m_queue->ReleaseBlock( blk );
 }
 
 void LfqProducerImpl::FlushDataImpl()
 {
-    auto blk = m_head.load();
-    auto tail = m_tail.load();
-    m_queue->FreeBlocks( blk, tail );
+    LfqBlock* blk = m_block.load();
+    m_block.store( nullptr );
+    if( blk ) m_queue->FreeBlock( blk );
     PrepareThread();
 }
 

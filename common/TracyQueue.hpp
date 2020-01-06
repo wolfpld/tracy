@@ -423,7 +423,7 @@ struct QueueItem
 
 enum { QueueItemSize = sizeof( QueueItem ) };
 
-static const size_t QueueDataSize[] = {
+static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),        // zone name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),

@@ -12,6 +12,7 @@
 #include "../common/TracyForceInline.hpp"
 #include "../common/TracyQueue.hpp"
 #include "../common/TracySystem.hpp"
+#include "../common/TracyYield.hpp"
 
 
 #define TracyLfqPrepare( type ) \
@@ -277,7 +278,7 @@ public:
         assert( blk );
         auto head = m_freeBlocks.load();
         blk->next.store( head );
-        while( !m_freeBlocks.compare_exchange_weak( head, blk ) ) blk->next.store( head );
+        while( !m_freeBlocks.compare_exchange_weak( head, blk ) ) { blk->next.store( head ); YieldThread(); }
     }
 
     LfqProducerImpl* GetIdleProducer()
@@ -298,7 +299,7 @@ public:
                 prod->m_available.store( false );
                 auto head = m_producers.load();
                 prod->m_next.store( head );
-                while( !m_producers.compare_exchange_weak( head, prod ) ) { prod->m_next.store( head ); }
+                while( !m_producers.compare_exchange_weak( head, prod ) ) { prod->m_next.store( head ); YieldThread(); }
                 return prod;
             }
         }
@@ -452,7 +453,7 @@ tracy_force_inline void LfqProducerImpl::CleanupThread()
 {
     auto blk = m_block.load();
     assert( blk );
-    while( !m_block.compare_exchange_weak( blk, nullptr ) ) {}
+    while( !m_block.compare_exchange_weak( blk, nullptr ) ) { YieldThread(); }
     m_queue->ReleaseBlock( blk );
 }
 

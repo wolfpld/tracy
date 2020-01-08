@@ -1,0 +1,7 @@
+"Would be nice to have" list for 1.0 release:
+=============================================
+
+* Pack queue items tightly in the queues.
+* Use level-of-detail system for plots.
+* Use per-thread lock data structures.
+* Use DTrace for BSD/OSX context switch capture.

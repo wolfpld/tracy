@@ -77,6 +77,10 @@ static void SetWindowTitleCallback( const char* title )
 }
 
 static void DrawContents();
+static void WindowRefreshCallback( GLFWwindow* window )
+{
+    DrawContents();
+}
 
 std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildConnectionHistory( const std::unordered_map<std::string, uint64_t>& connHistMap )
 {
@@ -235,6 +239,7 @@ int main( int argc, char** argv )
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
     gl3wInit();
+    glfwSetWindowRefreshCallback( window, WindowRefreshCallback );
 
 #ifdef _WIN32
     typedef UINT(*GDFS)(void);

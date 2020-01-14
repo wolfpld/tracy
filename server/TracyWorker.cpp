@@ -4737,8 +4737,7 @@ void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
 
 void Worker::ProcessTidToPid( const QueueTidToPid& ev )
 {
-    assert( m_data.tidToPid.find( ev.tid ) == m_data.tidToPid.end() );
-    m_data.tidToPid.emplace( ev.tid, ev.pid );
+    if( m_data.tidToPid.find( ev.tid ) == m_data.tidToPid.end() ) m_data.tidToPid.emplace( ev.tid, ev.pid );
 }
 
 void Worker::ProcessParamSetup( const QueueParamSetup& ev )

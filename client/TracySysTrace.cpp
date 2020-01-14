@@ -54,6 +54,20 @@ struct ReadyThread
     int8_t      reserverd;
 };
 
+struct ThreadTrace
+{
+    uint32_t processId;
+    uint32_t threadId;
+    uint32_t stackBase;
+    uint32_t stackLimit;
+    uint32_t userStackBase;
+    uint32_t userStackLimit;
+    uint32_t startAddr;
+    uint32_t win32StartAddr;
+    uint32_t tebBase;
+    uint32_t subProcessTag;
+};
+
 void WINAPI EventRecordCallback( PEVENT_RECORD record )
 {
 #ifdef TRACY_ON_DEMAND
@@ -94,6 +108,22 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         memset( ((char*)&item->threadWakeup.thread)+4, 0, 4 );
         tail.store( magic + 1, std::memory_order_release );
     }
+    else if( hdr.EventDescriptor.Opcode == 1 || hdr.EventDescriptor.Opcode == 3 )
+    {
+        const auto tt = (const ThreadTrace*)record->UserData;
+
+        uint64_t tid = tt->threadId;
+        if( tid == 0 ) return;
+        uint64_t pid = tt->processId;
+        Magic magic;
+        auto token = GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::TidToPid );
+        MemWrite( &item->tidToPid.tid, tid );
+        MemWrite( &item->tidToPid.pid, pid );
+        tail.store( magic + 1, std::memory_order_release );
+    }
 }
 
 bool SysTraceStart()
@@ -114,7 +144,7 @@ bool SysTraceStart()
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + sizeof( KERNEL_LOGGER_NAME );
     s_prop = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
     memset( s_prop, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
-    s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER;
+    s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER | EVENT_TRACE_FLAG_THREAD;
     s_prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
     s_prop->Wnode.BufferSize = psz;
     s_prop->Wnode.Flags = WNODE_FLAG_TRACED_GUID;

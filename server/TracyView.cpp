@@ -9187,7 +9187,7 @@ void View::DrawFindZone()
                 const auto parent = GetZoneParent( *ev.Zone(), m_worker.DecompressThread( ev.Thread() ) );
                 if( parent )
                 {
-                    group = &m_findZone.groups[uint64_t( parent->SrcLoc() )];
+                    group = &m_findZone.groups[uint64_t( uint16_t( parent->SrcLoc() ) )];
                 }
                 else
                 {

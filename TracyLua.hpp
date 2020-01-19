@@ -179,14 +179,10 @@ static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
     }
     assert( dst - ptr == spaceNeeded + 4 );
 
-    Magic magic;
-    auto token = GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::CallstackAlloc );
+    TracyLfqPrepare( QueueType::CallstackAlloc );
     MemWrite( &item->callstackAlloc.ptr, (uint64_t)ptr );
     MemWrite( &item->callstackAlloc.nativePtr, (uint64_t)Callstack( depth ) );
-    tail.store( magic + 1, std::memory_order_release );
+    TracyLfqCommit;
 }
 
 static inline int LuaZoneBeginS( lua_State* L )
@@ -203,14 +199,10 @@ static inline int LuaZoneBeginS( lua_State* L )
     lua_getinfo( L, "Snl", &dbg );
     const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src );
 
-    Magic magic;
-    auto token = GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLocCallstack );
+    TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
-    tail.store( magic + 1, std::memory_order_release );
+    TracyLfqCommit;
 
 #ifdef TRACY_CALLSTACK
     const uint32_t depth = TRACY_CALLSTACK;
@@ -238,14 +230,10 @@ static inline int LuaZoneBeginNS( lua_State* L )
     const auto name = lua_tolstring( L, 1, &nsz );
     const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src, name, nsz );
 
-    Magic magic;
-    auto token = GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLocCallstack );
+    TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLocCallstack );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
-    tail.store( magic + 1, std::memory_order_release );
+    TracyLfqCommit;
 
 #ifdef TRACY_CALLSTACK
     const uint32_t depth = TRACY_CALLSTACK;
@@ -275,14 +263,10 @@ static inline int LuaZoneBegin( lua_State* L )
     lua_getinfo( L, "Snl", &dbg );
     const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src );
 
-    Magic magic;
-    auto token = GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
+    TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLoc );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
-    tail.store( magic + 1, std::memory_order_release );
+    TracyLfqCommit;
     return 0;
 #endif
 }
@@ -306,14 +290,10 @@ static inline int LuaZoneBeginN( lua_State* L )
     const auto name = lua_tolstring( L, 1, &nsz );
     const auto srcloc = Profiler::AllocSourceLocation( dbg.currentline, dbg.source, dbg.name ? dbg.name : dbg.short_src, name, nsz );
 
-    Magic magic;
-    auto token = GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::ZoneBeginAllocSrcLoc );
+    TracyLfqPrepare( QueueType::ZoneBeginAllocSrcLoc );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, srcloc );
-    tail.store( magic + 1, std::memory_order_release );
+    TracyLfqCommit;
     return 0;
 #endif
 }
@@ -331,13 +311,9 @@ static inline int LuaZoneEnd( lua_State* L )
     }
 #endif
 
-    Magic magic;
-    auto token = GetToken();
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::ZoneEnd );
+    TracyLfqPrepare( QueueType::ZoneEnd );
     MemWrite( &item->zoneEnd.time, Profiler::GetTime() );
-    tail.store( magic + 1, std::memory_order_release );
+    TracyLfqCommit;
     return 0;
 }
 
@@ -355,16 +331,12 @@ static inline int LuaZoneText( lua_State* L )
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
 
-    Magic magic;
-    auto token = GetToken();
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::ZoneText );
+    TracyLfqPrepare( QueueType::ZoneText );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
-    tail.store( magic + 1, std::memory_order_release );
+    TracyLfqCommit;
     return 0;
 }
 
@@ -382,16 +354,12 @@ static inline int LuaZoneName( lua_State* L )
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
 
-    Magic magic;
-    auto token = GetToken();
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::ZoneName );
+    TracyLfqPrepare( QueueType::ZoneName );
     MemWrite( &item->zoneText.text, (uint64_t)ptr );
-    tail.store( magic + 1, std::memory_order_release );
+    TracyLfqCommit;
     return 0;
 }
 
@@ -404,17 +372,13 @@ static inline int LuaMessage( lua_State* L )
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
 
-    Magic magic;
-    auto token = GetToken();
     auto ptr = (char*)tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    auto& tail = token->get_tail_index();
-    auto item = token->enqueue_begin( magic );
-    MemWrite( &item->hdr.type, QueueType::Message );
+    TracyLfqPrepare( QueueType::Message );
     MemWrite( &item->message.time, Profiler::GetTime() );
     MemWrite( &item->message.text, (uint64_t)ptr );
-    tail.store( magic + 1, std::memory_order_release );
+    TracyLfqCommit;
     return 0;
 }
 

@@ -79,11 +79,7 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
     {
         const auto cswitch = (const CSwitch*)record->UserData;
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ContextSwitch );
+        TracyLfqPrepare( QueueType::ContextSwitch );
         MemWrite( &item->contextSwitch.time, hdr.TimeStamp.QuadPart );
         memcpy( &item->contextSwitch.oldThread, &cswitch->oldThreadId, sizeof( cswitch->oldThreadId ) );
         memcpy( &item->contextSwitch.newThread, &cswitch->newThreadId, sizeof( cswitch->newThreadId ) );
@@ -92,21 +88,17 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         MemWrite( &item->contextSwitch.cpu, record->BufferContext.ProcessorNumber );
         MemWrite( &item->contextSwitch.reason, cswitch->oldThreadWaitReason );
         MemWrite( &item->contextSwitch.state, cswitch->oldThreadState );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
     else if( hdr.EventDescriptor.Opcode == 50 )
     {
         const auto rt = (const ReadyThread*)record->UserData;
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ThreadWakeup );
+        TracyLfqPrepare( QueueType::ThreadWakeup );
         MemWrite( &item->threadWakeup.time, hdr.TimeStamp.QuadPart );
         memcpy( &item->threadWakeup.thread, &rt->threadId, sizeof( rt->threadId ) );
         memset( ((char*)&item->threadWakeup.thread)+4, 0, 4 );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
     else if( hdr.EventDescriptor.Opcode == 1 || hdr.EventDescriptor.Opcode == 3 )
     {
@@ -115,14 +107,10 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
         uint64_t tid = tt->threadId;
         if( tid == 0 ) return;
         uint64_t pid = tt->processId;
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::TidToPid );
+        TracyLfqPrepare( QueueType::TidToPid );
         MemWrite( &item->tidToPid.tid, tid );
         MemWrite( &item->tidToPid.pid, pid );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
 }
 
@@ -309,14 +297,10 @@ void SysTraceSendExternalName( uint64_t thread )
         {
             {
                 uint64_t _pid = pid;
-                Magic magic;
-                auto token = GetToken();
-                auto& tail = token->get_tail_index();
-                auto item = token->enqueue_begin( magic );
-                MemWrite( &item->hdr.type, QueueType::TidToPid );
+                TracyLfqPrepare( QueueType::TidToPid );
                 MemWrite( &item->tidToPid.tid, thread );
                 MemWrite( &item->tidToPid.pid, _pid );
-                tail.store( magic + 1, std::memory_order_release );
+                TracyLfqCommit;
             }
             if( pid == 4 )
             {
@@ -637,18 +621,14 @@ static void HandleTraceLine( const char* line )
 
         uint8_t reason = 100;
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ContextSwitch );
+        TracyLfqPrepare( QueueType::ContextSwitch );
         MemWrite( &item->contextSwitch.time, time );
         MemWrite( &item->contextSwitch.oldThread, oldPid );
         MemWrite( &item->contextSwitch.newThread, newPid );
         MemWrite( &item->contextSwitch.cpu, cpu );
         MemWrite( &item->contextSwitch.reason, reason );
         MemWrite( &item->contextSwitch.state, oldState );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
     else if( memcmp( line, "sched_wakeup", 12 ) == 0 )
     {
@@ -659,14 +639,10 @@ static void HandleTraceLine( const char* line )
 
         const auto pid = ReadNumber( line );
 
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::ThreadWakeup );
+        TracyLfqPrepare( QueueType::ThreadWakeup );
         MemWrite( &item->threadWakeup.time, time );
         MemWrite( &item->threadWakeup.thread, pid );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
 }
 
@@ -860,14 +836,10 @@ void SysTraceSendExternalName( uint64_t thread )
         {
             {
                 uint64_t _pid = pid;
-                Magic magic;
-                auto token = GetToken();
-                auto& tail = token->get_tail_index();
-                auto item = token->enqueue_begin( magic );
-                MemWrite( &item->hdr.type, QueueType::TidToPid );
+                TracyLfqPrepare( QueueType::TidToPid );
                 MemWrite( &item->tidToPid.tid, thread );
                 MemWrite( &item->tidToPid.pid, _pid );
-                tail.store( magic + 1, std::memory_order_release );
+                TracyLfqCommit;
             }
             sprintf( fn, "/proc/%i/comm", pid );
             f = fopen( fn, "rb" );

@@ -8178,7 +8178,7 @@ void View::DrawFindZone()
                             int64_t t;
                             uint64_t cnt;
                             if( !GetZoneRunningTime( ctx, zone, t, cnt ) ) break;
-                            vec.emplace_back( t );
+                            vec.push_back_no_space_check( t );
                             total += t;
                             if( t < tmin ) tmin = t;
                             else if( t > tmax ) tmax = t;
@@ -8195,7 +8195,7 @@ void View::DrawFindZone()
                             int64_t t;
                             uint64_t cnt;
                             if( !GetZoneRunningTime( ctx, zone, t, cnt ) ) break;
-                            vec.emplace_back( t );
+                            vec.push_back_no_space_check( t );
                             total += t;
                             if( t < tmin ) tmin = t;
                             else if( t > tmax ) tmax = t;
@@ -8216,7 +8216,7 @@ void View::DrawFindZone()
                             const auto start = zone.Start();
                             if( end > rangeMax || start < rangeMin ) continue;
                             const auto t = end - start - GetZoneChildTimeFast( zone );
-                            vec.emplace_back( t );
+                            vec.push_back_no_space_check( t );
                             total += t;
                         }
                     }
@@ -8228,7 +8228,7 @@ void View::DrawFindZone()
                             const auto end = zone.End();
                             if( end < 0 ) break;
                             const auto t = end - zone.Start() - GetZoneChildTimeFast( zone );
-                            vec.emplace_back( t );
+                            vec.push_back_no_space_check( t );
                             total += t;
                         }
                     }
@@ -8247,7 +8247,7 @@ void View::DrawFindZone()
                             const auto start = zone.Start();
                             if( end > rangeMax || start < rangeMin ) continue;
                             const auto t = end - start;
-                            vec.emplace_back( t );
+                            vec.push_back_no_space_check( t );
                             total += t;
                         }
                     }
@@ -8259,7 +8259,7 @@ void View::DrawFindZone()
                             const auto end = zone.End();
                             if( end < 0 ) break;
                             const auto t = end - zone.Start();
-                            vec.emplace_back( t );
+                            vec.push_back_no_space_check( t );
                             total += t;
                         }
                     }
@@ -8309,7 +8309,7 @@ void View::DrawFindZone()
                                     int64_t t;
                                     uint64_t cnt;
                                     GetZoneRunningTime( ctx, *ev.Zone(), t, cnt );
-                                    vec.emplace_back( t );
+                                    vec.push_back_no_space_check( t );
                                     act++;
                                     total += t;
                                 }
@@ -8326,7 +8326,7 @@ void View::DrawFindZone()
                                     int64_t t;
                                     uint64_t cnt;
                                     GetZoneRunningTime( ctx, *ev.Zone(), t, cnt );
-                                    vec.emplace_back( t );
+                                    vec.push_back_no_space_check( t );
                                     act++;
                                     total += t;
                                 }
@@ -8344,7 +8344,7 @@ void View::DrawFindZone()
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto t = ev.Zone()->End() - ev.Zone()->Start() - GetZoneChildTimeFast( *ev.Zone() );
-                                    vec.emplace_back( t );
+                                    vec.push_back_no_space_check( t );
                                     act++;
                                     total += t;
                                 }
@@ -8358,7 +8358,7 @@ void View::DrawFindZone()
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto t = ev.Zone()->End() - ev.Zone()->Start() - GetZoneChildTimeFast( *ev.Zone() );
-                                    vec.emplace_back( t );
+                                    vec.push_back_no_space_check( t );
                                     act++;
                                     total += t;
                                 }
@@ -8376,7 +8376,7 @@ void View::DrawFindZone()
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto t = ev.Zone()->End() - ev.Zone()->Start();
-                                    vec.emplace_back( t );
+                                    vec.push_back_no_space_check( t );
                                     act++;
                                     total += t;
                                 }
@@ -8390,7 +8390,7 @@ void View::DrawFindZone()
                                 if( selGroup == GetSelectionTarget( ev, groupBy ) )
                                 {
                                     const auto t = ev.Zone()->End() - ev.Zone()->Start();
-                                    vec.emplace_back( t );
+                                    vec.push_back_no_space_check( t );
                                     act++;
                                     total += t;
                                 }

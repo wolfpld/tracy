@@ -9133,6 +9133,8 @@ void View::DrawFindZone()
         const auto groupBy = m_findZone.groupBy;
         const auto highlightActive = m_findZone.highlight.active;
         const auto limitRange = m_findZone.limitRange;
+        FindZone::Group* group = nullptr;
+        uint64_t lastGid = std::numeric_limits<uint64_t>::max() - 1;
         while( processed < sz )
         {
             auto& ev = zones[processed];
@@ -9199,13 +9201,17 @@ void View::DrawFindZone()
                 assert( false );
                 break;
             }
-            auto it = m_findZone.groups.find( gid );
-            if( it == m_findZone.groups.end() )
+            if( lastGid != gid )
             {
-                it = m_findZone.groups.emplace( gid, FindZone::Group { m_findZone.groupId++ } ).first;
-                it->second.zones.reserve( 1024 );
+                lastGid = gid;
+                auto it = m_findZone.groups.find( gid );
+                if( it == m_findZone.groups.end() )
+                {
+                    it = m_findZone.groups.emplace( gid, FindZone::Group { m_findZone.groupId++ } ).first;
+                    it->second.zones.reserve( 1024 );
+                }
+                group = &it->second;
             }
-            FindZone::Group* group = &it->second;
             group->time += timespan;
             group->zones.push_back_non_empty( ev.Zone() );
         }

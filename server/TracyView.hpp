@@ -415,7 +415,7 @@ private:
         bool show = false;
         bool ignoreCase = false;
         std::vector<int16_t> match;
-        std::map<uint64_t, Group> groups;
+        flat_hash_map<uint64_t, Group, nohash<uint64_t>> groups;
         size_t processed;
         uint16_t groupId;
         int selMatch = 0;

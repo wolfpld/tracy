@@ -34,6 +34,7 @@
 #include "TracyImGui.hpp"
 #include "TracyPopcnt.hpp"
 #include "TracyPrint.hpp"
+#include "TracySort.hpp"
 #include "TracyView.hpp"
 
 #include "../imguicolortextedit/TextEditor.h"
@@ -8264,7 +8265,11 @@ void View::DrawFindZone()
                     }
                 }
                 auto mid = vec.begin() + vszorig;
+#ifdef NO_PARALLEL_SORT
                 pdqsort_branchless( mid, vec.end() );
+#else
+                std::sort( std::execution::par_unseq, mid, vec.end() );
+#endif
                 std::inplace_merge( vec.begin(), mid, vec.end() );
 
                 const auto vsz = vec.size();

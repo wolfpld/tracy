@@ -9175,41 +9175,39 @@ void View::DrawFindZone()
             }
 
             processed++;
-            FindZone::Group* group;
+            uint64_t gid = 0;
             switch( groupBy )
             {
             case FindZone::GroupBy::Thread:
-                group = &m_findZone.groups[ev.Thread()];
+                gid = ev.Thread();
                 break;
             case FindZone::GroupBy::UserText:
-                group = &m_findZone.groups[ev.Zone()->text.Active() ? ev.Zone()->text.Idx() : std::numeric_limits<uint64_t>::max()];
+                gid = ev.Zone()->text.Active() ? ev.Zone()->text.Idx() : std::numeric_limits<uint64_t>::max();
                 break;
             case FindZone::GroupBy::Callstack:
-                group = &m_findZone.groups[ev.Zone()->callstack.Val()];
+                gid = ev.Zone()->callstack.Val();
                 break;
             case FindZone::GroupBy::Parent:
             {
                 const auto parent = GetZoneParent( *ev.Zone(), m_worker.DecompressThread( ev.Thread() ) );
-                if( parent )
-                {
-                    group = &m_findZone.groups[uint64_t( uint16_t( parent->SrcLoc() ) )];
-                }
-                else
-                {
-                    group = &m_findZone.groups[0];
-                }
+                if( parent ) gid = uint64_t( uint16_t( parent->SrcLoc() ) );
                 break;
             }
             case FindZone::GroupBy::NoGrouping:
-                group = &m_findZone.groups[0];
                 break;
             default:
-                group = nullptr;
                 assert( false );
                 break;
             }
+            auto it = m_findZone.groups.find( gid );
+            if( it == m_findZone.groups.end() )
+            {
+                it = m_findZone.groups.emplace( gid, FindZone::Group {} ).first;
+                it->second.zones.reserve( 1024 );
+            }
+            FindZone::Group* group = &it->second;
             group->time += timespan;
-            group->zones.push_back( ev.Zone() );
+            group->zones.push_back_non_empty( ev.Zone() );
         }
         m_findZone.processed = processed;
 

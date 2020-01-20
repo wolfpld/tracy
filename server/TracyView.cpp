@@ -9202,7 +9202,7 @@ void View::DrawFindZone()
             auto it = m_findZone.groups.find( gid );
             if( it == m_findZone.groups.end() )
             {
-                it = m_findZone.groups.emplace( gid, FindZone::Group {} ).first;
+                it = m_findZone.groups.emplace( gid, FindZone::Group { m_findZone.groupId++ } ).first;
                 it->second.zones.reserve( 1024 );
             }
             FindZone::Group* group = &it->second;
@@ -9222,6 +9222,7 @@ void View::DrawFindZone()
         switch( m_findZone.sortBy )
         {
         case FindZone::SortBy::Order:
+            pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.id < rhs->second.id; } );
             break;
         case FindZone::SortBy::Count:
             pdqsort_branchless( groups.begin(), groups.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.zones.size() > rhs->second.zones.size(); } );

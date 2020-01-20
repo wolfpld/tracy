@@ -407,6 +407,7 @@ private:
 
         struct Group
         {
+            uint16_t id;
             Vector<short_ptr<ZoneEvent>> zones;
             int64_t time = 0;
         };
@@ -416,6 +417,7 @@ private:
         std::vector<int16_t> match;
         std::map<uint64_t, Group> groups;
         size_t processed;
+        uint16_t groupId;
         int selMatch = 0;
         uint64_t selGroup = Unselected;
         char pattern[1024] = {};
@@ -480,6 +482,7 @@ private:
             ResetSelection();
             groups.clear();
             processed = 0;
+            groupId = 0;
             selCs = 0;
             selGroup = Unselected;
         }

@@ -13,24 +13,11 @@
 #include <string.h>
 #include <inttypes.h>
 
-#if ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
-#  if __has_include(<execution>)
-#    include <execution>
-#  else
-#    define MY_LIBCPP_SUCKS
-#  endif
-#else
-#  define MY_LIBCPP_SUCKS
-#endif
-
-#ifdef MY_LIBCPP_SUCKS
-#  include "tracy_pdqsort.h"
-#endif
-
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
+#include "TracySort.hpp"
 #include "TracyTaskDispatch.hpp"
 #include "TracyVersion.hpp"
 #include "TracyWorker.hpp"
@@ -1599,7 +1586,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             {
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                 auto& zones = v.second.zones;
-#ifdef MY_LIBCPP_SUCKS
+#ifdef NO_PARALLEL_SORT
                 pdqsort_branchless( zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
 #else
                 std::sort( std::execution::par_unseq, zones.begin(), zones.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Zone()->Start() < rhs.Zone()->Start(); } );
@@ -3160,7 +3147,7 @@ void Worker::HandlePostponedPlots()
         if( src.empty() ) continue;
         if( std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count() - plot->postponeTime < 100 ) continue;
         auto& dst = plot->data;
-#ifdef MY_LIBCPP_SUCKS
+#ifdef NO_PARALLEL_SORT
         pdqsort_branchless( src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
 #else
         std::sort( std::execution::par_unseq, src.begin(), src.end(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
@@ -4792,7 +4779,7 @@ void Worker::CreateMemAllocPlot()
 void Worker::ReconstructMemAllocPlot()
 {
     auto& mem = m_data.memory;
-#ifdef MY_LIBCPP_SUCKS
+#ifdef NO_PARALLEL_SORT
     pdqsort_branchless( mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].TimeFree() < mem.data[rhs].TimeFree(); } );
 #else
     std::sort( std::execution::par_unseq, mem.frees.begin(), mem.frees.end(), [&mem] ( const auto& lhs, const auto& rhs ) { return mem.data[lhs].TimeFree() < mem.data[rhs].TimeFree(); } );

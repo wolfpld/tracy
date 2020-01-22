@@ -123,44 +123,44 @@ struct KeyOrValueEquality : functor_storage<bool, key_equal>
         : equality_storage(equality)
     {
     }
-    bool operator()(const key_type & lhs, const key_type & rhs)
+    tracy_force_inline bool operator()(const key_type & lhs, const key_type & rhs)
     {
         return static_cast<equality_storage &>(*this)(lhs, rhs);
     }
-    bool operator()(const key_type & lhs, const value_type & rhs)
+    tracy_force_inline bool operator()(const key_type & lhs, const value_type & rhs)
     {
         return static_cast<equality_storage &>(*this)(lhs, rhs.first);
     }
-    bool operator()(const value_type & lhs, const key_type & rhs)
+    tracy_force_inline bool operator()(const value_type & lhs, const key_type & rhs)
     {
         return static_cast<equality_storage &>(*this)(lhs.first, rhs);
     }
-    bool operator()(const value_type & lhs, const value_type & rhs)
+    tracy_force_inline bool operator()(const value_type & lhs, const value_type & rhs)
     {
         return static_cast<equality_storage &>(*this)(lhs.first, rhs.first);
     }
     template<typename F, typename S>
-    bool operator()(const key_type & lhs, const std::pair<F, S> & rhs)
+    tracy_force_inline bool operator()(const key_type & lhs, const std::pair<F, S> & rhs)
     {
         return static_cast<equality_storage &>(*this)(lhs, rhs.first);
     }
     template<typename F, typename S>
-    bool operator()(const std::pair<F, S> & lhs, const key_type & rhs)
+    tracy_force_inline bool operator()(const std::pair<F, S> & lhs, const key_type & rhs)
     {
         return static_cast<equality_storage &>(*this)(lhs.first, rhs);
     }
     template<typename F, typename S>
-    bool operator()(const value_type & lhs, const std::pair<F, S> & rhs)
+    tracy_force_inline bool operator()(const value_type & lhs, const std::pair<F, S> & rhs)
     {
         return static_cast<equality_storage &>(*this)(lhs.first, rhs.first);
     }
     template<typename F, typename S>
-    bool operator()(const std::pair<F, S> & lhs, const value_type & rhs)
+    tracy_force_inline bool operator()(const std::pair<F, S> & lhs, const value_type & rhs)
     {
         return static_cast<equality_storage &>(*this)(lhs.first, rhs.first);
     }
     template<typename FL, typename SL, typename FR, typename SR>
-    bool operator()(const std::pair<FL, SL> & lhs, const std::pair<FR, SR> & rhs)
+    tracy_force_inline bool operator()(const std::pair<FL, SL> & lhs, const std::pair<FR, SR> & rhs)
     {
         return static_cast<equality_storage &>(*this)(lhs.first, rhs.first);
     }
@@ -481,16 +481,16 @@ public:
         using pointer = ValueType *;
         using reference = ValueType &;
 
-        friend bool operator==(const templated_iterator & lhs, const templated_iterator & rhs)
+        tracy_force_inline friend bool operator==(const templated_iterator & lhs, const templated_iterator & rhs)
         {
             return lhs.current == rhs.current;
         }
-        friend bool operator!=(const templated_iterator & lhs, const templated_iterator & rhs)
+        tracy_force_inline friend bool operator!=(const templated_iterator & lhs, const templated_iterator & rhs)
         {
             return !(lhs == rhs);
         }
 
-        templated_iterator & operator++()
+        tracy_force_inline templated_iterator & operator++()
         {
             do
             {
@@ -499,23 +499,23 @@ public:
             while(current->is_empty());
             return *this;
         }
-        templated_iterator operator++(int)
+        tracy_force_inline templated_iterator operator++(int)
         {
             templated_iterator copy(*this);
             ++*this;
             return copy;
         }
 
-        ValueType & operator*() const
+        tracy_force_inline ValueType & operator*() const
         {
             return current->value;
         }
-        ValueType * operator->() const
+        tracy_force_inline ValueType * operator->() const
         {
             return std::addressof(current->value);
         }
 
-        operator templated_iterator<const value_type>() const
+        tracy_force_inline operator templated_iterator<const value_type>() const
         {
             return templated_iterator<const value_type> { current };
         }
@@ -539,19 +539,19 @@ public:
                 return const_iterator { it };
         }
     }
-    const_iterator cbegin() const
+    tracy_force_inline const_iterator cbegin() const
     {
         return begin();
     }
-    iterator end()
+    tracy_force_inline iterator end()
     {
         return iterator { entries + static_cast<ptrdiff_t>(num_slots_minus_one + max_lookups) };
     }
-    const_iterator end() const
+    tracy_force_inline const_iterator end() const
     {
         return const_iterator { entries + static_cast<ptrdiff_t>(num_slots_minus_one + max_lookups) };
     }
-    const_iterator cend() const
+    tracy_force_inline const_iterator cend() const
     {
         return end();
     }
@@ -909,17 +909,17 @@ private:
     }
 
     template<typename U>
-    size_t hash_object(const U & key)
+    tracy_force_inline size_t hash_object(const U & key)
     {
         return static_cast<Hasher &>(*this)(key);
     }
     template<typename U>
-    size_t hash_object(const U & key) const
+    tracy_force_inline size_t hash_object(const U & key) const
     {
         return static_cast<const Hasher &>(*this)(key);
     }
     template<typename L, typename R>
-    bool compares_equal(const L & lhs, const R & rhs)
+    tracy_force_inline bool compares_equal(const L & lhs, const R & rhs)
     {
         return static_cast<Equal &>(*this)(lhs, rhs);
     }
@@ -1256,7 +1256,7 @@ private:
 
 struct power_of_two_hash_policy
 {
-    size_t index_for_hash(size_t hash, size_t num_slots_minus_one) const
+    tracy_force_inline size_t index_for_hash(size_t hash, size_t num_slots_minus_one) const
     {
         return hash & num_slots_minus_one;
     }

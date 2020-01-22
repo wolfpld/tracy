@@ -1892,7 +1892,7 @@ int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
     auto ptr = &ev;
     for(;;)
     {
-        if( ptr->End() >= 0 ) return ptr->End();
+        if( ptr->IsEndValid() ) return ptr->End();
         if( ptr->Child() < 0 ) return ptr->Start();
         auto& children = GetZoneChildren( ptr->Child() );
         if( children.is_magic() )
@@ -5056,7 +5056,7 @@ void Worker::ReconstructZoneStatistics( ZoneEvent& zone, uint16_t thread )
     ztd.SetZone( &zone );
     ztd.SetThread( thread );
 
-    if( zone.End() >= 0 )
+    if( zone.IsEndValid() )
     {
         auto timeSpan = zone.End() - zone.Start();
         if( timeSpan > 0 )

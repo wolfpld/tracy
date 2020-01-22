@@ -3175,7 +3175,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
     const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd + resolution, [] ( const auto& l, const auto& r ) { Adapter a; return a(l).Start() < r; } );
     if( it == zitend ) return depth;
     Adapter a;
-    if( a(*it).End() < 0 && m_worker.GetZoneEnd( a(*it) ) < m_vd.zvStart ) return depth;
+    if( !a(*it).IsEndValid() && m_worker.GetZoneEnd( a(*it) ) < m_vd.zvStart ) return depth;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
@@ -6328,7 +6328,7 @@ void View::DrawZoneInfoWindow()
             if( m_timeDist.dataValidFor != &ev )
             {
                 m_timeDist.data.clear();
-                if( ev.End() >= 0 ) m_timeDist.dataValidFor = &ev;
+                if( ev.IsEndValid() ) m_timeDist.dataValidFor = &ev;
 
                 if( m_timeDist.runningTime )
                 {
@@ -8189,7 +8189,7 @@ void View::DrawFindZone()
                         for( i=m_findZone.sortedNum; i<zsz; i++ )
                         {
                             auto& zone = *zones[i].Zone();
-                            if( zone.End() < 0 ) break;
+                            if( !zone.IsEndValid() ) break;
                             const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
                             if( !ctx ) break;
                             int64_t t;
@@ -9138,7 +9138,7 @@ void View::DrawFindZone()
         while( zptr < zend )
         {
             auto& ev = *zptr;
-            if( ev.Zone()->End() < 0 ) break;
+            if( !ev.Zone()->IsEndValid() ) break;
 
             const auto end = m_worker.GetZoneEndDirect( *ev.Zone() );
             const auto start = ev.Zone()->Start();
@@ -9993,7 +9993,7 @@ void View::DrawCompare()
                     for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
                     {
                         auto& zone = *zones[i].Zone();
-                        if( zone.End() < 0 ) break;
+                        if( !zone.IsEndValid() ) break;
                         const auto t = zone.End() - zone.Start();
                         vec.emplace_back( t );
                         total += t;
@@ -14040,7 +14040,7 @@ int View::GetZoneDepth( const ZoneEvent& zone, uint64_t tid ) const
             auto vec = (Vector<ZoneEvent>*)timeline;
             auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
             if( it != vec->begin() ) --it;
-            assert( !( zone.End() >= 0 && it->Start() > zone.End() ) );
+            assert( !( zone.IsEndValid() && it->Start() > zone.End() ) );
             if( it == &zone ) return depth;
             assert( it->Child() >= 0 );
             timeline = &m_worker.GetZoneChildren( it->Child() );
@@ -14050,7 +14050,7 @@ int View::GetZoneDepth( const ZoneEvent& zone, uint64_t tid ) const
         {
             auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
             if( it != timeline->begin() ) --it;
-            assert( !( zone.End() >= 0 && (*it)->Start() > zone.End() ) );
+            assert( !( zone.IsEndValid() && (*it)->Start() > zone.End() ) );
             if( *it == &zone ) return depth;
             assert( (*it)->Child() >= 0 );
             timeline = &m_worker.GetZoneChildren( (*it)->Child() );
@@ -14073,7 +14073,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
                 auto vec = (Vector<ZoneEvent>*)timeline;
                 auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
                 if( it != vec->begin() ) --it;
-                if( zone.End() >= 0 && it->Start() > zone.End() ) break;
+                if( zone.IsEndValid() && it->Start() > zone.End() ) break;
                 if( it == &zone ) return parent;
                 if( it->Child() < 0 ) break;
                 parent = it;
@@ -14083,7 +14083,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
             {
                 auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
                 if( it != timeline->begin() ) --it;
-                if( zone.End() >= 0 && (*it)->Start() > zone.End() ) break;
+                if( zone.IsEndValid() && (*it)->Start() > zone.End() ) break;
                 if( *it == &zone ) return parent;
                 if( (*it)->Child() < 0 ) break;
                 parent = *it;
@@ -14107,7 +14107,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone, uint64_t tid ) cons
             auto vec = (Vector<ZoneEvent>*)timeline;
             auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
             if( it != vec->begin() ) --it;
-            if( zone.End() >= 0 && it->Start() > zone.End() ) break;
+            if( zone.IsEndValid() && it->Start() > zone.End() ) break;
             if( it == &zone ) return parent;
             if( it->Child() < 0 ) break;
             parent = it;
@@ -14117,7 +14117,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone, uint64_t tid ) cons
         {
             auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
             if( it != timeline->begin() ) --it;
-            if( zone.End() >= 0 && (*it)->Start() > zone.End() ) break;
+            if( zone.IsEndValid() && (*it)->Start() > zone.End() ) break;
             if( *it == &zone ) return parent;
             if( (*it)->Child() < 0 ) break;
             parent = *it;
@@ -14178,7 +14178,7 @@ const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
                 auto vec = (Vector<ZoneEvent>*)timeline;
                 auto it = std::upper_bound( vec->begin(), vec->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
                 if( it != vec->begin() ) --it;
-                if( zone.End() >= 0 && it->Start() > zone.End() ) break;
+                if( zone.IsEndValid() && it->Start() > zone.End() ) break;
                 if( it == &zone ) return thread;
                 if( it->Child() < 0 ) break;
                 timeline = &m_worker.GetZoneChildren( it->Child() );
@@ -14187,7 +14187,7 @@ const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
             {
                 auto it = std::upper_bound( timeline->begin(), timeline->end(), zone.Start(), [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
                 if( it != timeline->begin() ) --it;
-                if( zone.End() >= 0 && (*it)->Start() > zone.End() ) break;
+                if( zone.IsEndValid() && (*it)->Start() > zone.End() ) break;
                 if( *it == &zone ) return thread;
                 if( (*it)->Child() < 0 ) break;
                 timeline = &m_worker.GetZoneChildren( (*it)->Child() );
@@ -14302,7 +14302,7 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
             auto vec = (Vector<ZoneEvent>*)timeline;
             auto it = std::upper_bound( vec->begin(), vec->end(), time, [] ( const auto& l, const auto& r ) { return l < r.Start(); } );
             if( it != vec->begin() ) --it;
-            if( it->Start() > time || ( it->End() >= 0 && it->End() < time ) ) return ret;
+            if( it->Start() > time || ( it->IsEndValid() && it->End() < time ) ) return ret;
             ret = it;
             if( it->Child() < 0 ) return ret;
             timeline = &m_worker.GetZoneChildren( it->Child() );
@@ -14311,7 +14311,7 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
         {
             auto it = std::upper_bound( timeline->begin(), timeline->end(), time, [] ( const auto& l, const auto& r ) { return l < r->Start(); } );
             if( it != timeline->begin() ) --it;
-            if( (*it)->Start() > time || ( (*it)->End() >= 0 && (*it)->End() < time ) ) return ret;
+            if( (*it)->Start() > time || ( (*it)->IsEndValid() && (*it)->End() < time ) ) return ret;
             ret = *it;
             if( (*it)->Child() < 0 ) return ret;
             timeline = &m_worker.GetZoneChildren( (*it)->Child() );
@@ -14513,7 +14513,7 @@ int64_t View::GetZoneChildTimeFast( const ZoneEvent& zone )
             auto& vec = *(Vector<ZoneEvent>*)&children;
             for( auto& v : vec )
             {
-                assert( v.End() >= 0 );
+                assert( v.IsEndValid() );
                 time += v.End() - v.Start();
             }
         }
@@ -14521,7 +14521,7 @@ int64_t View::GetZoneChildTimeFast( const ZoneEvent& zone )
         {
             for( auto& v : children )
             {
-                assert( v->End() >= 0 );
+                assert( v->IsEndValid() );
                 time += v->End() - v->Start();
             }
         }
@@ -14535,7 +14535,7 @@ int64_t View::GetZoneSelfTime( const ZoneEvent& zone )
     if( m_cache.zoneSelfTime2.first == &zone ) return m_cache.zoneSelfTime2.second;
     const auto ztime = m_worker.GetZoneEnd( zone ) - zone.Start();
     const auto selftime = ztime - GetZoneChildTime( zone );
-    if( zone.End() >= 0 )
+    if( zone.IsEndValid() )
     {
         m_cache.zoneSelfTime2 = m_cache.zoneSelfTime;
         m_cache.zoneSelfTime = std::make_pair( &zone, selftime );

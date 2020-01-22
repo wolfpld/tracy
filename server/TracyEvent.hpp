@@ -161,6 +161,7 @@ struct ZoneEvent
     tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_srcloc)+2, &start, 4 ); memcpy( ((char*)&_start_srcloc)+6, ((char*)&start)+4, 2 ); }
     tracy_force_inline int64_t End() const { return int64_t( _end_child1 ) >> 16; }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_child1)+2, &end, 4 ); memcpy( ((char*)&_end_child1)+6, ((char*)&end)+4, 2 ); }
+    tracy_force_inline bool IsEndValid() const { return ( _end_child1 >> 63 ) == 0; }
     tracy_force_inline int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
     tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_start_srcloc, &srcloc, 2 ); }
     tracy_force_inline int32_t Child() const { return int32_t( uint32_t( _end_child1 & 0xFFFF ) | ( uint32_t( _child2 ) << 16 ) ); }

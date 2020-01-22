@@ -9126,8 +9126,6 @@ void View::DrawFindZone()
         DrawHelpMarker( "Mean time per call" );
 
         auto& zones = zoneData.zones;
-        auto sz = zones.size();
-        auto processed = m_findZone.processed;
         const auto hmin = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
         const auto hmax = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
         const auto groupBy = m_findZone.groupBy;
@@ -9135,22 +9133,24 @@ void View::DrawFindZone()
         const auto limitRange = m_findZone.limitRange;
         FindZone::Group* group = nullptr;
         uint64_t lastGid = std::numeric_limits<uint64_t>::max() - 1;
-        while( processed < sz )
+        auto zptr = zones.data() + m_findZone.processed;
+        const auto zend = zones.data() + zones.size();
+        while( zptr < zend )
         {
-            auto& ev = zones[processed];
+            auto& ev = *zptr;
             if( ev.Zone()->End() < 0 ) break;
 
             const auto end = m_worker.GetZoneEndDirect( *ev.Zone() );
             const auto start = ev.Zone()->Start();
             if( limitRange && ( start < rangeMin || end > rangeMax ) )
             {
-                processed++;
+                zptr++;
                 continue;
             }
             auto timespan = end - start;
             if( timespan == 0 )
             {
-                processed++;
+                zptr++;
                 continue;
             }
             if( m_findZone.selfTime )
@@ -9171,12 +9171,12 @@ void View::DrawFindZone()
             {
                 if( timespan < hmin || timespan > hmax )
                 {
-                    processed++;
+                    zptr++;
                     continue;
                 }
             }
 
-            processed++;
+            zptr++;
             uint64_t gid = 0;
             switch( groupBy )
             {
@@ -9215,7 +9215,7 @@ void View::DrawFindZone()
             group->time += timespan;
             group->zones.push_back_non_empty( ev.Zone() );
         }
-        m_findZone.processed = processed;
+        m_findZone.processed = zptr - zones.data();
 
         Vector<decltype( m_findZone.groups )::iterator> groups;
         groups.reserve_and_use( m_findZone.groups.size() );

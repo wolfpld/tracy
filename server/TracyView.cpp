@@ -5707,15 +5707,25 @@ void View::DrawZoneInfoWindow()
             ShowZoneInfo( *parent );
         }
     }
-    ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_CHART_BAR " Statistics" ) )
-#else
-    if( ImGui::Button( "Statistics" ) )
-#endif
+#ifndef TRACY_NO_STATISTICS
+    if( m_worker.AreSourceLocationZonesReady() )
     {
-        m_findZone.ShowZone( ev.SrcLoc(), m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+        const auto sl = ev.SrcLoc();
+        const auto& slz = m_worker.GetZonesForSourceLocation( sl );
+        if( !slz.zones.empty() )
+        {
+            ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+            if( ImGui::Button( ICON_FA_CHART_BAR " Statistics" ) )
+#else
+            if( ImGui::Button( "Statistics" ) )
+#endif
+            {
+                m_findZone.ShowZone( sl, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+            }
+        }
     }
+#endif
     if( ev.callstack.Val() != 0 )
     {
         ImGui::SameLine();

@@ -1374,7 +1374,7 @@ void View::DrawFrames()
 
             int64_t zoneTime = 0;
             // This search is not valid, as zones are sorted according to their start time, not end time.
-            auto itStart = std::lower_bound( begin, zoneData.zones.end(), f0, [this] ( const auto& l, const auto& r ) { return m_worker.GetZoneEndDirect( *l.Zone() ) < r; } );
+            auto itStart = std::lower_bound( begin, zoneData.zones.end(), f0, [this] ( const auto& l, const auto& r ) { return l.Zone()->End() < r; } );
             if( itStart != zoneData.zones.end() )
             {
                 auto itEnd = std::lower_bound( itStart, zoneData.zones.end(), f1, [] ( const auto& l, const auto& r ) { return l.Zone()->Start() < r; } );
@@ -8171,7 +8171,6 @@ void View::DrawFindZone()
                         {
                             auto& zone = *zones[i].Zone();
                             const auto end = zone.End();
-                            if( end < 0 ) break;
                             if( end > rangeMax || zone.Start() < rangeMin ) continue;
                             const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
                             if( !ctx ) break;
@@ -8189,7 +8188,6 @@ void View::DrawFindZone()
                         for( i=m_findZone.sortedNum; i<zsz; i++ )
                         {
                             auto& zone = *zones[i].Zone();
-                            if( !zone.IsEndValid() ) break;
                             const auto ctx = m_worker.GetContextSwitchData( m_worker.DecompressThread( zones[i].Thread() ) );
                             if( !ctx ) break;
                             int64_t t;
@@ -8212,7 +8210,6 @@ void View::DrawFindZone()
                         {
                             auto& zone = *zones[i].Zone();
                             const auto end = zone.End();
-                            if( end < 0 ) break;
                             const auto start = zone.Start();
                             if( end > rangeMax || start < rangeMin ) continue;
                             const auto t = end - start - GetZoneChildTimeFast( zone );
@@ -8226,7 +8223,6 @@ void View::DrawFindZone()
                         {
                             auto& zone = *zones[i].Zone();
                             const auto end = zone.End();
-                            if( end < 0 ) break;
                             const auto t = end - zone.Start() - GetZoneChildTimeFast( zone );
                             vec.push_back_no_space_check( t );
                             total += t;
@@ -8243,7 +8239,6 @@ void View::DrawFindZone()
                         {
                             auto& zone = *zones[i].Zone();
                             const auto end = zone.End();
-                            if( end < 0 ) break;
                             const auto start = zone.Start();
                             if( end > rangeMax || start < rangeMin ) continue;
                             const auto t = end - start;
@@ -8257,7 +8252,6 @@ void View::DrawFindZone()
                         {
                             auto& zone = *zones[i].Zone();
                             const auto end = zone.End();
-                            if( end < 0 ) break;
                             const auto t = end - zone.Start();
                             vec.push_back_no_space_check( t );
                             total += t;
@@ -9138,9 +9132,7 @@ void View::DrawFindZone()
         while( zptr < zend )
         {
             auto& ev = *zptr;
-            if( !ev.Zone()->IsEndValid() ) break;
-
-            const auto end = m_worker.GetZoneEndDirect( *ev.Zone() );
+            const auto end = ev.Zone()->End();
             const auto start = ev.Zone()->Start();
             if( limitRange && ( start < rangeMin || end > rangeMax ) )
             {
@@ -9148,11 +9140,7 @@ void View::DrawFindZone()
                 continue;
             }
             auto timespan = end - start;
-            if( timespan == 0 )
-            {
-                zptr++;
-                continue;
-            }
+            assert( timespan != 0 );
             if( m_findZone.selfTime )
             {
                 timespan -= GetZoneChildTimeFast( *ev.Zone() );
@@ -9993,7 +9981,6 @@ void View::DrawCompare()
                     for( i=m_compare.sortedNum[k]; i<zsz[k]; i++ )
                     {
                         auto& zone = *zones[i].Zone();
-                        if( !zone.IsEndValid() ) break;
                         const auto t = zone.End() - zone.Start();
                         vec.emplace_back( t );
                         total += t;

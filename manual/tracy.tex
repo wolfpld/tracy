@@ -289,12 +289,6 @@ mov         qword ptr [rdi+28h],rax         ; write buffer counter
 
 The second code block, responsible for ending a zone, is similar, but smaller, as it can reuse some variables retrieved in the above code.
 
-\subsubsection{Superscalar out-of-order speculative execution}
-
-You must be aware that modern processors \emph{do not} execute machine code in a linear way, as laid out in the source code. This can lead to counterintuivive timing results reported by Tracy. Trying to get more 'reliable' readings\footnote{And by saying 'reliable' you do in reality mean: behaving in a way you expect it to.} would require a change in the behavior of the code and this is not a thing a profiler should do. Instead, Tracy shows you what the hardware is \emph{really} doing.
-
-This is a complex subject and the details vary from one CPU to another. You can read a brief rundown of the topic at the following address: \url{https://travisdowns.github.io/blog/2019/06/11/speed-limits.html}.
-
 \subsection{Examples}
 
 To see how Tracy can be integrated into an application, you may look at example programs in the \texttt{examples} directory. Looking at the commit history might be the best way to do that.
@@ -433,7 +427,11 @@ When using Tracy Profiler, keep in mind the following requirements:
 \end{itemize}
 
 \subsection{Check your environment}
-\label{checkenvironment}
+
+It is not an easy task to reliably measure performance of an application on modern machines. There are many factors affecting program execution characteristics, some of which you will be able to minimize, and others you will have to live with. It is critically important that you understand how these variables impact profiling results, as it is key to understanding the data you get.
+
+\subsubsection{Operating system}
+\label{checkenvironmentos}
 
 In a multitasking operating system applications compete for system resources with each other. This has a visible effect on the measurements performed by the profiler, which you may, or may not accept.
 
@@ -448,6 +446,64 @@ logo=\bclampe
 ]{Debugger in Visual Studio}
 In MSVC you would typically run your program using the \emph{Start Debugging} menu option, which is conveniently available as a \keys{F5} shortcut. You should instead use the \emph{Start Without Debugging} option, available as \keys{\ctrl + F5} shortcut.
 \end{bclogo}
+
+\subsubsection{CPU design}
+\label{checkenvironmentcpu}
+
+Where to even begin here? Modern processors are such a complex beasts, that it's almost impossible to surely say anything about how they will behave. Cache configuration, prefetcher logic, memory timings, branch predictor, execution unit counts are all the drivers of instructions-per-cycle uplift nowadays, after the megahertz race had hit the wall. Not only is it incredibly difficult to reason about, but you also need to take into account how the CPU topology affects things, which is described in more detail in section~\ref{cputopology}.
+
+Nevertheless, let's take a look on the ways we can try to stabilize the profiling data.
+
+\paragraph{Superscalar out-of-order speculative execution}
+
+Also known as: the \emph{spectre} thing we have to dealt with now.
+
+You must be aware that most processors available on the market\footnote{With the exception of low-cost ARM CPUs.} \emph{do not} execute machine code in a linear way, as laid out in the source code. This can lead to counterintuivive timing results reported by Tracy. Trying to get more 'reliable' readings\footnote{And by saying 'reliable' you do in reality mean: behaving in a way you expect it to.} would require a change in the behavior of the code and this is not a thing a profiler should do. Instead, Tracy shows you what the hardware is \emph{really} doing.
+
+This is a complex subject and the details vary from one CPU to another. You can read a brief rundown of the topic at the following address: \url{https://travisdowns.github.io/blog/2019/06/11/speed-limits.html}.
+
+\paragraph{Simultaneous multithreading}
+
+Also known as: Hyper-threading. Typically present on Intel and AMD processors.
+
+To get the most reliable results you should have whole CPU core resources dedicated to a single thread of your program. Otherwise you're no longer measuring the behavior of your code, but rather how it keeps up when its computing resources are randomly taken away by some other thing running on another pipeline within the same physical core.
+
+Note that you might \emph{want} to observe this behavior, if you plan to deploy your application on a machine with simultaneous multithreading enabled. This would require careful examination of what else is running on the machine, or even how the threads of your own program are scheduled by the operating system, as various combinations of competing workloads (e.g. integer/floating point operations) will be impacted differently.
+
+\paragraph{Turbo mode frequency scaling}
+
+Also known as: Turbo Boost (Intel), Precision Boost (AMD).
+
+While the CPU is more-or-less designed to always be able to work at the advertised \emph{base} frequency, there is usually some headroom left, which allows usage of the built-in automatic overclocking. There are no guarantees that the turbo frequencies can be attained, or how long they will be held, as there are many things to take into consideration:
+
+\begin{itemize}
+\item How many cores are being used? Just one, or all 8? All 16?
+\item What type of work is being performed? Integer? Floating point? 128-wide SIMD? 256-wide SIMD? 512-wide SIMD?
+\item Were you lucky in the silicon lottery? Some dies are simply better made and are able to achieve higher frequencies.
+\item Are you running on the best-rated core, or at the worst-rated core? Some cores may be unable to match the performance of other cores in the same processor.
+\item What kind of cooling solution are you using? The cheap one bundled with the CPU, or a beefy chunk of metal that has no problem with heat dissipation?
+\item Do you have complete control over the power profile? Spoiler alert: no. The operating system may run anything at any time on the any of the other cores, which will impact the turbo frequency you're able to achieve.
+\end{itemize}
+
+As you can see, this feature basically screams 'unreliable results!' Best keep it disabled and run at the base frequency. Otherwise your timings won't make much sense. A true example: branchless compression function executing multiple times with the same input data was measured executing at \emph{four} different speeds.
+
+Keep in mind that even at the base frequency you may hit thermal limits of the silicon and be downthrottled.
+
+\paragraph{Power saving}
+
+This is basically the same as turbo mode, but in reverse. While unused, processor cores are kept at lower frequencies (or even completely disabled) to reduce power usage. When your code starts running\footnote{Not necessarily when the application is started, but also when, for example, a blocking mutex becomes released by other thread and is acquired.} the core frequency needs to ramp up, which may be visible in the measurements.
+
+What's even worse, if your code doesn't do a lot of work (for example, because it is waiting for the GPU to finish rendering the frame), the core frequency might not be ramped up to 100\%, which will skew the results.
+
+Again, to get the best results, keep this feature disabled.
+
+\paragraph{AVX offset and power licenses}
+
+Intel CPUs are unable to run at their advertised frequencies when wide SIMD operations are performed due to increased power requirements\footnote{AMD processors are not affected by this issue.}. Depending on the width \emph{and} type of operations performed, the core operating frequency will be reduced, in some cases quite drastically\footnote{\url{https://en.wikichip.org/wiki/intel/xeon_gold/5120\#Frequencies}}. To make things even better, \emph{some} part of the workload will be executed within the available power license, at twice reduced processing rate, then the CPU may be stopped for some time, so that the wide parts of executions units may be powered up, then the work will continue at full processing rate, but at reduced frequency.
+
+Be very careful when using AVX2 or AVX512.
+
+More information can be found at \url{https://travisdowns.github.io/blog/2020/01/17/avxfreq1.html}, \url{https://en.wikichip.org/wiki/intel/frequency_behavior}.
 
 \subsection{Running the server}
 
@@ -1793,7 +1849,7 @@ Context switch regions are using the following color key:
 
 Meanwhile the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}), which in addition to being listed in the message log is being indicated by the triangle over the thread separator. When there are multiple messages in one place, the triangle outline changes to a filled triangle.
 
-At high zoom levels, the zones will be displayed with additional markers, as presented on figure~\ref{inaccuracy}. The red regions at the start and end of a zone indicate the cost associated with recording an event (\emph{Queue delay}). The error bars show the timer inaccuracy (\emph{Timer resolution}). Note that these markers are only \emph{approximations}, as there are many factors that can impact the true cost of capturing a zone, for example cache effects, or CPU frequency scaling, which is unaccounted for.
+At high zoom levels, the zones will be displayed with additional markers, as presented on figure~\ref{inaccuracy}. The red regions at the start and end of a zone indicate the cost associated with recording an event (\emph{Queue delay}). The error bars show the timer inaccuracy (\emph{Timer resolution}). Note that these markers are only \emph{approximations}, as there are many factors that can impact the true cost of capturing a zone, for example cache effects, or CPU frequency scaling, which is unaccounted for (see section~\ref{checkenvironmentcpu}).
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -1833,7 +1889,7 @@ Each line in the thread execution display represents a separate logical CPU thre
 
 When the \faMousePointer{}~mouse pointer is hovered over either the CPU data zone, or the thread timeline label, Tracy will display a line connecting all zones associated with the selected thread. This can be used to easily see how the thread was migrating across the CPU cores.
 
-Careful examination of the data presented on this graph may allow you to determine areas where the profiled application was fighting for system resources with other programs (see section~\ref{checkenvironment}), or give you a hint to add more instrumentation macros.
+Careful examination of the data presented on this graph may allow you to determine areas where the profiled application was fighting for system resources with other programs (see section~\ref{checkenvironmentos}), or give you a hint to add more instrumentation macros.
 
 \subparagraph{Locks}
 

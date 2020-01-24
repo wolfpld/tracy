@@ -6321,11 +6321,8 @@ void View::DrawZoneInfoWindow()
             }
             ImGui::TreePop();
         }
-    }
 
-    if( ev.Child() >= 0 )
-    {
-        bool expand = ImGui::TreeNode( "Time distribution" );
+        expand = ImGui::TreeNode( "Time distribution" );
         if( expand )
         {
             ImGui::SameLine();

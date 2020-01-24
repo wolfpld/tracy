@@ -5583,7 +5583,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
 
 void View::CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
 {
-    assert( zone.Child() >= 0 );
+    assert( zone.HasChildren() );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
     if( children.is_magic() )
     {
@@ -5627,7 +5627,7 @@ void View::CalcZoneTimeDataImpl( const V& children, flat_hash_map<int16_t, ZoneT
 
 void View::CalcZoneTimeData( const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
 {
-    assert( zone.Child() >= 0 );
+    assert( zone.HasChildren() );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
     if( children.is_magic() )
     {
@@ -6303,7 +6303,7 @@ void View::DrawZoneInfoWindow()
         }
     } );
 
-    if( ev.Child() >= 0 )
+    if( ev.HasChildren() )
     {
         const auto& children = m_worker.GetZoneChildren( ev.Child() );
         bool expand = ImGui::TreeNode( "Child zones" );
@@ -14069,7 +14069,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
                 if( it != vec->begin() ) --it;
                 if( zone.IsEndValid() && it->Start() > zone.End() ) break;
                 if( it == &zone ) return parent;
-                if( it->Child() < 0 ) break;
+                if( !it->HasChildren() ) break;
                 parent = it;
                 timeline = &m_worker.GetZoneChildren( parent->Child() );
             }
@@ -14079,7 +14079,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone ) const
                 if( it != timeline->begin() ) --it;
                 if( zone.IsEndValid() && (*it)->Start() > zone.End() ) break;
                 if( *it == &zone ) return parent;
-                if( (*it)->Child() < 0 ) break;
+                if( !(*it)->HasChildren() ) break;
                 parent = *it;
                 timeline = &m_worker.GetZoneChildren( parent->Child() );
             }
@@ -14103,7 +14103,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone, uint64_t tid ) cons
             if( it != vec->begin() ) --it;
             if( zone.IsEndValid() && it->Start() > zone.End() ) break;
             if( it == &zone ) return parent;
-            if( it->Child() < 0 ) break;
+            if( !it->HasChildren() ) break;
             parent = it;
             timeline = &m_worker.GetZoneChildren( parent->Child() );
         }
@@ -14113,7 +14113,7 @@ const ZoneEvent* View::GetZoneParent( const ZoneEvent& zone, uint64_t tid ) cons
             if( it != timeline->begin() ) --it;
             if( zone.IsEndValid() && (*it)->Start() > zone.End() ) break;
             if( *it == &zone ) return parent;
-            if( (*it)->Child() < 0 ) break;
+            if( !(*it)->HasChildren() ) break;
             parent = *it;
             timeline = &m_worker.GetZoneChildren( parent->Child() );
         }
@@ -14174,7 +14174,7 @@ const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
                 if( it != vec->begin() ) --it;
                 if( zone.IsEndValid() && it->Start() > zone.End() ) break;
                 if( it == &zone ) return thread;
-                if( it->Child() < 0 ) break;
+                if( !it->HasChildren() ) break;
                 timeline = &m_worker.GetZoneChildren( it->Child() );
             }
             else
@@ -14183,7 +14183,7 @@ const ThreadData* View::GetZoneThreadData( const ZoneEvent& zone ) const
                 if( it != timeline->begin() ) --it;
                 if( zone.IsEndValid() && (*it)->Start() > zone.End() ) break;
                 if( *it == &zone ) return thread;
-                if( (*it)->Child() < 0 ) break;
+                if( !(*it)->HasChildren() ) break;
                 timeline = &m_worker.GetZoneChildren( (*it)->Child() );
             }
         }
@@ -14298,7 +14298,7 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
             if( it != vec->begin() ) --it;
             if( it->Start() > time || ( it->IsEndValid() && it->End() < time ) ) return ret;
             ret = it;
-            if( it->Child() < 0 ) return ret;
+            if( !it->HasChildren() ) return ret;
             timeline = &m_worker.GetZoneChildren( it->Child() );
         }
         else
@@ -14307,7 +14307,7 @@ const ZoneEvent* View::FindZoneAtTime( uint64_t thread, int64_t time ) const
             if( it != timeline->begin() ) --it;
             if( (*it)->Start() > time || ( (*it)->IsEndValid() && (*it)->End() < time ) ) return ret;
             ret = *it;
-            if( (*it)->Child() < 0 ) return ret;
+            if( !(*it)->HasChildren() ) return ret;
             timeline = &m_worker.GetZoneChildren( (*it)->Child() );
         }
     }
@@ -14445,7 +14445,7 @@ void View::SetViewToLastFrames()
 int64_t View::GetZoneChildTime( const ZoneEvent& zone )
 {
     int64_t time = 0;
-    if( zone.Child() >= 0 )
+    if( zone.HasChildren() )
     {
         auto& children = m_worker.GetZoneChildren( zone.Child() );
         if( children.is_magic() )
@@ -14499,7 +14499,7 @@ int64_t View::GetZoneChildTime( const GpuEvent& zone )
 int64_t View::GetZoneChildTimeFast( const ZoneEvent& zone )
 {
     int64_t time = 0;
-    if( zone.Child() >= 0 )
+    if( zone.HasChildren() )
     {
         auto& children = m_worker.GetZoneChildren( zone.Child() );
         if( children.is_magic() )

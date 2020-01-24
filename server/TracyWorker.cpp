@@ -1575,7 +1575,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 for( auto& zone : vec )
                 {
                     if( zone.IsEndValid() ) ReconstructZoneStatistics( zone, thread );
-                    if( zone.Child() >= 0 ) ProcessTimeline( GetZoneChildrenMutable( zone.Child() ), thread );
+                    if( zone.HasChildren() ) ProcessTimeline( GetZoneChildrenMutable( zone.Child() ), thread );
                 }
             };
 
@@ -1899,7 +1899,7 @@ int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
     for(;;)
     {
         if( ptr->IsEndValid() ) return ptr->End();
-        if( ptr->Child() < 0 ) return ptr->Start();
+        if( !ptr->HasChildren() ) return ptr->Start();
         auto& children = GetZoneChildren( ptr->Child() );
         if( children.is_magic() )
         {
@@ -2682,8 +2682,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     else
     {
         auto& back = td->stack.back();
-        const auto backChild = back->Child();
-        if( backChild < 0 )
+        if( !back->HasChildren() )
         {
             back->SetChild( int32_t( m_data.zoneChildren.size() ) );
             if( m_data.zoneVectorCache.empty() )
@@ -2701,6 +2700,7 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
         }
         else
         {
+            const auto backChild = back->Child();
             assert( !m_data.zoneChildren[backChild].empty() );
             m_data.zoneChildren[backChild].push_back_non_empty( zone );
         }
@@ -3501,10 +3501,9 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 
     if( m_data.lastTime < timeEnd ) m_data.lastTime = timeEnd;
 
-    const auto child = zone->Child();
-    if( child >= 0 )
+    if( zone->HasChildren() )
     {
-        auto& childVec = m_data.zoneChildren[child];
+        auto& childVec = m_data.zoneChildren[zone->Child()];
         const auto sz = childVec.size();
         if( sz <= 8 * 1024 )
         {
@@ -5065,7 +5064,7 @@ void Worker::ReconstructZoneStatistics( ZoneEvent& zone, uint16_t thread )
         if( slz.max < timeSpan ) slz.max = timeSpan;
         slz.total += timeSpan;
         slz.sumSq += double( timeSpan ) * timeSpan;
-        if( zone.Child() >= 0 )
+        if( zone.HasChildren() )
         {
             auto& children = GetZoneChildren( zone.Child() );
             assert( children.is_magic() );

@@ -4686,13 +4686,16 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 {
                                     ImGui::PopFont();
                                     ImGui::BeginTooltip();
+                                    TextFocused( "CPU:", RealToString( i, true ) );
                                     if( tt )
                                     {
+                                        ImGui::SameLine();
+                                        ImGui::Spacing();
+                                        ImGui::SameLine();
                                         TextFocused( "Package:", RealToString( tt->package, true ) );
                                         ImGui::SameLine();
                                         TextFocused( "Core:", RealToString( tt->core, true ) );
                                     }
-                                    TextFocused( "CPU:", RealToString( i, true ) );
                                     TextFocused( "Context switch regions:", RealToString( num, true ) );
                                     ImGui::Separator();
                                     TextFocused( "Start time:", TimeToString( start ) );
@@ -4797,13 +4800,16 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     m_drawThreadHighlight = thread;
                                     ImGui::PopFont();
                                     ImGui::BeginTooltip();
+                                    TextFocused( "CPU:", RealToString( i, true ) );
                                     if( tt )
                                     {
+                                        ImGui::SameLine();
+                                        ImGui::Spacing();
+                                        ImGui::SameLine();
                                         TextFocused( "Package:", RealToString( tt->package, true ) );
                                         ImGui::SameLine();
                                         TextFocused( "Core:", RealToString( tt->core, true ) );
                                     }
-                                    TextFocused( "CPU:", RealToString( i, true ) );
                                     if( local )
                                     {
                                         TextFocused( "Program:", m_worker.GetCaptureProgram().c_str() );
@@ -4872,13 +4878,16 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     {
                         ImGui::PopFont();
                         ImGui::BeginTooltip();
+                        TextFocused( "CPU:", RealToString( i, true ) );
                         if( tt )
                         {
+                            ImGui::SameLine();
+                            ImGui::Spacing();
+                            ImGui::SameLine();
                             TextFocused( "Package:", RealToString( tt->package, true ) );
                             ImGui::SameLine();
                             TextFocused( "Core:", RealToString( tt->core, true ) );
                         }
-                        TextFocused( "CPU:", RealToString( i, true ) );
                         TextFocused( "Context switch regions:", RealToString( cs.size(), true ) );
                         ImGui::EndTooltip();
                         ImGui::PushFont( m_smallFont );

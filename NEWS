@@ -14,6 +14,8 @@ v0.7 (xxxx-xx-xx)
 - Improved tid to pid mapping on windows.
 - Zero length and unfinished zones are no longer taken into account for
   statistics.
+- Build files for shared library are now available (experimental).
+- GPU zones now also have "active" parameter.
 
 v0.6.2 (2019-12-30)
 -------------------

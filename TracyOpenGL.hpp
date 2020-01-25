@@ -6,14 +6,14 @@
 #if !defined TRACY_ENABLE || defined __APPLE__
 
 #define TracyGpuContext
-#define TracyGpuNamedZone(x,y)
-#define TracyGpuNamedZoneC(x,y,z)
+#define TracyGpuNamedZone(x,y,z)
+#define TracyGpuNamedZoneC(x,y,z,w)
 #define TracyGpuZone(x)
 #define TracyGpuZoneC(x,y)
 #define TracyGpuCollect
 
-#define TracyGpuNamedZoneS(x,y,z)
-#define TracyGpuNamedZoneCS(x,y,z,w)
+#define TracyGpuNamedZoneS(x,y,z,w)
+#define TracyGpuNamedZoneCS(x,y,z,w,a)
 #define TracyGpuZoneS(x,y)
 #define TracyGpuZoneCS(x,y,z)
 
@@ -23,8 +23,8 @@ struct SourceLocationData;
 class GpuCtxScope
 {
 public:
-    GpuCtxScope( const SourceLocationData* ) {}
-    GpuCtxScope( const SourceLocationData*, int ) {}
+    GpuCtxScope( const SourceLocationData*, bool ) {}
+    GpuCtxScope( const SourceLocationData*, int, bool ) {}
 };
 }
 
@@ -50,26 +50,26 @@ public:
 
 #define TracyGpuContext tracy::GetGpuCtx().ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::GetGpuCtx().ptr) tracy::GpuCtx;
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
-#  define TracyGpuNamedZone( varname, name ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK );
-#  define TracyGpuNamedZoneC( varname, name, color ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK );
-#  define TracyGpuZone( name ) TracyGpuNamedZoneS( ___tracy_gpu_zone, name, TRACY_CALLSTACK )
-#  define TracyGpuZoneC( name, color ) TracyGpuNamedZoneCS( ___tracy_gpu_zone, name, color, TRACY_CALLSTACK )
+#  define TracyGpuNamedZone( varname, name, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK, active );
+#  define TracyGpuNamedZoneC( varname, name, color, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK, active );
+#  define TracyGpuZone( name ) TracyGpuNamedZoneS( ___tracy_gpu_zone, name, TRACY_CALLSTACK, true )
+#  define TracyGpuZoneC( name, color ) TracyGpuNamedZoneCS( ___tracy_gpu_zone, name, color, TRACY_CALLSTACK, true )
 #else
-#  define TracyGpuNamedZone( varname, name ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__) );
-#  define TracyGpuNamedZoneC( varname, name, color ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__) );
-#  define TracyGpuZone( name ) TracyGpuNamedZone( ___tracy_gpu_zone, name )
-#  define TracyGpuZoneC( name, color ) TracyGpuNamedZoneC( ___tracy_gpu_zone, name, color )
+#  define TracyGpuNamedZone( varname, name, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), active );
+#  define TracyGpuNamedZoneC( varname, name, color, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), active );
+#  define TracyGpuZone( name ) TracyGpuNamedZone( ___tracy_gpu_zone, name, true )
+#  define TracyGpuZoneC( name, color ) TracyGpuNamedZoneC( ___tracy_gpu_zone, name, color, true )
 #endif
 #define TracyGpuCollect tracy::GetGpuCtx().ptr->Collect();
 
 #ifdef TRACY_HAS_CALLSTACK
-#  define TracyGpuNamedZoneS( varname, name, depth ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
-#  define TracyGpuNamedZoneCS( varname, name, color, depth ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth );
-#  define TracyGpuZoneS( name, depth ) TracyGpuNamedZoneS( ___tracy_gpu_zone, name, depth )
-#  define TracyGpuZoneCS( name, color, depth ) TracyGpuNamedZoneCS( ___tracy_gpu_zone, name, color, depth )
+#  define TracyGpuNamedZoneS( varname, name, depth, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth, active );
+#  define TracyGpuNamedZoneCS( varname, name, color, depth, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, color }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), depth, active );
+#  define TracyGpuZoneS( name, depth ) TracyGpuNamedZoneS( ___tracy_gpu_zone, name, depth, true )
+#  define TracyGpuZoneCS( name, color, depth ) TracyGpuNamedZoneCS( ___tracy_gpu_zone, name, color, depth, true )
 #else
-#  define TracyGpuNamedZoneS( varname, name, depth ) TracyGpuNamedZone( varname, name )
-#  define TracyGpuNamedZoneCS( varname, name, color, depth ) TracyGpuNamedZoneC( varname, name, color )
+#  define TracyGpuNamedZoneS( varname, name, depth, active ) TracyGpuNamedZone( varname, name, active )
+#  define TracyGpuNamedZoneCS( varname, name, color, depth, active ) TracyGpuNamedZoneC( varname, name, color, active )
 #  define TracyGpuZoneS( name, depth ) TracyGpuZone( name )
 #  define TracyGpuZoneCS( name, color, depth ) TracyGpuZoneC( name, color )
 #endif
@@ -179,14 +179,15 @@ private:
 class GpuCtxScope
 {
 public:
-    tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc )
+    tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc, bool is_active )
 #ifdef TRACY_ON_DEMAND
-        : m_active( GetProfiler().IsConnected() )
+        : m_active( is_active && GetProfiler().IsConnected() )
+#else
+        : m_active( is_active )
 #endif
     {
-#ifdef TRACY_ON_DEMAND
         if( !m_active ) return;
-#endif
+
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
@@ -199,14 +200,15 @@ public:
         TracyLfqCommit;
     }
 
-    tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc, int depth )
+    tracy_force_inline GpuCtxScope( const SourceLocationData* srcloc, int depth, bool is_active )
 #ifdef TRACY_ON_DEMAND
-        : m_active( GetProfiler().IsConnected() )
+        : m_active( is_active && GetProfiler().IsConnected() )
+#else
+        : m_active( is_active )
 #endif
     {
-#ifdef TRACY_ON_DEMAND
         if( !m_active ) return;
-#endif
+
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
@@ -224,9 +226,8 @@ public:
 
     tracy_force_inline ~GpuCtxScope()
     {
-#ifdef TRACY_ON_DEMAND
         if( !m_active ) return;
-#endif
+
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
@@ -239,9 +240,7 @@ public:
     }
 
 private:
-#ifdef TRACY_ON_DEMAND
     const bool m_active;
-#endif
 };
 
 }

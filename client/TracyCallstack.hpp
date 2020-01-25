@@ -1,15 +1,10 @@
 #ifndef __TRACYCALLSTACK_HPP__
 #define __TRACYCALLSTACK_HPP__
 
+#include "../common/TracyApi.h"
 #include "TracyCallstack.h"
 
-#if TRACY_HAS_CALLSTACK == 1
-extern "C"
-{
-    typedef unsigned long (__stdcall *t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
-    extern t_RtlWalkFrameChain RtlWalkFrameChain;
-}
-#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5
+#if TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5
 #  include <unwind.h>
 #elif TRACY_HAS_CALLSTACK >= 3
 #  include <execinfo.h>
@@ -46,15 +41,12 @@ void InitCallstack();
 
 #if TRACY_HAS_CALLSTACK == 1
 
+TRACY_API uintptr_t* CallTrace( int depth );
+
 static tracy_force_inline void* Callstack( int depth )
 {
     assert( depth >= 1 && depth < 63 );
-
-    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
-    const auto num = RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );
-    *trace = num;
-
-    return trace;
+    return CallTrace( depth );
 }
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5

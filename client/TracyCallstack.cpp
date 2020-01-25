@@ -36,7 +36,11 @@ enum { MaxCbTrace = 16 };
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
 
-extern "C" { t_RtlWalkFrameChain RtlWalkFrameChain = 0; }
+extern "C"
+{
+    typedef unsigned long (__stdcall *t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
+    t_RtlWalkFrameChain RtlWalkFrameChain = 0;
+}
 
 #if defined __MINGW32__ && API_VERSION_NUMBER < 12
 extern "C" {
@@ -60,6 +64,14 @@ void InitCallstack()
 #endif
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
+}
+
+TRACY_API tracy_force_inline uintptr_t* CallTrace( int depth )
+{
+    auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
+    const auto num = RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );
+    *trace = num;
+    return trace;
 }
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )

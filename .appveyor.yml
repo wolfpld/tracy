@@ -15,7 +15,7 @@ build_script:
   - cmd: msbuild .\update\build\win32\update.vcxproj
   - cmd: msbuild .\profiler\build\win32\Tracy.vcxproj
   - cmd: msbuild .\capture\build\win32\capture.vcxproj
-  - cmd: msbuild .\library\win32\TracyProfiler.vcxproj
+  - cmd: msbuild .\library\win32\TracyProfiler.vcxproj /property:Configuration=Release
   - sh: sudo apt-get update && sudo apt-get -y install libglfw3-dev libgtk2.0-dev
   - sh: make -C update/build/unix debug release
   - sh: make -C profiler/build/unix debug release

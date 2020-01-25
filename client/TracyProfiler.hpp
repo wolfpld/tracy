@@ -57,8 +57,7 @@ TRACY_API std::atomic<uint32_t>& GetLockCounter();
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter();
 TRACY_API GpuCtxWrapper& GetGpuCtx();
 TRACY_API uint64_t GetThreadHandle();
-
-void InitRPMallocThread();
+TRACY_API void InitRPMallocThread();
 
 struct SourceLocationData
 {
@@ -376,7 +375,7 @@ public:
 #  endif
         const auto thread = GetThreadHandle();
 
-        rpmalloc_thread_initialize();
+        InitRPMallocThread();
         auto callstack = Callstack( depth );
 
         profiler.m_serialLock.lock();
@@ -397,7 +396,7 @@ public:
 #  endif
         const auto thread = GetThreadHandle();
 
-        rpmalloc_thread_initialize();
+        InitRPMallocThread();
         auto callstack = Callstack( depth );
 
         profiler.m_serialLock.lock();

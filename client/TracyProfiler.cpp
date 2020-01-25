@@ -870,7 +870,7 @@ TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
 
 struct RPMallocInit { RPMallocInit() { rpmalloc_initialize(); } };
 
-void InitRPMallocThread()
+TRACY_API void InitRPMallocThread()
 {
     rpmalloc_initialize();
     rpmalloc_thread_initialize();
@@ -948,7 +948,7 @@ TRACY_API LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZo
 #  endif
 
 #else
-void InitRPMallocThread()
+TRACY_API void InitRPMallocThread()
 {
     rpmalloc_thread_initialize();
 }

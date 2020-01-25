@@ -2620,21 +2620,6 @@ void Profiler::ProcessSysTime()
 }
 #endif
 
-void Profiler::ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val )
-{
-    TracyLfqPrepare( QueueType::ParamSetup );
-    tracy::MemWrite( &item->paramSetup.idx, idx );
-    tracy::MemWrite( &item->paramSetup.name, (uint64_t)name );
-    tracy::MemWrite( &item->paramSetup.isBool, (uint8_t)isBool );
-    tracy::MemWrite( &item->paramSetup.val, val );
-
-#ifdef TRACY_ON_DEMAND
-    GetProfiler().DeferItem( *item );
-#endif
-
-    TracyLfqCommit;
-}
-
 void Profiler::HandleParameter( uint64_t payload )
 {
     assert( m_paramCallback );

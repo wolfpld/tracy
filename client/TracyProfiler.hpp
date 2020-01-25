@@ -58,7 +58,7 @@ TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter();
 TRACY_API GpuCtxWrapper& GetGpuCtx();
 TRACY_API uint64_t GetThreadHandle();
 
-TRACY_API void InitRPMallocThread();
+void InitRPMallocThread();
 
 struct SourceLocationData
 {

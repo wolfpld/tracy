@@ -48,11 +48,11 @@ struct ThreadNameData
     const char* name;
     ThreadNameData* next;
 };
-TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData();
-TRACY_API void InitRPMallocThread();
+std::atomic<ThreadNameData*>& GetThreadNameData();
+void InitRPMallocThread();
 #endif
 
-void SetThreadName( const char* name )
+TRACY_API void SetThreadName( const char* name )
 {
 #if defined _WIN32 || defined __CYGWIN__
 #  if defined NTDDI_WIN10_RS2 && NTDDI_VERSION >= NTDDI_WIN10_RS2
@@ -118,7 +118,7 @@ void SetThreadName( const char* name )
 #endif
 }
 
-const char* GetThreadName( uint64_t id )
+TRACY_API const char* GetThreadName( uint64_t id )
 {
     static char buf[256];
 #ifdef TRACY_ENABLE

@@ -72,8 +72,8 @@ static inline uint64_t GetThreadHandle()
 }
 #endif
 
-void SetThreadName( const char* name );
-const char* GetThreadName( uint64_t id );
+TRACY_API void SetThreadName( const char* name );
+TRACY_API const char* GetThreadName( uint64_t id );
 
 }
 

@@ -870,7 +870,7 @@ TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
 
 struct RPMallocInit { RPMallocInit() { rpmalloc_initialize(); } };
 
-TRACY_API void InitRPMallocThread()
+void InitRPMallocThread()
 {
     rpmalloc_initialize();
     rpmalloc_thread_initialize();
@@ -941,14 +941,14 @@ TRACY_API std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().loc
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
 TRACY_API GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
 TRACY_API uint64_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
-TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
+std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
 
 #  ifdef TRACY_ON_DEMAND
 TRACY_API LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
 #  endif
 
 #else
-TRACY_API void InitRPMallocThread()
+void InitRPMallocThread()
 {
     rpmalloc_thread_initialize();
 }
@@ -1003,7 +1003,7 @@ TRACY_API uint64_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
 TRACY_API uint64_t GetThreadHandle() { return s_threadHandle.val; }
 #  endif
 
-TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
+std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
 
 #  ifdef TRACY_ON_DEMAND
 TRACY_API LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }

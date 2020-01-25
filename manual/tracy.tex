@@ -373,9 +373,9 @@ By default Tracy client will broadcast its presence to the local network. If you
 
 In projects that consist of multiple DLLs/shared objects things are a bit different. Compiling \texttt{TracyClient.cpp} into every DLL is not an option because this would result in several instances of Tracy objects lying around in the process. We rather need to pass the instances of them to the different DLLs to be reused there.
 
-For that you need a \emph{main DLL} to which your executable and the other DLLs link. If that doesn't exist you have to create one explicitly for Tracy. Link the executable and all DLLs which you want to profile to this DLL.
+For that you need a \emph{profiler DLL} to which your executable and the other DLLs link. If that doesn't exist you have to create one explicitly for Tracy. This library should contain the \texttt{tracy/TracyClient.cpp} source file. Link the executable and all DLLs which you want to profile to this DLL.
 
-You should compile the main library with the \texttt{tracy/TracyClient.cpp} source file and then add the \texttt{tracy/TracyClientDLL.cpp} file to the source files lists of the executable and the other DLLs.
+If you are targeting Windows with Microsoft Visual Studio, add the \texttt{TRACY\_IMPORTS} define to your application. While this is an optional step, it enables more efficient code.
 
 \subsubsection{Problematic platforms}
 

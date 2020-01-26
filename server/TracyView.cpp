@@ -3270,7 +3270,6 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
         {
             const auto color = GetZoneColor( ev, tid, depth );
             const char* zoneName = m_worker.GetZoneName( ev );
-            int dmul = ev.text.Active() ? 2 : 1;
 
             if( ev.Child() >= 0 )
             {
@@ -3291,9 +3290,9 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
             draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev, tid, depth ), 0.f, -1, GetZoneThickness( ev ) );
-            if( dsz * dmul > MinVisSize )
+            if( dsz > MinVisSize )
             {
-                const auto diff = dsz * dmul - MinVisSize;
+                const auto diff = dsz - MinVisSize;
                 uint32_t color;
                 if( diff < 1 )
                 {
@@ -3304,7 +3303,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                     color = 0x882222DD;
                 }
 
-                draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz*dmul, pr1 ), offset + tsz.y ), color );
+                draw->AddRectFilled( wpos + ImVec2( pr0, offset ), wpos + ImVec2( std::min( pr0+dsz, pr1 ), offset + tsz.y ), color );
                 draw->AddRectFilled( wpos + ImVec2( pr1, offset ), wpos + ImVec2( pr1+dsz, offset + tsz.y ), color );
             }
             if( rsz > MinVisSize )
@@ -5687,7 +5686,6 @@ void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, fl
 void View::DrawZoneInfoWindow()
 {
     auto& ev = *m_zoneInfoWindow;
-    int dmul = 1;
 
     const auto& srcloc = m_worker.GetSourceLocation( ev.SrcLoc() );
 
@@ -5834,7 +5832,6 @@ void View::DrawZoneInfoWindow()
     if( ev.text.Active() )
     {
         TextFocused( "User text:", m_worker.GetString( ev.text ) );
-        dmul++;
     }
 
     ImGui::Separator();

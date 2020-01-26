@@ -236,6 +236,7 @@ Worker::Worker( const char* addr, int port )
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
+    m_data.zoneExtra.push_back( ZoneExtra {} );
 
     memset( m_gpuCtxMap, 0, sizeof( m_gpuCtxMap ) );
 
@@ -262,6 +263,7 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
     m_data.callstackPayload.push_back( nullptr );
+    m_data.zoneExtra.push_back( ZoneExtra {} );
 
     m_data.lastTime = 0;
     if( !timeline.empty() )
@@ -910,6 +912,18 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 6, 3 ) )
+    {
+        f.Read( sz );
+        assert( sz != 0 );
+        m_data.zoneExtra.reserve_exact( sz, m_slab );
+        f.Read( m_data.zoneExtra.data(), sz * sizeof( ZoneExtra ) );
+    }
+    else
+    {
+        m_data.zoneExtra.push_back( ZoneExtra {} );
+    }
+
     s_loadProgress.progress.store( LoadProgress::Zones, std::memory_order_relaxed );
     f.Read( sz );
     s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
@@ -931,10 +945,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         td->id = tid;
         if( tsz != 0 )
         {
-            if( fileVer <= FileVersion( 0, 5, 9 ) )
+            if( fileVer < FileVersion( 0, 6, 3 ) )
             {
                 int64_t refTime = 0;
-                ReadTimelinePre0510( f, td->timeline, tsz, refTime, fileVer );
+                ReadTimelinePre063( f, td->timeline, tsz, refTime, childIdx, fileVer );
             }
             else
             {
@@ -2067,9 +2081,9 @@ const char* Worker::GetZoneName( const ZoneEvent& ev ) const
 
 const char* Worker::GetZoneName( const ZoneEvent& ev, const SourceLocation& srcloc ) const
 {
-    if( ev.name.Active() )
+    if( HasZoneExtra( ev ) && GetZoneExtra( ev ).name.Active() )
     {
-        return GetString( ev.name );
+        return GetString( GetZoneExtra( ev ).name );
     }
     else if( srcloc.name.active )
     {
@@ -3420,7 +3434,7 @@ ZoneEvent* Worker::AllocZoneEvent()
         ret = m_zoneEventPool.back_and_pop();
     }
 #endif
-    memset( &ret->text, 0, sizeof( ZoneEvent::text ) + sizeof( ZoneEvent::callstack ) + sizeof( ZoneEvent::name ) );
+    ret->extra = 0;
     return ret;
 }
 
@@ -3767,13 +3781,15 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
     auto zone = stack.back();
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
-    if( !zone->text.Active() )
+    if( !HasZoneExtra( *zone ) ) AllocZoneExtra( *zone );
+    auto& extra = GetZoneExtraMutable( *zone );
+    if( !extra.text.Active() )
     {
-        zone->text = StringIdx( it->second.idx );
+        extra.text = StringIdx( it->second.idx );
     }
     else
     {
-        const auto str0 = GetString( zone->text );
+        const auto str0 = GetString( extra.text );
         const auto str1 = it->second.ptr;
         const auto len0 = strlen( str0 );
         const auto len1 = strlen( str1 );
@@ -3781,7 +3797,7 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
         memcpy( buf, str0, len0 );
         buf[len0] = '\n';
         memcpy( buf+len0+1, str1, len1 );
-        zone->text = StringIdx( StoreString( buf, len0+len1+1 ).idx );
+        extra.text = StringIdx( StoreString( buf, len0+len1+1 ).idx );
     }
     m_pendingCustomStrings.erase( it );
 }
@@ -3800,7 +3816,9 @@ void Worker::ProcessZoneName( const QueueZoneText& ev )
     auto zone = stack.back();
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
-    zone->name = StringIdx( it->second.idx );
+    if( !HasZoneExtra( *zone ) ) AllocZoneExtra( *zone );
+    auto& extra = GetZoneExtraMutable( *zone );
+    extra.name = StringIdx( it->second.idx );
     m_pendingCustomStrings.erase( it );
 }
 
@@ -4456,8 +4474,12 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
     switch( next.type )
     {
     case NextCallstackType::Zone:
-        next.zone->callstack.SetVal( m_pendingCallstackId );
+    {
+        if( !HasZoneExtra( *next.zone ) ) AllocZoneExtra( *next.zone );
+        auto& extra = GetZoneExtraMutable( *next.zone );
+        extra.callstack.SetVal( m_pendingCallstackId );
         break;
+    }
     case NextCallstackType::Gpu:
         next.gpu->callstack.SetVal( m_pendingCallstackId );
         break;
@@ -4490,8 +4512,12 @@ void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
     switch( next.type )
     {
     case NextCallstackType::Zone:
-        next.zone->callstack.SetVal( m_pendingCallstackId );
+    {
+        if( !HasZoneExtra( *next.zone ) ) AllocZoneExtra( *next.zone );
+        auto& extra = GetZoneExtraMutable( *next.zone );
+        extra.callstack.SetVal( m_pendingCallstackId );
         break;
+    }
     case NextCallstackType::Gpu:
         next.gpu->callstack.SetVal( m_pendingCallstackId );
         break;
@@ -4992,7 +5018,7 @@ void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32
     }
 }
 
-void Worker::ReadTimelinePre0510( FileRead& f, ZoneEvent* zone, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre063( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32_t& childIdx, int fileVer )
 {
     uint64_t sz;
     f.Read( sz );
@@ -5002,12 +5028,22 @@ void Worker::ReadTimelinePre0510( FileRead& f, ZoneEvent* zone, int64_t& refTime
     }
     else
     {
-        const auto child = m_data.zoneChildren.size();
-        zone->SetChild( child );
-        m_data.zoneChildren.push_back( Vector<short_ptr<ZoneEvent>>() );
-        Vector<short_ptr<ZoneEvent>> tmp;
-        ReadTimelinePre0510( f, tmp, sz, refTime, fileVer );
-        m_data.zoneChildren[child] = std::move( tmp );
+        if( fileVer >= FileVersion( 0, 5, 10 ) )
+        {
+            const auto idx = childIdx;
+            childIdx++;
+            zone->SetChild( idx );
+            ReadTimelinePre063( f, m_data.zoneChildren[idx], sz, refTime, childIdx, fileVer );
+        }
+        else
+        {
+            const auto child = m_data.zoneChildren.size();
+            zone->SetChild( child );
+            m_data.zoneChildren.push_back( Vector<short_ptr<ZoneEvent>>() );
+            Vector<short_ptr<ZoneEvent>> tmp;
+            ReadTimelinePre063( f, tmp, sz, refTime, childIdx, fileVer );
+            m_data.zoneChildren[child] = std::move( tmp );
+        }
     }
 }
 
@@ -5104,7 +5140,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
         f.Read( srcloc );
         zone->SetSrcLoc( srcloc );
         // Use zone->_end_child1 as scratch buffer for zone start time offset.
-        f.Read( &zone->_end_child1, sizeof( zone->_end_child1 ) + sizeof( zone->text ) + sizeof( zone->callstack ) + sizeof( zone->name ) );
+        f.Read( &zone->_end_child1, sizeof( zone->_end_child1 ) + sizeof( zone->extra ) );
         refTime += int64_t( zone->_end_child1 );
         zone->SetStart( refTime );
         ReadTimeline( f, zone, refTime, childIdx );
@@ -5116,9 +5152,9 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
     while( ++zone != end );
 }
 
-void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint64_t size, int64_t& refTime, int fileVer )
+void Worker::ReadTimelinePre063( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint64_t size, int64_t& refTime, int32_t& childIdx, int fileVer )
 {
-    assert( fileVer <= FileVersion( 0, 5, 9 ) );
+    assert( fileVer < FileVersion( 0, 6, 3 ) );
     assert( size != 0 );
     auto& vec = *(Vector<ZoneEvent>*)( &_vec );
     vec.set_magic();
@@ -5151,43 +5187,50 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<ZoneEvent>>& _ve
                 f.Skip( 2 );
             }
         }
+        ZoneExtra extra;
         if( fileVer <= FileVersion( 0, 5, 7 ) )
         {
             __StringIdxOld str;
             f.Read( str );
             if( str.active )
             {
-                zone->text.SetIdx( str.idx );
+                extra.text.SetIdx( str.idx );
             }
             else
             {
-                new ( &zone->text ) StringIdx();
+                new ( &extra.text ) StringIdx();
             }
-            f.Read( zone->callstack );
+            f.Read( extra.callstack );
             f.Skip( 1 );
             f.Read( str );
             if( str.active )
             {
-                zone->name.SetIdx( str.idx );
+                extra.name.SetIdx( str.idx );
             }
             else
             {
-                new ( &zone->name ) StringIdx();
+                new ( &extra.name ) StringIdx();
             }
         }
         else
         {
-            f.Read( &zone->text, sizeof( zone->text ) );
-            f.Read( &zone->callstack, sizeof( zone->callstack ) );
+            f.Read( &extra.text, sizeof( extra.text ) );
+            f.Read( &extra.callstack, sizeof( extra.callstack ) );
             if( fileVer <= FileVersion( 0, 5, 8 ) )
             {
                 f.Skip( 1 );
             }
-            f.Read( &zone->name, sizeof( zone->name ) );
+            f.Read( &extra.name, sizeof( extra.name ) );
+        }
+        zone->extra = 0;
+        if( extra.callstack.Val() != 0 || extra.name.Active() || extra.text.Active() )
+        {
+            AllocZoneExtra( *zone );
+            memcpy( &GetZoneExtraMutable( *zone ), &extra, sizeof( ZoneExtra ) );
         }
         refTime += zone->_end_child1;
         zone->SetStart( refTime - m_data.baseTime );
-        ReadTimelinePre0510( f, zone, refTime, fileVer );
+        ReadTimelinePre063( f, zone, refTime, childIdx, fileVer );
         int64_t end = ReadTimeOffset( f, refTime );
         if( end >= 0 ) end -= m_data.baseTime;
         zone->SetEnd( end );
@@ -5510,6 +5553,10 @@ void Worker::Write( FileWrite& f )
         }
     }
 
+    sz = m_data.zoneExtra.size();
+    f.Write( &sz, sizeof( sz ) );
+    f.Write( m_data.zoneExtra.data(), sz * sizeof( ZoneExtra ) );
+
     sz = 0;
     for( auto& v : m_data.threads ) sz += v->count;
     f.Write( &sz, sizeof( sz ) );
@@ -5735,10 +5782,7 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime )
         f.Write( &srcloc, sizeof( srcloc ) );
         int64_t start = v.Start();
         WriteTimeOffset( f, refTime, start );
-        f.Write( &v.text, sizeof( v.text ) );
-        f.Write( &v.callstack, sizeof( v.callstack ) );
-        f.Write( &v.name, sizeof( v.name ) );
-
+        f.Write( &v.extra, sizeof( v.extra ) );
         if( v.Child() < 0 )
         {
             const uint64_t sz = 0;
@@ -5748,7 +5792,6 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime )
         {
             WriteTimeline( f, GetZoneChildren( v.Child() ), refTime );
         }
-
         WriteTimeOffset( f, refTime, v.End() );
     }
 }
@@ -5871,6 +5914,14 @@ const Worker::CpuThreadTopology* Worker::GetThreadTopology( uint32_t cpuThread )
     auto it = m_data.cpuTopologyMap.find( cpuThread );
     if( it == m_data.cpuTopologyMap.end() ) return nullptr;
     return &it->second;
+}
+
+void Worker::AllocZoneExtra( ZoneEvent& ev )
+{
+    assert( ev.extra == 0 );
+    ev.extra = uint32_t( m_data.zoneExtra.size() );
+    auto& extra = m_data.zoneExtra.push_next();
+    memset( &extra, 0, sizeof( extra ) );
 }
 
 }

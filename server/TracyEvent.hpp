@@ -164,20 +164,28 @@ struct ZoneEvent
     tracy_force_inline bool IsEndValid() const { return ( _end_child1 >> 63 ) == 0; }
     tracy_force_inline int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
     tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_start_srcloc, &srcloc, 2 ); }
-    tracy_force_inline int32_t Child() const { return int32_t( uint32_t( _end_child1 & 0xFFFF ) | ( uint32_t( _child2 ) << 16 ) ); }
-    tracy_force_inline void SetChild( int32_t child ) { memcpy( &_end_child1, &child, 2 ); _child2 = uint32_t( child ) >> 16; }
-    tracy_force_inline bool HasChildren() const { return ( _child2 >> 15 ) == 0; }
+    tracy_force_inline int32_t Child() const { int32_t child; memcpy( &child, &_child2, 4 ); return child; }
+    tracy_force_inline void SetChild( int32_t child ) { memcpy( &_child2, &child, 4 ); }
+    tracy_force_inline bool HasChildren() const { uint8_t tmp; memcpy( &tmp, ((char*)&_end_child1)+1, 1 ); return ( tmp >> 7 ) == 0; }
 
     uint64_t _start_srcloc;
-    uint64_t _end_child1;
-    StringIdx text;
-    Int24 callstack;
-    StringIdx name;
     uint16_t _child2;
+    uint64_t _end_child1;
+    uint32_t extra;
 };
 
 enum { ZoneEventSize = sizeof( ZoneEvent ) };
 static_assert( std::is_standard_layout<ZoneEvent>::value, "ZoneEvent is not standard layout" );
+
+
+struct ZoneExtra
+{
+    Int24 callstack;
+    StringIdx text;
+    StringIdx name;
+};
+
+enum { ZoneExtraSize = sizeof( ZoneExtra ) };
 
 
 struct LockEvent

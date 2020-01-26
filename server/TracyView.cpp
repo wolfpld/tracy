@@ -11201,6 +11201,10 @@ void View::DrawInfo()
         TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
         TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
         TextFocused( "CPU zones:", RealToString( m_worker.GetZoneCount(), true ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Extra data:", RealToString( m_worker.GetZoneExtraCount(), true ) );
         TextFocused( "GPU zones:", RealToString( m_worker.GetGpuZoneCount(), true ) );
         TextFocused( "Lock events:", RealToString( m_worker.GetLockCount(), true ) );
         TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount(), true ) );

@@ -5433,13 +5433,13 @@ template<typename T>
 static inline uint32_t GetZoneCallstack( const T& ev, const Worker& worker );
 
 template<>
-static inline uint32_t GetZoneCallstack<ZoneEvent>( const ZoneEvent& ev, const Worker& worker )
+inline uint32_t GetZoneCallstack<ZoneEvent>( const ZoneEvent& ev, const Worker& worker )
 {
     return worker.GetZoneExtra( ev ).callstack.Val();
 }
 
 template<>
-static inline uint32_t GetZoneCallstack<GpuEvent>( const GpuEvent& ev, const Worker& worker )
+inline uint32_t GetZoneCallstack<GpuEvent>( const GpuEvent& ev, const Worker& worker )
 {
     return ev.callstack.Val();
 }

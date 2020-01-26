@@ -940,19 +940,25 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto td = m_slab.AllocInit<ThreadData>();
-        uint64_t tid, tsz;
-        f.Read3( tid, td->count, tsz );
+        uint64_t tid;
+        f.Read2( tid, td->count );
         td->id = tid;
-        if( tsz != 0 )
+        int64_t refTime = 0;
+        if( fileVer < FileVersion( 0, 6, 3 ) )
         {
-            if( fileVer < FileVersion( 0, 6, 3 ) )
+            uint64_t tsz;
+            f.Read( tsz );
+            if( tsz != 0 )
             {
-                int64_t refTime = 0;
                 ReadTimelinePre063( f, td->timeline, tsz, refTime, childIdx, fileVer );
             }
-            else
+        }
+        else
+        {
+            uint32_t tsz;
+            f.Read( tsz );
+            if( tsz != 0 )
             {
-                int64_t refTime = 0;
                 ReadTimeline( f, td->timeline, tsz, refTime, childIdx );
             }
         }
@@ -5003,7 +5009,7 @@ void Worker::ReconstructContextSwitchUsage()
 
 void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32_t& childIdx )
 {
-    uint64_t sz;
+    uint32_t sz;
     f.Read( sz );
     if( sz == 0 )
     {
@@ -5124,7 +5130,7 @@ void Worker::CountZoneStatistics( ZoneEvent* zone )
 }
 #endif
 
-void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint64_t size, int64_t& refTime, int32_t& childIdx )
+void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint32_t size, int64_t& refTime, int32_t& childIdx )
 {
     assert( size != 0 );
     auto& vec = *(Vector<ZoneEvent>*)( &_vec );
@@ -5759,7 +5765,7 @@ void Worker::Write( FileWrite& f )
 
 void Worker::WriteTimeline( FileWrite& f, const Vector<short_ptr<ZoneEvent>>& vec, int64_t& refTime )
 {
-    uint64_t sz = vec.size();
+    uint32_t sz = uint32_t( vec.size() );
     f.Write( &sz, sizeof( sz ) );
     if( vec.is_magic() )
     {
@@ -5785,7 +5791,7 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime )
         f.Write( &v.extra, sizeof( v.extra ) );
         if( v.Child() < 0 )
         {
-            const uint64_t sz = 0;
+            const uint32_t sz = 0;
             f.Write( &sz, sizeof( sz ) );
         }
         else

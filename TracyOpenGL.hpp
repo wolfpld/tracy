@@ -1,7 +1,9 @@
 #ifndef __TRACYOPENGL_HPP__
 #define __TRACYOPENGL_HPP__
 
-// Include this file after you include OpenGL 3.2 headers.
+#ifndef GL_TIMESTAMP
+#  error "You must include OpenGL 3.2 headers before including TracyOpenGL.hpp"
+#endif
 
 #if !defined TRACY_ENABLE || defined __APPLE__
 

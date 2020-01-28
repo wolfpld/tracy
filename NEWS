@@ -17,6 +17,7 @@ v0.7 (xxxx-xx-xx)
 - Build files for shared library are now available (experimental).
 - GPU zones now also have "active" parameter.
 - Further reduction of memory usage and on-disk trace size.
+- Replaced ska::flat_hash_map with robin-hood-hashing.
 
 v0.6.2 (2019-12-30)
 -------------------

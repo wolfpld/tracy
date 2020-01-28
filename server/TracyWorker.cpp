@@ -352,7 +352,7 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
     for( auto& t : m_threadMap )
     {
         char buf[64];
-        sprintf( buf, "%i", t.first );
+        sprintf( buf, "%" PRIu64, t.first );
         AddThreadString( t.first, buf, strlen( buf ) );
     }
 

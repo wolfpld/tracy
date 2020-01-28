@@ -249,14 +249,14 @@ Worker::Worker( const char* addr, int port )
 
 Worker::Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages )
     : m_hasData( true )
+    , m_delay( 0 )
+    , m_resolution( 0 )
+    , m_captureProgram( program )
+    , m_captureTime( 0 )
+    , m_pid( 0 )
     , m_stream( nullptr )
     , m_buffer( nullptr )
     , m_traceVersion( CurrentVersion )
-    , m_captureProgram( program )
-    , m_captureTime( 0 )
-    , m_resolution( 0 )
-    , m_delay( 0 )
-    , m_pid( 0 )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();

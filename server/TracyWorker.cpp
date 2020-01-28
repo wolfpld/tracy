@@ -23,8 +23,6 @@
 #include "TracyWorker.hpp"
 #include "TracyYield.hpp"
 
-#include "tracy_flat_hash_map.hpp"
-
 namespace tracy
 {
 
@@ -465,7 +463,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             uint32_t packageId;
             uint64_t psz;
             f.Read2( packageId, psz );
-            auto& package = *m_data.cpuTopology.emplace( packageId, flat_hash_map<uint32_t, std::vector<uint32_t>> {} ).first;
+            auto& package = *m_data.cpuTopology.emplace( packageId, unordered_flat_map<uint32_t, std::vector<uint32_t>> {} ).first;
             package.second.reserve( psz );
             for( uint64_t j=0; j<psz; j++ )
             {
@@ -556,7 +554,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
-    flat_hash_map<uint64_t, const char*, nohash<uint64_t>> pointerMap;
+    unordered_flat_map<uint64_t, const char*> pointerMap;
 
     f.Read( sz );
     m_data.stringData.reserve_exact( sz, m_slab );
@@ -850,7 +848,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
     s_loadProgress.progress.store( LoadProgress::Messages, std::memory_order_relaxed );
-    flat_hash_map<uint64_t, MessageData*, nohash<uint64_t>> msgMap;
+    unordered_flat_map<uint64_t, MessageData*> msgMap;
     f.Read( sz );
     if( eventMask & EventType::Messages )
     {
@@ -4769,7 +4767,7 @@ void Worker::ProcessParamSetup( const QueueParamSetup& ev )
 void Worker::ProcessCpuTopology( const QueueCpuTopology& ev )
 {
     auto package = m_data.cpuTopology.find( ev.package );
-    if( package == m_data.cpuTopology.end() ) package = m_data.cpuTopology.emplace( ev.package, flat_hash_map<uint32_t, std::vector<uint32_t>> {} ).first;
+    if( package == m_data.cpuTopology.end() ) package = m_data.cpuTopology.emplace( ev.package, unordered_flat_map<uint32_t, std::vector<uint32_t>> {} ).first;
     auto core = package->second.find( ev.core );
     if( core == package->second.end() ) core = package->second.emplace( ev.core, std::vector<uint32_t> {} ).first;
     core->second.emplace_back( ev.thread );
@@ -5699,7 +5697,7 @@ void Worker::Write( FileWrite& f )
     }
 
     // Only save context switches relevant to active threads.
-    std::vector<flat_hash_map<uint64_t, ContextSwitch*, nohash<uint64_t>>::const_iterator> ctxValid;
+    std::vector<unordered_flat_map<uint64_t, ContextSwitch*>::const_iterator> ctxValid;
     ctxValid.reserve( m_data.ctxSwitch.size() );
     for( auto it = m_data.ctxSwitch.begin(); it != m_data.ctxSwitch.end(); ++it )
     {

@@ -17,7 +17,7 @@
 #include "TracyVector.hpp"
 #include "TracyViewData.hpp"
 #include "TracyWorker.hpp"
-#include "tracy_flat_hash_map.hpp"
+#include "tracy_robin_hood.h"
 
 struct ImVec2;
 struct ImFont;
@@ -156,10 +156,10 @@ private:
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
 
-    flat_hash_map<uint32_t, PathData, nohash<uint32_t>> GetCallstackPaths( const MemData& mem, bool onlyActive ) const;
-    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
-    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
-    void DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, int& idx );
+    unordered_flat_map<uint32_t, PathData> GetCallstackPaths( const MemData& mem, bool onlyActive ) const;
+    unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
+    unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
+    void DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx );
     void DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones );
 
     void DrawInfoWindow();
@@ -231,19 +231,19 @@ private:
     int64_t GetZoneSelfTime( const GpuEvent& zone );
     bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
 
-    tracy_force_inline void CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
-    tracy_force_inline void CalcZoneTimeData( const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
+    tracy_force_inline void CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone );
+    tracy_force_inline void CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone );
     template<typename Adapter, typename V>
-    void CalcZoneTimeDataImpl( const V& children, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
+    void CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone );
     template<typename Adapter, typename V>
-    void CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
+    void CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone );
 
     void SetPlaybackFrame( uint32_t idx );
 
-    flat_hash_map<const void*, VisData, nohash<const void*>> m_visData;
-    flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
-    flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;
-    flat_hash_map<const PlotData*, PlotView, nohash<const PlotData*>> m_plotView;
+    unordered_flat_map<const void*, VisData> m_visData;
+    unordered_flat_map<uint64_t, bool> m_visibleMsgThread;
+    unordered_flat_map<const void*, int> m_gpuDrift;
+    unordered_flat_map<const PlotData*, PlotView> m_plotView;
     Vector<const ThreadData*> m_threadOrder;
     Vector<float> m_threadDnd;
 
@@ -415,7 +415,7 @@ private:
         bool show = false;
         bool ignoreCase = false;
         std::vector<int16_t> match;
-        flat_hash_map<uint64_t, Group, nohash<uint64_t>> groups;
+        unordered_flat_map<uint64_t, Group> groups;
         size_t processed;
         uint16_t groupId;
         int selMatch = 0;
@@ -626,7 +626,7 @@ private:
         SortBy sortBy = SortBy::Time;
         bool runningTime = false;
         bool exclusiveTime = true;
-        flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>> data;
+        unordered_flat_map<int16_t, ZoneTimeData> data;
         const ZoneEvent* dataValidFor = nullptr;
         float fztime;
     } m_timeDist;

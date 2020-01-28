@@ -186,8 +186,8 @@
     <ClInclude Include="..\..\..\server\TracyViewData.hpp" />
     <ClInclude Include="..\..\..\server\TracyWorker.hpp" />
     <ClInclude Include="..\..\..\server\TracyYield.hpp" />
-    <ClInclude Include="..\..\..\server\tracy_flat_hash_map.hpp" />
     <ClInclude Include="..\..\..\server\tracy_pdqsort.h" />
+    <ClInclude Include="..\..\..\server\tracy_robin_hood.h" />
     <ClInclude Include="..\..\..\server\tracy_xxh3.h" />
     <ClInclude Include="..\..\libs\gl3w\GL\gl3w.h" />
     <ClInclude Include="..\..\libs\gl3w\GL\glcorearb.h" />

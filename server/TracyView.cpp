@@ -5607,7 +5607,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     ImGui::TreePop();
 }
 
-void View::CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
+void View::CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone )
 {
     assert( zone.HasChildren() );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
@@ -5622,7 +5622,7 @@ void View::CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_
 }
 
 template<typename Adapter, typename V>
-void View::CalcZoneTimeDataImpl( const V& children, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
+void View::CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone )
 {
     Adapter a;
     if( m_timeDist.exclusiveTime )
@@ -5651,7 +5651,7 @@ void View::CalcZoneTimeDataImpl( const V& children, flat_hash_map<int16_t, ZoneT
     }
 }
 
-void View::CalcZoneTimeData( const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
+void View::CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone )
 {
     assert( zone.HasChildren() );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
@@ -5666,7 +5666,7 @@ void View::CalcZoneTimeData( const ContextSwitch* ctx, flat_hash_map<int16_t, Zo
 }
 
 template<typename Adapter, typename V>
-void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone )
+void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone )
 {
     Adapter a;
     if( m_timeDist.exclusiveTime )
@@ -6388,7 +6388,7 @@ void View::DrawZoneInfoWindow()
             }
             if( !m_timeDist.data.empty() )
             {
-                std::vector<flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::const_iterator> vec;
+                std::vector<unordered_flat_map<int16_t, ZoneTimeData>::const_iterator> vec;
                 vec.reserve( m_timeDist.data.size() );
                 for( auto it = m_timeDist.data.cbegin(); it != m_timeDist.data.cend(); ++it ) vec.emplace_back( it );
                 static bool widthSet = false;
@@ -6478,7 +6478,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
             Vector<uint32_t> v;
         };
         uint64_t ctime = 0;
-        flat_hash_map<int16_t, ChildGroup, nohash<int16_t>> cmap;
+        unordered_flat_map<int16_t, ChildGroup> cmap;
         cmap.reserve( 128 );
         for( size_t i=0; i<children.size(); i++ )
         {
@@ -6921,7 +6921,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             Vector<uint32_t> v;
         };
         uint64_t ctime = 0;
-        flat_hash_map<int16_t, ChildGroup, nohash<int16_t>> cmap;
+        unordered_flat_map<int16_t, ChildGroup> cmap;
         cmap.reserve( 128 );
         for( size_t i=0; i<children.size(); i++ )
         {
@@ -12235,7 +12235,7 @@ void View::DrawCpuDataWindow()
     };
 
     const auto& ctd = m_worker.GetCpuThreadData();
-    flat_hash_map<uint64_t, PidData, nohash<uint64_t>> pids;
+    unordered_flat_map<uint64_t, PidData> pids;
     for( auto& v : ctd )
     {
         uint64_t pid = m_worker.GetPidFromTid( v.first );
@@ -12270,7 +12270,7 @@ void View::DrawCpuDataWindow()
     ImGui::NextColumn();
     ImGui::Separator();
 
-    std::vector<flat_hash_map<uint64_t, PidData, nohash<uint64_t>>::iterator> psort;
+    std::vector<unordered_flat_map<uint64_t, PidData>::iterator> psort;
     psort.reserve( pids.size() );
     for( auto it = pids.begin(); it != pids.end(); ++it ) psort.emplace_back( it );
     switch( m_cpuDataSort )
@@ -12763,17 +12763,17 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
     ImGui::EndChild();
 }
 
-static tracy_force_inline CallstackFrameTree* GetFrameTreeItemNoGroup( flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, CallstackFrameId idx, const Worker& worker )
+static tracy_force_inline CallstackFrameTree* GetFrameTreeItemNoGroup( unordered_flat_map<uint64_t, CallstackFrameTree>& tree, CallstackFrameId idx, const Worker& worker )
 {
     auto it = tree.find( idx.data );
     if( it == tree.end() )
     {
-        it = tree.emplace( idx.data, CallstackFrameTree { idx } ).first;
+        it = tree.emplace( idx.data, CallstackFrameTree( idx ) ).first;
     }
     return &it->second;
 }
 
-static tracy_force_inline CallstackFrameTree* GetFrameTreeItemGroup( flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, CallstackFrameId idx, const Worker& worker )
+static tracy_force_inline CallstackFrameTree* GetFrameTreeItemGroup( unordered_flat_map<uint64_t, CallstackFrameTree>& tree, CallstackFrameId idx, const Worker& worker )
 {
     auto frameDataPtr = worker.GetCallstackFrame( idx );
     if( !frameDataPtr ) return nullptr;
@@ -12785,14 +12785,14 @@ static tracy_force_inline CallstackFrameTree* GetFrameTreeItemGroup( flat_hash_m
     auto it = tree.find( fidx );
     if( it == tree.end() )
     {
-        it = tree.emplace( fidx, CallstackFrameTree { idx } ).first;
+        it = tree.emplace( fidx, CallstackFrameTree( idx ) ).first;
     }
     return &it->second;
 }
 
-flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPaths( const MemData& mem, bool onlyActive ) const
+unordered_flat_map<uint32_t, View::PathData> View::GetCallstackPaths( const MemData& mem, bool onlyActive ) const
 {
-    flat_hash_map<uint32_t, PathData, nohash<uint32_t>> pathSum;
+    unordered_flat_map<uint32_t, PathData> pathSum;
     pathSum.reserve( m_worker.GetCallstackPayloadCount() );
 
     const auto zvMid = m_vd.zvStart + ( m_vd.zvEnd - m_vd.zvStart ) / 2;
@@ -12839,9 +12839,9 @@ flat_hash_map<uint32_t, View::PathData, nohash<uint32_t>> View::GetCallstackPath
     return pathSum;
 }
 
-flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstackFrameTreeBottomUp( const MemData& mem ) const
+unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeBottomUp( const MemData& mem ) const
 {
-    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> root;
+    unordered_flat_map<uint64_t, CallstackFrameTree> root;
     auto pathSum = GetCallstackPaths( mem, m_activeOnlyBottomUp );
     if( m_groupCallstackTreeByNameBottomUp )
     {
@@ -12892,9 +12892,9 @@ flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstack
     return root;
 }
 
-flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> View::GetCallstackFrameTreeTopDown( const MemData& mem ) const
+unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopDown( const MemData& mem ) const
 {
-    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> root;
+    unordered_flat_map<uint64_t, CallstackFrameTree> root;
     auto pathSum = GetCallstackPaths( mem, m_activeOnlyTopDown );
     if( m_groupCallstackTreeByNameTopDown )
     {
@@ -12993,7 +12993,7 @@ struct MemoryPage
     int8_t data[PageSize];
 };
 
-static tracy_force_inline MemoryPage& GetPage( flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap, uint64_t page )
+static tracy_force_inline MemoryPage& GetPage( unordered_flat_map<uint64_t, MemoryPage>& memmap, uint64_t page )
 {
     auto it = memmap.find( page );
     if( it == memmap.end() )
@@ -13003,7 +13003,7 @@ static tracy_force_inline MemoryPage& GetPage( flat_hash_map<uint64_t, MemoryPag
     return it->second;
 }
 
-static tracy_force_inline void FillPages( flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>& memmap, uint64_t c0, uint64_t c1, int8_t val )
+static tracy_force_inline void FillPages( unordered_flat_map<uint64_t, MemoryPage>& memmap, uint64_t c0, uint64_t c1, int8_t val )
 {
     auto p0 = c0 >> PageBits;
     const auto p1 = c1 >> PageBits;
@@ -13047,7 +13047,7 @@ std::vector<MemoryPage> View::GetMemoryPages() const
 {
     std::vector<MemoryPage> ret;
 
-    static flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>> memmap;
+    static unordered_flat_map<uint64_t, MemoryPage> memmap;
 
     const auto& mem = m_worker.GetMemData();
     const auto memlow = mem.low;
@@ -13092,7 +13092,7 @@ std::vector<MemoryPage> View::GetMemoryPages() const
         }
     }
 
-    std::vector<flat_hash_map<uint64_t, MemoryPage, nohash<uint64_t>>::const_iterator> itmap;
+    std::vector<unordered_flat_map<uint64_t, MemoryPage>::const_iterator> itmap;
     itmap.reserve( memmap.size() );
     ret.reserve( memmap.size() );
     for( auto it = memmap.begin(); it != memmap.end(); ++it ) itmap.emplace_back( it );
@@ -13407,11 +13407,11 @@ void View::DrawMemory()
     ImGui::End();
 }
 
-void View::DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, int& idx )
+void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx )
 {
     auto& io = ImGui::GetIO();
 
-    std::vector<flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>::const_iterator> sorted;
+    std::vector<unordered_flat_map<uint64_t, CallstackFrameTree>::const_iterator> sorted;
     sorted.reserve( tree.size() );
     for( auto it = tree.begin(); it != tree.end(); ++it )
     {

@@ -28,8 +28,8 @@
 #include "stb_image.h"
 
 #include "../../common/TracyProtocol.hpp"
-#include "../../server/tracy_flat_hash_map.hpp"
 #include "../../server/tracy_pdqsort.h"
+#include "../../server/tracy_robin_hood.h"
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyImGui.hpp"
@@ -105,7 +105,7 @@ struct ClientData
 
 enum class ViewShutdown { False, True, Join };
 
-static tracy::flat_hash_map<uint32_t, ClientData> clients;
+static tracy::unordered_flat_map<uint32_t, ClientData> clients;
 static std::unique_ptr<tracy::View> view;
 static tracy::BadVersionState badVer;
 static int port = 8086;
@@ -114,7 +114,7 @@ static char title[128];
 static std::thread loadThread;
 static std::unique_ptr<tracy::UdpListen> broadcastListen;
 static std::mutex resolvLock;
-static tracy::flat_hash_map<std::string, std::string> resolvMap;
+static tracy::unordered_flat_map<std::string, std::string> resolvMap;
 static ResolvService resolv( port );
 static ImFont* bigFont;
 static ImFont* smallFont;

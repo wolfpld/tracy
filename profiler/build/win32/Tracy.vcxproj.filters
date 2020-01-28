@@ -173,9 +173,6 @@
     <ClInclude Include="..\..\..\server\TracyPopcnt.hpp">
       <Filter>server</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\server\tracy_flat_hash_map.hpp">
-      <Filter>server</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\common\TracyForceInline.hpp">
       <Filter>common</Filter>
     </ClInclude>
@@ -306,6 +303,9 @@
       <Filter>server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracySort.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\tracy_robin_hood.h">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

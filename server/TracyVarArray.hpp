@@ -5,7 +5,6 @@
 #include <string.h>
 
 #include "../common/TracyForceInline.hpp"
-#include "tracy_flat_hash_map.hpp"
 #include "TracyCharUtil.hpp"
 #include "TracyEvent.hpp"
 #include "TracyMemory.hpp"
@@ -95,12 +94,6 @@ struct VarArrayHasher
     {
         return arr->get_hash();
     }
-};
-
-template<typename T>
-struct VarArrayHasherPOT : public VarArrayHasher<T>
-{
-    typedef tracy::power_of_two_hash_policy hash_policy;
 };
 
 template<typename T>

@@ -165,7 +165,6 @@
     <ClInclude Include="..\..\..\server\TracyThreadCompress.hpp" />
     <ClInclude Include="..\..\..\server\TracyVector.hpp" />
     <ClInclude Include="..\..\..\server\TracyWorker.hpp" />
-    <ClInclude Include="..\..\..\server\tracy_flat_hash_map.hpp" />
     <ClInclude Include="..\..\src\getopt.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

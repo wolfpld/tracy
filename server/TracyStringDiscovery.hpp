@@ -2,7 +2,7 @@
 #define __TRACYSTRINGDISCOVERY_HPP__
 
 #include "../common/TracyForceInline.hpp"
-#include "tracy_flat_hash_map.hpp"
+#include "tracy_robin_hood.h"
 #include "TracyCharUtil.hpp"
 #include "TracyVector.hpp"
 
@@ -69,9 +69,9 @@ public:
 
 private:
     Vector<T> m_data;
-    flat_hash_map<uint64_t, T, nohash<uint64_t>> m_pending;
-    flat_hash_map<uint64_t, T, nohash<uint64_t>> m_map;
-    flat_hash_map<const char*, T, charutil::HasherPOT, charutil::Comparator> m_rev;
+    unordered_flat_map<uint64_t, T> m_pending;
+    unordered_flat_map<uint64_t, T> m_map;
+    unordered_flat_map<const char*, T, charutil::Hasher, charutil::Comparator> m_rev;
 };
 
 }

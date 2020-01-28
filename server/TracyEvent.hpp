@@ -10,7 +10,7 @@
 #include "TracyCharUtil.hpp"
 #include "TracyShortPtr.hpp"
 #include "TracyVector.hpp"
-#include "tracy_flat_hash_map.hpp"
+#include "tracy_robin_hood.h"
 #include "../common/TracyForceInline.hpp"
 
 namespace tracy
@@ -323,11 +323,13 @@ enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
 
 struct CallstackFrameTree
 {
+    CallstackFrameTree( CallstackFrameId id ) : frame( id ) {}
+
     CallstackFrameId frame;
     uint64_t alloc;
     uint32_t count;
-    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> children;
-    flat_hash_set<uint32_t, nohash<uint32_t>> callstacks;
+    unordered_flat_map<uint64_t, CallstackFrameTree> children;
+    unordered_flat_set<uint32_t> callstacks;
 };
 
 enum { CallstackFrameTreeSize = sizeof( CallstackFrameTree ) };
@@ -464,7 +466,7 @@ struct GpuCtxData
     uint64_t count;
     uint8_t accuracyBits;
     float period;
-    flat_hash_map<uint64_t, GpuCtxThreadData, nohash<uint64_t>> threadData;
+    unordered_flat_map<uint64_t, GpuCtxThreadData> threadData;
     short_ptr<GpuEvent> query[64*1024];
 };
 
@@ -480,7 +482,7 @@ struct LockMap
 
     int16_t srcloc;
     Vector<LockEventPtr> timeline;
-    flat_hash_map<uint64_t, uint8_t, nohash<uint64_t>> threadMap;
+    unordered_flat_map<uint64_t, uint8_t> threadMap;
     std::vector<uint64_t> threadList;
     LockType type;
     int64_t timeAnnounce;
@@ -530,7 +532,7 @@ struct MemData
 {
     Vector<MemEvent> data;
     Vector<uint32_t> frees;
-    flat_hash_map<uint64_t, size_t, nohash<uint64_t>> active;
+    unordered_flat_map<uint64_t, size_t> active;
     uint64_t high = std::numeric_limits<uint64_t>::min();
     uint64_t low = std::numeric_limits<uint64_t>::max();
     uint64_t usage = 0;
@@ -561,7 +563,6 @@ struct SourceLocationHasher
     {
         return charutil::hash( (const char*)ptr, sizeof( SourceLocationBase ) );
     }
-    typedef tracy::power_of_two_hash_policy hash_policy;
 };
 
 struct SourceLocationComparator

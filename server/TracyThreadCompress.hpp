@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "../common/TracyForceInline.hpp"
-#include "tracy_flat_hash_map.hpp"
+#include "tracy_robin_hood.h"
 #include "TracyVector.hpp"
 
 namespace tracy
@@ -51,7 +51,7 @@ private:
     uint16_t CompressThreadReal( uint64_t thread );
     uint16_t CompressThreadNew( uint64_t thread );
 
-    flat_hash_map<uint64_t, uint16_t, nohash<uint64_t>> m_threadMap;
+    unordered_flat_map<uint64_t, uint16_t> m_threadMap;
     Vector<uint64_t> m_threadExpand;
     std::pair<uint64_t, uint16_t> m_threadLast;
 };

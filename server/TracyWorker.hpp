@@ -16,7 +16,7 @@
 #include "../common/TracyQueue.hpp"
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
-#include "tracy_flat_hash_map.hpp"
+#include "tracy_robin_hood.h"
 #include "TracyEvent.hpp"
 #include "TracyShortPtr.hpp"
 #include "TracySlab.hpp"
@@ -137,7 +137,6 @@ private:
     struct CallstackFrameIdHash
     {
         size_t operator()( const CallstackFrameId& id ) const { return id.data; }
-        typedef tracy::power_of_two_hash_policy hash_policy;
     };
 
     struct CallstackFrameIdCompare
@@ -159,7 +158,6 @@ private:
             }
             return hash;
         }
-        typedef tracy::power_of_two_hash_policy hash_policy;
     };
 
     struct RevFrameComp
@@ -192,29 +190,29 @@ private:
         int64_t lastTime = 0;
         uint64_t frameOffset = 0;
 
-        flat_hash_map<uint64_t, const char*, nohash<uint64_t>> strings;
+        unordered_flat_map<uint64_t, const char*> strings;
         Vector<const char*> stringData;
-        flat_hash_map<charutil::StringKey, uint32_t, charutil::StringKey::HasherPOT, charutil::StringKey::Comparator> stringMap;
-        flat_hash_map<uint64_t, const char*, nohash<uint64_t>> threadNames;
-        flat_hash_map<uint64_t, std::pair<const char*, const char*>, nohash<uint64_t>> externalNames;
+        unordered_flat_map<charutil::StringKey, uint32_t, charutil::StringKey::Hasher, charutil::StringKey::Comparator> stringMap;
+        unordered_flat_map<uint64_t, const char*> threadNames;
+        unordered_flat_map<uint64_t, std::pair<const char*, const char*>> externalNames;
 
-        flat_hash_map<uint64_t, SourceLocation, nohash<uint64_t>> sourceLocation;
+        unordered_flat_map<uint64_t, SourceLocation> sourceLocation;
         Vector<short_ptr<SourceLocation>> sourceLocationPayload;
-        flat_hash_map<const SourceLocation*, int16_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
+        unordered_flat_map<const SourceLocation*, int16_t, SourceLocationHasher, SourceLocationComparator> sourceLocationPayloadMap;
         Vector<uint64_t> sourceLocationExpand;
 #ifndef TRACY_NO_STATISTICS
-        flat_hash_map<int16_t, SourceLocationZones, nohash<int16_t>> sourceLocationZones;
+        unordered_flat_map<int16_t, SourceLocationZones> sourceLocationZones;
         bool sourceLocationZonesReady;
 #else
-        flat_hash_map<int16_t, uint64_t> sourceLocationZonesCnt;
+        unordered_flat_map<int16_t, uint64_t> sourceLocationZonesCnt;
 #endif
 
-        flat_hash_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasherPOT<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
+        unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> callstackMap;
         Vector<short_ptr<VarArray<CallstackFrameId>>> callstackPayload;
-        flat_hash_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameMap;
-        flat_hash_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revFrameMap;
+        unordered_flat_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameMap;
+        unordered_flat_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revFrameMap;
 
-        flat_hash_map<uint32_t, LockMap*, nohash<uint32_t>> lockMap;
+        unordered_flat_map<uint32_t, LockMap*> lockMap;
 
         ThreadCompress localThreadCompress;
         ThreadCompress externalThreadCompress;
@@ -229,12 +227,12 @@ private:
 
         CrashEvent crashEvent;
 
-        flat_hash_map<uint64_t, ContextSwitch*, nohash<uint64_t>> ctxSwitch;
+        unordered_flat_map<uint64_t, ContextSwitch*> ctxSwitch;
 
         CpuData cpuData[256];
         int cpuDataCount = 0;
-        flat_hash_map<uint64_t, uint64_t, nohash<uint64_t>> tidToPid;
-        flat_hash_map<uint64_t, CpuThreadData, nohash<uint64_t>> cpuThreadData;
+        unordered_flat_map<uint64_t, uint64_t> tidToPid;
+        unordered_flat_map<uint64_t, CpuThreadData> cpuThreadData;
 
         std::pair<uint64_t, ThreadData*> threadDataLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
         std::pair<uint64_t, ContextSwitch*> ctxSwitchLast = std::make_pair( std::numeric_limits<uint64_t>::max(), nullptr );
@@ -251,8 +249,8 @@ private:
         bool ctxUsageReady = false;
 #endif
 
-        flat_hash_map<uint32_t, flat_hash_map<uint32_t, std::vector<uint32_t>>> cpuTopology;
-        flat_hash_map<uint32_t, CpuThreadTopology, nohash<uint32_t>> cpuTopologyMap;
+        unordered_flat_map<uint32_t, unordered_flat_map<uint32_t, std::vector<uint32_t>>> cpuTopology;
+        unordered_flat_map<uint32_t, CpuThreadTopology> cpuTopologyMap;
     };
 
     struct MbpsBlock
@@ -353,7 +351,7 @@ public:
     const CpuData* GetCpuData() const { return m_data.cpuData; }
     int GetCpuDataCpuCount() const { return m_data.cpuDataCount; }
     uint64_t GetPidFromTid( uint64_t tid ) const;
-    const flat_hash_map<uint64_t, CpuThreadData, nohash<uint64_t>>& GetCpuThreadData() const { return m_data.cpuThreadData; }
+    const unordered_flat_map<uint64_t, CpuThreadData>& GetCpuThreadData() const { return m_data.cpuThreadData; }
     void GetCpuUsageAtTime( int64_t time, int& own, int& other ) const;
 
     int64_t GetFrameTime( const FrameData& fd, size_t idx ) const;
@@ -362,7 +360,7 @@ public:
     const FrameImage* GetFrameImage( const FrameData& fd, size_t idx ) const;
     std::pair<int, int> GetFrameRange( const FrameData& fd, int64_t from, int64_t to );
 
-    const flat_hash_map<uint32_t, LockMap*, nohash<uint32_t>>& GetLockMap() const { return m_data.lockMap; }
+    const unordered_flat_map<uint32_t, LockMap*>& GetLockMap() const { return m_data.lockMap; }
     const Vector<short_ptr<MessageData>>& GetMessages() const { return m_data.messages; }
     const Vector<GpuCtxData*>& GetGpuData() const { return m_data.gpuData; }
     const Vector<PlotData*>& GetPlots() const { return m_data.plots.Data(); }
@@ -411,7 +409,7 @@ public:
 
 #ifndef TRACY_NO_STATISTICS
     const SourceLocationZones& GetZonesForSourceLocation( int16_t srcloc ) const;
-    const flat_hash_map<int16_t, SourceLocationZones, nohash<int16_t>>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
+    const unordered_flat_map<int16_t, SourceLocationZones>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
     bool IsCpuUsageReady() const { return m_data.ctxUsageReady; }
 #endif
@@ -673,15 +671,15 @@ private:
     bool m_ignoreMemFreeFaults;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
-    flat_hash_map<uint64_t, StringLocation, nohash<uint64_t>> m_pendingCustomStrings;
+    unordered_flat_map<uint64_t, StringLocation> m_pendingCustomStrings;
     uint64_t m_pendingCallstackPtr = 0;
     uint32_t m_pendingCallstackId;
-    flat_hash_map<uint64_t, int16_t, nohash<uint64_t>> m_pendingSourceLocationPayload;
+    unordered_flat_map<uint64_t, int16_t> m_pendingSourceLocationPayload;
     Vector<uint64_t> m_sourceLocationQueue;
-    flat_hash_map<uint64_t, int16_t, nohash<uint64_t>> m_sourceLocationShrink;
-    flat_hash_map<uint64_t, ThreadData*, nohash<uint64_t>> m_threadMap;
-    flat_hash_map<uint64_t, NextCallstack, nohash<uint64_t>> m_nextCallstack;
-    flat_hash_map<uint64_t, FrameImagePending, nohash<uint64_t>> m_pendingFrameImageData;
+    unordered_flat_map<uint64_t, int16_t> m_sourceLocationShrink;
+    unordered_flat_map<uint64_t, ThreadData*> m_threadMap;
+    unordered_flat_map<uint64_t, NextCallstack> m_nextCallstack;
+    unordered_flat_map<uint64_t, FrameImagePending> m_pendingFrameImageData;
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;
@@ -716,7 +714,7 @@ private:
     Vector<ServerQueryPacket> m_serverQueryQueue;
     size_t m_serverQuerySpaceLeft;
 
-    flat_hash_map<uint64_t, int32_t> m_frameImageStaging;
+    unordered_flat_map<uint64_t, int32_t> m_frameImageStaging;
     char* m_frameImageBuffer = nullptr;
     size_t m_frameImageBufferSize = 0;
     char* m_frameImageCompressedBuffer = nullptr;

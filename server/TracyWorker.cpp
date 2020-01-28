@@ -5910,7 +5910,7 @@ void Worker::SetParameter( size_t paramIdx, int32_t val )
     m_params[paramIdx].val = val;
     const auto idx = uint64_t( m_params[paramIdx].idx );
     const auto v = uint64_t( uint32_t( val ) );
-    Query( ServerQueryParameter, ( idx << 32 ) | val );
+    Query( ServerQueryParameter, ( idx << 32 ) | v );
 }
 
 const Worker::CpuThreadTopology* Worker::GetThreadTopology( uint32_t cpuThread ) const

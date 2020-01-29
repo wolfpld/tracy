@@ -1493,8 +1493,16 @@ void View::DrawFrames()
         auto x0 = std::max( 0, ( zrange.first - m_vd.frameStart ) * fwidth / group );
 
         if( x0 == x1 ) x1 = x0 + 1;
-
-        draw->AddRectFilled( wpos + ImVec2( 1+x0, 0 ), wpos + ImVec2( 1+x1, Height ), 0x55DD22DD );
+        if( x1 - x0 >= 3 )
+        {
+            draw->AddRectFilled( wpos + ImVec2( 2+x0, 0 ), wpos + ImVec2( x1, Height ), 0x55DD22DD );
+            draw->AddLine( wpos + ImVec2( 1+x0, -1 ), wpos + ImVec2( 1+x0, Height-1 ), 0x55FF55FF );
+            draw->AddLine( wpos + ImVec2( x1, -1 ), wpos + ImVec2( x1, Height-1 ), 0x55FF55FF );
+        }
+        else
+        {
+            draw->AddRectFilled( wpos + ImVec2( 1+x0, 0 ), wpos + ImVec2( 1+x1, Height ), 0x55FF55FF );
+        }
     }
 
     draw->AddLine( wpos + ImVec2( 0, round( Height - Height * BadTime / MaxFrameTime ) ),  wpos + ImVec2( w, round( Height - Height * BadTime / MaxFrameTime ) ),  0x4422DDDD );

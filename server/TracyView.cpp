@@ -5615,22 +5615,22 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     ImGui::TreePop();
 }
 
-void View::CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone )
+void View::CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
 {
     assert( zone.HasChildren() );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
     if( children.is_magic() )
     {
-        CalcZoneTimeDataImpl<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), data, zit, zone );
+        CalcZoneTimeDataImpl<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), data, ztime, zone );
     }
     else
     {
-        CalcZoneTimeDataImpl<VectorAdapterPointer<ZoneEvent>>( children, data, zit, zone );
+        CalcZoneTimeDataImpl<VectorAdapterPointer<ZoneEvent>>( children, data, ztime, zone );
     }
 }
 
 template<typename Adapter, typename V>
-void View::CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone )
+void View::CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
 {
     Adapter a;
     if( m_timeDist.exclusiveTime )
@@ -5638,7 +5638,7 @@ void View::CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, 
         for( auto& child : children )
         {
             const auto t = m_worker.GetZoneEnd( a(child) ) - a(child).Start();
-            zit->second.time -= t;
+            ztime -= t;
         }
     }
     for( auto& child : children )
@@ -5655,26 +5655,26 @@ void View::CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, 
             it->second.time += t;
             it->second.count++;
         }
-        if( a(child).Child() >= 0 ) CalcZoneTimeData( data, it, a(child) );
+        if( a(child).Child() >= 0 ) CalcZoneTimeData( data, it->second.time, a(child) );
     }
 }
 
-void View::CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone )
+void View::CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
 {
     assert( zone.HasChildren() );
     const auto& children = m_worker.GetZoneChildren( zone.Child() );
     if( children.is_magic() )
     {
-        CalcZoneTimeDataImpl<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), ctx, data, zit, zone );
+        CalcZoneTimeDataImpl<VectorAdapterDirect<ZoneEvent>>( *(Vector<ZoneEvent>*)( &children ), ctx, data, ztime, zone );
     }
     else
     {
-        CalcZoneTimeDataImpl<VectorAdapterPointer<ZoneEvent>>( children, ctx, data, zit, zone );
+        CalcZoneTimeDataImpl<VectorAdapterPointer<ZoneEvent>>( children, ctx, data, ztime, zone );
     }
 }
 
 template<typename Adapter, typename V>
-void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, unordered_flat_map<int16_t, ZoneTimeData>::iterator zit, const ZoneEvent& zone )
+void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone )
 {
     Adapter a;
     if( m_timeDist.exclusiveTime )
@@ -5685,7 +5685,7 @@ void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, un
             uint64_t cnt;
             const auto res = GetZoneRunningTime( ctx, a(child), t, cnt );
             assert( res );
-            zit->second.time -= t;
+            ztime -= t;
         }
     }
     for( auto& child : children )
@@ -5705,7 +5705,7 @@ void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, un
             it->second.time += t;
             it->second.count++;
         }
-        if( a(child).Child() >= 0 ) CalcZoneTimeData( ctx, data, it, a(child) );
+        if( a(child).Child() >= 0 ) CalcZoneTimeData( ctx, data, it->second.time, a(child) );
     }
 }
 
@@ -6383,14 +6383,14 @@ void View::DrawZoneInfoWindow()
                     else
                     {
                         auto it = m_timeDist.data.emplace( ev.SrcLoc(), ZoneTimeData{ time, 1 } ).first;
-                        CalcZoneTimeData( ctx, m_timeDist.data, it, ev );
+                        CalcZoneTimeData( ctx, m_timeDist.data, it->second.time, ev );
                     }
                     m_timeDist.fztime = 100.f / time;
                 }
                 else
                 {
                     auto it = m_timeDist.data.emplace( ev.SrcLoc(), ZoneTimeData{ ztime, 1 } ).first;
-                    CalcZoneTimeData( m_timeDist.data, it, ev );
+                    CalcZoneTimeData( m_timeDist.data, it->second.time, ev );
                     m_timeDist.fztime = 100.f / ztime;
                 }
             }

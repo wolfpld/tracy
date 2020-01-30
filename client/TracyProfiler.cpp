@@ -104,7 +104,6 @@ extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PR
 namespace tracy
 {
 
-#ifndef TRACY_DELAYED_INIT
 namespace
 {
 #  if ( defined _WIN32 || defined __CYGWIN__ ) && _WIN32_WINNT >= _WIN32_WINNT_VISTA
@@ -143,6 +142,8 @@ struct RPMallocInit
         rpmalloc_thread_initialize();
     }
 };
+
+#ifndef TRACY_DELAYED_INIT
 
 struct InitTimeWrapper
 {
@@ -867,12 +868,11 @@ static Thread* s_sysTraceThread = nullptr;
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
-
-struct RPMallocInit { RPMallocInit() { rpmalloc_initialize(); } };
-
 TRACY_API void InitRPMallocThread()
+
+void InitRPMallocThread()
 {
-    rpmalloc_initialize();
+    RPMallocInit rpinit;
     rpmalloc_thread_initialize();
 }
 

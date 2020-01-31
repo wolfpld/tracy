@@ -214,44 +214,6 @@ const char* TimeToString( int64_t _ns )
     return bufstart;
 }
 
-const char* RealToString( double val )
-{
-    enum { Pool = 8 };
-    static char bufpool[Pool][64];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    bufsel = ( bufsel + 1 ) % Pool;
-
-    *PrintFloat( buf, buf+64, val ) = '\0';
-    auto ptr = buf;
-    if( *ptr == '-' ) ptr++;
-
-    const auto vbegin = ptr;
-
-    while( *ptr != '\0' && *ptr != '.' ) ptr++;
-    auto end = ptr;
-    while( *end != '\0' ) end++;
-    auto sz = end - ptr + 1;
-
-    while( ptr - vbegin > 3 )
-    {
-        ptr -= 3;
-        memmove( ptr+1, ptr, sz+3 );
-        *ptr = ',';
-        sz += 4;
-    }
-
-    while( *ptr != '\0' && *ptr != '.' ) ptr++;
-
-    if( *ptr == '\0' ) return buf;
-    while( *ptr != '\0' ) ptr++;
-    ptr--;
-    while( *ptr == '0' ) ptr--;
-    if( *ptr != '.' && *ptr != ',' ) ptr++;
-    *ptr = '\0';
-    return buf;
-}
-
 const char* MemSizeToString( int64_t val )
 {
     enum { Pool = 8 };
@@ -326,6 +288,21 @@ const char* MemSizeToString( int64_t val )
     *ptr++ = '\0';
 
     return buf;
+}
+
+namespace detail
+{
+
+char* RealToStringGetBuffer()
+{
+    enum { Pool = 8 };
+    static char bufpool[Pool][64];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+    return buf;
+}
+
 }
 
 }

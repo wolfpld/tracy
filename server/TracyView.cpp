@@ -3265,8 +3265,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                     m_zoneHover = &ev;
                 }
             }
-            char tmp[64];
-            sprintf( tmp, "%s", RealToString( num ) );
+            const auto tmp = RealToString( num );
             const auto tsz = ImGui::CalcTextSize( tmp );
             if( tsz.x < px1 - px0 )
             {
@@ -3568,8 +3567,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                     m_gpuEnd = ev.CpuEnd();
                 }
             }
-            char tmp[64];
-            sprintf( tmp, "%s", RealToString( num ) );
+            const auto tmp = RealToString( num );
             const auto tsz = ImGui::CalcTextSize( tmp );
             if( tsz.x < px1 - px0 )
             {
@@ -5259,16 +5257,16 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                     }
                 }
 
-                char tmp[64];
                 if( yPos + ty >= yMin && yPos <= yMax )
                 {
+                    char tmp[64];
                     sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( max - min, v->format ), RealToString( num ) );
                     draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0x8844DDDD, tmp );
                 }
-                sprintf( tmp, "%s", FormatPlotValue( max, v->format ) );
+                auto tmp = FormatPlotValue( max, v->format );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
                 offset += PlotHeight - ty;
-                sprintf( tmp, "%s", FormatPlotValue( min, v->format ) );
+                tmp = FormatPlotValue( min, v->format );
                 DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0x8844DDDD, tmp );
 
                 draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );

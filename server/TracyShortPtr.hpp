@@ -25,6 +25,9 @@ public:
     tracy_force_inline T* operator->() { return Get(); }
     tracy_force_inline const T* operator->() const { return Get(); }
 
+    tracy_force_inline T* get() { return Get(); }
+    tracy_force_inline const T* get() const { return Get(); }
+
 private:
     tracy_force_inline void Set( const T* ptr )
     {

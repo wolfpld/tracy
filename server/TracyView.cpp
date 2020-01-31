@@ -9573,53 +9573,58 @@ void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
         }
     }
 
-    for( auto& ev : *zonesToIterate )
+    ImGuiListClipper clipper( zonesToIterate->size() );
+    while( clipper.Step() )
     {
-        const auto end = m_worker.GetZoneEndDirect( *ev );
-        int64_t timespan;
-        if( m_findZone.runningTime )
+        for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
         {
-            const auto ctx = m_worker.GetContextSwitchData( GetZoneThread( *ev ) );
-            uint64_t cnt;
-            GetZoneRunningTime( ctx, *ev, timespan, cnt );
-        }
-        else
-        {
-            timespan = end - ev->Start();
-            if( m_findZone.selfTime ) timespan -= GetZoneChildTimeFast( *ev );
-        }
-
-        ImGui::PushID( ev );
-        if( m_zoneHover == ev ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0, 1, 0, 1 ) );
-        if( ImGui::Selectable( TimeToString( ev->Start() ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
-        {
-            ShowZoneInfo( *ev );
-        }
-        if( ImGui::IsItemHovered() )
-        {
-            m_zoneHighlight = ev;
-            if( ImGui::IsMouseClicked( 2 ) )
+            auto ev = (*zonesToIterate)[i].get();
+            const auto end = m_worker.GetZoneEndDirect( *ev );
+            int64_t timespan;
+            if( m_findZone.runningTime )
             {
-                ZoomToZone( *ev );
+                const auto ctx = m_worker.GetContextSwitchData( GetZoneThread( *ev ) );
+                uint64_t cnt;
+                GetZoneRunningTime( ctx, *ev, timespan, cnt );
             }
-            ZoneTooltip( *ev );
-            m_zoneHover2 = ev;
-        }
-
-        ImGui::NextColumn();
-        ImGui::TextUnformatted( TimeToString( timespan ) );
-        ImGui::NextColumn();
-        if( m_worker.HasZoneExtra( *ev ) )
-        {
-            const auto& extra = m_worker.GetZoneExtra( *ev );
-            if( extra.name.Active() )
+            else
             {
-                ImGui::TextUnformatted( m_worker.GetString( extra.name ) );
+                timespan = end - ev->Start();
+                if( m_findZone.selfTime ) timespan -= GetZoneChildTimeFast( *ev );
             }
+
+            ImGui::PushID( ev );
+            if( m_zoneHover == ev ) ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0, 1, 0, 1 ) );
+            if( ImGui::Selectable( TimeToString( ev->Start() ), m_zoneInfoWindow == ev, ImGuiSelectableFlags_SpanAllColumns ) )
+            {
+                ShowZoneInfo( *ev );
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                m_zoneHighlight = ev;
+                if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    ZoomToZone( *ev );
+                }
+                ZoneTooltip( *ev );
+                m_zoneHover2 = ev;
+            }
+
+            ImGui::NextColumn();
+            ImGui::TextUnformatted( TimeToString( timespan ) );
+            ImGui::NextColumn();
+            if( m_worker.HasZoneExtra( *ev ) )
+            {
+                const auto& extra = m_worker.GetZoneExtra( *ev );
+                if( extra.name.Active() )
+                {
+                    ImGui::TextUnformatted( m_worker.GetString( extra.name ) );
+                }
+            }
+            ImGui::NextColumn();
+            if( m_zoneHover == ev ) ImGui::PopStyleColor();
+            ImGui::PopID();
         }
-        ImGui::NextColumn();
-        if( m_zoneHover == ev ) ImGui::PopStyleColor();
-        ImGui::PopID();
     }
     ImGui::Columns( 1 );
     ImGui::Separator();

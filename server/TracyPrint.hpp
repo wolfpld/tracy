@@ -21,7 +21,7 @@ static inline char* PrintFloat( char* begin, char* end, T value, int precision )
 }
 
 const char* TimeToString( int64_t ns );
-const char* RealToString( double val, bool separator );
+const char* RealToString( double val );
 const char* MemSizeToString( int64_t val );
 
 }

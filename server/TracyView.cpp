@@ -351,7 +351,7 @@ bool View::Draw()
         {
             TextFocused( "Thread:", s_instance->m_worker.GetThreadName( data.thread ) );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( data.thread, true ) );
+            ImGui::TextDisabled( "(%s)", RealToString( data.thread ) );
         }
         ImGui::Separator();
         if( ImGui::Button( "I understand" ) )
@@ -606,7 +606,7 @@ bool View::DrawImpl()
         {
             ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
         }
-        ImGui::Text( "%s: %s", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ), RealToString( m_worker.GetFrameCount( *m_frames ), true ) );
+        ImGui::Text( "%s: %s", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ), RealToString( m_worker.GetFrameCount( *m_frames ) ) );
         if( !vis )
         {
             ImGui::PopStyleColor();
@@ -634,7 +634,7 @@ bool View::DrawImpl()
                 ImGui::SetItemDefaultFocus();
             }
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size(), true ) );
+            ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size() ) );
         }
         ImGui::EndCombo();
     }
@@ -953,7 +953,7 @@ bool View::DrawConnection()
         ImGui::SameLine();
         ImGui::Text( "%6.2f Mbps", mbps / m_worker.GetCompRatio() );
         TextFocused( "Data transferred:", MemSizeToString( m_worker.GetDataTransferred() ) );
-        TextFocused( "Query backlog:", RealToString( m_worker.GetSendQueueSize(), true ) );
+        TextFocused( "Query backlog:", RealToString( m_worker.GetSendQueueSize() ) );
     }
 
     TextFocused( "Memory usage:", MemSizeToString( memUsage ) );
@@ -1229,7 +1229,7 @@ void View::DrawFrames()
 
                     TextDisabledUnformatted( "Frames:" );
                     ImGui::SameLine();
-                    ImGui::Text( "%s - %s (%s)", RealToString( sel, true ), RealToString( sel + g - 1, true ), RealToString( g, true ) );
+                    ImGui::Text( "%s - %s (%s)", RealToString( sel ), RealToString( sel + g - 1 ), RealToString( g ) );
                     ImGui::Separator();
                     TextFocused( "Max frame time:", TimeToString( f ) );
                     ImGui::SameLine();
@@ -1252,7 +1252,7 @@ void View::DrawFrames()
                         {
                             TextDisabledUnformatted( "Frame:" );
                             ImGui::SameLine();
-                            ImGui::TextUnformatted( RealToString( fnum, true ) );
+                            ImGui::TextUnformatted( RealToString( fnum ) );
                             ImGui::Separator();
                             const auto frameTime = m_worker.GetFrameTime( *m_frames, sel );
                             TextFocused( "Frame time:", TimeToString( frameTime ) );
@@ -1269,7 +1269,7 @@ void View::DrawFrames()
                         {
                             TextDisabledUnformatted( "Frame:" );
                             ImGui::SameLine();
-                            ImGui::TextUnformatted( RealToString( fnum, true ) );
+                            ImGui::TextUnformatted( RealToString( fnum ) );
                             ImGui::Separator();
                             const auto frameTime = m_worker.GetFrameTime( *m_frames, sel );
                             TextFocused( "Frame time:", TimeToString( frameTime ) );
@@ -1281,7 +1281,7 @@ void View::DrawFrames()
                     {
                         ImGui::TextDisabled( "%s:", m_worker.GetString( m_frames->name ) );
                         ImGui::SameLine();
-                        ImGui::TextUnformatted( RealToString( fnum, true ) );
+                        ImGui::TextUnformatted( RealToString( fnum ) );
                         ImGui::Separator();
                         const auto frameTime = m_worker.GetFrameTime( *m_frames, sel );
                         TextFocused( "Frame time:", TimeToString( frameTime ) );
@@ -1667,7 +1667,7 @@ const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint
         }
         else if( offset == 0 )
         {
-            sprintf( buf, "Frame %s (%s)", RealToString( fnum, true ), TimeToString( ftime ) );
+            sprintf( buf, "Frame %s (%s)", RealToString( fnum ), TimeToString( ftime ) );
         }
         else if( i == 1 )
         {
@@ -1675,12 +1675,12 @@ const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint
         }
         else
         {
-            sprintf( buf, "Frame %s (%s)", RealToString( fnum, true ), TimeToString( ftime ) );
+            sprintf( buf, "Frame %s (%s)", RealToString( fnum ), TimeToString( ftime ) );
         }
     }
     else
     {
-        sprintf( buf, "%s %s (%s)", m_worker.GetString( fd.name ), RealToString( fnum, true ), TimeToString( ftime ) );
+        sprintf( buf, "%s %s (%s)", m_worker.GetString( fd.name ), RealToString( fnum ), TimeToString( ftime ) );
     }
     return buf;
 }
@@ -2324,7 +2324,7 @@ void View::DrawZones()
                                 ImGui::SameLine();
                                 TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                                 ImGui::SameLine();
-                                ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+                                ImGui::TextDisabled( "(%s)", RealToString( tid ) );
                             }
                             else
                             {
@@ -2336,7 +2336,7 @@ void View::DrawZones()
                                     ImGui::SameLine();
                                     ImGui::TextUnformatted( m_worker.GetThreadName( td.first ) );
                                     ImGui::SameLine();
-                                    ImGui::TextDisabled( "(%s)", RealToString( td.first, true ) );
+                                    ImGui::TextDisabled( "(%s)", RealToString( td.first ) );
                                 }
                                 ImGui::Unindent();
                             }
@@ -2366,8 +2366,8 @@ void View::DrawZones()
                             TextFocused( "Appeared at", TimeToString( t0 ) );
                         }
                     }
-                    TextFocused( "Zone count:", RealToString( v->count, true ) );
-                    //TextFocused( "Top-level zones:", RealToString( v->timeline.size(), true ) );
+                    TextFocused( "Zone count:", RealToString( v->count ) );
+                    //TextFocused( "Top-level zones:", RealToString( v->timeline.size() ) );
                     if( isVulkan )
                     {
                         TextFocused( "Timestamp accuracy:", TimeToString( v->period ) );
@@ -2605,7 +2605,7 @@ void View::DrawZones()
                 ImGui::SameLine();
                 ImGui::TextUnformatted( m_worker.GetThreadName( v->id ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( v->id, true ) );
+                ImGui::TextDisabled( "(%s)", RealToString( v->id ) );
                 if( crash.thread == v->id )
                 {
                     ImGui::SameLine();
@@ -2685,20 +2685,20 @@ void View::DrawZones()
                 ImGui::Separator();
                 if( !v->timeline.empty() )
                 {
-                    TextFocused( "Zone count:", RealToString( v->count, true ) );
-                    TextFocused( "Top-level zones:", RealToString( v->timeline.size(), true ) );
+                    TextFocused( "Zone count:", RealToString( v->count ) );
+                    TextFocused( "Top-level zones:", RealToString( v->timeline.size() ) );
                 }
                 if( !v->messages.empty() )
                 {
-                    TextFocused( "Messages:", RealToString( v->messages.size(), true ) );
+                    TextFocused( "Messages:", RealToString( v->messages.size() ) );
                 }
                 if( lockCnt != 0 )
                 {
-                    TextFocused( "Locks:", RealToString( lockCnt, true ) );
+                    TextFocused( "Locks:", RealToString( lockCnt ) );
                 }
                 if( ctx )
                 {
-                    TextFocused( "Running state regions:", RealToString( ctx->v.size(), true ) );
+                    TextFocused( "Running state regions:", RealToString( ctx->v.size() ) );
                 }
                 ImGui::EndTooltip();
 
@@ -3013,17 +3013,17 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     TextFocused( "Waiting time:", TimeToString( ev.WakeupVal() - pit->End() ) );
                     if( migration )
                     {
-                        TextFocused( "CPU:", RealToString( pit->Cpu(), true ) );
+                        TextFocused( "CPU:", RealToString( pit->Cpu() ) );
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                        TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu(), true ) );
+                        TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu() ) );
 #else
-                        TextFocused( "->", RealToString( ev.Cpu(), true ) );
+                        TextFocused( "->", RealToString( ev.Cpu() ) );
 #endif
                     }
                     else
                     {
-                        TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
+                        TextFocused( "CPU:", RealToString( ev.Cpu() ) );
                     }
                     if( pit->Reason() != 100 )
                     {
@@ -3046,7 +3046,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     ImGui::BeginTooltip();
                     TextFocused( "Thread is", "waking up" );
                     TextFocused( "Scheduling delay:", TimeToString( ev.Start() - ev.WakeupVal() ) );
-                    TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
+                    TextFocused( "CPU:", RealToString( ev.Cpu() ) );
                     if( ImGui::IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( pit->End(), ev.WakeupVal() );
@@ -3088,7 +3088,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     ImGui::BeginTooltip();
                     TextFocused( "Thread is", "running" );
                     TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
-                    TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
+                    TextFocused( "CPU:", RealToString( ev.Cpu() ) );
                     ImGui::EndTooltip();
 
                     if( ImGui::IsMouseClicked( 2 ) )
@@ -3104,7 +3104,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 {
                     ImGui::BeginTooltip();
                     TextFocused( "Thread is", "chaning activity multiple times" );
-                    TextFocused( "Number of running regions:", RealToString( num, true ) );
+                    TextFocused( "Number of running regions:", RealToString( num ) );
                     TextFocused( "Time:", TimeToString( rend - ev.Start() ) );
                     ImGui::EndTooltip();
 
@@ -3126,7 +3126,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 ImGui::BeginTooltip();
                 TextFocused( "Thread is", "running" );
                 TextFocused( "Activity time:", TimeToString( end - ev.Start() ) );
-                TextFocused( "CPU:", RealToString( ev.Cpu(), true ) );
+                TextFocused( "CPU:", RealToString( ev.Cpu() ) );
                 ImGui::EndTooltip();
 
                 if( ImGui::IsMouseClicked( 2 ) )
@@ -3230,7 +3230,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                 if( num > 1 )
                 {
                     ImGui::BeginTooltip();
-                    TextFocused( "Zones too small to display:", RealToString( num, true ) );
+                    TextFocused( "Zones too small to display:", RealToString( num ) );
                     ImGui::Separator();
                     TextFocused( "Execution time:", TimeToString( rend - ev.Start() ) );
                     ImGui::EndTooltip();
@@ -3266,7 +3266,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                 }
             }
             char tmp[64];
-            sprintf( tmp, "%s", RealToString( num, true ) );
+            sprintf( tmp, "%s", RealToString( num ) );
             const auto tsz = ImGui::CalcTextSize( tmp );
             if( tsz.x < px1 - px0 )
             {
@@ -3539,7 +3539,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                 if( num > 1 )
                 {
                     ImGui::BeginTooltip();
-                    TextFocused( "Zones too small to display:", RealToString( num, true ) );
+                    TextFocused( "Zones too small to display:", RealToString( num ) );
                     ImGui::Separator();
                     TextFocused( "Execution time:", TimeToString( rend - start ) );
                     ImGui::EndTooltip();
@@ -3569,7 +3569,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                 }
             }
             char tmp[64];
-            sprintf( tmp, "%s", RealToString( num, true ) );
+            sprintf( tmp, "%s", RealToString( num ) );
             const auto tsz = ImGui::CalcTextSize( tmp );
             if( tsz.x < px1 - px0 )
             {
@@ -3994,7 +3994,7 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             }
             ImGui::Unindent( ty );
             ImGui::Separator();
-            TextFocused( "Lock events:", RealToString( lockmap.timeline.size(), true ) );
+            TextFocused( "Lock events:", RealToString( lockmap.timeline.size() ) );
             ImGui::EndTooltip();
 
             if( ImGui::IsMouseClicked( 0 ) )
@@ -4211,7 +4211,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                     if( condensed > 1 )
                     {
                         ImGui::BeginTooltip();
-                        TextFocused( "Multiple lock events:", RealToString( condensed, true ) );
+                        TextFocused( "Multiple lock events:", RealToString( condensed ) );
                         ImGui::EndTooltip();
                     }
                     else
@@ -4628,13 +4628,13 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     int usageOwn, usageOther;
                     m_worker.GetCpuUsageAtTime( m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx, usageOwn, usageOther );
                     ImGui::BeginTooltip();
-                    TextFocused( "Cores used by profiled program:", RealToString( usageOwn, true ) );
+                    TextFocused( "Cores used by profiled program:", RealToString( usageOwn ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.2f%%)", usageOwn * cpuCntRev * 100 );
-                    TextFocused( "Cores used by other programs:", RealToString( usageOther, true ) );
+                    TextFocused( "Cores used by other programs:", RealToString( usageOther ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.2f%%)", usageOther * cpuCntRev * 100 );
-                    TextFocused( "Number of cores:", RealToString( cpuCnt, true ) );
+                    TextFocused( "Number of cores:", RealToString( cpuCnt ) );
                     ImGui::EndTooltip();
                 }
             }
@@ -4693,17 +4693,17 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                 {
                                     ImGui::PopFont();
                                     ImGui::BeginTooltip();
-                                    TextFocused( "CPU:", RealToString( i, true ) );
+                                    TextFocused( "CPU:", RealToString( i ) );
                                     if( tt )
                                     {
                                         ImGui::SameLine();
                                         ImGui::Spacing();
                                         ImGui::SameLine();
-                                        TextFocused( "Package:", RealToString( tt->package, true ) );
+                                        TextFocused( "Package:", RealToString( tt->package ) );
                                         ImGui::SameLine();
-                                        TextFocused( "Core:", RealToString( tt->core, true ) );
+                                        TextFocused( "Core:", RealToString( tt->core ) );
                                     }
-                                    TextFocused( "Context switch regions:", RealToString( num, true ) );
+                                    TextFocused( "Context switch regions:", RealToString( num ) );
                                     ImGui::Separator();
                                     TextFocused( "Start time:", TimeToString( start ) );
                                     TextFocused( "End time:", TimeToString( rend ) );
@@ -4807,15 +4807,15 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     m_drawThreadHighlight = thread;
                                     ImGui::PopFont();
                                     ImGui::BeginTooltip();
-                                    TextFocused( "CPU:", RealToString( i, true ) );
+                                    TextFocused( "CPU:", RealToString( i ) );
                                     if( tt )
                                     {
                                         ImGui::SameLine();
                                         ImGui::Spacing();
                                         ImGui::SameLine();
-                                        TextFocused( "Package:", RealToString( tt->package, true ) );
+                                        TextFocused( "Package:", RealToString( tt->package ) );
                                         ImGui::SameLine();
-                                        TextFocused( "Core:", RealToString( tt->core, true ) );
+                                        TextFocused( "Core:", RealToString( tt->core ) );
                                     }
                                     if( local )
                                     {
@@ -4826,7 +4826,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         ImGui::SameLine();
                                         TextFocused( "Thread:", m_worker.GetThreadName( thread ) );
                                         ImGui::SameLine();
-                                        ImGui::TextDisabled( "(%s)", RealToString( thread, true ) );
+                                        ImGui::TextDisabled( "(%s)", RealToString( thread ) );
                                         m_drawThreadMigrations = thread;
                                         m_cpuDataThread = thread;
                                     }
@@ -4851,7 +4851,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         }
                                         TextFocused( "Thread:", m_worker.GetExternalName( thread ).second );
                                         ImGui::SameLine();
-                                        ImGui::TextDisabled( "(%s)", RealToString( thread, true ) );
+                                        ImGui::TextDisabled( "(%s)", RealToString( thread ) );
                                     }
                                     ImGui::Separator();
                                     TextFocused( "Start time:", TimeToString( start ) );
@@ -4885,17 +4885,17 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     {
                         ImGui::PopFont();
                         ImGui::BeginTooltip();
-                        TextFocused( "CPU:", RealToString( i, true ) );
+                        TextFocused( "CPU:", RealToString( i ) );
                         if( tt )
                         {
                             ImGui::SameLine();
                             ImGui::Spacing();
                             ImGui::SameLine();
-                            TextFocused( "Package:", RealToString( tt->package, true ) );
+                            TextFocused( "Package:", RealToString( tt->package ) );
                             ImGui::SameLine();
-                            TextFocused( "Core:", RealToString( tt->core, true ) );
+                            TextFocused( "Core:", RealToString( tt->core ) );
                         }
-                        TextFocused( "Context switch regions:", RealToString( cs.size(), true ) );
+                        TextFocused( "Context switch regions:", RealToString( cs.size() ) );
                         ImGui::EndTooltip();
                         ImGui::PushFont( m_smallFont );
                     }
@@ -4959,7 +4959,7 @@ static const char* FormatPlotValue( double val, PlotValueFormatting format )
     switch( format )
     {
     case PlotValueFormatting::Number:
-        return RealToString( val, true );
+        return RealToString( val );
         break;
     case PlotValueFormatting::Memory:
         return MemSizeToString( val );
@@ -5036,17 +5036,17 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.2f%%)", activity / double( traceLen ) * 100 );
                 ImGui::Separator();
-                TextFocused( "Data points:", RealToString( v->data.size(), true ) );
+                TextFocused( "Data points:", RealToString( v->data.size() ) );
                 TextFocused( "Data range:", FormatPlotValue( v->max - v->min, v->format ) );
                 TextFocused( "Min value:", FormatPlotValue( v->min, v->format ) );
                 TextFocused( "Max value:", FormatPlotValue( v->max, v->format ) );
-                TextFocused( "Data/second:", RealToString( double( v->data.size() ) / activity * 1000000000ll, true ) );
+                TextFocused( "Data/second:", RealToString( double( v->data.size() ) / activity * 1000000000ll ) );
 
                 const auto it = std::lower_bound( v->data.begin(), v->data.end(), last - 1000000000ll * 10, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
                 const auto tr10 = last - it->time.Val();
                 if( tr10 != 0 )
                 {
-                    TextFocused( "D/s (10s):", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ll, true ) );
+                    TextFocused( "D/s (10s):", RealToString( double( std::distance( it, v->data.end() ) ) / tr10 * 1000000000ll ) );
                 }
                 ImGui::EndTooltip();
 
@@ -5225,7 +5225,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x1 - 2, offset ), wpos + ImVec2( x1 + 2, offset + PlotHeight ) ) )
                             {
                                 ImGui::BeginTooltip();
-                                TextFocused( "Number of values:", RealToString( rsz, true ) );
+                                TextFocused( "Number of values:", RealToString( rsz ) );
                                 TextDisabledUnformatted( "Estimated range:" );
                                 ImGui::SameLine();
                                 ImGui::Text( "%s - %s", FormatPlotValue( tmpvec[0], v->format ), FormatPlotValue( dst[-1], v->format ) );
@@ -5262,7 +5262,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 char tmp[64];
                 if( yPos + ty >= yMin && yPos <= yMax )
                 {
-                    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( max - min, v->format ), RealToString( num, true ) );
+                    sprintf( tmp, "(y-range: %s, visible data points: %s)", FormatPlotValue( max - min, v->format ), RealToString( num ) );
                     draw->AddText( wpos + ImVec2( ty * 1.5f + txtx, offset - ty ), 0x8844DDDD, tmp );
                 }
                 sprintf( tmp, "%s", FormatPlotValue( max, v->format ) );
@@ -5338,7 +5338,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
             {
                 ImGui::TextUnformatted( MemSizeToString( item->val ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( item->val, true ) );
+                ImGui::TextDisabled( "(%s)", RealToString( item->val ) );
             }
         }
         else
@@ -5410,7 +5410,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
                     ImGui::SameLine();
                     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+                    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
 
                     m_memoryAllocHover = std::distance( mem.data.begin(), ev );
                     m_memoryAllocHoverWait = 2;
@@ -5457,7 +5457,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
 {
     bool expand = ImGui::TreeNode( "Zone trace" );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( trace.size(), true ) );
+    ImGui::TextDisabled( "(%s)", RealToString( trace.size() ) );
     if( !expand ) return;
 
     ImGui::SameLine();
@@ -5855,7 +5855,7 @@ void View::DrawZoneInfoWindow()
     ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
     if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
     {
         TextFocused( "User text:", m_worker.GetString( m_worker.GetZoneExtra( ev ).text ) );
@@ -5902,7 +5902,7 @@ void View::DrawZoneInfoWindow()
                     TextDisabledUnformatted( "(100%)" );
                     ImGui::Separator();
                     TextFocused( "Running state regions:", "1" );
-                    TextFocused( "CPU:", RealToString( it->Cpu(), true ) );
+                    TextFocused( "CPU:", RealToString( it->Cpu() ) );
                 }
             }
             else if( cnt > 1 )
@@ -5931,13 +5931,13 @@ void View::DrawZoneInfoWindow()
                 {
                     TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "Incomplete context switch data!" );
                 }
-                TextFocused( "Running state regions:", RealToString( cnt, true ) );
+                TextFocused( "Running state regions:", RealToString( cnt ) );
 
                 int numCpus = 0;
                 for( int i=0; i<256; i++ ) numCpus += cpus[i];
                 if( numCpus == 1 )
                 {
-                    TextFocused( "CPU:", RealToString( it->Cpu(), true ) );
+                    TextFocused( "CPU:", RealToString( it->Cpu() ) );
                 }
                 else
                 {
@@ -5955,9 +5955,9 @@ void View::DrawZoneInfoWindow()
                                 if( tt && ImGui::IsItemHovered() )
                                 {
                                     ImGui::BeginTooltip();
-                                    TextFocused( "Package:", RealToString( tt->package, true ) );
+                                    TextFocused( "Package:", RealToString( tt->package ) );
                                     ImGui::SameLine();
-                                    TextFocused( "Core:", RealToString( tt->core, true ) );
+                                    TextFocused( "Core:", RealToString( tt->core ) );
                                     ImGui::EndTooltip();
                                 }
                                 break;
@@ -5969,9 +5969,9 @@ void View::DrawZoneInfoWindow()
                                 if( tt && ImGui::IsItemHovered() )
                                 {
                                     ImGui::BeginTooltip();
-                                    TextFocused( "Package:", RealToString( tt->package, true ) );
+                                    TextFocused( "Package:", RealToString( tt->package ) );
                                     ImGui::SameLine();
-                                    TextFocused( "Core:", RealToString( tt->core, true ) );
+                                    TextFocused( "Core:", RealToString( tt->core ) );
                                     ImGui::EndTooltip();
                                 }
                             }
@@ -6042,7 +6042,7 @@ void View::DrawZoneInfoWindow()
                         ImGui::NextColumn();
                         if( cpu0 == cpu1 )
                         {
-                            ImGui::TextUnformatted( RealToString( cpu0, true ) );
+                            ImGui::TextUnformatted( RealToString( cpu0 ) );
                         }
                         else
                         {
@@ -6156,14 +6156,14 @@ void View::DrawZoneInfoWindow()
                 }
                 else
                 {
-                    ImGui::TextUnformatted( RealToString( nAlloc + nFree, true ) );
+                    ImGui::TextUnformatted( RealToString( nAlloc + nFree ) );
                     ImGui::SameLine();
                     TextDisabledUnformatted( "memory events." );
-                    ImGui::TextUnformatted( RealToString( nAlloc, true ) );
+                    ImGui::TextUnformatted( RealToString( nAlloc ) );
                     ImGui::SameLine();
                     TextDisabledUnformatted( "allocs," );
                     ImGui::SameLine();
-                    ImGui::TextUnformatted( RealToString( nFree, true ) );
+                    ImGui::TextUnformatted( RealToString( nFree ) );
                     ImGui::SameLine();
                     TextDisabledUnformatted( "frees." );
                     TextFocused( "Memory allocated:", MemSizeToString( cAlloc ) );
@@ -6232,7 +6232,7 @@ void View::DrawZoneInfoWindow()
             {
                 bool expand = ImGui::TreeNode( "Messages" );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( dist, true ) );
+                ImGui::TextDisabled( "(%s)", RealToString( dist ) );
                 if( expand )
                 {
                     ImGui::SameLine();
@@ -6341,7 +6341,7 @@ void View::DrawZoneInfoWindow()
         const auto& children = m_worker.GetZoneChildren( ev.Child() );
         bool expand = ImGui::TreeNode( "Child zones" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( children.size(), true ) );
+        ImGui::TextDisabled( "(%s)", RealToString( children.size() ) );
         if( expand )
         {
             if( children.is_magic() )
@@ -6442,7 +6442,7 @@ void View::DrawZoneInfoWindow()
                         m_findZone.ShowZone( v->first, name, ev.Start(), m_worker.GetZoneEnd( ev ) );
                     }
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v->second.count, true ) );
+                    ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( v->second.count ) );
                     ImGui::NextColumn();
                     ImGui::TextUnformatted( TimeToString( v->second.time ) );
                     ImGui::SameLine();
@@ -6570,7 +6570,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                     ImGui::EndTooltip();
                 }
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( cgr.v.size(), true ) );
+                ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( cgr.v.size() ) );
             }
             ImGui::NextColumn();
             const auto part = double( cgr.t ) * rztime;
@@ -6786,7 +6786,7 @@ void View::DrawGpuInfoWindow()
     ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
 
     ImGui::Separator();
     ImGui::BeginChild( "##gpuinfo" );
@@ -6886,7 +6886,7 @@ void View::DrawGpuInfoWindow()
         const auto& children = m_worker.GetGpuChildren( ev.Child() );
         bool expand = ImGui::TreeNode( "Child zones" );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( children.size(), true ) );
+        ImGui::TextDisabled( "(%s)", RealToString( children.size() ) );
         if( expand )
         {
             if( children.is_magic() )
@@ -7009,7 +7009,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                     ImGui::EndTooltip();
                 }
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( cgr.v.size(), true ) );
+                ImGui::TextDisabled( "(\xc3\x97%s)", RealToString( cgr.v.size() ) );
             }
             ImGui::NextColumn();
             const auto part = double( cgr.t ) * rztime;
@@ -7203,11 +7203,11 @@ void View::DrawOptions()
                 ImGui::SameLine();
                 if( gpuData[i]->threadData.size() == 1 )
                 {
-                    ImGui::TextDisabled( "%s top level zones", RealToString( timeline.size(), true ) );
+                    ImGui::TextDisabled( "%s top level zones", RealToString( timeline.size() ) );
                 }
                 else
                 {
-                    ImGui::TextDisabled( "%s threads", RealToString( gpuData[i]->threadData.size(), true ) );
+                    ImGui::TextDisabled( "%s threads", RealToString( gpuData[i]->threadData.size() ) );
                 }
                 ImGui::TreePush();
                 auto& drift = GpuDrift( gpuData[i] );
@@ -7450,7 +7450,7 @@ void View::DrawOptions()
                         {
                             ImGui::SameLine();
                         }
-                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size(), true ), fileName, sl.line );
+                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
                             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
@@ -7517,7 +7517,7 @@ void View::DrawOptions()
                         {
                             ImGui::SameLine();
                         }
-                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size(), true ), fileName, sl.line );
+                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
                             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
@@ -7584,7 +7584,7 @@ void View::DrawOptions()
                         {
                             ImGui::SameLine();
                         }
-                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size(), true ), fileName, sl.line );
+                        ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
                             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
@@ -7640,7 +7640,7 @@ void View::DrawOptions()
             {
                 SmallCheckbox( GetPlotName( p ), &Vis( p ).visible );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "%s data points", RealToString( p->data.size(), true ) );
+                ImGui::TextDisabled( "%s data points", RealToString( p->data.size() ) );
             }
             ImGui::TreePop();
         }
@@ -7701,7 +7701,7 @@ void View::DrawOptions()
             }
             ImGui::PopID();
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( t->id, true ) );
+            ImGui::TextDisabled( "(%s)", RealToString( t->id ) );
             if( crash.thread == t->id )
             {
                 ImGui::SameLine();
@@ -7726,7 +7726,7 @@ void View::DrawOptions()
 #endif
             }
             ImGui::SameLine();
-            ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size(), true ) );
+            ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size() ) );
             idx++;
         }
         if( m_threadDnd.size() > 1 )
@@ -7806,7 +7806,7 @@ void View::DrawOptions()
             SmallCheckbox( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), &Vis( fd ).visible );
             ImGui::PopID();
             ImGui::SameLine();
-            ImGui::TextDisabled( "%s %sframes", RealToString( fd->frames.size(), true ), fd->continuous ? "" : "discontinuous " );
+            ImGui::TextDisabled( "%s %sframes", RealToString( fd->frames.size() ), fd->continuous ? "" : "discontinuous " );
         }
         ImGui::TreePop();
     }
@@ -7836,11 +7836,11 @@ void View::DrawMessages()
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    TextFocused( "Total message count:", RealToString( msgs.size(), true ) );
+    TextFocused( "Total message count:", RealToString( msgs.size() ) );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    TextFocused( "Visible messages:", RealToString( m_visibleMessages, true ) );
+    TextFocused( "Visible messages:", RealToString( m_visibleMessages ) );
 
 #ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
@@ -7881,7 +7881,7 @@ void View::DrawMessages()
             SmallCheckbox( m_worker.GetThreadName( t->id ), &VisibleMsgThread( t->id ) );
             ImGui::PopID();
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( t->messages.size(), true ) );
+            ImGui::TextDisabled( "(%s)", RealToString( t->messages.size() ) );
             if( crash.thread == t->id )
             {
                 ImGui::SameLine();
@@ -7960,7 +7960,7 @@ void View::DrawMessages()
                 ImGui::SameLine();
                 ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+                ImGui::TextDisabled( "(%s)", RealToString( tid ) );
                 ImGui::NextColumn();
                 ImGui::PushStyleColor( ImGuiCol_Text, v->color );
                 ImGui::TextWrapped( "%s", text );
@@ -8163,7 +8163,7 @@ void View::DrawFindZone()
                     ImGui::SameLine();
                 }
                 const auto fileName = m_worker.GetString( srcloc.file );
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), fileName, srcloc.line );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size() ), fileName, srcloc.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {
                     if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
@@ -8709,7 +8709,7 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-                        TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal, true ) );
+                        TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal ) );
                         TextFocused( "Average time:", TimeToString( m_findZone.average ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
@@ -9038,7 +9038,7 @@ void View::DrawFindZone()
                             TextDisabledUnformatted( "Time range:" );
                             ImGui::SameLine();
                             ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
-                            TextFocused( "Count:", RealToString( bins[bin], true ) );
+                            TextFocused( "Count:", RealToString( bins[bin] ) );
                             TextFocused( "Time spent in bin:", TimeToString( binTime[bin] ) );
                             TextFocused( "Time spent in the left bins:", TimeToString( tBefore ) );
                             TextFocused( "Time spent in the right bins:", TimeToString( tAfter ) );
@@ -9319,7 +9319,7 @@ void View::DrawFindZone()
                     m_findZone.selCs = std::max( m_findZone.selCs - 1, 0 );
                 }
                 ImGui::SameLine();
-                ImGui::Text( "%s / %s", RealToString( m_findZone.selCs + 1, true ), RealToString( gsz, true ) );
+                ImGui::Text( "%s / %s", RealToString( m_findZone.selCs + 1 ), RealToString( gsz ) );
                 ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
                 if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
@@ -9331,7 +9331,7 @@ void View::DrawFindZone()
                 }
 
                 ImGui::SameLine();
-                TextFocused( "Count:", RealToString( group->second.zones.size(), true ) );
+                TextFocused( "Count:", RealToString( group->second.zones.size() ) );
                 ImGui::SameLine();
                 TextFocused( "Time:", TimeToString( group->second.time ) );
                 ImGui::SameLine();
@@ -9472,7 +9472,7 @@ void View::DrawFindZone()
                 }
                 ImGui::PopID();
                 ImGui::SameLine();
-                ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s) %s", RealToString( v->second.zones.size(), true ), TimeToString( v->second.time ) );
+                ImGui::TextColored( ImVec4( 0.5f, 0.5f, 0.5f, 1.0f ), "(%s) %s", RealToString( v->second.zones.size() ), TimeToString( v->second.time ) );
                 if( expand )
                 {
                     DrawZoneList( v->second.zones );
@@ -9816,7 +9816,7 @@ void View::DrawCompare()
                 ImGui::RadioButton( m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[0], idx++ );
                 ImGui::PopStyleVar();
                 ImGui::SameLine();
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_worker.GetString( srcloc.file ), srcloc.line );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size() ), m_worker.GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
             }
             ImGui::NextColumn();
@@ -9832,7 +9832,7 @@ void View::DrawCompare()
                 ImGui::RadioButton( m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function ), &m_compare.selMatch[1], idx++ );
                 ImGui::PopStyleVar();
                 ImGui::SameLine();
-                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size(), true ), m_compare.second->GetString( srcloc.file ), srcloc.line );
+                ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size() ), m_compare.second->GetString( srcloc.file ), srcloc.line );
                 ImGui::PopID();
             }
             ImGui::NextColumn();
@@ -9938,7 +9938,7 @@ void View::DrawCompare()
                 ImGui::PushID( -1 - idx );
                 ImGui::RadioButton( name, &m_compare.selMatch[0], idx++ );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( v->frames.size(), true ) );
+                ImGui::TextDisabled( "(%s)", RealToString( v->frames.size() ) );
                 ImGui::PopID();
             }
             ImGui::NextColumn();
@@ -9951,7 +9951,7 @@ void View::DrawCompare()
                 ImGui::PushID( idx );
                 ImGui::RadioButton( name, &m_compare.selMatch[1], idx++ );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( v->frames.size(), true ) );
+                ImGui::TextDisabled( "(%s)", RealToString( v->frames.size() ) );
                 ImGui::PopID();
             }
             ImGui::NextColumn();
@@ -10303,7 +10303,7 @@ void View::DrawCompare()
                     TextFocused( "Savings:", TimeToString( total1 * adj1 - total0 * adj0 ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.2f%%)", ( total0 * adj0 ) / ( total1 * adj1 ) * 100 );
-                    TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
+                    TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ) ) );
 
 #ifdef TRACY_EXTENDED_FONT
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
@@ -10609,7 +10609,7 @@ void View::DrawCompare()
                         ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
                         TextDisabledUnformatted( "Count:" );
                         ImGui::SameLine();
-                        ImGui::Text( "%s / %s", RealToString( floor( bins[bin].v0 ), true ), RealToString( floor( bins[bin].v1 ), true ) );
+                        ImGui::Text( "%s / %s", RealToString( floor( bins[bin].v0 ) ), RealToString( floor( bins[bin].v1 ) ) );
                         TextDisabledUnformatted( "Time spent in bin:" );
                         ImGui::SameLine();
                         ImGui::Text( "%s / %s", TimeToString( binTime[bin].v0 ), TimeToString( binTime[bin].v1 ) );
@@ -10731,11 +10731,11 @@ void View::DrawStatistics()
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    TextFocused( "Total zone count:", RealToString( slzcnt, true ) );
+    TextFocused( "Total zone count:", RealToString( slzcnt ) );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    TextFocused( "Visible zones:", RealToString( srcloc.size(), true ) );
+    TextFocused( "Visible zones:", RealToString( srcloc.size() ) );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
@@ -10812,7 +10812,7 @@ void View::DrawStatistics()
         ImGui::NextColumn();
         ImGui::TextUnformatted( TimeToString( m_statSelf ? v->second.selfTotal : v->second.total ) );
         ImGui::NextColumn();
-        ImGui::TextUnformatted( RealToString( v->second.zones.size(), true ) );
+        ImGui::TextUnformatted( RealToString( v->second.zones.size() ) );
         ImGui::NextColumn();
         ImGui::TextUnformatted( TimeToString( ( m_statSelf ? v->second.selfTotal : v->second.total ) / v->second.zones.size() ) );
         ImGui::NextColumn();
@@ -11024,7 +11024,7 @@ void View::DrawMemoryAllocWindow()
     if( ev.Size() >= 10000ll )
     {
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s bytes)", RealToString( ev.Size(), true ) );
+        ImGui::TextDisabled( "(%s bytes)", RealToString( ev.Size() ) );
     }
     ImGui::Separator();
     TextFocused( "Appeared at", TimeToString( ev.TimeAlloc() ) );
@@ -11034,7 +11034,7 @@ void View::DrawMemoryAllocWindow()
     ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tidAlloc ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( tidAlloc, true ) );
+    ImGui::TextDisabled( "(%s)", RealToString( tidAlloc ) );
     if( ev.CsAlloc() != 0 )
     {
         const auto cs = ev.CsAlloc();
@@ -11059,7 +11059,7 @@ void View::DrawMemoryAllocWindow()
         ImGui::SameLine();
         TextFocused( "Thread:", m_worker.GetThreadName( tidFree ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( tidFree, true ) );
+        ImGui::TextDisabled( "(%s)", RealToString( tidFree ) );
         if( ev.csFree.Val() != 0 )
         {
             const auto cs = ev.csFree.Val();
@@ -11195,7 +11195,7 @@ void View::DrawInfo()
     if( ImGui::TreeNode( "Profiler statistics" ) )
     {
         TextFocused( "Profiler memory usage:", MemSizeToString( memUsage ) );
-        TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ), true ) );
+        TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ) ) );
         ImGui::TreePop();
     }
 
@@ -11208,23 +11208,23 @@ void View::DrawInfo()
         ImGui::Text( "%i.%i.%i", version >> 16, ( version >> 8 ) & 0xFF, version & 0xFF );
         TextFocused( "Queue delay:", TimeToString( m_worker.GetDelay() ) );
         TextFocused( "Timer resolution:", TimeToString( m_worker.GetResolution() ) );
-        TextFocused( "CPU zones:", RealToString( m_worker.GetZoneCount(), true ) );
+        TextFocused( "CPU zones:", RealToString( m_worker.GetZoneCount() ) );
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        TextFocused( "Extra data:", RealToString( m_worker.GetZoneExtraCount(), true ) );
-        TextFocused( "GPU zones:", RealToString( m_worker.GetGpuZoneCount(), true ) );
-        TextFocused( "Lock events:", RealToString( m_worker.GetLockCount(), true ) );
-        TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount(), true ) );
-        TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size(), true ) );
-        TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
-        TextFocused( "Strings:", RealToString( m_worker.GetStringsCount(), true ) );
-        TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
-        TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
-        TextFocused( "Frame images:", RealToString( ficnt, true ) );
-        TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount(), true ) );
+        TextFocused( "Extra data:", RealToString( m_worker.GetZoneExtraCount() ) );
+        TextFocused( "GPU zones:", RealToString( m_worker.GetGpuZoneCount() ) );
+        TextFocused( "Lock events:", RealToString( m_worker.GetLockCount() ) );
+        TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount() ) );
+        TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size() ) );
+        TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount() ) );
+        TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );
+        TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount() ) );
+        TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount() ) );
+        TextFocused( "Frame images:", RealToString( ficnt ) );
+        TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount() ) );
         ImGui::SameLine();
-        TextFocused( "+", RealToString( m_worker.GetContextSwitchPerCpuCount(), true ) );
+        TextFocused( "+", RealToString( m_worker.GetContextSwitchPerCpuCount() ) );
         ImGui::TreePop();
     }
 
@@ -11253,7 +11253,7 @@ void View::DrawInfo()
                         ImGui::SetItemDefaultFocus();
                     }
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size(), true ) );
+                    ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size() ) );
                 }
                 ImGui::EndCombo();
             }
@@ -11327,26 +11327,26 @@ void View::DrawInfo()
             }
 
             const auto profileSpan = m_worker.GetLastTime();
-            TextFocused( "Count:", RealToString( fsz, true ) );
+            TextFocused( "Count:", RealToString( fsz ) );
             TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%.2f%% of profile time span)", m_frameSortData.total / float( profileSpan ) * 100.f );
             TextFocused( "Average frame time:", TimeToString( m_frameSortData.average ) );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ), true ) );
+            ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ) ) );
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.average, true ) );
+                ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.average ) );
                 ImGui::EndTooltip();
             }
             TextFocused( "Median frame time:", TimeToString( m_frameSortData.median ) );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.median ), true ) );
+            ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.median ) ) );
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
-                ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.median, true ) );
+                ImGui::Text( "%s FPS", RealToString( 1000000000.0 / m_frameSortData.median ) );
                 ImGui::EndTooltip();
             }
 
@@ -11376,7 +11376,7 @@ void View::DrawInfo()
 
                     TextDisabledUnformatted( "FPS range:" );
                     ImGui::SameLine();
-                    ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ), true ), RealToString( round( 1000000000.0 / tmax ), true ) );
+                    ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ) ), RealToString( round( 1000000000.0 / tmax ) ) );
 
                     if( tmax - tmin > 0 )
                     {
@@ -11483,7 +11483,7 @@ void View::DrawInfo()
                                 maxVal = std::max( maxVal, bins[i] );
                             }
 
-                            TextFocused( "Max counts:", RealToString( maxVal, true ) );
+                            TextFocused( "Max counts:", RealToString( maxVal ) );
 
                             ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                             ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );
@@ -11689,8 +11689,8 @@ void View::DrawInfo()
                                 ImGui::SameLine();
                                 ImGui::Text( "%s - %s", TimeToString( t0 ), TimeToString( t1 ) );
                                 ImGui::SameLine();
-                                ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( round( 1000000000.0 / t0 ), true ), RealToString( round( 1000000000.0 / t1 ), true ) );
-                                TextFocused( "Count:", RealToString( bins[bin], true ) );
+                                ImGui::TextDisabled( "(%s FPS - %s FPS)", RealToString( round( 1000000000.0 / t0 ) ), RealToString( round( 1000000000.0 / t1 ) ) );
+                                TextFocused( "Count:", RealToString( bins[bin] ) );
                                 ImGui::EndTooltip();
                             }
 
@@ -11776,7 +11776,7 @@ void View::DrawInfo()
     }
 
     ImGui::Separator();
-    TextFocused( "PID:", RealToString( m_worker.GetPid(), true ) );
+    TextFocused( "PID:", RealToString( m_worker.GetPid() ) );
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );
 
     auto& appInfo = m_worker.GetAppInfo();
@@ -11804,7 +11804,7 @@ void View::DrawInfo()
         ImGui::SameLine();
         TextFocused( "Thread:", m_worker.GetThreadName( crash.thread ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( crash.thread, true ) );
+        ImGui::TextDisabled( "(%s)", RealToString( crash.thread ) );
         TextDisabledUnformatted( "Reason:" );
         ImGui::SameLine();
         ImGui::TextWrapped( "%s", m_worker.GetString( crash.message ) );
@@ -12015,7 +12015,7 @@ void View::DrawLockInfoWindow()
         assert( false );
         break;
     }
-    TextFocused( "Lock events:", RealToString( lock.timeline.size(), true ) );
+    TextFocused( "Lock events:", RealToString( lock.timeline.size() ) );
     ImGui::Separator();
 
     const auto announce = timeAnnounce;
@@ -12036,7 +12036,7 @@ void View::DrawLockInfoWindow()
     TextFocused( "Lock wait time:", TimeToString( waitTotalTime ) );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%.2f%% of lock lifetime)", waitTotalTime / float( lifetime ) * 100.f );
-    TextFocused( "Max waiting threads:", RealToString( maxWaitingThreads, true ) );
+    TextFocused( "Max waiting threads:", RealToString( maxWaitingThreads ) );
     ImGui::Separator();
 
     const auto threadList = ImGui::TreeNode( "Thread list" );
@@ -12050,7 +12050,7 @@ void View::DrawLockInfoWindow()
             ImGui::SameLine();
             ImGui::TextUnformatted( m_worker.GetThreadName( t ) );
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( t, true ) );
+            ImGui::TextDisabled( "(%s)", RealToString( t ) );
         }
         ImGui::TreePop();
     }
@@ -12230,7 +12230,7 @@ void View::DrawPlayback()
     ImGui::Checkbox( "Zoom 2x", &m_playback.zoom );
     TextFocused( "Timestamp:", TimeToString( tstart ) );
     ImGui::SameLine();
-    TextFocused( "Frame:", RealToString( GetFrameNumber( *frameSet, fi->frameRef, m_worker.GetFrameOffset() ), true) );
+    TextFocused( "Frame:", RealToString( GetFrameNumber( *frameSet, fi->frameRef, m_worker.GetFrameOffset() ) ) );
     ImGui::End();
 }
 
@@ -12260,9 +12260,9 @@ void View::DrawCpuDataWindow()
 
     ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "CPU data", &m_showCpuDataWindow );
-    TextFocused( "Tracked threads:", RealToString( ctd.size(), true ) );
+    TextFocused( "Tracked threads:", RealToString( ctd.size() ) );
     ImGui::SameLine();
-    TextFocused( "Tracked processes:", RealToString( pids.size(), true ) );
+    TextFocused( "Tracked processes:", RealToString( pids.size() ) );
     ImGui::Separator();
     ImGui::BeginChild( "##cpudata" );
     ImGui::Columns( 5 );
@@ -12306,7 +12306,7 @@ void View::DrawCpuDataWindow()
             name = m_worker.GetCaptureProgram().c_str();
             ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0.2f, 1.0f, 0.2f, 1.0f ) );
         }
-        const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first, true );
+        const auto pidtxt = pid.first == 0 ? "Unknown" : RealToString( pid.first );
         const auto expand = ImGui::TreeNode( pidtxt );
         if( ImGui::IsItemHovered() )
         {
@@ -12321,7 +12321,7 @@ void View::DrawCpuDataWindow()
         if( tsz > 1 )
         {
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%s)", RealToString( tsz, true ) );
+            ImGui::TextDisabled( "(%s)", RealToString( tsz ) );
         }
         ImGui::NextColumn();
         ImGui::TextUnformatted( pid.first == 0 ? "???" : name );
@@ -12338,9 +12338,9 @@ void View::DrawCpuDataWindow()
         sprintf( buf, "%s (%.2f%%)", TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
         ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
-        ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions, true ) );
+        ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions ) );
         ImGui::NextColumn();
-        ImGui::TextUnformatted( RealToString( pid.second.data.migrations, true ) );
+        ImGui::TextUnformatted( RealToString( pid.second.data.migrations ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%.2f%%)", double( pid.second.data.migrations ) / pid.second.data.runningRegions * 100 );
         ImGui::NextColumn();
@@ -12371,7 +12371,7 @@ void View::DrawCpuDataWindow()
                 }
                 const auto& tit = ctd.find( tid );
                 assert( tit != ctd.end() );
-                ImGui::TextUnformatted( RealToString( tid, true ) );
+                ImGui::TextUnformatted( RealToString( tid ) );
                 if( ImGui::IsItemHovered() )
                 {
                     if( tidMatch )
@@ -12401,9 +12401,9 @@ void View::DrawCpuDataWindow()
                 sprintf( buf, "%s (%.2f%%)", TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
                 ImGui::ProgressBar( double( tit->second.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
                 ImGui::NextColumn();
-                ImGui::TextUnformatted( RealToString( tit->second.runningRegions, true ) );
+                ImGui::TextUnformatted( RealToString( tit->second.runningRegions ) );
                 ImGui::NextColumn();
-                ImGui::TextUnformatted( RealToString( tit->second.migrations, true ) );
+                ImGui::TextUnformatted( RealToString( tit->second.migrations ) );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.2f%%)", double( tit->second.migrations ) / tit->second.runningRegions * 100 );
                 ImGui::NextColumn();
@@ -12491,7 +12491,7 @@ void View::DrawAnnotationList()
         return;
     }
 
-    TextFocused( "Annotations:", RealToString( m_annotations.size(), true ) );
+    TextFocused( "Annotations:", RealToString( m_annotations.size() ) );
     ImGui::SameLine();
     DrawHelpMarker( "Press ctrl to unlock removal" );
     ImGui::Separator();
@@ -13137,11 +13137,11 @@ void View::DrawMemory()
     ImGui::SameLine();
     TextDisabledUnformatted( "Total allocations:" );
     ImGui::SameLine();
-    ImGui::Text( "%-15s", RealToString( mem.data.size(), true ) );
+    ImGui::Text( "%-15s", RealToString( mem.data.size() ) );
     ImGui::SameLine();
     TextDisabledUnformatted( "Active allocations:" );
     ImGui::SameLine();
-    ImGui::Text( "%-15s", RealToString( mem.active.size(), true ) );
+    ImGui::Text( "%-15s", RealToString( mem.active.size() ) );
     ImGui::SameLine();
     TextDisabledUnformatted( "Memory usage:" );
     ImGui::SameLine();
@@ -13261,7 +13261,7 @@ void View::DrawMemory()
         }
 
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( items.size(), true ) );
+        ImGui::TextDisabled( "(%s)", RealToString( items.size() ) );
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
@@ -13477,7 +13477,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             {
                 ImGui::BeginTooltip();
                 TextFocused( "Allocations size:", MemSizeToString( v.alloc ) );
-                TextFocused( "Allocations count:", RealToString( v.count, true ) );
+                TextFocused( "Allocations count:", RealToString( v.count ) );
                 TextFocused( "Average allocation size:", MemSizeToString( v.alloc / v.count ) );
                 ImGui::SameLine();
                 ImGui::EndTooltip();
@@ -13510,11 +13510,11 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             ImGui::SameLine();
             if( v.children.empty() )
             {
-                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count, true ) );
+                ImGui::TextColored( ImVec4( 0.2, 0.8, 0.8, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count ) );
             }
             else
             {
-                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count, true ) );
+                ImGui::TextColored( ImVec4( 0.8, 0.8, 0.2, 1.0 ), "%s (%s)", MemSizeToString( v.alloc ), RealToString( v.count ) );
             }
 
             if( expand )
@@ -13538,7 +13538,7 @@ void View::DrawAllocList()
 
     ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
-    TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size(), true ) );
+    TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size() ) );
     ListMemData<decltype( data.begin() )>( data.begin(), data.end(), []( auto& v ) {
         ImGui::Text( "0x%" PRIx64, (*v)->Ptr() );
     }, "##allocations" );
@@ -13922,7 +13922,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
 #ifndef TRACY_NO_STATISTICS
@@ -13952,7 +13952,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.2f%%)", 100.f * time / ztime );
             }
-            TextFocused( "Running state regions:", RealToString( cnt, true ) );
+            TextFocused( "Running state regions:", RealToString( cnt ) );
         }
     }
     if( m_worker.HasZoneExtra( ev ) && m_worker.GetZoneExtra( ev ).text.Active() )
@@ -13982,7 +13982,7 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%s)", RealToString( tid, true ) );
+    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
     ImGui::Separator();
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );

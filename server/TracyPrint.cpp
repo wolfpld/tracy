@@ -214,7 +214,7 @@ const char* TimeToString( int64_t _ns )
     return bufstart;
 }
 
-const char* RealToString( double val, bool separator )
+const char* RealToString( double val )
 {
     enum { Pool = 8 };
     static char bufpool[Pool][64];
@@ -228,20 +228,17 @@ const char* RealToString( double val, bool separator )
 
     const auto vbegin = ptr;
 
-    if( separator )
-    {
-        while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
-        auto end = ptr;
-        while( *end != '\0' ) end++;
-        auto sz = end - ptr;
+    while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
+    auto end = ptr;
+    while( *end != '\0' ) end++;
+    auto sz = end - ptr;
 
-        while( ptr - vbegin > 3 )
-        {
-            ptr -= 3;
-            memmove( ptr+1, ptr, sz );
-            *ptr = ',';
-            sz += 4;
-        }
+    while( ptr - vbegin > 3 )
+    {
+        ptr -= 3;
+        memmove( ptr+1, ptr, sz );
+        *ptr = ',';
+        sz += 4;
     }
 
     while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;

@@ -148,7 +148,7 @@ int main( int argc, char** argv )
     }
 
     printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nElapsed time: %s\nSaving trace...",
-        worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() ), tracy::RealToString( worker.GetZoneCount(), true ),
+        worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() ), tracy::RealToString( worker.GetZoneCount() ),
         tracy::TimeToString( std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count() ) );
     fflush( stdout );
     auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );

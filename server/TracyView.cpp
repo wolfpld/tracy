@@ -6600,34 +6600,38 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
 
                 pdqsort_branchless( cti.get(), cti.get() + cgr.v.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
-                for( size_t i=0; i<cgr.v.size(); i++ )
+                ImGuiListClipper clipper( cgr.v.size() );
+                while( clipper.Step() )
                 {
-                    auto& cev = a(children[cgr.v[cti[i]]]);
-                    const auto txt = m_worker.GetZoneName( cev );
-                    bool b = false;
-                    ImGui::Indent();
-                    ImGui::PushID( (int)cgr.v[cti[i]] );
-                    if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
+                    for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                     {
-                        ShowZoneInfo( cev );
-                    }
-                    if( ImGui::IsItemHovered() )
-                    {
-                        m_zoneHighlight = &cev;
-                        if( ImGui::IsMouseClicked( 2 ) )
+                        auto& cev = a(children[cgr.v[cti[i]]]);
+                        const auto txt = m_worker.GetZoneName( cev );
+                        bool b = false;
+                        ImGui::Indent();
+                        ImGui::PushID( (int)cgr.v[cti[i]] );
+                        if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                         {
-                            ZoomToZone( cev );
+                            ShowZoneInfo( cev );
                         }
-                        ZoneTooltip( cev );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            m_zoneHighlight = &cev;
+                            if( ImGui::IsMouseClicked( 2 ) )
+                            {
+                                ZoomToZone( cev );
+                            }
+                            ZoneTooltip( cev );
+                        }
+                        ImGui::PopID();
+                        ImGui::Unindent();
+                        ImGui::NextColumn();
+                        const auto part = double( ctt[cti[i]] ) * rztime;
+                        char buf[128];
+                        PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
+                        ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+                        ImGui::NextColumn();
                     }
-                    ImGui::PopID();
-                    ImGui::Unindent();
-                    ImGui::NextColumn();
-                    const auto part = double( ctt[cti[i]] ) * rztime;
-                    char buf[128];
-                    PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
-                    ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
-                    ImGui::NextColumn();
                 }
                 ImGui::TreePop();
             }
@@ -6658,34 +6662,38 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
         PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
-        for( size_t i=0; i<children.size(); i++ )
+        ImGuiListClipper clipper( children.size() );
+        while( clipper.Step() )
         {
-            auto& cev = a(children[cti[i]]);
-            const auto txt = m_worker.GetZoneName( cev );
-            bool b = false;
-            SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( cev.SrcLoc() ), 0 ) );
-            ImGui::SameLine();
-            ImGui::PushID( (int)i );
-            if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
+            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
             {
-                ShowZoneInfo( cev );
-            }
-            if( ImGui::IsItemHovered() )
-            {
-                m_zoneHighlight = &cev;
-                if( ImGui::IsMouseClicked( 2 ) )
+                auto& cev = a(children[cti[i]]);
+                const auto txt = m_worker.GetZoneName( cev );
+                bool b = false;
+                SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( cev.SrcLoc() ), 0 ) );
+                ImGui::SameLine();
+                ImGui::PushID( (int)i );
+                if( ImGui::Selectable( txt, &b, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
-                    ZoomToZone( cev );
+                    ShowZoneInfo( cev );
                 }
-                ZoneTooltip( cev );
+                if( ImGui::IsItemHovered() )
+                {
+                    m_zoneHighlight = &cev;
+                    if( ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToZone( cev );
+                    }
+                    ZoneTooltip( cev );
+                }
+                ImGui::PopID();
+                ImGui::NextColumn();
+                const auto part = double( ctt[cti[i]] ) * rztime;
+                char buf[128];
+                PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
+                ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
+                ImGui::NextColumn();
             }
-            ImGui::PopID();
-            ImGui::NextColumn();
-            const auto part = double( ctt[cti[i]] ) * rztime;
-            char buf[128];
-            PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
-            ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
-            ImGui::NextColumn();
         }
         ImGui::EndColumns();
     }

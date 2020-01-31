@@ -154,7 +154,7 @@ private:
     void DrawAnnotationList();
 
     template<class T>
-    void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
+    void ListMemData( T ptr, T end, std::function<void(T)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
 
     unordered_flat_map<uint32_t, PathData> GetCallstackPaths( const MemData& mem, bool onlyActive ) const;
     unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;

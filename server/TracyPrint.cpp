@@ -280,29 +280,28 @@ const char* MemSizeToString( int64_t val )
     };
     Unit unit;
 
+    char* ptr;
     if( aval < 10000ll * 1024 )
     {
-        sprintf( buf, "%.2f", val / 1024. );
+        ptr = PrintFloat( buf, buf+64, val / 1024., 2 );
         unit = Unit::Kilobyte;
     }
     else if( aval < 10000ll * 1024 * 1024 )
     {
-        sprintf( buf, "%.2f", val / ( 1024. * 1024 ) );
+        ptr = PrintFloat( buf, buf+64, val / ( 1024. * 1024 ), 2 );
         unit = Unit::Megabyte;
     }
     else if( aval < 10000ll * 1024 * 1024 * 1024 )
     {
-        sprintf( buf, "%.2f", val / ( 1024. * 1024 * 1024 ) );
+        ptr = PrintFloat( buf, buf+64, val / ( 1024. * 1024 * 1024 ), 2 );
         unit = Unit::Gigabyte;
     }
     else
     {
-        sprintf( buf, "%.2f", val / ( 1024. * 1024 * 1024 * 1024 ) );
+        ptr = PrintFloat( buf, buf+64, val / ( 1024. * 1024 * 1024 * 1024 ), 2 );
         unit = Unit::Terabyte;
     }
 
-    auto ptr = buf;
-    while( *ptr ) ptr++;
     ptr--;
     while( ptr >= buf && *ptr == '0' ) ptr--;
     if( *ptr != '.' ) ptr++;

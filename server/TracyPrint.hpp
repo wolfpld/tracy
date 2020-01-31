@@ -2,9 +2,17 @@
 #define __TRACYPRINT_HPP__
 
 #if ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
-#  include <charconv>
-#  include <type_traits>
+#  if __has_include(<charconv>) && __has_include(<type_traits>)
+#    include <charconv>
+#    include <type_traits>
+#  else
+#    define NO_CHARCONV
+#  endif
 #else
+#  define NO_CHARCONV
+#endif
+
+#ifdef NO_CHARCONV
 #  include <stdio.h>
 #endif
 
@@ -63,7 +71,7 @@ static tracy_force_inline void RealToStringInteger( char* buf, char* end )
 template<typename T>
 static inline char* PrintFloat( char* begin, char* end, T value, int precision )
 {
-#if ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
+#ifndef NO_CHARCONV
     return std::to_chars( begin, end, value, std::chars_format::fixed, precision ).ptr;
 #else
     return begin + sprintf( begin, "%.*f", precision, value );
@@ -73,14 +81,14 @@ static inline char* PrintFloat( char* begin, char* end, T value, int precision )
 template<typename T>
 static inline char* PrintFloat( char* begin, char* end, T value )
 {
-#if ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
+#ifndef NO_CHARCONV
     return std::to_chars( begin, end, value, std::chars_format::fixed ).ptr;
 #else
     return begin + sprintf( begin, "%f", value );
 #endif
 }
 
-#if ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
+#ifndef NO_CHARCONV
 template<typename T>
 static inline const char* RealToString( T val )
 {

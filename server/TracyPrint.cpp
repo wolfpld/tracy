@@ -222,26 +222,26 @@ const char* RealToString( double val )
     char* buf = bufpool[bufsel];
     bufsel = ( bufsel + 1 ) % Pool;
 
-    sprintf( buf, "%f", val );
+    *PrintFloat( buf, buf+64, val ) = '\0';
     auto ptr = buf;
     if( *ptr == '-' ) ptr++;
 
     const auto vbegin = ptr;
 
-    while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
+    while( *ptr != '\0' && *ptr != '.' ) ptr++;
     auto end = ptr;
     while( *end != '\0' ) end++;
-    auto sz = end - ptr;
+    auto sz = end - ptr + 1;
 
     while( ptr - vbegin > 3 )
     {
         ptr -= 3;
-        memmove( ptr+1, ptr, sz );
+        memmove( ptr+1, ptr, sz+3 );
         *ptr = ',';
         sz += 4;
     }
 
-    while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
+    while( *ptr != '\0' && *ptr != '.' ) ptr++;
 
     if( *ptr == '\0' ) return buf;
     while( *ptr != '\0' ) ptr++;

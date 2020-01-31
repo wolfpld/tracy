@@ -6465,6 +6465,15 @@ void View::DrawZoneInfoWindow()
     }
 }
 
+static tracy_force_inline void PrintStringPercent( char* buf, const char* string, double percent )
+{
+    const auto ssz = strlen( string );
+    memcpy( buf, string, ssz );
+    memcpy( buf+ssz, " (", 2 );
+    auto end = PrintFloat( buf+ssz+2, buf+128, percent, 2 );
+    memcpy( end, "%)", 3 );
+}
+
 template<typename Adapter, typename V>
 void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
 {
@@ -6516,7 +6525,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
         ImGui::NextColumn();
         char buf[128];
-        sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+        PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
         for( size_t i=0; i<msz; i++ )
@@ -6573,7 +6582,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
             ImGui::NextColumn();
             const auto part = double( cgr.t ) * rztime;
             char buf[128];
-            sprintf( buf, "%s (%.2f%%)", TimeToString( cgr.t ), part * 100 );
+            PrintStringPercent( buf, TimeToString( cgr.t ), part * 100 );
             ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
             if( expandGroup )
@@ -6616,7 +6625,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                     ImGui::NextColumn();
                     const auto part = double( ctt[cti[i]] ) * rztime;
                     char buf[128];
-                    sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+                    PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
                     ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
                     ImGui::NextColumn();
                 }
@@ -6646,7 +6655,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
         ImGui::NextColumn();
         char buf[128];
-        sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+        PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
         for( size_t i=0; i<children.size(); i++ )
@@ -6674,7 +6683,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
             ImGui::NextColumn();
             const auto part = double( ctt[cti[i]] ) * rztime;
             char buf[128];
-            sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+            PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
             ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
         }
@@ -6959,7 +6968,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
         ImGui::NextColumn();
         char buf[128];
-        sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+        PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) * rztime, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
         for( size_t i=0; i<msz; i++ )
@@ -7012,7 +7021,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             ImGui::NextColumn();
             const auto part = double( cgr.t ) * rztime;
             char buf[128];
-            sprintf( buf, "%s (%.2f%%)", TimeToString( cgr.t ), part * 100 );
+            PrintStringPercent( buf, TimeToString( cgr.t ), part * 100 );
             ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
             if( expandGroup )
@@ -7055,7 +7064,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                     ImGui::NextColumn();
                     const auto part = double( ctt[cti[i]] ) * rztime;
                     char buf[128];
-                    sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+                    PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
                     ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
                     ImGui::NextColumn();
                 }
@@ -7086,7 +7095,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
         TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
         ImGui::NextColumn();
         char buf[128];
-        sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
+        PrintStringPercent( buf, TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
         ImGui::ProgressBar( double( ztime - ctime ) / ztime, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
         for( size_t i=0; i<children.size(); i++ )
@@ -7111,7 +7120,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             ImGui::NextColumn();
             const auto part = double( ctt[cti[i]] ) / ztime;
             char buf[128];
-            sprintf( buf, "%s (%.2f%%)", TimeToString( ctt[cti[i]] ), part * 100 );
+            PrintStringPercent( buf, TimeToString( ctt[cti[i]] ), part * 100 );
             ImGui::ProgressBar( part, ImVec2( -1, ty ), buf );
             ImGui::NextColumn();
         }
@@ -12333,7 +12342,7 @@ void View::DrawCpuDataWindow()
             m_drawThreadHighlight = pid.first;
         }
         ImGui::NextColumn();
-        sprintf( buf, "%s (%.2f%%)", TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
+        PrintStringPercent( buf, TimeToString( pid.second.data.runningTime ), double( pid.second.data.runningTime ) * rtimespan * 100 );
         ImGui::ProgressBar( double( pid.second.data.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
         ImGui::NextColumn();
         ImGui::TextUnformatted( RealToString( pid.second.data.runningRegions ) );
@@ -12396,7 +12405,7 @@ void View::DrawCpuDataWindow()
                     m_drawThreadHighlight = tid;
                 }
                 ImGui::NextColumn();
-                sprintf( buf, "%s (%.2f%%)", TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
+                PrintStringPercent( buf, TimeToString( tit->second.runningTime ), double( tit->second.runningTime ) * rtimespan * 100 );
                 ImGui::ProgressBar( double( tit->second.runningTime ) * rtimespan, ImVec2( -1, ty ), buf );
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( RealToString( tit->second.runningRegions ) );

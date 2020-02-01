@@ -152,6 +152,8 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
     m_userData.StateShouldBePreserved();
     m_userData.LoadState( m_vd );
     m_userData.LoadAnnotations( m_annotations );
+
+    if( m_worker.GetCallstackFrameCount() == 0 ) m_showUnknownFrames = false;
 }
 
 View::~View()

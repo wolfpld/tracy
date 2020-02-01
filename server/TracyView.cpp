@@ -5873,8 +5873,11 @@ void View::DrawZoneInfoWindow()
     if( m_worker.AreSourceLocationZonesReady() )
     {
         auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+        if( zoneData.total > 0 )
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+        }
     }
 #endif
     TextFocused( "Self time:", TimeToString( selftime ) );
@@ -13955,8 +13958,11 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     if( m_worker.AreSourceLocationZonesReady() )
     {
         auto& zoneData = m_worker.GetZonesForSourceLocation( ev.SrcLoc() );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+        if( zoneData.total > 0 )
+        {
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+        }
     }
 #endif
     TextFocused( "Self time:", TimeToString( selftime ) );

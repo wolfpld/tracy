@@ -11203,6 +11203,7 @@ void View::DrawInfo()
         char buf[256];
         buf[descsz] = '\0';
         memcpy( buf, desc.c_str(), descsz );
+        ImGui::SetNextItemWidth( -1 );
         if( ImGui::InputTextWithHint( "", "Enter description of the trace", buf, 256 ) )
         {
             m_userData.SetDescription( buf );

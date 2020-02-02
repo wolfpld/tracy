@@ -16,6 +16,7 @@
 \usepackage{hyperref} % For hyperlinks in the PDF
 \usepackage{fontawesome5}
 \usepackage[os=win]{menukeys}
+\usepackage{xfrac}
 
 \usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
 \geometry{a4paper,textwidth=6.5in,hmarginratio=1:1,
@@ -1536,6 +1537,14 @@ In some cases your program may be incorrectly instrumented, for example you coul
 You have instrumented your application and you have captured a profiling trace. Now you want to look at the collected data. You can do this in the application contained in the \texttt{profiler} directory.
 
 The workflow is identical, whether you are viewing a previously saved trace, or if you're performing a live capture, as described in section~\ref{interactiveprofiling}.
+
+\subsection{Time display}
+
+In most cases Tracy will display an approximation of time value, depending on how big it is. For example, a short time range will be displayed as 123~\si{\nano\second}, and some longer ones will be shortened to 123.45~\si{\micro\second}, 123.45~\si{\milli\second}, 12.34~\si{\second}, 1:23.4, 12:34:56, or even 1d12:34:56 to indicate more than a day has passed.
+
+While such presentation makes time values easy to read, it is not always appropriate. For example, you may have multiple events happen at a time approximated to 1:23.4, giving you a precision of only $\sfrac{1}{10}$ of a second. There's certainly a lot that can happen in 100~\si{\milli\second}.
+
+To solve this problem, an alternative time display is used in appropriate places. It combines a day--hour--minute--second value with full nanosecond resolution, resulting in values such as 1:23~456,789,012~\si{\nano\second}.
 
 \subsection{Main profiler window}
 

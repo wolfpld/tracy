@@ -5347,6 +5347,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( x - 2, offset ), wpos + ImVec2( x + 2, offset + PlotHeight ) ) )
     {
         ImGui::BeginTooltip();
+        TextFocused( "Time:", TimeToString( item->time.Val() ) );
         if( type == PlotType::Memory )
         {
             TextDisabledUnformatted( "Value:" );

@@ -211,6 +211,103 @@ const char* TimeToString( int64_t _ns )
     return bufstart;
 }
 
+const char* TimeToStringExact( int64_t _ns )
+{
+    enum { Pool = 8 };
+    static char bufpool[Pool][64];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    char* bufstart = buf;
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    uint64_t ns;
+    if( _ns < 0 )
+    {
+        *buf = '-';
+        buf++;
+        ns = -_ns;
+    }
+    else
+    {
+        ns = _ns;
+    }
+
+    const char* numStart = buf;
+
+    if( ns >= 1000ll * 1000 * 1000 * 60 * 60 * 24 )
+    {
+        const auto d = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 * 60 * 24 ) );
+        const auto h = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 * 60 ) - d * 24 );
+        const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) - d * ( 60 * 24 ) - h * 60 );
+        const auto s = int64_t( ns / ( 1000ll * 1000 * 1000 ) - d * ( 60 * 60 * 24 ) - h * ( 60 * 60 ) - m * 60 );
+        assert( d < 100 );
+        PrintTinyInt( buf, d );
+        *buf++ = 'd';
+        PrintTinyInt0( buf, h );
+        *buf++ = ':';
+        PrintTinyInt0( buf, m );
+        *buf++ = ':';
+        PrintTinyInt0( buf, s );
+        ns %= 1000ll * 1000 * 1000;
+    }
+    else if( ns >= 1000ll * 1000 * 1000 * 60 * 60 )
+    {
+        const auto h = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 * 60 ) );
+        const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) - h * 60 );
+        const auto s = int64_t( ns / ( 1000ll * 1000 * 1000 ) - h * ( 60 * 60 ) - m * 60 );
+        PrintTinyInt( buf, h );
+        *buf++ = ':';
+        PrintTinyInt0( buf, m );
+        *buf++ = ':';
+        PrintTinyInt0( buf, s );
+        ns %= 1000ll * 1000 * 1000;
+    }
+    else if( ns >= 1000ll * 1000 * 1000 * 60 )
+    {
+        const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) );
+        const auto s = int64_t( ns / ( 1000ll * 1000 * 1000 ) - m * 60 );
+        PrintTinyInt( buf, m );
+        *buf++ = ':';
+        PrintTinyInt0( buf, s );
+        ns %= 1000ll * 1000 * 1000;
+    }
+    else if( ns >= 1000ll * 1000 * 1000 )
+    {
+        PrintTinyInt( buf, int64_t( ns / ( 1000ll * 1000 * 1000 ) ) );
+        *buf++ = 's';
+        ns %= 1000ll * 1000 * 1000;
+    }
+
+    if( ns > 0 )
+    {
+        if( buf != numStart ) *buf++ = ' ';
+        if( ns >= 1000ll * 1000 )
+        {
+            PrintSmallInt( buf, int64_t( ns / ( 1000ll * 1000 ) ) );
+            *buf++ = ',';
+            ns %= 1000ll * 1000;
+        }
+        if( ns >= 1000ll )
+        {
+            PrintSmallInt( buf, int64_t( ns / 1000ll ) );
+            *buf++ = ',';
+            ns %= 1000ll;
+        }
+        PrintSmallInt( buf, ns );
+        *buf++ = 'n';
+        *buf++ = 's';
+    }
+    else
+    {
+        memcpy( buf, "0ns", 3 );
+        buf += 3;
+    }
+
+    *buf++ = '\0';
+
+    return bufstart;
+}
+
 const char* MemSizeToString( int64_t val )
 {
     enum { Pool = 8 };

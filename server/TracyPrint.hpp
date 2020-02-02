@@ -116,6 +116,7 @@ static inline const char* RealToString( double val )
 #endif
 
 const char* TimeToString( int64_t ns );
+const char* TimeToStringExact( int64_t ns );
 const char* MemSizeToString( int64_t val );
 
 }

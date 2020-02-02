@@ -32,6 +32,7 @@ static const char* IntTable100 =
 
 static inline void PrintTinyInt( char*& buf, uint64_t v )
 {
+    assert( v < 100 );
     if( v >= 10 )
     {
         *buf++ = '0' + v/10;
@@ -41,6 +42,7 @@ static inline void PrintTinyInt( char*& buf, uint64_t v )
 
 static inline void PrintTinyInt0( char*& buf, uint64_t v )
 {
+    assert( v < 100 );
     if( v >= 10 )
     {
         *buf++ = '0' + v/10;
@@ -54,6 +56,7 @@ static inline void PrintTinyInt0( char*& buf, uint64_t v )
 
 static inline void PrintSmallInt( char*& buf, uint64_t v )
 {
+    assert( v < 1000 );
     if( v >= 100 )
     {
         memcpy( buf, IntTable100 + v/10*2, 2 );

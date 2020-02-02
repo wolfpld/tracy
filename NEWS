@@ -19,6 +19,7 @@ v0.7 (xxxx-xx-xx)
 - Further reduction of memory usage and on-disk trace size.
 - Replaced ska::flat_hash_map with robin-hood-hashing.
 - Speed-up rendering of long lists of items.
+- Exact event time is displayed in some places in the UI.
 
 v0.6.2 (2019-12-30)
 -------------------

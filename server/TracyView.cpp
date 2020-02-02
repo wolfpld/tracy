@@ -1570,7 +1570,15 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
                 const auto left = s - m_vd.zvStart;
                 const auto right = m_vd.zvEnd - e;
 
-                ZoomToRange( m_vd.zvStart - left * mul, m_vd.zvEnd + right * mul );
+                auto start = m_vd.zvStart - left * mul;
+                auto end = m_vd.zvEnd + right * mul;
+                if( end - start > 1000ll * 1000 * 1000 * 60 * 60 * 24 * 10 )
+                {
+                    start = -1000ll * 1000 * 1000 * 60 * 60 * 24 * 5;
+                    end = 1000ll * 1000 * 1000 * 60 * 60 * 24 * 5;
+                }
+
+                ZoomToRange( start, end );
             }
             else
             {
@@ -1595,6 +1603,19 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             m_vd.zvStart -= dpx;
             m_vd.zvEnd -= dpx;
             io.MouseClickedPos[1].x = io.MousePos.x;
+
+            if( m_vd.zvStart < -1000ll * 1000 * 1000 * 60 * 60 * 24 * 5 )
+            {
+                const auto range = m_vd.zvEnd - m_vd.zvStart;
+                m_vd.zvStart = -1000ll * 1000 * 1000 * 60 * 60 * 24 * 5;
+                m_vd.zvEnd = m_vd.zvStart + range;
+            }
+            else if( m_vd.zvEnd > 1000ll * 1000 * 1000 * 60 * 60 * 24 * 5 )
+            {
+                const auto range = m_vd.zvEnd - m_vd.zvStart;
+                m_vd.zvEnd = 1000ll * 1000 * 1000 * 60 * 60 * 24 * 5;
+                m_vd.zvStart = m_vd.zvEnd - range;
+            }
         }
         if( delta.y != 0 )
         {

@@ -71,6 +71,9 @@ public:
     tracy_force_inline T* operator->() { return m_ptr; }
     tracy_force_inline const T* operator->() const { return m_ptr; }
 
+    tracy_force_inline T* get() { return m_ptr; }
+    tracy_force_inline const T* get() const { return m_ptr; }
+
 private:
     T* m_ptr;
 };

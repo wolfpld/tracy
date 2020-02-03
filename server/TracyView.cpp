@@ -8152,9 +8152,9 @@ void View::DrawFindZone()
         ImGui::TextUnformatted( ICON_FA_LOCK );
         ImGui::SameLine();
 #endif
-        TextFocused( "Zone time range:", TimeToString( m_findZone.rangeMin ) );
+        TextFocused( "Zone time range:", TimeToStringExact( m_findZone.rangeMin ) );
         ImGui::SameLine();
-        TextFocused( "-", TimeToString( m_findZone.rangeMax ) );
+        TextFocused( "-", TimeToStringExact( m_findZone.rangeMax ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", TimeToString( m_findZone.rangeMax - m_findZone.rangeMin ) );
         ImGui::SameLine();

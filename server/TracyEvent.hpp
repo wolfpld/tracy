@@ -323,7 +323,7 @@ enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
 
 struct CallstackFrameTree
 {
-    CallstackFrameTree( CallstackFrameId id ) : frame( id ) {}
+    CallstackFrameTree( CallstackFrameId id ) : frame( id ), alloc( 0 ), count( 0 ) {}
 
     CallstackFrameId frame;
     uint64_t alloc;

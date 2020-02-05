@@ -12,6 +12,10 @@
 #  define NO_CHARCONV
 #endif
 
+#if defined _MSC_VER && _MSC_VER < 1924
+#  define NO_CHARCONV
+#endif
+
 #ifdef NO_CHARCONV
 #  include <stdio.h>
 #endif

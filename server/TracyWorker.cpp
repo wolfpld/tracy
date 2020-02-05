@@ -1697,7 +1697,20 @@ uint64_t Worker::GetPlotCount() const
     uint64_t cnt = 0;
     for( auto& p : m_data.plots.Data() )
     {
-        if( p->type != PlotType::Memory )
+        if( p->type == PlotType::User )
+        {
+            cnt += p->data.size();
+        }
+    }
+    return cnt;
+}
+
+uint64_t Worker::GetTracyPlotCount() const
+{
+    uint64_t cnt = 0;
+    for( auto& p : m_data.plots.Data() )
+    {
+        if( p->type != PlotType::User )
         {
             cnt += p->data.size();
         }

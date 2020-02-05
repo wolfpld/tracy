@@ -332,6 +332,7 @@ public:
     uint64_t GetGpuZoneCount() const { return m_data.gpuCnt; }
     uint64_t GetLockCount() const;
     uint64_t GetPlotCount() const;
+    uint64_t GetTracyPlotCount() const;
     uint64_t GetContextSwitchCount() const;
     uint64_t GetContextSwitchPerCpuCount() const;
     bool HasContextSwitches() const { return !m_data.ctxSwitch.empty(); }

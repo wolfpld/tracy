@@ -11273,6 +11273,8 @@ void View::DrawInfo()
         TextFocused( "GPU zones:", RealToString( m_worker.GetGpuZoneCount() ) );
         TextFocused( "Lock events:", RealToString( m_worker.GetLockCount() ) );
         TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount() ) );
+        ImGui::SameLine();
+        TextFocused( "+", RealToString( m_worker.GetTracyPlotCount() ) );
         TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size() ) );
         TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount() ) );
         TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );

@@ -6229,8 +6229,8 @@ void View::DrawZoneInfoWindow()
                         }
                         pdqsort_branchless( v.begin(), v.end(), [] ( const auto& l, const auto& r ) { return l->TimeAlloc() < r->TimeAlloc(); } );
 
-                        ListMemData<decltype( v.begin() )>( v.begin(), v.end(), []( auto v ) {
-                            ImGui::Text( "0x%" PRIx64, (*v)->Ptr() );
+                        ListMemData( v, []( auto v ) {
+                            ImGui::Text( "0x%" PRIx64, v->Ptr() );
                         }, nullptr, m_allocTimeRelativeToZone ? ev.Start() : -1 );
                         ImGui::TreePop();
                     }
@@ -12607,28 +12607,37 @@ void View::DrawAnnotationList()
     ImGui::End();
 }
 
-template<class T>
-void View::ListMemData( T ptr, T end, std::function<void(T)> DrawAddress, const char* id, int64_t startTime )
+void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id, int64_t startTime )
 {
     if( startTime == -1 ) startTime = 0;
 
     const auto& style = ImGui::GetStyle();
-    const auto dist = std::distance( ptr, end ) + 1;
+    const auto dist = vec.size() + 1;
     const auto ty = ImGui::GetTextLineHeight() + style.ItemSpacing.y;
+
+    enum class SortBy
+    {
+        Address,
+        Size,
+        AllocTime,
+        Duration
+    };
+
+    static SortBy sortBy = SortBy::AllocTime;
 
     ImGui::BeginChild( id ? id : "##memScroll", ImVec2( 0, std::max( ty * std::min<int64_t>( dist, 5 ), std::min( ty * dist, ImGui::GetContentRegionAvail().y ) ) ) );
     ImGui::Columns( 8 );
-    ImGui::TextUnformatted( "Address" );
+    if( ImGui::SmallButton( "Address" ) ) sortBy = SortBy::Address;
     ImGui::SameLine();
     DrawHelpMarker( "Click on address to display memory allocation info window.\nMiddle click to zoom to allocation range." );
     ImGui::NextColumn();
-    ImGui::TextUnformatted( "Size" );
+    if( ImGui::SmallButton( "Size" ) ) sortBy = SortBy::Size;
     ImGui::NextColumn();
-    ImGui::TextUnformatted( "Appeared at" );
+    if( ImGui::SmallButton( "Appeared at" ) ) sortBy = SortBy::AllocTime;
     ImGui::SameLine();
     DrawHelpMarker( "Click on entry to center timeline at the memory allocation time." );
     ImGui::NextColumn();
-    ImGui::TextUnformatted( "Duration" );
+    if( ImGui::SmallButton( "Duration" ) ) sortBy = SortBy::Duration;
     ImGui::SameLine();
     DrawHelpMarker( "Active allocations are displayed using green color.\nClick on entry to center timeline at the memory release time." );
     ImGui::NextColumn();
@@ -12648,24 +12657,42 @@ void View::ListMemData( T ptr, T end, std::function<void(T)> DrawAddress, const 
 
     const auto& mem = m_worker.GetMemData();
 
+    switch( sortBy )
+    {
+    case SortBy::Address:
+        pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return l->Ptr() < r->Ptr(); } );
+        break;
+    case SortBy::AllocTime:
+        break;
+    case SortBy::Duration:
+        pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return ( l->TimeFree() - l->TimeAlloc() ) < ( r->TimeFree() - r->TimeAlloc() ); } );
+        break;
+    case SortBy::Size:
+        pdqsort_branchless( vec.begin(), vec.end(), []( const auto& l, const auto& r ) { return l->Size() < r->Size(); } );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+
     int idx = 0;
-    ImGuiListClipper clipper( end - ptr );
+    ImGuiListClipper clipper( vec.end() - vec.begin() );
     while( clipper.Step() )
     {
         for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
         {
-            auto v = ptr[i];
+            auto v = vec[i];
             const auto arrIdx = std::distance( mem.data.begin(), v );
 
             if( m_memoryAllocInfoWindow == arrIdx )
             {
                 ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 1.f, 0.f, 0.f, 1.f ) );
-                DrawAddress( ptr+i );
+                DrawAddress( v );
                 ImGui::PopStyleColor();
             }
             else
             {
-                DrawAddress( ptr+i );
+                DrawAddress( v );
                 if( ImGui::IsItemClicked() )
                 {
                     m_memoryAllocInfoWindow = arrIdx;
@@ -13271,8 +13298,7 @@ void View::DrawMemory()
             }
             else
             {
-                ListMemData<decltype( match.begin() )>( match.begin(), match.end(), [this]( auto it ) {
-                    auto& v = *it;
+                ListMemData( match, [this]( auto v ) {
                     if( v->Ptr() == m_memInfo.ptrFind )
                     {
                         ImGui::Text( "0x%" PRIx64, m_memInfo.ptrFind );
@@ -13328,8 +13354,8 @@ void View::DrawMemory()
 
         if( !items.empty() )
         {
-            ListMemData<decltype( items.begin() )>( items.begin(), items.end(), []( auto v ) {
-                ImGui::Text( "0x%" PRIx64, (*v)->Ptr() );
+            ListMemData( items, []( auto v ) {
+                ImGui::Text( "0x%" PRIx64, v->Ptr() );
             }, "##activeMem" );
         }
         else
@@ -13598,8 +13624,8 @@ void View::DrawAllocList()
     ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size() ) );
-    ListMemData<decltype( data.begin() )>( data.begin(), data.end(), []( auto v ) {
-        ImGui::Text( "0x%" PRIx64, (*v)->Ptr() );
+    ListMemData( data, []( auto v ) {
+        ImGui::Text( "0x%" PRIx64, v->Ptr() );
     }, "##allocations" );
     ImGui::End();
 }

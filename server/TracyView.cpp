@@ -12284,7 +12284,7 @@ void View::DrawPlayback()
         }
     }
     ImGui::SameLine();
-    ImGui::Checkbox( "Zoom 2x", &m_playback.zoom );
+    ImGui::Checkbox( "Zoom 2\xc3\x97", &m_playback.zoom );
     TextFocused( "Timestamp:", TimeToString( tstart ) );
     if( ImGui::IsItemHovered() )
     {

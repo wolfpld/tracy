@@ -11270,11 +11270,29 @@ void View::DrawInfo()
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Extra data:", RealToString( m_worker.GetZoneExtraCount() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Count of zones containing any of the following: call stack trace, custom name, user text" );
+            ImGui::EndTooltip();
+        }
         TextFocused( "GPU zones:", RealToString( m_worker.GetGpuZoneCount() ) );
         TextFocused( "Lock events:", RealToString( m_worker.GetLockCount() ) );
         TextFocused( "Plot data points:", RealToString( m_worker.GetPlotCount() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "User plots" );
+            ImGui::EndTooltip();
+        }
         ImGui::SameLine();
         TextFocused( "+", RealToString( m_worker.GetTracyPlotCount() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Automated Tracy plots" );
+            ImGui::EndTooltip();
+        }
         TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size() ) );
         TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount() ) );
         TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );
@@ -11282,8 +11300,20 @@ void View::DrawInfo()
         TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount() ) );
         TextFocused( "Frame images:", RealToString( ficnt ) );
         TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Detailed context switch data regarding application threads" );
+            ImGui::EndTooltip();
+        }
         ImGui::SameLine();
         TextFocused( "+", RealToString( m_worker.GetContextSwitchPerCpuCount() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Coarse CPU core context switch data" );
+            ImGui::EndTooltip();
+        }
         ImGui::TreePop();
     }
 

@@ -7864,6 +7864,13 @@ void View::DrawMessages()
     ImGui::SetNextWindowSize( ImVec2( 1200, 600 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Messages", &m_showMessages );
 
+    if( msgs.empty() )
+    {
+        ImGui::TextUnformatted( "No messages were collected." );
+        ImGui::End();
+        return;
+    }
+
     size_t tsz = 0;
     for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
 

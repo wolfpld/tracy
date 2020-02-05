@@ -7213,11 +7213,11 @@ void View::DrawOptions()
         m_vd.drawCpuUsageGraph = val;
         ImGui::Unindent();
     }
-    ImGui::Separator();
 
     const auto& gpuData = m_worker.GetGpuData();
     if( !gpuData.empty() )
     {
+        ImGui::Separator();
         val = m_vd.drawGpuZones;
 #ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_EYE " Draw GPU zones", &val );

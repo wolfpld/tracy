@@ -22,6 +22,7 @@ v0.7 (xxxx-xx-xx)
 - Exact event time is displayed in some places in the UI.
 - Memory allocation lists can now be sorted.
 - Added display of trace file compression ratio.
+- Optional Zstd compression of trace files.
 
 v0.6.2 (2019-12-30)
 -------------------

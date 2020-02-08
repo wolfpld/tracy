@@ -51,7 +51,7 @@ $(IMAGE): $(OBJ) $(OBJ2)
 	$(CXX) $(CXXFLAGS) $(DEFINES) $(OBJ) $(OBJ2) $(LIBS) -o $@
 
 ifneq "$(MAKECMDGOALS)" "clean"
--include $(addprefix $(OBJDIR)/,$(SRC:.cpp=.d)) %(addprefix $(OBJDIR)/,$(SRC2:.c=.d))
+-include $(addprefix $(OBJDIR)/,$(SRC:.cpp=.d)) $(addprefix $(OBJDIR)/,$(SRC2:.c=.d))
 endif
 
 clean:

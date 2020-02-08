@@ -402,10 +402,16 @@ bool View::DrawImpl()
     }
 
     if( !m_userData.Valid() ) m_userData.Init( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() );
-    if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::NeedsJoin )
+    if( m_saveThreadState.load( std::memory_order_acquire ) == SaveThreadState::NeedsJoin )
     {
         m_saveThread.join();
-        m_saveThreadState.store( SaveThreadState::Inert, std::memory_order_relaxed );
+        m_saveThreadState.store( SaveThreadState::Inert, std::memory_order_release );
+        const auto src = m_srcFileBytes.load( std::memory_order_relaxed );
+        const auto dst = m_dstFileBytes.load( std::memory_order_relaxed );
+        m_notificationTime = 4;
+        char buf[1024];
+        sprintf( buf, "Trace size %s (%.2f%% ratio)", MemSizeToString( dst ), 100.f * dst / src );
+        m_notificationText = buf;
     }
 
     const auto& io = ImGui::GetIO();
@@ -1013,7 +1019,11 @@ bool View::DrawConnection()
                 m_saveThread = std::thread( [this, f{std::move( f )}] {
                     std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
                     m_worker.Write( *f );
-                    m_saveThreadState.store( SaveThreadState::NeedsJoin, std::memory_order_relaxed );
+                    f->Finish();
+                    const auto stats = f->GetCompressionStatistics();
+                    m_srcFileBytes.store( stats.first, std::memory_order_relaxed );
+                    m_dstFileBytes.store( stats.second, std::memory_order_relaxed );
+                    m_saveThreadState.store( SaveThreadState::NeedsJoin, std::memory_order_release );
                 } );
             }
         }

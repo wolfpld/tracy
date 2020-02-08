@@ -391,6 +391,8 @@ private:
 
     std::atomic<SaveThreadState> m_saveThreadState { SaveThreadState::Inert };
     std::thread m_saveThread;
+    std::atomic<size_t> m_srcFileBytes { 0 };
+    std::atomic<size_t> m_dstFileBytes { 0 };
 
     void* m_frameTexture = nullptr;
     const void* m_frameTexturePtr = nullptr;

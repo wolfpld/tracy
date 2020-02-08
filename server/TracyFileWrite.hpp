@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <utility>
 
 #include "TracyFileHeader.hpp"
 #include "../common/tracy_lz4.hpp"
@@ -36,14 +37,16 @@ public:
 
     ~FileWrite()
     {
-        if( m_offset > 0 )
-        {
-            WriteLz4Block();
-        }
+        if( m_offset > 0 ) WriteLz4Block();
         fclose( m_file );
 
         if( m_stream ) LZ4_freeStream( m_stream );
         if( m_streamHC ) LZ4_freeStreamHC( m_streamHC );
+    }
+
+    void Finish()
+    {
+        if( m_offset > 0 ) WriteLz4Block();
     }
 
     tracy_force_inline void Write( const void* ptr, size_t size )
@@ -58,6 +61,8 @@ public:
         }
     }
 
+    std::pair<size_t, size_t> GetCompressionStatistics() const { return std::make_pair( m_srcBytes, m_dstBytes ); }
+
 private:
     FileWrite( FILE* f, Compression comp )
         : m_stream( nullptr )
@@ -66,6 +71,8 @@ private:
         , m_buf( m_bufData[0] )
         , m_second( m_bufData[1] )
         , m_offset( 0 )
+        , m_srcBytes( 0 )
+        , m_dstBytes( 0 )
     {
         switch( comp )
         {
@@ -123,6 +130,10 @@ private:
         {
             sz = LZ4_compress_HC_continue( m_streamHC, m_buf, lz4, m_offset, LZ4Size );
         }
+
+        m_srcBytes += m_offset;
+        m_dstBytes += sz;
+
         fwrite( &sz, 1, sizeof( sz ), m_file );
         fwrite( lz4, 1, sz, m_file );
         m_offset = 0;
@@ -139,6 +150,8 @@ private:
     char* m_buf;
     char* m_second;
     size_t m_offset;
+    size_t m_srcBytes;
+    size_t m_dstBytes;
 };
 
 }

@@ -156,6 +156,9 @@ int main( int argc, char** argv )
     {
         worker.Write( *f );
         printf( " \033[32;1mdone!\033[0m\n" );
+        f->Finish();
+        const auto stats = f->GetCompressionStatistics();
+        printf( "Trace size %s (%.2f%% ratio)\n", tracy::MemSizeToString( stats.second ), 100.f * stats.second / stats.first );
     }
     else
     {

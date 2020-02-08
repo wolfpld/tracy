@@ -122,7 +122,7 @@ LZ4LIB_API const char* LZ4_versionString (void);   /**< library version string; 
  * Default value is 14, for 16KB, which nicely fits into Intel x86 L1 cache
  */
 #ifndef LZ4_MEMORY_USAGE
-# define LZ4_MEMORY_USAGE 12
+# define LZ4_MEMORY_USAGE 14
 #endif
 
 

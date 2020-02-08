@@ -71,9 +71,11 @@ int main( int argc, char** argv )
 
     try
     {
+        int64_t t;
         float ratio;
         int inVer;
         {
+            const auto t0 = std::chrono::high_resolution_clock::now();
             tracy::Worker worker( *f, tracy::EventType::All, false );
 
 #ifndef TRACY_NO_STATISTICS
@@ -90,9 +92,11 @@ int main( int argc, char** argv )
             fflush( stdout );
             worker.Write( *w );
             w->Finish();
+            const auto t1 = std::chrono::high_resolution_clock::now();
             const auto stats = w->GetCompressionStatistics();
             ratio = 100.f * stats.second / stats.first;
             inVer = worker.GetTraceVersion();
+            t = std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count();
         }
 
         FILE* in = fopen( input, "rb" );
@@ -105,10 +109,10 @@ int main( int argc, char** argv )
         const auto outSize = ftello64( out );
         fclose( out );
 
-        printf( "%s (%i.%i.%i) {%s} -> %s (%i.%i.%i) {%s, %.2f%%}  %.2f%% size change\n",
+        printf( "%s (%i.%i.%i) {%s} -> %s (%i.%i.%i) {%s, %.2f%%}  %s, %.2f%% change\n",
             input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, tracy::MemSizeToString( inSize ),
             output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::MemSizeToString( outSize ), ratio,
-            float( outSize ) / inSize * 100 );
+            tracy::TimeToString( t ), float( outSize ) / inSize * 100 );
     }
     catch( const tracy::UnsupportedVersion& e )
     {

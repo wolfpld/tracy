@@ -21,6 +21,7 @@ v0.7 (xxxx-xx-xx)
 - Speed-up rendering of long lists of items.
 - Exact event time is displayed in some places in the UI.
 - Memory allocation lists can now be sorted.
+- Added display of trace file compression ratio.
 
 v0.6.2 (2019-12-30)
 -------------------

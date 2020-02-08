@@ -1509,20 +1509,30 @@ If you truly need to capture large traces, you have two options. Either buy more
 
 Each new release of Tracy changes the internal format of trace files. While there is a backwards compatibility layer, allowing loading of traces created by previous versions of Tracy in new releases, it won't be there forever. You are thus advised to upgrade your traces using the utility contained in the \texttt{update} directory.
 
-To use it, you will need to provide the input file and the output file. The program will print a short summary when it finishes:
+To use it, you will need to provide the input file and the output file. The program will print a short summary when it finishes, with information about trace file versions, their respective sizes and the output trace file compression ratio:
 
 \begin{verbatim}
 % ./update old.tracy new.tracy
-old.tracy (0.3.0) {938437 KB} -> new.tracy (0.4.0) {357865 KB}  38.13% size change
+old.tracy (0.3.0) {916.4 MB} -> new.tracy (0.4.0) {349.4 MB, 31.53%}  9.7 s, 38.13% change
 \end{verbatim}
 
 The new file contains the same data as the old one, but in the updated internal representation. Note that to perform an upgrade, whole trace needs to be loaded to memory.
 
 \subsubsection{Archival mode}
 
-The update utility supports optional higher level of data compression, enabled by passing the \texttt{-{}-hc} parameter. It can reduce the trace size down to \numrange{70}{40}\% the original size, at a considerable time cost ($\sim17\times$~increase of compression time).
+The update utility supports optional higher level of data compression, enabled by passing the \texttt{-{}-hc} parameter. It can reduce the trace size down to \numrange{70}{40}\% the original size, at a considerable time cost. Even better compression level can be achieved by passing the \texttt{-{}-extreme} parameter, but the compression process will be \emph{very} slow. Refer to table~\ref{compressiontimes} for a guidance about compression ratio vs compression time.
 
-Even better compression level can be achieved by passing the \texttt{-{}-extreme} parameter, but the compression process will be \emph{very} slow.
+\begin{table}[h]
+\centering
+\begin{tabular}[h]{c|c|c}
+\textbf{Mode} & \textbf{Compression ratio} & \textbf{Compression time} \\ \hline
+default & 34.36\% & 738.8 \si{\milli\second} \\
+\texttt{-{}-hc} & 21.17\% & 9.4 \si{\second} \\
+\texttt{-{}-extreme} & 20.76\% & 104.8 \si{\second}
+\end{tabular}
+\caption{Example compression times.}
+\label{compressiontimes}
+\end{table}
 
 Note that trace files (even the ones created in high compression mode) are optimized for fast decompression. You still will be able to squeeze the data using normal compression methods. For example, 7-zip can compress traces to about \numrange{63}{35}\% of their uncompressed\footnote{Compressed internally.} size.
 

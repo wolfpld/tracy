@@ -1,6 +1,7 @@
 #ifndef __TRACYFILEREAD_HPP__
 #define __TRACYFILEREAD_HPP__
 
+#include <assert.h>
 #include <atomic>
 #include <algorithm>
 #include <stdexcept>
@@ -8,11 +9,13 @@
 #include <string.h>
 #include <string>
 #include <thread>
+#include <utility>
 
 #include "TracyFileHeader.hpp"
 #include "TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
+#include "../zstd/zstd.h"
 
 namespace tracy
 {
@@ -34,7 +37,8 @@ public:
         m_decThread.join();
 
         fclose( m_file );
-        LZ4_freeStreamDecode( m_stream );
+        if( m_stream ) LZ4_freeStreamDecode( m_stream );
+        if( m_streamZstd ) ZSTD_freeDStream( m_streamZstd );
     }
 
     tracy_force_inline void Read( void* ptr, size_t size )
@@ -153,7 +157,8 @@ public:
 
 private:
     FileRead( FILE* f, const char* fn )
-        : m_stream( LZ4_createStreamDecode() )
+        : m_stream( nullptr )
+        , m_streamZstd( nullptr )
         , m_file( f )
         , m_buf( m_bufData[1] )
         , m_second( m_bufData[0] )
@@ -166,13 +171,13 @@ private:
     {
         char hdr[4];
         if( fread( hdr, 1, sizeof( hdr ), m_file ) != sizeof( hdr ) ) throw NotTracyDump();
-        if( memcmp( hdr, Lz4Header, sizeof( hdr ) ) != 0 )
+        if( memcmp( hdr, Lz4Header, sizeof( hdr ) ) == 0 )
         {
-            fseek( m_file, 0, SEEK_SET );
-            uint32_t sz;
-            static_assert( sizeof( sz ) == sizeof( hdr ), "Size mismatch" );
-            memcpy( &sz, hdr, sizeof( sz ) );
-            if( sz > LZ4Size ) throw NotTracyDump();
+            m_stream = LZ4_createStreamDecode();
+        }
+        else if( memcmp( hdr, ZstdHeader, sizeof( hdr ) ) == 0 )
+        {
+            m_streamZstd = ZSTD_createDStream();
         }
 
         ReadBlock();
@@ -249,7 +254,18 @@ private:
         if( fread( &sz, 1, sizeof( sz ), m_file ) == sizeof( sz ) )
         {
             fread( m_lz4buf, 1, sz, m_file );
-            m_lastBlock = (size_t)LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_second, sz, BufSize );
+            if( m_stream )
+            {
+                m_lastBlock = (size_t)LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_second, sz, BufSize );
+            }
+            else
+            {
+                ZSTD_outBuffer out = { m_second, BufSize, 0 };
+                ZSTD_inBuffer in = { m_lz4buf, sz, 0 };
+                const auto ret = ZSTD_decompressStream( m_streamZstd, &out, &in );
+                assert( ret > 0 );
+                m_lastBlock = out.pos;
+            }
         }
         else
         {
@@ -258,9 +274,10 @@ private:
     }
 
     enum { BufSize = 64 * 1024 };
-    enum { LZ4Size = LZ4_COMPRESSBOUND( BufSize ) };
+    enum { LZ4Size = std::max( LZ4_COMPRESSBOUND( BufSize ), ZSTD_COMPRESSBOUND( BufSize ) ) };
 
     LZ4_streamDecode_t* m_stream;
+    ZSTD_DStream* m_streamZstd;
     FILE* m_file;
     char* m_buf;
     char* m_second;

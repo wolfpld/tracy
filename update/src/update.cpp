@@ -9,6 +9,7 @@
 
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyFileWrite.hpp"
+#include "../../server/TracyPrint.hpp"
 #include "../../server/TracyVersion.hpp"
 #include "../../server/TracyWorker.hpp"
 
@@ -70,6 +71,7 @@ int main( int argc, char** argv )
 
     try
     {
+        float ratio;
         int inVer;
         {
             tracy::Worker worker( *f, tracy::EventType::All, false );
@@ -87,6 +89,9 @@ int main( int argc, char** argv )
             printf( "Saving... \r" );
             fflush( stdout );
             worker.Write( *w );
+            w->Finish();
+            const auto stats = w->GetCompressionStatistics();
+            ratio = 100.f * stats.second / stats.first;
             inVer = worker.GetTraceVersion();
         }
 
@@ -100,7 +105,10 @@ int main( int argc, char** argv )
         const auto outSize = ftello64( out );
         fclose( out );
 
-        printf( "%s (%i.%i.%i) {%zu KB} -> %s (%i.%i.%i) {%zu KB}  %.2f%% size change\n", input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, size_t( inSize / 1024 ), output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, size_t( outSize / 1024 ), float( outSize ) / inSize * 100 );
+        printf( "%s (%i.%i.%i) {%s} -> %s (%i.%i.%i) {%s, %.2f%%}  %.2f%% size change\n",
+            input, inVer >> 16, ( inVer >> 8 ) & 0xFF, inVer & 0xFF, tracy::MemSizeToString( inSize ),
+            output, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch, tracy::MemSizeToString( outSize ), ratio,
+            float( outSize ) / inSize * 100 );
     }
     catch( const tracy::UnsupportedVersion& e )
     {

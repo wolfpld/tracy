@@ -12,6 +12,7 @@
 #include "../../server/TracyPrint.hpp"
 #include "../../server/TracyVersion.hpp"
 #include "../../server/TracyWorker.hpp"
+#include "../../zstd/zstd.h"
 
 #ifdef __CYGWIN__
 #  define ftello64(x) ftello(x)
@@ -24,6 +25,7 @@ void Usage()
     printf( "Usage: update [--hc|--extreme] input.tracy output.tracy\n\n" );
     printf( "  --hc: enable LZ4HC compression\n" );
     printf( "  --extreme: enable extreme LZ4HC compression (very slow)\n" );
+    printf( "  --zstd level: use Zstd compression with given compression level\n" );
     exit( 1 );
 }
 
@@ -39,7 +41,8 @@ int main( int argc, char** argv )
 
     tracy::FileWrite::Compression clev = tracy::FileWrite::Compression::Fast;
 
-    if( argc != 3 && argc != 4 ) Usage();
+    int zstdLevel = 1;
+    if( argc != 3 && argc != 4 && argc != 5 ) Usage();
     if( argc == 4 )
     {
         if( strcmp( argv[1], "--hc" ) == 0 )
@@ -55,6 +58,18 @@ int main( int argc, char** argv )
             Usage();
         }
         argv++;
+    }
+    if( argc == 5 )
+    {
+        if( strcmp( argv[1], "--zstd" ) != 0 ) Usage();
+        clev = tracy::FileWrite::Compression::Zstd;
+        zstdLevel = atoi( argv[2] );
+        if( zstdLevel > ZSTD_maxCLevel() || zstdLevel < ZSTD_minCLevel() )
+        {
+            printf( "Available Zstd compression levels range: %i - %i\n", ZSTD_minCLevel(), ZSTD_maxCLevel() );
+            exit( 1 );
+        }
+        argv += 2;
     }
 
     const char* input = argv[1];
@@ -82,7 +97,7 @@ int main( int argc, char** argv )
             while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 #endif
 
-            auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev ) );
+            auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev, zstdLevel ) );
             if( !w )
             {
                 fprintf( stderr, "Cannot open output file!\n" );

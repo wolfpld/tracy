@@ -367,16 +367,35 @@ LZ4_memcpy_using_offset(BYTE* dstPtr, const BYTE* srcPtr, BYTE* dstEnd, const si
     BYTE v[8];
     switch(offset) {
     case 1:
-        memset(v, *srcPtr, 8);
+        if(sizeof(void*) == 8) {
+            U64 m = *srcPtr * 0x0101010101010101;
+            memcpy(v, &m, 8);
+        } else {
+            memset(v, *srcPtr, 8);
+        }
         goto copy_loop;
     case 2:
-        memcpy(v, srcPtr, 2);
-        memcpy(&v[2], srcPtr, 2);
-        memcpy(&v[4], &v[0], 4);
+        if(sizeof(void*) == 8) {
+            U16 m;
+            memcpy(&m, srcPtr, 2);
+            U64 n = m * 0x0001000100010001;
+            memcpy(v, &n, 8);
+        } else {
+            memcpy(v, srcPtr, 2);
+            memcpy(&v[2], srcPtr, 2);
+            memcpy(&v[4], &v[0], 4);
+        }
         goto copy_loop;
     case 4:
-        memcpy(v, srcPtr, 4);
-        memcpy(&v[4], srcPtr, 4);
+        if(sizeof(void*) == 8) {
+            U32 m;
+            memcpy(&m, srcPtr, 4);
+            U64 n = m | (U64(m) << 32);
+            memcpy(v, &n, 8);
+        } else {
+            memcpy(v, srcPtr, 4);
+            memcpy(&v[4], srcPtr, 4);
+        }
         goto copy_loop;
     default:
         LZ4_memcpy_using_offset_base(dstPtr, srcPtr, dstEnd, offset);

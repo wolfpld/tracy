@@ -1867,6 +1867,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
     const auto redColor = GetColorMuted( 0x4444FF, activeFrameSet );
 
     int i = zrange.first;
+    auto x1 = ( m_worker.GetFrameBegin( frames, i ) - m_vd.zvStart ) * pxns;
     while( i < zrange.second )
     {
         const auto ftime = m_worker.GetFrameTime( frames, i );
@@ -1874,50 +1875,55 @@ bool View::DrawZoneFrames( const FrameData& frames )
         const auto fend = m_worker.GetFrameEnd( frames, i );
         const auto fsz = pxns * ftime;
 
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( ( fbegin - m_vd.zvStart ) * pxns, 0 ), wpos + ImVec2( ( fend - m_vd.zvStart ) * pxns, ty ) ) )
+        if( hover )
         {
-            tooltipDisplayed = true;
-
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
-            ImGui::SameLine();
-            ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / ftime );
-            TextFocused( "Time from start of program:", TimeToStringExact( m_worker.GetFrameBegin( frames, i ) ) );
-            auto fi = m_worker.GetFrameImage( frames, i );
-            if( fi )
+            const auto x0 = frames.continuous ? x1 : ( fbegin - m_vd.zvStart ) * pxns;
+            x1 = ( fend - m_vd.zvStart ) * pxns;
+            if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x0, 0 ), wpos + ImVec2( x1, ty ) ) )
             {
-                const auto scale = ImGui::GetTextLineHeight() / 15.f;
-                if( fi != m_frameTexturePtr )
+                tooltipDisplayed = true;
+
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / ftime );
+                TextFocused( "Time from start of program:", TimeToStringExact( m_worker.GetFrameBegin( frames, i ) ) );
+                auto fi = m_worker.GetFrameImage( frames, i );
+                if( fi )
                 {
-                    if( !m_frameTexture ) m_frameTexture = MakeTexture();
-                    UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
-                    m_frameTexturePtr = fi;
+                    const auto scale = ImGui::GetTextLineHeight() / 15.f;
+                    if( fi != m_frameTexturePtr )
+                    {
+                        if( !m_frameTexture ) m_frameTexture = MakeTexture();
+                        UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
+                        m_frameTexturePtr = fi;
+                    }
+                    ImGui::Separator();
+                    if( fi->flip )
+                    {
+                        ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                    }
+                    else
+                    {
+                        ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ) );
+                    }
+
+                    if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_showPlayback = true;
+                        m_playback.pause = true;
+                        SetPlaybackFrame( frames.frames[i].frameImage );
+                    }
                 }
-                ImGui::Separator();
-                if( fi->flip )
+                ImGui::EndTooltip();
+
+                if( ImGui::IsMouseClicked( 2 ) )
                 {
-                    ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
-                }
-                else
-                {
-                    ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ) );
+                    ZoomToRange( fbegin, fend );
                 }
 
-                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 0 ) )
-                {
-                    m_showPlayback = true;
-                    m_playback.pause = true;
-                    SetPlaybackFrame( frames.frames[i].frameImage );
-                }
+                if( activeFrameSet ) m_frameHover = i;
             }
-            ImGui::EndTooltip();
-
-            if( ImGui::IsMouseClicked( 2 ) )
-            {
-                ZoomToRange( fbegin, fend );
-            }
-
-            if( activeFrameSet ) m_frameHover = i;
         }
 
         if( fsz < MinFrameSize )

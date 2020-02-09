@@ -24,6 +24,7 @@ v0.7 (xxxx-xx-xx)
 - Added display of trace file compression ratio.
 - Optional Zstd compression of trace files.
 - Frame images are now internally compressed using Zstd (instead of LZ4).
+- Fix display of continuous frame set tooltips.
 
 v0.6.2 (2019-12-30)
 -------------------

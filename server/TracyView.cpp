@@ -6037,92 +6037,96 @@ void View::DrawZoneInfoWindow()
                     ImGui::Text( "State" );
                     ImGui::NextColumn();
                     ImGui::Separator();
-                    while( bit < eit )
+                    const auto wrsz = eit - bit;
+                    ImGuiListClipper clipper( wrsz );
+                    while( clipper.Step() )
                     {
-                        const auto cend = bit->End();
-                        const auto state = bit->State();
-                        const auto reason = bit->Reason();
-                        const auto cpu0 = bit->Cpu();
-                        ++bit;
-                        const auto cstart = bit->Start();
-                        const auto cwakeup = bit->WakeupVal();
-                        const auto cpu1 = bit->Cpu();
+                        for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                        {
+                            const auto cend = bit[i].End();
+                            const auto state = bit[i].State();
+                            const auto reason = bit[i].Reason();
+                            const auto cpu0 = bit[i].Cpu();
+                            const auto cstart = bit[i+1].Start();
+                            const auto cwakeup = bit[i+1].WakeupVal();
+                            const auto cpu1 = bit[i+1].Cpu();
 
-                        auto tt = adjust == 0 ? TimeToStringExact( cend ) : TimeToString( cend - adjust );
-                        if( ImGui::Selectable( tt ) )
-                        {
-                            CenterAtTime( cend );
-                        }
-                        ImGui::NextColumn();
-                        tt = adjust == 0 ? TimeToStringExact( cstart ) : TimeToString( cstart - adjust );
-                        if( ImGui::Selectable( tt ) )
-                        {
-                            CenterAtTime( cstart );
-                        }
-                        ImGui::NextColumn();
-                        if( ImGui::Selectable( TimeToString( cwakeup - cend ) ) )
-                        {
-                            ZoomToRange( cend, cwakeup );
-                        }
-                        ImGui::NextColumn();
-                        if( cstart != cwakeup )
-                        {
-                            if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
+                            auto tt = adjust == 0 ? TimeToStringExact( cend ) : TimeToString( cend - adjust );
+                            if( ImGui::Selectable( tt ) )
                             {
-                                ZoomToRange( cwakeup, cstart );
+                                CenterAtTime( cend );
                             }
-                        }
-                        else
-                        {
-                            ImGui::TextUnformatted( "-" );
-                        }
-                        ImGui::NextColumn();
-                        if( cpu0 == cpu1 )
-                        {
-                            ImGui::TextUnformatted( RealToString( cpu0 ) );
-                        }
-                        else
-                        {
+                            ImGui::NextColumn();
+                            tt = adjust == 0 ? TimeToStringExact( cstart ) : TimeToString( cstart - adjust );
+                            if( ImGui::Selectable( tt ) )
+                            {
+                                CenterAtTime( cstart );
+                            }
+                            ImGui::NextColumn();
+                            if( ImGui::Selectable( TimeToString( cwakeup - cend ) ) )
+                            {
+                                ZoomToRange( cend, cwakeup );
+                            }
+                            ImGui::NextColumn();
+                            if( cstart != cwakeup )
+                            {
+                                if( ImGui::Selectable( TimeToString( cstart - cwakeup ) ) )
+                                {
+                                    ZoomToRange( cwakeup, cstart );
+                                }
+                            }
+                            else
+                            {
+                                ImGui::TextUnformatted( "-" );
+                            }
+                            ImGui::NextColumn();
+                            if( cpu0 == cpu1 )
+                            {
+                                ImGui::TextUnformatted( RealToString( cpu0 ) );
+                            }
+                            else
+                            {
 #ifdef TRACY_EXTENDED_FONT
-                            ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
+                                ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
 #else
-                            ImGui::Text( "%i -> %i", cpu0, cpu1 );
+                                ImGui::Text( "%i -> %i", cpu0, cpu1 );
 #endif
-                            const auto tt0 = m_worker.GetThreadTopology( cpu0 );
-                            const auto tt1 = m_worker.GetThreadTopology( cpu1 );
-                            if( tt0 && tt1 )
-                            {
-                                if( tt0->package != tt1->package )
+                                const auto tt0 = m_worker.GetThreadTopology( cpu0 );
+                                const auto tt1 = m_worker.GetThreadTopology( cpu1 );
+                                if( tt0 && tt1 )
                                 {
-                                    ImGui::SameLine();
-                                    TextDisabledUnformatted( "P" );
-                                }
-                                else if( tt0->core != tt1->core )
-                                {
-                                    ImGui::SameLine();
-                                    TextDisabledUnformatted( "C" );
+                                    if( tt0->package != tt1->package )
+                                    {
+                                        ImGui::SameLine();
+                                        TextDisabledUnformatted( "P" );
+                                    }
+                                    else if( tt0->core != tt1->core )
+                                    {
+                                        ImGui::SameLine();
+                                        TextDisabledUnformatted( "C" );
+                                    }
                                 }
                             }
+                            ImGui::NextColumn();
+                            const char* desc;
+                            if( reason == ContextSwitchData::NoState )
+                            {
+                                ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
+                                desc = DecodeContextSwitchState( state );
+                            }
+                            else
+                            {
+                                ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
+                                desc = DecodeContextSwitchReason( reason );
+                            }
+                            if( *desc && ImGui::IsItemHovered() )
+                            {
+                                ImGui::BeginTooltip();
+                                ImGui::TextUnformatted( desc );
+                                ImGui::EndTooltip();
+                            }
+                            ImGui::NextColumn();
                         }
-                        ImGui::NextColumn();
-                        const char* desc;
-                        if( reason == ContextSwitchData::NoState )
-                        {
-                            ImGui::TextUnformatted( DecodeContextSwitchStateCode( state ) );
-                            desc = DecodeContextSwitchState( state );
-                        }
-                        else
-                        {
-                            ImGui::TextUnformatted( DecodeContextSwitchReasonCode( reason ) );
-                            desc = DecodeContextSwitchReason( reason );
-                        }
-                        if( *desc && ImGui::IsItemHovered() )
-                        {
-                            ImGui::BeginTooltip();
-                            ImGui::TextUnformatted( desc );
-                            ImGui::EndTooltip();
-                        }
-                        ImGui::NextColumn();
                     }
                     ImGui::EndColumns();
 

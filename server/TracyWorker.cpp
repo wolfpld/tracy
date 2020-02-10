@@ -1591,6 +1591,18 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         m_backgroundDone.store( false, std::memory_order_relaxed );
 #ifndef TRACY_NO_STATISTICS
         m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
+            if( !m_data.ctxSwitch.empty() )
+            {
+                ReconstructContextSwitchUsage();
+                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+            }
+
+            if( reconstructMemAllocPlot )
+            {
+                ReconstructMemAllocPlot();
+                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+            }
+
             std::function<void(Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
             ProcessTimeline = [this, &ProcessTimeline] ( Vector<short_ptr<ZoneEvent>>& _vec, uint16_t thread )
             {
@@ -1627,10 +1639,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 std::lock_guard<std::shared_mutex> lock( m_data.lock );
                 m_data.sourceLocationZonesReady = true;
             }
-            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-            if( !m_data.ctxSwitch.empty() ) ReconstructContextSwitchUsage();
-            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-            if( reconstructMemAllocPlot ) ReconstructMemAllocPlot();
+
             m_backgroundDone.store( true, std::memory_order_relaxed );
         } );
 #else

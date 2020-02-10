@@ -125,10 +125,11 @@ public:
 
     tracy_force_inline int64_t Val() const
     {
-        int64_t val = 0;
-        memcpy( ((char*)&val)+2, m_val, 6 );
-        val >>= 16;
-        return val;
+        int16_t hi;
+        memcpy( &hi, m_val+4, 2 );
+        uint32_t lo;
+        memcpy( &lo, m_val, 4 );
+        return ( int64_t( hi ) << 32 ) | lo;
     }
 
     tracy_force_inline bool IsNonNegative() const

@@ -1779,7 +1779,7 @@ void Worker::GetCpuUsageAtTime( int64_t time, int& own, int& other ) const
         if( !cs.empty() )
         {
             auto it = std::lower_bound( cs.begin(), cs.end(), time, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
-            if( it != cs.end() && it->Start() <= time && it->End() >= 0 )
+            if( it != cs.end() && it->Start() <= time && it->IsEndValid() )
             {
                 if( GetPidFromTid( DecompressThreadExternal( it->Thread() ) ) == m_pid )
                 {
@@ -4766,7 +4766,7 @@ void Worker::ProcessThreadWakeup( const QueueThreadWakeup& ev )
         it = m_data.ctxSwitch.emplace( ev.thread, ctx ).first;
     }
     auto& data = it->second->v;
-    if( !data.empty() && data.back().End() < 0 ) return;        // wakeup of a running thread
+    if( !data.empty() && !data.back().IsEndValid() ) return;        // wakeup of a running thread
     auto& item = data.push_next();
     item.SetWakeup( time );
     item.SetStart( time );
@@ -4989,7 +4989,7 @@ void Worker::ReconstructContextSwitchUsage()
                         other++;
                         assert( other <= cpucnt );
                     }
-                    if( cpus[i].it->End() < 0 )
+                    if( !cpus[i].it->IsEndValid() )
                     {
                         cpus[i].it++;
                         assert( cpus[i].it = cpus[i].end );

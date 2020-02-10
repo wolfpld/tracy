@@ -131,6 +131,11 @@ public:
         return val;
     }
 
+    tracy_force_inline bool IsNonNegative() const
+    {
+        return ( m_val[5] >> 7 ) == 0;
+    }
+
 private:
     uint8_t m_val[6];
 };
@@ -355,6 +360,7 @@ struct ContextSwitchData
     tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_cpu)+2, &start, 4 ); memcpy( ((char*)&_start_cpu)+6, ((char*)&start)+4, 2 ); }
     tracy_force_inline int64_t End() const { return int64_t( _end_reason_state ) >> 16; }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_reason_state)+2, &end, 4 ); memcpy( ((char*)&_end_reason_state)+6, ((char*)&end)+4, 2 ); }
+    tracy_force_inline bool IsEndValid() const { return ( _end_reason_state >> 63 ) == 0; }
     tracy_force_inline uint8_t Cpu() const { return uint8_t( _start_cpu & 0xFF ); }
     tracy_force_inline void SetCpu( uint8_t cpu ) { memcpy( &_start_cpu, &cpu, 1 ); }
     tracy_force_inline int8_t Reason() const { return int8_t( (_end_reason_state >> 8) & 0xFF ); }
@@ -378,6 +384,7 @@ struct ContextSwitchCpu
     tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_thread)+2, &start, 4 ); memcpy( ((char*)&_start_thread)+6, ((char*)&start)+4, 2 ); }
     tracy_force_inline int64_t End() const { return _end.Val(); }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end.SetVal( end ); }
+    tracy_force_inline bool IsEndValid() const { return _end.IsNonNegative(); }
     tracy_force_inline uint16_t Thread() const { return uint16_t( _start_thread ); }
     tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_start_thread, &thread, 2 ); }
 

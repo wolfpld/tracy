@@ -2664,7 +2664,7 @@ void View::DrawZones()
                 {
                     const auto& back = ctx->v.back();
                     first = ctx->v.begin()->Start();
-                    last = back.End() >= 0 ? back.End() : back.Start();
+                    last = back.IsEndValid() ? back.End() : back.Start();
                 }
                 if( !v->timeline.empty() )
                 {
@@ -3095,7 +3095,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             }
         }
 
-        const auto end = ev.End() >= 0 ? ev.End() : m_worker.GetLastTime();
+        const auto end = ev.IsEndValid() ? ev.End() : m_worker.GetLastTime();
         const auto zsz = std::max( ( end - ev.Start() ) * pxns, pxns * 0.5 );
         if( zsz < MinCtxSize )
         {
@@ -3111,7 +3111,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 if( it == prevIt ) ++it;
                 num += std::distance( prevIt, it );
                 if( it == citend ) break;
-                const auto nend = it->End() >= 0 ? it->End() : m_worker.GetLastTime();
+                const auto nend = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
                 const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                 if( pxnext - px1 >= MinCtxSize * 2 ) break;
                 px1 = pxnext;
@@ -4718,7 +4718,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     if( it == prevIt ) ++it;
                                     num += std::distance( prevIt, it );
                                     if( it == eit ) break;
-                                    const auto nend = it->End() >= 0 ? it->End() : m_worker.GetLastTime();
+                                    const auto nend = it->IsEndValid() ? it->End() : m_worker.GetLastTime();
                                     const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
                                     if( pxnext - px1 >= MinVisSize * 2 ) break;
                                     px1 = pxnext;

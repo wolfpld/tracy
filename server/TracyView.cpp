@@ -4586,7 +4586,8 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
     const auto ty = ImGui::GetFontSize();
     const auto ostep = ty + 1;
-    const auto nspx = 1.0 / pxns;
+    const auto nspxdbl = 1.0 / pxns;
+    const auto nspx = int64_t( nspxdbl );
     auto draw = ImGui::GetWindowDrawList();
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
@@ -4640,7 +4641,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                 int usageOwn, usageOther;
                 while( pos < w )
                 {
-                    m_worker.GetCpuUsageAtTime( m_vd.zvStart + pos * nspx, usageOwn, usageOther );
+                    m_worker.GetCpuUsageAtTime( m_vd.zvStart + pos * nspxdbl, usageOwn, usageOther );
                     float base;
                     if( usageOwn != 0 )
                     {
@@ -4663,7 +4664,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                 if( hover && ImGui::IsMouseHoveringRect( ImVec2( wpos.x, wpos.y + offset ), ImVec2( wpos.x + w, wpos.y + offset + cpuUsageHeight ), true ) )
                 {
                     int usageOwn, usageOther;
-                    m_worker.GetCpuUsageAtTime( m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx, usageOwn, usageOther );
+                    m_worker.GetCpuUsageAtTime( m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspxdbl, usageOwn, usageOther );
                     ImGui::BeginTooltip();
                     TextFocused( "Cores used by profiled program:", RealToString( usageOwn ) );
                     ImGui::SameLine();
@@ -4967,7 +4968,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     const auto px0 = ( t0 - m_vd.zvStart ) * pxns;
                     const auto px1 = ( t1 - m_vd.zvStart ) * pxns;
 
-                    if( t1 - t0 < 2.f * nspx )
+                    if( t1 - t0 < 2 * nspx )
                     {
                         draw->AddLine( wpos + ImVec2( px0, origOffset + sty * 0.5f + cpu0 * sstep ), wpos + ImVec2( px1, origOffset + sty * 0.5f + cpu1 * sstep ), color );
                     }

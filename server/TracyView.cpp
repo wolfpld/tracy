@@ -1724,8 +1724,11 @@ bool View::DrawZoneFramesHeader()
     const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetFontSize();
+    const auto ty025 = round( ty * 0.25f );
+    const auto ty0375 = round( ty * 0.375f );
+    const auto ty05 = round( ty * 0.5f );
 
-    ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty * 1.5 ) );
+    ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty * 1.5f ) );
     bool hover = ImGui::IsItemHovered();
 
     auto timespan = m_vd.zvEnd - m_vd.zvStart;
@@ -1745,7 +1748,7 @@ bool View::DrawZoneFramesHeader()
         int64_t tt = 0;
         while( x < w )
         {
-            draw->AddLine( wpos + ImVec2( x, 0 ), wpos + ImVec2( x, round( ty * 0.5 ) ), 0x66FFFFFF );
+            draw->AddLine( wpos + ImVec2( x, 0 ), wpos + ImVec2( x, ty05 ), 0x66FFFFFF );
             if( tw == 0 )
             {
                 char buf[128];
@@ -1755,14 +1758,14 @@ bool View::DrawZoneFramesHeader()
                     sprintf( buf, "+%s", txt );
                     txt = buf;
                 }
-                draw->AddText( wpos + ImVec2( x, round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
                 tw = ImGui::CalcTextSize( txt ).x;
             }
             else if( x > tx + tw + ty * 2 )
             {
                 tx = x;
                 auto txt = TimeToString( tt );
-                draw->AddText( wpos + ImVec2( x, round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
                 tw = ImGui::CalcTextSize( txt ).x;
             }
 
@@ -1770,12 +1773,12 @@ bool View::DrawZoneFramesHeader()
             {
                 for( int i=1; i<5; i++ )
                 {
-                    draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, round( ty * 0.25 ) ), 0x33FFFFFF );
+                    draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, ty025 ), 0x33FFFFFF );
                 }
-                draw->AddLine( wpos + ImVec2( x + 5 * dx / 10, 0 ), wpos + ImVec2( x + 5 * dx / 10, round( ty * 0.375 ) ), 0x33FFFFFF );
+                draw->AddLine( wpos + ImVec2( x + 5 * dx / 10, 0 ), wpos + ImVec2( x + 5 * dx / 10, ty0375 ), 0x33FFFFFF );
                 for( int i=6; i<10; i++ )
                 {
-                    draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, round( ty * 0.25 ) ), 0x33FFFFFF );
+                    draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, ty025 ), 0x33FFFFFF );
                 }
             }
 
@@ -1850,6 +1853,8 @@ bool View::DrawZoneFrames( const FrameData& frames )
     const auto wh = ImGui::GetContentRegionAvail().y;
     auto draw = ImGui::GetWindowDrawList();
     const auto ty = ImGui::GetFontSize();
+    const auto ty025 = ty * 0.25f;
+    const auto ty05 = round( ty * 0.5f );
 
     ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty ) );
     bool hover = ImGui::IsItemHovered();
@@ -1940,7 +1945,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
             {
                 if( ( fbegin - prevEnd ) * pxns >= MinFrameSize )
                 {
-                    DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_vd.zvStart ) * pxns, ( prevEnd - m_vd.zvStart ) * pxns, ty / 4, inactiveColor );
+                    DrawZigZag( draw, wpos + ImVec2( 0, ty05 ), ( prev - m_vd.zvStart ) * pxns, ( prevEnd - m_vd.zvStart ) * pxns, ty025, inactiveColor );
                     prev = -1;
                 }
                 else
@@ -1966,11 +1971,11 @@ bool View::DrawZoneFrames( const FrameData& frames )
         {
             if( frames.continuous )
             {
-                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_vd.zvStart ) * pxns, ( fbegin - m_vd.zvStart ) * pxns, ty / 4, inactiveColor );
+                DrawZigZag( draw, wpos + ImVec2( 0, ty05 ), ( prev - m_vd.zvStart ) * pxns, ( fbegin - m_vd.zvStart ) * pxns, ty025, inactiveColor );
             }
             else
             {
-                DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_vd.zvStart ) * pxns, ( prevEnd - m_vd.zvStart ) * pxns, ty / 4, inactiveColor );
+                DrawZigZag( draw, wpos + ImVec2( 0, ty05 ), ( prev - m_vd.zvStart ) * pxns, ( prevEnd - m_vd.zvStart ) * pxns, ty025, inactiveColor );
             }
             prev = -1;
         }
@@ -2025,13 +2030,13 @@ bool View::DrawZoneFrames( const FrameData& frames )
             }
             tpos = round( tpos );
 
-            draw->AddLine( wpos + ImVec2( std::max( -10.0, f0 ), round( ty / 2 ) ), wpos + ImVec2( tpos, round( ty / 2 ) ), color );
-            draw->AddLine( wpos + ImVec2( std::max( -10.0, tpos + tx + 1 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, f1 ), round( ty / 2 ) ), color );
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, f0 ), ty05 ), wpos + ImVec2( tpos, ty05 ), color );
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, tpos + tx + 1 ), ty05 ), wpos + ImVec2( std::min( w + 20.0, f1 ), ty05 ), color );
             draw->AddText( wpos + ImVec2( tpos, 0 ), color, buf );
         }
         else
         {
-            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_vd.zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_vd.zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_vd.zvStart ) * pxns + 2 ), ty05 ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_vd.zvStart ) * pxns - 2 ), ty05 ), color );
         }
 
         i++;
@@ -2041,13 +2046,13 @@ bool View::DrawZoneFrames( const FrameData& frames )
     {
         if( frames.continuous )
         {
-            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), ( prev - m_vd.zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_vd.zvStart ) * pxns, ty / 4, inactiveColor );
+            DrawZigZag( draw, wpos + ImVec2( 0, ty05 ), ( prev - m_vd.zvStart ) * pxns, ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_vd.zvStart ) * pxns, ty025, inactiveColor );
         }
         else
         {
             const auto begin = ( prev - m_vd.zvStart ) * pxns;
             const auto end = ( m_worker.GetFrameBegin( frames, zrange.second-1 ) - m_vd.zvStart ) * pxns;
-            DrawZigZag( draw, wpos + ImVec2( 0, round( ty / 2 ) ), begin, std::max( begin + MinFrameSize, end ), ty / 4, inactiveColor );
+            DrawZigZag( draw, wpos + ImVec2( 0, ty05 ), begin, std::max( begin + MinFrameSize, end ), ty025, inactiveColor );
         }
     }
 
@@ -3025,7 +3030,8 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
     if( citend != vec.end() ) ++citend;
 
     const auto w = ImGui::GetWindowContentRegionWidth() - 1;
-    const auto ty = round( ImGui::GetFontSize() * 0.75 );
+    const auto ty = round( ImGui::GetFontSize() * 0.75f );
+    const auto ty05 = round( ty * 0.5f );
     auto draw = ImGui::GetWindowDrawList();
 
     auto pit = citend;
@@ -3043,12 +3049,12 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             const auto color = migration ? 0xFFEE7711 : 0xFF2222AA;
             if( m_vd.darkenContextSwitches )
             {
-                draw->AddRectFilled( wpos + ImVec2( px0, round( offset + ty * 0.5 ) ), wpos + ImVec2( px1, endOffset ), 0x661C2321 );
+                draw->AddRectFilled( wpos + ImVec2( px0, offset + ty05 ), wpos + ImVec2( px1, endOffset ), 0x661C2321 );
             }
-            draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( std::min( pxw, w+10.0 ), round( offset + ty * 0.5 ) - 0.5 ), color, 2 );
+            draw->AddLine( wpos + ImVec2( px0, offset + ty05 - 0.5f ), wpos + ImVec2( std::min( pxw, w+10.0 ), offset + ty05 - 0.5f ), color, 2 );
             if( ev.WakeupVal() != ev.Start() )
             {
-                draw->AddLine( wpos + ImVec2( std::max( pxw, 10.0 ), round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), 0xFF2280A0, 2 );
+                draw->AddLine( wpos + ImVec2( std::max( pxw, 10.0 ), offset + ty05 - 0.5f ), wpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF2280A0, 2 );
             }
 
             if( hover )
@@ -3129,7 +3135,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             minpx = std::min( std::max( px1, px0+MinCtxSize ), double( w + 10 ) );
             if( num == 1 )
             {
-                draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( minpx, round( offset + ty * 0.5 ) - 0.5 ), 0xFF22DD22, 2 );
+                draw->AddLine( wpos + ImVec2( px0, offset + ty05 - 0.5f ), wpos + ImVec2( minpx, offset + ty05 - 0.5f ), 0xFF22DD22, 2 );
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty ) ) )
                 {
                     ImGui::BeginTooltip();
@@ -3146,7 +3152,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             }
             else
             {
-                DrawZigZag( draw, wpos + ImVec2( 0, offset + round( ty/2 ) ), px0, minpx, ty/4, 0xFF888888, 1.5 );
+                DrawZigZag( draw, wpos + ImVec2( 0, offset + ty05 ), px0, minpx, ty/4, 0xFF888888, 1.5 );
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty ) ) )
                 {
                     ImGui::BeginTooltip();
@@ -3167,7 +3173,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
         {
             const auto px0 = std::max( { ( ev.Start() - m_vd.zvStart ) * pxns, -10.0, minpx } );
             const auto px1 = std::min( ( end - m_vd.zvStart ) * pxns, w + 10.0 );
-            draw->AddLine( wpos + ImVec2( px0, round( offset + ty * 0.5 ) - 0.5 ), wpos + ImVec2( px1, round( offset + ty * 0.5 ) - 0.5 ), 0xFF22DD22, 2 );
+            draw->AddLine( wpos + ImVec2( px0, offset + ty05 - 0.5f ), wpos + ImVec2( px1, offset + ty05 - 0.5f ), 0xFF22DD22, 2 );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + ty ) ) )
             {
                 ImGui::BeginTooltip();
@@ -3239,6 +3245,10 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
     auto draw = ImGui::GetWindowDrawList();
     const auto dsz = delay * pxns;
     const auto rsz = resolution * pxns;
+
+    const auto ty025 = round( ty * 0.25f );
+    const auto ty05  = round( ty * 0.5f );
+    const auto ty075 = round( ty * 0.75f );
 
     depth++;
     int maxdepth = depth;
@@ -3373,13 +3383,13 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                     color = 0xAAFFFFFF;
                 }
 
-                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + round( tsz.y/2 ) ), wpos + ImVec2( pr0 - rsz, offset + round( tsz.y/2 ) ), color );
-                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr0 + rsz, offset + round( 3*tsz.y/4 ) ), color );
-                draw->AddLine( wpos + ImVec2( pr0 - rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr0 - rsz, offset + round( 3*tsz.y/4 ) ), color );
+                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + ty05  ), wpos + ImVec2( pr0 - rsz, offset + ty05  ), color );
+                draw->AddLine( wpos + ImVec2( pr0 + rsz, offset + ty025 ), wpos + ImVec2( pr0 + rsz, offset + ty075 ), color );
+                draw->AddLine( wpos + ImVec2( pr0 - rsz, offset + ty025 ), wpos + ImVec2( pr0 - rsz, offset + ty075 ), color );
 
-                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + round( tsz.y/2 ) ), wpos + ImVec2( pr1 - rsz, offset + round( tsz.y/2 ) ), color );
-                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr1 + rsz, offset + round( 3*tsz.y/4 ) ), color );
-                draw->AddLine( wpos + ImVec2( pr1 - rsz, offset + round( tsz.y/4 ) ), wpos + ImVec2( pr1 - rsz, offset + round( 3*tsz.y/4 ) ), color );
+                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + ty05  ), wpos + ImVec2( pr1 - rsz, offset + ty05  ), color );
+                draw->AddLine( wpos + ImVec2( pr1 + rsz, offset + ty025 ), wpos + ImVec2( pr1 + rsz, offset + ty075 ), color );
+                draw->AddLine( wpos + ImVec2( pr1 - rsz, offset + ty025 ), wpos + ImVec2( pr1 - rsz, offset + ty075 ), color );
             }
             if( tsz.x < zsz )
             {
@@ -4065,6 +4075,10 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
     const auto dsz = delay * pxns;
     const auto rsz = resolution * pxns;
 
+    const auto ty025 = round( ty * 0.25f );
+    const auto ty05  = round( ty * 0.5f );
+    const auto ty075 = round( ty * 0.75f );
+
     int cnt = 0;
     for( const auto& v : m_worker.GetLockMap() )
     {
@@ -4538,7 +4552,7 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 }
                 else if( condensed > 1 )
                 {
-                    DrawZigZag( draw, wpos + ImVec2( 0, offset + round( ty / 2 ) ), px0, pxend, ty / 4, DarkenColor( cfilled ) );
+                    DrawZigZag( draw, wpos + ImVec2( 0, offset + ty05 ), px0, pxend, ty025, DarkenColor( cfilled ) );
                 }
 
                 const auto rx0 = ( t0 - m_vd.zvStart ) * pxns;
@@ -4548,13 +4562,13 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 }
                 if( rsz >= MinVisSize )
                 {
-                    draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + round( ty/2 ) ), wpos + ImVec2( rx0 - rsz, offset + round( ty/2 ) ), 0xAAFFFFFF );
-                    draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + round( ty/4 ) ), wpos + ImVec2( rx0 + rsz, offset + round( 3*ty/4 ) ), 0xAAFFFFFF );
-                    draw->AddLine( wpos + ImVec2( rx0 - rsz, offset + round( ty/4 ) ), wpos + ImVec2( rx0 - rsz, offset + round( 3*ty/4 ) ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + ty05  ), wpos + ImVec2( rx0 - rsz, offset + ty05  ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( rx0 + rsz, offset + ty025 ), wpos + ImVec2( rx0 + rsz, offset + ty075 ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( rx0 - rsz, offset + ty025 ), wpos + ImVec2( rx0 - rsz, offset + ty075 ), 0xAAFFFFFF );
 
-                    draw->AddLine( wpos + ImVec2( px1 + rsz, offset + round( ty/2 ) ), wpos + ImVec2( px1 - rsz, offset + round( ty/2 ) ), 0xAAFFFFFF );
-                    draw->AddLine( wpos + ImVec2( px1 + rsz, offset + round( ty/4 ) ), wpos + ImVec2( px1 + rsz, offset + round( 3*ty/4 ) ), 0xAAFFFFFF );
-                    draw->AddLine( wpos + ImVec2( px1 - rsz, offset + round( ty/4 ) ), wpos + ImVec2( px1 - rsz, offset + round( 3*ty/4 ) ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( px1 + rsz, offset + ty05  ), wpos + ImVec2( px1 - rsz, offset + ty05  ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( px1 + rsz, offset + ty025 ), wpos + ImVec2( px1 + rsz, offset + ty075 ), 0xAAFFFFFF );
+                    draw->AddLine( wpos + ImVec2( px1 - rsz, offset + ty025 ), wpos + ImVec2( px1 - rsz, offset + ty075 ), 0xAAFFFFFF );
                 }
 
                 vbegin = next;
@@ -8107,13 +8121,14 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
 
 static void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tmax, ImVec2 wpos, float w, float ty )
 {
+    const auto ty15 = round( ty * 1.5f );
     const auto mintxt = TimeToString( tmin );
     const auto maxtxt = TimeToString( tmax );
     const auto maxsz = ImGui::CalcTextSize( maxtxt ).x;
-    draw->AddLine( wpos, wpos + ImVec2( 0, round( ty * 1.5 ) ), 0x66FFFFFF );
-    draw->AddLine( wpos + ImVec2( w-1, 0 ), wpos + ImVec2( w-1, round( ty * 1.5 ) ), 0x66FFFFFF );
-    draw->AddText( wpos + ImVec2( 0, round( ty * 1.5 ) ), 0x66FFFFFF, mintxt );
-    draw->AddText( wpos + ImVec2( w-1-maxsz, round( ty * 1.5 ) ), 0x66FFFFFF, maxtxt );
+    draw->AddLine( wpos, wpos + ImVec2( 0, ty15 ), 0x66FFFFFF );
+    draw->AddLine( wpos + ImVec2( w-1, 0 ), wpos + ImVec2( w-1, ty15 ), 0x66FFFFFF );
+    draw->AddText( wpos + ImVec2( 0, ty15 ), 0x66FFFFFF, mintxt );
+    draw->AddText( wpos + ImVec2( w-1-maxsz, ty15 ), 0x66FFFFFF, maxtxt );
 
     char range[64];
 #ifdef TRACY_EXTENDED_FONT
@@ -8123,7 +8138,7 @@ static void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tm
 #endif
 
     const auto rsz = ImGui::CalcTextSize( range ).x;
-    draw->AddText( wpos + ImVec2( round( (w-1-rsz) * 0.5 ), round( ty * 1.5 ) ), 0x66FFFFFF, range );
+    draw->AddText( wpos + ImVec2( round( (w-1-rsz) * 0.5 ), ty15 ), 0x66FFFFFF, range );
 }
 
 void View::DrawFindZone()
@@ -8946,6 +8961,8 @@ void View::DrawFindZone()
 
                         DrawHistogramMinMaxLabel( draw, tmin, tmax, wpos + ImVec2( 0, yoff ), w, ty );
 
+                        const auto ty05 = round( ty * 0.5f );
+                        const auto ty025 = round( ty * 0.25f );
                         if( m_findZone.logTime )
                         {
                             const auto ltmin = log10( tmin );
@@ -8969,12 +8986,12 @@ void View::DrawFindZone()
 
                                 if( x >= 0 )
                                 {
-                                    draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF );
+                                    draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + ty05 ), 0x66FFFFFF );
                                     if( tw == 0 || x > tx + tw + ty * 1.1 )
                                     {
                                         tx = x;
                                         auto txt = TimeToString( tt );
-                                        draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                        draw->AddText( wpos + ImVec2( x, yoff + ty05 ), 0x66FFFFFF, txt );
                                         tw = ImGui::CalcTextSize( txt ).x;
                                     }
                                 }
@@ -8984,7 +9001,7 @@ void View::DrawFindZone()
                                     const auto xoff = x + logticks[j] * step;
                                     if( xoff >= 0 )
                                     {
-                                        draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + round( ty * 0.25 ) ), 0x66FFFFFF );
+                                        draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + ty025 ), 0x66FFFFFF );
                                     }
                                 }
 
@@ -9020,7 +9037,7 @@ void View::DrawFindZone()
                                 {
                                     tx = x;
                                     auto txt = TimeToString( tt );
-                                    draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                    draw->AddText( wpos + ImVec2( xo + x, yoff + ty05 ), 0x66FFFFFF, txt );
                                     tw = ImGui::CalcTextSize( txt ).x;
                                 }
 
@@ -10569,6 +10586,8 @@ void View::DrawCompare()
 
                     DrawHistogramMinMaxLabel( draw, tmin, tmax, wpos + ImVec2( 0, yoff ), w, ty );
 
+                    const auto ty05 = round( ty * 0.5f );
+                    const auto ty025 = round( ty * 0.25f );
                     if( m_compare.logTime )
                     {
                         const auto ltmin = log10( tmin );
@@ -10592,12 +10611,12 @@ void View::DrawCompare()
 
                             if( x >= 0 )
                             {
-                                draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF );
+                                draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + ty05 ), 0x66FFFFFF );
                                 if( tw == 0 || x > tx + tw + ty * 1.1 )
                                 {
                                     tx = x;
                                     auto txt = TimeToString( tt );
-                                    draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                    draw->AddText( wpos + ImVec2( x, yoff + ty05 ), 0x66FFFFFF, txt );
                                     tw = ImGui::CalcTextSize( txt ).x;
                                 }
                             }
@@ -10607,7 +10626,7 @@ void View::DrawCompare()
                                 const auto xoff = x + logticks[j] * step;
                                 if( xoff >= 0 )
                                 {
-                                    draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + round( ty * 0.25 ) ), 0x66FFFFFF );
+                                    draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + ty025 ), 0x66FFFFFF );
                                 }
                             }
 
@@ -10643,7 +10662,7 @@ void View::DrawCompare()
                             {
                                 tx = x;
                                 auto txt = TimeToString( tt );
-                                draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                draw->AddText( wpos + ImVec2( xo + x, yoff + ty05 ), 0x66FFFFFF, txt );
                                 tw = ImGui::CalcTextSize( txt ).x;
                             }
 
@@ -11657,6 +11676,8 @@ void View::DrawInfo()
 
                             DrawHistogramMinMaxLabel( draw, tmin, tmax, wpos + ImVec2( 0, yoff ), w, ty );
 
+                            const auto ty05 = round( ty * 0.5f );
+                            const auto ty025 = round( ty * 0.25f );
                             if( m_frameSortData.logTime )
                             {
                                 const auto ltmin = log10( tmin );
@@ -11680,12 +11701,12 @@ void View::DrawInfo()
 
                                     if( x >= 0 )
                                     {
-                                        draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF );
+                                        draw->AddLine( wpos + ImVec2( x, yoff ), wpos + ImVec2( x, yoff + ty05 ), 0x66FFFFFF );
                                         if( tw == 0 || x > tx + tw + ty * 1.1 )
                                         {
                                             tx = x;
                                             auto txt = TimeToString( tt );
-                                            draw->AddText( wpos + ImVec2( x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                            draw->AddText( wpos + ImVec2( x, yoff + ty05 ), 0x66FFFFFF, txt );
                                             tw = ImGui::CalcTextSize( txt ).x;
                                         }
                                     }
@@ -11695,7 +11716,7 @@ void View::DrawInfo()
                                         const auto xoff = x + logticks[j] * step;
                                         if( xoff >= 0 )
                                         {
-                                            draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + round( ty * 0.25 ) ), 0x66FFFFFF );
+                                            draw->AddLine( wpos + ImVec2( xoff, yoff ), wpos + ImVec2( xoff, yoff + ty025 ), 0x66FFFFFF );
                                         }
                                     }
 
@@ -11731,7 +11752,7 @@ void View::DrawInfo()
                                     {
                                         tx = x;
                                         auto txt = TimeToString( tt );
-                                        draw->AddText( wpos + ImVec2( xo + x, yoff + round( ty * 0.5 ) ), 0x66FFFFFF, txt );
+                                        draw->AddText( wpos + ImVec2( xo + x, yoff + ty05 ), 0x66FFFFFF, txt );
                                         tw = ImGui::CalcTextSize( txt ).x;
                                     }
 

@@ -1801,14 +1801,13 @@ static uint32_t DarkenColor( uint32_t color )
 static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color, float thickness = 1.f )
 {
     const auto spanSz = end - start;
-    const auto h05 = round( h * 0.5 );
-
-    if( spanSz <= h05 )
+    if( spanSz <= h * 0.5 )
     {
         draw->AddLine( wpos + ImVec2( start, 0 ), wpos + ImVec2( start + spanSz, round( -spanSz ) ), color, thickness );
         return;
     }
 
+    const auto h05 = round( h * 0.5 );
     draw->AddLine( wpos + ImVec2( start, 0 ), wpos + ImVec2( start + h05, -h05 ), color, thickness );
     start += h05;
 

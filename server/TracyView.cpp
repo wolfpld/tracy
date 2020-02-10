@@ -1797,29 +1797,37 @@ static uint32_t DarkenColor( uint32_t color )
 
 static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color, float thickness = 1.f )
 {
-    int mode = 0;
-    while( start < end )
+    const auto spanSz = end - start;
+    const auto h05 = round( h * 0.5 );
+
+    if( spanSz <= h05 )
     {
-        double step = std::min( end - start, mode == 0 ? h/2 : h );
-        switch( mode )
-        {
-        case 0:
-            draw->AddLine( wpos + ImVec2( start, 0 ), wpos + ImVec2( start + step, round( -step ) ), color, thickness );
-            mode = 1;
-            break;
-        case 1:
-            draw->AddLine( wpos + ImVec2( start, round( -h/2 ) ), wpos + ImVec2( start + step, round( step - h/2 ) ), color, thickness );
-            mode = 2;
-            break;
-        case 2:
-            draw->AddLine( wpos + ImVec2( start, round( h/2 ) ), wpos + ImVec2( start + step, round( h/2 - step ) ), color, thickness );
-            mode = 1;
-            break;
-        default:
-            assert( false );
-            break;
-        };
-        start += step;
+        draw->AddLine( wpos + ImVec2( start, 0 ), wpos + ImVec2( start + spanSz, round( -spanSz ) ), color, thickness );
+        return;
+    }
+
+    draw->AddLine( wpos + ImVec2( start, 0 ), wpos + ImVec2( start + h05, -h05 ), color, thickness );
+    start += h05;
+
+    const auto h2 = h*2;
+    int steps = int( ( end - start ) / h2 );
+    while( steps-- )
+    {
+        draw->AddLine( wpos + ImVec2( start,     -h05 ), wpos + ImVec2( start + h,   h05 ), color, thickness );
+        draw->AddLine( wpos + ImVec2( start + h,  h05 ), wpos + ImVec2( start + h2, -h05 ), color, thickness );
+        start += h2;
+    }
+
+    if( end - start <= h )
+    {
+        const auto span = end - start;
+        draw->AddLine( wpos + ImVec2( start, -h05 ), wpos + ImVec2( start + span, round( span - h*0.5 ) ), color, thickness );
+    }
+    else
+    {
+        draw->AddLine( wpos + ImVec2( start, -h05 ), wpos + ImVec2( start + h, h05 ), color, thickness );
+        const auto span = end - start - h;
+        draw->AddLine( wpos + ImVec2( start + h, h05 ), wpos + ImVec2( start + h + span, round( h*0.5 - span ) ), color, thickness );
     }
 }
 

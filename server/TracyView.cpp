@@ -1807,30 +1807,35 @@ static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, doub
         return;
     }
 
+    const auto p = wpos + ImVec2( 0.5f, 0.5f );
     const auto h05 = round( h * 0.5 );
-    draw->AddLine( wpos + ImVec2( start, 0 ), wpos + ImVec2( start + h05, -h05 ), color, thickness );
+
+    draw->PathLineTo( p + ImVec2( start, 0 ) );
+    draw->PathLineTo( p + ImVec2( start + h05, -h05 ) );
     start += h05;
 
     const auto h2 = h*2;
     int steps = int( ( end - start ) / h2 );
     while( steps-- )
     {
-        draw->AddLine( wpos + ImVec2( start,     -h05 ), wpos + ImVec2( start + h,   h05 ), color, thickness );
-        draw->AddLine( wpos + ImVec2( start + h,  h05 ), wpos + ImVec2( start + h2, -h05 ), color, thickness );
+        draw->PathLineTo( p + ImVec2( start + h,   h05 ) );
+        draw->PathLineTo( p + ImVec2( start + h2, -h05 ) );
         start += h2;
     }
 
     if( end - start <= h )
     {
         const auto span = end - start;
-        draw->AddLine( wpos + ImVec2( start, -h05 ), wpos + ImVec2( start + span, round( span - h*0.5 ) ), color, thickness );
+        draw->PathLineTo( p + ImVec2( start + span, round( span - h*0.5 ) ) );
     }
     else
     {
-        draw->AddLine( wpos + ImVec2( start, -h05 ), wpos + ImVec2( start + h, h05 ), color, thickness );
         const auto span = end - start - h;
-        draw->AddLine( wpos + ImVec2( start + h, h05 ), wpos + ImVec2( start + h + span, round( h*0.5 - span ) ), color, thickness );
+        draw->PathLineTo( p + ImVec2( start + h, h05 ) );
+        draw->PathLineTo( p + ImVec2( start + h + span, round( h*0.5 - span ) ) );
     }
+
+    draw->PathStroke( color, false, thickness );
 }
 
 static uint32_t GetColorMuted( uint32_t color, bool active )

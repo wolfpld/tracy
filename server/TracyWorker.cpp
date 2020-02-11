@@ -5177,10 +5177,11 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
     {
         s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
         int16_t srcloc;
-        f.Read( srcloc );
+        int64_t tstart;
+        f.Read3( srcloc, tstart, zone->extra );
         zone->SetSrcLoc( srcloc );
-        zone->SetStart( ReadTimeOffset( f, refTime ) );
-        f.Read( zone->extra );
+        refTime += tstart;
+        zone->SetStart( refTime );
         ReadTimeline( f, zone, refTime, childIdx );
         zone->SetEnd( ReadTimeOffset( f, refTime ) );
 #ifdef TRACY_NO_STATISTICS

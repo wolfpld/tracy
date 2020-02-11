@@ -2249,11 +2249,13 @@ void Worker::Network()
         lz4sz_t lz4sz;
         if( !m_sock.Read( &lz4sz, sizeof( lz4sz ), 10, ShouldExit ) ) goto close;
         if( !m_sock.Read( lz4buf.get(), lz4sz, 10, ShouldExit ) ) goto close;
-        m_bytes.fetch_add( sizeof( lz4sz ) + lz4sz, std::memory_order_relaxed );
+        auto bb = m_bytes.load( std::memory_order_relaxed );
+        m_bytes.store( bb + sizeof( lz4sz ) + lz4sz, std::memory_order_relaxed );
 
         auto sz = LZ4_decompress_safe_continue( (LZ4_streamDecode_t*)m_stream, lz4buf.get(), buf, lz4sz, TargetFrameSize );
         assert( sz >= 0 );
-        m_decBytes.fetch_add( sz, std::memory_order_relaxed );
+        bb = m_decBytes.load( std::memory_order_relaxed );
+        m_decBytes.store( bb + sz, std::memory_order_relaxed );
 
         {
             std::lock_guard<std::mutex> lock( m_netReadLock );
@@ -5175,7 +5177,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
     auto end = vec.end();
     do
     {
-        s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
+        const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
+        s_loadProgress.subProgress.store( lp + 1, std::memory_order_relaxed );
         int16_t srcloc;
         int64_t tstart;
         f.Read3( srcloc, tstart, zone->extra );
@@ -5203,7 +5206,8 @@ void Worker::ReadTimelinePre063( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec
     auto end = vec.end();
     do
     {
-        s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
+        const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
+        s_loadProgress.subProgress.store( lp + 1, std::memory_order_relaxed );
         if( fileVer >= FileVersion( 0, 5, 2 ) )
         {
             int16_t srcloc;
@@ -5291,7 +5295,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
     auto end = vec.end();
     do
     {
-        s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
+        const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
+        s_loadProgress.subProgress.store( lp + 1, std::memory_order_relaxed );
 
         int64_t tcpu, tgpu;
         int16_t srcloc;
@@ -5326,7 +5331,8 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec
     auto end = vec.end();
     do
     {
-        s_loadProgress.subProgress.fetch_add( 1, std::memory_order_relaxed );
+        const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
+        s_loadProgress.subProgress.store( lp + 1, std::memory_order_relaxed );
 
         if( fileVer <= FileVersion( 0, 5, 1 ) )
         {

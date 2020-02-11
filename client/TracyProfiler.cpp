@@ -868,7 +868,7 @@ static Thread* s_sysTraceThread = nullptr;
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
-TRACY_API void InitRPMallocThread()
+TRACY_API void InitRPMallocThread();
 
 void InitRPMallocThread()
 {

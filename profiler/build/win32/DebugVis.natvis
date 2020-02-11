@@ -30,7 +30,7 @@
     </Expand>
   </Type>
   <Type Name="tracy::ContextSwitchData">
-    <DisplayString>{{ start={int64_t( _start_cpu ) >> 8} end={int64_t( _end_reason_state ) >> 16} cpu={uint8_t( _start_cpu &amp; 0xFF )} reason={int8_t( (_end_reason_state >> 8) &amp; 0xFF )} state={int8_t( _end_reason_state &amp; 0xFF )} }}</DisplayString>
+    <DisplayString>{{ start={int64_t( _start_cpu ) >> 16} end={int64_t( _end_reason_state ) >> 16} cpu={uint8_t( _start_cpu &amp; 0xFF )} reason={int8_t( (_end_reason_state >> 8) &amp; 0xFF )} state={int8_t( _end_reason_state &amp; 0xFF )} }}</DisplayString>
   </Type>
   <Type Name="tracy::ContextSwitchCpu">
     <DisplayString>{{ start={int64_t( _start_thread ) >> 16} end={_end} thread={uint16_t( _start_thread )} }}</DisplayString>

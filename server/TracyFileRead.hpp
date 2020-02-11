@@ -142,6 +142,30 @@ public:
         }
     }
 
+    template<class T, class U, class V, class W, class X>
+    tracy_force_inline void Read5( T& v0, U& v1, V& v2, W& v3, X& v4 )
+    {
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) < BufSize - m_offset )
+        {
+            memcpy( &v0, m_buf + m_offset, sizeof( T ) );
+            memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, m_buf + m_offset + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+            memcpy( &v4, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ), sizeof( X ) );
+            m_offset += sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X );
+        }
+        else
+        {
+            char tmp[sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X )];
+            ReadBig( tmp, sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) );
+            memcpy( &v0, tmp, sizeof( T ) );
+            memcpy( &v1, tmp + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, tmp + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+            memcpy( &v4, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ), sizeof( X ) );
+        }
+    }
+
     bool IsEOF()
     {
         if( m_lastBlock != BufSize && m_offset == m_lastBlock ) return true;

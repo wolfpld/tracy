@@ -5179,10 +5179,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
         int16_t srcloc;
         f.Read( srcloc );
         zone->SetSrcLoc( srcloc );
-        // Use zone->_end_child1 as scratch buffer for zone start time offset.
-        f.Read( &zone->_end_child1, sizeof( zone->_end_child1 ) + sizeof( zone->extra ) );
-        refTime += int64_t( zone->_end_child1 );
-        zone->SetStart( refTime );
+        zone->SetStart( ReadTimeOffset( f, refTime ) );
+        f.Read( zone->extra );
         ReadTimeline( f, zone, refTime, childIdx );
         zone->SetEnd( ReadTimeOffset( f, refTime ) );
 #ifdef TRACY_NO_STATISTICS

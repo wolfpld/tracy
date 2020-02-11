@@ -5294,10 +5294,9 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
 
         int64_t tcpu, tgpu;
         int16_t srcloc;
-        f.Read3( tcpu, tgpu, srcloc );
-        zone->SetSrcLoc( srcloc );
         uint16_t thread;
-        f.Read2( zone->callstack, thread );
+        f.Read5( tcpu, tgpu, srcloc, zone->callstack, thread );
+        zone->SetSrcLoc( srcloc );
         zone->SetThread( thread );
         refTime += tcpu;
         refGpuTime += tgpu;

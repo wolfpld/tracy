@@ -1782,6 +1782,8 @@ void Worker::GetCpuUsageAtTime( int64_t time, int& own, int& other ) const
     }
 #endif
 
+    int cntOwn = 0;
+    int cntOther = 0;
     for( int i=0; i<m_data.cpuDataCount; i++ )
     {
         auto& cs = m_data.cpuData[i].cs;
@@ -1792,15 +1794,17 @@ void Worker::GetCpuUsageAtTime( int64_t time, int& own, int& other ) const
             {
                 if( GetPidFromTid( DecompressThreadExternal( it->Thread() ) ) == m_pid )
                 {
-                    own++;
+                    cntOwn++;
                 }
                 else
                 {
-                    other++;
+                    cntOther++;
                 }
             }
         }
     }
+    own = cntOwn;
+    other = cntOther;
 }
 
 const ContextSwitch* const Worker::GetContextSwitchDataImpl( uint64_t thread )

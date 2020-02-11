@@ -5700,11 +5700,13 @@ void View::CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, 
     Adapter a;
     if( m_timeDist.exclusiveTime )
     {
+        int64_t zt = ztime;
         for( auto& child : children )
         {
             const auto t = m_worker.GetZoneEnd( a(child) ) - a(child).Start();
-            ztime -= t;
+            zt -= t;
         }
+        ztime = zt;
     }
     for( auto& child : children )
     {
@@ -5744,14 +5746,16 @@ void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, un
     Adapter a;
     if( m_timeDist.exclusiveTime )
     {
+        int64_t zt = ztime;
         for( auto& child : children )
         {
             int64_t t;
             uint64_t cnt;
             const auto res = GetZoneRunningTime( ctx, a(child), t, cnt );
             assert( res );
-            ztime -= t;
+            zt -= t;
         }
+        ztime = zt;
     }
     for( auto& child : children )
     {

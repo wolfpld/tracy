@@ -139,6 +139,11 @@ int main( int argc, char** argv )
         fprintf( stderr, "The file you are trying to open is not a tracy dump.\n" );
         exit( 1 );
     }
+    catch( const tracy::FileReadError& e )
+    {
+        fprintf( stderr, "The file you are trying to open cannot be mapped to memory.\n" );
+        exit( 1 );
+    }
     catch( const tracy::LegacyVersion& e )
     {
         fprintf( stderr, "The file you are trying to open is from a legacy version.\n" );

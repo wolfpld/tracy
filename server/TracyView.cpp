@@ -9768,6 +9768,10 @@ void View::DrawCompare()
                 {
                     m_compare.badVer.state = BadVersionState::BadFile;
                 }
+                catch( const tracy::FileReadError& )
+                {
+                    m_compare.badVer.state = BadVersionState::ReadError;
+                }
             }
         }
         tracy::BadVersion( m_compare.badVer );

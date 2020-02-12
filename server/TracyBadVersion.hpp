@@ -12,6 +12,7 @@ struct BadVersionState
     {
         Ok,
         BadFile,
+        ReadError,
         UnsupportedVersion,
         LegacyVersion
     };

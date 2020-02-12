@@ -581,6 +581,10 @@ static void DrawContents()
                 {
                     badVer.state = tracy::BadVersionState::BadFile;
                 }
+                catch( const tracy::FileReadError& )
+                {
+                    badVer.state = tracy::BadVersionState::ReadError;
+                }
             }
         }
 

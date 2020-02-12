@@ -95,14 +95,18 @@ public:
 
     tracy_force_inline void SetVal( uint32_t val )
     {
-        memcpy( m_val, &val, 3 );
+        memcpy( m_val, &val, 2 );
+        val >>= 16;
+        memcpy( m_val+2, &val, 1 );
     }
 
     tracy_force_inline uint32_t Val() const
     {
-        uint32_t val = 0;
-        memcpy( &val, m_val, 3 );
-        return val;
+        uint8_t hi;
+        memcpy( &hi, m_val+2, 1 );
+        uint16_t lo;
+        memcpy( &lo, m_val, 2 );
+        return ( uint32_t( hi ) << 16 ) | lo;
     }
 
 private:
@@ -120,7 +124,9 @@ public:
 
     tracy_force_inline void SetVal( int64_t val )
     {
-        memcpy( m_val, &val, 6 );
+        memcpy( m_val, &val, 4 );
+        val >>= 32;
+        memcpy( m_val+4, &val, 2 );
     }
 
     tracy_force_inline int64_t Val() const

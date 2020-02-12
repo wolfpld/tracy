@@ -617,8 +617,10 @@ private:
 #endif
 
     tracy_force_inline void ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32_t& childIdx );
+    tracy_force_inline void ReadTimelineHaveSize( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32_t& childIdx, uint32_t sz );
     tracy_force_inline void ReadTimelinePre063( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32_t& childIdx, int fileVer );
     tracy_force_inline void ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx );
+    tracy_force_inline void ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, uint64_t sz );
     tracy_force_inline void ReadTimelinePre0510( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int fileVer );
 
 #ifndef TRACY_NO_STATISTICS

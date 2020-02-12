@@ -5047,6 +5047,11 @@ void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32
 {
     uint32_t sz;
     f.Read( sz );
+    ReadTimelineHaveSize( f, zone, refTime, childIdx, sz );
+}
+
+void Worker::ReadTimelineHaveSize( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32_t& childIdx, uint32_t sz )
+{
     if( sz == 0 )
     {
         zone->SetChild( -1 );
@@ -5093,6 +5098,11 @@ void Worker::ReadTimeline( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_
 {
     uint64_t sz;
     f.Read( sz );
+    ReadTimelineHaveSize( f, zone, refTime, refGpuTime, childIdx, sz );
+}
+
+void Worker::ReadTimelineHaveSize( FileRead& f, GpuEvent* zone, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx, uint64_t sz )
+{
     if( sz == 0 )
     {
         zone->SetChild( -1 );
@@ -5181,11 +5191,12 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
         s_loadProgress.subProgress.store( lp + 1, std::memory_order_relaxed );
         int16_t srcloc;
         int64_t tstart;
-        f.Read3( srcloc, tstart, zone->extra );
+        uint32_t childSz;
+        f.Read4( srcloc, tstart, zone->extra, childSz );
         zone->SetSrcLoc( srcloc );
         refTime += tstart;
         zone->SetStart( refTime );
-        ReadTimeline( f, zone, refTime, childIdx );
+        ReadTimelineHaveSize( f, zone, refTime, childIdx, childSz );
         zone->SetEnd( ReadTimeOffset( f, refTime ) );
 #ifdef TRACY_NO_STATISTICS
         CountZoneStatistics( zone );
@@ -5301,7 +5312,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
         int64_t tcpu, tgpu;
         int16_t srcloc;
         uint16_t thread;
-        f.Read5( tcpu, tgpu, srcloc, zone->callstack, thread );
+        uint64_t childSz;
+        f.Read6( tcpu, tgpu, srcloc, zone->callstack, thread, childSz );
         zone->SetSrcLoc( srcloc );
         zone->SetThread( thread );
         refTime += tcpu;
@@ -5309,7 +5321,7 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
         zone->SetCpuStart( refTime );
         zone->SetGpuStart( refGpuTime );
 
-        ReadTimeline( f, zone, refTime, refGpuTime, childIdx );
+        ReadTimelineHaveSize( f, zone, refTime, refGpuTime, childIdx, childSz );
 
         f.Read2( tcpu, tgpu );
         refTime += tcpu;

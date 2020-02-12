@@ -1156,13 +1156,12 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
                 uint64_t ptr, size;
                 Int24 csAlloc;
-                f.Read4( ptr, size, csAlloc, mem->csFree );
+                int64_t timeAlloc, timeFree;
+                uint16_t threadAlloc, threadFree;
+                f.Read8( ptr, size, csAlloc, mem->csFree, timeAlloc, timeFree, threadAlloc, threadFree );
                 mem->SetPtr( ptr );
                 mem->SetSize( size );
                 mem->SetCsAlloc( csAlloc.Val() );
-                int64_t timeAlloc, timeFree;
-                uint16_t threadAlloc, threadFree;
-                f.Read4( timeAlloc, timeFree, threadAlloc, threadFree );
                 refTime += timeAlloc;
                 mem->SetTimeAlloc( refTime );
                 if( timeFree >= 0 )

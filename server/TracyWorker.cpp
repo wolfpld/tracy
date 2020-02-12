@@ -5181,6 +5181,8 @@ void Worker::CountZoneStatistics( ZoneEvent* zone )
 void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint32_t size, int64_t& refTime, int32_t& childIdx )
 {
     assert( size != 0 );
+    const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
+    s_loadProgress.subProgress.store( lp + size, std::memory_order_relaxed );
     auto& vec = *(Vector<ZoneEvent>*)( &_vec );
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
@@ -5188,8 +5190,6 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
     auto end = vec.end();
     do
     {
-        const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
-        s_loadProgress.subProgress.store( lp + 1, std::memory_order_relaxed );
         int16_t srcloc;
         int64_t tstart;
         uint32_t childSz;
@@ -5210,6 +5210,8 @@ void Worker::ReadTimelinePre063( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec
 {
     assert( fileVer < FileVersion( 0, 6, 3 ) );
     assert( size != 0 );
+    const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
+    s_loadProgress.subProgress.store( lp + size, std::memory_order_relaxed );
     auto& vec = *(Vector<ZoneEvent>*)( &_vec );
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
@@ -5217,8 +5219,6 @@ void Worker::ReadTimelinePre063( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec
     auto end = vec.end();
     do
     {
-        const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
-        s_loadProgress.subProgress.store( lp + 1, std::memory_order_relaxed );
         if( fileVer >= FileVersion( 0, 5, 2 ) )
         {
             int16_t srcloc;
@@ -5298,6 +5298,8 @@ void Worker::ReadTimelinePre063( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec
 void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int32_t& childIdx )
 {
     assert( size != 0 );
+    const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
+    s_loadProgress.subProgress.store( lp + size, std::memory_order_relaxed );
     auto& vec = *(Vector<GpuEvent>*)( &_vec );
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
@@ -5305,9 +5307,6 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
     auto end = vec.end();
     do
     {
-        const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
-        s_loadProgress.subProgress.store( lp + 1, std::memory_order_relaxed );
-
         int64_t tcpu, tgpu;
         int16_t srcloc;
         uint16_t thread;
@@ -5334,6 +5333,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
 void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint64_t size, int64_t& refTime, int64_t& refGpuTime, int fileVer )
 {
     assert( size != 0 );
+    const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
+    s_loadProgress.subProgress.store( lp + size, std::memory_order_relaxed );
     auto& vec = *(Vector<GpuEvent>*)( &_vec );
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
@@ -5341,9 +5342,6 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec
     auto end = vec.end();
     do
     {
-        const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
-        s_loadProgress.subProgress.store( lp + 1, std::memory_order_relaxed );
-
         if( fileVer <= FileVersion( 0, 5, 1 ) )
         {
             int64_t tcpu, tgpu;

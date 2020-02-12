@@ -11,7 +11,17 @@
 #include <thread>
 #include <utility>
 
+#include <sys/stat.h>
+
+#ifdef _MSC_VER
+#  define stat64 _stat64
+#endif
+#ifdef __CYGWIN__
+#  define stat64 stat
+#endif
+
 #include "TracyFileHeader.hpp"
+#include "TracyMmap.hpp"
 #include "TracyYield.hpp"
 #include "../common/tracy_lz4.hpp"
 #include "../common/TracyForceInline.hpp"
@@ -21,6 +31,7 @@ namespace tracy
 {
 
 struct NotTracyDump : public std::exception {};
+struct FileReadError : public std::exception {};
 
 class FileRead
 {
@@ -36,7 +47,7 @@ public:
         m_exit.store( true, std::memory_order_relaxed );
         m_decThread.join();
 
-        fclose( m_file );
+        if( m_data ) munmap( m_data, m_dataSize );
         if( m_stream ) LZ4_freeStreamDecode( m_stream );
         if( m_streamZstd ) ZSTD_freeDStream( m_streamZstd );
     }
@@ -198,7 +209,7 @@ private:
     FileRead( FILE* f, const char* fn )
         : m_stream( nullptr )
         , m_streamZstd( nullptr )
-        , m_file( f )
+        , m_data( nullptr )
         , m_buf( m_bufData[1] )
         , m_second( m_bufData[0] )
         , m_offset( 0 )
@@ -209,7 +220,11 @@ private:
         , m_filename( fn )
     {
         char hdr[4];
-        if( fread( hdr, 1, sizeof( hdr ), m_file ) != sizeof( hdr ) ) throw NotTracyDump();
+        if( fread( hdr, 1, sizeof( hdr ), f ) != sizeof( hdr ) )
+        {
+            fclose( f );
+            throw NotTracyDump();
+        }
         if( memcmp( hdr, Lz4Header, sizeof( hdr ) ) == 0 )
         {
             m_stream = LZ4_createStreamDecode();
@@ -218,6 +233,30 @@ private:
         {
             m_streamZstd = ZSTD_createDStream();
         }
+        else
+        {
+            fclose( f );
+            throw NotTracyDump();
+        }
+
+        struct stat64 buf;
+        if( stat64( fn, &buf ) == 0 )
+        {
+            m_dataSize = buf.st_size;
+        }
+        else
+        {
+            fclose( f );
+            throw FileReadError();
+        }
+
+        m_data = (char*)mmap( nullptr, m_dataSize, PROT_READ, MAP_SHARED, fileno( f ), 0 );
+        fclose( f );
+        if( !m_data )
+        {
+            throw FileReadError();
+        }
+        m_dataOffset = sizeof( hdr );
 
         ReadBlock();
         std::swap( m_buf, m_second );
@@ -288,19 +327,22 @@ private:
 
     void ReadBlock()
     {
-        char m_lz4buf[LZ4Size];
-        uint32_t sz;
-        if( fread( &sz, 1, sizeof( sz ), m_file ) == sizeof( sz ) )
+        if( m_dataOffset < m_dataSize )
         {
-            fread( m_lz4buf, 1, sz, m_file );
+            uint32_t sz;
+            memcpy( &sz, m_data + m_dataOffset, sizeof( sz ) );
+            m_dataOffset += sizeof( sz );
+
             if( m_stream )
             {
-                m_lastBlock = (size_t)LZ4_decompress_safe_continue( m_stream, m_lz4buf, m_second, sz, BufSize );
+                m_lastBlock = (size_t)LZ4_decompress_safe_continue( m_stream, m_data + m_dataOffset, m_second, sz, BufSize );
+                m_dataOffset += sz;
             }
             else
             {
                 ZSTD_outBuffer out = { m_second, BufSize, 0 };
-                ZSTD_inBuffer in = { m_lz4buf, sz, 0 };
+                ZSTD_inBuffer in = { m_data + m_dataOffset, sz, 0 };
+                m_dataOffset += sz;
                 const auto ret = ZSTD_decompressStream( m_streamZstd, &out, &in );
                 assert( ret > 0 );
                 m_lastBlock = out.pos;
@@ -317,7 +359,9 @@ private:
 
     LZ4_streamDecode_t* m_stream;
     ZSTD_DStream* m_streamZstd;
-    FILE* m_file;
+    char* m_data;
+    uint64_t m_dataSize;
+    uint64_t m_dataOffset;
     char* m_buf;
     char* m_second;
     size_t m_offset;

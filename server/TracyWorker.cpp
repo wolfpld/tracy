@@ -946,6 +946,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         uint64_t tid;
         f.Read2( tid, td->count );
         td->id = tid;
+        m_data.zonesCnt += td->count;
         int64_t refTime = 0;
         if( fileVer < FileVersion( 0, 6, 3 ) )
         {
@@ -1005,6 +1006,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         auto ctx = m_slab.AllocInit<GpuCtxData>();
         f.Read4( ctx->thread, ctx->accuracyBits, ctx->count, ctx->period );
+        m_data.gpuCnt += ctx->count;
         if( fileVer >= FileVersion( 0, 5, 10 ) )
         {
             uint64_t tdsz;
@@ -5182,7 +5184,6 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
     auto& vec = *(Vector<ZoneEvent>*)( &_vec );
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
-    m_data.zonesCnt += size;
     auto zone = vec.begin();
     auto end = vec.end();
     do
@@ -5212,7 +5213,6 @@ void Worker::ReadTimelinePre063( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec
     auto& vec = *(Vector<ZoneEvent>*)( &_vec );
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
-    m_data.zonesCnt += size;
     auto zone = vec.begin();
     auto end = vec.end();
     do
@@ -5301,7 +5301,6 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec, uint6
     auto& vec = *(Vector<GpuEvent>*)( &_vec );
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
-    m_data.gpuCnt += size;
     auto zone = vec.begin();
     auto end = vec.end();
     do
@@ -5338,7 +5337,6 @@ void Worker::ReadTimelinePre0510( FileRead& f, Vector<short_ptr<GpuEvent>>& _vec
     auto& vec = *(Vector<GpuEvent>*)( &_vec );
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
-    m_data.gpuCnt += size;
     auto zone = vec.begin();
     auto end = vec.end();
     do

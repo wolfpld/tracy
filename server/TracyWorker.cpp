@@ -315,9 +315,8 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
             }
 
             auto zone = AllocZoneEvent();
-            zone->SetStart( v.timestamp );
+            zone->SetStartSrcLoc( v.timestamp, key );
             zone->SetEnd( -1 );
-            zone->SetSrcLoc( key );
             zone->SetChild( -1 );
 
             m_threadCtxData = NoticeThread( v.tid );
@@ -3453,9 +3452,8 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
     const auto start = TscTime( refTime - m_data.baseTime );
-    zone->SetStart( start );
+    zone->SetStartSrcLoc( start, ShrinkSourceLocation( ev.srcloc ) );
     zone->SetEnd( -1 );
-    zone->SetSrcLoc( ShrinkSourceLocation( ev.srcloc ) );
     zone->SetChild( -1 );
 
     if( m_data.lastTime < start ) m_data.lastTime = start;
@@ -3506,9 +3504,8 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
     const auto start = TscTime( refTime - m_data.baseTime );
-    zone->SetStart( start );
+    zone->SetStartSrcLoc( start, it->second );
     zone->SetEnd( -1 );
-    zone->SetSrcLoc( it->second );
     zone->SetChild( -1 );
 
     if( m_data.lastTime < start ) m_data.lastTime = start;
@@ -5194,9 +5191,8 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
         int64_t tstart;
         uint32_t childSz;
         f.Read4( srcloc, tstart, zone->extra, childSz );
-        zone->SetSrcLoc( srcloc );
         refTime += tstart;
-        zone->SetStart( refTime );
+        zone->SetStartSrcLoc( refTime, srcloc );
         ReadTimelineHaveSize( f, zone, refTime, childIdx, childSz );
         zone->SetEnd( ReadTimeOffset( f, refTime ) );
 #ifdef TRACY_NO_STATISTICS

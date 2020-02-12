@@ -1163,19 +1163,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 mem->SetSize( size );
                 mem->SetCsAlloc( csAlloc.Val() );
                 refTime += timeAlloc;
-                mem->SetTimeAlloc( refTime );
+                mem->SetTimeThreadAlloc( refTime, threadAlloc );
                 if( timeFree >= 0 )
                 {
-                    mem->SetTimeFree( timeFree + refTime );
+                    mem->SetTimeThreadFree( timeFree + refTime, threadFree );
                     frees[fidx++] = i;
                 }
                 else
                 {
-                    mem->SetTimeFree( timeFree );
+                    mem->SetTimeThreadFree( timeFree, threadFree );
                     active.emplace( ptr, i );
                 }
-                mem->SetThreadAlloc( threadAlloc );
-                mem->SetThreadFree( threadFree );
                 mem++;
             }
         }

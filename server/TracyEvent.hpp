@@ -291,6 +291,9 @@ struct MemEvent
     tracy_force_inline uint16_t ThreadFree() const { return uint16_t( _time_thread_free ); }
     tracy_force_inline void SetThreadFree( uint16_t thread ) { memcpy( &_time_thread_free, &thread, 2 ); }
 
+    tracy_force_inline void SetTimeThreadAlloc( int64_t time, uint16_t thread ) { time <<= 16; time |= thread; memcpy( &_time_thread_alloc, &time, 8 ); }
+    tracy_force_inline void SetTimeThreadFree( int64_t time, uint16_t thread ) { time <<= 16; time |= thread; memcpy( &_time_thread_free, &time, 8 ); }
+
     uint64_t _ptr_csalloc1;
     uint64_t _size_csalloc2;
     Int24 csFree;

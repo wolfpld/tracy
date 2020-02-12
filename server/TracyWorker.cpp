@@ -4411,10 +4411,8 @@ void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
     auto& mem = m_data.memory.data.push_next();
     mem.SetPtr( ptr );
     mem.SetSize( size );
-    mem.SetTimeAlloc( time );
-    mem.SetThreadAlloc( CompressThread( ev.thread ) );
-    mem.SetTimeFree( -1 );
-    mem.SetThreadFree( 0 );
+    mem.SetTimeThreadAlloc( time, CompressThread( ev.thread ) );
+    mem.SetTimeThreadFree( -1, 0 );
     mem.SetCsAlloc( 0 );
     mem.csFree.SetVal( 0 );
 
@@ -4452,8 +4450,7 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
 
     m_data.memory.frees.push_back( it->second );
     auto& mem = m_data.memory.data[it->second];
-    mem.SetTimeFree( time );
-    mem.SetThreadFree( CompressThread( ev.thread ) );
+    mem.SetTimeThreadFree( time, CompressThread( ev.thread ) );
     m_data.memory.usage -= mem.Size();
     m_data.memory.active.erase( it );
 

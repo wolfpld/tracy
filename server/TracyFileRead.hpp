@@ -192,17 +192,6 @@ public:
         }
     }
 
-    bool IsEOF()
-    {
-        if( m_lastBlock != BufSize && m_offset == m_lastBlock ) return true;
-        if( m_offset == BufSize )
-        {
-            if( fseek( m_file, 1, SEEK_CUR ) != 0 ) return true;
-            fseek( m_file, -1, SEEK_CUR );
-        }
-        return false;
-    }
-
     const std::string& GetFilename() const { return m_filename; }
 
 private:

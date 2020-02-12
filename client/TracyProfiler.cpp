@@ -792,12 +792,16 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
         case BUS_OBJERR:
             strcpy( msgPtr, "Object-specific hardware error.\n" );
             break;
+#  ifdef BUS_MCEERR_AR
         case BUS_MCEERR_AR:
             strcpy( msgPtr, "Hardware memory error consumed on a machine check; action required.\n" );
             break;
+#  endif
+#  ifdef BUS_MCEERR_AO
         case BUS_MCEERR_AO:
             strcpy( msgPtr, "Hardware memory error detected in process but not consumed; action optional.\n" );
             break;
+#  endif
         default:
             break;
         }

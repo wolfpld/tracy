@@ -946,13 +946,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         f.Read2( tid, td->count );
         td->id = tid;
         m_data.zonesCnt += td->count;
-        int64_t refTime = 0;
         if( fileVer < FileVersion( 0, 6, 3 ) )
         {
             uint64_t tsz;
             f.Read( tsz );
             if( tsz != 0 )
             {
+                int64_t refTime = 0;
                 ReadTimelinePre063( f, td->timeline, tsz, refTime, childIdx, fileVer );
             }
         }
@@ -962,7 +962,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             f.Read( tsz );
             if( tsz != 0 )
             {
-                ReadTimeline( f, td->timeline, tsz, refTime, childIdx );
+                ReadTimeline( f, td->timeline, tsz, 0, childIdx );
             }
         }
         uint64_t msz;
@@ -5042,25 +5042,26 @@ void Worker::ReconstructContextSwitchUsage()
 }
 #endif
 
-void Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32_t& childIdx )
+int64_t Worker::ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t refTime, int32_t& childIdx )
 {
     uint32_t sz;
     f.Read( sz );
-    ReadTimelineHaveSize( f, zone, refTime, childIdx, sz );
+    return ReadTimelineHaveSize( f, zone, refTime, childIdx, sz );
 }
 
-void Worker::ReadTimelineHaveSize( FileRead& f, ZoneEvent* zone, int64_t& refTime, int32_t& childIdx, uint32_t sz )
+int64_t Worker::ReadTimelineHaveSize( FileRead& f, ZoneEvent* zone, int64_t refTime, int32_t& childIdx, uint32_t sz )
 {
     if( sz == 0 )
     {
         zone->SetChild( -1 );
+        return refTime;
     }
     else
     {
         const auto idx = childIdx;
         childIdx++;
         zone->SetChild( idx );
-        ReadTimeline( f, m_data.zoneChildren[idx], sz, refTime, childIdx );
+        return ReadTimeline( f, m_data.zoneChildren[idx], sz, refTime, childIdx );
     }
 }
 
@@ -5175,7 +5176,7 @@ void Worker::CountZoneStatistics( ZoneEvent* zone )
 }
 #endif
 
-void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint32_t size, int64_t& refTime, int32_t& childIdx )
+int64_t Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint32_t size, int64_t refTime, int32_t& childIdx )
 {
     assert( size != 0 );
     const auto lp = s_loadProgress.subProgress.load( std::memory_order_relaxed );
@@ -5193,13 +5194,17 @@ void Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint
         f.Read4( srcloc, tstart, zone->extra, childSz );
         refTime += tstart;
         zone->SetStartSrcLoc( refTime, srcloc );
-        ReadTimelineHaveSize( f, zone, refTime, childIdx, childSz );
-        zone->SetEnd( ReadTimeOffset( f, refTime ) );
+        refTime = ReadTimelineHaveSize( f, zone, refTime, childIdx, childSz );
+        int64_t tend;
+        f.Read( tend );
+        refTime += tend;
+        zone->SetEnd( refTime );
 #ifdef TRACY_NO_STATISTICS
         CountZoneStatistics( zone );
 #endif
     }
     while( ++zone != end );
+    return refTime;
 }
 
 void Worker::ReadTimelinePre063( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, uint64_t size, int64_t& refTime, int32_t& childIdx, int fileVer )

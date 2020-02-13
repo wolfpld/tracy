@@ -5186,25 +5186,39 @@ int64_t Worker::ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec, u
     vec.set_magic();
     vec.reserve_exact( size, m_slab );
     auto zone = vec.begin();
-    auto end = vec.end();
-    do
+    auto end = vec.end() - 1;
+
+    int16_t srcloc;
+    int64_t tstart, tend;
+    uint32_t childSz, extra;
+    f.Read4( srcloc, tstart, extra, childSz );
+
+    while( zone != end )
     {
-        int16_t srcloc;
-        int64_t tstart;
-        uint32_t childSz;
-        f.Read4( srcloc, tstart, zone->extra, childSz );
         refTime += tstart;
         zone->SetStartSrcLoc( refTime, srcloc );
+        zone->extra = extra;
         refTime = ReadTimelineHaveSize( f, zone, refTime, childIdx, childSz );
-        int64_t tend;
-        f.Read( tend );
+        f.Read5( tend, srcloc, tstart, extra, childSz );
         refTime += tend;
         zone->SetEnd( refTime );
 #ifdef TRACY_NO_STATISTICS
         CountZoneStatistics( zone );
 #endif
+        zone++;
     }
-    while( ++zone != end );
+
+    refTime += tstart;
+    zone->SetStartSrcLoc( refTime, srcloc );
+    zone->extra = extra;
+    refTime = ReadTimelineHaveSize( f, zone, refTime, childIdx, childSz );
+    f.Read( tend );
+    refTime += tend;
+    zone->SetEnd( refTime );
+#ifdef TRACY_NO_STATISTICS
+    CountZoneStatistics( zone );
+#endif
+
     return refTime;
 }
 

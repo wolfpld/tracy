@@ -1490,17 +1490,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 auto ptr = data->v.data();
                 for( uint64_t j=0; j<csz; j++ )
                 {
-                    ptr->SetWakeup( ReadTimeOffset( f, refTime ) );
-                    ptr->SetStart( ReadTimeOffset( f, refTime ) );
-                    int64_t diff;
-                    f.Read( diff );
+                    int64_t deltaWakeup, deltaStart, diff;
+                    uint8_t cpu;
+                    int8_t reason, state;
+                    f.Read6( deltaWakeup, deltaStart, diff, cpu, reason, state );
+                    refTime += deltaWakeup;
+                    ptr->SetWakeup( refTime );
+                    refTime += deltaStart;
+                    ptr->SetStart( refTime );
                     if( diff > 0 ) runningTime += diff;
                     refTime += diff;
                     ptr->SetEnd( refTime );
-                    uint8_t cpu;
-                    int8_t reason;
-                    int8_t state;
-                    f.Read3( cpu, reason, state );
                     ptr->SetCpu( cpu );
                     ptr->SetReason( reason );
                     ptr->SetState( state );

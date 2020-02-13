@@ -1093,11 +1093,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             pd->data.reserve_exact( psz, m_slab );
             if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
+                auto ptr = pd->data.data();
                 int64_t refTime = 0;
                 for( uint64_t j=0; j<psz; j++ )
                 {
-                    pd->data[j].time.SetVal( ReadTimeOffset( f, refTime ) );
-                    f.Read( pd->data[j].val );
+                    int64_t t;
+                    f.Read2( t, ptr->val );
+                    refTime += t;
+                    ptr->time = refTime;
+                    ptr++;
                 }
             }
             else

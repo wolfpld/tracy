@@ -333,16 +333,26 @@ private:
         auto dst = (char*)ptr;
         while( size > 0 )
         {
+            size_t sz;
             if( m_offset == BufSize )
             {
+                sz = std::min<size_t>( size, BufSize );
+
                 m_signalSwitch.store( true, std::memory_order_relaxed );
                 while( m_signalAvailable.load( std::memory_order_acquire ) == false ) { YieldThread(); }
                 m_signalAvailable.store( false, std::memory_order_relaxed );
+                assert( m_offset == 0 );
+
+                memcpy( dst, m_buf, sz );
+                m_offset = sz;
+            }
+            else
+            {
+                sz = std::min( size, BufSize - m_offset );
+                memcpy( dst, m_buf + m_offset, sz );
+                m_offset += sz;
             }
 
-            const auto sz = std::min( size, BufSize - m_offset );
-            memcpy( dst, m_buf + m_offset, sz );
-            m_offset += sz;
             dst += sz;
             size -= sz;
         }

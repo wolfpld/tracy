@@ -330,8 +330,9 @@ private:
 
     void ReadBig( void* ptr, size_t size )
     {
+        assert( size > 0 );
         auto dst = (char*)ptr;
-        while( size > 0 )
+        do
         {
             size_t sz;
             if( m_offset == BufSize )
@@ -356,6 +357,7 @@ private:
             dst += sz;
             size -= sz;
         }
+        while( size > 0 );
     }
 
     void SkipBig( size_t size )

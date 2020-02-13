@@ -367,26 +367,19 @@ private:
 
     void ReadBlock( uint32_t sz )
     {
-        if( m_dataOffset < m_dataSize )
+        if( m_stream )
         {
-            if( m_stream )
-            {
-                m_lastBlock = (size_t)LZ4_decompress_safe_continue( m_stream, m_data + m_dataOffset, m_second, sz, BufSize );
-                m_dataOffset += sz;
-            }
-            else
-            {
-                ZSTD_outBuffer out = { m_second, BufSize, 0 };
-                ZSTD_inBuffer in = { m_data + m_dataOffset, sz, 0 };
-                m_dataOffset += sz;
-                const auto ret = ZSTD_decompressStream( m_streamZstd, &out, &in );
-                assert( ret > 0 );
-                m_lastBlock = out.pos;
-            }
+            m_lastBlock = (size_t)LZ4_decompress_safe_continue( m_stream, m_data + m_dataOffset, m_second, sz, BufSize );
+            m_dataOffset += sz;
         }
         else
         {
-            m_lastBlock = 0;
+            ZSTD_outBuffer out = { m_second, BufSize, 0 };
+            ZSTD_inBuffer in = { m_data + m_dataOffset, sz, 0 };
+            m_dataOffset += sz;
+            const auto ret = ZSTD_decompressStream( m_streamZstd, &out, &in );
+            assert( ret > 0 );
+            m_lastBlock = out.pos;
         }
     }
 

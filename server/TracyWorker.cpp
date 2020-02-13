@@ -1542,10 +1542,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     auto ptr = m_data.cpuData[i].cs.data();
                     for( uint64_t j=0; j<sz; j++ )
                     {
-                        ptr->SetStart( ReadTimeOffset( f, refTime ) );
-                        ptr->SetEnd( ReadTimeOffset( f, refTime ) );
+                        int64_t deltaStart, deltaEnd;
                         uint16_t thread;
-                        f.Read( thread );
+                        f.Read3( deltaStart, deltaEnd, thread );
+                        refTime += deltaStart;
+                        ptr->SetStart( refTime );
+                        refTime += deltaEnd;
+                        ptr->SetEnd( refTime );
                         ptr->SetThread( thread );
                         ptr++;
                     }

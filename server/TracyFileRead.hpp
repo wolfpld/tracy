@@ -288,16 +288,26 @@ private:
         }
         m_dataOffset = sizeof( hdr );
 
-        ReadBlock();
+        ReadBlock( ReadBlockSize() );
         std::swap( m_buf, m_second );
         m_decThread = std::thread( [this] { Worker(); } );
     }
 
+    tracy_force_inline uint32_t ReadBlockSize()
+    {
+        uint32_t sz;
+        memcpy( &sz, m_data + m_dataOffset, sizeof( sz ) );
+        m_dataOffset += sizeof( sz );
+        return sz;
+    }
+
     void Worker()
     {
+        uint32_t blockSz = ReadBlockSize();
         for(;;)
         {
-            ReadBlock();
+            ReadBlock( blockSz );
+            if( m_lastBlock == BufSize ) blockSz = ReadBlockSize();
             for(;;)
             {
                 if( m_exit.load( std::memory_order_relaxed ) == true ) return;
@@ -355,14 +365,10 @@ private:
         }
     }
 
-    void ReadBlock()
+    void ReadBlock( uint32_t sz )
     {
         if( m_dataOffset < m_dataSize )
         {
-            uint32_t sz;
-            memcpy( &sz, m_data + m_dataOffset, sizeof( sz ) );
-            m_dataOffset += sizeof( sz );
-
             if( m_stream )
             {
                 m_lastBlock = (size_t)LZ4_decompress_safe_continue( m_stream, m_data + m_dataOffset, m_second, sz, BufSize );

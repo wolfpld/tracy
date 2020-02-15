@@ -453,19 +453,20 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
     return uint64_t( ( uint64_t( to565( vmin ) ) << 16 ) | to565( vmax ) | ( uint64_t( vp ) << 32 ) );
 #  endif
 #else
-    const auto ref = to565( src[0], src[1], src[2] );
+    uint32_t ref;
+    memcpy( &ref, src, 4 );
+    uint32_t refMask = ref & 0xF8FCF8;
     auto stmp = src + 4;
     for( int i=1; i<16; i++ )
     {
-        if( to565( stmp[0], stmp[1], stmp[2] ) != ref )
-        {
-            break;
-        }
+        uint32_t px;
+        memcpy( &px, stmp, 4 );
+        if( ( px & 0xF8FCF8 ) != refMask ) break;
         stmp += 4;
     }
     if( stmp == src + 64 )
     {
-        return uint64_t( ref ) << 16;
+        return uint64_t( to565( ref ) ) << 16;
     }
 
     uint8_t min[3] = { src[0], src[1], src[2] };

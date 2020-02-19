@@ -17,6 +17,7 @@
 \usepackage{fontawesome5}
 \usepackage[os=win]{menukeys}
 \usepackage{xfrac}
+\usepackage[euler]{textgreek}
 
 \usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
 \geometry{a4paper,textwidth=6.5in,hmarginratio=1:1,
@@ -2221,7 +2222,7 @@ Clicking the \LMB{} left mouse button on group name will highlight the group tim
 
 The call stack grouping mode has a different way of listing groups. Here only one group is displayed at any time, due to need to display the call stack frames. You can switch between call stack groups by using the~\faCaretLeft{}~and~\faCaretRight{} buttons. The group can be selected by clicking on the~\emph{\faCheck{}~Select} button (to reset the group selection use the~\RMB{}~right mouse button, as usual). You can open the call stack window (section~\ref{callstackwindow}) by pressing the~\emph{\faAlignJustify{}~Call~stack} button.
 
-The average and median zone times are displayed on the histogram as a red (average) and blue (median) vertical bars. When a group is selected, additional bars will indicate the average group time (orange) and median group time (green). You can disable drawing of either set of markers by clicking on the check-box next to the color legend.
+Tracy displays a variety of statistical values regarding the selected function: mean (average value), median (middle value), mode (most common value, quantized using histogram bins), and \textsigma{} (standard deviation). The mean and median zone times are also displayed on the histogram as a red (mean) and blue (median) vertical bars. When a group is selected, additional bars will indicate the mean group time (orange) and median group time (green). You can disable drawing of either set of markers by clicking on the check-box next to the color legend.
 
 Hovering the \faMousePointer{}~mouse cursor over a zone on the timeline, which is currently selected in the find zone window, will display a pulsing vertical bar on the histogram, highlighting the bin to which the hovered zone has been assigned. Zone entry on the zone list will also be highlighted.
 

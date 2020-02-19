@@ -8790,13 +8790,18 @@ void View::DrawFindZone()
                             m_findZone.selTime = selectionTime;
                         }
 
+                        int maxBin = 0;
                         int64_t maxVal;
                         if( cumulateTime )
                         {
                             maxVal = binTime[0];
                             for( int i=1; i<numBins; i++ )
                             {
-                                maxVal = std::max( maxVal, binTime[i] );
+                                if( maxVal < binTime[i] )
+                                {
+                                    maxVal = binTime[i];
+                                    maxBin = i;
+                                }
                             }
                         }
                         else
@@ -8804,7 +8809,11 @@ void View::DrawFindZone()
                             maxVal = bins[0];
                             for( int i=1; i<numBins; i++ )
                             {
-                                maxVal = std::max( maxVal, bins[i] );
+                                if( maxVal < bins[i] )
+                                {
+                                    maxVal = bins[i];
+                                    maxBin = i;
+                                }
                             }
                         }
 
@@ -8813,11 +8822,30 @@ void View::DrawFindZone()
                         ImGui::Spacing();
                         ImGui::SameLine();
                         TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal ) );
-                        TextFocused( "Mean time:", TimeToString( m_findZone.average ) );
+                        TextFocused( "Mean:", TimeToString( m_findZone.average ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-                        TextFocused( "Median time:", TimeToString( m_findZone.median ) );
+                        TextFocused( "Median:", TimeToString( m_findZone.median ) );
+                        ImGui::SameLine();
+                        ImGui::Spacing();
+                        ImGui::SameLine();
+                        {
+                            int64_t t0, t1;
+                            if( m_findZone.logTime )
+                            {
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
+                                t0 = int64_t( pow( 10, ltmin + double( maxBin )   / numBins * ( ltmax - ltmin ) ) );
+                                t1 = int64_t( pow( 10, ltmin + double( maxBin+1 ) / numBins * ( ltmax - ltmin ) ) );
+                            }
+                            else
+                            {
+                                t0 = int64_t( tmin + double( maxBin )   / numBins * ( tmax - tmin ) );
+                                t1 = int64_t( tmin + double( maxBin+1 ) / numBins * ( tmax - tmin ) );
+                            }
+                            TextFocused( "Mode:", TimeToString( ( t0 + t1 ) / 2 ) );
+                        }
                         if( !m_findZone.limitRange && m_findZone.sorted.size() > 1 )
                         {
                             const auto sz = m_findZone.sorted.size();

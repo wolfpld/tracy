@@ -69,6 +69,8 @@ static const char* s_tracyStackFrames[] = {
     "tracy::Profiler::MemFreeCallstack(void const*, int)",
     "tracy::ScopedZone::{ctor}",
     "tracy::ScopedZone::ScopedZone(tracy::SourceLocationData const*, int, bool)",
+    "tracy::CallTrace",
+    "tracy::Profiler::Message",
     nullptr
 };
 

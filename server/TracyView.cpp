@@ -5945,7 +5945,7 @@ void View::DrawZoneInfoWindow()
         if( zoneData.total > 0 )
         {
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+            ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
         }
     }
 #endif
@@ -8813,7 +8813,7 @@ void View::DrawFindZone()
                         ImGui::Spacing();
                         ImGui::SameLine();
                         TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( maxVal ) );
-                        TextFocused( "Average time:", TimeToString( m_findZone.average ) );
+                        TextFocused( "Mean time:", TimeToString( m_findZone.average ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
@@ -8866,7 +8866,7 @@ void View::DrawFindZone()
                         if( m_findZone.selGroup != m_findZone.Unselected )
                         {
                             TextFocused( "Zone group time:", TimeToString( m_findZone.groups[m_findZone.selGroup].time ) );
-                            TextFocused( "Group average:", TimeToString( m_findZone.selAverage ) );
+                            TextFocused( "Group mean:", TimeToString( m_findZone.selAverage ) );
                             ImGui::SameLine();
                             ImGui::Spacing();
                             ImGui::SameLine();
@@ -8875,7 +8875,7 @@ void View::DrawFindZone()
                         else
                         {
                             TextFocused( "Zone group time:", "none" );
-                            TextFocused( "Group average:", "none" );
+                            TextFocused( "Group mean:", "none" );
                             ImGui::SameLine();
                             ImGui::Spacing();
                             ImGui::SameLine();
@@ -8887,7 +8887,7 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
                         ImGui::SameLine();
-                        ImGui::TextUnformatted( "Average time" );
+                        ImGui::TextUnformatted( "Mean time" );
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
@@ -8900,11 +8900,11 @@ void View::DrawFindZone()
                         ImGui::SameLine();
                         if( m_findZone.selGroup != m_findZone.Unselected )
                         {
-                            ImGui::TextUnformatted( "Group average" );
+                            ImGui::TextUnformatted( "Group mean" );
                         }
                         else
                         {
-                            TextDisabledUnformatted( "Group average" );
+                            TextDisabledUnformatted( "Group mean" );
                         }
                         ImGui::SameLine();
                         ImGui::Spacing();
@@ -10423,7 +10423,7 @@ void View::DrawCompare()
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
 #endif
-                    TextFocused( "Average time (this):", TimeToString( m_compare.average[0] ) );
+                    TextFocused( "Mean time (this):", TimeToString( m_compare.average[0] ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
@@ -10462,7 +10462,7 @@ void View::DrawCompare()
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
 #endif
-                    TextFocused( "Average time (ext.):", TimeToString( m_compare.average[1] ) );
+                    TextFocused( "Mean time (ext.):", TimeToString( m_compare.average[1] ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
@@ -11480,7 +11480,7 @@ void View::DrawInfo()
             TextFocused( "Total time:", TimeToString( m_frameSortData.total ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%.2f%% of profile time span)", m_frameSortData.total / float( profileSpan ) * 100.f );
-            TextFocused( "Average frame time:", TimeToString( m_frameSortData.average ) );
+            TextFocused( "Mean frame time:", TimeToString( m_frameSortData.average ) );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s FPS)", RealToString( round( 1000000000.0 / m_frameSortData.average ) ) );
             if( ImGui::IsItemHovered() )
@@ -11639,7 +11639,7 @@ void View::DrawInfo()
                             ImGui::SameLine();
                             ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
                             ImGui::SameLine();
-                            ImGui::TextUnformatted( "Average time" );
+                            ImGui::TextUnformatted( "Mean time" );
                             ImGui::SameLine();
                             ImGui::Spacing();
                             ImGui::SameLine();
@@ -13664,7 +13664,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
                 ImGui::BeginTooltip();
                 TextFocused( "Allocations size:", MemSizeToString( v.alloc ) );
                 TextFocused( "Allocations count:", RealToString( v.count ) );
-                TextFocused( "Average allocation size:", MemSizeToString( v.alloc / v.count ) );
+                TextFocused( "Mean allocation size:", MemSizeToString( v.alloc / v.count ) );
                 ImGui::SameLine();
                 ImGui::EndTooltip();
             }
@@ -14118,7 +14118,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
         if( zoneData.total > 0 )
         {
             ImGui::SameLine();
-            ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+            ImGui::TextDisabled( "(%.2f%% of mean time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
         }
     }
 #endif

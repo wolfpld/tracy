@@ -5842,7 +5842,7 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime )
         int64_t start = v.Start();
         WriteTimeOffset( f, refTime, start );
         f.Write( &v.extra, sizeof( v.extra ) );
-        if( v.Child() < 0 )
+        if( !v.HasChildren() )
         {
             const uint32_t sz = 0;
             f.Write( &sz, sizeof( sz ) );

@@ -3341,7 +3341,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             const auto color = GetZoneColor( ev, tid, depth );
             const char* zoneName = m_worker.GetZoneName( ev );
 
-            if( ev.Child() >= 0 )
+            if( ev.HasChildren() )
             {
                 const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.Child() ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
                 if( d > maxdepth ) maxdepth = d;
@@ -3493,7 +3493,7 @@ int View::SkipZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
         }
         else
         {
-            if( ev.Child() >= 0 )
+            if( ev.HasChildren() )
             {
                 const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.Child() ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
                 if( d > maxdepth ) maxdepth = d;
@@ -5776,7 +5776,7 @@ void View::CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, un
             it->second.time += t;
             it->second.count++;
         }
-        if( a(child).Child() >= 0 ) CalcZoneTimeData( ctx, data, it->second.time, a(child) );
+        if( a(child).HasChildren() ) CalcZoneTimeData( ctx, data, it->second.time, a(child) );
     }
 }
 
@@ -14314,7 +14314,7 @@ int View::GetZoneDepth( const ZoneEvent& zone, uint64_t tid ) const
             if( it != vec->begin() ) --it;
             assert( !( zone.IsEndValid() && it->Start() > zone.End() ) );
             if( it == &zone ) return depth;
-            assert( it->Child() >= 0 );
+            assert( it->HasChildren() );
             timeline = &m_worker.GetZoneChildren( it->Child() );
             depth++;
         }
@@ -14324,7 +14324,7 @@ int View::GetZoneDepth( const ZoneEvent& zone, uint64_t tid ) const
             if( it != timeline->begin() ) --it;
             assert( !( zone.IsEndValid() && (*it)->Start() > zone.End() ) );
             if( *it == &zone ) return depth;
-            assert( (*it)->Child() >= 0 );
+            assert( (*it)->HasChildren() );
             timeline = &m_worker.GetZoneChildren( (*it)->Child() );
             depth++;
         }

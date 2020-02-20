@@ -631,6 +631,7 @@ private:
 
     tracy_force_inline ZoneExtra& GetZoneExtraMutable( const ZoneEvent& ev ) { return m_data.zoneExtra[ev.extra]; }
     tracy_force_inline void AllocZoneExtra( ZoneEvent& ev );
+    tracy_force_inline ZoneExtra& RequestZoneExtra( ZoneEvent& ev );
 
     int64_t ReadTimeline( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint32_t size, int64_t refTime, int32_t& childIdx );
     void ReadTimelinePre063( FileRead& f, Vector<short_ptr<ZoneEvent>>& vec, uint64_t size, int64_t& refTime, int32_t& childIdx, int fileVer );

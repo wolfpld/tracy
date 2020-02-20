@@ -3822,8 +3822,7 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
     auto zone = stack.back();
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
-    if( !HasZoneExtra( *zone ) ) AllocZoneExtra( *zone );
-    auto& extra = GetZoneExtraMutable( *zone );
+    auto& extra = RequestZoneExtra( *zone );
     if( !extra.text.Active() )
     {
         extra.text = StringIdx( it->second.idx );
@@ -3857,8 +3856,7 @@ void Worker::ProcessZoneName( const QueueZoneText& ev )
     auto zone = stack.back();
     auto it = m_pendingCustomStrings.find( ev.text );
     assert( it != m_pendingCustomStrings.end() );
-    if( !HasZoneExtra( *zone ) ) AllocZoneExtra( *zone );
-    auto& extra = GetZoneExtraMutable( *zone );
+    auto& extra = RequestZoneExtra( *zone );
     extra.name = StringIdx( it->second.idx );
     m_pendingCustomStrings.erase( it );
 }
@@ -4513,8 +4511,7 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
     {
     case NextCallstackType::Zone:
     {
-        if( !HasZoneExtra( *next.zone ) ) AllocZoneExtra( *next.zone );
-        auto& extra = GetZoneExtraMutable( *next.zone );
+        auto& extra = RequestZoneExtra( *next.zone );
         extra.callstack.SetVal( m_pendingCallstackId );
         break;
     }
@@ -4551,8 +4548,7 @@ void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
     {
     case NextCallstackType::Zone:
     {
-        if( !HasZoneExtra( *next.zone ) ) AllocZoneExtra( *next.zone );
-        auto& extra = GetZoneExtraMutable( *next.zone );
+        auto& extra = RequestZoneExtra( *next.zone );
         extra.callstack.SetVal( m_pendingCallstackId );
         break;
     }
@@ -5989,6 +5985,12 @@ void Worker::AllocZoneExtra( ZoneEvent& ev )
     ev.extra = uint32_t( m_data.zoneExtra.size() );
     auto& extra = m_data.zoneExtra.push_next();
     memset( &extra, 0, sizeof( extra ) );
+}
+
+ZoneExtra& Worker::RequestZoneExtra( ZoneEvent& ev )
+{
+    if( !HasZoneExtra( ev ) ) AllocZoneExtra( ev );
+    return GetZoneExtraMutable( ev );
 }
 
 }

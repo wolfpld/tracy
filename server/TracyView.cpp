@@ -4920,8 +4920,8 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                         ImGui::TextDisabled( "(%s)", RealToString( thread ) );
                                     }
                                     ImGui::Separator();
-                                    TextFocused( "Start time:", TimeToString( start ) );
-                                    TextFocused( "End time:", TimeToString( end ) );
+                                    TextFocused( "Start time:", TimeToStringExact( start ) );
+                                    TextFocused( "End time:", TimeToStringExact( end ) );
                                     TextFocused( "Activity time:", TimeToString( end - start ) );
                                     ImGui::EndTooltip();
                                     ImGui::PushFont( m_smallFont );

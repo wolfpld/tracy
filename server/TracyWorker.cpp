@@ -5287,8 +5287,7 @@ void Worker::ReadTimelinePre063( FileRead& f, Vector<short_ptr<ZoneEvent>>& _vec
         zone->extra = 0;
         if( extra.callstack.Val() != 0 || extra.name.Active() || extra.text.Active() )
         {
-            AllocZoneExtra( *zone );
-            memcpy( &GetZoneExtraMutable( *zone ), &extra, sizeof( ZoneExtra ) );
+            memcpy( &AllocZoneExtra( *zone ), &extra, sizeof( ZoneExtra ) );
         }
         refTime += zone->_end_child1;
         zone->SetStart( refTime - m_data.baseTime );
@@ -5979,18 +5978,25 @@ const Worker::CpuThreadTopology* Worker::GetThreadTopology( uint32_t cpuThread )
     return &it->second;
 }
 
-void Worker::AllocZoneExtra( ZoneEvent& ev )
+ZoneExtra& Worker::AllocZoneExtra( ZoneEvent& ev )
 {
     assert( ev.extra == 0 );
     ev.extra = uint32_t( m_data.zoneExtra.size() );
     auto& extra = m_data.zoneExtra.push_next();
     memset( &extra, 0, sizeof( extra ) );
+    return extra;
 }
 
 ZoneExtra& Worker::RequestZoneExtra( ZoneEvent& ev )
 {
-    if( !HasZoneExtra( ev ) ) AllocZoneExtra( ev );
-    return GetZoneExtraMutable( ev );
+    if( !HasZoneExtra( ev ) )
+    {
+        return AllocZoneExtra( ev );
+    }
+    else
+    {
+        return GetZoneExtraMutable( ev );
+    }
 }
 
 }

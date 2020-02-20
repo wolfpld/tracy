@@ -1497,13 +1497,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     refTime += deltaWakeup;
                     ptr->SetWakeup( refTime );
                     refTime += deltaStart;
-                    ptr->SetStart( refTime );
+                    ptr->SetStartCpu( refTime, cpu );
                     if( diff > 0 ) runningTime += diff;
                     refTime += diff;
-                    ptr->SetEnd( refTime );
-                    ptr->SetCpu( cpu );
-                    ptr->SetReason( reason );
-                    ptr->SetState( state );
+                    ptr->SetEndReasonState( refTime, reason, state );
                     ptr++;
                 }
                 data->runningTime = runningTime;

@@ -1543,10 +1543,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         uint16_t thread;
                         f.Read3( deltaStart, deltaEnd, thread );
                         refTime += deltaStart;
-                        ptr->SetStart( refTime );
+                        ptr->SetStartThread( refTime, thread );
                         refTime += deltaEnd;
                         ptr->SetEnd( refTime );
-                        ptr->SetThread( thread );
                         ptr++;
                     }
                     cnt += sz;

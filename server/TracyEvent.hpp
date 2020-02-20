@@ -403,6 +403,8 @@ struct ContextSwitchCpu
     tracy_force_inline uint16_t Thread() const { return uint16_t( _start_thread ); }
     tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_start_thread, &thread, 2 ); }
 
+    tracy_force_inline void SetStartThread( int64_t start, uint16_t thread ) { assert( start < (int64_t)( 1ull << 47 ) ); _start_thread = ( uint64_t( start ) << 16 ) | thread; }
+
     uint64_t _start_thread;
     Int48 _end;
 };

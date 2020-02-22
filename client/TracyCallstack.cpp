@@ -56,6 +56,17 @@ BOOL IMAGEAPI SymGetLineFromInlineContext(HANDLE hProcess, DWORD64 qwAddr, ULONG
 };
 #endif
 
+struct ModuleCache
+{
+    uint64_t start;
+    uint64_t end;
+    char* name;
+    uint32_t nameLen;
+    ModuleCache* next;
+};
+
+static ModuleCache* s_modCache = nullptr;
+
 void InitCallstack()
 {
 #ifdef UNICODE
@@ -100,6 +111,18 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
 {
 #ifndef __CYGWIN__
+    auto ptr = s_modCache;
+    while( ptr )
+    {
+        if( addr >= ptr->start && addr < ptr->end )
+        {
+            memcpy( buf, ptr->name, ptr->nameLen+1 );
+            len = ptr->nameLen;
+            return;
+        }
+        ptr = ptr->next;
+    }
+
     HMODULE mod[1024];
     DWORD needed;
     HANDLE proc = GetCurrentProcess();
@@ -128,6 +151,16 @@ static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
                         buf[namelen+1] = ']';
                         buf[namelen+2] = '\0';
                         len = namelen+2;
+
+                        auto cache = (ModuleCache*)tracy_malloc( sizeof( ModuleCache ) );
+                        cache->start = base;
+                        cache->end = base + info.SizeOfImage;
+                        cache->name = (char*)tracy_malloc( namelen+3 );
+                        memcpy( cache->name, buf, namelen+3 );
+                        cache->nameLen = namelen+2;
+                        cache->next = s_modCache;
+                        s_modCache = cache;
+
                         return;
                     }
                 }

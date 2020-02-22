@@ -1619,6 +1619,10 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.callstackAlloc.ptr );
         tracy_free( (void*)ptr );
         break;
+    case QueueType::CallstackSample:
+        ptr = MemRead<uint64_t>( &item.callstackSample.ptr );
+        tracy_free( (void*)ptr );
+        break;
     case QueueType::FrameImage:
         ptr = MemRead<uint64_t>( &item.frameImage.image );
         tracy_free( (void*)ptr );
@@ -1741,6 +1745,11 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     }
                     ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
                     SendCallstackAlloc( ptr );
+                    tracy_free( (void*)ptr );
+                    break;
+                case QueueType::CallstackSample:
+                    ptr = MemRead<uint64_t>( &item->callstackSample.ptr );
+                    SendCallstackPayload64( ptr );
                     tracy_free( (void*)ptr );
                     break;
                 case QueueType::FrameImage:

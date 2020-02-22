@@ -4621,9 +4621,13 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     }
     else
     {
-        if( td->samples.back().time.Val() <= t )
+        if( td->samples.back().time.Val() < t )
         {
             td->samples.push_back_non_empty( sd );
+        }
+        else if( td->samples.back().time.Val() == t )
+        {
+            td->samples.back() = sd;
         }
         else
         {

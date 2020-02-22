@@ -77,6 +77,14 @@ struct ThreadTrace
     uint32_t subProcessTag;
 };
 
+struct StackWalkEvent
+{
+    uint64_t eventTimeStamp;
+    uint32_t stackProcess;
+    uint32_t stackThread;
+    uint64_t stack[192];
+};
+
 void WINAPI EventRecordCallback( PEVENT_RECORD record )
 {
 #ifdef TRACY_ON_DEMAND
@@ -123,6 +131,24 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
             MemWrite( &item->tidToPid.tid, tid );
             MemWrite( &item->tidToPid.pid, pid );
             TracyLfqCommit;
+        }
+        break;
+    case 0xdef2fe46:    // StackWalk Guid
+        if( hdr.EventDescriptor.Opcode == 32 )
+        {
+            const auto sw = (const StackWalkEvent*)record->UserData;
+            if( sw->stackProcess == s_pid )
+            {
+                const uint64_t sz = ( record->UserDataLength - 16 ) / 8;
+                auto trace = (uint64_t*)tracy_malloc( ( 1 + sz ) * sizeof( uint64_t ) );
+                memcpy( trace, &sz, sizeof( uint64_t ) );
+                memcpy( trace+1, sw->stack, sizeof( uint64_t ) * sz );
+                TracyLfqPrepare( QueueType::CallstackSample );
+                MemWrite( &item->callstackSample.time, sw->eventTimeStamp );
+                MemWrite( &item->callstackSample.thread, (uint64_t)sw->stackThread );
+                MemWrite( &item->callstackSample.ptr, (uint64_t)trace );
+                TracyLfqCommit;
+            }
         }
         break;
     default:

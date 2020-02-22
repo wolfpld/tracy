@@ -204,6 +204,7 @@ bool SysTraceStart()
     s_prop->Wnode.Flags = WNODE_FLAG_TRACED_GUID;
     s_prop->Wnode.ClientContext = 3;
     s_prop->Wnode.Guid = SystemTraceControlGuid;
+    s_prop->BufferSize = 1024;
     s_prop->LoggerNameOffset = sizeof( EVENT_TRACE_PROPERTIES );
     memcpy( ((char*)s_prop) + sizeof( EVENT_TRACE_PROPERTIES ), KERNEL_LOGGER_NAME, sizeof( KERNEL_LOGGER_NAME ) );
 

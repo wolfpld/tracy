@@ -533,6 +533,7 @@ private:
     void SendSourceLocation( uint64_t ptr );
     void SendSourceLocationPayload( uint64_t ptr );
     void SendCallstackPayload( uint64_t ptr );
+    void SendCallstackPayload64( uint64_t ptr );
     void SendCallstackAlloc( uint64_t ptr );
     void SendCallstackFrame( uint64_t ptr );
 

@@ -2149,6 +2149,25 @@ void Profiler::SendCallstackPayload( uint64_t _ptr )
     }
 }
 
+void Profiler::SendCallstackPayload64( uint64_t _ptr )
+{
+    auto ptr = (uint64_t*)_ptr;
+
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::CallstackPayload );
+    MemWrite( &item.stringTransfer.ptr, _ptr );
+
+    const auto sz = *ptr++;
+    const auto len = sz * sizeof( uint64_t );
+    const auto l16 = uint16_t( len );
+
+    NeedDataSize( QueueDataSize[(int)QueueType::CallstackPayload] + sizeof( l16 ) + l16 );
+
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::CallstackPayload] );
+    AppendDataUnsafe( &l16, sizeof( l16 ) );
+    AppendDataUnsafe( ptr, sizeof( uint64_t ) * sz );
+}
+
 void Profiler::SendCallstackAlloc( uint64_t _ptr )
 {
     auto ptr = (const char*)_ptr;

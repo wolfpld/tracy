@@ -76,6 +76,45 @@ void InitCallstack()
 #endif
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
+
+    HMODULE mod[1024];
+    DWORD needed;
+    HANDLE proc = GetCurrentProcess();
+
+#ifndef __CYGWIN__
+    if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
+    {
+        const auto sz = needed / sizeof( HMODULE );
+        for( size_t i=0; i<sz; i++ )
+        {
+            MODULEINFO info;
+            if( GetModuleInformation( proc, mod[i], &info, sizeof( info ) ) != 0 )
+            {
+                const auto base = uint64_t( info.lpBaseOfDll );
+                char name[1024];
+                const auto res = GetModuleFileNameA( mod[i], name, 1021 );
+                if( res > 0 )
+                {
+                    auto ptr = name + res;
+                    while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
+                    if( ptr > name ) ptr++;
+                    const auto namelen = name + res - ptr;
+                    auto cache = (ModuleCache*)tracy_malloc( sizeof( ModuleCache ) );
+                    cache->start = base;
+                    cache->end = base + info.SizeOfImage;
+                    cache->name = (char*)tracy_malloc( namelen+3 );
+                    cache->name[0] = '[';
+                    memcpy( cache->name+1, ptr, namelen );
+                    cache->name[namelen+1] = ']';
+                    cache->name[namelen+2] = '\0';
+                    cache->nameLen = namelen+2;
+                    cache->next = s_modCache;
+                    s_modCache = cache;
+                }
+            }
+        }
+    }
+#endif
 }
 
 TRACY_API tracy_force_inline uintptr_t* CallTrace( int depth )

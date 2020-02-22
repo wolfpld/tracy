@@ -7265,6 +7265,14 @@ void View::DrawOptions()
 #endif
         m_vd.drawCpuUsageGraph = val;
         ImGui::Unindent();
+        val = m_vd.drawSamples;
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_EYE_DROPPER " Draw stack samples", &val );
+#else
+        ImGui::Checkbox( "Draw stack samples", &val );
+#endif
+        m_vd.drawSamples = val;
+
     }
 
     const auto& gpuData = m_worker.GetGpuData();

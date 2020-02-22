@@ -20,7 +20,7 @@ constexpr auto FileOptions = "options";
 constexpr auto FileAnnotations = "annotations";
 
 enum : uint32_t { VersionTimeline = 0 };
-enum : uint32_t { VersionOptions = 3 };
+enum : uint32_t { VersionOptions = 4 };
 enum : uint32_t { VersionAnnotations = 0 };
 
 UserData::UserData()
@@ -104,6 +104,7 @@ void UserData::LoadState( ViewData& data )
             fread( &data.darkenContextSwitches, 1, sizeof( data.darkenContextSwitches ), f );
             fread( &data.drawCpuData, 1, sizeof( data.drawCpuData ), f );
             fread( &data.drawCpuUsageGraph, 1, sizeof( data.drawCpuUsageGraph ), f );
+            fread( &data.drawSamples, 1, sizeof( data.drawSamples ), f );
             fread( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
         }
         fclose( f );
@@ -143,6 +144,7 @@ void UserData::SaveState( const ViewData& data )
         fwrite( &data.darkenContextSwitches, 1, sizeof( data.darkenContextSwitches ), f );
         fwrite( &data.drawCpuData, 1, sizeof( data.drawCpuData ), f );
         fwrite( &data.drawCpuUsageGraph, 1, sizeof( data.drawCpuUsageGraph ), f );
+        fwrite( &data.drawSamples, 1, sizeof( data.drawSamples ), f );
         fwrite( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
         fclose( f );
     }

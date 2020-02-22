@@ -38,4 +38,10 @@
   <Type Name="tracy::ContextSwitchUsage">
     <DisplayString>{{ time={int64_t( _time_other_own ) >> 16} own={uint8_t( _time_other_own >> 8 )} other={uint8_t( _time_other_own )} }}</DisplayString>
   </Type>
+  <Type Name="tracy::Int24">
+    <DisplayString>{{ value={m_val[0] | (m_val[1]&lt;&lt;8) | (m_val[2]&lt;&lt;16)} }}</DisplayString>
+  </Type>
+  <Type Name="tracy::Int48">
+    <DisplayString>{{ value={int64_t( uint64_t(m_val[0]) | (uint64_t(m_val[1])&lt;&lt;8) | (uint64_t(m_val[2])&lt;&lt;16) | (uint64_t(m_val[3])&lt;&lt;24) | (uint64_t(m_val[4])&lt;&lt;32) | (uint64_t(m_val[5])&lt;&lt;40) )} }}</DisplayString>
+  </Type>
 </AutoVisualizer>

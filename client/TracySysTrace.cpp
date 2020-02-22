@@ -184,6 +184,16 @@ bool SysTraceStart()
         return false;
     }
 
+    CLASSIC_EVENT_ID stackId;
+    stackId.EventGuid = PerfInfoGuid;
+    stackId.Type = 46;
+    const auto stackStatus = TraceSetInformation( s_traceHandle, TraceStackTracingInfo, &stackId, sizeof( stackId ) );
+    if( stackStatus != ERROR_SUCCESS )
+    {
+        tracy_free( s_prop );
+        return false;
+    }
+
 #ifdef UNICODE
     WCHAR KernelLoggerName[sizeof( KERNEL_LOGGER_NAME )];
 #else

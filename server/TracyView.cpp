@@ -3213,24 +3213,73 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
 
     const auto ty0375 = offset + round( ImGui::GetFontSize() * 0.375f );
     const auto ty02 = round( ImGui::GetFontSize() * 0.2f );
-    const auto y0 = ty0375 - ty02;
+    const auto ty01 = round( ImGui::GetFontSize() * 0.1f );
+    const auto y0 = ty0375 - ty02 - 3;
     const auto y1 = ty0375 + ty02 - 1;
     auto draw = ImGui::GetWindowDrawList();
 
+    enum { MinVis = 6 };
+    bool tooltipDisplayed = false;
+
     while( it < itend )
     {
-        auto& ev = *it;
+        bool visible = true;
         const auto px0 = ( it->time.Val() - m_vd.zvStart ) * pxns;
-        draw->AddCircleFilled( wpos + ImVec2( px0, ty0375 ), ty02, 0xFFDD8888, 7 );
-        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0 - ty02, y0 ), wpos + ImVec2( px0 + ty02, y1 ) ) )
+        double px1;
+        auto next = it+1;
+        int num;
+        if( next != itend )
         {
-            CallstackTooltip( it->callstack.Val() );
-            if( ImGui::IsMouseClicked( 0 ) )
+            px1 = ( next->time.Val() - m_vd.zvStart ) * pxns;
+            if( px1 - px0 < MinVis )
             {
-                m_callstackInfoWindow = it->callstack.Val();
+                visible = false;
+                auto nextTime = px0 + MinVis * nspx;
+                for(;;)
+                {
+                    const auto prev = next;
+                    next = std::lower_bound( next, itend, nextTime, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+                    if( prev == next ) ++next;
+                    if( next == itend ) break;
+                    const auto pxnext = ( next->time.Val() - m_vd.zvStart ) * pxns;
+                    if( pxnext - px1 >= MinVis ) break;
+                    px1 = pxnext;
+                    nextTime = next->time.Val() + nspx;
+                }
+                num = next - it;
             }
         }
-        ++it;
+        if( visible )
+        {
+            draw->AddCircleFilled( wpos + ImVec2( px0, ty0375 ), ty02, 0xFFDD8888, 7 );
+            if( !tooltipDisplayed && hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0 - ty02 - 2, y0 ), wpos + ImVec2( px0 + ty02 + 1, y1 ) ) )
+            {
+                tooltipDisplayed = true;
+                CallstackTooltip( it->callstack.Val() );
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    m_callstackInfoWindow = it->callstack.Val();
+                }
+            }
+        }
+        else
+        {
+            DrawZigZag( draw, wpos + ImVec2( 0, ty0375 ), px0, std::max( px1, px0+MinVis ), ty01, 0xFF997777 );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, y0 ), wpos + ImVec2( std::max( px1, px0+MinVis ), y1 ) ) )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Multiple call stack samples" );
+                TextFocused( "Number of samples:", RealToString( num ) );
+                ImGui::EndTooltip();
+
+                if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    const auto prev = next-1;
+                    ZoomToRange( it->time.Val(), prev->time.Val() + 1 );
+                }
+            }
+        }
+        it = next;
     }
 }
 

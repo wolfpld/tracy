@@ -9,6 +9,7 @@
 #    define NOMINMAX
 #  endif
 #  include <windows.h>
+#  include <psapi.h>
 #  ifdef _MSC_VER
 #    pragma warning( push )
 #    pragma warning( disable : 4091 )
@@ -96,6 +97,49 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
+static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
+{
+#ifndef __CYGWIN__
+    HMODULE mod[1024];
+    DWORD needed;
+    HANDLE proc = GetCurrentProcess();
+
+    if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
+    {
+        const auto sz = needed / sizeof( HMODULE );
+        for( size_t i=0; i<sz; i++ )
+        {
+            MODULEINFO info;
+            if( GetModuleInformation( proc, mod[i], &info, sizeof( info ) ) != 0 )
+            {
+                const auto base = uint64_t( info.lpBaseOfDll );
+                if( addr >= base && addr < base + info.SizeOfImage )
+                {
+                    char name[1024];
+                    const auto res = GetModuleFileNameA( mod[i], name, 1021 );
+                    if( res > 0 )
+                    {
+                        auto ptr = name + res;
+                        while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
+                        if( ptr > name ) ptr++;
+                        const auto namelen = name + res - ptr;
+                        buf[0] = '[';
+                        memcpy( buf+1, ptr, namelen );
+                        buf[namelen+1] = ']';
+                        buf[namelen+2] = '\0';
+                        len = namelen+2;
+                        return;
+                    }
+                }
+            }
+        }
+    }
+#endif
+
+    memcpy( buf, "[unknown]", 10 );
+    len = 9;
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     int write;
@@ -126,8 +170,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
     {
-        memcpy( si->Name, "[unknown]", 10 );
-        si->NameLen = 9;
+        GetModuleName( ptr, si->Name, si->NameLen );
     }
 
     IMAGEHLP_LINE64 line;
@@ -170,8 +213,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
             if( SymFromInlineContext( proc, ptr, ctx, nullptr, si ) == 0 )
             {
-                memcpy( si->Name, "[unknown]", 10 );
-                si->NameLen = 9;
+                GetModuleName( ptr, si->Name, si->NameLen );
             }
 
             auto name = (char*)tracy_malloc( si->NameLen + 1 );

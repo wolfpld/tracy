@@ -2482,11 +2482,11 @@ void View::DrawZones()
         offset += ostep;
         if( showFull )
         {
+            const auto sampleOffset = offset;
+            if( m_vd.drawSamples && !v->samples.empty() ) offset += round( ostep * 0.5f );
+
             const auto ctxOffset = offset;
-            if( m_vd.drawContextSwitches )
-            {
-                offset += round( ostep * 0.75f );
-            }
+            if( m_vd.drawContextSwitches ) offset += round( ostep * 0.75f );
 
             if( m_vd.drawZones )
             {
@@ -2501,6 +2501,11 @@ void View::DrawZones()
                 {
                     DrawContextSwitches( ctxSwitch, hover, pxns, int64_t( nspx ), wpos, ctxOffset, offset );
                 }
+            }
+
+            if( m_vd.drawSamples && !v->samples.empty() )
+            {
+                DrawSamples( v->samples, hover, pxns, int64_t( nspx ), wpos, sampleOffset );
             }
 
             if( m_vd.drawLocks )
@@ -3196,6 +3201,36 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
             pit = it;
             ++it;
         }
+    }
+}
+
+void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset )
+{
+    auto it = std::lower_bound( vec.begin(), vec.end(), m_vd.zvStart, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+    if( it == vec.end() ) return;
+    const auto itend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+    if( it == itend ) return;
+
+    const auto ty0375 = offset + round( ImGui::GetFontSize() * 0.375f );
+    const auto ty02 = round( ImGui::GetFontSize() * 0.2f );
+    const auto y0 = ty0375 - ty02;
+    const auto y1 = ty0375 + ty02 - 1;
+    auto draw = ImGui::GetWindowDrawList();
+
+    while( it < itend )
+    {
+        auto& ev = *it;
+        const auto px0 = ( it->time.Val() - m_vd.zvStart ) * pxns;
+        draw->AddCircleFilled( wpos + ImVec2( px0, ty0375 ), ty02, 0xFFDD8888, 7 );
+        if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0 - ty02, y0 ), wpos + ImVec2( px0 + ty02, y1 ) ) )
+        {
+            CallstackTooltip( it->callstack.Val() );
+            if( ImGui::IsMouseClicked( 0 ) )
+            {
+                m_callstackInfoWindow = it->callstack.Val();
+            }
+        }
+        ++it;
     }
 }
 

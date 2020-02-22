@@ -25,9 +25,9 @@
 namespace tracy
 {
 
-TRACEHANDLE s_traceHandle;
-TRACEHANDLE s_traceHandle2;
-EVENT_TRACE_PROPERTIES* s_prop;
+static TRACEHANDLE s_traceHandle;
+static TRACEHANDLE s_traceHandle2;
+static EVENT_TRACE_PROPERTIES* s_prop;
 
 struct CSwitch
 {

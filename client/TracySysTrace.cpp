@@ -188,7 +188,7 @@ bool SysTraceStart()
     if( isOs64Bit )
     {
         TRACE_PROFILE_INTERVAL interval = {};
-        interval.Interval = 10000;
+        interval.Interval = 1250;   // 8 kHz
         const auto intervalStatus = TraceSetInformation( 0, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
         if( intervalStatus != ERROR_SUCCESS ) return false;
     }

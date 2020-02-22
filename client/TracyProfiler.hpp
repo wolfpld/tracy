@@ -413,7 +413,7 @@ public:
 #ifdef TRACY_HAS_CALLSTACK
         auto ptr = Callstack( depth );
         TracyLfqPrepare( QueueType::Callstack );
-        MemWrite( &item->callstack.ptr, ptr );
+        MemWrite( &item->callstack.ptr, (uint64_t)ptr );
         TracyLfqCommit;
 #endif
     }

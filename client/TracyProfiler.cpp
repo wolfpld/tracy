@@ -2573,7 +2573,7 @@ void Profiler::SendCallstack( int depth, const char* skipBefore )
     CutCallstack( ptr, skipBefore );
 
     TracyLfqPrepare( QueueType::Callstack );
-    MemWrite( &item->callstack.ptr, ptr );
+    MemWrite( &item->callstack.ptr, (uint64_t)ptr );
     TracyLfqCommit;
 #endif
 }

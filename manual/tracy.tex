@@ -1375,6 +1375,13 @@ logo=\bcbombe
 In this manual, the word \emph{core} is typically used as a short term for \emph{logical CPU}. Do not confuse it with physical processor cores.
 \end{bclogo}
 
+\subsubsection{Call stack sampling}
+\label{sampling}
+
+Manual markup of zones doesn't cover every function existing in a program and cannot be performed in system libraries, or in kernel. This can leave blank spaces on the trace, leaving you with no clue what the application is doing. Tracy is able to periodically inspect state of running threads, providing you with a snapshot of call stack at the time when sampling was performed. While this information doesn't have the fidelity of manually inserted zones, it can sometimes give you an insight where to go next.
+
+This feature is only available on Windows and requires privilege elevation (see chapter~\ref{contextswitches} for more information).
+
 \subsection{Trace parameters}
 \label{traceparameters}
 
@@ -1864,9 +1871,20 @@ On this combined view you will find the zones with locks and their associated th
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw(0, 0.35) -- (0.2, 0.35) -- (0.1, 0.15) -- (0, 0.35);
-\draw(0.25, 0.5) node[anchor=north west] {Main thread};
-\draw[densely dotted] (0, 0) -- +(15, 0);
+\draw(0, 0.55) -- (0.2, 0.55) -- (0.1, 0.35) -- (0, 0.55);
+\draw(0.25, 0.7) node[anchor=north west] {Main thread};
+\draw[densely dotted] (0, 0.2) -- +(15, 0);
+
+\draw(1.2, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
+\draw(2.2, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
+\draw(3.3, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
+\draw(5, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
+\draw(6.2, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
+\draw(7, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
+\draw(8.2, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
+\draw(9.8, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
+\draw(11.7, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
+\draw(12.7, -0.025) node[circle,draw,inner sep=0pt,minimum size=4] {};
 
 \draw[dotted, thick] (0, -0.25) -- (1, -0.25);
 \draw[thick] (1, -0.25) -- (3.8, -0.25);
@@ -1924,7 +1942,9 @@ Labels accompanied by the \faCaretDown{}~symbol can be collapsed out of the view
 
 In an example on figure~\ref{zoneslocks} you can see that there are two threads: \emph{Main thread} and \emph{Streaming thread}\footnote{By clicking on a thread name you can temporarily disable display of the zones in this thread.}. We can see that the \emph{Main thread} has two root level zones visible: \emph{Update} and \emph{Render}. The \emph{Update} zone is split into further sub-zones, some of which are too small to be displayed at the current zoom level. This is indicated by drawing a zig-zag pattern over the merged zones box (section~\ref{collapseditems}), with the number of collapsed zones printed in place of zone name. We can also see that the \emph{Physics} zone acquires the \emph{Physics lock} mutex for the most of its run time.
 
-The thick line between the \emph{Main thread} label and zones represents the context switch data (see section~\ref{contextswitches}). We can see that the thread, as displayed, starts in the suspended state, represented by the dotted region. Then it is woken up and starts execution of the \texttt{Update} zone. In midst of the physics processing it is preempted, which explains why there is an empty space between child zones. Then it is resumed again and continues execution into the \texttt{Render} zone, where it is preempted again, but for a shorter time. After rendering is done, the thread sleeps again, presumably waiting for the next frame. Similar information is also available for the streaming thread.
+The row of dots right below the \emph{Main thread} label shows call stack sample points, which may have been automatically captured (see chapter~\ref{sampling} for more detail). Hovering the \faMousePointer{}~mouse pointer over each dot will display a short call stack summary, while clicking on a dot with the \LMB{}~left mouse button will open a more detailed call stack information window (see section~\ref{callstackwindow}).
+
+The thick line right below represents the context switch data (see section~\ref{contextswitches}). We can see that the thread, as displayed, starts in the suspended state, represented by the dotted region. Then it is woken up and starts execution of the \texttt{Update} zone. In midst of the physics processing it is preempted, which explains why there is an empty space between child zones. Then it is resumed again and continues execution into the \texttt{Render} zone, where it is preempted again, but for a shorter time. After rendering is done, the thread sleeps again, presumably waiting for the next frame. Similar information is also available for the streaming thread.
 
 Context switch regions are using the following color key:
 
@@ -2423,6 +2443,8 @@ This window shows the frames contained in the selected call stack. Each frame is
 A single stack frame may have multiple function call places associated with it. This happens in case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number.
 
 Sometimes it may be more useful to have just the function address, instead of the source file location\footnote{It can pinpoint the exact assembly instruction which caused the crash.}. This can be achieved by selecting the \emph{\faAt{}~Show frame addresses} option.
+
+In some cases it may be not possible to properly decode source location of a stack frame. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the library containing the frame address, or simply '\texttt{[unknown]}' if even this information cannot be retrieved.
 
 \subsubsection{Reading call stacks}
 

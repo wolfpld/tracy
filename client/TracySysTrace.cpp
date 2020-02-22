@@ -160,6 +160,14 @@ bool SysTraceStart()
 {
     s_pid = GetCurrentProcessId();
 
+#if defined _WIN64
+    constexpr bool isOs64Bit = true;
+#else
+    BOOL _iswow64;
+    IsWow64Process( GetCurrentProcess(), &_iswow64 );
+    const bool isOs64Bit = _iswow64;
+#endif
+
     TOKEN_PRIVILEGES priv = {};
     priv.PrivilegeCount = 1;
     priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
@@ -173,15 +181,20 @@ bool SysTraceStart()
     const auto status = GetLastError();
     if( status != ERROR_SUCCESS ) return false;
 
-    TRACE_PROFILE_INTERVAL interval = {};
-    interval.Interval = 10000;
-    const auto intervalStatus = TraceSetInformation( 0, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
-    if( intervalStatus != ERROR_SUCCESS ) return false;
+    if( isOs64Bit )
+    {
+        TRACE_PROFILE_INTERVAL interval = {};
+        interval.Interval = 10000;
+        const auto intervalStatus = TraceSetInformation( 0, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
+        if( intervalStatus != ERROR_SUCCESS ) return false;
+    }
 
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + sizeof( KERNEL_LOGGER_NAME );
     s_prop = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
     memset( s_prop, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
-    s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER | EVENT_TRACE_FLAG_THREAD | EVENT_TRACE_FLAG_PROFILE;
+    ULONG flags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER | EVENT_TRACE_FLAG_THREAD;
+    if( isOs64Bit ) flags |= EVENT_TRACE_FLAG_PROFILE;
+    s_prop->EnableFlags = flags;
     s_prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
     s_prop->Wnode.BufferSize = psz;
     s_prop->Wnode.Flags = WNODE_FLAG_TRACED_GUID;
@@ -210,14 +223,17 @@ bool SysTraceStart()
         return false;
     }
 
-    CLASSIC_EVENT_ID stackId;
-    stackId.EventGuid = PerfInfoGuid;
-    stackId.Type = 46;
-    const auto stackStatus = TraceSetInformation( s_traceHandle, TraceStackTracingInfo, &stackId, sizeof( stackId ) );
-    if( stackStatus != ERROR_SUCCESS )
+    if( isOs64Bit )
     {
-        tracy_free( s_prop );
-        return false;
+        CLASSIC_EVENT_ID stackId;
+        stackId.EventGuid = PerfInfoGuid;
+        stackId.Type = 46;
+        const auto stackStatus = TraceSetInformation( s_traceHandle, TraceStackTracingInfo, &stackId, sizeof( stackId ) );
+        if( stackStatus != ERROR_SUCCESS )
+        {
+            tracy_free( s_prop );
+            return false;
+        }
     }
 
 #ifdef UNICODE

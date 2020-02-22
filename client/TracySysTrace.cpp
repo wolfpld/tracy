@@ -85,6 +85,10 @@ struct StackWalkEvent
     uint64_t stack[192];
 };
 
+#ifdef __CYGWIN__
+extern "C" ULONG WMIAPI TraceSetInformation(TRACEHANDLE SessionHandle, TRACE_INFO_CLASS InformationClass, PVOID TraceInformation, ULONG InformationLength);
+#endif
+
 void WINAPI EventRecordCallback( PEVENT_RECORD record )
 {
 #ifdef TRACY_ON_DEMAND

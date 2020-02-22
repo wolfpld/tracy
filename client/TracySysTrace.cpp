@@ -28,6 +28,7 @@ namespace tracy
 static TRACEHANDLE s_traceHandle;
 static TRACEHANDLE s_traceHandle2;
 static EVENT_TRACE_PROPERTIES* s_prop;
+static DWORD s_pid;
 
 struct CSwitch
 {
@@ -123,6 +124,8 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
 
 bool SysTraceStart()
 {
+    s_pid = GetCurrentProcessId();
+
     TOKEN_PRIVILEGES priv = {};
     priv.PrivilegeCount = 1;
     priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;

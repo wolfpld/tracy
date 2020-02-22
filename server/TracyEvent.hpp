@@ -202,6 +202,15 @@ struct ZoneExtra
 enum { ZoneExtraSize = sizeof( ZoneExtra ) };
 
 
+struct SampleData
+{
+    Int48 time;
+    Int24 callstack;
+};
+
+enum { SampleDataSize = sizeof( SampleData ) };
+
+
 struct LockEvent
 {
     enum class Type : uint8_t
@@ -475,6 +484,7 @@ struct ThreadData
 #ifndef TRACY_NO_STATISTICS
     Vector<int64_t> childTimeStack;
 #endif
+    Vector<SampleData> samples;
 };
 
 struct GpuCtxThreadData

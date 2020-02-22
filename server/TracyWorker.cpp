@@ -3391,6 +3391,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::CallstackAlloc:
         ProcessCallstackAlloc( ev.callstackAlloc );
         break;
+    case QueueType::CallstackSample:
+        ProcessCallstackSample( ev.callstackSample );
+        break;
     case QueueType::CallstackFrameSize:
         ProcessCallstackFrameSize( ev.callstackFrameSize );
         m_serverQuerySpaceLeft++;
@@ -4569,6 +4572,39 @@ void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
     default:
         assert( false );
         break;
+    }
+}
+
+void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
+{
+    assert( m_pendingCallstackPtr == ev.ptr );
+    m_pendingCallstackPtr = 0;
+    m_data.samplesCnt++;
+
+    const auto refTime = m_refTimeCtx + ev.time;
+    m_refTimeCtx = refTime;
+    const auto t = TscTime( refTime - m_data.baseTime );
+
+    SampleData sd;
+    sd.time.SetVal( t );
+    sd.callstack.SetVal( m_pendingCallstackId );
+
+    auto td = NoticeThread( ev.thread );
+    if( td->samples.empty() )
+    {
+        td->samples.push_back( sd );
+    }
+    else
+    {
+        if( td->samples.back().time.Val() <= t )
+        {
+            td->samples.push_back_non_empty( sd );
+        }
+        else
+        {
+            const auto it = std::lower_bound( td->samples.begin(), td->samples.end(), t, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
+            td->samples.insert( it, sd );
+        }
     }
 }
 

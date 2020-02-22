@@ -190,6 +190,7 @@ private:
         MemData memory;
         uint64_t zonesCnt = 0;
         uint64_t gpuCnt = 0;
+        uint64_t samplesCnt = 0;
         int64_t baseTime = 0;
         int64_t lastTime = 0;
         uint64_t frameOffset = 0;
@@ -511,6 +512,7 @@ private:
     tracy_force_inline void ProcessCallstackMemory( const QueueCallstackMemory& ev );
     tracy_force_inline void ProcessCallstack( const QueueCallstack& ev );
     tracy_force_inline void ProcessCallstackAlloc( const QueueCallstackAlloc& ev );
+    tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );

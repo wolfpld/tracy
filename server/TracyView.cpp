@@ -11107,8 +11107,19 @@ void View::DrawCallstackWindow()
                     TextDisabledUnformatted( "inline" );
                 }
                 ImGui::NextColumn();
-
-                ImGui::TextWrapped( "%s", txt );
+                {
+                    ImGuiWindow* window = ImGui::GetCurrentWindow();
+                    ImGui::PushTextWrapPos( 0.0f );
+                    if( txt[0] == '[' )
+                    {
+                        TextDisabledUnformatted( txt );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( txt );
+                    }
+                    ImGui::PopTextWrapPos();
+                }
                 if( ImGui::IsItemClicked() )
                 {
                     ImGui::SetClipboardText( txt );
@@ -14327,7 +14338,14 @@ void View::CallstackTooltip( uint32_t idx )
                     TextDisabledUnformatted( "--" );
                 }
                 ImGui::SameLine();
-                ImGui::TextUnformatted( txt );
+                if( txt[0] == '[' )
+                {
+                    TextDisabledUnformatted( txt );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( txt );
+                }
             }
         }
     }
@@ -14741,7 +14759,14 @@ void View::DrawCallstackCalls( uint32_t callstack, uint8_t limit ) const
         }
         const auto& frame = frameData->data[frameData->size - 1];
         auto txt = m_worker.GetString( frame.name );
-        ImGui::TextUnformatted( txt );
+        if( txt[0] == '[' )
+        {
+            TextDisabledUnformatted( txt );
+        }
+        else
+        {
+            ImGui::TextUnformatted( txt );
+        }
     }
 }
 

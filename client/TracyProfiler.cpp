@@ -1687,6 +1687,9 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
             m_refTimeThread = 0;
         }
 
+        int64_t refThread = m_refTimeThread;
+        int64_t refCtx = m_refTimeCtx;
+        int64_t refGpu = m_refTimeGpu;
         auto end = m_itemBuf + sz;
         auto item = m_itemBuf;
         while( item != end )
@@ -1722,8 +1725,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                 case QueueType::ZoneBeginAllocSrcLocCallstack:
                 {
                     int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
-                    int64_t dt = t - m_refTimeThread;
-                    m_refTimeThread = t;
+                    int64_t dt = t - refThread;
+                    refThread = t;
                     MemWrite( &item->zoneBegin.time, dt );
                     ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
                     SendSourceLocationPayload( ptr );
@@ -1753,8 +1756,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     SendCallstackPayload64( ptr );
                     tracy_free( (void*)ptr );
                     int64_t t = MemRead<int64_t>( &item->callstackSample.time );
-                    int64_t dt = t - m_refTimeCtx;
-                    m_refTimeCtx = t;
+                    int64_t dt = t - refCtx;
+                    refCtx = t;
                     MemWrite( &item->callstackSample.time, dt );
                     break;
                 }
@@ -1772,16 +1775,16 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                 case QueueType::ZoneBeginCallstack:
                 {
                     int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
-                    int64_t dt = t - m_refTimeThread;
-                    m_refTimeThread = t;
+                    int64_t dt = t - refThread;
+                    refThread = t;
                     MemWrite( &item->zoneBegin.time, dt );
                     break;
                 }
                 case QueueType::ZoneEnd:
                 {
                     int64_t t = MemRead<int64_t>( &item->zoneEnd.time );
-                    int64_t dt = t - m_refTimeThread;
-                    m_refTimeThread = t;
+                    int64_t dt = t - refThread;
+                    refThread = t;
                     MemWrite( &item->zoneEnd.time, dt );
                     break;
                 }
@@ -1789,48 +1792,48 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                 case QueueType::GpuZoneBeginCallstack:
                 {
                     int64_t t = MemRead<int64_t>( &item->gpuZoneBegin.cpuTime );
-                    int64_t dt = t - m_refTimeThread;
-                    m_refTimeThread = t;
+                    int64_t dt = t - refThread;
+                    refThread = t;
                     MemWrite( &item->gpuZoneBegin.cpuTime, dt );
                     break;
                 }
                 case QueueType::GpuZoneEnd:
                 {
                     int64_t t = MemRead<int64_t>( &item->gpuZoneEnd.cpuTime );
-                    int64_t dt = t - m_refTimeThread;
-                    m_refTimeThread = t;
+                    int64_t dt = t - refThread;
+                    refThread = t;
                     MemWrite( &item->gpuZoneEnd.cpuTime, dt );
                     break;
                 }
                 case QueueType::PlotData:
                 {
                     int64_t t = MemRead<int64_t>( &item->plotData.time );
-                    int64_t dt = t - m_refTimeThread;
-                    m_refTimeThread = t;
+                    int64_t dt = t - refThread;
+                    refThread = t;
                     MemWrite( &item->plotData.time, dt );
                     break;
                 }
                 case QueueType::ContextSwitch:
                 {
                     int64_t t = MemRead<int64_t>( &item->contextSwitch.time );
-                    int64_t dt = t - m_refTimeCtx;
-                    m_refTimeCtx = t;
+                    int64_t dt = t - refCtx;
+                    refCtx = t;
                     MemWrite( &item->contextSwitch.time, dt );
                     break;
                 }
                 case QueueType::ThreadWakeup:
                 {
                     int64_t t = MemRead<int64_t>( &item->threadWakeup.time );
-                    int64_t dt = t - m_refTimeCtx;
-                    m_refTimeCtx = t;
+                    int64_t dt = t - refCtx;
+                    refCtx = t;
                     MemWrite( &item->threadWakeup.time, dt );
                     break;
                 }
                 case QueueType::GpuTime:
                 {
                     int64_t t = MemRead<int64_t>( &item->gpuTime.gpuTime );
-                    int64_t dt = t - m_refTimeGpu;
-                    m_refTimeGpu = t;
+                    int64_t dt = t - refGpu;
+                    refGpu = t;
                     MemWrite( &item->gpuTime.gpuTime, dt );
                     break;
                 }
@@ -1842,6 +1845,9 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
             if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
             item++;
         }
+        m_refTimeThread = refThread;
+        m_refTimeCtx = refCtx;
+        m_refTimeGpu = refGpu;
     }
     else
     {
@@ -1855,6 +1861,7 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
     const auto sz = GetQueue().try_dequeue_bulk( token, m_itemBuf, BulkSize );
     if( sz > 0 )
     {
+        int64_t refCtx = m_refTimeCtx;
         auto end = m_itemBuf + sz;
         auto item = m_itemBuf;
         while( item != end )
@@ -1869,8 +1876,8 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
                     timeStop = -1;
                     return DequeueStatus::DataDequeued;
                 }
-                int64_t dt = csTime - m_refTimeCtx;
-                m_refTimeCtx = csTime;
+                int64_t dt = csTime - refCtx;
+                refCtx = csTime;
                 MemWrite( &item->contextSwitch.time, dt );
                 if( !AppendData( item, QueueDataSize[(int)QueueType::ContextSwitch] ) ) return DequeueStatus::ConnectionLost;
             }
@@ -1882,13 +1889,14 @@ Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::Con
                     timeStop = -1;
                     return DequeueStatus::DataDequeued;
                 }
-                int64_t dt = csTime - m_refTimeCtx;
-                m_refTimeCtx = csTime;
+                int64_t dt = csTime - refCtx;
+                refCtx = csTime;
                 MemWrite( &item->threadWakeup.time, dt );
                 if( !AppendData( item, QueueDataSize[(int)QueueType::ThreadWakeup] ) ) return DequeueStatus::ConnectionLost;
             }
             item++;
         }
+        m_refTimeCtx = refCtx;
     }
     else
     {
@@ -1919,6 +1927,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
     const auto sz = m_serialDequeue.size();
     if( sz > 0 )
     {
+        int64_t refSerial = m_refTimeSerial;
+        int64_t refGpu = m_refTimeGpu;
         auto item = m_serialDequeue.data();
         auto end = item + sz;
         while( item != end )
@@ -1938,8 +1948,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::LockSharedWait:
                 {
                     int64_t t = MemRead<int64_t>( &item->lockWait.time );
-                    int64_t dt = t - m_refTimeSerial;
-                    m_refTimeSerial = t;
+                    int64_t dt = t - refSerial;
+                    refSerial = t;
                     MemWrite( &item->lockWait.time, dt );
                     break;
                 }
@@ -1947,8 +1957,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::LockSharedObtain:
                 {
                     int64_t t = MemRead<int64_t>( &item->lockObtain.time );
-                    int64_t dt = t - m_refTimeSerial;
-                    m_refTimeSerial = t;
+                    int64_t dt = t - refSerial;
+                    refSerial = t;
                     MemWrite( &item->lockObtain.time, dt );
                     break;
                 }
@@ -1956,8 +1966,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::LockSharedRelease:
                 {
                     int64_t t = MemRead<int64_t>( &item->lockRelease.time );
-                    int64_t dt = t - m_refTimeSerial;
-                    m_refTimeSerial = t;
+                    int64_t dt = t - refSerial;
+                    refSerial = t;
                     MemWrite( &item->lockRelease.time, dt );
                     break;
                 }
@@ -1965,8 +1975,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::MemAllocCallstack:
                 {
                     int64_t t = MemRead<int64_t>( &item->memAlloc.time );
-                    int64_t dt = t - m_refTimeSerial;
-                    m_refTimeSerial = t;
+                    int64_t dt = t - refSerial;
+                    refSerial = t;
                     MemWrite( &item->memAlloc.time, dt );
                     break;
                 }
@@ -1974,8 +1984,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::MemFreeCallstack:
                 {
                     int64_t t = MemRead<int64_t>( &item->memFree.time );
-                    int64_t dt = t - m_refTimeSerial;
-                    m_refTimeSerial = t;
+                    int64_t dt = t - refSerial;
+                    refSerial = t;
                     MemWrite( &item->memFree.time, dt );
                     break;
                 }
@@ -1983,24 +1993,24 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 case QueueType::GpuZoneBeginCallstackSerial:
                 {
                     int64_t t = MemRead<int64_t>( &item->gpuZoneBegin.cpuTime );
-                    int64_t dt = t - m_refTimeSerial;
-                    m_refTimeSerial = t;
+                    int64_t dt = t - refSerial;
+                    refSerial = t;
                     MemWrite( &item->gpuZoneBegin.cpuTime, dt );
                     break;
                 }
                 case QueueType::GpuZoneEndSerial:
                 {
                     int64_t t = MemRead<int64_t>( &item->gpuZoneEnd.cpuTime );
-                    int64_t dt = t - m_refTimeSerial;
-                    m_refTimeSerial = t;
+                    int64_t dt = t - refSerial;
+                    refSerial = t;
                     MemWrite( &item->gpuZoneEnd.cpuTime, dt );
                     break;
                 }
                 case QueueType::GpuTime:
                 {
                     int64_t t = MemRead<int64_t>( &item->gpuTime.gpuTime );
-                    int64_t dt = t - m_refTimeGpu;
-                    m_refTimeGpu = t;
+                    int64_t dt = t - refGpu;
+                    refGpu = t;
                     MemWrite( &item->gpuTime.gpuTime, dt );
                     break;
                 }
@@ -2012,6 +2022,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
             if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
             item++;
         }
+        m_refTimeSerial = refSerial;
+        m_refTimeGpu = refGpu;
         m_serialDequeue.clear();
     }
     else

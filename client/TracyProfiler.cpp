@@ -1748,10 +1748,16 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     tracy_free( (void*)ptr );
                     break;
                 case QueueType::CallstackSample:
+                {
                     ptr = MemRead<uint64_t>( &item->callstackSample.ptr );
                     SendCallstackPayload64( ptr );
                     tracy_free( (void*)ptr );
+                    int64_t t = MemRead<int64_t>( &item->callstackSample.time );
+                    int64_t dt = t - m_refTimeCtx;
+                    m_refTimeCtx = t;
+                    MemWrite( &item->callstackSample.time, dt );
                     break;
+                }
                 case QueueType::FrameImage:
                 {
                     ptr = MemRead<uint64_t>( &item->frameImage.image );

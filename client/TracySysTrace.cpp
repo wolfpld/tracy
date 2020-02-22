@@ -75,42 +75,49 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
 #endif
 
     const auto& hdr = record->EventHeader;
-    if( hdr.EventDescriptor.Opcode == 36 )
+    switch( hdr.ProviderId.Data1 )
     {
-        const auto cswitch = (const CSwitch*)record->UserData;
+    case 0x3d6fa8d1:    // Thread Guid
+        if( hdr.EventDescriptor.Opcode == 36 )
+        {
+            const auto cswitch = (const CSwitch*)record->UserData;
 
-        TracyLfqPrepare( QueueType::ContextSwitch );
-        MemWrite( &item->contextSwitch.time, hdr.TimeStamp.QuadPart );
-        memcpy( &item->contextSwitch.oldThread, &cswitch->oldThreadId, sizeof( cswitch->oldThreadId ) );
-        memcpy( &item->contextSwitch.newThread, &cswitch->newThreadId, sizeof( cswitch->newThreadId ) );
-        memset( ((char*)&item->contextSwitch.oldThread)+4, 0, 4 );
-        memset( ((char*)&item->contextSwitch.newThread)+4, 0, 4 );
-        MemWrite( &item->contextSwitch.cpu, record->BufferContext.ProcessorNumber );
-        MemWrite( &item->contextSwitch.reason, cswitch->oldThreadWaitReason );
-        MemWrite( &item->contextSwitch.state, cswitch->oldThreadState );
-        TracyLfqCommit;
-    }
-    else if( hdr.EventDescriptor.Opcode == 50 )
-    {
-        const auto rt = (const ReadyThread*)record->UserData;
+            TracyLfqPrepare( QueueType::ContextSwitch );
+            MemWrite( &item->contextSwitch.time, hdr.TimeStamp.QuadPart );
+            memcpy( &item->contextSwitch.oldThread, &cswitch->oldThreadId, sizeof( cswitch->oldThreadId ) );
+            memcpy( &item->contextSwitch.newThread, &cswitch->newThreadId, sizeof( cswitch->newThreadId ) );
+            memset( ((char*)&item->contextSwitch.oldThread)+4, 0, 4 );
+            memset( ((char*)&item->contextSwitch.newThread)+4, 0, 4 );
+            MemWrite( &item->contextSwitch.cpu, record->BufferContext.ProcessorNumber );
+            MemWrite( &item->contextSwitch.reason, cswitch->oldThreadWaitReason );
+            MemWrite( &item->contextSwitch.state, cswitch->oldThreadState );
+            TracyLfqCommit;
+        }
+        else if( hdr.EventDescriptor.Opcode == 50 )
+        {
+            const auto rt = (const ReadyThread*)record->UserData;
 
-        TracyLfqPrepare( QueueType::ThreadWakeup );
-        MemWrite( &item->threadWakeup.time, hdr.TimeStamp.QuadPart );
-        memcpy( &item->threadWakeup.thread, &rt->threadId, sizeof( rt->threadId ) );
-        memset( ((char*)&item->threadWakeup.thread)+4, 0, 4 );
-        TracyLfqCommit;
-    }
-    else if( hdr.EventDescriptor.Opcode == 1 || hdr.EventDescriptor.Opcode == 3 )
-    {
-        const auto tt = (const ThreadTrace*)record->UserData;
+            TracyLfqPrepare( QueueType::ThreadWakeup );
+            MemWrite( &item->threadWakeup.time, hdr.TimeStamp.QuadPart );
+            memcpy( &item->threadWakeup.thread, &rt->threadId, sizeof( rt->threadId ) );
+            memset( ((char*)&item->threadWakeup.thread)+4, 0, 4 );
+            TracyLfqCommit;
+        }
+        else if( hdr.EventDescriptor.Opcode == 1 || hdr.EventDescriptor.Opcode == 3 )
+        {
+            const auto tt = (const ThreadTrace*)record->UserData;
 
-        uint64_t tid = tt->threadId;
-        if( tid == 0 ) return;
-        uint64_t pid = tt->processId;
-        TracyLfqPrepare( QueueType::TidToPid );
-        MemWrite( &item->tidToPid.tid, tid );
-        MemWrite( &item->tidToPid.pid, pid );
-        TracyLfqCommit;
+            uint64_t tid = tt->threadId;
+            if( tid == 0 ) return;
+            uint64_t pid = tt->processId;
+            TracyLfqPrepare( QueueType::TidToPid );
+            MemWrite( &item->tidToPid.tid, tid );
+            MemWrite( &item->tidToPid.pid, pid );
+            TracyLfqCommit;
+        }
+        break;
+    default:
+        break;
     }
 }
 

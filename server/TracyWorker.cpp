@@ -984,6 +984,31 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             f.Skip( msz * sizeof( uint64_t ) );
         }
+        if( fileVer >= FileVersion( 0, 6, 4 ) )
+        {
+            uint64_t ssz;
+            f.Read( ssz );
+            if( ssz != 0 )
+            {
+                if( eventMask & EventType::Samples )
+                {
+                    m_data.samplesCnt += ssz;
+                    int64_t refTime = 0;
+                    td->samples.reserve_exact( ssz, m_slab );
+                    auto ptr = td->samples.data();
+                    for( uint64_t j=0; j<ssz; j++ )
+                    {
+                        ptr->time.SetVal( ReadTimeOffset( f, refTime ) );
+                        f.Read( &ptr->callstack, sizeof( ptr->callstack ) );
+                        ptr++;
+                    }
+                }
+                else
+                {
+                    f.Skip( ssz * ( 8 + 3 ) );
+                }
+            }
+        }
         m_data.threads[i] = td;
         m_threadMap.emplace( tid, td );
     }
@@ -5671,6 +5696,14 @@ void Worker::Write( FileWrite& f )
         {
             auto ptr = uint64_t( (MessageData*)v );
             f.Write( &ptr, sizeof( ptr ) );
+        }
+        sz = thread->samples.size();
+        f.Write( &sz, sizeof( sz ) );
+        refTime = 0;
+        for( auto& v : thread->samples )
+        {
+            WriteTimeOffset( f, refTime, v.time.Val() );
+            f.Write( &v.callstack, sizeof( v.callstack ) );
         }
     }
 

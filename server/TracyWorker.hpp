@@ -44,6 +44,7 @@ namespace EventType
         Memory          = 1 << 3,
         FrameImages     = 1 << 4,
         ContextSwitches = 1 << 5,
+        Samples         = 1 << 6,
 
         None            = 0,
         All             = std::numeric_limits<uint32_t>::max()

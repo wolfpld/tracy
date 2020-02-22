@@ -2095,9 +2095,9 @@ const char* Worker::GetThreadName( uint64_t id ) const
     }
 }
 
-bool Worker::IsThreadLocal( uint64_t id ) const
+bool Worker::IsThreadLocal( uint64_t id )
 {
-    return m_data.localThreadCompress.Exists( id );
+    return m_data.localThreadCompress.Exists( id ) && RetrieveThread( id )->count > 0;
 }
 
 const SourceLocation& Worker::GetSourceLocation( int16_t srcloc ) const

@@ -25,6 +25,14 @@
 namespace tracy
 {
 
+DEFINE_GUID ( /* ce1dbfb4-137e-4da6-87b0-3f59aa102cbc */
+    PerfInfoGuid,
+    0xce1dbfb4,
+    0x137e,
+    0x4da6,
+    0x87, 0xb0, 0x3f, 0x59, 0xaa, 0x10, 0x2c, 0xbc
+);
+
 static TRACEHANDLE s_traceHandle;
 static TRACEHANDLE s_traceHandle2;
 static EVENT_TRACE_PROPERTIES* s_prop;
@@ -139,10 +147,15 @@ bool SysTraceStart()
     const auto status = GetLastError();
     if( status != ERROR_SUCCESS ) return false;
 
+    TRACE_PROFILE_INTERVAL interval = {};
+    interval.Interval = 10000;
+    const auto intervalStatus = TraceSetInformation( 0, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
+    if( intervalStatus != ERROR_SUCCESS ) return false;
+
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + sizeof( KERNEL_LOGGER_NAME );
     s_prop = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
     memset( s_prop, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
-    s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER | EVENT_TRACE_FLAG_THREAD;
+    s_prop->EnableFlags = EVENT_TRACE_FLAG_CSWITCH | EVENT_TRACE_FLAG_DISPATCHER | EVENT_TRACE_FLAG_THREAD | EVENT_TRACE_FLAG_PROFILE;
     s_prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
     s_prop->Wnode.BufferSize = psz;
     s_prop->Wnode.Flags = WNODE_FLAG_TRACED_GUID;

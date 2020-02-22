@@ -11388,6 +11388,7 @@ void View::DrawInfo()
         TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );
         TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount() ) );
         TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount() ) );
+        TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
         TextFocused( "Frame images:", RealToString( ficnt ) );
         TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount() ) );
         if( ImGui::IsItemHovered() )

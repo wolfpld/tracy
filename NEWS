@@ -11,6 +11,7 @@ v0.7 (xxxx-xx-xx)
 
 - Added display of statistical mode to find zone menu.
 - Automatic stack sampling is now available on windows.
+- Properly handle tracing on long-running systems.
 
 v0.6.3 (2020-02-13)
 -------------------

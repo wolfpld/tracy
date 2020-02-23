@@ -4634,7 +4634,14 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
         else
         {
             const auto it = std::lower_bound( td->samples.begin(), td->samples.end(), t, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-            td->samples.insert( it, sd );
+            if( it->time.Val() == t )
+            {
+                *it = sd;
+            }
+            else
+            {
+                td->samples.insert( it, sd );
+            }
         }
     }
 }

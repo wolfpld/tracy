@@ -663,9 +663,10 @@ ssize_t getline(char **buf, size_t *bufsiz, FILE *fp)
 
 static void HandleTraceLine( const char* line )
 {
-    line += 24;
+    line += 23;
+    while( *line != '[' ) line++;
+    line++;
     const auto cpu = (uint8_t)ReadNumber( line );
-
     line++;      // ']'
     while( *line == ' ' ) line++;
 

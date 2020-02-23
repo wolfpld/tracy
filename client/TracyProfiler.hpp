@@ -14,6 +14,7 @@
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyMutex.hpp"
+#include "../common/TracyProtocol.hpp"
 
 #if defined _WIN32 || defined __CYGWIN__
 #  include <intrin.h>
@@ -518,9 +519,25 @@ private:
     DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
     DequeueStatus DequeueContextSwitches( tracy::moodycamel::ConsumerToken& token, int64_t& timeStop );
     DequeueStatus DequeueSerial();
-    bool AppendData( const void* data, size_t len );
     bool CommitData();
-    bool NeedDataSize( size_t len );
+
+    tracy_force_inline bool AppendData( const void* data, size_t len )
+    {
+        const auto ret = NeedDataSize( len );
+        AppendDataUnsafe( data, len );
+        return ret;
+    }
+
+    tracy_force_inline bool NeedDataSize( size_t len )
+    {
+        assert( len <= TargetFrameSize );
+        bool ret = true;
+        if( m_bufferOffset - m_bufferStart + len > TargetFrameSize )
+        {
+            ret = CommitData();
+        }
+        return ret;
+    }
 
     tracy_force_inline void AppendDataUnsafe( const void* data, size_t len )
     {

@@ -48,7 +48,6 @@
 #include <thread>
 
 #include "../common/TracyAlign.hpp"
-#include "../common/TracyProtocol.hpp"
 #include "../common/TracySocket.hpp"
 #include "../common/TracySystem.hpp"
 #include "../common/tracy_lz4.hpp"
@@ -2033,29 +2032,11 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
     return DequeueStatus::DataDequeued;
 }
 
-bool Profiler::AppendData( const void* data, size_t len )
-{
-    const auto ret = NeedDataSize( len );
-    AppendDataUnsafe( data, len );
-    return ret;
-}
-
 bool Profiler::CommitData()
 {
     bool ret = SendData( m_buffer + m_bufferStart, m_bufferOffset - m_bufferStart );
     if( m_bufferOffset > TargetFrameSize * 2 ) m_bufferOffset = 0;
     m_bufferStart = m_bufferOffset;
-    return ret;
-}
-
-bool Profiler::NeedDataSize( size_t len )
-{
-    assert( len <= TargetFrameSize );
-    bool ret = true;
-    if( m_bufferOffset - m_bufferStart + len > TargetFrameSize )
-    {
-        ret = CommitData();
-    }
     return ret;
 }
 

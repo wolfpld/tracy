@@ -29,11 +29,8 @@ public:
     using const_iterator = const T*;
 
     tracy_force_inline Vector()
-        : m_ptr( nullptr )
-        , m_size( 0 )
-        , m_capacity( 0 )
-        , m_magic( 0 )
     {
+        memset( this, 0, sizeof( Vector<T> ) );
     }
 
     Vector( const Vector& ) = delete;

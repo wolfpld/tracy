@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <limits>
 #include <stdint.h>
+#include <stdlib.h>
 #include <type_traits>
 
 #include "../common/TracyForceInline.hpp"
@@ -41,13 +42,13 @@ public:
     }
 
     tracy_force_inline Vector( const T& value )
-        : m_ptr( new T[1] )
+        : m_ptr( (T*)malloc( sizeof( T ) ) )
         , m_size( 1 )
         , m_capacity( 0 )
         , m_magic( 0 )
     {
         memUsage += sizeof( T );
-        m_ptr[0] = value;
+        new(m_ptr) T( value );
     }
 
     tracy_force_inline ~Vector()
@@ -55,7 +56,8 @@ public:
         if( m_capacity != MaxCapacity() && m_ptr )
         {
             memUsage -= Capacity() * sizeof( T );
-            delete[] (T*)m_ptr;
+            const auto sz = size();
+            free( m_ptr );
         }
     }
 
@@ -65,7 +67,8 @@ public:
         if( m_capacity != MaxCapacity() && m_ptr )
         {
             memUsage -= Capacity() * sizeof( T );
-            delete[] (T*)m_ptr;
+            const auto sz = size();
+            free( m_ptr );
         }
         memcpy( this, &src, sizeof( Vector<T> ) );
         memset( &src, 0, sizeof( Vector<T> ) );
@@ -106,34 +109,39 @@ public:
     {
         assert( m_capacity != MaxCapacity() );
         if( m_size == Capacity() ) AllocMore();
-        m_ptr[m_size++] = v;
+        new(m_ptr+m_size) T( v );
+        m_size++;
     }
 
     tracy_force_inline void push_back_non_empty( const T& v )
     {
         assert( m_capacity != MaxCapacity() );
         if( m_size == CapacityNoNullptrCheck() ) AllocMore();
-        m_ptr[m_size++] = v;
+        new(m_ptr+m_size) T( v );
+        m_size++;
     }
 
     tracy_force_inline void push_back_no_space_check( const T& v )
     {
         assert( m_capacity != MaxCapacity() );
         assert( m_size < Capacity() );
-        m_ptr[m_size++] = v;
+        new(m_ptr+m_size) T( v );
+        m_size++;
     }
 
     tracy_force_inline void push_back( T&& v )
     {
         assert( m_capacity != MaxCapacity() );
         if( m_size == Capacity() ) AllocMore();
-        m_ptr[m_size++] = std::move( v );
+        new(m_ptr+m_size) T( std::move( v ) );
+        m_size++;
     }
 
     tracy_force_inline T& push_next()
     {
         assert( m_capacity != MaxCapacity() );
         if( m_size == Capacity() ) AllocMore();
+        new(m_ptr+m_size) T();
         return m_ptr[m_size++];
     }
 
@@ -141,6 +149,7 @@ public:
     {
         assert( m_capacity != MaxCapacity() );
         assert( m_size < Capacity() );
+        new(m_ptr+m_size) T();
         return m_ptr[m_size++];
     }
 
@@ -152,6 +161,7 @@ public:
         if( m_size == Capacity() ) AllocMore();
         if( dist != m_size ) memmove( m_ptr + dist + 1, m_ptr + dist, ( m_size - dist ) * sizeof( T ) );
         m_size++;
+        new(m_ptr+dist) T( v );
         m_ptr[dist] = v;
         return m_ptr + dist;
     }
@@ -164,7 +174,7 @@ public:
         if( m_size == Capacity() ) AllocMore();
         if( dist != m_size ) memmove( m_ptr + dist + 1, m_ptr + dist, ( m_size - dist ) * sizeof( T ) );
         m_size++;
-        m_ptr[dist] = std::move( v );
+        new(m_ptr+dist) T( std::move( v ) );
         return m_ptr + dist;
     }
 
@@ -274,7 +284,7 @@ private:
         if( m_ptr == nullptr )
         {
             memUsage += sizeof( T );
-            m_ptr = new T[1];
+            m_ptr = (T*)malloc( sizeof( T ) );
             m_capacity = 0;
         }
         else
@@ -287,7 +297,7 @@ private:
 
     void Realloc()
     {
-        T* ptr = new T[CapacityNoNullptrCheck()];
+        T* ptr = (T*)malloc( sizeof( T ) * CapacityNoNullptrCheck() );
         if( m_size != 0 )
         {
             if( std::is_trivially_copyable<T>() )
@@ -298,10 +308,10 @@ private:
             {
                 for( uint32_t i=0; i<m_size; i++ )
                 {
-                    ptr[i] = std::move( m_ptr[i] );
+                    new(ptr+i) T( std::move( m_ptr[i] ) );
                 }
             }
-            delete[] (T*)m_ptr;
+            free( m_ptr );
         }
         m_ptr = ptr;
     }

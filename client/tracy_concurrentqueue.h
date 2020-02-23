@@ -191,7 +191,7 @@ struct ConcurrentQueueDefaultTraits
 	// but many producers, a smaller block size should be favoured. For few producers
 	// and/or many elements, a larger block size is preferred. A sane default
 	// is provided. Must be a power of 2.
-	static const size_t BLOCK_SIZE = 128;
+	static const size_t BLOCK_SIZE = 256;
 	
 	// For explicit producers (i.e. when using a producer token), the block is
 	// checked for being empty by iterating through a list of flags, one per element.

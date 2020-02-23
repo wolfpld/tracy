@@ -2757,14 +2757,15 @@ void Worker::NewZone( ZoneEvent* zone, uint64_t thread )
     auto td = m_threadCtxData;
     if( !td ) td = m_threadCtxData = NoticeThread( thread );
     td->count++;
-    if( td->stack.empty() )
+    const auto ssz = td->stack.size();
+    if( ssz == 0 )
     {
         td->stack.push_back( zone );
         td->timeline.push_back( zone );
     }
     else
     {
-        auto& back = td->stack.back();
+        auto& back = td->stack.data()[ssz-1];
         if( !back->HasChildren() )
         {
             back->SetChild( int32_t( m_data.zoneChildren.size() ) );

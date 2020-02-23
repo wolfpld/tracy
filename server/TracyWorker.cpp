@@ -325,7 +325,7 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
         else
         {
             auto td = NoticeThread( v.tid );
-            td->zoneIdStack.back_and_pop();
+            td->zoneIdStack.pop_back();
             auto& stack = td->stack;
             auto zone = stack.back_and_pop();
             zone->SetEnd( v.timestamp );

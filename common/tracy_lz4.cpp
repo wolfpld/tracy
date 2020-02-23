@@ -473,7 +473,8 @@ static int g_debuglog_enable = 1;
 /*-************************************
 *  Common functions
 **************************************/
-static unsigned LZ4_NbCommonBytes (reg_t val)
+LZ4_FORCE_INLINE
+unsigned LZ4_NbCommonBytes (reg_t val)
 {
     if (LZ4_isLittleEndian()) {
         if (sizeof(val)==8) {

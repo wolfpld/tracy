@@ -2054,6 +2054,7 @@ const char* Worker::GetString( const StringIdx& idx ) const
 
 static const char* BadExternalThreadNames[] = {
     "ntdll.dll",
+    "???",
     nullptr
 };
 

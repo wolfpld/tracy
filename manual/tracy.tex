@@ -2440,7 +2440,7 @@ The zone information window has the following controls available:
 
 This window shows the frames contained in the selected call stack. Each frame is described by the function name and source file location. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
-A single stack frame may have multiple function call places associated with it. This happens in case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number.
+A single stack frame may have multiple function call places associated with it. This happens in case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number\footnote{Or '\faCaretRight{}'~icon in case of call stack tooltips.}.
 
 Sometimes it may be more useful to have just the function address, instead of the source file location\footnote{It can pinpoint the exact assembly instruction which caused the crash.}. This can be achieved by selecting the \emph{\faAt{}~Show frame addresses} option.
 

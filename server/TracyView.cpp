@@ -3015,7 +3015,7 @@ static const char* DecodeContextSwitchState( uint8_t state )
     case 4: return "(Thread has finished executing and has exited)";
     case 5: return "(Thread is not ready to use the processor because it is waiting for a peripheral operation to complete or a resource to become free)";
     case 6: return "(Thread is waiting for a resource, other than the processor, before it can execute)";
-    case 7: return "(Thread has beed selected to run on a specific processor but have not yet beed scheduled)";
+    case 7: return "(Thread has been selected to run on a specific processor but have not yet beed scheduled)";
     case 101: return "(Uninterruptible sleep, usually IO)";
     case 102: return "(Idle kernel thread)";
     case 103: return "(Running or on run queue)";

@@ -34,10 +34,7 @@ public:
     tracy_force_inline void* AllocRaw( size_t size )
     {
         assert( size <= BlockSize );
-        if( m_offset + size > BlockSize )
-        {
-            DoAlloc();
-        }
+        if( m_offset + size > BlockSize ) DoAlloc();
         void* ret = m_ptr + m_offset;
         m_offset += size;
         return ret;
@@ -47,14 +44,8 @@ public:
     tracy_force_inline T* AllocInit()
     {
         const auto size = sizeof( T );
-        assert( size <= BlockSize );
-        if( m_offset + size > BlockSize )
-        {
-            DoAlloc();
-        }
-        void* ret = m_ptr + m_offset;
+        auto ret = AllocRaw( size );
         new( ret ) T;
-        m_offset += size;
         return (T*)ret;
     }
 
@@ -62,19 +53,13 @@ public:
     tracy_force_inline T* AllocInit( size_t sz )
     {
         const auto size = sizeof( T ) * sz;
-        assert( size <= BlockSize );
-        if( m_offset + size > BlockSize )
-        {
-            DoAlloc();
-        }
-        void* ret = m_ptr + m_offset;
+        auto ret = AllocRaw( size );
         T* ptr = (T*)ret;
         for( size_t i=0; i<sz; i++ )
         {
             new( ptr ) T;
             ptr++;
         }
-        m_offset += size;
         return (T*)ret;
     }
 

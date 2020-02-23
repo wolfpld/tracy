@@ -1013,8 +1013,6 @@ TRACY_API LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
 #  endif
 #endif
 
-enum { BulkSize = TargetFrameSize / QueueItemSize };
-
 Profiler::Profiler()
     : m_timeBegin( 0 )
     , m_mainThread( detail::GetThreadHandleImpl() )
@@ -1030,7 +1028,6 @@ Profiler::Profiler()
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
     , m_bufferStart( 0 )
-    , m_itemBuf( (QueueItem*)tracy_malloc( sizeof( QueueItem ) * BulkSize ) )
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
     , m_serialQueue( 1024*1024 )
     , m_serialDequeue( 1024*1024 )
@@ -1128,7 +1125,6 @@ Profiler::~Profiler()
     tracy_free( s_thread );
 
     tracy_free( m_lz4Buf );
-    tracy_free( m_itemBuf );
     tracy_free( m_buffer );
     LZ4_freeStream( (LZ4_stream_t*)m_stream );
 
@@ -1640,9 +1636,8 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 {
     for(;;)
     {
-        const auto sz = GetQueue().try_dequeue_bulk( token, m_itemBuf, BulkSize );
+        const auto sz = GetQueue().try_dequeue_bulk_single( token, [](auto){}, []( QueueItem* item, size_t sz ) { assert( sz > 0 ); while( sz-- > 0 ) FreeAssociatedMemory( *item++ ); } );
         if( sz == 0 ) break;
-        for( size_t i=0; i<sz; i++ ) FreeAssociatedMemory( m_itemBuf[i] );
     }
 
     ClearSerial();
@@ -1672,236 +1667,253 @@ void Profiler::ClearSerial()
 
 Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
 {
-    uint64_t threadId;
-    const auto sz = GetQueue().try_dequeue_bulk_single( token, m_itemBuf, BulkSize, threadId );
-    if( sz > 0 )
-    {
-        if( threadId != m_threadCtx )
+    bool connectionLost = false;
+    const auto sz = GetQueue().try_dequeue_bulk_single( token,
+        [this, &connectionLost] ( const uint64_t& threadId )
         {
-            QueueItem item;
-            MemWrite( &item.hdr.type, QueueType::ThreadContext );
-            MemWrite( &item.threadCtx.thread, threadId );
-            if( !AppendData( &item, QueueDataSize[(int)QueueType::ThreadContext] ) ) return DequeueStatus::ConnectionLost;
-            m_threadCtx = threadId;
-            m_refTimeThread = 0;
-        }
-
-        int64_t refThread = m_refTimeThread;
-        int64_t refCtx = m_refTimeCtx;
-        int64_t refGpu = m_refTimeGpu;
-        auto end = m_itemBuf + sz;
-        auto item = m_itemBuf;
-        while( item != end )
-        {
-            uint64_t ptr;
-            const auto idx = MemRead<uint8_t>( &item->hdr.idx );
-            if( idx < (int)QueueType::Terminate )
+            if( threadId != m_threadCtx )
             {
-                switch( (QueueType)idx )
+                QueueItem item;
+                MemWrite( &item.hdr.type, QueueType::ThreadContext );
+                MemWrite( &item.threadCtx.thread, threadId );
+                if( !AppendData( &item, QueueDataSize[(int)QueueType::ThreadContext] ) ) connectionLost = true;
+                m_threadCtx = threadId;
+                m_refTimeThread = 0;
+            }
+        },
+        [this, &connectionLost] ( QueueItem* item, size_t sz )
+        {
+            if( connectionLost ) return;
+            assert( sz > 0 );
+            int64_t refThread = m_refTimeThread;
+            int64_t refCtx = m_refTimeCtx;
+            int64_t refGpu = m_refTimeGpu;
+            while( sz-- > 0 )
+            {
+                uint64_t ptr;
+                const auto idx = MemRead<uint8_t>( &item->hdr.idx );
+                if( idx < (int)QueueType::Terminate )
                 {
-                case QueueType::ZoneText:
-                case QueueType::ZoneName:
-                    ptr = MemRead<uint64_t>( &item->zoneText.text );
-                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-                    tracy_free( (void*)ptr );
-                    break;
-                case QueueType::Message:
-                case QueueType::MessageColor:
-                case QueueType::MessageCallstack:
-                case QueueType::MessageColorCallstack:
-                    ptr = MemRead<uint64_t>( &item->message.text );
-                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-                    tracy_free( (void*)ptr );
-                    break;
-                case QueueType::MessageAppInfo:
-                    ptr = MemRead<uint64_t>( &item->message.text );
-                    SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
-#ifndef TRACY_ON_DEMAND
-                    tracy_free( (void*)ptr );
-#endif
-                    break;
-                case QueueType::ZoneBeginAllocSrcLoc:
-                case QueueType::ZoneBeginAllocSrcLocCallstack:
-                {
-                    int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
-                    int64_t dt = t - refThread;
-                    refThread = t;
-                    MemWrite( &item->zoneBegin.time, dt );
-                    ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
-                    SendSourceLocationPayload( ptr );
-                    tracy_free( (void*)ptr );
-                    break;
-                }
-                case QueueType::Callstack:
-                    ptr = MemRead<uint64_t>( &item->callstack.ptr );
-                    SendCallstackPayload( ptr );
-                    tracy_free( (void*)ptr );
-                    break;
-                case QueueType::CallstackAlloc:
-                    ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );
-                    if( ptr != 0 )
+                    switch( (QueueType)idx )
                     {
-                        CutCallstack( (void*)ptr, "lua_pcall" );
+                    case QueueType::ZoneText:
+                    case QueueType::ZoneName:
+                        ptr = MemRead<uint64_t>( &item->zoneText.text );
+                        SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                        tracy_free( (void*)ptr );
+                        break;
+                    case QueueType::Message:
+                    case QueueType::MessageColor:
+                    case QueueType::MessageCallstack:
+                    case QueueType::MessageColorCallstack:
+                        ptr = MemRead<uint64_t>( &item->message.text );
+                        SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                        tracy_free( (void*)ptr );
+                        break;
+                    case QueueType::MessageAppInfo:
+                        ptr = MemRead<uint64_t>( &item->message.text );
+                        SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+#ifndef TRACY_ON_DEMAND
+                        tracy_free( (void*)ptr );
+#endif
+                        break;
+                    case QueueType::ZoneBeginAllocSrcLoc:
+                    case QueueType::ZoneBeginAllocSrcLocCallstack:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
+                        int64_t dt = t - refThread;
+                        refThread = t;
+                        MemWrite( &item->zoneBegin.time, dt );
+                        ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
+                        SendSourceLocationPayload( ptr );
+                        tracy_free( (void*)ptr );
+                        break;
+                    }
+                    case QueueType::Callstack:
+                        ptr = MemRead<uint64_t>( &item->callstack.ptr );
                         SendCallstackPayload( ptr );
                         tracy_free( (void*)ptr );
+                        break;
+                    case QueueType::CallstackAlloc:
+                        ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );
+                        if( ptr != 0 )
+                        {
+                            CutCallstack( (void*)ptr, "lua_pcall" );
+                            SendCallstackPayload( ptr );
+                            tracy_free( (void*)ptr );
+                        }
+                        ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
+                        SendCallstackAlloc( ptr );
+                        tracy_free( (void*)ptr );
+                        break;
+                    case QueueType::CallstackSample:
+                    {
+                        ptr = MemRead<uint64_t>( &item->callstackSample.ptr );
+                        SendCallstackPayload64( ptr );
+                        tracy_free( (void*)ptr );
+                        int64_t t = MemRead<int64_t>( &item->callstackSample.time );
+                        int64_t dt = t - refCtx;
+                        refCtx = t;
+                        MemWrite( &item->callstackSample.time, dt );
+                        break;
                     }
-                    ptr = MemRead<uint64_t>( &item->callstackAlloc.ptr );
-                    SendCallstackAlloc( ptr );
-                    tracy_free( (void*)ptr );
-                    break;
-                case QueueType::CallstackSample:
-                {
-                    ptr = MemRead<uint64_t>( &item->callstackSample.ptr );
-                    SendCallstackPayload64( ptr );
-                    tracy_free( (void*)ptr );
-                    int64_t t = MemRead<int64_t>( &item->callstackSample.time );
-                    int64_t dt = t - refCtx;
-                    refCtx = t;
-                    MemWrite( &item->callstackSample.time, dt );
-                    break;
+                    case QueueType::FrameImage:
+                    {
+                        ptr = MemRead<uint64_t>( &item->frameImage.image );
+                        const auto w = MemRead<uint16_t>( &item->frameImage.w );
+                        const auto h = MemRead<uint16_t>( &item->frameImage.h );
+                        const auto csz = size_t( w * h / 2 );
+                        SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
+                        tracy_free( (void*)ptr );
+                        break;
+                    }
+                    case QueueType::ZoneBegin:
+                    case QueueType::ZoneBeginCallstack:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
+                        int64_t dt = t - refThread;
+                        refThread = t;
+                        MemWrite( &item->zoneBegin.time, dt );
+                        break;
+                    }
+                    case QueueType::ZoneEnd:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->zoneEnd.time );
+                        int64_t dt = t - refThread;
+                        refThread = t;
+                        MemWrite( &item->zoneEnd.time, dt );
+                        break;
+                    }
+                    case QueueType::GpuZoneBegin:
+                    case QueueType::GpuZoneBeginCallstack:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->gpuZoneBegin.cpuTime );
+                        int64_t dt = t - refThread;
+                        refThread = t;
+                        MemWrite( &item->gpuZoneBegin.cpuTime, dt );
+                        break;
+                    }
+                    case QueueType::GpuZoneEnd:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->gpuZoneEnd.cpuTime );
+                        int64_t dt = t - refThread;
+                        refThread = t;
+                        MemWrite( &item->gpuZoneEnd.cpuTime, dt );
+                        break;
+                    }
+                    case QueueType::PlotData:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->plotData.time );
+                        int64_t dt = t - refThread;
+                        refThread = t;
+                        MemWrite( &item->plotData.time, dt );
+                        break;
+                    }
+                    case QueueType::ContextSwitch:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->contextSwitch.time );
+                        int64_t dt = t - refCtx;
+                        refCtx = t;
+                        MemWrite( &item->contextSwitch.time, dt );
+                        break;
+                    }
+                    case QueueType::ThreadWakeup:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->threadWakeup.time );
+                        int64_t dt = t - refCtx;
+                        refCtx = t;
+                        MemWrite( &item->threadWakeup.time, dt );
+                        break;
+                    }
+                    case QueueType::GpuTime:
+                    {
+                        int64_t t = MemRead<int64_t>( &item->gpuTime.gpuTime );
+                        int64_t dt = t - refGpu;
+                        refGpu = t;
+                        MemWrite( &item->gpuTime.gpuTime, dt );
+                        break;
+                    }
+                    default:
+                        assert( false );
+                        break;
+                    }
                 }
-                case QueueType::FrameImage:
+                if( !AppendData( item++, QueueDataSize[idx] ) )
                 {
-                    ptr = MemRead<uint64_t>( &item->frameImage.image );
-                    const auto w = MemRead<uint16_t>( &item->frameImage.w );
-                    const auto h = MemRead<uint16_t>( &item->frameImage.h );
-                    const auto csz = size_t( w * h / 2 );
-                    SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
-                    tracy_free( (void*)ptr );
-                    break;
-                }
-                case QueueType::ZoneBegin:
-                case QueueType::ZoneBeginCallstack:
-                {
-                    int64_t t = MemRead<int64_t>( &item->zoneBegin.time );
-                    int64_t dt = t - refThread;
-                    refThread = t;
-                    MemWrite( &item->zoneBegin.time, dt );
-                    break;
-                }
-                case QueueType::ZoneEnd:
-                {
-                    int64_t t = MemRead<int64_t>( &item->zoneEnd.time );
-                    int64_t dt = t - refThread;
-                    refThread = t;
-                    MemWrite( &item->zoneEnd.time, dt );
-                    break;
-                }
-                case QueueType::GpuZoneBegin:
-                case QueueType::GpuZoneBeginCallstack:
-                {
-                    int64_t t = MemRead<int64_t>( &item->gpuZoneBegin.cpuTime );
-                    int64_t dt = t - refThread;
-                    refThread = t;
-                    MemWrite( &item->gpuZoneBegin.cpuTime, dt );
-                    break;
-                }
-                case QueueType::GpuZoneEnd:
-                {
-                    int64_t t = MemRead<int64_t>( &item->gpuZoneEnd.cpuTime );
-                    int64_t dt = t - refThread;
-                    refThread = t;
-                    MemWrite( &item->gpuZoneEnd.cpuTime, dt );
-                    break;
-                }
-                case QueueType::PlotData:
-                {
-                    int64_t t = MemRead<int64_t>( &item->plotData.time );
-                    int64_t dt = t - refThread;
-                    refThread = t;
-                    MemWrite( &item->plotData.time, dt );
-                    break;
-                }
-                case QueueType::ContextSwitch:
-                {
-                    int64_t t = MemRead<int64_t>( &item->contextSwitch.time );
-                    int64_t dt = t - refCtx;
-                    refCtx = t;
-                    MemWrite( &item->contextSwitch.time, dt );
-                    break;
-                }
-                case QueueType::ThreadWakeup:
-                {
-                    int64_t t = MemRead<int64_t>( &item->threadWakeup.time );
-                    int64_t dt = t - refCtx;
-                    refCtx = t;
-                    MemWrite( &item->threadWakeup.time, dt );
-                    break;
-                }
-                case QueueType::GpuTime:
-                {
-                    int64_t t = MemRead<int64_t>( &item->gpuTime.gpuTime );
-                    int64_t dt = t - refGpu;
-                    refGpu = t;
-                    MemWrite( &item->gpuTime.gpuTime, dt );
-                    break;
-                }
-                default:
-                    assert( false );
-                    break;
+                    connectionLost = true;
+                    m_refTimeThread = refThread;
+                    m_refTimeCtx = refCtx;
+                    m_refTimeGpu = refGpu;
+                    return;
                 }
             }
-            if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
-            item++;
+            m_refTimeThread = refThread;
+            m_refTimeCtx = refCtx;
+            m_refTimeGpu = refGpu;
         }
-        m_refTimeThread = refThread;
-        m_refTimeCtx = refCtx;
-        m_refTimeGpu = refGpu;
-    }
-    else
-    {
-        return DequeueStatus::QueueEmpty;
-    }
-    return DequeueStatus::DataDequeued;
+    );
+    if( connectionLost ) return DequeueStatus::ConnectionLost;
+    return sz > 0 ? DequeueStatus::DataDequeued : DequeueStatus::QueueEmpty;
 }
 
 Profiler::DequeueStatus Profiler::DequeueContextSwitches( tracy::moodycamel::ConsumerToken& token, int64_t& timeStop )
 {
-    const auto sz = GetQueue().try_dequeue_bulk( token, m_itemBuf, BulkSize );
-    if( sz > 0 )
-    {
-        int64_t refCtx = m_refTimeCtx;
-        auto end = m_itemBuf + sz;
-        auto item = m_itemBuf;
-        while( item != end )
+    const auto sz = GetQueue().try_dequeue_bulk_single( token, [] ( const uint64_t& ) {},
+        [this, &timeStop] ( QueueItem* item, size_t sz )
         {
-            FreeAssociatedMemory( *item );
-            const auto idx = MemRead<uint8_t>( &item->hdr.idx );
-            if( idx == (uint8_t)QueueType::ContextSwitch )
+            assert( sz > 0 );
+            int64_t refCtx = m_refTimeCtx;
+            while( sz-- > 0 )
             {
-                const auto csTime = MemRead<int64_t>( &item->contextSwitch.time );
-                if( csTime > timeStop )
+                FreeAssociatedMemory( *item );
+                if( timeStop < 0 ) return;
+                const auto idx = MemRead<uint8_t>( &item->hdr.idx );
+                if( idx == (uint8_t)QueueType::ContextSwitch )
                 {
-                    timeStop = -1;
-                    return DequeueStatus::DataDequeued;
+                    const auto csTime = MemRead<int64_t>( &item->contextSwitch.time );
+                    if( csTime > timeStop )
+                    {
+                        timeStop = -1;
+                        m_refTimeCtx = refCtx;
+                        return;
+                    }
+                    int64_t dt = csTime - refCtx;
+                    refCtx = csTime;
+                    MemWrite( &item->contextSwitch.time, dt );
+                    if( !AppendData( item, QueueDataSize[(int)QueueType::ContextSwitch] ) )
+                    {
+                        timeStop = -2;
+                        m_refTimeCtx = refCtx;
+                        return;
+                    }
                 }
-                int64_t dt = csTime - refCtx;
-                refCtx = csTime;
-                MemWrite( &item->contextSwitch.time, dt );
-                if( !AppendData( item, QueueDataSize[(int)QueueType::ContextSwitch] ) ) return DequeueStatus::ConnectionLost;
-            }
-            else if( idx == (uint8_t)QueueType::ThreadWakeup )
-            {
-                const auto csTime = MemRead<int64_t>( &item->threadWakeup.time );
-                if( csTime > timeStop )
+                else if( idx == (uint8_t)QueueType::ThreadWakeup )
                 {
-                    timeStop = -1;
-                    return DequeueStatus::DataDequeued;
+                    const auto csTime = MemRead<int64_t>( &item->threadWakeup.time );
+                    if( csTime > timeStop )
+                    {
+                        timeStop = -1;
+                        m_refTimeCtx = refCtx;
+                        return;
+                    }
+                    int64_t dt = csTime - refCtx;
+                    refCtx = csTime;
+                    MemWrite( &item->threadWakeup.time, dt );
+                    if( !AppendData( item, QueueDataSize[(int)QueueType::ThreadWakeup] ) )
+                    {
+                        timeStop = -2;
+                        m_refTimeCtx = refCtx;
+                        return;
+                    }
                 }
-                int64_t dt = csTime - refCtx;
-                refCtx = csTime;
-                MemWrite( &item->threadWakeup.time, dt );
-                if( !AppendData( item, QueueDataSize[(int)QueueType::ThreadWakeup] ) ) return DequeueStatus::ConnectionLost;
+                item++;
             }
-            item++;
+            m_refTimeCtx = refCtx;
         }
-        m_refTimeCtx = refCtx;
-    }
-    else
-    {
-        return DequeueStatus::QueueEmpty;
-    }
-    return DequeueStatus::DataDequeued;
+    );
+
+    if( timeStop == -2 ) return DequeueStatus::ConnectionLost;
+    return ( timeStop == -1 || sz > 0 ) ? DequeueStatus::DataDequeued : DequeueStatus::QueueEmpty;
 }
 
 Profiler::DequeueStatus Profiler::DequeueSerial()
@@ -2439,13 +2451,11 @@ void Profiler::CalibrateDelay()
     const auto dt = t1 - t0;
     m_delay = dt / Events;
 
-    enum { Bulk = 1000 };
     moodycamel::ConsumerToken token( GetQueue() );
     int left = Events;
-    QueueItem item[Bulk];
     while( left != 0 )
     {
-        const auto sz = GetQueue().try_dequeue_bulk( token, item, std::min( left, (int)Bulk ) );
+        const auto sz = GetQueue().try_dequeue_bulk_single( token, [](auto){}, [](auto, auto){} );
         assert( sz > 0 );
         left -= (int)sz;
     }

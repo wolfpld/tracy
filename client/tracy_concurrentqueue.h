@@ -568,57 +568,9 @@ public:
     {
         return static_cast<ExplicitProducer*>(token.producer)->ConcurrentQueue::ExplicitProducer::enqueue_begin(currentTailIndex);
     }
-	
-	// Attempts to dequeue several elements from the queue using an explicit consumer token.
-	// Returns the number of items actually dequeued.
-	// Returns 0 if all producer streams appeared empty at the time they
-	// were checked (so, the queue is likely but not guaranteed to be empty).
-	// Never allocates. Thread-safe.
-	template<typename It>
-	size_t try_dequeue_bulk(consumer_token_t& token, It itemFirst, size_t max)
-	{
-		if (token.desiredProducer == nullptr || token.lastKnownGlobalOffset != globalExplicitConsumerOffset.load(std::memory_order_relaxed)) {
-			if (!update_current_producer_after_rotation(token)) {
-				return 0;
-			}
-		}
-		
-		size_t count = static_cast<ProducerBase*>(token.currentProducer)->dequeue_bulk(itemFirst, max);
-		if (count == max) {
-			if ((token.itemsConsumedFromCurrent += static_cast<std::uint32_t>(max)) >= EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE) {
-				globalExplicitConsumerOffset.fetch_add(1, std::memory_order_relaxed);
-			}
-			return max;
-		}
-		token.itemsConsumedFromCurrent += static_cast<std::uint32_t>(count);
-		max -= count;
-		
-		auto tail = producerListTail.load(std::memory_order_acquire);
-		auto ptr = static_cast<ProducerBase*>(token.currentProducer)->next_prod();
-		if (ptr == nullptr) {
-			ptr = tail;
-		}
-		while (ptr != static_cast<ProducerBase*>(token.currentProducer)) {
-			auto dequeued = ptr->dequeue_bulk(itemFirst, max);
-			count += dequeued;
-			if (dequeued != 0) {
-				token.currentProducer = ptr;
-				token.itemsConsumedFromCurrent = static_cast<std::uint32_t>(dequeued);
-			}
-			if (dequeued == max) {
-				break;
-			}
-			max -= dequeued;
-			ptr = ptr->next_prod();
-			if (ptr == nullptr) {
-				ptr = tail;
-			}
-		}
-		return count;
-	}
-	
-    template<typename It>
-    size_t try_dequeue_bulk_single(consumer_token_t& token, It itemFirst, size_t max, uint64_t& threadId )
+
+	template<class NotifyThread, class ProcessData>
+    size_t try_dequeue_bulk_single(consumer_token_t& token, NotifyThread notifyThread, ProcessData processData )
     {
         if (token.desiredProducer == nullptr || token.lastKnownGlobalOffset != globalExplicitConsumerOffset.load(std::memory_order_relaxed)) {
             if (!update_current_producer_after_rotation(token)) {
@@ -626,14 +578,7 @@ public:
             }
         }
 
-        size_t count = static_cast<ProducerBase*>(token.currentProducer)->dequeue_bulk(itemFirst, max);
-        if (count == max) {
-            if ((token.itemsConsumedFromCurrent += static_cast<std::uint32_t>(max)) >= EXPLICIT_CONSUMER_CONSUMPTION_QUOTA_BEFORE_ROTATE) {
-                globalExplicitConsumerOffset.fetch_add(1, std::memory_order_relaxed);
-            }
-            threadId = token.currentProducer->threadId;
-            return max;
-        }
+        size_t count = static_cast<ProducerBase*>(token.currentProducer)->dequeue_bulk(notifyThread, processData);
         token.itemsConsumedFromCurrent += static_cast<std::uint32_t>(count);
 
         auto tail = producerListTail.load(std::memory_order_acquire);
@@ -644,9 +589,8 @@ public:
         if( count == 0 )
         {
             while (ptr != static_cast<ProducerBase*>(token.currentProducer)) {
-                auto dequeued = ptr->dequeue_bulk(itemFirst, max);
+                auto dequeued = ptr->dequeue_bulk(notifyThread, processData);
                 if (dequeued != 0) {
-                    threadId = ptr->threadId;
                     token.currentProducer = ptr;
                     token.itemsConsumedFromCurrent = static_cast<std::uint32_t>(dequeued);
                     return dequeued;
@@ -660,7 +604,6 @@ public:
         }
         else
         {
-            threadId = token.currentProducer->threadId;
             token.currentProducer = ptr;
             token.itemsConsumedFromCurrent = 0;
             return count;
@@ -1011,10 +954,10 @@ private:
 		
 		virtual ~ProducerBase() { };
 		
-		template<typename It>
-		inline size_t dequeue_bulk(It& itemFirst, size_t max)
+		template<class NotifyThread, class ProcessData>
+		inline size_t dequeue_bulk(NotifyThread notifyThread, ProcessData processData)
 		{
-			return static_cast<ExplicitProducer*>(this)->dequeue_bulk(itemFirst, max);
+			return static_cast<ExplicitProducer*>(this)->dequeue_bulk(notifyThread, processData);
 		}
 		
 		inline ProducerBase* next_prod() const { return static_cast<ProducerBase*>(next); }
@@ -1188,14 +1131,14 @@ private:
             return this->tailIndex;
         }
 		
-		template<typename It>
-		size_t dequeue_bulk(It& itemFirst, size_t max)
+		template<class NotifyThread, class ProcessData>
+		size_t dequeue_bulk(NotifyThread notifyThread, ProcessData processData)
 		{
 			auto tail = this->tailIndex.load(std::memory_order_relaxed);
 			auto overcommit = this->dequeueOvercommit.load(std::memory_order_relaxed);
 			auto desiredCount = static_cast<size_t>(tail - (this->dequeueOptimisticCount.load(std::memory_order_relaxed) - overcommit));
 			if (details::circular_less_than<size_t>(0, desiredCount)) {
-				desiredCount = desiredCount < max ? desiredCount : max;
+				desiredCount = desiredCount < 8192 ? desiredCount : 8192;
 				std::atomic_thread_fence(std::memory_order_acquire);
 				
 				auto myDequeueCount = this->dequeueOptimisticCount.fetch_add(desiredCount, std::memory_order_relaxed);
@@ -1221,7 +1164,9 @@ private:
 					auto firstBlockBaseIndex = firstIndex & ~static_cast<index_t>(BLOCK_SIZE - 1);
 					auto offset = static_cast<size_t>(static_cast<typename std::make_signed<index_t>::type>(firstBlockBaseIndex - headBase) / BLOCK_SIZE);
 					auto indexIndex = (localBlockIndexHead + offset) & (localBlockIndex->size - 1);
-					
+
+					notifyThread( this->threadId );
+
 					// Iterate the blocks and dequeue
 					auto index = firstIndex;
 					do {
@@ -1230,10 +1175,9 @@ private:
 						endIndex = details::circular_less_than<index_t>(firstIndex + static_cast<index_t>(actualCount), endIndex) ? firstIndex + static_cast<index_t>(actualCount) : endIndex;
 						auto block = localBlockIndex->entries[indexIndex].block;
 
-                        const auto sz = endIndex - index;
-                        memcpy( itemFirst, (*block)[index], sizeof( T ) * sz );
-                        index += sz;
-                        itemFirst += sz;
+						const auto sz = endIndex - index;
+						processData( (*block)[index], sz );
+						index += sz;
 
 						block->ConcurrentQueue::Block::set_many_empty(firstIndexInBlock, static_cast<size_t>(endIndex - firstIndexInBlock));
 						indexIndex = (indexIndex + 1) & (localBlockIndex->size - 1);

@@ -631,7 +631,6 @@ private:
     int m_bufferOffset;
     int m_bufferStart;
 
-    QueueItem* m_itemBuf;
     char* m_lz4Buf;
 
     FastVector<QueueItem> m_serialQueue, m_serialDequeue;

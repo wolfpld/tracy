@@ -9619,7 +9619,11 @@ void View::DrawFindZone()
                                 }
                                 else
                                 {
+#ifdef TRACY_EXTENDED_FONT
+                                    TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
+#else
                                     TextDisabledUnformatted( "--" );
+#endif
                                 }
                                 ImGui::SameLine();
                                 ImGui::TextUnformatted( txt );
@@ -14387,7 +14391,11 @@ void View::CallstackTooltip( uint32_t idx )
                 }
                 else
                 {
+#ifdef TRACY_EXTENDED_FONT
+                    TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
+#else
                     TextDisabledUnformatted( "--" );
+#endif
                 }
                 ImGui::SameLine();
                 if( txt[0] == '[' )

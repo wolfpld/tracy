@@ -1,6 +1,7 @@
 #ifndef __TRACYFASTVECTOR_HPP__
 #define __TRACYFASTVECTOR_HPP__
 
+#include <assert.h>
 #include <stddef.h>
 
 #include "../common/TracyAlloc.hpp"
@@ -21,6 +22,7 @@ public:
         , m_write( m_ptr )
         , m_end( m_ptr + capacity )
     {
+        assert( capacity != 0 );
     }
 
     FastVector( const FastVector& ) = delete;

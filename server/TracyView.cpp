@@ -8040,6 +8040,17 @@ void View::DrawMessages()
     ImGui::Spacing();
     ImGui::SameLine();
     TextFocused( "Visible messages:", RealToString( m_visibleMessages ) );
+    if( m_worker.GetFrameImageCount() != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_IMAGE " Show frame images", &m_showMessageImages );
+#else
+        ImGui::Checkbox( "Show frame images", &m_showMessageImages );
+#endif
+    }
 
 #ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
@@ -8146,6 +8157,31 @@ void View::DrawMessages()
                 if( ImGui::IsItemHovered() )
                 {
                     m_msgHighlight = v;
+
+                    if( m_showMessageImages )
+                    {
+                        const auto frameIdx = m_worker.GetFrameRange( *m_frames, v->time, v->time ).first;
+                        auto fi = m_worker.GetFrameImage( *m_frames, frameIdx );
+                        if( fi )
+                        {
+                            ImGui::BeginTooltip();
+                            if( fi != m_frameTexturePtr )
+                            {
+                                if( !m_frameTexture ) m_frameTexture = MakeTexture();
+                                UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
+                                m_frameTexturePtr = fi;
+                            }
+                            if( fi->flip )
+                            {
+                                ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                            }
+                            else
+                            {
+                                ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+                            }
+                            ImGui::EndTooltip();
+                        }
+                    }
                 }
                 if( m_msgToFocus == v )
                 {

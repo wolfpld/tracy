@@ -305,6 +305,7 @@ private:
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
     ImGuiTextFilter m_messageFilter;
+    bool m_showMessageImages = false;
     ImGuiTextFilter m_statisticsFilter;
     int m_visibleMessages = 0;
     bool m_disconnectIssued = false;

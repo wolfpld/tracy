@@ -2103,9 +2103,11 @@ Disabling display of some events is especially recommended when the profiler per
 \subsection{Messages window}
 \label{messages}
 
-In this window you can see all the messages that were sent by the client application, as described in section~\ref{messagelog}. The window is split into four columns: \emph{time}, \emph{thread}, \emph{message} and \emph{call stack}. Hovering the \faMousePointer{} mouse cursor over a message will highlight it on the timeline view. Clicking the \LMB{} left mouse button on a message will center the timeline view on the selected message.
+In this window you can see all the messages that were sent by the client application, as described in section~\ref{messagelog}. The window is split into four columns: \emph{time}, \emph{thread}, \emph{message} and \emph{call stack}. Hovering the \faMousePointer{}~mouse cursor over a message will highlight it on the timeline view. Clicking the \LMB{} left mouse button on a message will center the timeline view on the selected message.
 
 The \emph{call stack} column is filled only if a call stack capture was requested, as described in section~\ref{collectingcallstacks}. A single entry consists of the \emph{\faAlignJustify{}~Show} button, which opens the call stack information window (chapter~\ref{callstackwindow}) and of an abbreviated information about call path.
+
+If the \emph{\faImage{}~Show frame images} option is selected, hovering the \faMousePointer{}~mouse cursor over a message will show a tooltip containing frame image (see section~\ref{frameimages}) associated with frame in which the message was issued, if available.
 
 In a live capture, the message list will automatically scroll down to display the most recent message. This behavior can be disabled by manually scrolling the message list up. When the view is scrolled down to display the last message, the auto-scrolling feature will be enabled again.
 
@@ -2113,7 +2115,7 @@ The message list can be filtered in the following ways:
 
 \begin{itemize}
 \item By the originating thread in the \emph{\faRandom{} Visible threads} drop-down.
-\item By matching the message text to the expression in the \emph{Filter messages} entry field. Multiple filter expressions can be comma-separated (e.g. 'warn, info' will match messages containing strings 'warn' \emph{or} 'info'). Matches can be excluded by preceding the term with a minus character (e.g. '-debug' will hide all messages containing string 'debug').
+\item By matching the message text to the expression in the \emph{\faFilter{}~Filter messages} entry field. Multiple filter expressions can be comma-separated (e.g. 'warn, info' will match messages containing strings 'warn' \emph{or} 'info'). Matches can be excluded by preceding the term with a minus character (e.g. '-debug' will hide all messages containing string 'debug').
 \end{itemize}
 
 \subsection{Statistics window}
@@ -2127,7 +2129,7 @@ By default the displayed times are inclusive, that is, they contain execution ti
 
 Clicking the \LMB{} left mouse button on a zone will open the individual zone statistics view in the find zone window (section~\ref{findzone}).
 
-You can filter the displayed list of zones by matching the zone name to the expression in the \emph{Filter zones} entry field. Refer to section~\ref{messages} for a more detailed description of the expression syntax.
+You can filter the displayed list of zones by matching the zone name to the expression in the \emph{\faFilter{}~Filter zones} entry field. Refer to section~\ref{messages} for a more detailed description of the expression syntax.
 
 \subsection{Find zone window}
 \label{findzone}

@@ -149,6 +149,13 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 
 static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
 {
+    if( ( addr & 0x8000000000000000 ) != 0 )
+    {
+        memcpy( buf, "[kernel]", 9 );
+        len = 8;
+        return;
+    }
+
 #ifndef __CYGWIN__
     for( auto& v : *s_modCache )
     {

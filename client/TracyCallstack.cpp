@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "TracyCallstack.hpp"
+#include "TracyFastVector.hpp"
 
 #ifdef TRACY_HAS_CALLSTACK
 
@@ -62,10 +63,9 @@ struct ModuleCache
     uint64_t end;
     char* name;
     uint32_t nameLen;
-    ModuleCache* next;
 };
 
-static ModuleCache* s_modCache = nullptr;
+static FastVector<ModuleCache>* s_modCache;
 
 void InitCallstack()
 {
@@ -82,6 +82,8 @@ void InitCallstack()
     HANDLE proc = GetCurrentProcess();
 
 #ifndef __CYGWIN__
+    s_modCache = new FastVector<ModuleCache>( 512 );
+
     if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
     {
         const auto sz = needed / sizeof( HMODULE );
@@ -99,7 +101,7 @@ void InitCallstack()
                     while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
                     if( ptr > name ) ptr++;
                     const auto namelen = name + res - ptr;
-                    auto cache = (ModuleCache*)tracy_malloc( sizeof( ModuleCache ) );
+                    auto cache = s_modCache->push_next();
                     cache->start = base;
                     cache->end = base + info.SizeOfImage;
                     cache->name = (char*)tracy_malloc( namelen+3 );
@@ -108,8 +110,6 @@ void InitCallstack()
                     cache->name[namelen+1] = ']';
                     cache->name[namelen+2] = '\0';
                     cache->nameLen = namelen+2;
-                    cache->next = s_modCache;
-                    s_modCache = cache;
                 }
             }
         }
@@ -150,16 +150,14 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
 {
 #ifndef __CYGWIN__
-    auto ptr = s_modCache;
-    while( ptr )
+    for( auto& v : *s_modCache )
     {
-        if( addr >= ptr->start && addr < ptr->end )
+        if( addr >= v.start && addr < v.end )
         {
-            memcpy( buf, ptr->name, ptr->nameLen+1 );
-            len = ptr->nameLen;
+            memcpy( buf, v.name, v.nameLen+1 );
+            len = v.nameLen;
             return;
         }
-        ptr = ptr->next;
     }
 
     HMODULE mod[1024];
@@ -191,14 +189,12 @@ static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
                         buf[namelen+2] = '\0';
                         len = namelen+2;
 
-                        auto cache = (ModuleCache*)tracy_malloc( sizeof( ModuleCache ) );
+                        auto cache = s_modCache->push_next();
                         cache->start = base;
                         cache->end = base + info.SizeOfImage;
                         cache->name = (char*)tracy_malloc( namelen+3 );
                         memcpy( cache->name, buf, namelen+3 );
                         cache->nameLen = namelen+2;
-                        cache->next = s_modCache;
-                        s_modCache = cache;
 
                         return;
                     }

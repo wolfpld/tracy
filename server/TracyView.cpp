@@ -11238,11 +11238,12 @@ void View::DrawCallstackWindow()
                 {
                     if( entry.sel == 0 )
                     {
-                        ImGui::TextDisabled( "0x%" PRIx64, entry.idx );
+                        const auto addr = m_worker.GetCanonicalPointer( entry );
+                        ImGui::TextDisabled( "0x%" PRIx64, addr );
                         if( ImGui::IsItemClicked() )
                         {
                             char tmp[32];
-                            sprintf( tmp, "0x%" PRIx64, entry.idx );
+                            sprintf( tmp, "0x%" PRIx64, addr );
                             ImGui::SetClipboardText( tmp );
                         }
                     }

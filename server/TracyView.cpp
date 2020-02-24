@@ -8022,7 +8022,11 @@ void View::DrawMessages()
     size_t tsz = 0;
     for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
 
+#ifdef TRACY_EXTENDED_FONT
+    m_messageFilter.Draw( ICON_FA_FILTER " Filter messages", 200 );
+#else
     m_messageFilter.Draw( "Filter messages", 200 );
+#endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
@@ -10942,7 +10946,11 @@ void View::DrawStatistics()
         return;
     }
 
+#ifdef TRACY_EXTENDED_FONT
+    m_statisticsFilter.Draw( ICON_FA_FILTER " Filter zones", 200 );
+#else
     m_statisticsFilter.Draw( "Filter zones", 200 );
+#endif
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )

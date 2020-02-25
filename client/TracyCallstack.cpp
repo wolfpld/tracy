@@ -31,6 +31,20 @@
 namespace tracy
 {
 
+static inline char* CopyString( const char* src, size_t sz )
+{
+    auto dst = (char*)tracy_malloc( sz + 1 );
+    memcpy( dst, src, sz );
+    dst[sz] = '\0';
+    return dst;
+}
+
+static inline char* CopyString( const char* src )
+{
+    return CopyString( src, strlen( src ) );
+}
+
+
 #if TRACY_HAS_CALLSTACK == 1
 
 enum { MaxCbTrace = 16 };
@@ -251,12 +265,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
 
     {
-        auto name = (char*)tracy_malloc(si->NameLen + 1);
-        memcpy(name, si->Name, si->NameLen);
-        name[si->NameLen] = '\0';
-
-        cb_data[write].name = name;
-
         const char* filename;
         if (SymGetLineFromAddr64(proc, ptr, &displacement, &line) == 0)
         {
@@ -269,13 +277,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             cb_data[write].line = line.LineNumber;
         }
 
-        const auto fsz = strlen(filename);
-        auto file = (char*)tracy_malloc(fsz + 1);
-        memcpy(file, filename, fsz);
-        file[fsz] = '\0';
-
-        cb_data[write].file = file;
-
+        cb_data[write].name = CopyString( si->Name, si->NameLen );
+        cb_data[write].file = CopyString( filename );
         cb_data[write].symAddr = symValid ? si->Address : 0;
     }
 
@@ -289,11 +292,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             const auto symInlineValid = SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0;
             if( !symInlineValid ) GetModuleName( ptr, si->Name, si->NameLen );
 
-            auto name = (char*)tracy_malloc( si->NameLen + 1 );
-            memcpy( name, si->Name, si->NameLen );
-            name[si->NameLen] = '\0';
-            cb.name = name;
-
             const char* filename;
             if( SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) == 0 )
             {
@@ -306,12 +304,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
                 cb.line = line.LineNumber;
             }
 
-            const auto fsz = strlen( filename );
-            auto file = (char*)tracy_malloc( fsz + 1 );
-            memcpy( file, filename, fsz );
-            file[fsz] = '\0';
-            cb.file = file;
-
+            cb.name = CopyString( si->Name, si->NameLen );
+            cb.file = CopyString( filename );
             cb.symAddr = symInlineValid ? si->Address : 0;
 
             ctx++;
@@ -333,15 +327,6 @@ CallstackEntry cb_data[MaxCbTrace];
 void InitCallstack()
 {
     cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
-}
-
-static inline char* CopyString( const char* src )
-{
-    const auto sz = strlen( src );
-    auto dst = (char*)tracy_malloc( sz + 1 );
-    memcpy( dst, src, sz );
-    dst[sz] = '\0';
-    return dst;
 }
 
 static int FastCallstackDataCb( void* data, uintptr_t pc, const char* fn, int lineno, const char* function )
@@ -573,11 +558,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     if( symoff == 0 )
     {
-        const auto namelen = strlen( symname );
-        auto name = (char*)tracy_malloc( namelen + 1 );
-        memcpy( name, symname, namelen );
-        name[namelen] = '\0';
-        cb.name = name;
+        cb.name = CopyString( symname );
     }
     else
     {

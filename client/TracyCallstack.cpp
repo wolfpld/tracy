@@ -243,10 +243,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = 1024;
 
-    if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
-    {
-        GetModuleName( ptr, si->Name, si->NameLen );
-    }
+    const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
+    if( !symValid ) GetModuleName( ptr, si->Name, si->NameLen );
 
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
@@ -277,6 +275,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         file[fsz] = '\0';
 
         cb_data[write].file = file;
+
+        cb_data[write].symAddr = symValid ? si->Address : 0;
     }
 
 #ifndef __CYGWIN__
@@ -286,10 +286,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         {
             auto& cb = cb_data[i];
 
-            if( SymFromInlineContext( proc, ptr, ctx, nullptr, si ) == 0 )
-            {
-                GetModuleName( ptr, si->Name, si->NameLen );
-            }
+            const auto symInlineValid = SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0;
+            if( !symInlineValid ) GetModuleName( ptr, si->Name, si->NameLen );
 
             auto name = (char*)tracy_malloc( si->NameLen + 1 );
             memcpy( name, si->Name, si->NameLen );
@@ -313,6 +311,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             memcpy( file, filename, fsz );
             file[fsz] = '\0';
             cb.file = file;
+
+            cb.symAddr = symInlineValid ? si->Address : 0;
 
             ctx++;
         }

@@ -27,6 +27,7 @@ struct CallstackEntry
     const char* name;
     const char* file;
     uint32_t line;
+    uint64_t symAddr;
 };
 
 struct CallstackEntryData

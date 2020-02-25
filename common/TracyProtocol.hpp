@@ -68,6 +68,7 @@ struct WelcomeMessage
     uint64_t resolution;
     uint64_t epoch;
     uint64_t pid;
+    int64_t samplingPeriod;
     uint8_t onDemand;
     uint8_t isApple;
     char programName[WelcomeMessageProgramNameSize];

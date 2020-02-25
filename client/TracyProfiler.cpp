@@ -1196,6 +1196,7 @@ void Profiler::Worker()
     MemWrite( &welcome.resolution, m_resolution );
     MemWrite( &welcome.epoch, m_epoch );
     MemWrite( &welcome.pid, pid );
+    MemWrite( &welcome.samplingPeriod, m_samplingPeriod );
     MemWrite( &welcome.onDemand, onDemand );
     MemWrite( &welcome.isApple, isApple );
     memcpy( welcome.programName, procname, pnsz );

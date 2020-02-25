@@ -160,7 +160,7 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
     }
 }
 
-bool SysTraceStart()
+bool SysTraceStart( int64_t& samplingPeriod )
 {
     s_pid = GetCurrentProcessId();
 
@@ -191,6 +191,7 @@ bool SysTraceStart()
         interval.Interval = 1250;   // 8 kHz
         const auto intervalStatus = TraceSetInformation( 0, TraceSampledProfileIntervalInfo, &interval, sizeof( interval ) );
         if( intervalStatus != ERROR_SUCCESS ) return false;
+        samplingPeriod = 125*1000;
     }
 
     const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + sizeof( KERNEL_LOGGER_NAME );
@@ -523,7 +524,7 @@ void SysTraceInjectPayload()
 }
 #endif
 
-bool SysTraceStart()
+bool SysTraceStart( int64_t& samplingPeriod )
 {
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
     if( !TraceWrite( CurrentTracer, sizeof( CurrentTracer ), "nop", 4 ) ) return false;

@@ -619,6 +619,7 @@ private:
     UdpBroadcast* m_broadcast;
     bool m_noExit;
     std::atomic<uint32_t> m_zoneId;
+    int64_t m_samplingPeriod;
 
     uint64_t m_threadCtx;
     int64_t m_refTimeThread;

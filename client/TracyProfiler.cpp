@@ -1024,6 +1024,7 @@ Profiler::Profiler()
     , m_broadcast( nullptr )
     , m_noExit( false )
     , m_zoneId( 1 )
+    , m_samplingPeriod( 0 )
     , m_stream( LZ4_createStream() )
     , m_buffer( (char*)tracy_malloc( TargetFrameSize*3 ) )
     , m_bufferOffset( 0 )
@@ -1072,7 +1073,7 @@ Profiler::Profiler()
     new(s_compressThread) Thread( LaunchCompressWorker, this );
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
-    if( SysTraceStart() )
+    if( SysTraceStart( m_samplingPeriod ) )
     {
         s_sysTraceThread = (Thread*)tracy_malloc( sizeof( Thread ) );
         new(s_sysTraceThread) Thread( SysTraceWorker, nullptr );

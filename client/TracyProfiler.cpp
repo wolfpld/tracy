@@ -2215,12 +2215,17 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
     const auto frameData = DecodeCallstackPtr( ptr );
 
     {
+        SendString( uint64_t( frameData.imageName ), frameData.imageName, QueueType::CustomStringData );
+
         QueueItem item;
         MemWrite( &item.hdr.type, QueueType::CallstackFrameSize );
         MemWrite( &item.callstackFrameSize.ptr, ptr );
         MemWrite( &item.callstackFrameSize.size, frameData.size );
+        MemWrite( &item.callstackFrameSize.imageName, (uint64_t)frameData.imageName );
 
         AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrameSize] );
+
+        tracy_free( (void*)frameData.imageName );
     }
 
     for( uint8_t i=0; i<frameData.size; i++ )

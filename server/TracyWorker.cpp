@@ -1330,7 +1330,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         m_data.callstackPayload.push_back_no_space_check( arr );
     }
 
-    if( fileVer >= FileVersion( 0, 5, 8 ) )
+    if( fileVer >= FileVersion( 0, 6, 5 ) )
     {
         f.Read( sz );
         m_data.callstackFrameMap.reserve( sz );
@@ -1342,6 +1342,26 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
             frameData->data = m_slab.Alloc<CallstackFrame>( frameData->size );
             f.Read( frameData->data, sizeof( CallstackFrame ) * frameData->size );
+
+            m_data.callstackFrameMap.emplace( id, frameData );
+        }
+    }
+    else if( fileVer >= FileVersion( 0, 5, 8 ) )
+    {
+        f.Read( sz );
+        m_data.callstackFrameMap.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            CallstackFrameId id;
+            auto frameData = m_slab.Alloc<CallstackFrameData>();
+            f.Read2( id, frameData->size );
+
+            frameData->data = m_slab.Alloc<CallstackFrame>( frameData->size );
+            for( uint8_t j=0; j<frameData->size; j++ )
+            {
+                f.Read3( frameData->data[j].name, frameData->data[j].file, frameData->data[j].line );
+                frameData->data[j].symAddr = 0;
+            }
 
             m_data.callstackFrameMap.emplace( id, frameData );
         }
@@ -1365,6 +1385,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 f.Read( str );
                 if( str.active ) frameData->data[j].file.SetIdx( str.idx );
                 f.Read( frameData->data[j].line );
+                frameData->data[j].symAddr = 0;
             }
 
             m_data.callstackFrameMap.emplace( id, frameData );
@@ -3093,6 +3114,7 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _s
         cf.name = StoreString( data, sz ).idx; data += sz;
         memcpy( &sz, data, 4 ); data += 4;
         cf.file = StoreString( data, sz ).idx; data += sz;
+        cf.symAddr = 0;
         CallstackFrameData cfd = { &cf, 1 };
 
         CallstackFrameId id;
@@ -4683,6 +4705,7 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
         m_callstackFrameStaging->data[idx].name = StringIdx( nit->second.idx );
         m_callstackFrameStaging->data[idx].file = StringIdx( fit->second.idx );
         m_callstackFrameStaging->data[idx].line = ev.line;
+        m_callstackFrameStaging->data[idx].symAddr = ev.symAddr;
 
         if( --m_pendingCallstackSubframes == 0 )
         {

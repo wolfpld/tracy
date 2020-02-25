@@ -314,11 +314,16 @@ enum { MemEventSize = sizeof( MemEvent ) };
 static_assert( std::is_standard_layout<MemEvent>::value, "MemEvent is not standard layout" );
 
 
-struct CallstackFrame
+struct CallstackFrameBasic
 {
     StringIdx name;
     StringIdx file;
     uint32_t line;
+};
+
+struct CallstackFrame : public CallstackFrameBasic
+{
+    uint64_t symAddr;
 };
 
 enum { CallstackFrameSize = sizeof( CallstackFrame ) };

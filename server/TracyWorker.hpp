@@ -172,7 +172,7 @@ private:
             if( lhs->size != rhs->size ) return false;
             for( uint8_t i=0; i<lhs->size; i++ )
             {
-                if( memcmp( lhs->data + i, rhs->data + i, sizeof( CallstackFrame ) ) != 0 ) return false;
+                if( memcmp( lhs->data + i, rhs->data + i, sizeof( CallstackFrameBasic ) ) != 0 ) return false;
             }
             return true;
         }

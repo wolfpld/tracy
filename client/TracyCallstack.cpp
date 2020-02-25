@@ -257,8 +257,10 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = 1024;
 
+    char moduleName[1024];
+    ULONG moduleNameLen;
+    GetModuleName( ptr, moduleName, moduleNameLen );
     const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
-    if( !symValid ) GetModuleName( ptr, si->Name, si->NameLen );
 
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
@@ -277,7 +279,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             cb_data[write].line = line.LineNumber;
         }
 
-        cb_data[write].name = CopyString( si->Name, si->NameLen );
+        cb_data[write].name = symValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName, moduleNameLen );
         cb_data[write].file = CopyString( filename );
         cb_data[write].symAddr = symValid ? si->Address : 0;
     }
@@ -288,10 +290,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         for( DWORD i=0; i<inlineNum; i++ )
         {
             auto& cb = cb_data[i];
-
             const auto symInlineValid = SymFromInlineContext( proc, ptr, ctx, nullptr, si ) != 0;
-            if( !symInlineValid ) GetModuleName( ptr, si->Name, si->NameLen );
-
             const char* filename;
             if( SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) == 0 )
             {
@@ -304,7 +303,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
                 cb.line = line.LineNumber;
             }
 
-            cb.name = CopyString( si->Name, si->NameLen );
+            cb.name = symInlineValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName, moduleNameLen );
             cb.file = CopyString( filename );
             cb.symAddr = symInlineValid ? si->Address : 0;
 
@@ -313,7 +312,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     }
 #endif
 
-    return { cb_data, uint8_t( cb_num ) };
+    return { cb_data, uint8_t( cb_num ), CopyString( moduleName, moduleNameLen ) };
 }
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6

@@ -34,6 +34,7 @@ struct CallstackEntryData
 {
     const CallstackEntry* data;
     uint8_t size;
+    const char* imageName;
 };
 
 const char* DecodeCallstackPtrFast( uint64_t ptr );

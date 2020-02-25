@@ -1348,7 +1348,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             CallstackFrameId id;
             auto frameData = m_slab.Alloc<CallstackFrameData>();
-            f.Read2( id, frameData->size );
+            f.Read3( id, frameData->size, frameData->imageName );
 
             frameData->data = m_slab.Alloc<CallstackFrame>( frameData->size );
             f.Read( frameData->data, sizeof( CallstackFrame ) * frameData->size );
@@ -1363,7 +1363,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         for( uint64_t i=0; i<sz; i++ )
         {
             CallstackFrameId id;
-            auto frameData = m_slab.Alloc<CallstackFrameData>();
+            auto frameData = m_slab.AllocInit<CallstackFrameData>();
             f.Read2( id, frameData->size );
 
             frameData->data = m_slab.Alloc<CallstackFrame>( frameData->size );
@@ -1384,7 +1384,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             __StringIdxOld str;
             CallstackFrameId id;
-            auto frameData = m_slab.Alloc<CallstackFrameData>();
+            auto frameData = m_slab.AllocInit<CallstackFrameData>();
             f.Read2( id, frameData->size );
 
             frameData->data = m_slab.AllocInit<CallstackFrame>( frameData->size );
@@ -3133,7 +3133,7 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _s
         {
             auto frame = m_slab.Alloc<CallstackFrame>();
             memcpy( frame, &cf, sizeof( CallstackFrame ) );
-            auto frameData = m_slab.Alloc<CallstackFrameData>();
+            auto frameData = m_slab.AllocInit<CallstackFrameData>();
             frameData->data = frame;
             frameData->size = 1;
             id.idx = m_callstackAllocNextIdx++;
@@ -4687,6 +4687,9 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
     m_pendingCallstackFrames--;
     m_pendingCallstackSubframes = ev.size;
 
+    auto iit = m_pendingCustomStrings.find( ev.imageName );
+    assert( iit != m_pendingCustomStrings.end() );
+
     // Frames may be duplicated due to recursion
     auto fmit = m_data.callstackFrameMap.find( PackPointer( ev.ptr ) );
     if( fmit == m_data.callstackFrameMap.end() )
@@ -4694,9 +4697,12 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
         m_callstackFrameStaging = m_slab.Alloc<CallstackFrameData>();
         m_callstackFrameStaging->size = ev.size;
         m_callstackFrameStaging->data = m_slab.Alloc<CallstackFrame>( ev.size );
+        m_callstackFrameStaging->imageName = StringIdx( iit->second.idx );
 
         m_callstackFrameStagingPtr = ev.ptr;
     }
+
+    m_pendingCustomStrings.erase( iit );
 }
 
 void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
@@ -5850,6 +5856,7 @@ void Worker::Write( FileWrite& f )
     {
         f.Write( &frame.first, sizeof( CallstackFrameId ) );
         f.Write( &frame.second->size, sizeof( frame.second->size ) );
+        f.Write( &frame.second->imageName, sizeof( frame.second->imageName ) );
         f.Write( frame.second->data, sizeof( CallstackFrame ) * frame.second->size );
     }
 

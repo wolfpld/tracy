@@ -332,6 +332,7 @@ struct CallstackFrameData
 {
     short_ptr<CallstackFrame> data;
     uint8_t size;
+    StringIdx imageName;
 };
 
 enum { CallstackFrameDataSize = sizeof( CallstackFrameData ) };

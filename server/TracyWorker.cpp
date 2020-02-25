@@ -258,6 +258,7 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
     , m_captureProgram( program )
     , m_captureTime( 0 )
     , m_pid( 0 )
+    , m_samplingPeriod( 0 )
     , m_stream( nullptr )
     , m_buffer( nullptr )
     , m_traceVersion( CurrentVersion )
@@ -432,6 +433,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     else
     {
         m_pid = 0;
+    }
+
+    if( fileVer >= FileVersion( 0, 6, 5 ) )
+    {
+        f.Read( m_samplingPeriod );
+    }
+    else
+    {
+        m_samplingPeriod = 0;
     }
 
     uint64_t sz;
@@ -5515,6 +5525,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &m_data.lastTime, sizeof( m_data.lastTime ) );
     f.Write( &m_data.frameOffset, sizeof( m_data.frameOffset ) );
     f.Write( &m_pid, sizeof( m_pid ) );
+    f.Write( &m_samplingPeriod, sizeof( m_samplingPeriod ) );
 
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );

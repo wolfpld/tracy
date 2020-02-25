@@ -2359,6 +2359,7 @@ void Worker::Exec()
         m_delay = TscTime( welcome.delay );
         m_resolution = TscTime( welcome.resolution );
         m_pid = welcome.pid;
+        m_samplingPeriod = welcome.samplingPeriod;
         m_onDemand = welcome.onDemand;
         m_captureProgram = welcome.programName;
         m_captureTime = welcome.epoch;

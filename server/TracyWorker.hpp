@@ -673,6 +673,7 @@ private:
     uint64_t m_captureTime;
     std::string m_hostInfo;
     uint64_t m_pid;
+    int64_t m_samplingPeriod;
     bool m_terminate = false;
     bool m_crashed = false;
     bool m_disconnect = false;

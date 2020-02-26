@@ -1636,6 +1636,20 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 6, 5 ) )
+    {
+        f.Read( sz );
+        m_data.symbolMap.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t symAddr;
+            StringIdx name, file, imageName;
+            uint32_t line;
+            f.Read5( symAddr, name, file, line, imageName );
+            m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName } );
+        }
+    }
+
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
@@ -5979,6 +5993,14 @@ void Worker::Write( FileWrite& f )
     sz = m_data.cpuThreadData.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.cpuThreadData )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second, sizeof( v.second ) );
+    }
+
+    sz = m_data.symbolMap.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.symbolMap )
     {
         f.Write( &v.first, sizeof( v.first ) );
         f.Write( &v.second, sizeof( v.second ) );

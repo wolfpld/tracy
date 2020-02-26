@@ -2450,7 +2450,7 @@ Stack frame location may be displayed in the following number of ways, depending
 \item \emph{Source code} -- displays source file and line number associated with the frame.
 \item \emph{Return address} -- shows return address, which may be used to pinpoint the exact instruction in the disassembly.
 \item \emph{Symbol address} -- displays begin address of the function containing the frame address.
-\item \emph{Function} -- opens source code at the beginning of the function containing selected frame.
+\item \emph{Entry point} -- opens source code at the beginning of the function containing selected frame.
 \end{itemize}
 
 In some cases it may be not possible to properly decode stack frame address. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the image containing the frame address, or simply '\texttt{[unknown]}' if even this information cannot be retrieved. '\texttt{[kernel]}' is used to indicate unknown stack frames within the operating system internal routines.

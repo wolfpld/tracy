@@ -11133,7 +11133,7 @@ void View::DrawCallstackWindow()
     ImGui::SameLine();
     ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
     ImGui::SameLine();
-    ImGui::RadioButton( "Function", &m_showCallstackFrameAddress, 3 );
+    ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
     ImGui::PopStyleVar();
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );

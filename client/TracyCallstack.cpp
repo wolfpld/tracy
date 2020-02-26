@@ -49,6 +49,7 @@ static inline char* CopyString( const char* src )
 #if TRACY_HAS_CALLSTACK == 1
 
 enum { MaxCbTrace = 16 };
+enum { MaxNameSize = 1024 };
 
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
@@ -142,13 +143,13 @@ TRACY_API tracy_force_inline uintptr_t* CallTrace( int depth )
 
 const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
-    static char ret[1024];
+    static char ret[MaxNameSize];
     const auto proc = GetCurrentProcess();
 
-    char buf[sizeof( SYMBOL_INFO ) + 1024];
+    char buf[sizeof( SYMBOL_INFO ) + MaxNameSize];
     auto si = (SYMBOL_INFO*)buf;
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
-    si->MaxNameLen = 1024;
+    si->MaxNameLen = MaxNameSize;
 
     if( SymFromAddr( proc, ptr, nullptr, si ) == 0 )
     {
@@ -253,10 +254,10 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         cb_num = 1;
     }
 
-    char buf[sizeof( SYMBOL_INFO ) + 1024];
+    char buf[sizeof( SYMBOL_INFO ) + MaxNameSize];
     auto si = (SYMBOL_INFO*)buf;
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
-    si->MaxNameLen = 1024;
+    si->MaxNameLen = MaxNameSize;
 
     char moduleName[1024];
     ULONG moduleNameLen;

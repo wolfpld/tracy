@@ -208,7 +208,7 @@ private:
         Vector<uint64_t> sourceLocationExpand;
 #ifndef TRACY_NO_STATISTICS
         unordered_flat_map<int16_t, SourceLocationZones> sourceLocationZones;
-        bool sourceLocationZonesReady;
+        bool sourceLocationZonesReady = false;
 #else
         unordered_flat_map<int16_t, uint64_t> sourceLocationZonesCnt;
 #endif

@@ -657,7 +657,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     }
 
 #ifndef TRACY_NO_STATISTICS
-    m_data.sourceLocationZonesReady = false;
     m_data.sourceLocationZones.reserve( sle + sz );
 
     f.Read( sz );

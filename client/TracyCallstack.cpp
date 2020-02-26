@@ -573,6 +573,51 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
+SymbolData DecodeSymbolAddress( uint64_t ptr )
+{
+    SymbolData sym;
+
+    char* demangled = nullptr;
+    const char* symname = nullptr;
+    const char* symloc = nullptr;
+    auto vptr = (void*)ptr;
+
+    Dl_info dlinfo;
+    if( dladdr( vptr, &dlinfo ) )
+    {
+        symloc = dlinfo.dli_fname;
+        symname = dlinfo.dli_sname;
+
+        if( symname && symname[0] == '_' )
+        {
+            size_t len = 0;
+            int status;
+            demangled = abi::__cxa_demangle( symname, nullptr, &len, &status );
+            if( status == 0 )
+            {
+                symname = demangled;
+            }
+        }
+    }
+
+    if( !symname )
+    {
+        symname = "[unknown]";
+    }
+    if( !symloc )
+    {
+        symloc = "[unknown]";
+    }
+
+    sym.name = CopyString( symname );
+    sym.file = CopyString( symloc );
+    sym.line = 0;
+
+    if( demangled ) free( demangled );
+
+    return sym;
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     static CallstackEntry cb;

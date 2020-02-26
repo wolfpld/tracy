@@ -484,7 +484,12 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     cb_num = 0;
     backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
     assert( cb_num > 0 );
-    return { cb_data, uint8_t( cb_num ) };
+
+    const char* symloc = nullptr;
+    Dl_info dlinfo;
+    if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
+
+    return { cb_data, uint8_t( cb_num ), CopyString( symloc ? symloc : "[unknown]" ) };
 }
 
 #elif TRACY_HAS_CALLSTACK == 5

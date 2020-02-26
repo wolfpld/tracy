@@ -556,7 +556,6 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 {
     static char ret[1024];
     auto vptr = (void*)ptr;
-    char** sym = nullptr;
     const char* symname = nullptr;
     Dl_info dlinfo;
     if( dladdr( vptr, &dlinfo ) && dlinfo.dli_sname )
@@ -583,7 +582,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     const char* symname = nullptr;
     const char* symloc = nullptr;
     auto vptr = (void*)ptr;
-    char** sym = nullptr;
     ptrdiff_t symoff = 0;
     void* symaddr = nullptr;
 
@@ -643,7 +641,6 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     cb.symAddr = (uint64_t)symaddr;
 
-    if( sym ) free( sym );
     if( demangled ) free( demangled );
 
     return { &cb, 1, CopyString( symloc ? symloc : "[unknown]" ) };

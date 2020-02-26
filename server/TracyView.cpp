@@ -11121,10 +11121,18 @@ void View::DrawCallstackWindow()
     ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::Checkbox( ICON_FA_AT " Show frame addresses", &m_showCallstackFrameAddress );
+    ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
 #else
-    ImGui::Checkbox( "Show frame addresses", &m_showCallstackFrameAddress );
+    ImGui::Checkbox( "Frame location:" );
 #endif
+    ImGui::SameLine();
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+    ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
+    ImGui::PopStyleVar();
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
 
@@ -11238,8 +11246,23 @@ void View::DrawCallstackWindow()
                     ImGui::Indent( indentVal );
                 }
                 txt = m_worker.GetString( frame.file );
-                if( m_showCallstackFrameAddress )
+                switch( m_showCallstackFrameAddress )
                 {
+                case 0:
+                    if( frame.line == 0 )
+                    {
+                        TextDisabledUnformatted( txt );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "%s:%i", txt, frame.line );
+                    }
+                    if( ImGui::IsItemClicked() )
+                    {
+                        ImGui::SetClipboardText( txt );
+                    }
+                    break;
+                case 1:
                     if( entry.sel == 0 )
                     {
                         const auto addr = m_worker.GetCanonicalPointer( entry );
@@ -11255,21 +11278,26 @@ void View::DrawCallstackWindow()
                     {
                         ImGui::TextDisabled( "Custom #%" PRIu64, entry.idx );
                     }
-                }
-                else
-                {
-                    if( frame.line == 0 )
+                    break;
+                case 2:
+                    if( entry.sel == 0 )
                     {
-                        TextDisabledUnformatted( txt );
+                        ImGui::TextDisabled( "0x%" PRIx64, frame.symAddr );
+                        if( ImGui::IsItemClicked() )
+                        {
+                            char tmp[32];
+                            sprintf( tmp, "0x%" PRIx64, frame.symAddr );
+                            ImGui::SetClipboardText( tmp );
+                        }
                     }
                     else
                     {
-                        ImGui::TextDisabled( "%s:%i", txt, frame.line );
+                        ImGui::TextDisabled( "Custom #%" PRIu64, entry.idx );
                     }
-                    if( ImGui::IsItemClicked() )
-                    {
-                        ImGui::SetClipboardText( txt );
-                    }
+                    break;
+                default:
+                    assert( false );
+                    break;
                 }
                 if( ImGui::IsItemClicked( 1 ) )
                 {

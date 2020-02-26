@@ -343,7 +343,7 @@ private:
 
     int m_statSort = 0;
     bool m_statSelf = false;
-    bool m_showCallstackFrameAddress = false;
+    int m_showCallstackFrameAddress = 0;
     bool m_showUnknownFrames = true;
     bool m_groupChildrenLocations = false;
     bool m_allocTimeRelativeToZone = true;

@@ -2440,13 +2440,13 @@ The zone information window has the following controls available:
 \subsection{Call stack window}
 \label{callstackwindow}
 
-This window shows the frames contained in the selected call stack. Each frame is described by the function name and source file location. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
+This window shows the frames contained in the selected call stack. Each frame is described by a function name, source file location and originating image\footnote{Executable images are called \emph{modules} by Microsoft.} name. Clicking the \LMB{}~left mouse button on either the function name of source file location will copy the name to the clipboard. Clicking the \RMB{}~right mouse button on the source file location will open the source file view window (if applicable, see section~\ref{sourceview}).
 
 A single stack frame may have multiple function call places associated with it. This happens in case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number\footnote{Or '\faCaretRight{}'~icon in case of call stack tooltips.}.
 
 Sometimes it may be more useful to have just the function address, instead of the source file location\footnote{It can pinpoint the exact assembly instruction which caused the crash.}. This can be achieved by selecting the \emph{\faAt{}~Show frame addresses} option.
 
-In some cases it may be not possible to properly decode source location of a stack frame. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the library containing the frame address, or simply '\texttt{[unknown]}' if even this information cannot be retrieved.
+In some cases it may be not possible to properly decode source location of a stack frame. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the image containing the frame address, or simply '\texttt{[unknown]}' if even this information cannot be retrieved. '\texttt{[kernel]}' is used to indicate unknown stack frames within the operating system internal routines.
 
 \subsubsection{Reading call stacks}
 

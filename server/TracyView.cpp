@@ -11628,6 +11628,7 @@ void View::DrawInfo()
         TextFocused( "Memory allocations:", RealToString( m_worker.GetMemData().data.size() ) );
         TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount() ) );
         TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );
+        TextFocused( "Symbols:", RealToString( m_worker.GetSymbolsCount() ) );
         TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount() ) );
         TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount() ) );
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );

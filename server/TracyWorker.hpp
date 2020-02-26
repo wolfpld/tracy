@@ -347,6 +347,7 @@ public:
     uint64_t GetCallstackPayloadCount() const { return m_data.callstackPayload.size() - 1; }
     uint64_t GetCallstackFrameCount() const { return m_data.callstackFrameMap.size(); }
     uint64_t GetCallstackSampleCount() const { return m_data.samplesCnt; }
+    uint64_t GetSymbolsCount() const { return m_data.symbolMap.size(); }
     uint32_t GetFrameImageCount() const { return (uint32_t)m_data.frameImage.size(); }
     uint64_t GetStringsCount() const { return m_data.strings.size() + m_data.stringData.size(); }
     uint64_t GetFrameOffset() const { return m_data.frameOffset; }

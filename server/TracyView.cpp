@@ -11117,7 +11117,7 @@ void View::DrawStatistics()
 void View::DrawCallstackWindow()
 {
     bool show = true;
-    ImGui::SetNextWindowSize( ImVec2( 1200, 500 ), ImGuiCond_FirstUseEver );
+    ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
 #ifdef TRACY_EXTENDED_FONT
@@ -11132,13 +11132,14 @@ void View::DrawCallstackWindow()
     ImGui::BeginChild( "##callstack" );
     const auto w = ImGui::GetWindowWidth();
     static bool widthSet = false;
-    ImGui::Columns( 3 );
+    ImGui::Columns( 4 );
     if( !widthSet )
     {
         widthSet = true;
         ImGui::SetColumnWidth( 0, w * 0.05f );
-        ImGui::SetColumnWidth( 1, w * 0.475f );
-        ImGui::SetColumnWidth( 2, w * 0.475f );
+        ImGui::SetColumnWidth( 1, w * 0.425f );
+        ImGui::SetColumnWidth( 2, w * 0.425f );
+        ImGui::SetColumnWidth( 3, w * 0.1f );
     }
     ImGui::TextUnformatted( "Frame" );
     ImGui::NextColumn();
@@ -11149,6 +11150,8 @@ void View::DrawCallstackWindow()
     ImGui::TextUnformatted( "Location" );
     ImGui::SameLine();
     DrawHelpMarker( "Click on entry to copy it to clipboard.\nRight click on entry to try to open source file." );
+    ImGui::NextColumn();
+    ImGui::TextUnformatted( "Image" );
     ImGui::NextColumn();
 
     int fidx = 0;
@@ -11168,6 +11171,7 @@ void View::DrawCallstackWindow()
             {
                 ImGui::SetClipboardText( buf );
             }
+            ImGui::NextColumn();
             ImGui::NextColumn();
             ImGui::NextColumn();
         }
@@ -11283,6 +11287,11 @@ void View::DrawCallstackWindow()
                     ImGui::Unindent( indentVal );
                 }
                 ImGui::PopTextWrapPos();
+                ImGui::NextColumn();
+                if( frameData->imageName.Active() )
+                {
+                    TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
+                }
                 ImGui::NextColumn();
             }
         }

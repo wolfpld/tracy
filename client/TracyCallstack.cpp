@@ -403,6 +403,85 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
+static int SymbolAddressDataCb( void* data, uintptr_t pc, const char* fn, int lineno, const char* function )
+{
+    auto& sym = *(SymbolData*)data;
+
+    enum { DemangleBufLen = 64*1024 };
+    char demangled[DemangleBufLen];
+
+    if( !fn && !function )
+    {
+        const char* symname = nullptr;
+        const char* symloc = nullptr;
+        auto vptr = (void*)pc;
+
+        Dl_info dlinfo;
+        if( dladdr( vptr, &dlinfo ) )
+        {
+            symloc = dlinfo.dli_fname;
+            symname = dlinfo.dli_sname;
+
+            if( symname && symname[0] == '_' )
+            {
+                size_t len = DemangleBufLen;
+                int status;
+                abi::__cxa_demangle( symname, demangled, &len, &status );
+                if( status == 0 )
+                {
+                    symname = demangled;
+                }
+            }
+        }
+
+        if( !symname ) symname = "[unknown]";
+        if( !symloc ) symloc = "[unknown]";
+
+        sym.name = CopyString( symname );
+        sym.file = CopyString( symloc );
+        sym.line = 0;
+    }
+    else
+    {
+        if( !fn ) fn = "[unknown]";
+        if( !function )
+        {
+            function = "[unknown]";
+        }
+        else
+        {
+            if( function[0] == '_' )
+            {
+                size_t len = DemangleBufLen;
+                int status;
+                abi::__cxa_demangle( function, demangled, &len, &status );
+                if( status == 0 )
+                {
+                    function = demangled;
+                }
+            }
+        }
+
+        sym.name = CopyString( function );
+        sym.file = CopyString( fn );
+        sym.line = lineno;
+    }
+
+    return 1;
+}
+
+static void SymbolAddressErrorCb( void* data, const char* /*msg*/, int /*errnum*/ )
+{
+    memset( data, 0, sizeof( SymbolData ) );
+}
+
+SymbolData DecodeSymbolAddress( uint64_t ptr )
+{
+    SymbolData sym;
+    backtrace_pcinfo( cb_bts, ptr, SymbolAddressDataCb, SymbolAddressErrorCb, &sym );
+    return sym;
+}
+
 static int CallstackDataCb( void* /*data*/, uintptr_t pc, const char* fn, int lineno, const char* function )
 {
     enum { DemangleBufLen = 64*1024 };

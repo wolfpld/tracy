@@ -49,7 +49,7 @@ static inline char* CopyString( const char* src )
 #if TRACY_HAS_CALLSTACK == 1
 
 enum { MaxCbTrace = 16 };
-enum { MaxNameSize = 1024 };
+enum { MaxNameSize = 8*1024 };
 
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];

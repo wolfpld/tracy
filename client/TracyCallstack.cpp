@@ -322,6 +322,7 @@ enum { MaxCbTrace = 16 };
 struct backtrace_state* cb_bts;
 int cb_num;
 CallstackEntry cb_data[MaxCbTrace];
+int cb_fixup;
 
 void InitCallstack()
 {
@@ -371,6 +372,8 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, const char* fn, int li
 {
     enum { DemangleBufLen = 64*1024 };
     char demangled[DemangleBufLen];
+
+    cb_data[cb_num].symAddr = (uint64_t)pc;
 
     if( !fn && !function )
     {
@@ -479,11 +482,27 @@ static void CallstackErrorCb( void* /*data*/, const char* /*msg*/, int /*errnum*
     cb_num = 1;
 }
 
+void SymInfoCallback( void* /*data*/, uintptr_t pc, const char* symname, uintptr_t symval, uintptr_t symsize )
+{
+    cb_data[cb_fixup].symAddr = (uint64_t)symval;
+}
+
+void SymInfoError( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
+{
+    cb_data[cb_fixup].symAddr = 0;
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     cb_num = 0;
     backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
     assert( cb_num > 0 );
+
+    for( int i=0; i<cb_num; i++ )
+    {
+        cb_fixup = i;
+        backtrace_syminfo( cb_bts, cb_data[i].symAddr, SymInfoCallback, SymInfoError, nullptr );
+    }
 
     const char* symloc = nullptr;
     Dl_info dlinfo;

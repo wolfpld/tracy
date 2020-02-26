@@ -11132,6 +11132,8 @@ void View::DrawCallstackWindow()
     ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
     ImGui::SameLine();
     ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Function", &m_showCallstackFrameAddress, 3 );
     ImGui::PopStyleVar();
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
@@ -11295,19 +11297,67 @@ void View::DrawCallstackWindow()
                         ImGui::TextDisabled( "Custom #%" PRIu64, entry.idx );
                     }
                     break;
+                case 3:
+                {
+                    const auto sym = m_worker.GetSymbolData( frame.symAddr );
+                    if( sym )
+                    {
+                        const auto symtxt = m_worker.GetString( sym->file );
+                        if( sym->line == 0 )
+                        {
+                            TextDisabledUnformatted( symtxt );
+                        }
+                        else
+                        {
+                            ImGui::TextDisabled( "%s:%i", symtxt, sym->line );
+                        }
+                        if( ImGui::IsItemClicked() )
+                        {
+                            ImGui::SetClipboardText( symtxt );
+                        }
+                    }
+                    else
+                    {
+                        TextDisabledUnformatted( "[unknown]" );
+                    }
+                    break;
+                }
                 default:
                     assert( false );
                     break;
                 }
                 if( ImGui::IsItemClicked( 1 ) )
                 {
-                    if( SourceFileValid( txt, m_worker.GetCaptureTime() ) )
+                    if( m_showCallstackFrameAddress == 3 )
                     {
-                        SetTextEditorFile( txt, frame.line );
+                        const auto sym = m_worker.GetSymbolData( frame.symAddr );
+                        if( sym )
+                        {
+                            const auto symtxt = m_worker.GetString( sym->file );
+                            if( SourceFileValid( symtxt, m_worker.GetCaptureTime() ) )
+                            {
+                                SetTextEditorFile( symtxt, sym->line );
+                            }
+                            else
+                            {
+                                m_callstackBuzzAnim.Enable( bidx, 0.5f );
+                            }
+                        }
+                        else
+                        {
+                            m_callstackBuzzAnim.Enable( bidx, 0.5f );
+                        }
                     }
                     else
                     {
-                        m_callstackBuzzAnim.Enable( bidx, 0.5f );
+                        if( SourceFileValid( txt, m_worker.GetCaptureTime() ) )
+                        {
+                            SetTextEditorFile( txt, frame.line );
+                        }
+                        else
+                        {
+                            m_callstackBuzzAnim.Enable( bidx, 0.5f );
+                        }
                     }
                 }
                 if( indentVal != 0.f )

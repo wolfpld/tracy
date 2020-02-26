@@ -2004,6 +2004,19 @@ const CallstackFrameData* Worker::GetCallstackFrame( const CallstackFrameId& ptr
     }
 }
 
+const SymbolData* Worker::GetSymbolData( uint64_t sym ) const
+{
+    auto it = m_data.symbolMap.find( sym );
+    if( it == m_data.symbolMap.end() )
+    {
+        return nullptr;
+    }
+    else
+    {
+        return &it->second;
+    }
+}
+
 int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
 {
     auto ptr = &ev;

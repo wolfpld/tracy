@@ -382,6 +382,7 @@ public:
     const VarArray<CallstackFrameId>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
     const CallstackFrameData* GetCallstackFrame( const CallstackFrameId& ptr ) const;
     uint64_t GetCanonicalPointer( const CallstackFrameId& id ) const;
+    const SymbolData* GetSymbolData( uint64_t sym ) const;
 
     const CrashEvent& GetCrashEvent() const { return m_data.crashEvent; }
 

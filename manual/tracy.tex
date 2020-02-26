@@ -2444,9 +2444,15 @@ This window shows the frames contained in the selected call stack. Each frame is
 
 A single stack frame may have multiple function call places associated with it. This happens in case of inlined function calls. Such entries will be displayed in the call stack window, with \emph{inline} in place of frame number\footnote{Or '\faCaretRight{}'~icon in case of call stack tooltips.}.
 
-Sometimes it may be more useful to have just the function address, instead of the source file location\footnote{It can pinpoint the exact assembly instruction which caused the crash.}. This can be achieved by selecting the \emph{\faAt{}~Show frame addresses} option.
+Stack frame location may be displayed in the following number of ways, depending on the \emph{\faAt{}~Frame location} option selection:
 
-In some cases it may be not possible to properly decode source location of a stack frame. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the image containing the frame address, or simply '\texttt{[unknown]}' if even this information cannot be retrieved. '\texttt{[kernel]}' is used to indicate unknown stack frames within the operating system internal routines.
+\begin{itemize}
+\item \emph{Source code} -- displays source file and line number associated with the frame.
+\item \emph{Return address} -- shows return address, which may be used to pinpoint the exact instruction in the disassembly.
+\item \emph{Symbol address} -- displays begin address of the function containing the frame address.
+\end{itemize}
+
+In some cases it may be not possible to properly decode stack frame address. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the image containing the frame address, or simply '\texttt{[unknown]}' if even this information cannot be retrieved. '\texttt{[kernel]}' is used to indicate unknown stack frames within the operating system internal routines.
 
 \subsubsection{Reading call stacks}
 

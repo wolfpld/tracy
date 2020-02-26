@@ -526,6 +526,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     auto vptr = (void*)ptr;
     char** sym = nullptr;
     ptrdiff_t symoff = 0;
+    void* symaddr = nullptr;
 
     Dl_info dlinfo;
     if( dladdr( vptr, &dlinfo ) )
@@ -533,6 +534,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         symloc = dlinfo.dli_fname;
         symname = dlinfo.dli_sname;
         symoff = (char*)ptr - (char*)dlinfo.dli_saddr;
+        symaddr = dlinfo.dli_saddr;
 
         if( symname && symname[0] == '_' )
         {
@@ -580,10 +582,12 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     loc[loclen + addrlen] = '\0';
     cb.file = loc;
 
+    cb.symAddr = (uint64_t)symaddr;
+
     if( sym ) free( sym );
     if( demangled ) free( demangled );
 
-    return { &cb, 1 };
+    return { &cb, 1, CopyString( symloc ? symloc : "[unknown]" ) };
 }
 
 #endif

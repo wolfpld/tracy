@@ -217,6 +217,7 @@ private:
         Vector<short_ptr<VarArray<CallstackFrameId>>> callstackPayload;
         unordered_flat_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameMap;
         unordered_flat_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revFrameMap;
+        unordered_flat_map<uint64_t, SymbolData> symbolMap;
 
         unordered_flat_map<uint32_t, LockMap*> lockMap;
 
@@ -517,6 +518,7 @@ private:
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
+    tracy_force_inline void ProcessSymbolInformation( const QueueCallstackFrame& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
     tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
     tracy_force_inline void ProcessContextSwitch( const QueueContextSwitch& ev );
@@ -693,6 +695,7 @@ private:
     unordered_flat_map<uint64_t, ThreadData*> m_threadMap;
     unordered_flat_map<uint64_t, NextCallstack> m_nextCallstack;
     unordered_flat_map<uint64_t, FrameImagePending> m_pendingFrameImageData;
+    unordered_flat_map<uint64_t, StringIdx> m_pendingSymbols;
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;

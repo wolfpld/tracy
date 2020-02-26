@@ -557,6 +557,7 @@ private:
     bool HandleServerQuery();
     void HandleDisconnect();
     void HandleParameter( uint64_t payload );
+    void HandleSymbolQuery( uint64_t symbol );
 
     void CalibrateTimer();
     void CalibrateDelay();

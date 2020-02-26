@@ -2301,6 +2301,9 @@ bool Profiler::HandleServerQuery()
     case ServerQueryParameter:
         HandleParameter( ptr );
         break;
+    case ServerQuerySymbol:
+        HandleSymbolQuery( ptr );
+        break;
     default:
         assert( false );
         break;
@@ -2675,6 +2678,28 @@ void Profiler::HandleParameter( uint64_t payload )
     const auto idx = uint32_t( payload >> 32 );
     const auto val = int32_t( payload & 0xFFFFFFFF );
     m_paramCallback( idx, val );
+}
+
+void Profiler::HandleSymbolQuery( uint64_t symbol )
+{
+#ifdef TRACY_HAS_CALLSTACK
+    const auto sym = DecodeSymbolAddress( symbol );
+
+    SendString( uint64_t( sym.file ), sym.file, QueueType::CustomStringData );
+    SendString( uint64_t( sym.name ), sym.name, QueueType::CustomStringData );
+
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::SymbolInformation );
+    MemWrite( &item.callstackFrame.file, uint64_t( sym.file ) );
+    MemWrite( &item.callstackFrame.name, uint64_t( sym.name ) );
+    MemWrite( &item.callstackFrame.line, sym.line );
+    MemWrite( &item.callstackFrame.symAddr, symbol );
+
+    AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
+
+    tracy_free( (void*)sym.file );
+    tracy_free( (void*)sym.name );
+#endif
 }
 
 }

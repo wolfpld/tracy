@@ -326,7 +326,14 @@ struct CallstackFrame : public CallstackFrameBasic
     uint64_t symAddr;
 };
 
+struct SymbolData : public CallstackFrameBasic
+{
+    StringIdx imageName;
+};
+
+enum { CallstackFrameBasicSize = sizeof( CallstackFrameBasic ) };
 enum { CallstackFrameSize = sizeof( CallstackFrame ) };
+enum { SymbolDataSize = sizeof( SymbolData ) };
 
 struct CallstackFrameData
 {

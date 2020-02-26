@@ -47,7 +47,8 @@ enum ServerQuery : uint8_t
     ServerQueryFrameName,
     ServerQueryDisconnect,
     ServerQueryExternalName,
-    ServerQueryParameter
+    ServerQueryParameter,
+    ServerQuerySymbol
 };
 
 struct ServerQueryPacket

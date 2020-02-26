@@ -2501,7 +2501,8 @@ void Worker::Exec()
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
                 !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
-                m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() )
+                m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() ||
+                !m_pendingSymbols.empty() )
             {
                 continue;
             }
@@ -3460,6 +3461,9 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::CallstackFrame:
         ProcessCallstackFrame( ev.callstackFrame );
+        break;
+    case QueueType::SymbolInformation:
+        ProcessSymbolInformation( ev.callstackFrame );
         break;
     case QueueType::Terminate:
         m_terminate = true;
@@ -4723,6 +4727,12 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
         m_callstackFrameStaging->data[idx].line = ev.line;
         m_callstackFrameStaging->data[idx].symAddr = ev.symAddr;
 
+        if( ev.symAddr != 0 && m_data.symbolMap.find( ev.symAddr ) == m_data.symbolMap.end() && m_pendingSymbols.find( ev.symAddr ) == m_pendingSymbols.end() )
+        {
+            m_pendingSymbols.emplace( ev.symAddr, m_callstackFrameStaging->imageName );
+            Query( ServerQuerySymbol, ev.symAddr );
+        }
+
         if( --m_pendingCallstackSubframes == 0 )
         {
             assert( m_data.callstackFrameMap.find( PackPointer( m_callstackFrameStagingPtr ) ) == m_data.callstackFrameMap.end() );
@@ -4735,6 +4745,28 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
         m_pendingCallstackSubframes--;
     }
 
+    m_pendingCustomStrings.erase( nit );
+    m_pendingCustomStrings.erase( m_pendingCustomStrings.find( ev.file ) );
+}
+
+void Worker::ProcessSymbolInformation( const QueueCallstackFrame& ev )
+{
+    auto it = m_pendingSymbols.find( ev.symAddr );
+    assert( it != m_pendingSymbols.end() );
+
+    auto nit = m_pendingCustomStrings.find( ev.name );
+    assert( nit != m_pendingCustomStrings.end() );
+    auto fit = m_pendingCustomStrings.find( ev.file );
+    assert( fit != m_pendingCustomStrings.end() );
+
+    SymbolData sd;
+    sd.name = StringIdx( nit->second.idx );
+    sd.file = StringIdx( fit->second.idx );
+    sd.line = ev.line;
+    sd.imageName = it->second;
+    m_data.symbolMap.emplace( ev.symAddr, std::move( sd ) );
+
+    m_pendingSymbols.erase( it );
     m_pendingCustomStrings.erase( nit );
     m_pendingCustomStrings.erase( m_pendingCustomStrings.find( ev.file ) );
 }

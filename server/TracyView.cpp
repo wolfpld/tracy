@@ -10946,15 +10946,25 @@ void View::DrawStatistics()
         return;
     }
 
-    bool instrumentationTab = true;
-    const auto hasSampleData = m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0;
-    if( hasSampleData )
+    if( m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0 )
     {
-        ImGui::BeginTabBar( "StatisticsTabBar" );
-        instrumentationTab = ImGui::BeginTabItem( "Instrumentation" );
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_statMode, 0 );
+#else
+        ImGui::RadioButton( "Instrumentation", &m_statMode, 0 );
+#endif
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_statMode, 1 );
+#else
+        ImGui::RadioButton( "Sampling", &m_statMode, 1 );
+#endif
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
     }
 
-    if( instrumentationTab )
+    if( m_statMode == 0 )
     {
 #ifdef TRACY_EXTENDED_FONT
         m_statisticsFilter.Draw( ICON_FA_FILTER " Filter zones", 200 );
@@ -11120,181 +11130,170 @@ void View::DrawStatistics()
         }
         ImGui::EndColumns();
         ImGui::EndChild();
-
-        if( hasSampleData )
-        {
-            ImGui::EndTabItem();
-        }
     }
-
-    if( hasSampleData )
+    else
     {
-        if( ImGui::BeginTabItem( "Sampling" ) )
+#ifdef TRACY_EXTENDED_FONT
+        m_statisticsFilter.Draw( ICON_FA_FILTER " Filter zones", 200 );
+#else
+        m_statisticsFilter.Draw( "Filter zones", 200 );
+#endif
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
+#else
+        if( ImGui::Button( "Clear" ) )
+#endif
         {
-#ifdef TRACY_EXTENDED_FONT
-            m_statisticsFilter.Draw( ICON_FA_FILTER " Filter zones", 200 );
-#else
-            m_statisticsFilter.Draw( "Filter zones", 200 );
-#endif
-            ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-            if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
-#else
-            if( ImGui::Button( "Clear" ) )
-#endif
-            {
-                m_statisticsFilter.Clear();
-            }
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-            ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
-#else
-            ImGui::Checkbox( "Show time", &m_statSampleTime );
-#endif
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
-            ImGui::Checkbox( ICON_FA_CLOCK " Exclusive", &m_statSelf );
-#else
-            ImGui::Checkbox( "Exclusive", &m_statSelf );
-#endif
-            ImGui::Separator();
-            ImGui::BeginChild( "##statisticsSampling" );
-
-            const auto& symMap = m_worker.GetSymbolMap();
-            const auto& symStat = m_worker.GetSymbolStats();
-
-            Vector<decltype(symStat.begin())> data;
-            data.reserve( symStat.size() );
-            auto statit = symStat.begin();
-            if( m_statisticsFilter.IsActive() )
-            {
-                while( statit != symStat.end() )
-                {
-                    auto sit = symMap.find( statit->first );
-                    if( sit != symMap.end() )
-                    {
-                        auto name = m_worker.GetString( sit->second.name );
-                        if( m_statisticsFilter.PassFilter( name ) )
-                        {
-                            data.push_back_no_space_check( statit );
-                        }
-                    }
-                    ++statit;
-                }
-            }
-            else
-            {
-                while( statit != symStat.end() )
-                {
-                    data.push_back_no_space_check( statit );
-                    ++statit;
-                }
-            }
-            if( m_statSelf )
-            {
-                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second.excl > r->second.excl; } );
-            }
-            else
-            {
-                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second.incl > r->second.incl; } );
-            }
-
-            const auto w = ImGui::GetWindowWidth();
-            static bool widthSet = false;
-            ImGui::Columns( 4 );
-            if( !widthSet )
-            {
-                widthSet = true;
-                ImGui::SetColumnWidth( 0, w * 0.3f );
-                ImGui::SetColumnWidth( 1, w * 0.45f );
-                ImGui::SetColumnWidth( 2, w * 0.15f );
-                ImGui::SetColumnWidth( 3, w * 0.1f );
-            }
-            ImGui::TextUnformatted( "Name" );
-            ImGui::NextColumn();
-            ImGui::TextUnformatted( "Location" );
-            ImGui::NextColumn();
-            ImGui::TextUnformatted( "Module" );
-            ImGui::NextColumn();
-            ImGui::TextUnformatted( m_statSampleTime ? "Time" : "Count" );
-            ImGui::NextColumn();
-            ImGui::Separator();
-
-            const auto period = m_worker.GetSamplingPeriod();
-            for( auto& v : data )
-            {
-                const auto cnt = m_statSelf ? v->second.excl : v->second.incl;
-                if( cnt > 0 )
-                {
-                    const char* name = "[unknown]";
-                    const char* file = "[unknown]";
-                    const char* imageName = "[unknown]";
-                    uint32_t line = 0;
-
-                    auto sit = symMap.find( v->first );
-                    if( sit != symMap.end() )
-                    {
-                        name = m_worker.GetString( sit->second.name );
-                        file = m_worker.GetString( sit->second.file );
-                        imageName = m_worker.GetString( sit->second.imageName );
-                        line = sit->second.line;
-                    }
-
-                    ImGui::TextUnformatted( name );
-                    ImGui::NextColumn();
-                    float indentVal = 0.f;
-                    if( m_statBuzzAnim.Match( v->first ) )
-                    {
-                        const auto time = m_statBuzzAnim.Time();
-                        indentVal = sin( time * 60.f ) * 10.f * time;
-                        ImGui::Indent( indentVal );
-                    }
-                    if( line > 0 )
-                    {
-                        ImGui::TextDisabled( "%s:%i", file, line );
-                    }
-                    else
-                    {
-                        TextDisabledUnformatted( file );
-                    }
-                    if( ImGui::IsItemClicked( 1 ) )
-                    {
-                        if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
-                        {
-                            SetTextEditorFile( file, line );
-                        }
-                        else
-                        {
-                            m_statBuzzAnim.Enable( v->first, 0.5f );
-                        }
-                    }
-                    if( indentVal != 0.f )
-                    {
-                        ImGui::Unindent( indentVal );
-                    }
-                    ImGui::NextColumn();
-                    TextDisabledUnformatted( imageName );
-                    ImGui::NextColumn();
-                    if( m_statSampleTime )
-                    {
-                        ImGui::TextUnformatted( TimeToString( cnt * period ) );
-                    }
-                    else
-                    {
-                        ImGui::TextUnformatted( RealToString( cnt ) );
-                    }
-                    ImGui::NextColumn();
-                }
-            }
-            ImGui::EndColumns();
-            ImGui::EndChild();
-            ImGui::EndTabItem();
+            m_statisticsFilter.Clear();
         }
-        ImGui::EndTabBar();
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+#else
+        ImGui::Checkbox( "Show time", &m_statSampleTime );
+#endif
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_CLOCK " Exclusive", &m_statSelf );
+#else
+        ImGui::Checkbox( "Exclusive", &m_statSelf );
+#endif
+        ImGui::Separator();
+        ImGui::BeginChild( "##statisticsSampling" );
+
+        const auto& symMap = m_worker.GetSymbolMap();
+        const auto& symStat = m_worker.GetSymbolStats();
+
+        Vector<decltype(symStat.begin())> data;
+        data.reserve( symStat.size() );
+        auto statit = symStat.begin();
+        if( m_statisticsFilter.IsActive() )
+        {
+            while( statit != symStat.end() )
+            {
+                auto sit = symMap.find( statit->first );
+                if( sit != symMap.end() )
+                {
+                    auto name = m_worker.GetString( sit->second.name );
+                    if( m_statisticsFilter.PassFilter( name ) )
+                    {
+                        data.push_back_no_space_check( statit );
+                    }
+                }
+                ++statit;
+            }
+        }
+        else
+        {
+            while( statit != symStat.end() )
+            {
+                data.push_back_no_space_check( statit );
+                ++statit;
+            }
+        }
+        if( m_statSelf )
+        {
+            pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second.excl > r->second.excl; } );
+        }
+        else
+        {
+            pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second.incl > r->second.incl; } );
+        }
+
+        const auto w = ImGui::GetWindowWidth();
+        static bool widthSet = false;
+        ImGui::Columns( 4 );
+        if( !widthSet )
+        {
+            widthSet = true;
+            ImGui::SetColumnWidth( 0, w * 0.3f );
+            ImGui::SetColumnWidth( 1, w * 0.45f );
+            ImGui::SetColumnWidth( 2, w * 0.15f );
+            ImGui::SetColumnWidth( 3, w * 0.1f );
+        }
+        ImGui::TextUnformatted( "Name" );
+        ImGui::NextColumn();
+        ImGui::TextUnformatted( "Location" );
+        ImGui::NextColumn();
+        ImGui::TextUnformatted( "Module" );
+        ImGui::NextColumn();
+        ImGui::TextUnformatted( m_statSampleTime ? "Time" : "Count" );
+        ImGui::NextColumn();
+        ImGui::Separator();
+
+        const auto period = m_worker.GetSamplingPeriod();
+        for( auto& v : data )
+        {
+            const auto cnt = m_statSelf ? v->second.excl : v->second.incl;
+            if( cnt > 0 )
+            {
+                const char* name = "[unknown]";
+                const char* file = "[unknown]";
+                const char* imageName = "[unknown]";
+                uint32_t line = 0;
+
+                auto sit = symMap.find( v->first );
+                if( sit != symMap.end() )
+                {
+                    name = m_worker.GetString( sit->second.name );
+                    file = m_worker.GetString( sit->second.file );
+                    imageName = m_worker.GetString( sit->second.imageName );
+                    line = sit->second.line;
+                }
+
+                ImGui::TextUnformatted( name );
+                ImGui::NextColumn();
+                float indentVal = 0.f;
+                if( m_statBuzzAnim.Match( v->first ) )
+                {
+                    const auto time = m_statBuzzAnim.Time();
+                    indentVal = sin( time * 60.f ) * 10.f * time;
+                    ImGui::Indent( indentVal );
+                }
+                if( line > 0 )
+                {
+                    ImGui::TextDisabled( "%s:%i", file, line );
+                }
+                else
+                {
+                    TextDisabledUnformatted( file );
+                }
+                if( ImGui::IsItemClicked( 1 ) )
+                {
+                    if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
+                    {
+                        SetTextEditorFile( file, line );
+                    }
+                    else
+                    {
+                        m_statBuzzAnim.Enable( v->first, 0.5f );
+                    }
+                }
+                if( indentVal != 0.f )
+                {
+                    ImGui::Unindent( indentVal );
+                }
+                ImGui::NextColumn();
+                TextDisabledUnformatted( imageName );
+                ImGui::NextColumn();
+                if( m_statSampleTime )
+                {
+                    ImGui::TextUnformatted( TimeToString( cnt * period ) );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( RealToString( cnt ) );
+                }
+                ImGui::NextColumn();
+            }
+        }
+        ImGui::EndColumns();
+        ImGui::EndChild();
     }
 #endif
     ImGui::End();

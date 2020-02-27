@@ -344,6 +344,7 @@ private:
     int m_statSort = 0;
     bool m_statSelf = false;
     bool m_statSampleTime = true;
+    int m_statMode = 0;
     int m_showCallstackFrameAddress = 0;
     bool m_showUnknownFrames = true;
     bool m_groupChildrenLocations = false;

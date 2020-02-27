@@ -2695,7 +2695,7 @@ void Profiler::HandleSymbolQuery( uint64_t symbol )
 
     AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
 
-    tracy_free( (void*)sym.file );
+    if( sym.needFree ) tracy_free( (void*)sym.file );
 #endif
 }
 

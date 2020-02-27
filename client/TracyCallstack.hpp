@@ -26,6 +26,7 @@ struct SymbolData
 {
     const char* file;
     uint32_t line;
+    bool needFree;
 };
 
 struct CallstackEntry

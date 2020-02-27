@@ -237,18 +237,17 @@ SymbolData DecodeSymbolAddress( uint64_t ptr )
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-    const char* filename;
     if( SymGetLineFromAddr64( GetCurrentProcess(), ptr, &displacement, &line ) == 0 )
     {
-        filename = "[unknown]";
+        sym.file = "[unknown]";
         sym.line = 0;
     }
     else
     {
-        filename = line.FileName;
+        sym.file = line.FileName;
         sym.line = line.LineNumber;
     }
-    sym.file = CopyString( filename );
+    sym.needFree = false;
     return sym;
 }
 
@@ -397,16 +396,18 @@ static int SymbolAddressDataCb( void* data, uintptr_t pc, const char* fn, int li
     if( !fn )
     {
         const char* symloc = nullptr;
-        Dl_info dlinfo;
+        static Dl_info dlinfo;
         if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
         if( !symloc ) symloc = "[unknown]";
-        sym.file = CopyString( symloc );
+        sym.file = symloc;
         sym.line = 0;
+        sym.needFree = false;
     }
     else
     {
         sym.file = CopyString( fn );
         sym.line = lineno;
+        sym.needFree = true;
     }
 
     return 1;
@@ -597,10 +598,10 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 SymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     const char* symloc = nullptr;
-    Dl_info dlinfo;
+    static Dl_info dlinfo;
     if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
     if( !symloc ) symloc = "[unknown]";
-    return SymbolData { CopyString( symloc ), 0 };
+    return SymbolData { symloc, 0, false };
 }
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )

@@ -78,7 +78,6 @@ struct ModuleCache
     uint64_t start;
     uint64_t end;
     char* name;
-    uint32_t nameLen;
 };
 
 static FastVector<ModuleCache>* s_modCache;
@@ -125,7 +124,6 @@ void InitCallstack()
                     memcpy( cache->name+1, ptr, namelen );
                     cache->name[namelen+1] = ']';
                     cache->name[namelen+2] = '\0';
-                    cache->nameLen = namelen+2;
                 }
             }
         }
@@ -163,23 +161,16 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
-static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
+static const char* GetModuleName( uint64_t addr )
 {
-    if( ( addr & 0x8000000000000000 ) != 0 )
-    {
-        memcpy( buf, "[kernel]", 9 );
-        len = 8;
-        return;
-    }
+    if( ( addr & 0x8000000000000000 ) != 0 ) return "[kernel]";
 
 #ifndef __CYGWIN__
     for( auto& v : *s_modCache )
     {
         if( addr >= v.start && addr < v.end )
         {
-            memcpy( buf, v.name, v.nameLen+1 );
-            len = v.nameLen;
-            return;
+            return v.name;
         }
     }
 
@@ -206,20 +197,15 @@ static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
                         while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
                         if( ptr > name ) ptr++;
                         const auto namelen = name + res - ptr;
-                        buf[0] = '[';
-                        memcpy( buf+1, ptr, namelen );
-                        buf[namelen+1] = ']';
-                        buf[namelen+2] = '\0';
-                        len = namelen+2;
-
                         auto cache = s_modCache->push_next();
                         cache->start = base;
                         cache->end = base + info.SizeOfImage;
                         cache->name = (char*)tracy_malloc( namelen+3 );
-                        memcpy( cache->name, buf, namelen+3 );
-                        cache->nameLen = namelen+2;
-
-                        return;
+                        cache->name[0] = '[';
+                        memcpy( cache->name+1, ptr, namelen );
+                        cache->name[namelen+1] = ']';
+                        cache->name[namelen+2] = '\0';
+                        return cache->name;
                     }
                 }
             }
@@ -227,8 +213,7 @@ static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
     }
 #endif
 
-    memcpy( buf, "[unknown]", 10 );
-    len = 9;
+    return "[unknown]";
 }
 
 SymbolData DecodeSymbolAddress( uint64_t ptr )
@@ -279,9 +264,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     si->SizeOfStruct = sizeof( SYMBOL_INFO );
     si->MaxNameLen = MaxNameSize;
 
-    char moduleName[1024];
-    ULONG moduleNameLen;
-    GetModuleName( ptr, moduleName, moduleNameLen );
+    const auto moduleName = GetModuleName( ptr );
     const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
 
     IMAGEHLP_LINE64 line;
@@ -301,7 +284,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
             cb_data[write].line = line.LineNumber;
         }
 
-        cb_data[write].name = symValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName, moduleNameLen );
+        cb_data[write].name = symValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName );
         cb_data[write].file = CopyString( filename );
         cb_data[write].symAddr = symValid ? si->Address : 0;
     }
@@ -325,7 +308,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
                 cb.line = line.LineNumber;
             }
 
-            cb.name = symInlineValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName, moduleNameLen );
+            cb.name = symInlineValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName );
             cb.file = CopyString( filename );
             cb.symAddr = symInlineValid ? si->Address : 0;
 
@@ -334,7 +317,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     }
 #endif
 
-    return { cb_data, uint8_t( cb_num ), CopyString( moduleName, moduleNameLen ) };
+    return { cb_data, uint8_t( cb_num ), CopyString( moduleName ) };
 }
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6

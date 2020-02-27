@@ -11228,8 +11228,8 @@ void View::DrawStatistics()
             widthSet = true;
             ImGui::SetColumnWidth( 0, w * 0.3f );
             ImGui::SetColumnWidth( 1, w * 0.45f );
-            ImGui::SetColumnWidth( 2, w * 0.15f );
-            ImGui::SetColumnWidth( 3, w * 0.1f );
+            ImGui::SetColumnWidth( 2, w * 0.125f );
+            ImGui::SetColumnWidth( 3, w * 0.125f );
         }
         ImGui::TextUnformatted( "Name" );
         ImGui::NextColumn();
@@ -11323,6 +11323,10 @@ void View::DrawStatistics()
                 {
                     ImGui::TextUnformatted( RealToString( cnt ) );
                 }
+                char buf[64];
+                PrintStringPercent( buf, 100. * cnt / m_worker.GetCallstackSampleCount() );
+                ImGui::SameLine();
+                TextDisabledUnformatted( buf );
                 ImGui::NextColumn();
             }
         }

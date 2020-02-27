@@ -203,6 +203,34 @@ public:
         }
     }
 
+    template<class T, class U, class V, class W, class X, class Y, class Z>
+    tracy_force_inline void Read7( T& v0, U& v1, V& v2, W& v3, X& v4, Y& v5, Z& v6 )
+    {
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) < BufSize - m_offset )
+        {
+            memcpy( &v0, m_buf + m_offset, sizeof( T ) );
+            memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, m_buf + m_offset + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+            memcpy( &v4, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ), sizeof( X ) );
+            memcpy( &v5, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ), sizeof( Y ) );
+            memcpy( &v6, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ), sizeof( Z ) );
+            m_offset += sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z );
+        }
+        else
+        {
+            char tmp[sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z )];
+            ReadBig( tmp, sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) );
+            memcpy( &v0, tmp, sizeof( T ) );
+            memcpy( &v1, tmp + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, tmp + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+            memcpy( &v4, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ), sizeof( X ) );
+            memcpy( &v5, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ), sizeof( Y ) );
+            memcpy( &v6, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ), sizeof( Z ) );
+        }
+    }
+
     template<class T, class U, class V, class W, class X, class Y, class Z, class A>
     tracy_force_inline void Read8( T& v0, U& v1, V& v2, W& v3, X& v4, Y& v5, Z& v6, A& v7 )
     {

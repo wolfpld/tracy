@@ -106,7 +106,6 @@ public:
         std::string message;
     };
 
-#pragma pack( 1 )
     struct ZoneThreadData
     {
         tracy_force_inline ZoneEvent* Zone() const { return (ZoneEvent*)( _zone_thread >> 16 ); }
@@ -116,9 +115,7 @@ public:
 
         uint64_t _zone_thread;
     };
-
     enum { ZoneThreadDataSize = sizeof( ZoneThreadData ) };
-#pragma pack()
 
     struct CpuThreadTopology
     {

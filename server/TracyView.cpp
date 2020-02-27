@@ -6640,6 +6640,13 @@ static tracy_force_inline void PrintStringPercent( char* buf, const char* string
     memcpy( end, "%)", 3 );
 }
 
+static tracy_force_inline void PrintStringPercent( char* buf, double percent )
+{
+    memcpy( buf, "(", 2 );
+    auto end = PrintFloat( buf+1, buf+64, percent, 2 );
+    memcpy( end, "%)", 3 );
+}
+
 template<typename Adapter, typename V>
 void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
 {

@@ -11131,12 +11131,30 @@ void View::DrawStatistics()
     {
         if( ImGui::BeginTabItem( "Sampling" ) )
         {
-
+#ifdef TRACY_EXTENDED_FONT
+            m_statisticsFilter.Draw( ICON_FA_FILTER " Filter zones", 200 );
+#else
+            m_statisticsFilter.Draw( "Filter zones", 200 );
+#endif
+            ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+            if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
+#else
+            if( ImGui::Button( "Clear" ) )
+#endif
+            {
+                m_statisticsFilter.Clear();
+            }
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
             ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
 #else
             ImGui::Checkbox( "Show time", &m_statSampleTime );
 #endif
+            ImGui::SameLine();
+            ImGui::Spacing();
             ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
             ImGui::Checkbox( ICON_FA_CLOCK " Exclusive", &m_statSelf );
@@ -11149,14 +11167,32 @@ void View::DrawStatistics()
             const auto& symMap = m_worker.GetSymbolMap();
             const auto& symStat = m_worker.GetSymbolStats();
 
-            const auto sssz = symStat.size();
-            std::vector<decltype(symStat.begin())> data;
-            data.reserve( sssz );
+            Vector<decltype(symStat.begin())> data;
+            data.reserve( symStat.size() );
             auto statit = symStat.begin();
-            while( statit != symStat.end() )
+            if( m_statisticsFilter.IsActive() )
             {
-                data.emplace_back( statit );
-                ++statit;
+                while( statit != symStat.end() )
+                {
+                    auto sit = symMap.find( statit->first );
+                    if( sit != symMap.end() )
+                    {
+                        auto name = m_worker.GetString( sit->second.name );
+                        if( m_statisticsFilter.PassFilter( name ) )
+                        {
+                            data.push_back_no_space_check( statit );
+                        }
+                    }
+                    ++statit;
+                }
+            }
+            else
+            {
+                while( statit != symStat.end() )
+                {
+                    data.push_back_no_space_check( statit );
+                    ++statit;
+                }
             }
             if( m_statSelf )
             {

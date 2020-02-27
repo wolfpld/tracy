@@ -244,7 +244,7 @@ Worker::Worker( const char* addr, int port )
 
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = true;
-    m_data.callstackSamplesReady = false;       // FIXME implement live data update
+    m_data.callstackSamplesReady = true;
     m_data.ctxUsageReady = true;
 #endif
 
@@ -1737,44 +1737,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                             }
                         }
                     }
-                    for( auto& v : counts )
-                    {
-                        const auto count = v.second;
-                        const auto& cs = GetCallstack( v.first );
-                        const auto cssz = cs.size();
-
-                        const auto fexcl = GetCallstackFrame( cs[0] );
-                        if( fexcl )
-                        {
-                            const auto fsz = fexcl->size;
-                            const auto& frame0 = fexcl->data[0];
-                            auto sym = m_data.symbolStats.find( frame0.symAddr );
-                            if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame0.symAddr, SymbolStats {} ).first;
-                            sym->second.excl += count;
-                            for( uint8_t f=1; f<fsz; f++ )
-                            {
-                                const auto& frame = fexcl->data[f];
-                                sym = m_data.symbolStats.find( frame.symAddr );
-                                if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
-                                sym->second.incl += count;
-                            }
-                        }
-                        for( uint8_t c=1; c<cssz; c++ )
-                        {
-                            const auto fincl = GetCallstackFrame( cs[c] );
-                            if( fincl )
-                            {
-                                const auto fsz = fincl->size;
-                                for( uint8_t f=0; f<fsz; f++ )
-                                {
-                                    const auto& frame = fincl->data[f];
-                                    auto sym = m_data.symbolStats.find( frame.symAddr );
-                                    if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
-                                    sym->second.incl += count;
-                                }
-                            }
-                        }
-                    }
+                    for( auto& v : counts ) UpdateSampleStatistics( v.first, v.second );
                 }
 
                 std::lock_guard<std::shared_mutex> lock( m_data.lock );
@@ -4778,6 +4741,10 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
             }
         }
     }
+
+#ifndef TRACY_NO_STATISTICS
+    UpdateSampleStatistics( m_pendingCallstackId, 1 );
+#endif
 }
 
 void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
@@ -5277,6 +5244,44 @@ void Worker::ReconstructContextSwitchUsage()
 
     std::lock_guard<std::shared_mutex> lock( m_data.lock );
     m_data.ctxUsageReady = true;
+}
+
+void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count )
+{
+    const auto& cs = GetCallstack( callstack );
+    const auto cssz = cs.size();
+
+    const auto fexcl = GetCallstackFrame( cs[0] );
+    if( fexcl )
+    {
+        const auto fsz = fexcl->size;
+        const auto& frame0 = fexcl->data[0];
+        auto sym = m_data.symbolStats.find( frame0.symAddr );
+        if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame0.symAddr, SymbolStats {} ).first;
+        sym->second.excl += count;
+        for( uint8_t f=1; f<fsz; f++ )
+        {
+            const auto& frame = fexcl->data[f];
+            sym = m_data.symbolStats.find( frame.symAddr );
+            if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
+            sym->second.incl += count;
+        }
+    }
+    for( uint8_t c=1; c<cssz; c++ )
+    {
+        const auto fincl = GetCallstackFrame( cs[c] );
+        if( fincl )
+        {
+            const auto fsz = fincl->size;
+            for( uint8_t f=0; f<fsz; f++ )
+            {
+                const auto& frame = fincl->data[f];
+                auto sym = m_data.symbolStats.find( frame.symAddr );
+                if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
+                sym->second.incl += count;
+            }
+        }
+    }
 }
 #endif
 

@@ -10961,7 +10961,7 @@ void View::DrawCompare()
 
 void View::DrawStatistics()
 {
-    ImGui::SetNextWindowSize( ImVec2( 1300, 600 ), ImGuiCond_FirstUseEver );
+    ImGui::SetNextWindowSize( ImVec2( 1350, 600 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Statistics", &m_showStatistics, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -11163,9 +11163,9 @@ void View::DrawStatistics()
     else
     {
 #ifdef TRACY_EXTENDED_FONT
-        m_statisticsFilter.Draw( ICON_FA_FILTER " Filter zones", 200 );
+        m_statisticsFilter.Draw( ICON_FA_FILTER " Filter symbols", 200 );
 #else
-        m_statisticsFilter.Draw( "Filter zones", 200 );
+        m_statisticsFilter.Draw( "Filter symbols", 200 );
 #endif
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -11265,7 +11265,7 @@ void View::DrawStatistics()
         ImGui::NextColumn();
         ImGui::TextUnformatted( "Location" );
         ImGui::NextColumn();
-        ImGui::TextUnformatted( "Module" );
+        ImGui::TextUnformatted( "Image" );
         ImGui::NextColumn();
         ImGui::TextUnformatted( m_statSampleTime ? "Time" : "Count" );
         ImGui::NextColumn();

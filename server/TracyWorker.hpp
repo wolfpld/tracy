@@ -181,6 +181,7 @@ private:
         StringIdx imageName;
         StringIdx file;
         uint32_t line;
+        bool isInline;
     };
 
     struct DataBlock

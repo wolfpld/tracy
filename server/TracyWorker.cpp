@@ -1645,8 +1645,9 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             uint64_t symAddr;
             StringIdx name, file, imageName, callFile;
             uint32_t line, callLine;
-            f.Read7( symAddr, name, file, line, imageName, callFile, callLine );
-            m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine } );
+            uint8_t isInline;
+            f.Read8( symAddr, name, file, line, imageName, callFile, callLine, isInline );
+            m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine, isInline } );
         }
     }
 
@@ -4827,7 +4828,7 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
 
         if( ev.symAddr != 0 && m_data.symbolMap.find( ev.symAddr ) == m_data.symbolMap.end() && m_pendingSymbols.find( ev.symAddr ) == m_pendingSymbols.end() )
         {
-            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName, file, ev.line } );
+            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName, file, ev.line, idx < m_callstackFrameStaging->size - 1 } );
             Query( ServerQuerySymbol, ev.symAddr );
         }
 
@@ -4862,6 +4863,7 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     sd.imageName = it->second.imageName;
     sd.callFile = it->second.file;
     sd.callLine = it->second.line;
+    sd.isInline = it->second.isInline;
     m_data.symbolMap.emplace( ev.symAddr, std::move( sd ) );
 
     m_pendingSymbols.erase( it );

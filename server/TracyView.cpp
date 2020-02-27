@@ -11244,12 +11244,14 @@ void View::DrawStatistics()
                 const char* file = "[unknown]";
                 const char* imageName = "[unknown]";
                 uint32_t line = 0;
+                bool isInline = false;
 
                 auto sit = symMap.find( v->first );
                 if( sit != symMap.end() )
                 {
                     name = m_worker.GetString( sit->second.name );
                     imageName = m_worker.GetString( sit->second.imageName );
+                    isInline = sit->second.isInline;
                     if( m_statSampleLocation == 0 )
                     {
                         file = m_worker.GetString( sit->second.file );
@@ -11262,6 +11264,15 @@ void View::DrawStatistics()
                     }
                 }
 
+                if( isInline )
+                {
+#ifdef TRACY_EXTENDED_FONT
+                    TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
+#else
+                    TextDisabledUnformatted( "inline" );
+#endif
+                    ImGui::SameLine();
+                }
                 ImGui::TextUnformatted( name );
                 ImGui::NextColumn();
                 float indentVal = 0.f;

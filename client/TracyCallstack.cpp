@@ -619,14 +619,8 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
         }
     }
 
-    if( !symname )
-    {
-        symname = "[unknown]";
-    }
-    if( !symloc )
-    {
-        symloc = "[unknown]";
-    }
+    if( !symname ) symname = "[unknown]";
+    if( !symloc ) symloc = "[unknown]";
 
     if( symoff == 0 )
     {

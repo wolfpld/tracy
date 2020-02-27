@@ -10961,7 +10961,7 @@ void View::DrawCompare()
 
 void View::DrawStatistics()
 {
-    ImGui::SetNextWindowSize( ImVec2( 1000, 600 ), ImGuiCond_FirstUseEver );
+    ImGui::SetNextWindowSize( ImVec2( 1300, 600 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Statistics", &m_showStatistics, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -11195,6 +11195,14 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
+#else
+        ImGui::Checkbox( "Hide unknown", &m_statHideUnknown );
+#endif
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         ImGui::TextUnformatted( "Location:" );
         ImGui::SameLine();
         ImGui::RadioButton( "Function entry", &m_statSampleLocation, 0 );
@@ -11291,6 +11299,11 @@ void View::DrawStatistics()
                         file = m_worker.GetString( sit->second.callFile );
                         line = sit->second.callLine;
                     }
+                    if( m_statHideUnknown && file[0] == '[' ) continue;
+                }
+                else if( m_statHideUnknown )
+                {
+                    continue;
                 }
 
                 if( isInline )

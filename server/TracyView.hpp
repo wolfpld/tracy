@@ -346,6 +346,7 @@ private:
     bool m_statSampleTime = true;
     int m_statMode = 0;
     int m_statSampleLocation = 0;
+    bool m_statHideUnknown = false;
     int m_showCallstackFrameAddress = 0;
     bool m_showUnknownFrames = true;
     bool m_groupChildrenLocations = false;

@@ -24,13 +24,15 @@ namespace tracy
 
 struct SymbolData
 {
-    const char* name;
     const char* file;
     uint32_t line;
 };
 
-struct CallstackEntry : public SymbolData
+struct CallstackEntry
 {
+    const char* name;
+    const char* file;
+    uint32_t line;
     uint64_t symAddr;
 };
 

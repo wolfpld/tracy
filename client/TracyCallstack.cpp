@@ -234,20 +234,11 @@ static void GetModuleName( uint64_t addr, char* buf, ULONG& len )
 SymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     SymbolData sym;
-    const auto proc = GetCurrentProcess();
-
-    char buf[sizeof( SYMBOL_INFO ) + MaxNameSize];
-    auto si = (SYMBOL_INFO*)buf;
-    si->SizeOfStruct = sizeof( SYMBOL_INFO );
-    si->MaxNameLen = MaxNameSize;
-    const auto symValid = SymFromAddr( proc, ptr, nullptr, si ) != 0;
-
     IMAGEHLP_LINE64 line;
     DWORD displacement = 0;
     line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
-
     const char* filename;
-    if (SymGetLineFromAddr64(proc, ptr, &displacement, &line) == 0)
+    if( SymGetLineFromAddr64( GetCurrentProcess(), ptr, &displacement, &line ) == 0 )
     {
         filename = "[unknown]";
         sym.line = 0;
@@ -257,10 +248,7 @@ SymbolData DecodeSymbolAddress( uint64_t ptr )
         filename = line.FileName;
         sym.line = line.LineNumber;
     }
-
-    sym.name = symValid ? CopyString( si->Name, si->NameLen ) : CopyString( "[unknown]", 9 );
     sym.file = CopyString( filename );
-
     return sym;
 }
 
@@ -406,63 +394,17 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 static int SymbolAddressDataCb( void* data, uintptr_t pc, const char* fn, int lineno, const char* function )
 {
     auto& sym = *(SymbolData*)data;
-
-    enum { DemangleBufLen = 64*1024 };
-    char demangled[DemangleBufLen];
-
-    if( !fn && !function )
+    if( !fn )
     {
-        const char* symname = nullptr;
         const char* symloc = nullptr;
-        auto vptr = (void*)pc;
-
         Dl_info dlinfo;
-        if( dladdr( vptr, &dlinfo ) )
-        {
-            symloc = dlinfo.dli_fname;
-            symname = dlinfo.dli_sname;
-
-            if( symname && symname[0] == '_' )
-            {
-                size_t len = DemangleBufLen;
-                int status;
-                abi::__cxa_demangle( symname, demangled, &len, &status );
-                if( status == 0 )
-                {
-                    symname = demangled;
-                }
-            }
-        }
-
-        if( !symname ) symname = "[unknown]";
+        if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
         if( !symloc ) symloc = "[unknown]";
-
-        sym.name = CopyString( symname );
         sym.file = CopyString( symloc );
         sym.line = 0;
     }
     else
     {
-        if( !fn ) fn = "[unknown]";
-        if( !function )
-        {
-            function = "[unknown]";
-        }
-        else
-        {
-            if( function[0] == '_' )
-            {
-                size_t len = DemangleBufLen;
-                int status;
-                abi::__cxa_demangle( function, demangled, &len, &status );
-                if( status == 0 )
-                {
-                    function = demangled;
-                }
-            }
-        }
-
-        sym.name = CopyString( function );
         sym.file = CopyString( fn );
         sym.line = lineno;
     }
@@ -654,47 +596,11 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 
 SymbolData DecodeSymbolAddress( uint64_t ptr )
 {
-    SymbolData sym;
-
-    char* demangled = nullptr;
-    const char* symname = nullptr;
     const char* symloc = nullptr;
-    auto vptr = (void*)ptr;
-
     Dl_info dlinfo;
-    if( dladdr( vptr, &dlinfo ) )
-    {
-        symloc = dlinfo.dli_fname;
-        symname = dlinfo.dli_sname;
-
-        if( symname && symname[0] == '_' )
-        {
-            size_t len = 0;
-            int status;
-            demangled = abi::__cxa_demangle( symname, nullptr, &len, &status );
-            if( status == 0 )
-            {
-                symname = demangled;
-            }
-        }
-    }
-
-    if( !symname )
-    {
-        symname = "[unknown]";
-    }
-    if( !symloc )
-    {
-        symloc = "[unknown]";
-    }
-
-    sym.name = CopyString( symname );
-    sym.file = CopyString( symloc );
-    sym.line = 0;
-
-    if( demangled ) free( demangled );
-
-    return sym;
+    if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
+    if( !symloc ) symloc = "[unknown]";
+    return SymbolData { CopyString( symloc ), 0 };
 }
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )

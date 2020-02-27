@@ -2686,7 +2686,6 @@ void Profiler::HandleSymbolQuery( uint64_t symbol )
     const auto sym = DecodeSymbolAddress( symbol );
 
     SendString( uint64_t( sym.file ), sym.file, QueueType::CustomStringData );
-    SendString( uint64_t( sym.name ), sym.name, QueueType::CustomStringData );
 
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SymbolInformation );
@@ -2697,7 +2696,6 @@ void Profiler::HandleSymbolQuery( uint64_t symbol )
     AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
 
     tracy_free( (void*)sym.file );
-    tracy_free( (void*)sym.name );
 #endif
 }
 

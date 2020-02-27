@@ -314,6 +314,13 @@ struct QueueCallstackFrame
     uint64_t symAddr;
 };
 
+struct QueueSymbolInformation
+{
+    uint64_t file;
+    uint32_t line;
+    uint64_t symAddr;
+};
+
 struct QueueCrashReport
 {
     int64_t time;
@@ -420,6 +427,7 @@ struct QueueItem
         QueueCallstackSample callstackSample;
         QueueCallstackFrameSize callstackFrameSize;
         QueueCallstackFrame callstackFrame;
+        QueueSymbolInformation symbolInformation;
         QueueCrashReport crashReport;
         QueueSysTime sysTime;
         QueueContextSwitch contextSwitch;
@@ -449,7 +457,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstack ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackAlloc ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackSample ),
-    sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),  // symbol information
+    sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
     sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack

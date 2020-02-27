@@ -2690,10 +2690,9 @@ void Profiler::HandleSymbolQuery( uint64_t symbol )
 
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SymbolInformation );
-    MemWrite( &item.callstackFrame.file, uint64_t( sym.file ) );
-    MemWrite( &item.callstackFrame.name, uint64_t( sym.name ) );
-    MemWrite( &item.callstackFrame.line, sym.line );
-    MemWrite( &item.callstackFrame.symAddr, symbol );
+    MemWrite( &item.symbolInformation.file, uint64_t( sym.file ) );
+    MemWrite( &item.symbolInformation.line, sym.line );
+    MemWrite( &item.symbolInformation.symAddr, symbol );
 
     AppendData( &item, QueueDataSize[(int)QueueType::SymbolInformation] );
 

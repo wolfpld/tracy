@@ -533,7 +533,7 @@ private:
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
-    tracy_force_inline void ProcessSymbolInformation( const QueueCallstackFrame& ev );
+    tracy_force_inline void ProcessSymbolInformation( const QueueSymbolInformation& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
     tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
     tracy_force_inline void ProcessContextSwitch( const QueueContextSwitch& ev );

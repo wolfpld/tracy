@@ -3559,7 +3559,7 @@ bool Worker::Process( const QueueItem& ev )
         ProcessCallstackFrame( ev.callstackFrame );
         break;
     case QueueType::SymbolInformation:
-        ProcessSymbolInformation( ev.callstackFrame );
+        ProcessSymbolInformation( ev.symbolInformation );
         break;
     case QueueType::Terminate:
         m_terminate = true;
@@ -4846,13 +4846,11 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
     m_pendingCustomStrings.erase( m_pendingCustomStrings.find( ev.file ) );
 }
 
-void Worker::ProcessSymbolInformation( const QueueCallstackFrame& ev )
+void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
 {
     auto it = m_pendingSymbols.find( ev.symAddr );
     assert( it != m_pendingSymbols.end() );
 
-    auto nit = m_pendingCustomStrings.find( ev.name );
-    assert( nit != m_pendingCustomStrings.end() );
     auto fit = m_pendingCustomStrings.find( ev.file );
     assert( fit != m_pendingCustomStrings.end() );
 
@@ -4864,8 +4862,7 @@ void Worker::ProcessSymbolInformation( const QueueCallstackFrame& ev )
     m_data.symbolMap.emplace( ev.symAddr, std::move( sd ) );
 
     m_pendingSymbols.erase( it );
-    m_pendingCustomStrings.erase( nit );
-    m_pendingCustomStrings.erase( m_pendingCustomStrings.find( ev.file ) );
+    m_pendingCustomStrings.erase( fit );
 }
 
 void Worker::ProcessCrashReport( const QueueCrashReport& ev )

@@ -101,7 +101,7 @@
 
 Tracy is a real-time, nanosecond resolution \emph{frame profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
 
-In contrast with \emph{statistical profilers} (such as VTune, perf or Very Sleepy), Tracy does require manual markup of the source code. In return, it allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. While the statistical profilers may show you the hot spots in your code, they are unable to pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
+While Tracy can perform statistical analysis of sampled call stack data, just like other \emph{statistical profilers} (such as VTune, perf or Very Sleepy), it mainly focuses on manual markup of the source code, which allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it is unable to pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 
 Even though Tracy is a \emph{frame} profiler, with the emphasis on analysis of \emph{frame time} in real-time applications (i.e.~games), it does work with utilities that do not employ the concept of a frame. There's nothing that would prohibit profiling of, for example, a compression tool, or an event-driven UI application.
 
@@ -114,7 +114,7 @@ The concept of Tracy being a real-time profiler may be explained in a couple of 
 \begin{enumerate}
 \item The profiled application is not slowed down by profiling\footnote{See section~\ref{perfimpact} for a benchmark.}. The act of recording a profiling event has virtually zero cost -- it only takes a few nanoseconds. Even on low-power mobile devices there's no perceptible impact on execution speed.
 \item The profiler itself works in real-time, without the need to process collected data in a complex way. Actually, it is quite inefficient in the way it works, as the data it presents is calculated anew each frame. And yet it can run at 60 frames per second.
-\item The profiler has full functionality when the profiled application is running and the data is captured. You may interact with your application and then immediately switch to the profiler, when a performance drop occurs.
+\item The profiler has full functionality when the profiled application is running and the data is still being collected. You may interact with your application and then immediately switch to the profiler, when a performance drop occurs.
 \end{enumerate}
 
 \subsection{Nanosecond resolution}
@@ -230,9 +230,9 @@ You may wonder, why should you use Tracy, when there are so many other profilers
 
 \begin{itemize}
 \item Tracy is free and open source (BSD license), while RAD Telemetry costs about \$8000 per year.
-\item Tracy provides out-of-the-box Lua bindings.
+\item Tracy provides out-of-the-box Lua bindings. It has been successfully integrated with other native and interpreted languages (Rust, Arma scripting language) using the C API (see chapter~\ref{capi} for reference).
 \item Tracy has a wide variety of profiling options. You can profile CPU, GPU, locks, memory allocations, context switches and more.
-\item Tracy is feature rich. Statistical information and trace comparisons are not present in other profilers.
+\item Tracy is feature rich. Statistical information about zones, trace comparisons, or inclusion of inline function frames in call stacks (even in statistics of sampled stacks) are features unique to Tracy.
 \item Tracy focuses on performance. Many tricks are used to reduce memory requirements and network bandwidth. The impact on the client execution speed is minimal, while other profilers perform heavy data processing within the profiled application (and then claim to be lightweight).
 \item Tracy uses low-level kernel APIs, or even raw assembly, where other profilers rely on layers of abstraction.
 \item Tracy is multi-platform right from the very beginning. Both on the client and server side. Other profilers tend to have Windows-specific graphical interfaces.
@@ -350,7 +350,7 @@ Finally, on Unix make sure that the application is linked with libraries \texttt
 
 \subsubsection{Short-lived applications}
 
-In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), add the \texttt{TRACY\_NO\_EXIT} define to the build configuration. With this option enabled, Tracy will not exit until an incoming connection is made, even if the application has already finished executing. This mode of operation can also be turned on by setting the \texttt{TRACY\_NO\_EXIT} environment variable to $1$.
+In case you want to profile a short-lived program (for example, a compression utility that finishes its work in one second), set the \texttt{TRACY\_NO\_EXIT} environment variable to $1$. With this option enabled, Tracy will not exit until an incoming connection is made, even if the application has already finished executing. If your platform doesn't support easy setup of environment variables, you may also add the \texttt{TRACY\_NO\_EXIT} define to your build configuration, which has the same effect.
 
 \subsubsection{On-demand profiling}
 \label{ondemand}
@@ -369,7 +369,7 @@ The client with on-demand profiling enabled needs to perform additional bookkeep
 
 \subsubsection{Client discovery}
 
-By default Tracy client will broadcast its presence to the local network. If you want to disable this feature, define the \texttt{TRACY\_NO\_BROADCAST} macro.
+By default Tracy client will announce its presence to the local network\footnote{Additional configuration may be required to achieve full functionality, depending on your network layout. Read about UDP broadcasts for more information.}. If you want to disable this feature, define the \texttt{TRACY\_NO\_BROADCAST} macro.
 
 \subsubsection{Setup for multi-DLL projects}
 
@@ -387,7 +387,7 @@ This is a very sad state of things.
 
 \paragraph{Apple woes}
 
-Because Apple \emph{has} to be \emph{think different}, there are some problems when using Tracy on OSX and iOS. First, the performance hit due to profiling is higher than on other platforms. Second, some critical features are missing and won't be possible to achieve:
+Because Apple \emph{has} to be \emph{think different}, there are some problems with using Tracy on OSX and iOS. First, the performance hit due to profiling is higher than on other platforms. Second, some critical features are missing and won't be possible to achieve:
 
 \begin{itemize}
 \item There's no support for the \texttt{TRACY\_NO\_EXIT} mode.
@@ -426,6 +426,15 @@ When using Tracy Profiler, keep in mind the following requirements:
 \item There can be no more than 65534 unique source locations\footnote{A source location is a place in the code, which is identified by source file name and line number, for example when you markup a zone.}. This number is further split in half between native code source locations and dynamic source locations (for example, when Lua instrumentation is used).
 \item Profiling session cannot be longer than 1.6 days ($2^{47}$ \si{\nano\second}). This also includes on-demand sessions.
 \item No more than 4 billion ($2^{32}$) memory free events may be recorded.
+\item No more than 16 million ($2^{24}$) unique call stacks can be captured.
+\end{itemize}
+
+The following conditions also need apply, but don't trouble yourself with them too much. You would probably already knew, if you'd be breaking any.
+
+\begin{itemize}
+\item Only little-endian CPUs are supported.
+\item Virtual address space must be limited to 48 bits.
+\item Tracy server requires CPU which is able to handle misaligned memory accesses.
 \end{itemize}
 
 \subsection{Check your environment}
@@ -1378,9 +1387,9 @@ In this manual, the word \emph{core} is typically used as a short term for \emph
 \subsubsection{Call stack sampling}
 \label{sampling}
 
-Manual markup of zones doesn't cover every function existing in a program and cannot be performed in system libraries, or in kernel. This can leave blank spaces on the trace, leaving you with no clue what the application is doing. Tracy is able to periodically inspect state of running threads, providing you with a snapshot of call stack at the time when sampling was performed. While this information doesn't have the fidelity of manually inserted zones, it can sometimes give you an insight where to go next.
+Manual markup of zones doesn't cover every function existing in a program and cannot be performed in system libraries, or in kernel. This can leave blank spaces on the trace, leaving you with no clue what the application was doing. Tracy is able to periodically inspect state of running threads, providing you with a snapshot of call stack at the time when sampling was performed. While this information doesn't have the fidelity of manually inserted zones, it can sometimes give you an insight where to go next.
 
-This feature is only available on Windows and requires privilege elevation (see chapter~\ref{contextswitches} for more information).
+This feature is only available on Windows and requires privilege elevation, as described in chapter~\ref{contextswitches}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
 
 \subsection{Trace parameters}
 \label{traceparameters}
@@ -1942,20 +1951,7 @@ Labels accompanied by the \faCaretDown{}~symbol can be collapsed out of the view
 
 In an example on figure~\ref{zoneslocks} you can see that there are two threads: \emph{Main thread} and \emph{Streaming thread}\footnote{By clicking on a thread name you can temporarily disable display of the zones in this thread.}. We can see that the \emph{Main thread} has two root level zones visible: \emph{Update} and \emph{Render}. The \emph{Update} zone is split into further sub-zones, some of which are too small to be displayed at the current zoom level. This is indicated by drawing a zig-zag pattern over the merged zones box (section~\ref{collapseditems}), with the number of collapsed zones printed in place of zone name. We can also see that the \emph{Physics} zone acquires the \emph{Physics lock} mutex for the most of its run time.
 
-The row of dots right below the \emph{Main thread} label shows call stack sample points, which may have been automatically captured (see chapter~\ref{sampling} for more detail). Hovering the \faMousePointer{}~mouse pointer over each dot will display a short call stack summary, while clicking on a dot with the \LMB{}~left mouse button will open a more detailed call stack information window (see section~\ref{callstackwindow}).
-
-The thick line right below represents the context switch data (see section~\ref{contextswitches}). We can see that the thread, as displayed, starts in the suspended state, represented by the dotted region. Then it is woken up and starts execution of the \texttt{Update} zone. In midst of the physics processing it is preempted, which explains why there is an empty space between child zones. Then it is resumed again and continues execution into the \texttt{Render} zone, where it is preempted again, but for a shorter time. After rendering is done, the thread sleeps again, presumably waiting for the next frame. Similar information is also available for the streaming thread.
-
-Context switch regions are using the following color key:
-
-\begin{itemize}
-\item \emph{Green} -- Thread is running.
-\item \emph{Red} -- Thread is waiting to be resumed by the scheduler. There are many reasons why a thread may be in the waiting state. Hovering the \faMousePointer{}~mouse pointer over the region will display more information.
-\item \emph{Blue} -- Thread is waiting to be resumed and is migrating to another CPU core. This might have visible performance effects, because low level CPU caches are not shared between cores, which may result in additional cache misses. To avoid this problem, you may pin a thread to a specific core, by setting its affinity.
-\item \emph{Bronze} -- Thread has been placed in the scheduler's run queue and is about to be resumed.
-\end{itemize}
-
-Meanwhile the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}), which in addition to being listed in the message log is being indicated by the triangle over the thread separator. When there are multiple messages in one place, the triangle outline changes to a filled triangle.
+Meanwhile the \emph{Streaming thread} is performing some \emph{Streaming jobs}. The first \emph{Streaming job} sent a message (section~\ref{messagelog}), which in addition to being listed in the message log is being indicated by a triangle over the thread separator. When there are multiple messages in one place, the triangle outline shape changes to a filled triangle.
 
 At high zoom levels, the zones will be displayed with additional markers, as presented on figure~\ref{inaccuracy}. The red regions at the start and end of a zone indicate the cost associated with recording an event (\emph{Queue delay}). The error bars show the timer inaccuracy (\emph{Timer resolution}). Note that these markers are only \emph{approximations}, as there are many factors that can impact the true cost of capturing a zone, for example cache effects, or CPU frequency scaling, which is unaccounted for (see section~\ref{checkenvironmentcpu}).
 
@@ -1981,16 +1977,33 @@ The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan context i
 
 Hovering the \faMousePointer{} mouse pointer over a zone will highlight all other zones that have the same source location with a white outline. Clicking the \LMB{}~left mouse button on a zone will open zone information window (section~\ref{zoneinfo}). Holding the \keys{\ctrl} key and clicking the \LMB{}~left mouse button on a zone will open zone statistics window (section~\ref{findzone}). Clicking the \MMB{}~middle mouse button on a zone will zoom the view to the extent of the zone.
 
+\subparagraph{Call stack samples}
+
+The row of dots right below the \emph{Main thread} label shows call stack sample points, which may have been automatically captured (see chapter~\ref{sampling} for more detail). Hovering the \faMousePointer{}~mouse pointer over each dot will display a short call stack summary, while clicking on a dot with the \LMB{}~left mouse button will open a more detailed call stack information window (see section~\ref{callstackwindow}).
+
+\subparagraph{Context switches}
+
+The thick line right below the samples represents context switch data (see section~\ref{contextswitches}). We can see that the main thread, as displayed, starts in a suspended state, represented by the dotted region. Then it is woken up and starts execution of the \texttt{Update} zone. In midst of the physics processing it is preempted, which explains why there is an empty space between child zones. Then it is resumed again and continues execution into the \texttt{Render} zone, where it is preempted again, but for a shorter time. After rendering is done, the thread sleeps again, presumably waiting for the vertical blanking, to indicate next frame. Similar information is also available for the streaming thread.
+
+Context switch regions are using the following color key:
+
+\begin{itemize}
+\item \emph{Green} -- Thread is running.
+\item \emph{Red} -- Thread is waiting to be resumed by the scheduler. There are many reasons why a thread may be in the waiting state. Hovering the \faMousePointer{}~mouse pointer over the region will display more information.
+\item \emph{Blue} -- Thread is waiting to be resumed and is migrating to another CPU core. This might have visible performance effects, because low level CPU caches are not shared between cores, which may result in additional cache misses. To avoid this problem, you may pin a thread to a specific core, by setting its affinity.
+\item \emph{Bronze} -- Thread has been placed in the scheduler's run queue and is about to be resumed.
+\end{itemize}
+
 \subparagraph{CPU data}
 
 This label is only available if context switch data was collected. It is split into two parts: a graph of CPU load by various threads running in the system, and a per-core thread execution display.
 
 The CPU load graph is showing how much CPU resources were used at any given time during program execution. The green part of the graph represents threads belonging to the profiled application and the gray part of the graph shows all other programs running in the system.
 
-Each line in the thread execution display represents a separate logical CPU thread. If CPU topology data is available (see section~\ref{cputopology}), package and core assignment will be displayed in brackets, in addition to numerical processor identifier. When a core is busy executing a thread, a zone will be drawn at the appropriate time. Zones are colored according to the following key:
+Each line in the thread execution display represents a separate logical CPU thread. If CPU topology data is available (see section~\ref{cputopology}), package and core assignment will be displayed in brackets, in addition to numerical processor identifier (i.e. \texttt{[\emph{package}:\emph{core}] CPU \emph{thread}}). When a core is busy executing a thread, a zone will be drawn at the appropriate time. Zones are colored according to the following key:
 
 \begin{itemize}
-\item \emph{Bright color} or \emph{orange} if dynamic thread colors are disabled -- Thread tracked by the profiler.
+\item \emph{Bright color} -- or \emph{orange} if dynamic thread colors are disabled -- Thread tracked by the profiler.
 \item \emph{Dark blue} -- Thread existing in the profiled application, but not known to the profiler. This may include internal profiler threads, helper threads created by external libraries, etc.
 \item \emph{Gray} -- Threads assigned to other programs running in the system.
 \end{itemize}
@@ -2121,15 +2134,35 @@ The message list can be filtered in the following ways:
 \subsection{Statistics window}
 \label{statistics}
 
-Looking at the timeline view gives you a very localized outlook on things. Sometimes you want to look at the general overview of the program's behavior, for example you want to know which function takes the most of application's execution time. The statistics window provides you exactly that information.
+Looking at the timeline view gives you a very localized outlook on things. Sometimes you want to take a look at the general overview of the program's behavior, for example you want to know which function takes the most of application's execution time. The statistics window provides you exactly that information.
+
+If the trace capture was performed with call stack sampling enabled (as described in chapter~\ref{sampling}), you will be presented with an option to switch between \emph{\faSyringe{}~Instrumentation} and \emph{\faEyeDropper{}~Sampling} modes. Otherwise only the instrumentation view will be available.
+
+\subsubsection{Instrumentation mode}
 
 Here you will find a multi-column display of captured zones, which contains: the zone \emph{name} and \emph{location}, \emph{total time} spent in the zone, the \emph{count} of zone executions and the \emph{mean time spent in the zone per call}. The view may be sorted according to the three displayed values.
 
-By default the displayed times are inclusive, that is, they contain execution times of zone's children. If you want to view just the time spent in zone, you can enable the exclusive mode by selecting the \emph{\faClock{} Show self times} option.
+The \emph{\faClock{}~Show self times} option determines how the displayed time is calculated. If it is disabled, the measurements will be inclusive, that is, containing execution time of zone's children. Enabling the option switches the measurement to exclusive, displaying just the time spent in zone, subtracting the child calls.
 
 Clicking the \LMB{} left mouse button on a zone will open the individual zone statistics view in the find zone window (section~\ref{findzone}).
 
 You can filter the displayed list of zones by matching the zone name to the expression in the \emph{\faFilter{}~Filter zones} entry field. Refer to section~\ref{messages} for a more detailed description of the expression syntax.
+
+\subsubsection{Sampling mode}
+
+Data displayed in this mode is in essence very similar to the instrumentation one. Here you will find function names, their locations in source code and time measurements. There are, however, some very important differences.
+
+First and foremost, the presented information is constructed from a number of call stack samples, which represent real addresses in the application's binary code, mapped to the line numbers in the source files. This reverse mapping may not be always possible, or may be erroneous. Furthermore, due to the nature of the sampling process, it is impossible to obtain exact time measurement. Instead, time values are guesstimated by multiplying number of sample counts by mean time between two distinct samples.
+
+The \emph{Name} column contains name of the function in which the sampling was done. Functions which were inlined are preceded with a '\faCaretRight{}' symbol.
+
+The \emph{Location} column displays the corresponding source file name and line number. Depending on the \emph{Location} option selection it can either show function entry address, or the instruction at which the sampling was performed. The \emph{function entry} mode points at the beginning of a non-inlined function, or at the place where inlined function was inserted in its parent function. The \emph{instruction} mode is not useful for non-inlined functions, as it points to one randomly selected sampling point out of many that were captured. However, in case of inlined functions, this random sampling point is within the inlined function body. Using these options in tandem enable you to look at both the inlined function code and the place where it was inserted. This information is complemented by the originating executable image name in the \emph{Image} column.
+
+Some function locations may not be found, due to insufficient debugging data available on the client side. To filter out such entries, use the \emph{\faEyeSlash{}~Hide unknown} option.
+
+The last column, \emph{Time} or \emph{Count} (depending on the \emph{\faStopwatch{}~Show time} option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format.
+
+Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case, and the exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Exclusive} switch.
 
 \subsection{Find zone window}
 \label{findzone}
@@ -2450,10 +2483,10 @@ Stack frame location may be displayed in the following number of ways, depending
 \item \emph{Source code} -- displays source file and line number associated with the frame.
 \item \emph{Return address} -- shows return address, which may be used to pinpoint the exact instruction in the disassembly.
 \item \emph{Symbol address} -- displays begin address of the function containing the frame address.
-\item \emph{Entry point} -- opens source code at the beginning of the function containing selected frame.
+\item \emph{Entry point} -- source code at the beginning of the function containing selected frame, or function call place in case of inline frames.
 \end{itemize}
 
-In some cases it may be not possible to properly decode stack frame address. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the image containing the frame address, or simply '\texttt{[unknown]}' if even this information cannot be retrieved. '\texttt{[kernel]}' is used to indicate unknown stack frames within the operating system internal routines.
+In some cases it may be not possible to properly decode stack frame address. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the image containing the frame address, or simply '\texttt{[unknown]}' if even this information cannot be retrieved. Additionally, '\texttt{[kernel]}' is used to indicate unknown stack frames within the operating system internal routines.
 
 \subsubsection{Reading call stacks}
 
@@ -2480,7 +2513,7 @@ Let's say you are looking at the call stack of some function called within \text
 
 At the first glance it may look like \texttt{unique\_ptr::reset} was the \emph{call site} of the \texttt{Application::Run}, which would make no sense, but this is not the case here. When you remember these are the \emph{function return points}, it becomes much more clear what is happening. As an optimization, \texttt{Application::Run} is returning directly into \texttt{unique\_ptr::reset}, skipping the return to \texttt{main} and an unnecessary \texttt{reset} function call.
 
-In rare cases, the linker may determine that some two functions in your program are identical\footnote{For example if all they do is zero-initialize a region of memory. As some constructors would do.}. As a result, only one copy of the binary code will be provided in the executable for both functions to share. While this optimization produces more compact programs, it also means that there's no way to distinguish the two functions apart. In effect, some call stacks may look nonsensical until you perform a small investigation.
+Moreover, the linker may determine in some rare cases that any two functions in your program are identical\footnote{For example if all they do is zero-initialize a region of memory. As some constructors would do.}. As a result, only one copy of the binary code will be provided in the executable for both functions to share. While this optimization produces more compact programs, it also means that there's no way to distinguish the two functions apart in the resulting machine code. In effect, some call stacks may look nonsensical until you perform a small investigation.
 
 \subsection{Source file view window}
 \label{sourceview}

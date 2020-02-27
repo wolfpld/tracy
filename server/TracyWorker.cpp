@@ -244,6 +244,7 @@ Worker::Worker( const char* addr, int port )
 
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = true;
+    m_data.callstackSamplesReady = false;       // FIXME implement live data update
     m_data.ctxUsageReady = true;
 #endif
 
@@ -1660,7 +1661,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         m_backgroundDone.store( false, std::memory_order_relaxed );
 #ifndef TRACY_NO_STATISTICS
-        m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
+        m_threadBackground = std::thread( [this, reconstructMemAllocPlot, eventMask] {
             if( !m_data.ctxSwitch.empty() )
             {
                 ReconstructContextSwitchUsage();
@@ -1708,6 +1709,75 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             {
                 std::lock_guard<std::shared_mutex> lock( m_data.lock );
                 m_data.sourceLocationZonesReady = true;
+            }
+
+            if( eventMask & EventType::Samples )
+            {
+                unordered_flat_map<uint32_t, uint32_t> counts;
+                uint32_t total = 0;
+                for( auto& t : m_data.threads ) total += t->samples.size();
+                if( total != 0 )
+                {
+                    counts.reserve( total );
+                    for( auto& t : m_data.threads )
+                    {
+                        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                        for( auto& sd : t->samples )
+                        {
+                            const auto cs = sd.callstack.Val();
+                            auto it = counts.find( cs );
+                            if( it == counts.end() )
+                            {
+                                counts.emplace( cs, 1 );
+                            }
+                            else
+                            {
+                                it->second++;
+                            }
+                        }
+                    }
+                    for( auto& v : counts )
+                    {
+                        const auto count = v.second;
+                        const auto& cs = GetCallstack( v.first );
+                        const auto cssz = cs.size();
+
+                        const auto fexcl = GetCallstackFrame( cs[0] );
+                        if( fexcl )
+                        {
+                            const auto fsz = fexcl->size;
+                            const auto& frame0 = fexcl->data[0];
+                            auto sym = m_data.symbolStats.find( frame0.symAddr );
+                            if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame0.symAddr, SymbolStats {} ).first;
+                            sym->second.excl += count;
+                            for( uint8_t f=1; f<fsz; f++ )
+                            {
+                                const auto& frame = fexcl->data[f];
+                                sym = m_data.symbolStats.find( frame.symAddr );
+                                if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
+                                sym->second.incl += count;
+                            }
+                        }
+                        for( uint8_t c=1; c<cssz; c++ )
+                        {
+                            const auto fincl = GetCallstackFrame( cs[c] );
+                            if( fincl )
+                            {
+                                const auto fsz = fincl->size;
+                                for( uint8_t f=0; f<fsz; f++ )
+                                {
+                                    const auto& frame = fincl->data[f];
+                                    auto sym = m_data.symbolStats.find( frame.symAddr );
+                                    if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
+                                    sym->second.incl += count;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                m_data.callstackSamplesReady = true;
             }
 
             m_backgroundDone.store( true, std::memory_order_relaxed );

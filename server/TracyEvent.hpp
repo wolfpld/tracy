@@ -660,6 +660,14 @@ struct Parameter
     int32_t val;
 };
 
+
+struct SymbolStats
+{
+    uint32_t incl, excl;
+};
+
+enum { SymbolStatsSize = sizeof( SymbolStats ) };
+
 }
 
 #endif

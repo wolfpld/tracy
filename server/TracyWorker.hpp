@@ -215,6 +215,11 @@ private:
         unordered_flat_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> callstackFrameMap;
         unordered_flat_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revFrameMap;
         unordered_flat_map<uint64_t, SymbolData> symbolMap;
+        unordered_flat_map<uint64_t, SymbolStats> symbolStats;
+
+#ifndef TRACY_NO_STATISTICS
+        bool callstackSamplesReady = false;
+#endif
 
         unordered_flat_map<uint32_t, LockMap*> lockMap;
 
@@ -420,6 +425,7 @@ public:
     const unordered_flat_map<int16_t, SourceLocationZones>& GetSourceLocationZones() const { return m_data.sourceLocationZones; }
     bool AreSourceLocationZonesReady() const { return m_data.sourceLocationZonesReady; }
     bool IsCpuUsageReady() const { return m_data.ctxUsageReady; }
+    bool AreCallstackSamplesReady() const { return m_data.callstackSamplesReady; }
 #endif
 
     tracy_force_inline uint16_t CompressThread( uint64_t thread ) { return m_data.localThreadCompress.CompressThread( thread ); }

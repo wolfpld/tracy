@@ -380,7 +380,7 @@ static int SymbolAddressDataCb( void* data, uintptr_t pc, const char* fn, int li
     {
         const char* symloc = nullptr;
         Dl_info dlinfo;
-        if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
+        if( dladdr( (void*)pc, &dlinfo ) ) symloc = dlinfo.dli_fname;
         if( !symloc ) symloc = "[unknown]";
         sym.file = symloc;
         sym.line = 0;

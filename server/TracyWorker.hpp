@@ -179,6 +179,8 @@ private:
     {
         StringIdx name;
         StringIdx imageName;
+        StringIdx file;
+        uint32_t line;
     };
 
     struct DataBlock

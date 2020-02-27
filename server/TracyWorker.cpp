@@ -1643,10 +1643,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         for( uint64_t i=0; i<sz; i++ )
         {
             uint64_t symAddr;
-            StringIdx name, file, imageName;
-            uint32_t line;
-            f.Read5( symAddr, name, file, line, imageName );
-            m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName } );
+            StringIdx name, file, imageName, callFile;
+            uint32_t line, callLine;
+            f.Read7( symAddr, name, file, line, imageName, callFile, callLine );
+            m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine } );
         }
     }
 
@@ -4819,14 +4819,15 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
         const auto idx = m_callstackFrameStaging->size - m_pendingCallstackSubframes;
 
         const auto name = StringIdx( nit->second.idx );
+        const auto file = StringIdx( fit->second.idx );
         m_callstackFrameStaging->data[idx].name = name;
-        m_callstackFrameStaging->data[idx].file = StringIdx( fit->second.idx );
+        m_callstackFrameStaging->data[idx].file = file;
         m_callstackFrameStaging->data[idx].line = ev.line;
         m_callstackFrameStaging->data[idx].symAddr = ev.symAddr;
 
         if( ev.symAddr != 0 && m_data.symbolMap.find( ev.symAddr ) == m_data.symbolMap.end() && m_pendingSymbols.find( ev.symAddr ) == m_pendingSymbols.end() )
         {
-            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName } );
+            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName, file, ev.line } );
             Query( ServerQuerySymbol, ev.symAddr );
         }
 
@@ -4859,6 +4860,8 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     sd.file = StringIdx( fit->second.idx );
     sd.line = ev.line;
     sd.imageName = it->second.imageName;
+    sd.callFile = it->second.file;
+    sd.callLine = it->second.line;
     m_data.symbolMap.emplace( ev.symAddr, std::move( sd ) );
 
     m_pendingSymbols.erase( it );

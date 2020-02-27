@@ -329,6 +329,8 @@ struct CallstackFrame : public CallstackFrameBasic
 struct SymbolData : public CallstackFrameBasic
 {
     StringIdx imageName;
+    StringIdx callFile;
+    uint32_t callLine;
 };
 
 enum { CallstackFrameBasicSize = sizeof( CallstackFrameBasic ) };

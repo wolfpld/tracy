@@ -11163,6 +11163,14 @@ void View::DrawStatistics()
 #else
         ImGui::Checkbox( "Exclusive", &m_statSelf );
 #endif
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::TextUnformatted( "Location:" );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Function entry", &m_statSampleLocation, 0 );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Instruction", &m_statSampleLocation, 1 );
         ImGui::Separator();
         ImGui::BeginChild( "##statisticsSampling" );
 
@@ -11241,9 +11249,17 @@ void View::DrawStatistics()
                 if( sit != symMap.end() )
                 {
                     name = m_worker.GetString( sit->second.name );
-                    file = m_worker.GetString( sit->second.file );
                     imageName = m_worker.GetString( sit->second.imageName );
-                    line = sit->second.line;
+                    if( m_statSampleLocation == 0 )
+                    {
+                        file = m_worker.GetString( sit->second.file );
+                        line = sit->second.line;
+                    }
+                    else
+                    {
+                        file = m_worker.GetString( sit->second.callFile );
+                        line = sit->second.callLine;
+                    }
                 }
 
                 ImGui::TextUnformatted( name );

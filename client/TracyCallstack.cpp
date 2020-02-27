@@ -379,7 +379,7 @@ static int SymbolAddressDataCb( void* data, uintptr_t pc, const char* fn, int li
     if( !fn )
     {
         const char* symloc = nullptr;
-        static Dl_info dlinfo;
+        Dl_info dlinfo;
         if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
         if( !symloc ) symloc = "[unknown]";
         sym.file = symloc;
@@ -581,7 +581,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
 SymbolData DecodeSymbolAddress( uint64_t ptr )
 {
     const char* symloc = nullptr;
-    static Dl_info dlinfo;
+    Dl_info dlinfo;
     if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
     if( !symloc ) symloc = "[unknown]";
     return SymbolData { symloc, 0, false };

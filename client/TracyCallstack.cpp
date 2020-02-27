@@ -317,7 +317,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     }
 #endif
 
-    return { cb_data, uint8_t( cb_num ), CopyString( moduleName ) };
+    return { cb_data, uint8_t( cb_num ), moduleName };
 }
 
 #elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4 || TRACY_HAS_CALLSTACK == 6
@@ -548,7 +548,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     Dl_info dlinfo;
     if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
 
-    return { cb_data, uint8_t( cb_num ), CopyString( symloc ? symloc : "[unknown]" ) };
+    return { cb_data, uint8_t( cb_num ), symloc ? symloc : "[unknown]" };
 }
 
 #elif TRACY_HAS_CALLSTACK == 5
@@ -651,7 +651,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     if( demangled ) free( demangled );
 
-    return { &cb, 1, CopyString( symloc ? symloc : "[unknown]" ) };
+    return { &cb, 1, symloc };
 }
 
 #endif

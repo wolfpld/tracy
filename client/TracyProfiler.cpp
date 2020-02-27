@@ -2224,8 +2224,6 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
         MemWrite( &item.callstackFrameSize.imageName, (uint64_t)frameData.imageName );
 
         AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrameSize] );
-
-        tracy_free( (void*)frameData.imageName );
     }
 
     for( uint8_t i=0; i<frameData.size; i++ )

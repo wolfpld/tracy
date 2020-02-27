@@ -342,7 +342,7 @@ private:
     CpuDataSortBy m_cpuDataSort = CpuDataSortBy::Pid;
 
     int m_statSort = 0;
-    bool m_statSelf = false;
+    bool m_statSelf = true;
     bool m_statSampleTime = true;
     int m_statMode = 0;
     int m_showCallstackFrameAddress = 0;

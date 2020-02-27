@@ -105,6 +105,22 @@ static inline bool AreOtherWaiting( uint64_t bitlist, uint64_t threadBit )
     return ( bitlist & ~threadBit ) != 0;
 }
 
+static tracy_force_inline void PrintStringPercent( char* buf, const char* string, double percent )
+{
+    const auto ssz = strlen( string );
+    memcpy( buf, string, ssz );
+    memcpy( buf+ssz, " (", 2 );
+    auto end = PrintFloat( buf+ssz+2, buf+128, percent, 2 );
+    memcpy( end, "%)", 3 );
+}
+
+static tracy_force_inline void PrintStringPercent( char* buf, double percent )
+{
+    memcpy( buf, "(", 2 );
+    auto end = PrintFloat( buf+1, buf+64, percent, 2 );
+    memcpy( end, "%)", 3 );
+}
+
 
 enum { MinVisSize = 3 };
 enum { MinCtxSize = 4 };
@@ -2735,13 +2751,16 @@ void View::DrawZones()
                     TextFocused( "Last event at", TimeToString( last ) );
                     TextFocused( "Lifetime:", TimeToString( lifetime ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", lifetime / double( traceLen ) * 100 );
+                    char buf[64];
+                    PrintStringPercent( buf, lifetime / double( traceLen ) * 100 );
+                    TextDisabledUnformatted( buf );
 
                     if( ctx )
                     {
                         TextFocused( "Time in running state:", TimeToString( ctx->runningTime ) );
                         ImGui::SameLine();
-                        ImGui::TextDisabled( "(%.2f%%)", ctx->runningTime / double( lifetime ) * 100 );
+                        PrintStringPercent( buf, ctx->runningTime / double( lifetime ) * 100 );
+                        TextDisabledUnformatted( buf );
                     }
                 }
 
@@ -4780,10 +4799,13 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     ImGui::BeginTooltip();
                     TextFocused( "Cores used by profiled program:", RealToString( usageOwn ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", usageOwn * cpuCntRev * 100 );
+                    char buf[64];
+                    PrintStringPercent( buf, usageOwn * cpuCntRev * 100 );
+                    TextDisabledUnformatted( buf );
                     TextFocused( "Cores used by other programs:", RealToString( usageOther ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", usageOther * cpuCntRev * 100 );
+                    PrintStringPercent( buf, usageOther * cpuCntRev * 100 );
+                    TextDisabledUnformatted( buf );
                     TextFocused( "Number of cores:", RealToString( cpuCnt ) );
                     ImGui::EndTooltip();
                 }
@@ -5184,7 +5206,9 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 TextFocused( "Last event at", TimeToString( last ) );
                 TextFocused( "Activity time:", TimeToString( activity ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%.2f%%)", activity / double( traceLen ) * 100 );
+                char buf[64];
+                PrintStringPercent( buf, activity / double( traceLen ) * 100 );
+                TextDisabledUnformatted( buf );
                 ImGui::Separator();
                 TextFocused( "Data points:", RealToString( v->data.size() ) );
                 TextFocused( "Data range:", FormatPlotValue( v->max - v->min, v->format ) );
@@ -6038,8 +6062,10 @@ void View::DrawZoneInfoWindow()
     TextFocused( "Self time:", TimeToString( selftime ) );
     if( ztime != 0 )
     {
+        char buf[64];
+        PrintStringPercent( buf, 100.f * selftime / ztime );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+        TextDisabledUnformatted( buf );
     }
     const auto ctx = m_worker.GetContextSwitchData( tid );
     if( ctx )
@@ -6081,8 +6107,10 @@ void View::DrawZoneInfoWindow()
                 TextFocused( "Running state time:", TimeToString( running ) );
                 if( ztime != 0 )
                 {
+                    char buf[64];
+                    PrintStringPercent( buf, 100.f * running / ztime );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", 100.f * running / ztime );
+                    TextDisabledUnformatted( buf );
                 }
                 ImGui::Separator();
                 if( incomplete )
@@ -6610,7 +6638,9 @@ void View::DrawZoneInfoWindow()
                     ImGui::NextColumn();
                     ImGui::TextUnformatted( TimeToString( v->second.time ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", v->second.time * m_timeDist.fztime );
+                    char buf[64];
+                    PrintStringPercent( buf, v->second.time * m_timeDist.fztime );
+                    TextDisabledUnformatted( buf );
                     ImGui::NextColumn();
                     ImGui::TextUnformatted( TimeToString( v->second.time / v->second.count ) );
                     ImGui::NextColumn();
@@ -6629,22 +6659,6 @@ void View::DrawZoneInfoWindow()
         m_zoneInfoWindow = nullptr;
         m_zoneInfoStack.clear();
     }
-}
-
-static tracy_force_inline void PrintStringPercent( char* buf, const char* string, double percent )
-{
-    const auto ssz = strlen( string );
-    memcpy( buf, string, ssz );
-    memcpy( buf+ssz, " (", 2 );
-    auto end = PrintFloat( buf+ssz+2, buf+128, percent, 2 );
-    memcpy( end, "%)", 3 );
-}
-
-static tracy_force_inline void PrintStringPercent( char* buf, double percent )
-{
-    memcpy( buf, "(", 2 );
-    auto end = PrintFloat( buf+1, buf+64, percent, 2 );
-    memcpy( end, "%)", 3 );
 }
 
 template<typename Adapter, typename V>
@@ -6987,8 +7001,10 @@ void View::DrawGpuInfoWindow()
     TextFocused( "GPU self time:", TimeToString( selftime ) );
     if( ztime != 0 )
     {
+        char buf[64];
+        PrintStringPercent( buf, 100.f * selftime / ztime );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+        TextDisabledUnformatted( buf );
     }
     TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
     auto ctx = GetZoneCtx( ev );
@@ -8727,7 +8743,9 @@ void View::DrawFindZone()
                     m_findZone.scheduleResetMatch = true;
                 }
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%.2f%%)", 100.f * zoneData.selfTotal / zoneData.total );
+                char buf[64];
+                PrintStringPercent( buf, 100.f * zoneData.selfTotal / zoneData.total );
+                TextDisabledUnformatted( buf );
                 if( m_worker.HasContextSwitches() )
                 {
                     ImGui::SameLine();
@@ -9612,7 +9630,9 @@ void View::DrawFindZone()
                 ImGui::SameLine();
                 TextFocused( "Time:", TimeToString( group->second.time ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%.2f%%)", group->second.time * 100.f / zoneData.total );
+                char buf[64];
+                PrintStringPercent( buf, group->second.time * 100.f / zoneData.total );
+                TextDisabledUnformatted( buf );
 
                 if( group->first != 0 )
                 {
@@ -10592,7 +10612,9 @@ void View::DrawCompare()
                     TextFocused( "Total time (ext.):", TimeToString( total1 * adj1 ) );
                     TextFocused( "Savings:", TimeToString( total1 * adj1 - total0 * adj0 ) );
                     ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", ( total0 * adj0 ) / ( total1 * adj1 ) * 100 );
+                    char buf[64];
+                    PrintStringPercent( buf, ( total0 * adj0 ) / ( total1 * adj1 ) * 100 );
+                    TextDisabledUnformatted( buf );
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ) ) );
 
 #ifdef TRACY_EXTENDED_FONT
@@ -12996,7 +13018,8 @@ void View::DrawCpuDataWindow()
         ImGui::NextColumn();
         ImGui::TextUnformatted( RealToString( pid.second.data.migrations ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%.2f%%)", double( pid.second.data.migrations ) / pid.second.data.runningRegions * 100 );
+        PrintStringPercent( buf, double( pid.second.data.migrations ) / pid.second.data.runningRegions * 100 );
+        TextDisabledUnformatted( buf );
         ImGui::NextColumn();
         if( expand )
         {
@@ -13059,7 +13082,8 @@ void View::DrawCpuDataWindow()
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( RealToString( tit->second.migrations ) );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%.2f%%)", double( tit->second.migrations ) / tit->second.runningRegions * 100 );
+                PrintStringPercent( buf, double( tit->second.migrations ) / tit->second.runningRegions * 100 );
+                TextDisabledUnformatted( buf );
                 ImGui::NextColumn();
                 if( tidMatch )
                 {
@@ -14622,8 +14646,10 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     TextFocused( "Self time:", TimeToString( selftime ) );
     if( ztime != 0 )
     {
+        char buf[64];
+        PrintStringPercent( buf, 100.f * selftime / ztime );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+        TextDisabledUnformatted( buf );
     }
     const auto ctx = m_worker.GetContextSwitchData( tid );
     if( ctx )
@@ -14635,8 +14661,10 @@ void View::ZoneTooltip( const ZoneEvent& ev )
             TextFocused( "Running state time:", TimeToString( time ) );
             if( ztime != 0 )
             {
+                char buf[64];
+                PrintStringPercent( buf, 100.f * time / ztime );
                 ImGui::SameLine();
-                ImGui::TextDisabled( "(%.2f%%)", 100.f * time / ztime );
+                TextDisabledUnformatted( buf );
             }
             TextFocused( "Running state regions:", RealToString( cnt ) );
         }
@@ -14674,8 +14702,10 @@ void View::ZoneTooltip( const GpuEvent& ev )
     TextFocused( "GPU self time:", TimeToString( selftime ) );
     if( ztime != 0 )
     {
+        char buf[64];
+        PrintStringPercent( buf, 100.f * selftime / ztime );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+        TextDisabledUnformatted( buf );
     }
     TextFocused( "CPU command setup time:", TimeToString( ev.CpuEnd() - ev.CpuStart() ) );
     auto ctx = GetZoneCtx( ev );

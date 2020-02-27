@@ -175,6 +175,12 @@ private:
         }
     };
 
+    struct SymbolPending
+    {
+        StringIdx name;
+        StringIdx imageName;
+    };
+
     struct DataBlock
     {
         std::shared_mutex lock;
@@ -704,7 +710,7 @@ private:
     unordered_flat_map<uint64_t, ThreadData*> m_threadMap;
     unordered_flat_map<uint64_t, NextCallstack> m_nextCallstack;
     unordered_flat_map<uint64_t, FrameImagePending> m_pendingFrameImageData;
-    unordered_flat_map<uint64_t, StringIdx> m_pendingSymbols;
+    unordered_flat_map<uint64_t, SymbolPending> m_pendingSymbols;
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;

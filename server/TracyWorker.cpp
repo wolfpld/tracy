@@ -4818,14 +4818,15 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
     {
         const auto idx = m_callstackFrameStaging->size - m_pendingCallstackSubframes;
 
-        m_callstackFrameStaging->data[idx].name = StringIdx( nit->second.idx );
+        const auto name = StringIdx( nit->second.idx );
+        m_callstackFrameStaging->data[idx].name = name;
         m_callstackFrameStaging->data[idx].file = StringIdx( fit->second.idx );
         m_callstackFrameStaging->data[idx].line = ev.line;
         m_callstackFrameStaging->data[idx].symAddr = ev.symAddr;
 
         if( ev.symAddr != 0 && m_data.symbolMap.find( ev.symAddr ) == m_data.symbolMap.end() && m_pendingSymbols.find( ev.symAddr ) == m_pendingSymbols.end() )
         {
-            m_pendingSymbols.emplace( ev.symAddr, m_callstackFrameStaging->imageName );
+            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName } );
             Query( ServerQuerySymbol, ev.symAddr );
         }
 
@@ -4856,10 +4857,10 @@ void Worker::ProcessSymbolInformation( const QueueCallstackFrame& ev )
     assert( fit != m_pendingCustomStrings.end() );
 
     SymbolData sd;
-    sd.name = StringIdx( nit->second.idx );
+    sd.name = it->second.name;
     sd.file = StringIdx( fit->second.idx );
     sd.line = ev.line;
-    sd.imageName = it->second;
+    sd.imageName = it->second.imageName;
     m_data.symbolMap.emplace( ev.symAddr, std::move( sd ) );
 
     m_pendingSymbols.erase( it );

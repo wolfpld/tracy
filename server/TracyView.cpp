@@ -12919,7 +12919,16 @@ void View::DrawPlayback()
         ImGui::EndTooltip();
     }
     ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
     TextFocused( "Frame:", RealToString( GetFrameNumber( *frameSet, fi->frameRef, m_worker.GetFrameOffset() ) ) );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    char buf[64];
+    auto ptr = PrintFloat( buf, buf+62, 100.f * fi->csz / ( size_t( fi->w ) * size_t( fi->h ) / 2 ), 2 );
+    memcpy( ptr, "%", 2 );
+    TextFocused( "Ratio:", buf );
     ImGui::End();
 }
 

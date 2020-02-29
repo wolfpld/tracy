@@ -30,10 +30,11 @@ namespace tracy
 
 static inline CallstackFrameId PackPointer( uint64_t ptr )
 {
-    assert( ( ( ptr & 0x4000000000000000 ) << 1 ) == ( ptr & 0x8000000000000000 ) );
+    assert( ( ( ptr & 0x3000000000000000 ) << 2 ) == ( ptr & 0xC000000000000000 ) );
     CallstackFrameId id;
     id.idx = ptr;
     id.sel = 0;
+    id.custom = 0;
     return id;
 }
 
@@ -3123,7 +3124,7 @@ void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
 uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
 {
     assert( id.sel == 0 );
-    return ( id.idx & 0x7FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x4000000000000000 ) << 1 );
+    return ( id.idx & 0x3FFFFFFFFFFFFFFF ) | ( ( id.idx & 0xC000000000000000 ) << 2 );
 }
 
 void Worker::AddCallstackPayload( uint64_t ptr, const char* _data, size_t _sz )
@@ -3201,6 +3202,7 @@ void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _s
             frameData->size = 1;
             id.idx = m_callstackAllocNextIdx++;
             id.sel = 1;
+            id.custom = 0;
             m_data.callstackFrameMap.emplace( id, frameData );
             m_data.revFrameMap.emplace( frameData, id );
         }
@@ -5304,7 +5306,7 @@ void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool ca
         }
     }
 
-    UpdateSampleStatisticsImpl( frames, cssz, count );
+    UpdateSampleStatisticsImpl( frames, cssz, count, cs );
 }
 
 void Worker::UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postponedSamples.begin())& it )
@@ -5324,20 +5326,20 @@ void Worker::UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postpo
         frames[i] = frame;
     }
 
-    UpdateSampleStatisticsImpl( frames, cssz, it->second );
+    UpdateSampleStatisticsImpl( frames, cssz, it->second, cs );
     it = m_data.postponedSamples.erase( it );
 }
 
-void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint8_t framesCount, uint32_t count )
+void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint8_t framesCount, uint32_t count, const VarArray<CallstackFrameId>& cs )
 {
+    const auto fexcl = frames[0];
+    const auto fxsz = fexcl->size;
     {
-        const auto fexcl = frames[0];
-        const auto fsz = fexcl->size;
         const auto& frame0 = fexcl->data[0];
         auto sym = m_data.symbolStats.find( frame0.symAddr );
         if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame0.symAddr, SymbolStats {} ).first;
         sym->second.excl += count;
-        for( uint8_t f=1; f<fsz; f++ )
+        for( uint8_t f=1; f<fxsz; f++ )
         {
             const auto& frame = fexcl->data[f];
             sym = m_data.symbolStats.find( frame.symAddr );
@@ -5356,6 +5358,78 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
             if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
             sym->second.incl += count;
         }
+    }
+
+    CallstackFrameId parentFrameId;
+    if( fxsz != 1 )
+    {
+        auto cfdata = (CallstackFrame*)alloca( ( fxsz-1 ) * sizeof( CallstackFrame ) );
+        for( int i=0; i<fxsz-1; i++ )
+        {
+            cfdata[i] = fexcl->data[i+1];
+        }
+        CallstackFrameData cfd;
+        cfd.data = cfdata;
+        cfd.size = fxsz-1;
+        cfd.imageName = fexcl->imageName;
+
+        auto it = m_data.revParentFrameMap.find( &cfd );
+        if( it == m_data.revParentFrameMap.end() )
+        {
+            auto frame = m_slab.Alloc<CallstackFrame>( fxsz-1 );
+            memcpy( frame, cfdata, fxsz * sizeof( CallstackFrame ) );
+            auto frameData = m_slab.AllocInit<CallstackFrameData>();
+            frameData->data = frame;
+            frameData->size = fxsz - 1;
+            parentFrameId.idx = m_callstackParentNextIdx++;
+            parentFrameId.sel = 0;
+            parentFrameId.custom = 1;
+            m_data.callstackFrameMap.emplace( parentFrameId, frameData );
+            m_data.revParentFrameMap.emplace( frameData, parentFrameId );
+        }
+        else
+        {
+            parentFrameId = it->second;
+        }
+    }
+
+    const auto sz = framesCount - ( fxsz == 1 );
+    const auto memsize = sizeof( VarArray<CallstackFrameId> ) + sz * sizeof( CallstackFrameId );
+    auto mem = (char*)m_slab.AllocRaw( memsize );
+
+    auto data = (CallstackFrameId*)mem;
+    auto dst = data;
+    if( fxsz == 1 )
+    {
+        for( int i=0; i<sz; i++ )
+        {
+            *dst++ = cs[i+1];
+        }
+    }
+    else
+    {
+        *dst++ = parentFrameId;
+        for( int i=1; i<sz; i++ )
+        {
+            *dst++ = cs[i];
+        }
+    }
+
+    auto arr = (VarArray<CallstackFrameId>*)( mem + sz * sizeof( CallstackFrameId ) );
+    new(arr) VarArray<CallstackFrameId>( sz, data );
+
+    uint32_t idx;
+    auto it = m_data.parentCallstackMap.find( arr );
+    if( it == m_data.parentCallstackMap.end() )
+    {
+        idx = m_data.parentCallstackPayload.size();
+        m_data.parentCallstackMap.emplace( arr, idx );
+        m_data.parentCallstackPayload.push_back( arr );
+    }
+    else
+    {
+        idx = it->second;
+        m_slab.Unalloc( memsize );
     }
 }
 #endif

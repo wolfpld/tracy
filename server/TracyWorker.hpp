@@ -227,6 +227,9 @@ private:
         unordered_flat_map<uint64_t, SymbolStats> symbolStats;
 
 #ifndef TRACY_NO_STATISTICS
+        unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> parentCallstackMap;
+        Vector<short_ptr<VarArray<CallstackFrameId>>> parentCallstackPayload;
+        unordered_flat_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revParentFrameMap;
         unordered_flat_map<uint32_t, uint32_t> postponedSamples;
         bool newFramesWereReceived = false;
         bool callstackSamplesReady = false;
@@ -643,7 +646,7 @@ private:
     void ReconstructContextSwitchUsage();
     void UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone );
     void UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postponedSamples.begin())& it );
-    void UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint8_t framesCount, uint32_t count );
+    void UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint8_t framesCount, uint32_t count, const VarArray<CallstackFrameId>& cs );
 #endif
 
     tracy_force_inline int64_t ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t refTime, int32_t& childIdx );
@@ -731,6 +734,7 @@ private:
     CallstackFrameData* m_callstackFrameStaging;
     uint64_t m_callstackFrameStagingPtr;
     uint64_t m_callstackAllocNextIdx = 0;
+    uint64_t m_callstackParentNextIdx = 0;
 
     uint64_t m_lastMemActionCallstack;
     bool m_lastMemActionWasAlloc;

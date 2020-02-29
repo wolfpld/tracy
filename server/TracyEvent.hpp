@@ -354,8 +354,9 @@ union CallstackFrameId
 {
     struct
     {
-        uint64_t idx : 63;
+        uint64_t idx : 62;
         uint64_t sel : 1;
+        uint64_t custom : 1;
     };
     uint64_t data;
 };

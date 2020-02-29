@@ -5,7 +5,9 @@
 #include <stdint.h>
 #include <string.h>
 
-#define XXH_STATIC_LINKING_ONLY
+#ifndef XXH_STATIC_LINKING_ONLY
+#  define XXH_STATIC_LINKING_ONLY
+#endif
 #include "tracy_xxh3.h"
 
 namespace tracy

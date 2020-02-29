@@ -4,6 +4,11 @@
 #include <stdint.h>
 #include <string.h>
 
+#ifndef XXH_STATIC_LINKING_ONLY
+#  define XXH_STATIC_LINKING_ONLY
+#endif
+#include "tracy_xxh3.h"
+
 #include "../common/TracyForceInline.hpp"
 #include "TracyCharUtil.hpp"
 #include "TracyEvent.hpp"
@@ -61,23 +66,7 @@ enum { VarArraySize = sizeof( VarArray<int> ) };
 template<typename T>
 inline void VarArray<T>::CalcHash()
 {
-    T hash = 5381;
-    for( uint8_t i=0; i<m_size; i++ )
-    {
-        hash = ( ( hash << 5 ) + hash ) ^ m_ptr[i];
-    }
-    m_hash = uint32_t( hash );
-}
-
-template<>
-inline void VarArray<CallstackFrameId>::CalcHash()
-{
-    uint64_t hash = 5381;
-    for( uint8_t i=0; i<m_size; i++ )
-    {
-        hash = ( ( hash << 5 ) + hash ) ^ m_ptr[i].data;
-    }
-    m_hash = uint32_t( hash );
+    m_hash = uint32_t( XXH3_64bits( m_ptr.get(), m_size * sizeof( T ) ) );
 }
 
 template<typename T>

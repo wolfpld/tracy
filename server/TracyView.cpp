@@ -11888,7 +11888,29 @@ void View::DrawInfo()
         TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );
         TextFocused( "Symbols:", RealToString( m_worker.GetSymbolsCount() ) );
         TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount() ) );
+        if( m_worker.AreCallstackSamplesReady() )
+        {
+            ImGui::SameLine();
+            TextFocused( "+", RealToString( m_worker.GetCallstackParentPayloadCount() ) );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Parent call stacks for stack samples" );
+                ImGui::EndTooltip();
+            }
+        }
         TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount() ) );
+        if( m_worker.AreCallstackSamplesReady() )
+        {
+            ImGui::SameLine();
+            TextFocused( "+", RealToString( m_worker.GetCallstackParentFrameCount() ) );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Parent call stack frames for stack samples" );
+                ImGui::EndTooltip();
+            }
+        }
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
         TextFocused( "Frame images:", RealToString( ficnt ) );
         TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount() ) );

@@ -1737,7 +1737,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                             }
                         }
                     }
-                    for( auto& v : counts ) UpdateSampleStatistics( v.first, v.second );
+                    for( auto& v : counts ) UpdateSampleStatistics( v.first, v.second, false );
                 }
 
                 std::lock_guard<std::shared_mutex> lock( m_data.lock );
@@ -4743,7 +4743,7 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     }
 
 #ifndef TRACY_NO_STATISTICS
-    UpdateSampleStatistics( m_pendingCallstackId, 1 );
+    UpdateSampleStatistics( m_pendingCallstackId, 1, true );
 #endif
 }
 
@@ -5246,14 +5246,54 @@ void Worker::ReconstructContextSwitchUsage()
     m_data.ctxUsageReady = true;
 }
 
-void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count )
+void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone )
 {
     const auto& cs = GetCallstack( callstack );
     const auto cssz = cs.size();
 
-    const auto fexcl = GetCallstackFrame( cs[0] );
-    if( fexcl )
+    auto frames = (const CallstackFrameData**)alloca( cssz * sizeof( CallstackFrameData* ) );
+    for( uint8_t i=0; i<cssz; i++ )
     {
+        auto frame = GetCallstackFrame( cs[i] );
+        if( !frame )
+        {
+            if( canPostpone )
+            {
+                auto it = m_data.postponedSamples.find( callstack );
+                if( it == m_data.postponedSamples.end() )
+                {
+                    m_data.postponedSamples.emplace( callstack, count );
+                }
+                else
+                {
+                    it->second += count;
+                }
+            }
+            return;
+        }
+        else
+        {
+            frames[i] = frame;
+        }
+    }
+
+    if( canPostpone )
+    {
+        auto it = m_data.postponedSamples.find( callstack );
+        if( it != m_data.postponedSamples.end() )
+        {
+            count += it->second;
+            m_data.postponedSamples.erase( it );
+        }
+    }
+
+    UpdateSampleStatisticsImpl( frames, cssz, count );
+}
+
+void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint8_t framesCount, uint32_t count )
+{
+    {
+        const auto fexcl = frames[0];
         const auto fsz = fexcl->size;
         const auto& frame0 = fexcl->data[0];
         auto sym = m_data.symbolStats.find( frame0.symAddr );
@@ -5267,19 +5307,16 @@ void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count )
             sym->second.incl += count;
         }
     }
-    for( uint8_t c=1; c<cssz; c++ )
+    for( uint8_t c=1; c<framesCount; c++ )
     {
-        const auto fincl = GetCallstackFrame( cs[c] );
-        if( fincl )
+        const auto fincl = frames[c];
+        const auto fsz = fincl->size;
+        for( uint8_t f=0; f<fsz; f++ )
         {
-            const auto fsz = fincl->size;
-            for( uint8_t f=0; f<fsz; f++ )
-            {
-                const auto& frame = fincl->data[f];
-                auto sym = m_data.symbolStats.find( frame.symAddr );
-                if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
-                sym->second.incl += count;
-            }
+            const auto& frame = fincl->data[f];
+            auto sym = m_data.symbolStats.find( frame.symAddr );
+            if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
+            sym->second.incl += count;
         }
     }
 }

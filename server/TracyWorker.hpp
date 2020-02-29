@@ -227,6 +227,7 @@ private:
         unordered_flat_map<uint64_t, SymbolStats> symbolStats;
 
 #ifndef TRACY_NO_STATISTICS
+        unordered_flat_map<uint32_t, uint32_t> postponedSamples;
         bool callstackSamplesReady = false;
 #endif
 
@@ -638,7 +639,8 @@ private:
 
 #ifndef TRACY_NO_STATISTICS
     void ReconstructContextSwitchUsage();
-    void UpdateSampleStatistics( uint32_t callstack, uint32_t count );
+    void UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone );
+    void UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint8_t framesCount, uint32_t count );
 #endif
 
     tracy_force_inline int64_t ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t refTime, int32_t& childIdx );

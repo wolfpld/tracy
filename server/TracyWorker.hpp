@@ -228,6 +228,7 @@ private:
 
 #ifndef TRACY_NO_STATISTICS
         unordered_flat_map<uint32_t, uint32_t> postponedSamples;
+        bool newFramesWereReceived = false;
         bool callstackSamplesReady = false;
 #endif
 
@@ -631,6 +632,7 @@ private:
     void HandleFrameName( uint64_t name, const char* str, size_t sz );
 
     void HandlePostponedPlots();
+    void HandlePostponedSamples();
 
     StringLocation StoreString( const char* str, size_t sz );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
@@ -640,6 +642,7 @@ private:
 #ifndef TRACY_NO_STATISTICS
     void ReconstructContextSwitchUsage();
     void UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone );
+    void UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postponedSamples.begin())& it );
     void UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint8_t framesCount, uint32_t count );
 #endif
 

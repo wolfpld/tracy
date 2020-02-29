@@ -2511,6 +2511,7 @@ void Worker::Exec()
 
         const char* ptr = m_buffer + netbuf.bufferOffset;
         const char* end = ptr + netbuf.size;
+        m_data.newFramesWereReceived = false;
 
         {
             std::lock_guard<std::shared_mutex> lock( m_data.lock );
@@ -2531,6 +2532,7 @@ void Worker::Exec()
             }
 
             HandlePostponedPlots();
+            HandlePostponedSamples();
 
             while( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
             {
@@ -3335,6 +3337,18 @@ void Worker::HandlePostponedPlots()
         std::inplace_merge( dst.begin() + dsd, dst.begin() + ded, dst.begin() + ded + src.size(), [] ( const auto& l, const auto& r ) { return l.time.Val() < r.time.Val(); } );
         src.clear();
     }
+}
+
+void Worker::HandlePostponedSamples()
+{
+    if( !m_data.newFramesWereReceived ) return;
+    if( m_data.postponedSamples.empty() ) return;
+    auto it = m_data.postponedSamples.begin();
+    do
+    {
+        UpdateSampleStatisticsPostponed( it );
+    }
+    while( it != m_data.postponedSamples.end() );
 }
 
 StringLocation Worker::StoreString( const char* str, size_t sz )
@@ -4754,6 +4768,7 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
     assert( m_pendingCallstackFrames > 0 );
     m_pendingCallstackFrames--;
     m_pendingCallstackSubframes = ev.size;
+    m_data.newFramesWereReceived = true;
 
     auto iit = m_pendingCustomStrings.find( ev.imageName );
     assert( iit != m_pendingCustomStrings.end() );
@@ -5290,6 +5305,27 @@ void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool ca
     }
 
     UpdateSampleStatisticsImpl( frames, cssz, count );
+}
+
+void Worker::UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postponedSamples.begin())& it )
+{
+    const auto& cs = GetCallstack( it->first );
+    const auto cssz = cs.size();
+
+    auto frames = (const CallstackFrameData**)alloca( cssz * sizeof( CallstackFrameData* ) );
+    for( uint8_t i=0; i<cssz; i++ )
+    {
+        auto frame = GetCallstackFrame( cs[i] );
+        if( !frame )
+        {
+            ++it;
+            return;
+        }
+        frames[i] = frame;
+    }
+
+    UpdateSampleStatisticsImpl( frames, cssz, it->second );
+    it = m_data.postponedSamples.erase( it );
 }
 
 void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint8_t framesCount, uint32_t count )

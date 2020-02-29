@@ -11408,9 +11408,31 @@ void View::DrawCallstackWindow()
     ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
     ImGui::SameLine();
     ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
-    ImGui::PopStyleVar();
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
+    {
+        auto frame = m_worker.GetCallstackFrame( *cs.begin() );
+        if( frame && frame->data[0].symAddr != 0 )
+        {
+            auto sym = m_worker.GetSymbolStats( frame->data[0].symAddr );
+            if( sym && !sym->parents.empty() )
+            {
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                if( ImGui::Button( ICON_FA_DOOR_OPEN " Global entry statistics" ) )
+#else
+                if( ImGui::Button( "Global entry statistics" ) )
+#endif
+                {
+                    m_sampleParents.symAddr = frame->data[0].symAddr;
+                    m_sampleParents.sel = 0;
+                }
+            }
+        }
+    }
+    ImGui::PopStyleVar();
 
     ImGui::Separator();
     ImGui::BeginChild( "##callstack" );

@@ -16,6 +16,8 @@ v0.7 (xxxx-xx-xx)
 - Call stack window will now display module names.
 - Symbol location in call stack window may now also display symbol address.
 - Statistics menu can now use call stack sampling data.
+- All call paths leading to the sampled instruction in a call stack can be
+  now displayed.
 - Frame image compression ratio (lossless in-memory compression, not taking
   into account DXT compression) is displayed in playback window.
 

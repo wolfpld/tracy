@@ -5430,6 +5430,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         m_slab.Unalloc( memsize );
     }
 
+    sym0 = m_data.symbolStats.find( frame0.symAddr );
     auto sit = sym0->second.parents.find( idx );
     if( sit == sym0->second.parents.end() )
     {

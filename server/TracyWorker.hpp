@@ -448,7 +448,7 @@ public:
 
     const unordered_flat_map<uint64_t, SymbolData>& GetSymbolMap() const { return m_data.symbolMap; }
     const unordered_flat_map<uint64_t, SymbolStats>& GetSymbolStats() const { return m_data.symbolStats; }
-    const SymbolStats& GetSymbolStats( uint64_t symAddr ) const;
+    const SymbolStats* GetSymbolStats( uint64_t symAddr ) const;
     bool AreCallstackSamplesReady() const { return m_data.callstackSamplesReady; }
 #endif
 

@@ -5434,11 +5434,11 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
     auto sit = sym0->second.parents.find( idx );
     if( sit == sym0->second.parents.end() )
     {
-        sym0->second.parents.emplace( idx, 1 );
+        sym0->second.parents.emplace( idx, count );
     }
     else
     {
-        sit->second++;
+        sit->second += count;
     }
 }
 #endif

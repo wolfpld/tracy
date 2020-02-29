@@ -13456,7 +13456,7 @@ void View::DrawSampleParents()
     int bidx = 0;
     for( auto& entry : cs )
     {
-        auto frameData = m_worker.GetCallstackFrame( entry );
+        auto frameData = entry.custom ? m_worker.GetParentCallstackFrame( entry ) : m_worker.GetCallstackFrame( entry );
         assert( frameData );
         const auto fsz = frameData->size;
         for( uint8_t f=0; f<fsz; f++ )

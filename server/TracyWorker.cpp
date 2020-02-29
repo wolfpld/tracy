@@ -2041,6 +2041,7 @@ std::pair<int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, in
 
 const CallstackFrameData* Worker::GetCallstackFrame( const CallstackFrameId& ptr ) const
 {
+    assert( ptr.custom == 0 );
     auto it = m_data.callstackFrameMap.find( ptr );
     if( it == m_data.callstackFrameMap.end() )
     {
@@ -2051,6 +2052,22 @@ const CallstackFrameData* Worker::GetCallstackFrame( const CallstackFrameId& ptr
         return it->second;
     }
 }
+
+#ifndef TRACY_NO_STATISTICS
+const CallstackFrameData* Worker::GetParentCallstackFrame( const CallstackFrameId& ptr ) const
+{
+    assert( ptr.custom == 1 );
+    auto it = m_data.parentCallstackFrameMap.find( ptr );
+    if( it == m_data.parentCallstackFrameMap.end() )
+    {
+        return nullptr;
+    }
+    else
+    {
+        return it->second;
+    }
+}
+#endif
 
 const SymbolData* Worker::GetSymbolData( uint64_t sym ) const
 {
@@ -5402,7 +5419,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
             parentFrameId.idx = m_callstackParentNextIdx++;
             parentFrameId.sel = 0;
             parentFrameId.custom = 1;
-            m_data.callstackFrameMap.emplace( parentFrameId, frameData );
+            m_data.parentCallstackFrameMap.emplace( parentFrameId, frameData );
             m_data.revParentFrameMap.emplace( frameData, parentFrameId );
         }
         else

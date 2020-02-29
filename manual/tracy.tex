@@ -2149,12 +2149,13 @@ Clicking the \LMB{} left mouse button on a zone will open the individual zone st
 You can filter the displayed list of zones by matching the zone name to the expression in the \emph{\faFilter{}~Filter zones} entry field. Refer to section~\ref{messages} for a more detailed description of the expression syntax.
 
 \subsubsection{Sampling mode}
+\label{statisticssampling}
 
 Data displayed in this mode is in essence very similar to the instrumentation one. Here you will find function names, their locations in source code and time measurements. There are, however, some very important differences.
 
 First and foremost, the presented information is constructed from a number of call stack samples, which represent real addresses in the application's binary code, mapped to the line numbers in the source files. This reverse mapping may not be always possible, or may be erroneous. Furthermore, due to the nature of the sampling process, it is impossible to obtain exact time measurement. Instead, time values are guesstimated by multiplying number of sample counts by mean time between two distinct samples.
 
-The \emph{Name} column contains name of the function in which the sampling was done. Functions which were inlined are preceded with a '\faCaretRight{}' symbol.
+The \emph{Name} column contains name of the function in which the sampling was done. Functions which were inlined are preceded with a '\faCaretRight{}' symbol. Clicking on a function will open the call stack sample parents window (see chapter~\ref{sampleparents}).
 
 The \emph{Location} column displays the corresponding source file name and line number. Depending on the \emph{Location} option selection it can either show function entry address, or the instruction at which the sampling was performed. The \emph{function entry} mode points at the beginning of a non-inlined function, or at the place where inlined function was inserted in its parent function. The \emph{instruction} mode is not useful for non-inlined functions, as it points to one randomly selected sampling point out of many that were captured. However, in case of inlined functions, this random sampling point is within the inlined function body. Using these options in tandem enable you to look at both the inlined function code and the place where it was inserted. This information is complemented by the originating executable image name in the \emph{Image} column.
 
@@ -2488,6 +2489,8 @@ Stack frame location may be displayed in the following number of ways, depending
 
 In some cases it may be not possible to properly decode stack frame address. Such frames will be presented with a dimmed '\texttt{[ntdll.dll]}' name of the image containing the frame address, or simply '\texttt{[unknown]}' if even this information cannot be retrieved. Additionally, '\texttt{[kernel]}' is used to indicate unknown stack frames within the operating system internal routines.
 
+If the displayed call stack is a sampled call stack (chapter~\ref{sampling}), an additional button will be available, \emph{\faDoorOpen{}~Global entry statistics}. Clicking it will open the call stack sample parents window (chapter~\ref{sampleparents}) for the current call stack.
+
 \subsubsection{Reading call stacks}
 
 You need to take special care when reading call stacks. Contrary to their name, call stacks do not show \emph{function call stacks}, but rather \emph{function return stacks}. This might be a bit confusing at first, but this is how programs do work. Consider the following source code:
@@ -2514,6 +2517,13 @@ Let's say you are looking at the call stack of some function called within \text
 At the first glance it may look like \texttt{unique\_ptr::reset} was the \emph{call site} of the \texttt{Application::Run}, which would make no sense, but this is not the case here. When you remember these are the \emph{function return points}, it becomes much more clear what is happening. As an optimization, \texttt{Application::Run} is returning directly into \texttt{unique\_ptr::reset}, skipping the return to \texttt{main} and an unnecessary \texttt{reset} function call.
 
 Moreover, the linker may determine in some rare cases that any two functions in your program are identical\footnote{For example if all they do is zero-initialize a region of memory. As some constructors would do.}. As a result, only one copy of the binary code will be provided in the executable for both functions to share. While this optimization produces more compact programs, it also means that there's no way to distinguish the two functions apart in the resulting machine code. In effect, some call stacks may look nonsensical until you perform a small investigation.
+
+\subsection{Call stack sample parents window}
+\label{sampleparents}
+
+This window displays statistical information about the selected symbol. All sampled call stacks (chapter~\ref{sampling}) leading to the symbol are counted and displayed in descending order. You can select the displayed call stack using the \emph{parent call stack} controls, which also display time spent in the chosen call stack. Alternatively, sample counts may be shown by disabling the \emph{\faStopwatch{}~Show time} option, which is described in more detail in chapter~\ref{statisticssampling}.
+
+The layout of frame list and the \emph{\faAt{}~Frame location} option selection is similar to the call stack window, described in chapter~\ref{callstackwindow}.
 
 \subsection{Source file view window}
 \label{sourceview}

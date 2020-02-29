@@ -668,6 +668,7 @@ struct Parameter
 struct SymbolStats
 {
     uint32_t incl, excl;
+    unordered_flat_map<uint32_t, uint32_t> parents;
 };
 
 enum { SymbolStatsSize = sizeof( SymbolStats ) };

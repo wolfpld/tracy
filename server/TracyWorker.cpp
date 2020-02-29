@@ -5334,18 +5334,16 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
 {
     const auto fexcl = frames[0];
     const auto fxsz = fexcl->size;
+    const auto& frame0 = fexcl->data[0];
+    auto sym0 = m_data.symbolStats.find( frame0.symAddr );
+    if( sym0 == m_data.symbolStats.end() ) sym0 = m_data.symbolStats.emplace( frame0.symAddr, SymbolStats { 0, 0, unordered_flat_map<uint32_t, uint32_t>() } ).first;
+    sym0->second.excl += count;
+    for( uint8_t f=1; f<fxsz; f++ )
     {
-        const auto& frame0 = fexcl->data[0];
-        auto sym = m_data.symbolStats.find( frame0.symAddr );
-        if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame0.symAddr, SymbolStats {} ).first;
-        sym->second.excl += count;
-        for( uint8_t f=1; f<fxsz; f++ )
-        {
-            const auto& frame = fexcl->data[f];
-            sym = m_data.symbolStats.find( frame.symAddr );
-            if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
-            sym->second.incl += count;
-        }
+        const auto& frame = fexcl->data[f];
+        auto sym = m_data.symbolStats.find( frame.symAddr );
+        if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats { 0, 0, unordered_flat_map<uint32_t, uint32_t>() } ).first;
+        sym->second.incl += count;
     }
     for( uint8_t c=1; c<framesCount; c++ )
     {
@@ -5355,7 +5353,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         {
             const auto& frame = fincl->data[f];
             auto sym = m_data.symbolStats.find( frame.symAddr );
-            if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats {} ).first;
+            if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats { 0, 0, unordered_flat_map<uint32_t, uint32_t>() } ).first;
             sym->second.incl += count;
         }
     }
@@ -5430,6 +5428,16 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
     {
         idx = it->second;
         m_slab.Unalloc( memsize );
+    }
+
+    auto sit = sym0->second.parents.find( idx );
+    if( sit == sym0->second.parents.end() )
+    {
+        sym0->second.parents.emplace( idx, 1 );
+    }
+    else
+    {
+        sit->second++;
     }
 }
 #endif

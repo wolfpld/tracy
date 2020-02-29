@@ -3157,7 +3157,7 @@ void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
 uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
 {
     assert( id.sel == 0 );
-    return ( id.idx & 0x3FFFFFFFFFFFFFFF ) | ( ( id.idx & 0xC000000000000000 ) << 2 );
+    return ( id.idx & 0x3FFFFFFFFFFFFFFF ) | ( ( id.idx & 0x3000000000000000 ) << 2 );
 }
 
 void Worker::AddCallstackPayload( uint64_t ptr, const char* _data, size_t _sz )

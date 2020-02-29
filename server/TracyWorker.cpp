@@ -4779,15 +4779,20 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
 
     auto nit = m_pendingCustomStrings.find( ev.name );
     assert( nit != m_pendingCustomStrings.end() );
+    const auto nitidx = nit->second.idx;
+    m_pendingCustomStrings.erase( nit );
+
     auto fit = m_pendingCustomStrings.find( ev.file );
     assert( fit != m_pendingCustomStrings.end() );
+    const auto fitidx = fit->second.idx;
+    m_pendingCustomStrings.erase( fit );
 
     if( m_callstackFrameStaging )
     {
         const auto idx = m_callstackFrameStaging->size - m_pendingCallstackSubframes;
 
-        const auto name = StringIdx( nit->second.idx );
-        const auto file = StringIdx( fit->second.idx );
+        const auto name = StringIdx( nitidx );
+        const auto file = StringIdx( fitidx );
         m_callstackFrameStaging->data[idx].name = name;
         m_callstackFrameStaging->data[idx].file = file;
         m_callstackFrameStaging->data[idx].line = ev.line;
@@ -4810,9 +4815,6 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
     {
         m_pendingCallstackSubframes--;
     }
-
-    m_pendingCustomStrings.erase( nit );
-    m_pendingCustomStrings.erase( m_pendingCustomStrings.find( ev.file ) );
 }
 
 void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )

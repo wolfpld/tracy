@@ -153,6 +153,7 @@ private:
     void DrawCpuDataWindow();
     void DrawSelectedAnnotation();
     void DrawAnnotationList();
+    void DrawSampleParents();
 
     void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
 
@@ -358,6 +359,7 @@ private:
     Namespace m_namespace = Namespace::Short;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
+    BuzzAnim<int> m_sampleParentBuzzAnim;
     BuzzAnim<int> m_callstackTreeBuzzAnim;
     BuzzAnim<const void*> m_zoneinfoBuzzAnim;
     BuzzAnim<int> m_findZoneBuzzAnim;
@@ -637,6 +639,11 @@ private:
         const ZoneEvent* dataValidFor = nullptr;
         float fztime;
     } m_timeDist;
+
+    struct {
+        uint64_t symAddr = 0;
+        int sel;
+    } m_sampleParents;
 };
 
 }

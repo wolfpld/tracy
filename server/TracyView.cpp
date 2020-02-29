@@ -729,6 +729,7 @@ bool View::DrawImpl()
     if( m_showCpuDataWindow ) DrawCpuDataWindow();
     if( m_selectedAnnotation ) DrawSelectedAnnotation();
     if( m_showAnnotationList ) DrawAnnotationList();
+    if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
 
     if( m_zoomAnim.active )
     {
@@ -748,6 +749,7 @@ bool View::DrawImpl()
     }
 
     m_callstackBuzzAnim.Update( io.DeltaTime );
+    m_sampleParentBuzzAnim.Update( io.DeltaTime );
     m_callstackTreeBuzzAnim.Update( io.DeltaTime );
     m_zoneinfoBuzzAnim.Update( io.DeltaTime );
     m_findZoneBuzzAnim.Update( io.DeltaTime );
@@ -11272,6 +11274,7 @@ void View::DrawStatistics()
         ImGui::Separator();
 
         const auto period = m_worker.GetSamplingPeriod();
+        int idx = 0;
         for( auto& v : data )
         {
             const auto cnt = m_statSelf ? v->second.excl : v->second.incl;
@@ -11315,7 +11318,20 @@ void View::DrawStatistics()
 #endif
                     ImGui::SameLine();
                 }
-                ImGui::TextUnformatted( name );
+                if( v->first == 0 )
+                {
+                    ImGui::TextUnformatted( name );
+                }
+                else
+                {
+                    ImGui::PushID( idx++ );
+                    if( ImGui::Selectable( name, m_sampleParents.symAddr == v->first, ImGuiSelectableFlags_SpanAllColumns ) )
+                    {
+                        m_sampleParents.symAddr = v->first;
+                        m_sampleParents.sel = 0;
+                    }
+                    ImGui::PopID();
+                }
                 ImGui::NextColumn();
                 float indentVal = 0.f;
                 if( m_statBuzzAnim.Match( v->first ) )
@@ -13271,6 +13287,299 @@ void View::DrawAnnotationList()
     }
     ImGui::EndChild();
     ImGui::End();
+}
+
+void View::DrawSampleParents()
+{
+    const auto symbol = m_worker.GetSymbolData( m_sampleParents.symAddr );
+    const auto stats = m_worker.GetSymbolStats( m_sampleParents.symAddr );
+    assert( !stats.parents.empty() );
+
+    bool show = true;
+    ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
+    ImGui::Begin( "Call stack sample parents", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+    ImGui::PushFont( m_bigFont );
+    TextFocused( "Symbol:", m_worker.GetString( symbol->name ) );
+    ImGui::PopFont();
+    TextDisabledUnformatted( "Location:" );
+    ImGui::SameLine();
+    if( symbol->callLine > 0 )
+    {
+        ImGui::Text( "%s:%i", m_worker.GetString( symbol->file ), symbol->line );
+    }
+    else
+    {
+        ImGui::TextUnformatted( m_worker.GetString( symbol->file ) );
+    }
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    TextDisabledUnformatted( m_worker.GetString( symbol->imageName ) );
+    ImGui::Separator();
+    TextDisabledUnformatted( "Parent call stack:" );
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
+#else
+    if( ImGui::SmallButton( " < " ) )
+#endif
+    {
+        m_sampleParents.sel = std::max( m_sampleParents.sel - 1, 0 );
+    }
+    ImGui::SameLine();
+    ImGui::Text( "%s / %s", RealToString( m_sampleParents.sel + 1 ), RealToString( stats.parents.size() ) );
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
+#else
+    if( ImGui::SmallButton( " > " ) )
+#endif
+    {
+        m_sampleParents.sel = std::min<int>( m_sampleParents.sel + 1, stats.parents.size() - 1 );
+    }
+    Vector<decltype(stats.parents.begin())> data;
+    data.reserve( stats.parents.size() );
+    for( auto it = stats.parents.begin(); it != stats.parents.end(); ++it )
+    {
+        data.push_back( it );
+    }
+    pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second > r->second; } );
+    ImGui::SameLine();
+    ImGui::TextUnformatted( m_statSampleTime ? TimeToString( m_worker.GetSamplingPeriod() * data[m_sampleParents.sel]->second ) : RealToString( data[m_sampleParents.sel]->second ) );
+    ImGui::SameLine();
+    char buf[64];
+    PrintStringPercent( buf, 100. * data[m_sampleParents.sel]->second / stats.excl );
+    TextDisabledUnformatted( buf );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
+#else
+    ImGui::Checkbox( "Show time", &m_statSampleTime );
+#endif
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
+#else
+    ImGui::Checkbox( "Frame location:" );
+#endif
+    ImGui::SameLine();
+    ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
+    ImGui::SameLine();
+    ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
+    ImGui::PopStyleVar();
+
+    auto& cs = m_worker.GetParentCallstack( data[m_sampleParents.sel]->first );
+    ImGui::Separator();
+    ImGui::BeginChild( "##callstack" );
+    const auto w = ImGui::GetWindowWidth();
+    static bool widthSet = false;
+    ImGui::Columns( 4 );
+    if( !widthSet )
+    {
+        widthSet = true;
+        ImGui::SetColumnWidth( 0, w * 0.05f );
+        ImGui::SetColumnWidth( 1, w * 0.425f );
+        ImGui::SetColumnWidth( 2, w * 0.425f );
+        ImGui::SetColumnWidth( 3, w * 0.1f );
+    }
+    ImGui::TextUnformatted( "Frame" );
+    ImGui::NextColumn();
+    ImGui::TextUnformatted( "Function" );
+    ImGui::SameLine();
+    DrawHelpMarker( "Click on entry to copy it to clipboard." );
+    ImGui::NextColumn();
+    ImGui::TextUnformatted( "Location" );
+    ImGui::SameLine();
+    DrawHelpMarker( "Click on entry to copy it to clipboard.\nRight click on entry to try to open source file." );
+    ImGui::NextColumn();
+    ImGui::TextUnformatted( "Image" );
+    ImGui::NextColumn();
+
+    int fidx = 0;
+    int bidx = 0;
+    for( auto& entry : cs )
+    {
+        auto frameData = m_worker.GetCallstackFrame( entry );
+        assert( frameData );
+        const auto fsz = frameData->size;
+        for( uint8_t f=0; f<fsz; f++ )
+        {
+            const auto& frame = frameData->data[f];
+            auto txt = m_worker.GetString( frame.name );
+            bidx++;
+            ImGui::Separator();
+            if( f == fsz-1 )
+            {
+                ImGui::Text( "%i", fidx++ );
+            }
+            else
+            {
+                TextDisabledUnformatted( "inline" );
+            }
+            ImGui::NextColumn();
+            {
+                ImGuiWindow* window = ImGui::GetCurrentWindow();
+                ImGui::PushTextWrapPos( 0.0f );
+                if( txt[0] == '[' )
+                {
+                    TextDisabledUnformatted( txt );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( txt );
+                }
+                ImGui::PopTextWrapPos();
+            }
+            if( ImGui::IsItemClicked() )
+            {
+                ImGui::SetClipboardText( txt );
+            }
+            ImGui::NextColumn();
+            ImGui::PushTextWrapPos( 0.0f );
+            float indentVal = 0.f;
+            if( m_sampleParentBuzzAnim.Match( bidx ) )
+            {
+                const auto time = m_sampleParentBuzzAnim.Time();
+                indentVal = sin( time * 60.f ) * 10.f * time;
+                ImGui::Indent( indentVal );
+            }
+            txt = m_worker.GetString( frame.file );
+            switch( m_showCallstackFrameAddress )
+            {
+            case 0:
+                if( frame.line == 0 )
+                {
+                    TextDisabledUnformatted( txt );
+                }
+                else
+                {
+                    ImGui::TextDisabled( "%s:%i", txt, frame.line );
+                }
+                if( ImGui::IsItemClicked() )
+                {
+                    ImGui::SetClipboardText( txt );
+                }
+                break;
+            case 1:
+                if( entry.custom == 0 )
+                {
+                    const auto addr = m_worker.GetCanonicalPointer( entry );
+                    ImGui::TextDisabled( "0x%" PRIx64, addr );
+                    if( ImGui::IsItemClicked() )
+                    {
+                        char tmp[32];
+                        sprintf( tmp, "0x%" PRIx64, addr );
+                        ImGui::SetClipboardText( tmp );
+                    }
+                }
+                else
+                {
+                    TextDisabledUnformatted( "unavailable" );
+                }
+                break;
+            case 2:
+                ImGui::TextDisabled( "0x%" PRIx64, frame.symAddr );
+                if( ImGui::IsItemClicked() )
+                {
+                    char tmp[32];
+                    sprintf( tmp, "0x%" PRIx64, frame.symAddr );
+                    ImGui::SetClipboardText( tmp );
+                }
+                break;
+            case 3:
+            {
+                const auto sym = m_worker.GetSymbolData( frame.symAddr );
+                if( sym )
+                {
+                    const auto symtxt = m_worker.GetString( sym->file );
+                    if( sym->line == 0 )
+                    {
+                        TextDisabledUnformatted( symtxt );
+                    }
+                    else
+                    {
+                        ImGui::TextDisabled( "%s:%i", symtxt, sym->line );
+                    }
+                    if( ImGui::IsItemClicked() )
+                    {
+                        ImGui::SetClipboardText( symtxt );
+                    }
+                }
+                else
+                {
+                    TextDisabledUnformatted( "[unknown]" );
+                }
+                break;
+            }
+            default:
+                assert( false );
+                break;
+            }
+            if( ImGui::IsItemClicked( 1 ) )
+            {
+                if( m_showCallstackFrameAddress == 3 )
+                {
+                    const auto sym = m_worker.GetSymbolData( frame.symAddr );
+                    if( sym )
+                    {
+                        const auto symtxt = m_worker.GetString( sym->file );
+                        if( SourceFileValid( symtxt, m_worker.GetCaptureTime() ) )
+                        {
+                            SetTextEditorFile( symtxt, sym->line );
+                        }
+                        else
+                        {
+                            m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
+                        }
+                    }
+                    else
+                    {
+                        m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
+                    }
+                }
+                else
+                {
+                    if( SourceFileValid( txt, m_worker.GetCaptureTime() ) )
+                    {
+                        SetTextEditorFile( txt, frame.line );
+                    }
+                    else
+                    {
+                        m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
+                    }
+                }
+            }
+            if( indentVal != 0.f )
+            {
+                ImGui::Unindent( indentVal );
+            }
+            ImGui::PopTextWrapPos();
+            ImGui::NextColumn();
+            if( frameData->imageName.Active() )
+            {
+                TextDisabledUnformatted( m_worker.GetString( frameData->imageName ) );
+            }
+            ImGui::NextColumn();
+        }
+    }
+
+    ImGui::EndColumns();
+    ImGui::EndChild();
+    ImGui::End();
+
+    if( !show )
+    {
+        m_sampleParents.symAddr = 0;
+    }
 }
 
 void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id, int64_t startTime )

@@ -2348,6 +2348,14 @@ const Worker::SourceLocationZones& Worker::GetZonesForSourceLocation( int16_t sr
     auto it = m_data.sourceLocationZones.find( srcloc );
     return it != m_data.sourceLocationZones.end() ? it->second : empty;
 }
+
+const SymbolStats& Worker::GetSymbolStats( uint64_t symAddr ) const
+{
+    assert( AreCallstackSamplesReady() );
+    auto it = m_data.symbolStats.find( symAddr );
+    assert( it != m_data.symbolStats.end() );
+    return it->second;
+}
 #endif
 
 void Worker::Network()

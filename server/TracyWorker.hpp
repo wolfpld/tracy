@@ -403,6 +403,10 @@ public:
     uint64_t GetCanonicalPointer( const CallstackFrameId& id ) const;
     const SymbolData* GetSymbolData( uint64_t sym ) const;
 
+#ifndef TRACY_NO_STATISTICS
+    const VarArray<CallstackFrameId>& GetParentCallstack( uint32_t idx ) const { return *m_data.parentCallstackPayload[idx]; }
+#endif
+
     const CrashEvent& GetCrashEvent() const { return m_data.crashEvent; }
 
     // Some zones may have incomplete timing data (only start time is available, end hasn't arrived yet).
@@ -444,6 +448,7 @@ public:
 
     const unordered_flat_map<uint64_t, SymbolData>& GetSymbolMap() const { return m_data.symbolMap; }
     const unordered_flat_map<uint64_t, SymbolStats>& GetSymbolStats() const { return m_data.symbolStats; }
+    const SymbolStats& GetSymbolStats( uint64_t symAddr ) const;
     bool AreCallstackSamplesReady() const { return m_data.callstackSamplesReady; }
 #endif
 

@@ -13325,13 +13325,39 @@ void View::DrawSampleParents()
     ImGui::PopFont();
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
+    const auto callFile = m_worker.GetString( symbol->callFile );
     if( symbol->callLine > 0 )
     {
-        ImGui::Text( "%s:%i", m_worker.GetString( symbol->file ), symbol->line );
+        ImGui::Text( "%s:%i", callFile, symbol->callLine );
     }
     else
     {
-        ImGui::TextUnformatted( m_worker.GetString( symbol->file ) );
+        ImGui::TextUnformatted( callFile );
+    }
+    if( ImGui::IsItemClicked( 1 ) )
+    {
+        if( SourceFileValid( callFile, m_worker.GetCaptureTime() ) )
+        {
+            SetTextEditorFile( callFile, symbol->callLine );
+        }
+    }
+    TextDisabledUnformatted( "Entry point:" );
+    ImGui::SameLine();
+    const auto file = m_worker.GetString( symbol->file );
+    if( symbol->line > 0 )
+    {
+        ImGui::Text( "%s:%i", file, symbol->line );
+    }
+    else
+    {
+        ImGui::TextUnformatted( file );
+    }
+    if( ImGui::IsItemClicked( 1 ) )
+    {
+        if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
+        {
+            SetTextEditorFile( file, symbol->line );
+        }
     }
     ImGui::SameLine();
     ImGui::Spacing();

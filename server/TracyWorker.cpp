@@ -2526,7 +2526,6 @@ void Worker::Exec()
 
         const char* ptr = m_buffer + netbuf.bufferOffset;
         const char* end = ptr + netbuf.size;
-        m_data.newFramesWereReceived = false;
 
         {
             std::lock_guard<std::shared_mutex> lock( m_data.lock );
@@ -2547,7 +2546,10 @@ void Worker::Exec()
             }
 
             HandlePostponedPlots();
+#ifndef TRACY_NO_STATISTICS
             HandlePostponedSamples();
+            m_data.newFramesWereReceived = false;
+#endif
 
             while( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
             {
@@ -3355,6 +3357,7 @@ void Worker::HandlePostponedPlots()
     }
 }
 
+#ifndef TRACY_NO_STATISTICS
 void Worker::HandlePostponedSamples()
 {
     if( !m_data.newFramesWereReceived ) return;
@@ -3366,6 +3369,7 @@ void Worker::HandlePostponedSamples()
     }
     while( it != m_data.postponedSamples.end() );
 }
+#endif
 
 StringLocation Worker::StoreString( const char* str, size_t sz )
 {
@@ -4784,7 +4788,9 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
     assert( m_pendingCallstackFrames > 0 );
     m_pendingCallstackFrames--;
     m_pendingCallstackSubframes = ev.size;
+#ifndef TRACY_NO_STATISTICS
     m_data.newFramesWereReceived = true;
+#endif
 
     auto iit = m_pendingCustomStrings.find( ev.imageName );
     assert( iit != m_pendingCustomStrings.end() );

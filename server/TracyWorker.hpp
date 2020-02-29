@@ -361,9 +361,11 @@ public:
     bool HasContextSwitches() const { return !m_data.ctxSwitch.empty(); }
     uint64_t GetSrcLocCount() const { return m_data.sourceLocationPayload.size() + m_data.sourceLocation.size(); }
     uint64_t GetCallstackPayloadCount() const { return m_data.callstackPayload.size() - 1; }
+#ifndef TRACY_NO_STATISTICS
     uint64_t GetCallstackParentPayloadCount() const { return m_data.parentCallstackPayload.size(); }
-    uint64_t GetCallstackFrameCount() const { return m_data.callstackFrameMap.size(); }
     uint64_t GetCallstackParentFrameCount() const { return m_callstackParentNextIdx; }
+#endif
+    uint64_t GetCallstackFrameCount() const { return m_data.callstackFrameMap.size(); }
     uint64_t GetCallstackSampleCount() const { return m_data.samplesCnt; }
     uint64_t GetSymbolsCount() const { return m_data.symbolMap.size(); }
     uint32_t GetFrameImageCount() const { return (uint32_t)m_data.frameImage.size(); }

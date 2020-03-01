@@ -11403,11 +11403,11 @@ void View::DrawCallstackWindow()
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
     ImGui::SameLine();
+    ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
+    ImGui::SameLine();
     ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
     ImGui::SameLine();
     ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
     {
@@ -13418,11 +13418,11 @@ void View::DrawSampleParents()
     ImGui::SameLine();
     ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
     ImGui::SameLine();
+    ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
+    ImGui::SameLine();
     ImGui::RadioButton( "Return address", &m_showCallstackFrameAddress, 1 );
     ImGui::SameLine();
     ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
-    ImGui::SameLine();
-    ImGui::RadioButton( "Entry point", &m_showCallstackFrameAddress, 3 );
     ImGui::PopStyleVar();
 
     auto& cs = m_worker.GetParentCallstack( data[m_sampleParents.sel]->first );

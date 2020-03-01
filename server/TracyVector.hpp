@@ -56,7 +56,6 @@ public:
         if( m_capacity != MaxCapacity() && m_ptr )
         {
             memUsage -= Capacity() * sizeof( T );
-            const auto sz = size();
             free( m_ptr );
         }
     }
@@ -67,7 +66,6 @@ public:
         if( m_capacity != MaxCapacity() && m_ptr )
         {
             memUsage -= Capacity() * sizeof( T );
-            const auto sz = size();
             free( m_ptr );
         }
         memcpy( this, &src, sizeof( Vector<T> ) );

@@ -13,3 +13,8 @@
 #define HAVE_DL_ITERATE_PHDR 1
 #define HAVE_ATOMIC_FUNCTIONS 1
 #define HAVE_DECL_STRNLEN 1
+
+#ifdef BSD
+#  define HAVE_KERN_PROC 1
+#  define HAVE_KERN_PROC_ARGS 1
+#endif

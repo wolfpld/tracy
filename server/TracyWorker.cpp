@@ -5416,6 +5416,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
             auto frameData = m_slab.AllocInit<CallstackFrameData>();
             frameData->data = frame;
             frameData->size = fxsz - 1;
+            frameData->imageName = fexcl->imageName;
             parentFrameId.idx = m_callstackParentNextIdx++;
             parentFrameId.sel = 0;
             parentFrameId.custom = 1;

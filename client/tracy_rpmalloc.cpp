@@ -107,10 +107,11 @@
 #  define PLATFORM_POSIX 1
 #endif
 
+#define _Static_assert static_assert
+
 /// Platform and arch specifics
 #if defined(_MSC_VER) && !defined(__clang__)
 #  define FORCEINLINE inline __forceinline
-#  define _Static_assert static_assert
 #else
 #  define FORCEINLINE inline __attribute__((__always_inline__))
 #endif

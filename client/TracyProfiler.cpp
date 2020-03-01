@@ -2438,8 +2438,6 @@ void Profiler::CalibrateDelay()
     enum { Events = Iterations * 2 };   // start + end
     static_assert( Events < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
-    moodycamel::ProducerToken ptoken_detail( GetQueue() );
-    moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptoken = GetQueue().get_explicit_producer( ptoken_detail );
     static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };
     const auto t0 = GetTime();
     for( int i=0; i<Iterations; i++ )
@@ -2591,7 +2589,7 @@ void Profiler::ReportTopology()
         cpuData[i].core = uint32_t( atoi( buf ) );
     }
 
-    for( uint32_t i=0; i<numcpus; i++ )
+    for( int i=0; i<numcpus; i++ )
     {
         auto& data = cpuData[i];
 

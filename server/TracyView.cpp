@@ -6098,7 +6098,7 @@ void View::DrawZoneInfoWindow()
                 int64_t running = it->End() - ev.Start();
                 cpus[it->Cpu()] = 1;
                 ++it;
-                for( int64_t i=0; i<cnt-2; i++ )
+                for( uint64_t i=0; i<cnt-2; i++ )
                 {
                     running += it->End() - it->Start();
                     cpus[it->Cpu()] = 1;
@@ -7974,13 +7974,13 @@ void View::DrawOptions()
                 const auto srcval = m_threadOrder[source];
                 if( target < source )
                 {
-                    assert( source < m_threadOrder.size() );
+                    assert( source < (int)m_threadOrder.size() );
                     m_threadOrder.erase( m_threadOrder.begin() + source );
                     m_threadOrder.insert( m_threadOrder.begin() + target, srcval );
                 }
                 else
                 {
-                    assert( target <= m_threadOrder.size() );
+                    assert( target <= (int)m_threadOrder.size() );
                     m_threadOrder.insert( m_threadOrder.begin() + target, srcval );
                     m_threadOrder.erase( m_threadOrder.begin() + source );
                 }
@@ -11518,7 +11518,6 @@ void View::DrawCallstackWindow()
                 }
                 ImGui::NextColumn();
                 {
-                    ImGuiWindow* window = ImGui::GetCurrentWindow();
                     ImGui::PushTextWrapPos( 0.0f );
                     if( txt[0] == '[' )
                     {
@@ -13475,7 +13474,6 @@ void View::DrawSampleParents()
             }
             ImGui::NextColumn();
             {
-                ImGuiWindow* window = ImGui::GetCurrentWindow();
                 ImGui::PushTextWrapPos( 0.0f );
                 if( txt[0] == '[' )
                 {
@@ -15762,7 +15760,7 @@ bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, in
     {
         int64_t running = it->End() - ev.Start();
         ++it;
-        for( int64_t i=0; i<cnt-2; i++ )
+        for( uint64_t i=0; i<cnt-2; i++ )
         {
             running += it->End() - it->Start();
             ++it;

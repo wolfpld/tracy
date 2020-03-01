@@ -277,7 +277,7 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
     }
     if( !messages.empty() )
     {
-        if( m_data.lastTime < messages.back().timestamp ) m_data.lastTime = messages.back().timestamp;
+        if( m_data.lastTime < (int64_t)messages.back().timestamp ) m_data.lastTime = messages.back().timestamp;
     }
 
     for( auto& v : timeline )
@@ -1486,7 +1486,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             }
             td->Sync();
             td.reset();
-            for( size_t i=0; i<jobs; i++ )
+            for( int i=0; i<jobs; i++ )
             {
                 if( data[i].state.load( std::memory_order_acquire ) == JobData::DataReady )
                 {
@@ -2186,7 +2186,7 @@ const char* Worker::GetThreadName( uint64_t id ) const
     {
         // Client should send additional information about thread name, to make this check unnecessary
         const auto txt = it->second;
-        if( txt[0] >= '0' && txt[0] <= '9' && atoi( txt ) == id )
+        if( txt[0] >= '0' && txt[0] <= '9' && (uint64_t)atoi( txt ) == id )
         {
             const auto eit = m_data.externalNames.find( id );
             if( eit != m_data.externalNames.end() )
@@ -3967,7 +3967,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     m_data.frameImage.push_back( fi );
     m_pendingFrameImageData.erase( it );
 
-    if( fidx >= frames.size() )
+    if( fidx >= (int64_t)frames.size() )
     {
         if( m_frameImageStaging.find( fidx ) != m_frameImageStaging.end() )
         {

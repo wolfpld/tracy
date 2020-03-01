@@ -1,5 +1,5 @@
 /* fileline.c -- Get file and line number information in a backtrace.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without
@@ -34,71 +34,96 @@ POSSIBILITY OF SUCH DAMAGE.  */
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/param.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifdef BSD
-#  include <sys/sysctl.h>
-#  include <limits.h>
-#endif
-
-#ifdef __APPLE__
-#  include <mach-o/dyld.h>
+#if defined (HAVE_KERN_PROC_ARGS) || defined (HAVE_KERN_PROC)
+#include <sys/sysctl.h>
 #endif
 
 #include "backtrace.hpp"
 #include "internal.hpp"
 
-#ifdef BSD
-#  if !defined HAVE_GETEXECNAME && defined KERN_PROC_PATHNAME
-#    define HAVE_GETEXECNAME
-static char execname[PATH_MAX + 1];
-static const char *
-getexecname(void)
-{
-  size_t path_len = sizeof(execname);
-  int mib[] = {
-    CTL_KERN,
-#if defined(__NetBSD__)
-    KERN_PROC_ARGS,
-    -1,
-    KERN_PROC_PATHNAME,
-#else
-    KERN_PROC,
-    KERN_PROC_PATHNAME,
-    -1,
-#endif
-  };
-  u_int miblen = sizeof(mib) / sizeof(mib[0]);
-  int rc = sysctl(mib, miblen, execname, &path_len, NULL, 0);
-  return rc ? NULL : execname;
-}
-#  endif
-#endif
-
-#if !defined HAVE_GETEXECNAME && defined __APPLE__
-#  define HAVE_GETEXECNAME
-static char execname[PATH_MAX + 1];
-static const char *
-getexecname(void)
-{
-  uint32_t size = sizeof(execname);
-  if (_NSGetExecutablePath(execname, &size) == 0)
-    return execname;
-  else
-    return NULL;
-}
-#endif
-
 #ifndef HAVE_GETEXECNAME
-#  define getexecname() NULL
+#define getexecname() NULL
 #endif
 
 namespace tracy
 {
+
+#if !defined (HAVE_KERN_PROC_ARGS) && !defined (HAVE_KERN_PROC)
+
+#define sysctl_exec_name1(state, error_callback, data) NULL
+#define sysctl_exec_name2(state, error_callback, data) NULL
+
+#else /* defined (HAVE_KERN_PROC_ARGS) || |defined (HAVE_KERN_PROC) */
+
+static char *
+sysctl_exec_name (struct backtrace_state *state,
+		  int mib0, int mib1, int mib2, int mib3,
+		  backtrace_error_callback error_callback, void *data)
+{
+  int mib[4];
+  size_t len;
+  char *name;
+  size_t rlen;
+
+  mib[0] = mib0;
+  mib[1] = mib1;
+  mib[2] = mib2;
+  mib[3] = mib3;
+
+  if (sysctl (mib, 4, NULL, &len, NULL, 0) < 0)
+    return NULL;
+  name = (char *) backtrace_alloc (state, len, error_callback, data);
+  if (name == NULL)
+    return NULL;
+  rlen = len;
+  if (sysctl (mib, 4, name, &rlen, NULL, 0) < 0)
+    {
+      backtrace_free (state, name, len, error_callback, data);
+      return NULL;
+    }
+  return name;
+}
+
+#ifdef HAVE_KERN_PROC_ARGS
+
+static char *
+sysctl_exec_name1 (struct backtrace_state *state,
+		   backtrace_error_callback error_callback, void *data)
+{
+  /* This variant is used on NetBSD.  */
+  return sysctl_exec_name (state, CTL_KERN, KERN_PROC_ARGS, -1,
+			   KERN_PROC_PATHNAME, error_callback, data);
+}
+
+#else
+
+#define sysctl_exec_name1(state, error_callback, data) NULL
+
+#endif
+
+#ifdef HAVE_KERN_PROC
+
+static char *
+sysctl_exec_name2 (struct backtrace_state *state,
+		   backtrace_error_callback error_callback, void *data)
+{
+  /* This variant is used on FreeBSD.  */
+  return sysctl_exec_name (state, CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1,
+			   error_callback, data);
+}
+
+#else
+
+#define sysctl_exec_name2(state, error_callback, data) NULL
+
+#endif
+
+#endif /* defined (HAVE_KERN_PROC_ARGS) || |defined (HAVE_KERN_PROC) */
 
 /* Initialize the fileline information from the executable.  Returns 1
    on success, 0 on failure.  */
@@ -115,7 +140,10 @@ fileline_initialize (struct backtrace_state *state,
   const char *filename;
   char buf[64];
 
-  failed = state->fileline_initialization_failed;
+  if (!state->threaded)
+    failed = state->fileline_initialization_failed;
+  else
+    failed = backtrace_atomic_load_int (&state->fileline_initialization_failed);
 
   if (failed)
     {
@@ -123,7 +151,10 @@ fileline_initialize (struct backtrace_state *state,
       return 0;
     }
 
-  fileline_fn = state->fileline_fn;
+  if (!state->threaded)
+    fileline_fn = state->fileline_fn;
+  else
+    fileline_fn = backtrace_atomic_load_pointer (&state->fileline_fn);
   if (fileline_fn != NULL)
     return 1;
 
@@ -131,7 +162,7 @@ fileline_initialize (struct backtrace_state *state,
 
   descriptor = -1;
   called_error_callback = 0;
-  for (pass = 0; pass < 5; ++pass)
+  for (pass = 0; pass < 7; ++pass)
     {
       int does_not_exist;
 
@@ -153,6 +184,12 @@ fileline_initialize (struct backtrace_state *state,
 	  snprintf (buf, sizeof (buf), "/proc/%ld/object/a.out",
 		    (long) getpid ());
 	  filename = buf;
+	  break;
+	case 5:
+	  filename = sysctl_exec_name1 (state, error_callback, data);
+	  break;
+	case 6:
+	  filename = sysctl_exec_name2 (state, error_callback, data);
 	  break;
 	default:
 	  abort ();
@@ -194,12 +231,23 @@ fileline_initialize (struct backtrace_state *state,
     }
 
   if (failed)
-  {
-    state->fileline_initialization_failed = 1;
-    return 0;
-  }
+    {
+      if (!state->threaded)
+	state->fileline_initialization_failed = 1;
+      else
+	backtrace_atomic_store_int (&state->fileline_initialization_failed, 1);
+      return 0;
+    }
 
-  state->fileline_fn = fileline_fn;
+  if (!state->threaded)
+    state->fileline_fn = fileline_fn;
+  else
+    {
+      backtrace_atomic_store_pointer (&state->fileline_fn, fileline_fn);
+
+      /* Note that if two threads initialize at once, one of the data
+	 sets may be leaked.  */
+    }
 
   return 1;
 }

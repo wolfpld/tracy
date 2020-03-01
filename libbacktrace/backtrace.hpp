@@ -1,5 +1,5 @@
 /* backtrace.h -- Public header file for stack backtrace library.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without
@@ -74,7 +74,13 @@ typedef void (*backtrace_error_callback) (void *data, const char *msg,
    use appropriate atomic operations.  If THREADED is zero the state
    may only be accessed by one thread at a time.  This returns a state
    pointer on success, NULL on error.  If an error occurs, this will
-   call the ERROR_CALLBACK routine.  */
+   call the ERROR_CALLBACK routine.
+
+   Calling this function allocates resources that cannot be freed.
+   There is no backtrace_free_state function.  The state is used to
+   cache information that is expensive to recompute.  Programs are
+   expected to call this function at most once and to save the return
+   value for all later calls to backtrace functions.  */
 
 extern struct backtrace_state *backtrace_create_state (
     const char *filename, int threaded,

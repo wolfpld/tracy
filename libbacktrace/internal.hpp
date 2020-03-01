@@ -1,5 +1,5 @@
 /* internal.h -- Internal header file for stack backtrace library.
-   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Copyright (C) 2012-2020 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without
@@ -56,12 +56,45 @@ POSSIBILITY OF SUCH DAMAGE.  */
 # endif
 #endif
 
+#ifndef HAVE_SYNC_FUNCTIONS
+
 /* Define out the sync functions.  These should never be called if
    they are not available.  */
 
 #define __sync_bool_compare_and_swap(A, B, C) (abort(), 1)
 #define __sync_lock_test_and_set(A, B) (abort(), 0)
 #define __sync_lock_release(A) abort()
+
+#endif /* !defined (HAVE_SYNC_FUNCTIONS) */
+
+#ifdef HAVE_ATOMIC_FUNCTIONS
+
+/* We have the atomic builtin functions.  */
+
+#define backtrace_atomic_load_pointer(p) \
+    __atomic_load_n ((p), __ATOMIC_ACQUIRE)
+#define backtrace_atomic_load_int(p) \
+    __atomic_load_n ((p), __ATOMIC_ACQUIRE)
+#define backtrace_atomic_store_pointer(p, v) \
+    __atomic_store_n ((p), (v), __ATOMIC_RELEASE)
+#define backtrace_atomic_store_size_t(p, v) \
+    __atomic_store_n ((p), (v), __ATOMIC_RELEASE)
+#define backtrace_atomic_store_int(p, v) \
+    __atomic_store_n ((p), (v), __ATOMIC_RELEASE)
+
+#else /* !defined (HAVE_ATOMIC_FUNCTIONS) */
+#ifdef HAVE_SYNC_FUNCTIONS
+
+/* We have the sync functions but not the atomic functions.  Define
+   the atomic ones in terms of the sync ones.  */
+
+extern void *backtrace_atomic_load_pointer (void *);
+extern int backtrace_atomic_load_int (int *);
+extern void backtrace_atomic_store_pointer (void *, void *);
+extern void backtrace_atomic_store_size_t (size_t *, size_t);
+extern void backtrace_atomic_store_int (int *, int);
+
+#else /* !defined (HAVE_SYNC_FUNCTIONS) */
 
 /* We have neither the sync nor the atomic functions.  These will
    never be called.  */
@@ -71,6 +104,9 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #define backtrace_atomic_store_pointer(p, v) abort()
 #define backtrace_atomic_store_size_t(p, v) abort()
 #define backtrace_atomic_store_int(p, v) abort()
+
+#endif /* !defined (HAVE_SYNC_FUNCTIONS) */
+#endif /* !defined (HAVE_ATOMIC_FUNCTIONS) */
 
 namespace tracy
 {
@@ -146,7 +182,7 @@ struct backtrace_view
 /* Create a view of SIZE bytes from DESCRIPTOR at OFFSET.  Store the
    result in *VIEW.  Returns 1 on success, 0 on error.  */
 extern int backtrace_get_view (struct backtrace_state *state, int descriptor,
-			       off_t offset, size_t size,
+			       off_t offset, uint64_t size,
 			       backtrace_error_callback error_callback,
 			       void *data, struct backtrace_view *view);
 
@@ -224,6 +260,18 @@ extern int backtrace_vector_release (struct backtrace_state *state,
 				     backtrace_error_callback error_callback,
 				     void *data);
 
+/* Free the space managed by VEC.  This will reset VEC.  */
+
+static inline void
+backtrace_vector_free (struct backtrace_state *state,
+		       struct backtrace_vector *vec,
+		       backtrace_error_callback error_callback, void *data)
+{
+  vec->alc += vec->size;
+  vec->size = 0;
+  backtrace_vector_release (state, vec, error_callback, data);
+}
+
 /* Read initial debug data from a descriptor, and set the
    fileline_data, syminfo_fn, and syminfo_data fields of STATE.
    Return the fileln_fn field in *FILELN_FN--this is done this way so
@@ -241,23 +289,54 @@ extern int backtrace_initialize (struct backtrace_state *state,
 				 void *data,
 				 fileline *fileline_fn);
 
+/* An enum for the DWARF sections we care about.  */
+
+enum dwarf_section
+{
+  DEBUG_INFO,
+  DEBUG_LINE,
+  DEBUG_ABBREV,
+  DEBUG_RANGES,
+  DEBUG_STR,
+  DEBUG_ADDR,
+  DEBUG_STR_OFFSETS,
+  DEBUG_LINE_STR,
+  DEBUG_RNGLISTS,
+
+  DEBUG_MAX
+};
+
+/* Data for the DWARF sections we care about.  */
+
+struct dwarf_sections
+{
+  const unsigned char *data[DEBUG_MAX];
+  size_t size[DEBUG_MAX];
+};
+
+/* DWARF data read from a file, used for .gnu_debugaltlink.  */
+
+struct dwarf_data;
+
 /* Add file/line information for a DWARF module.  */
 
 extern int backtrace_dwarf_add (struct backtrace_state *state,
 				uintptr_t base_address,
-				const unsigned char* dwarf_info,
-				size_t dwarf_info_size,
-				const unsigned char *dwarf_line,
-				size_t dwarf_line_size,
-				const unsigned char *dwarf_abbrev,
-				size_t dwarf_abbrev_size,
-				const unsigned char *dwarf_ranges,
-				size_t dwarf_range_size,
-				const unsigned char *dwarf_str,
-				size_t dwarf_str_size,
+				const struct dwarf_sections *dwarf_sections,
 				int is_bigendian,
+				struct dwarf_data *fileline_altlink,
 				backtrace_error_callback error_callback,
-				void *data, fileline *fileline_fn);
+				void *data, fileline *fileline_fn,
+				struct dwarf_data **fileline_entry);
+
+/* A test-only hook for elf_uncompress_zdebug.  */
+
+extern int backtrace_uncompress_zdebug (struct backtrace_state *,
+					const unsigned char *compressed,
+					size_t compressed_size,
+					backtrace_error_callback, void *data,
+					unsigned char **uncompressed,
+					size_t *uncompressed_size);
 
 }
 

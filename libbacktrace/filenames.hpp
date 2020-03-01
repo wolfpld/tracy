@@ -1,5 +1,5 @@
-/* state.c -- Create the backtrace state.
-   Copyright (C) 2012-2020 Free Software Foundation, Inc.
+/* btest.c -- Filename header for libbacktrace library
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Google.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,47 +30,23 @@ STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.  */
 
-#include "config.h"
-
-#include <string.h>
-#include <sys/types.h>
-
-#include "backtrace.hpp"
-#include "internal.hpp"
-
-namespace tracy
-{
-
-/* Create the backtrace state.  This will then be passed to all the
-   other routines.  */
-
-struct backtrace_state *
-backtrace_create_state (const char *filename, int threaded,
-			backtrace_error_callback error_callback,
-			void *data)
-{
-  struct backtrace_state init_state;
-  struct backtrace_state *state;
-
-#ifndef HAVE_SYNC_FUNCTIONS
-  if (threaded)
-    {
-      error_callback (data, "backtrace library does not support threads", 0);
-      return NULL;
-    }
+#ifndef GCC_VERSION
+# define GCC_VERSION (__GNUC__ * 1000 + __GNUC_MINOR__)
 #endif
 
-  memset (&init_state, 0, sizeof init_state);
-  init_state.filename = filename;
-  init_state.threaded = threaded;
+#if (GCC_VERSION < 2007)
+# define __attribute__(x)
+#endif
 
-  state = ((struct backtrace_state *)
-	   backtrace_alloc (&init_state, sizeof *state, error_callback, data));
-  if (state == NULL)
-    return NULL;
-  *state = init_state;
+#ifndef ATTRIBUTE_UNUSED
+# define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
+#endif
 
-  return state;
-}
-
-}
+#if defined(__MSDOS__) || defined(_WIN32) || defined(__OS2__) || defined (__CYGWIN__)
+# define IS_DIR_SEPARATOR(c) ((c) == '/' || (c) == '\\')
+# define HAS_DRIVE_SPEC(f) ((f)[0] != '\0' && (f)[1] == ':')
+# define IS_ABSOLUTE_PATH(f) (IS_DIR_SEPARATOR((f)[0]) || HAS_DRIVE_SPEC(f))
+#else
+# define IS_DIR_SEPARATOR(c) ((c) == '/')
+# define IS_ABSOLUTE_PATH(f) (IS_DIR_SEPARATOR((f)[0]))
+#endif

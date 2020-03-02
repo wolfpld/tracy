@@ -523,6 +523,8 @@ struct GpuCtxData
 
 enum { GpuCtxDataSize = sizeof( GpuCtxData ) };
 
+enum class LockType : uint8_t;
+
 struct LockMap
 {
     struct TimeRange

@@ -47,7 +47,24 @@ POSSIBILITY OF SUCH DAMAGE.  */
 #include "internal.hpp"
 
 #ifndef HAVE_GETEXECNAME
+#  ifdef __APPLE__
+#    include <mach-o/dyld.h>
+static const char* getexecname()
+{
+    static char execname[PATH_MAX+1];
+    uint32_t size = sizeof( execname );
+    if( _NSGetExecutablePath( execname, &size ) == 0 )
+    {
+        return execname;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
+#  else
 #define getexecname() NULL
+#  endif
 #endif
 
 namespace tracy

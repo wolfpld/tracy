@@ -1,7 +1,7 @@
 #ifndef __TRACYOPENGL_HPP__
 #define __TRACYOPENGL_HPP__
 
-#ifndef GL_TIMESTAMP
+#if !defined GL_TIMESTAMP && !defined GL_TIMESTAMP_EXT
 #  error "You must include OpenGL 3.2 headers before including TracyOpenGL.hpp"
 #endif
 

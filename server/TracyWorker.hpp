@@ -21,12 +21,10 @@
 #include "TracyShortPtr.hpp"
 #include "TracySlab.hpp"
 #include "TracyStringDiscovery.hpp"
+#include "TracyTextureCompression.hpp"
 #include "TracyThreadCompress.hpp"
 #include "TracyVarArray.hpp"
 
-
-struct ZSTD_CCtx_s;
-struct ZSTD_DCtx_s;
 
 namespace tracy
 {
@@ -486,9 +484,7 @@ public:
     const FailureData& GetFailureData() const { return m_failureData; }
     static const char* GetFailureString( Failure failure );
 
-    void PackFrameImage( struct ZSTD_CCtx_s* ctx, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes, uint32_t& csz ) const;
-    const char* PackFrameImage( const char* image, uint32_t inBytes, uint32_t& csz );
-    const char* UnpackFrameImage( const FrameImage& image );
+    const char* UnpackFrameImage( const FrameImage& image ) { return m_texcomp.Unpack( image ); }
 
     const Vector<Parameter>& GetParameters() const { return m_params; }
     void SetParameter( size_t paramIdx, int32_t val );
@@ -772,10 +768,7 @@ private:
     unordered_flat_map<uint64_t, int32_t> m_frameImageStaging;
     char* m_frameImageBuffer = nullptr;
     size_t m_frameImageBufferSize = 0;
-    char* m_frameImageCompressedBuffer = nullptr;
-    size_t m_frameImageCompressedBufferSize = 0;
-    struct ZSTD_CCtx_s* m_fiCctx = nullptr;
-    struct ZSTD_DCtx_s* m_fiDctx = nullptr;
+    TextureCompression m_texcomp;
 
     uint64_t m_threadCtx = 0;
     ThreadData* m_threadCtxData = nullptr;

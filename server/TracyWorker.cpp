@@ -13,8 +13,6 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "../zstd/zstd.h"
-
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "TracyFileRead.hpp"
@@ -233,8 +231,6 @@ Worker::Worker( const char* addr, int port )
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
-    , m_fiCctx( ZSTD_createCCtx() )
-    , m_fiDctx( ZSTD_createDCtx() )
 {
     m_data.sourceLocationExpand.push_back( 0 );
     m_data.localThreadCompress.InitZero();
@@ -381,7 +377,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     : m_hasData( true )
     , m_stream( nullptr )
     , m_buffer( nullptr )
-    , m_fiDctx( ZSTD_createDCtx() )
 {
     auto loadStart = std::chrono::high_resolution_clock::now();
 
@@ -1478,7 +1473,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
                 data[idx].state.store( JobData::InProgress, std::memory_order_release );
                 td->Queue( [this, &data, idx, fi] {
-                    PackFrameImage( data[idx].ctx, data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w * fi->h / 2, fi->csz );
+                    m_texcomp.Pack( data[idx].ctx, data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w * fi->h / 2, fi->csz );
                     data[idx].state.store( JobData::DataReady, std::memory_order_release );
                 } );
 
@@ -1769,7 +1764,6 @@ Worker::~Worker()
     LZ4_freeStreamDecode( (LZ4_streamDecode_t*)m_stream );
 
     delete[] m_frameImageBuffer;
-    delete[] m_frameImageCompressedBuffer;
 
     for( auto& v : m_data.threads )
     {
@@ -1801,9 +1795,6 @@ Worker::~Worker()
     {
         v.second->~LockMap();
     }
-
-    if( m_fiCctx ) ZSTD_freeCCtx( m_fiCctx );
-    if( m_fiDctx ) ZSTD_freeDCtx( m_fiDctx );
 }
 
 uint64_t Worker::GetLockCount() const
@@ -3150,7 +3141,7 @@ void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
         dst += 8;
     }
     uint32_t csz;
-    auto image = PackFrameImage( m_frameImageBuffer, sz, csz );
+    auto image = m_texcomp.Pack( m_frameImageBuffer, sz, csz, m_slab );
     m_pendingFrameImageData.emplace( ptr, FrameImagePending { image, csz } );
 }
 
@@ -6203,7 +6194,7 @@ void Worker::Write( FileWrite& f )
         f.Write( &fi->w, sizeof( fi->w ) );
         f.Write( &fi->h, sizeof( fi->h ) );
         f.Write( &fi->flip, sizeof( fi->flip ) );
-        const auto image = UnpackFrameImage( *fi );
+        const auto image = m_texcomp.Unpack( *fi );
         f.Write( image, fi->w * fi->h / 2 );
     }
 
@@ -6379,51 +6370,6 @@ static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)
 const char* Worker::GetFailureString( Worker::Failure failure )
 {
     return s_failureReasons[(int)failure];
-}
-
-void Worker::PackFrameImage( struct ZSTD_CCtx_s* ctx, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes, uint32_t& csz ) const
-{
-    const auto maxout = ZSTD_COMPRESSBOUND( inBytes );
-    if( bufsz < maxout )
-    {
-        bufsz = maxout;
-        delete[] buf;
-        buf = new char[maxout];
-    }
-    assert( ctx );
-    const auto outsz = ZSTD_compressCCtx( ctx, buf, maxout, image, inBytes, 3 );
-    csz = uint32_t( outsz );
-}
-
-const char* Worker::PackFrameImage( const char* image, uint32_t inBytes, uint32_t& csz )
-{
-    const auto maxout = ZSTD_COMPRESSBOUND( inBytes );
-    if( m_frameImageCompressedBufferSize < maxout )
-    {
-        m_frameImageCompressedBufferSize = maxout;
-        delete[] m_frameImageCompressedBuffer;
-        m_frameImageCompressedBuffer = new char[maxout];
-    }
-    assert( m_fiCctx );
-    const auto outsz = ZSTD_compressCCtx( m_fiCctx, m_frameImageCompressedBuffer, maxout, image, inBytes, 1 );
-    csz = uint32_t( outsz );
-    auto ptr = (char*)m_slab.AllocBig( outsz );
-    memcpy( ptr, m_frameImageCompressedBuffer, outsz );
-    return ptr;
-}
-
-const char* Worker::UnpackFrameImage( const FrameImage& image )
-{
-    const auto outsz = size_t( image.w ) * size_t( image.h ) / 2;
-    if( m_frameImageCompressedBufferSize < outsz )
-    {
-        m_frameImageCompressedBufferSize = outsz;
-        delete[] m_frameImageCompressedBuffer;
-        m_frameImageCompressedBuffer = new char[outsz];
-    }
-    assert( m_fiDctx );
-    ZSTD_decompressDCtx( m_fiDctx, m_frameImageCompressedBuffer, outsz, image.ptr, image.csz );
-    return m_frameImageCompressedBuffer;
 }
 
 void Worker::SetParameter( size_t paramIdx, int32_t val )

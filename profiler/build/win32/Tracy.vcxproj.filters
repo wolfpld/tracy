@@ -192,6 +192,9 @@
     <ClCompile Include="..\..\..\server\TracyMmap.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyTextureCompression.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -477,6 +480,9 @@
       <Filter>zstd</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyMmap.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyTextureCompression.hpp">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

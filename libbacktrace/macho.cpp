@@ -857,7 +857,7 @@ macho_add_dsym (struct backtrace_state *state, const char *filename,
   else
     {
       dirnamelen = p - filename;
-      diralc = backtrace_alloc (state, dirnamelen + 1, error_callback, data);
+      diralc = (char*)backtrace_alloc (state, dirnamelen + 1, error_callback, data);
       if (diralc == NULL)
 	goto fail;
       memcpy (diralc, filename, dirnamelen);
@@ -875,7 +875,7 @@ macho_add_dsym (struct backtrace_state *state, const char *filename,
 	     + dsymsuffixdirlen
 	     + basenamelen
 	     + 1);
-  dsym = backtrace_alloc (state, dsymlen, error_callback, data);
+  dsym = (char*)backtrace_alloc (state, dsymlen, error_callback, data);
   if (dsym == NULL)
     goto fail;
 

@@ -1473,7 +1473,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
                 data[idx].state.store( JobData::InProgress, std::memory_order_release );
                 td->Queue( [this, &data, idx, fi] {
-                    m_texcomp.Pack( data[idx].ctx, data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w * fi->h / 2, fi->csz );
+                    fi->csz = m_texcomp.Pack( data[idx].ctx, data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w * fi->h / 2 );
                     data[idx].state.store( JobData::DataReady, std::memory_order_release );
                 } );
 

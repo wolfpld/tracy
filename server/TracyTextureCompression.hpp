@@ -20,12 +20,12 @@ public:
     TextureCompression();
     ~TextureCompression();
 
-    void Pack( struct ZSTD_CCtx_s* ctx, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes, uint32_t& csz ) const;
+    uint32_t Pack( struct ZSTD_CCtx_s* ctx, char*& buf, size_t& bufsz, const char* image, uint32_t inBytes ) const;
 
     template<size_t Size>
     const char* Pack( const char* image, uint32_t inBytes, uint32_t& csz, Slab<Size>& slab )
     {
-        const auto outsz = PackImpl( image, inBytes );
+        const auto outsz = Pack( m_cctx, m_buf, m_bufSize, image, inBytes );
         auto ptr = (char*)slab.AllocBig( outsz );
         memcpy( ptr, m_buf, outsz );
         csz = outsz;
@@ -35,8 +35,6 @@ public:
     const char* Unpack( const FrameImage& image );
 
 private:
-    uint32_t PackImpl( const char* image, uint32_t inBytes );
-
     char* m_buf;
     size_t m_bufSize;
     struct ZSTD_CCtx_s* m_cctx;

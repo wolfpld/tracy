@@ -2102,9 +2102,11 @@ _memory_unmap_os(void* address, size_t size, size_t offset, size_t release) {
 #if defined(POSIX_MADV_FREE)
 		if (posix_madvise(address, size, POSIX_MADV_FREE))
 #endif
+#if defined(POSIX_MADV_DONTNEED)
 		if (posix_madvise(address, size, POSIX_MADV_DONTNEED)) {
 			assert("Failed to madvise virtual memory block as free" == 0);
 		}
+#endif
 	}
 #endif
 #endif

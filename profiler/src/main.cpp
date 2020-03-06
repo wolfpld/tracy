@@ -359,6 +359,10 @@ int main( int argc, char** argv )
 
 static void DrawContents()
 {
+    static bool reconnect = false;
+    static std::string reconnectAddr;
+    static int reconnectPort;
+
     const ImVec4 clear_color = ImColor( 114, 144, 154 );
 
     int display_w, display_h;
@@ -660,6 +664,12 @@ static void DrawContents()
         if( !view->Draw() )
         {
             viewShutdown = ViewShutdown::True;
+            reconnect = view->ReconnectRequested();
+            if( reconnect )
+            {
+                reconnectAddr = view->GetAddress();
+                reconnectPort = view->GetPort();
+            }
             loadThread = std::thread( [view = std::move( view )] () mutable {
                 view.reset();
                 viewShutdown = ViewShutdown::Join;
@@ -747,6 +757,10 @@ static void DrawContents()
     case ViewShutdown::Join:
         loadThread.join();
         viewShutdown = ViewShutdown::False;
+        if( reconnect )
+        {
+            view = std::make_unique<tracy::View>( reconnectAddr.c_str(), reconnectPort, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
+        }
         break;
     default:
         break;

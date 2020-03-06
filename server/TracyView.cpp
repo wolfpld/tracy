@@ -1095,8 +1095,16 @@ bool View::DrawConnection()
             ImGui::EndPopup();
             return false;
         }
+        ImGui::SameLine();
+        if( ImGui::Button( "Reconnect" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+            m_reconnectRequested = true;
+            return false;
+        }
         ImGui::SameLine( 0, ty * 2 );
-        if( ImGui::Button( "No", ImVec2( ty * 8, 0 ) ) )
+        if( ImGui::Button( "No", ImVec2( ty * 6, 0 ) ) )
         {
             ImGui::CloseCurrentPopup();
         }

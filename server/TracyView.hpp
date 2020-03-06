@@ -81,6 +81,7 @@ public:
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
     void SetTextEditorFile( const char* fileName, int line );
 
+    bool ReconnectRequested() const { return m_reconnectRequested; }
     std::string GetAddress() const { return m_worker.GetAddr(); }
     int GetPort() const { return m_worker.GetPort(); }
 
@@ -410,6 +411,8 @@ private:
 
     std::vector<std::unique_ptr<Annotation>> m_annotations;
     UserData m_userData;
+
+    bool m_reconnectRequested = false;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

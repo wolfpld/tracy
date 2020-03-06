@@ -20,6 +20,7 @@ v0.7 (xxxx-xx-xx)
   now displayed.
 - Frame image compression ratio (lossless in-memory compression, not taking
   into account DXT compression) is displayed in playback window.
+- Allow reconnection straight from the discard data dialog.
 
 v0.6.3 (2020-02-13)
 -------------------

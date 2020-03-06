@@ -337,6 +337,7 @@ public:
     ~Worker();
 
     const std::string& GetAddr() const { return m_addr; }
+    int GetPort() const { return m_port; }
     const std::string& GetCaptureName() const { return m_captureName; }
     const std::string& GetCaptureProgram() const { return m_captureProgram; }
     uint64_t GetCaptureTime() const { return m_captureTime; }

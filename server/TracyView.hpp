@@ -81,6 +81,9 @@ public:
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
     void SetTextEditorFile( const char* fileName, int line );
 
+    std::string GetAddress() const { return m_worker.GetAddr(); }
+    int GetPort() const { return m_worker.GetPort(); }
+
 private:
     enum class Namespace : uint8_t
     {

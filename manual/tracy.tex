@@ -413,9 +413,9 @@ The first command will allow access to system CPU statistics. The second one wil
 
 \subsubsection{Changing network port}
 
-Network communication between the client and the server is performed using network port 8086. The profiling session utilizes the TCP protocol and client broadcasts are done over UDP.
+Network communication between the client and the server by default is performed using network port 8086. The profiling session utilizes the TCP protocol and client broadcasts are done over UDP.
 
-If for some reason you can't use this network port, you may add the \texttt{TRACY\_PORT} macro in the client, which should define a numerical port value to use instead.
+If for some reason you want to use another port\footnote{For example, other programs may already be using it, or you may have overzealous firewall rules, or you may want to run two clients on the same IP address.}, you can change it using the \texttt{TRACY\_DATA\_PORT} macro for the data connection, and \texttt{TRACY\_BROADCAST\_PORT} macro for client broadcasts. Alternatively, both ports may be changed at the same time by declaring the \texttt{TRACY\_PORT} macro (specific macros listed before have higher priority).
 
 \subsubsection{Limitations}
 
@@ -1446,11 +1446,11 @@ You can disconnect from the client and save the captured trace by pressing \keys
 
 If you want to look at the profile data in real-time (or load a saved trace file), you can use the data analysis utility contained in the \texttt{profiler} directory. After starting the application, you will be greeted with a welcome dialog (figure~\ref{welcomedialog}), presenting a bunch of useful links (\faBook{}~\emph{User manual}, \faGlobeAmericas{}~\emph{Homepage}, \faComment~\emph{Join chat} and \faVideo{}~\emph{Tutorial}).
 
-The client \emph{address entry} field and the \faWifi{}~\emph{Connect} button are used to connect to a running client. You can use the connection history button~\faCaretDown{} to display a list of commonly used addresses, from which you can quickly select an address. You can remove entries from this list by hovering the \faMousePointer{}~mouse cursor over an entry and pressing the \keys{\del} button on the keyboard.
+The client \emph{address entry} field and the \faWifi{}~\emph{Connect} button are used to connect to a running client\footnote{Note that a custom port may be provided here, for example by entering '127.0.0.1:1234'.}. You can use the connection history button~\faCaretDown{} to display a list of commonly used targets, from which you can quickly select an address. You can remove entries from this list by hovering the \faMousePointer{}~mouse cursor over an entry and pressing the \keys{\del} button on the keyboard.
 
 If you want to open a trace that you have stored on the disk, you can do so by pressing the \faFolderOpen{}~\emph{Open saved trace} button.
 
-The \emph{discovered clients} list is only displayed if there are clients broadcasting their presence on the local network\footnote{Only on IPv4 networks and only within the broadcast domain.}. Each entry shows the IP address of the client, how long the client has been running, and the name of the application that is profiled. Clicking on an entry will connect to the client. Incompatible clients are grayed-out and can't be connected to.
+The \emph{discovered clients} list is only displayed if there are clients broadcasting their presence on the local network\footnote{Only on IPv4 networks and only within the broadcast domain.}. Each entry shows the address\footnote{Either as an IP address, or as a host name, if able to resolve.} of the client (and optionally port, if different from the default one), how long the client has been running, and the name of the application that is profiled. Clicking on an entry will connect to the client. Incompatible clients are grayed-out and can't be connected to.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -1506,7 +1506,7 @@ If the profiled application opted to provide trace parameters (see section~\ref{
 
 \subsubsection{Automatic loading or connecting}
 
-You can pass trace file name as an argument to the profiler application to open the capture, skipping the welcome dialog. You can also use the \texttt{-a address} argument to automatically connect to the given address. To specify the network port, pass the \texttt{-p port} parameter.
+You can pass trace file name as an argument to the profiler application to open the capture, skipping the welcome dialog. You can also use the \texttt{-a address} argument to automatically connect to the given address. To specify the network port, pass the \texttt{-p port} parameter. It will be used for connections to client (overridable in the UI) and for listening to client discovery broadcasts.
 
 \subsection{Connection speed}
 

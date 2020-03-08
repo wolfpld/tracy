@@ -639,6 +639,15 @@ static void DrawContents()
                 ImGuiSelectableFlags flags = ImGuiSelectableFlags_SpanAllColumns;
                 if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
                 const bool selected = ImGui::Selectable( name->second.c_str(), &sel, flags );
+                if( ImGui::IsItemHovered() )
+                {
+                    char portstr[32];
+                    sprintf( portstr, "%" PRIu32, v.second.port );
+                    ImGui::BeginTooltip();
+                    tracy::TextFocused( "IP:", v.second.address.c_str() );
+                    tracy::TextFocused( "Port:", portstr );
+                    ImGui::EndTooltip();
+                }
                 if( v.second.port != port )
                 {
                     ImGui::SameLine();

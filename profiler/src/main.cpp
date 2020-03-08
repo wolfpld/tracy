@@ -541,7 +541,8 @@ static void DrawContents()
         connectClicked |= ImGui::Button( ICON_FA_WIFI " Connect" );
         if( connectClicked && *addr && !loadThread.joinable() )
         {
-            std::string addrStr( addr );
+            const auto addrLen = strlen( addr );
+            std::string addrStr( addr, addr+addrLen );
             auto it = connHistMap.find( addrStr );
             if( it != connHistMap.end() )
             {
@@ -553,7 +554,18 @@ static void DrawContents()
             }
             connHistVec = RebuildConnectionHistory( connHistMap );
 
-            view = std::make_unique<tracy::View>( addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
+            auto ptr = addr + addrLen - 1;
+            while( ptr > addr && *ptr != ':' ) ptr--;
+            if( *ptr == ':' )
+            {
+                std::string addrPart = std::string( addr, ptr );
+                uint32_t portPart = atoi( ptr+1 );
+                view = std::make_unique<tracy::View>( addrPart.c_str(), portPart, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
+            }
+            else
+            {
+                view = std::make_unique<tracy::View>( addr, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
+            }
         }
         ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
         if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )

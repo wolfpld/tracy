@@ -61,6 +61,15 @@
 #include "TracySysTrace.hpp"
 #include "../TracyC.h"
 
+#ifdef TRACY_PORT
+#  ifndef TRACY_DATA_PORT
+#    define TRACY_DATA_PORT TRACY_PORT
+#  endif
+#  ifndef TRACY_BROADCAST_PORT
+#    define TRACY_BROADCAST_PORT TRACY_PORT
+#  endif
+#endif
+
 #ifdef __APPLE__
 #  define TRACY_DELAYED_INIT
 #else
@@ -1158,10 +1167,15 @@ void Profiler::Worker()
 
     SetThreadName( "Tracy Profiler" );
 
-#ifdef TRACY_PORT
-    const auto port = TRACY_PORT;
+#ifdef TRACY_DATA_PORT
+    const auto dataPort = TRACY_DATA_PORT;
 #else
-    const auto port = 8086;
+    const auto dataPort = 8086;
+#endif
+#ifdef TRACY_BROADCAST_PORT
+    const auto broadcastPort = TRACY_BROADCAST_PORT;
+#else
+    const auto broadcastPort = 8086;
 #endif
 
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
@@ -1207,7 +1221,7 @@ void Profiler::Worker()
     moodycamel::ConsumerToken token( GetQueue() );
 
     ListenSocket listen;
-    if( !listen.Listen( port, 8 ) )
+    if( !listen.Listen( dataPort, 8 ) )
     {
         for(;;)
         {
@@ -1224,7 +1238,7 @@ void Profiler::Worker()
 #ifndef TRACY_NO_BROADCAST
     m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
     new(m_broadcast) UdpBroadcast();
-    if( !m_broadcast->Open( "255.255.255.255", port ) )
+    if( !m_broadcast->Open( "255.255.255.255", broadcastPort ) )
     {
         m_broadcast->~UdpBroadcast();
         tracy_free( m_broadcast );
@@ -1265,7 +1279,7 @@ void Profiler::Worker()
                     lastBroadcast = t;
                     const auto ts = std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
                     broadcastMsg.activeTime = uint32_t( ts - m_epoch );
-                    m_broadcast->Send( port, &broadcastMsg, broadcastLen );
+                    m_broadcast->Send( broadcastPort, &broadcastMsg, broadcastLen );
                 }
             }
         }

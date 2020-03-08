@@ -526,12 +526,13 @@ static uint64_t GetPid()
 #endif
 }
 
-static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz, int& len )
+static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz, int& len, int port )
 {
     static BroadcastMessage msg;
 
     msg.broadcastVersion = BroadcastVersion;
     msg.protocolVersion = ProtocolVersion;
+    msg.listenPort = port;
 
     memcpy( msg.programName, procname, pnsz );
     memset( msg.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
@@ -1247,7 +1248,7 @@ void Profiler::Worker()
 #endif
 
     int broadcastLen = 0;
-    auto& broadcastMsg = GetBroadcastMessage( procname, pnsz, broadcastLen );
+    auto& broadcastMsg = GetBroadcastMessage( procname, pnsz, broadcastLen, dataPort );
     uint64_t lastBroadcast = 0;
 
     // Connections loop.

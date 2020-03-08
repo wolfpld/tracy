@@ -4097,7 +4097,14 @@ static LockState CombineLockState( LockState state, LockState next )
 void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLocation& srcloc, bool hover, ImDrawList* draw, const ImVec2& wpos, float w, float ty, float offset, uint8_t tid )
 {
     char buf[1024];
-    sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( srcloc.function ) );
+    if( lockmap.customName.Active() )
+    {
+        sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( lockmap.customName ) );
+    }
+    else
+    {
+        sprintf( buf, "%" PRIu32 ": %s", id, m_worker.GetString( srcloc.function ) );
+    }
     DrawTextContrast( draw, wpos + ImVec2( 0, offset ), 0xFF8888FF, buf );
     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( w, offset + ty ) ) )
     {
@@ -4432,7 +4439,14 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                         }
 
                         ImGui::BeginTooltip();
-                        ImGui::Text( "Lock #%" PRIu32 ": %s", v.first, m_worker.GetString( srcloc.function ) );
+                        if( v.second->customName.Active() )
+                        {
+                            ImGui::Text( "Lock #%" PRIu32 ": %s", v.first, m_worker.GetString( v.second->customName ) );
+                        }
+                        else
+                        {
+                            ImGui::Text( "Lock #%" PRIu32 ": %s", v.first, m_worker.GetString( srcloc.function ) );
+                        }
                         ImGui::Separator();
                         ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
                         TextFocused( "Time:", TimeToString( t1 - t0 ) );
@@ -7654,7 +7668,14 @@ void View::DrawOptions()
                         auto fileName = m_worker.GetString( sl.file );
 
                         char buf[1024];
-                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                        if( l.second->customName.Active() )
+                        {
+                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
+                        }
+                        else
+                        {
+                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                        }
                         SmallCheckbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
@@ -7721,7 +7742,14 @@ void View::DrawOptions()
                         auto fileName = m_worker.GetString( sl.file );
 
                         char buf[1024];
-                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                        if( l.second->customName.Active() )
+                        {
+                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
+                        }
+                        else
+                        {
+                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                        }
                         SmallCheckbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
@@ -7788,7 +7816,14 @@ void View::DrawOptions()
                         auto fileName = m_worker.GetString( sl.file );
 
                         char buf[1024];
-                        sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                        if( l.second->customName.Active() )
+                        {
+                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( l.second->customName ) );
+                        }
+                        else
+                        {
+                            sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
+                        }
                         SmallCheckbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
@@ -12726,8 +12761,19 @@ void View::DrawLockInfoWindow()
     bool visible = true;
     ImGui::Begin( "Lock info", &visible, ImGuiWindowFlags_AlwaysAutoResize );
     if( m_bigFont ) ImGui::PushFont( m_bigFont );
-    ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
+    if( lock.customName.Active() )
+    {
+        ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( lock.customName ) );
+    }
+    else
+    {
+        ImGui::Text( "Lock #%" PRIu32 ": %s", m_lockInfoWindow, m_worker.GetString( srcloc.function ) );
+    }
     if( m_bigFont ) ImGui::PopFont();
+    if( lock.customName.Active() )
+    {
+        TextFocused( "Name:", m_worker.GetString( srcloc.function ) );
+    }
     TextDisabledUnformatted( "Location:" );
     if( m_lockInfoAnim.Match( m_lockInfoWindow ) )
     {

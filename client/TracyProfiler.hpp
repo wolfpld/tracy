@@ -619,6 +619,7 @@ private:
     Socket* m_sock;
     UdpBroadcast* m_broadcast;
     bool m_noExit;
+    uint32_t m_userPort;
     std::atomic<uint32_t> m_zoneId;
     int64_t m_samplingPeriod;
 

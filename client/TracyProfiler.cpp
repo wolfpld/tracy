@@ -1033,6 +1033,7 @@ Profiler::Profiler()
     , m_sock( nullptr )
     , m_broadcast( nullptr )
     , m_noExit( false )
+    , m_userPort( 0 )
     , m_zoneId( 1 )
     , m_samplingPeriod( 0 )
     , m_stream( LZ4_createStream() )
@@ -1075,6 +1076,12 @@ Profiler::Profiler()
         m_noExit = true;
     }
 #endif
+
+    const char* userPort = getenv( "TRACY_PORT" );
+    if( userPort )
+    {
+        m_userPort = atoi( userPort );
+    }
 
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
@@ -1169,9 +1176,9 @@ void Profiler::Worker()
     SetThreadName( "Tracy Profiler" );
 
 #ifdef TRACY_DATA_PORT
-    const auto dataPort = TRACY_DATA_PORT;
+    const auto dataPort = m_userPort != 0 ? m_userPort : TRACY_DATA_PORT;
 #else
-    const auto dataPort = 8086;
+    const auto dataPort = m_userPort != 0 ? m_userPort : 8086;
 #endif
 #ifdef TRACY_BROADCAST_PORT
     const auto broadcastPort = TRACY_BROADCAST_PORT;

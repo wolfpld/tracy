@@ -535,7 +535,7 @@ public:
 
     tracy_force_inline void CustomName( const char* name, size_t size )
     {
-        m_ctx.CustomName( txt, size );
+        m_ctx.CustomName( name, size );
     }
 
 private:

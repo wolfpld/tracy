@@ -718,6 +718,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             uint32_t id;
             uint64_t tsz;
             f.Read( id );
+            if( fileVer >= FileVersion( 0, 6, 6 ) )
+            {
+                f.Read( lockmap.customName );
+            }
             if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
                 f.Read( lockmap.srcloc );
@@ -832,6 +836,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             LockType type;
             uint64_t tsz;
+            if( fileVer >= FileVersion( 0, 6, 6 ) )
+            {
+                f.Skip( sizeof( LockMap::customName ) );
+            }
             if( fileVer >= FileVersion( 0, 5, 2 ) )
             {
                 f.Skip( sizeof( uint32_t ) + sizeof( LockMap::srcloc ) );
@@ -3476,6 +3484,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::LockMark:
         ProcessLockMark( ev.lockMark );
         break;
+    case QueueType::LockName:
+        ProcessLockName( ev.lockName );
+        break;
     case QueueType::PlotData:
         ProcessPlotData( ev.plotData );
         break;
@@ -4221,6 +4232,16 @@ void Worker::ProcessLockMark( const QueueLockMark& ev )
             }
         }
     }
+}
+
+void Worker::ProcessLockName( const QueueLockName& ev )
+{
+    auto lit = m_data.lockMap.find( ev.id );
+    assert( lit != m_data.lockMap.end() );
+    auto it = m_pendingCustomStrings.find( ev.name );
+    assert( it != m_pendingCustomStrings.end() );
+    lit->second->customName = StringIdx( it->second.idx );
+    m_pendingCustomStrings.erase( it );
 }
 
 void Worker::ProcessPlotData( const QueuePlotData& ev )
@@ -6011,6 +6032,7 @@ void Worker::Write( FileWrite& f )
     for( auto& v : m_data.lockMap )
     {
         f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second->customName, sizeof( v.second->customName ) );
         f.Write( &v.second->srcloc, sizeof( v.second->srcloc ) );
         f.Write( &v.second->type, sizeof( v.second->type ) );
         f.Write( &v.second->valid, sizeof( v.second->valid ) );

@@ -33,6 +33,7 @@
 #define LockableBase( type ) type
 #define SharedLockableBase( type ) type
 #define LockMark(x) (void)x;
+#define LockableName(x,y,z);
 
 #define TracyPlot(x,y)
 #define TracyPlotConfig(x,y)
@@ -107,6 +108,7 @@
 #define LockableBase( type ) tracy::Lockable<type>
 #define SharedLockableBase( type ) tracy::SharedLockable<type>
 #define LockMark( varname ) static const tracy::SourceLocationData __tracy_lock_location_##varname { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; varname.Mark( &__tracy_lock_location_##varname );
+#define LockableName( varname, txt, size ) varname.CustomName( txt, size );
 
 #define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val );
 #define TracyPlotConfig( name, type ) tracy::Profiler::ConfigurePlot( name, type );

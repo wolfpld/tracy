@@ -153,6 +153,20 @@ public:
         Profiler::QueueSerialFinish();
     }
 
+    tracy_force_inline void CustomName( const char* name, size_t size )
+    {
+        auto ptr = (char*)tracy_malloc( size+1 );
+        memcpy( ptr, name, size );
+        ptr[size] = '\0';
+        TracyLfqPrepare( QueueType::LockName );
+        MemWrite( &item->lockName.id, m_id );
+        MemWrite( &item->lockName.name, (uint64_t)ptr );
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+        TracyLfqCommit;
+    }
+
 private:
     uint32_t m_id;
 
@@ -197,6 +211,11 @@ public:
     tracy_force_inline void Mark( const SourceLocationData* srcloc )
     {
         m_ctx.Mark( srcloc );
+    }
+
+    tracy_force_inline void CustomName( const char* name, size_t size )
+    {
+        m_ctx.CustomName( name, size );
     }
 
 private:
@@ -434,6 +453,20 @@ public:
         Profiler::QueueSerialFinish();
     }
 
+    tracy_force_inline void CustomName( const char* name, size_t size )
+    {
+        auto ptr = (char*)tracy_malloc( size+1 );
+        memcpy( ptr, name, size );
+        ptr[size] = '\0';
+        TracyLfqPrepare( QueueType::LockName );
+        MemWrite( &item->lockName.id, m_id );
+        MemWrite( &item->lockName.name, (uint64_t)ptr );
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+        TracyLfqCommit;
+    }
+
 private:
     uint32_t m_id;
 
@@ -498,6 +531,11 @@ public:
     tracy_force_inline void Mark( const SourceLocationData* srcloc )
     {
         m_ctx.Mark( srcloc );
+    }
+
+    tracy_force_inline void CustomName( const char* name, size_t size )
+    {
+        m_ctx.CustomName( txt, size );
     }
 
 private:

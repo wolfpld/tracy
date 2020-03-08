@@ -533,6 +533,7 @@ struct LockMap
         int64_t end = std::numeric_limits<int64_t>::min();
     };
 
+    StringIdx customName;
     int16_t srcloc;
     Vector<LockEventPtr> timeline;
     unordered_flat_map<uint64_t, uint8_t> threadMap;

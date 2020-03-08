@@ -32,6 +32,7 @@ enum class QueueType : uint8_t
     LockSharedWait,
     LockSharedObtain,
     LockSharedRelease,
+    LockName,
     MemAlloc,
     MemFree,
     MemAllocCallstack,
@@ -192,6 +193,12 @@ struct QueueLockMark
     uint64_t thread;
     uint32_t id;
     uint64_t srcloc;    // ptr
+};
+
+struct QueueLockName
+{
+    uint32_t id;
+    uint64_t name;      // ptr
 };
 
 enum class PlotDataType : uint8_t
@@ -412,6 +419,7 @@ struct QueueItem
         QueueLockObtain lockObtain;
         QueueLockRelease lockRelease;
         QueueLockMark lockMark;
+        QueueLockName lockName;
         QueuePlotData plotData;
         QueueMessage message;
         QueueMessageColor messageColor;
@@ -468,6 +476,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockWait ),        // shared
     sizeof( QueueHeader ) + sizeof( QueueLockObtain ),      // shared
     sizeof( QueueHeader ) + sizeof( QueueLockRelease ),     // shared
+    sizeof( QueueHeader ) + sizeof( QueueLockName ),
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),
     sizeof( QueueHeader ) + sizeof( QueueMemFree ),
     sizeof( QueueHeader ) + sizeof( QueueMemAlloc ),        // callstack

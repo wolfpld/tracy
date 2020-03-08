@@ -523,6 +523,7 @@ private:
     tracy_force_inline void ProcessLockSharedObtain( const QueueLockObtain& ev );
     tracy_force_inline void ProcessLockSharedRelease( const QueueLockRelease& ev );
     tracy_force_inline void ProcessLockMark( const QueueLockMark& ev );
+    tracy_force_inline void ProcessLockName( const QueueLockName& ev );
     tracy_force_inline void ProcessPlotData( const QueuePlotData& ev );
     tracy_force_inline void ProcessPlotConfig( const QueuePlotConfig& ev );
     tracy_force_inline void ProcessMessage( const QueueMessage& ev );

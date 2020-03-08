@@ -99,13 +99,14 @@ struct ClientData
     int64_t time;
     uint32_t protocolVersion;
     uint32_t activeTime;
+    uint32_t port;
     std::string procName;
     std::string address;
 };
 
 enum class ViewShutdown { False, True, Join };
 
-static tracy::unordered_flat_map<uint32_t, ClientData> clients;
+static tracy::unordered_flat_map<uint64_t, ClientData> clients;
 static std::unique_ptr<tracy::View> view;
 static tracy::BadVersionState badVer;
 static int port = 8086;
@@ -405,10 +406,12 @@ static void DrawContents()
                     const uint32_t protoVer = bm.protocolVersion;
                     const auto procname = bm.programName;
                     const auto activeTime = bm.activeTime;
+                    const auto listenPort = bm.listenPort;
                     auto address = addr.GetText();
 
                     const auto ipNumerical = addr.GetNumber();
-                    auto it = clients.find( ipNumerical );
+                    const auto clientId = uint64_t( ipNumerical ) | ( uint64_t( listenPort ) << 32 );
+                    auto it = clients.find( clientId );
                     if( it == clients.end() )
                     {
                         std::string ip( address );
@@ -424,12 +427,13 @@ static void DrawContents()
                                 } );
                         }
                         resolvLock.unlock();
-                        clients.emplace( addr.GetNumber(), ClientData { time, protoVer, activeTime, procname, std::move( ip ) } );
+                        clients.emplace( clientId, ClientData { time, protoVer, activeTime, listenPort, procname, std::move( ip ) } );
                     }
                     else
                     {
                         it->second.time = time;
                         it->second.activeTime = activeTime;
+                        it->second.port = listenPort;
                         if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
                         if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
                     }
@@ -622,9 +626,15 @@ static void DrawContents()
                 assert( name != resolvMap.end() );
                 ImGuiSelectableFlags flags = ImGuiSelectableFlags_SpanAllColumns;
                 if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
-                if( ImGui::Selectable( name->second.c_str(), &sel, flags ) && !loadThread.joinable() )
+                const bool selected = ImGui::Selectable( name->second.c_str(), &sel, flags );
+                if( v.second.port != port )
                 {
-                    view = std::make_unique<tracy::View>( v.second.address.c_str(), port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( ":%" PRIu32, v.second.port );
+                }
+                if( selected && !loadThread.joinable() )
+                {
+                    view = std::make_unique<tracy::View>( v.second.address.c_str(), v.second.port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
                 }
                 ImGui::NextColumn();
                 const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;

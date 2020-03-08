@@ -1346,11 +1346,18 @@ void Profiler::Worker()
         m_deferredLock.lock();
         for( auto& item : m_deferredQueue )
         {
+            uint64_t ptr;
             const auto idx = MemRead<uint8_t>( &item.hdr.idx );
-            if( (QueueType)idx == QueueType::MessageAppInfo )
+            switch( (QueueType)idx )
             {
-                uint64_t ptr = MemRead<uint64_t>( &item.message.text );
+            case QueueType::MessageAppInfo:
+                ptr = MemRead<uint64_t>( &item.message.text );
                 SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                break;
+            case QueueType::LockName:
+                ptr = MemRead<uint64_t>( &item.lockName.name );
+                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                break;
             }
             AppendData( &item, QueueDataSize[idx] );
         }

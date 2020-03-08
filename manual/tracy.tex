@@ -901,7 +901,7 @@ with
 TracyLockable(std::mutex, m_lock);
 \end{lstlisting}
 
-Alternatively, you may use \texttt{TracyLockableN(type, varname, description)} to provide a custom lock name.
+Alternatively, you may use \texttt{TracyLockableN(type, varname, description)} to provide a custom lock name at a global level, which will replace the automatically generated '\texttt{std::mutex m\_lock}'-like name. You may also set a custom name for a specific instance of a lock, through the \texttt{LockableName(varname, name, size)} macro.
 
 The standard \texttt{std::lock\_guard} and \texttt{std::unique\_lock} wrappers should use the \texttt{LockableBase(type)} macro for their template parameter (unless you're using C++17, with improved template argument deduction). For example:
 

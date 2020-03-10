@@ -1779,6 +1779,7 @@ Worker::~Worker()
         v->stack.~Vector();
         v->messages.~Vector();
         v->zoneIdStack.~Vector();
+        v->samples.~Vector();
 #ifndef TRACY_NO_STATISTICS
         v->childTimeStack.~Vector();
 #endif

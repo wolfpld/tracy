@@ -245,6 +245,8 @@ private:
         Vector<Vector<short_ptr<GpuEvent>>> gpuChildren;
 #ifndef TRACY_NO_STATISTICS
         Vector<Vector<GhostZone>> ghostChildren;
+        Vector<CallstackFrameId> ghostFrames;
+        unordered_flat_map<uint64_t, uint32_t> ghostFramesMap;
 #endif
 
         Vector<Vector<short_ptr<ZoneEvent>>> zoneVectorCache;

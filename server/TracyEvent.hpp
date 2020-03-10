@@ -504,7 +504,7 @@ enum { FrameImageSize = sizeof( FrameImage ) };
 struct GhostZone
 {
     Int48 start, end;
-    CallstackFrameId frame;
+    Int24 frame;
     int32_t child;
 };
 

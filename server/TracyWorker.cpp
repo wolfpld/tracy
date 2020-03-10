@@ -1763,16 +1763,28 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         do
                         {
                             auto& entry = cs[idx];
+                            uint32_t fid;
+                            auto it = m_data.ghostFramesMap.find( entry.data );
+                            if( it == m_data.ghostFramesMap.end() )
+                            {
+                                fid = uint32_t( m_data.ghostFrames.size() );
+                                m_data.ghostFrames.push_back( entry );
+                                m_data.ghostFramesMap.emplace( entry.data, fid );
+                            }
+                            else
+                            {
+                                fid = it->second;
+                            }
                             if( vec->empty() )
                             {
                                 gcnt++;
                                 auto& zone = vec->push_next();
                                 zone.start.SetVal( time );
                                 zone.end.SetVal( time + m_samplingPeriod );
-                                zone.frame = entry;
+                                zone.frame.SetVal( fid );
                                 zone.child = -1;
                             }
-                            else if( vec->back().frame == entry )
+                            else if( vec->back().frame.Val() == fid )
                             {
                                 auto& zone = vec->back();
                                 zone.end.SetVal( time + m_samplingPeriod );
@@ -1784,7 +1796,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                 auto& zone = vec->push_next();
                                 zone.start.SetVal( time );
                                 zone.end.SetVal( time + m_samplingPeriod );
-                                zone.frame = entry;
+                                zone.frame.SetVal( fid );
                                 zone.child = -1;
                             }
                             if( idx > 0 )

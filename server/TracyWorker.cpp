@@ -1723,7 +1723,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 for( auto& t : m_data.threads ) total += t->samples.size();
                 if( total != 0 )
                 {
-                    counts.reserve( total );
                     for( auto& t : m_data.threads )
                     {
                         if( m_shutdown.load( std::memory_order_relaxed ) ) return;

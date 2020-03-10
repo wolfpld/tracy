@@ -431,6 +431,7 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <stdlib.h>
 #    include <string.h>
 #    include <unistd.h>
+#    include <atomic>
 
 #    include "TracyProfiler.hpp"
 
@@ -450,6 +451,8 @@ static const char SchedSwitch[] = "events/sched/sched_switch/enable";
 static const char SchedWakeup[] = "events/sched/sched_wakeup/enable";
 static const char BufferSizeKb[] = "buffer_size_kb";
 static const char TracePipe[] = "trace_pipe";
+
+static std::atomic<bool> traceActive { false };
 
 #ifdef __ANDROID__
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
@@ -546,6 +549,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #endif
 
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
+    traceActive.store( true, std::memory_order_relaxed );
 
     return true;
 }
@@ -553,6 +557,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 void SysTraceStop()
 {
     TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 );
+    traceActive.store( false, std::memory_order_relaxed );
 }
 
 static uint64_t ReadNumber( const char*& ptr )
@@ -738,6 +743,8 @@ static void ProcessTraceLines( int fd )
 
     for(;;)
     {
+        if( !traceActive.load( std::memory_order_relaxed ) ) break;
+
         const auto rd = read( fd, line, 64*1024 );
         if( rd <= 0 ) break;
 
@@ -836,7 +843,11 @@ static void ProcessTraceLines( int fd )
 
     for(;;)
     {
-        while( poll( &pfd, 1, 0 ) <= 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        while( poll( &pfd, 1, 0 ) <= 0 )
+        {
+            if( !traceActive.load( std::memory_order_relaxed ) ) break;
+            std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        }
 
         const auto rd = read( fd, buf, 64*1024 );
         if( rd <= 0 ) break;

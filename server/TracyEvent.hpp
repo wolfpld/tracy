@@ -486,6 +486,18 @@ struct FrameEvent
 
 enum { FrameEventSize = sizeof( FrameEvent ) };
 
+
+struct FrameImage
+{
+    short_ptr<const char> ptr;
+    uint32_t csz;
+    uint16_t w, h;
+    uint32_t frameRef;
+    uint8_t flip;
+};
+
+enum { FrameImageSize = sizeof( FrameImage ) };
+
 #pragma pack()
 
 
@@ -627,16 +639,6 @@ struct SourceLocationComparator
     }
 };
 
-struct FrameImage
-{
-    short_ptr<const char> ptr;
-    uint32_t csz;
-    uint16_t w, h;
-    uint32_t frameRef;
-    uint8_t flip;
-};
-
-enum { FrameImageSize = sizeof( FrameImage ) };
 
 struct ContextSwitch
 {

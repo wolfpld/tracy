@@ -196,6 +196,7 @@ private:
         uint64_t zonesCnt = 0;
         uint64_t gpuCnt = 0;
         uint64_t samplesCnt = 0;
+        uint64_t ghostCnt = 0;
         int64_t baseTime = 0;
         int64_t lastTime = 0;
         uint64_t frameOffset = 0;
@@ -232,6 +233,7 @@ private:
         unordered_flat_map<uint32_t, uint32_t> postponedSamples;
         bool newFramesWereReceived = false;
         bool callstackSamplesReady = false;
+        bool ghostZonesReady = false;
 #endif
 
         unordered_flat_map<uint32_t, LockMap*> lockMap;
@@ -241,6 +243,9 @@ private:
 
         Vector<Vector<short_ptr<ZoneEvent>>> zoneChildren;
         Vector<Vector<short_ptr<GpuEvent>>> gpuChildren;
+#ifndef TRACY_NO_STATISTICS
+        Vector<Vector<GhostZone>> ghostChildren;
+#endif
 
         Vector<Vector<short_ptr<ZoneEvent>>> zoneVectorCache;
 
@@ -368,6 +373,7 @@ public:
     uint64_t GetCallstackFrameCount() const { return m_data.callstackFrameMap.size(); }
     uint64_t GetCallstackSampleCount() const { return m_data.samplesCnt; }
     uint64_t GetSymbolsCount() const { return m_data.symbolMap.size(); }
+    uint64_t GetGhostZonesCount() const { return m_data.ghostCnt; }
     uint32_t GetFrameImageCount() const { return (uint32_t)m_data.frameImage.size(); }
     uint64_t GetStringsCount() const { return m_data.strings.size() + m_data.stringData.size(); }
     uint64_t GetFrameOffset() const { return m_data.frameOffset; }
@@ -437,6 +443,9 @@ public:
 
     tracy_force_inline const Vector<short_ptr<ZoneEvent>>& GetZoneChildren( int32_t idx ) const { return m_data.zoneChildren[idx]; }
     tracy_force_inline const Vector<short_ptr<GpuEvent>>& GetGpuChildren( int32_t idx ) const { return m_data.gpuChildren[idx]; }
+#ifndef TRACY_NO_STATISTICS
+    tracy_force_inline const Vector<GhostZone>& GetGhostChildren( int32_t idx ) const { return m_data.ghostChildren[idx]; }
+#endif
 
     tracy_force_inline const bool HasZoneExtra( const ZoneEvent& ev ) const { return ev.extra != 0; }
     tracy_force_inline const ZoneExtra& GetZoneExtra( const ZoneEvent& ev ) const { return m_data.zoneExtra[ev.extra]; }

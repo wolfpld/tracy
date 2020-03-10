@@ -500,6 +500,16 @@ struct FrameImage
 
 enum { FrameImageSize = sizeof( FrameImage ) };
 
+
+struct GhostZone
+{
+    Int48 start, end;
+    CallstackFrameId frame;
+    int32_t child;
+};
+
+enum { GhostZoneSize = sizeof( GhostZone ) };
+
 #pragma pack()
 
 
@@ -514,6 +524,7 @@ struct ThreadData
     Vector<uint32_t> zoneIdStack;
 #ifndef TRACY_NO_STATISTICS
     Vector<int64_t> childTimeStack;
+    Vector<GhostZone> ghostZones;
 #endif
     Vector<SampleData> samples;
 };

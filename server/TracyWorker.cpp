@@ -242,6 +242,7 @@ Worker::Worker( const char* addr, int port )
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = true;
     m_data.callstackSamplesReady = true;
+    m_data.ghostZonesReady = true;
     m_data.ctxUsageReady = true;
 #endif
 
@@ -1743,8 +1744,70 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     for( auto& v : counts ) UpdateSampleStatistics( v.first, v.second, false );
                 }
 
+                {
+                    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                    m_data.callstackSamplesReady = true;
+                }
+
+                uint32_t gcnt = 0;
+                for( auto& t : m_data.threads )
+                {
+                    if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                    for( auto& sd : t->samples )
+                    {
+                        const auto& cs = GetCallstack( sd.callstack.Val() );
+                        const auto time = sd.time.Val();
+                        auto vec = &t->ghostZones;
+
+                        auto idx = cs.size() - 1;
+                        do
+                        {
+                            auto& entry = cs[idx];
+                            if( vec->empty() )
+                            {
+                                gcnt++;
+                                auto& zone = vec->push_next();
+                                zone.start.SetVal( time );
+                                zone.end.SetVal( time + m_samplingPeriod );
+                                zone.frame = entry;
+                                zone.child = -1;
+                            }
+                            else if( vec->back().frame == entry )
+                            {
+                                auto& zone = vec->back();
+                                zone.end.SetVal( time + m_samplingPeriod );
+                            }
+                            else
+                            {
+                                gcnt++;
+                                vec->back().end.SetVal( time );
+                                auto& zone = vec->push_next();
+                                zone.start.SetVal( time );
+                                zone.end.SetVal( time + m_samplingPeriod );
+                                zone.frame = entry;
+                                zone.child = -1;
+                            }
+                            if( idx > 0 )
+                            {
+                                auto& zone = vec->back();
+                                if( zone.child < 0 )
+                                {
+                                    zone.child = m_data.ghostChildren.size();
+                                    vec = &m_data.ghostChildren.push_next();
+                                }
+                                else
+                                {
+                                    vec = &m_data.ghostChildren[zone.child];
+                                }
+                            }
+                        }
+                        while( idx-- > 0 );
+                    }
+                }
+
                 std::lock_guard<std::shared_mutex> lock( m_data.lock );
-                m_data.callstackSamplesReady = true;
+                m_data.ghostZonesReady = true;
+                m_data.ghostCnt = gcnt;
             }
 
             m_backgroundDone.store( true, std::memory_order_relaxed );
@@ -1781,6 +1844,7 @@ Worker::~Worker()
         v->samples.~Vector();
 #ifndef TRACY_NO_STATISTICS
         v->childTimeStack.~Vector();
+        v->ghostZones.~Vector();
 #endif
     }
     for( auto& v : m_data.gpuData )
@@ -1803,6 +1867,12 @@ Worker::~Worker()
     {
         v.second->~LockMap();
     }
+#ifndef TRACY_NO_STATISTICS
+    for( auto& v : m_data.ghostChildren )
+    {
+        v.~Vector();
+    }
+#endif
 }
 
 uint64_t Worker::GetLockCount() const

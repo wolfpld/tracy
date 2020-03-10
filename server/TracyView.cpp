@@ -12008,6 +12008,7 @@ void View::DrawInfo()
             }
         }
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
+        TextFocused( "Ghost zones:", RealToString( m_worker.GetGhostZonesCount() ) );
         TextFocused( "Frame images:", RealToString( ficnt ) );
         if( ficnt != 0 && ImGui::IsItemHovered() )
         {

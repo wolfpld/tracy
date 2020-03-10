@@ -363,6 +363,8 @@ union CallstackFrameId
 
 enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
 
+static tracy_force_inline bool operator==( const CallstackFrameId& lhs, const CallstackFrameId& rhs ) { return lhs.data == rhs.data; }
+
 
 struct CallstackFrameTree
 {

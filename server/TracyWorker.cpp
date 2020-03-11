@@ -1784,20 +1784,41 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                 zone.frame.SetVal( fid );
                                 zone.child = -1;
                             }
-                            else if( vec->back().frame.Val() == fid )
-                            {
-                                auto& zone = vec->back();
-                                zone.end.SetVal( time + m_samplingPeriod );
-                            }
                             else
                             {
-                                gcnt++;
-                                vec->back().end.SetVal( time );
-                                auto& zone = vec->push_next();
-                                zone.start.SetVal( time );
-                                zone.end.SetVal( time + m_samplingPeriod );
-                                zone.frame.SetVal( fid );
-                                zone.child = -1;
+                                auto& back = vec->back();
+                                const auto backFrame = GetCallstackFrame( m_data.ghostFrames[back.frame.Val()] );
+                                const auto thisFrame = GetCallstackFrame( entry );
+                                bool match = false;
+                                if( backFrame && thisFrame )
+                                {
+                                    match = backFrame->size == thisFrame->size;
+                                    if( match )
+                                    {
+                                        for( uint8_t i=0; i<thisFrame->size; i++ )
+                                        {
+                                            if( backFrame->data[i].symAddr != thisFrame->data[i].symAddr )
+                                            {
+                                                match = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                if( match )
+                                {
+                                    back.end.SetVal( time + m_samplingPeriod );
+                                }
+                                else
+                                {
+                                    gcnt++;
+                                    back.end.SetVal( time );
+                                    auto& zone = vec->push_next();
+                                    zone.start.SetVal( time );
+                                    zone.end.SetVal( time + m_samplingPeriod );
+                                    zone.frame.SetVal( fid );
+                                    zone.child = -1;
+                                }
                             }
                             if( idx > 0 )
                             {

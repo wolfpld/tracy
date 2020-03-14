@@ -23,6 +23,7 @@ v0.7 (xxxx-xx-xx)
 - Allow reconnection straight from the discard data dialog.
 - Added ability to set custom names for locks.
 - Improved handling of network ports.
+- Added time percentage display to instrumentation statistics.
 
 v0.6.3 (2020-02-13)
 -------------------

@@ -6575,7 +6575,7 @@ void View::DrawZoneInfoWindow()
         if( expand )
         {
             ImGui::SameLine();
-            if( SmallCheckbox( "Exclusive time", &m_timeDist.exclusiveTime ) ) m_timeDist.dataValidFor = nullptr;
+            if( SmallCheckbox( "Self time", &m_timeDist.exclusiveTime ) ) m_timeDist.dataValidFor = nullptr;
             if( ctx )
             {
                 ImGui::SameLine();
@@ -11123,9 +11123,9 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::Checkbox( ICON_FA_CLOCK " Show self times", &m_statSelf );
+        ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
 #else
-        ImGui::Checkbox( "Show self times", &m_statSelf );
+        ImGui::Checkbox( "Self time", &m_statSelf );
 #endif
 
         ImGui::Separator();
@@ -11233,9 +11233,9 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::Checkbox( ICON_FA_CLOCK " Exclusive", &m_statSelf );
+        ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
 #else
-        ImGui::Checkbox( "Exclusive", &m_statSelf );
+        ImGui::Checkbox( "Self time", &m_statSelf );
 #endif
         ImGui::SameLine();
         ImGui::Spacing();

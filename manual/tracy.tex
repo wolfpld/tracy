@@ -2142,7 +2142,7 @@ If the trace capture was performed with call stack sampling enabled (as describe
 
 Here you will find a multi-column display of captured zones, which contains: the zone \emph{name} and \emph{location}, \emph{total time} spent in the zone, the \emph{count} of zone executions and the \emph{mean time spent in the zone per call}. The view may be sorted according to the three displayed values.
 
-The \emph{\faClock{}~Show self times} option determines how the displayed time is calculated. If it is disabled, the measurements will be inclusive, that is, containing execution time of zone's children. Enabling the option switches the measurement to exclusive, displaying just the time spent in zone, subtracting the child calls.
+The \emph{\faClock{}~Self time} option determines how the displayed time is calculated. If it is disabled, the measurements will be inclusive, that is, containing execution time of zone's children. Enabling the option switches the measurement to exclusive, displaying just the time spent in zone, subtracting the child calls.
 
 Clicking the \LMB{} left mouse button on a zone will open the individual zone statistics view in the find zone window (section~\ref{findzone}).
 
@@ -2163,7 +2163,7 @@ Some function locations may not be found, due to insufficient debugging data ava
 
 The last column, \emph{Time} or \emph{Count} (depending on the \emph{\faStopwatch{}~Show time} option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format.
 
-Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case, and the exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Exclusive} switch.
+Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case, and the exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch.
 
 \subsection{Find zone window}
 \label{findzone}

@@ -493,6 +493,8 @@ public:
     const decltype(DataBlock::cpuTopology)& GetCpuTopology() const { return m_data.cpuTopology; }
     const CpuThreadTopology* GetThreadTopology( uint32_t cpuThread ) const;
 
+    std::pair<uint64_t, uint64_t> GetTextureCompressionBytes() const { return std::make_pair( m_texcomp.GetInputBytesCount(), m_texcomp.GetOutputBytesCount() ); }
+
 private:
     void Network();
     void Exec();

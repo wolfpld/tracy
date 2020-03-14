@@ -11999,6 +11999,18 @@ void View::DrawInfo()
         }
         TextFocused( "Call stack samples:", RealToString( m_worker.GetCallstackSampleCount() ) );
         TextFocused( "Frame images:", RealToString( ficnt ) );
+        if( ficnt != 0 && ImGui::IsItemHovered() )
+        {
+            const auto bytes = m_worker.GetTextureCompressionBytes();
+            ImGui::BeginTooltip();
+            TextFocused( "Input data:", MemSizeToString( bytes.first ) );
+            TextFocused( "Compressed:", MemSizeToString( bytes.second ) );
+            char buf[64];
+            auto ptr = PrintFloat( buf, buf+62, 100. * bytes.second / bytes.first, 2 );
+            memcpy( ptr, "%", 2 );
+            TextFocused( "Ratio:", buf );
+            ImGui::EndTooltip();
+        }
         TextFocused( "Context switch regions:", RealToString( m_worker.GetContextSwitchCount() ) );
         if( ImGui::IsItemHovered() )
         {

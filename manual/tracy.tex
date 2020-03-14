@@ -61,7 +61,7 @@
          belowskip=\baselineskip
 }
 
-\usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
+\usepackage[hang,small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
 
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes,patterns}
@@ -767,14 +767,52 @@ while(!m_fiQueue.empty())
 
 Notice that in the call to \texttt{FrameImage} we are passing the remaining queue size as the \texttt{offset} parameter. Queue size represents how many frames ahead our program is relative to the GPU. Since we are sending past frame images we need to specify how many frames behind the images are. Of course if this would be a synchronous capture (without use of fences and with retrieval code after the capture setup), we would set \texttt{offset} to zero, as there would be no frame lag.
 
-You can see the performance boost you may expect in table~\ref{asynccapture}. The na\"ive capture performs synchronous retrieval of full screen image and resizes it using \emph{stb\_image\_resize}. The proper capture does things as described in this chapter.
+\subparagraph{High quality capture}
+
+The code above uses \texttt{glBlitFramebuffer} function, which can only use nearest neighbor filtering. This can result in low-quality screen shots, as shown on figure~\ref{lowqualityss}. With a bit more work it is possible to obtain much nicer looking screen shots, as presented on figure~\ref{highqualityss}. Unfortunately, you will need to setup a complete rendering pipeline for this to work.
+
+First, you need to allocate additional set of intermediate frame buffers and textures, sized the same as the screen. These new textures should have minification filter set to \texttt{GL\_LINEAR\_MIPMAP\_LINEAR}. You will also need to setup everything needed to render a full-screen quad: a simple texturing shader and vertex buffer with appropriate data. Since this vertex buffer will be used to render to the scaled-down framebuffer, you may prepare its contents beforehand and update it only when the aspect ratio would change.
+
+With all this done, the screen capture can be performed as follows:
+
+\begin{itemize}
+\item Setup vertex buffer configuration for the full-screen quad buffer (you only need position and uv~coordinates).
+\item Blit the screen contents to the full-sized framebuffer.
+\item Bind the texture backing the full-sized framebuffer.
+\item Generate mip-maps using \texttt{glGenerateMipmap}.
+\item Set viewport to represent the scaled-down image size.
+\item Bind vertex buffer data, shader, setup the required uniforms.
+\item Draw full-screen quad to the scaled-down framebuffer.
+\item Retrieve framebuffer contents, as in the code above.
+\item Restore viewport, vertex buffer configuration, bound textures, etc.
+\end{itemize}
+
+While this approach is much more complex than the previously discussed one, the resulting image quality increase makes it worth it.
+
+\begin{figure}[h]
+\centering
+\begin{minipage}{0.45\textwidth}
+\centering
+\includegraphics[width=0.9\textwidth]{images/screenshot-lo.png}
+\caption{Low-quality screen shot}
+\label{lowqualityss}
+\end{minipage}\hfill
+\begin{minipage}{0.45\textwidth}
+\centering
+\includegraphics[width=0.9\textwidth]{images/screenshot-hi.png}
+\caption{High-quality screen shot}
+\label{highqualityss}
+\end{minipage}
+\end{figure}
+
+You can see the performance results you may expect in a simple application in table~\ref{asynccapture}. The na\"ive capture performs synchronous retrieval of full screen image and resizes it using \emph{stb\_image\_resize}. The proper and high quality captures do things as described in this chapter.
 
 \begin{table}[h]
 \centering
-\begin{tabular}[h]{c|c|c}
-\textbf{Resolution} & \textbf{Na\"ive capture} & \textbf{Proper capture} \\ \hline
-$1280\times720$ & 80~FPS & 4200~FPS \\
-$2560\times1440$ & 23~FPS & 3300~FPS
+\begin{tabular}[h]{c|c|c|c}
+\textbf{Resolution} & \textbf{Na\"ive capture} & \textbf{Proper capture} & \textbf{High quality} \\ \hline
+$1280\times720$ & 80~FPS & 4200~FPS & 2800~FPS \\
+$2560\times1440$ & 23~FPS & 3300~FPS & 1600~FPS
 \end{tabular}
 \caption{Frame capture efficiency}
 \label{asynccapture}

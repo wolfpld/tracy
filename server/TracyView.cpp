@@ -11156,6 +11156,7 @@ void View::DrawStatistics()
         ImGui::NextColumn();
         ImGui::Separator();
 
+        const auto lastTime = m_worker.GetLastTime();
         for( auto& v : srcloc )
         {
             ImGui::PushID( v->first );
@@ -11193,7 +11194,12 @@ void View::DrawStatistics()
                 ImGui::Unindent( indentVal );
             }
             ImGui::NextColumn();
-            ImGui::TextUnformatted( TimeToString( m_statSelf ? v->second.selfTotal : v->second.total ) );
+            const auto time = m_statSelf ? v->second.selfTotal : v->second.total;
+            ImGui::TextUnformatted( TimeToString( time ) );
+            ImGui::SameLine();
+            char buf[64];
+            PrintStringPercent( buf, 100. * time / lastTime );
+            TextDisabledUnformatted( buf );
             ImGui::NextColumn();
             ImGui::TextUnformatted( RealToString( v->second.zones.size() ) );
             ImGui::NextColumn();

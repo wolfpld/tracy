@@ -11367,7 +11367,7 @@ void View::DrawStatistics()
 #endif
                     ImGui::SameLine();
                 }
-                if( v->first == 0 )
+                if( v->first == 0 || v->second.excl == 0 )
                 {
                     ImGui::TextUnformatted( name );
                 }

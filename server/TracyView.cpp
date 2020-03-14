@@ -13045,9 +13045,17 @@ void View::DrawPlayback()
     ImGui::Spacing();
     ImGui::SameLine();
     char buf[64];
-    auto ptr = PrintFloat( buf, buf+62, 100.f * fi->csz / ( size_t( fi->w ) * size_t( fi->h ) / 2 ), 2 );
-    memcpy( ptr, "%", 2 );
+    auto ptr = PrintFloat( buf, buf+62, 4.f * fi->csz / ( size_t( fi->w ) * size_t( fi->h ) / 2 ), 2 );
+    memcpy( ptr, " bpp", 5 );
     TextFocused( "Ratio:", buf );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ptr = PrintFloat( buf, buf+62, 100.f * fi->csz / ( size_t( fi->w ) * size_t( fi->h ) / 2 ), 2 );
+        memcpy( ptr, "%", 2 );
+        ImGui::TextUnformatted( buf );
+        ImGui::EndTooltip();
+    }
     ImGui::End();
 }
 

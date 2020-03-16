@@ -850,6 +850,24 @@ void View::DrawNotificationArea()
             if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawZones = true;
         }
     }
+#ifndef TRACY_NO_STATISTICS
+    if( !m_vd.ghostZones )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_GHOST );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "ghost" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Ghost zones are hidden." );
+            ImGui::EndTooltip();
+            if( ImGui::IsMouseClicked( 0 ) ) m_vd.ghostZones = true;
+        }
+    }
+#endif
     if( !m_vd.drawLocks )
     {
         ImGui::SameLine();

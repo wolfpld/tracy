@@ -7550,6 +7550,20 @@ void View::DrawOptions()
 #endif
     ImGui::Indent();
     m_vd.drawZones = val;
+
+#ifndef TRACY_NO_STATISTICS
+    if( m_worker.AreGhostZonesReady() && m_worker.GetGhostZonesCount() != 0 )
+    {
+        val = m_vd.ghostZones;
+#ifdef TRACY_EXTENDED_FONT
+        SmallCheckbox( ICON_FA_GHOST " Draw ghost zones", &val );
+#else
+        SmallCheckbox( "Draw ghost zones", &val );
+#endif
+        m_vd.ghostZones = val;
+    }
+#endif
+
     int ival = m_vd.dynamicColors;
 #ifdef TRACY_EXTENDED_FONT
     ImGui::TextUnformatted( ICON_FA_PALETTE " Zone colors" );

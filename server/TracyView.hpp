@@ -59,6 +59,7 @@ public:
     {
         bool visible = true;
         bool showFull = true;
+        bool ghost = false;
         int offset = 0;
         int height = 0;
     };

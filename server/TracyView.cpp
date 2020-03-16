@@ -2713,122 +2713,153 @@ void View::DrawZones()
             }
             DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), labelColor, txt );
 
-            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
+#ifndef TRACY_NO_STATISTICS
+            const bool hasGhostZones = showFull && m_worker.AreGhostZonesReady() && !v->ghostZones.empty();
+            float ghostSz;
+            if( hasGhostZones )
             {
-                m_drawThreadMigrations = v->id;
-                m_drawThreadHighlight = v->id;
-                ImGui::BeginTooltip();
-                SmallColorBox( GetThreadColor( v->id, 0 ) );
-                ImGui::SameLine();
-                ImGui::TextUnformatted( m_worker.GetThreadName( v->id ) );
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", RealToString( v->id ) );
-                if( crash.thread == v->id )
-                {
-                    ImGui::SameLine();
+                auto& vis = Vis( v );
+                const auto color = vis.ghost ? 0xFFAA9999 : 0x88AA7777;
 #ifdef TRACY_EXTENDED_FONT
-                    TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+                draw->AddText( wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), color, ICON_FA_GHOST );
+                ghostSz = ImGui::CalcTextSize( ICON_FA_GHOST ).x;
 #else
-                    TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+                draw->AddText( draw, wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), color, "ghost" );
+                ghostSz = ImGui::CalcTextSize( "ghost" ).x;
 #endif
-                }
+            }
+#endif
 
-                const auto ctx = m_worker.GetContextSwitchData( v->id );
-
-                ImGui::Separator();
-                int64_t first = std::numeric_limits<int64_t>::max();
-                int64_t last = -1;
-                if( ctx && !ctx->v.empty() )
+            if( hover )
+            {
+#ifndef TRACY_NO_STATISTICS
+                if( hasGhostZones && ImGui::IsMouseHoveringRect( wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), wpos + ImVec2( 1.5f * ty + txtsz.x + ghostSz, oldOffset + ty ) ) )
                 {
-                    const auto& back = ctx->v.back();
-                    first = ctx->v.begin()->Start();
-                    last = back.IsEndValid() ? back.End() : back.Start();
-                }
-                if( !v->timeline.empty() )
-                {
-                    if( v->timeline.is_magic() )
+                    if( ImGui::IsMouseClicked( 0 ) )
                     {
-                        auto& tl = *((Vector<ZoneEvent>*)&v->timeline);
-                        first = std::min( first, tl.front().Start() );
-                        last = std::max( last, m_worker.GetZoneEnd( tl.back() ) );
-                    }
-                    else
-                    {
-                        first = std::min( first, v->timeline.front()->Start() );
-                        last = std::max( last, m_worker.GetZoneEnd( *v->timeline.back() ) );
+                        auto& vis = Vis( v );
+                        vis.ghost = !vis.ghost;
                     }
                 }
-                if( !v->messages.empty() )
+                else
+#endif
+                if( ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
                 {
-                    first = std::min( first, v->messages.front()->time );
-                    last = std::max( last, v->messages.back()->time );
-                }
-                size_t lockCnt = 0;
-                for( const auto& lock : m_worker.GetLockMap() )
-                {
-                    const auto& lockmap = *lock.second;
-                    if( !lockmap.valid ) continue;
-                    auto it = lockmap.threadMap.find( v->id );
-                    if( it == lockmap.threadMap.end() ) continue;
-                    lockCnt++;
-                    const auto thread = it->second;
-                    auto lptr = lockmap.timeline.data();
-                    auto eptr = lptr + lockmap.timeline.size() - 1;
-                    while( lptr->ptr->thread != thread ) lptr++;
-                    if( lptr->ptr->Time() < first ) first = lptr->ptr->Time();
-                    while( eptr->ptr->thread != thread ) eptr--;
-                    if( eptr->ptr->Time() > last ) last = eptr->ptr->Time();
-                }
-
-                if( last >= 0 )
-                {
-                    const auto lifetime = last - first;
-                    const auto traceLen = m_worker.GetLastTime();
-
-                    TextFocused( "Appeared at", TimeToString( first ) );
-                    TextFocused( "Last event at", TimeToString( last ) );
-                    TextFocused( "Lifetime:", TimeToString( lifetime ) );
+                    m_drawThreadMigrations = v->id;
+                    m_drawThreadHighlight = v->id;
+                    ImGui::BeginTooltip();
+                    SmallColorBox( GetThreadColor( v->id, 0 ) );
                     ImGui::SameLine();
-                    char buf[64];
-                    PrintStringPercent( buf, lifetime / double( traceLen ) * 100 );
-                    TextDisabledUnformatted( buf );
+                    ImGui::TextUnformatted( m_worker.GetThreadName( v->id ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", RealToString( v->id ) );
+                    if( crash.thread == v->id )
+                    {
+                        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+                        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+#else
+                        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+#endif
+                    }
 
+                    const auto ctx = m_worker.GetContextSwitchData( v->id );
+
+                    ImGui::Separator();
+                    int64_t first = std::numeric_limits<int64_t>::max();
+                    int64_t last = -1;
+                    if( ctx && !ctx->v.empty() )
+                    {
+                        const auto& back = ctx->v.back();
+                        first = ctx->v.begin()->Start();
+                        last = back.IsEndValid() ? back.End() : back.Start();
+                    }
+                    if( !v->timeline.empty() )
+                    {
+                        if( v->timeline.is_magic() )
+                        {
+                            auto& tl = *((Vector<ZoneEvent>*)&v->timeline);
+                            first = std::min( first, tl.front().Start() );
+                            last = std::max( last, m_worker.GetZoneEnd( tl.back() ) );
+                        }
+                        else
+                        {
+                            first = std::min( first, v->timeline.front()->Start() );
+                            last = std::max( last, m_worker.GetZoneEnd( *v->timeline.back() ) );
+                        }
+                    }
+                    if( !v->messages.empty() )
+                    {
+                        first = std::min( first, v->messages.front()->time );
+                        last = std::max( last, v->messages.back()->time );
+                    }
+                    size_t lockCnt = 0;
+                    for( const auto& lock : m_worker.GetLockMap() )
+                    {
+                        const auto& lockmap = *lock.second;
+                        if( !lockmap.valid ) continue;
+                        auto it = lockmap.threadMap.find( v->id );
+                        if( it == lockmap.threadMap.end() ) continue;
+                        lockCnt++;
+                        const auto thread = it->second;
+                        auto lptr = lockmap.timeline.data();
+                        auto eptr = lptr + lockmap.timeline.size() - 1;
+                        while( lptr->ptr->thread != thread ) lptr++;
+                        if( lptr->ptr->Time() < first ) first = lptr->ptr->Time();
+                        while( eptr->ptr->thread != thread ) eptr--;
+                        if( eptr->ptr->Time() > last ) last = eptr->ptr->Time();
+                    }
+
+                    if( last >= 0 )
+                    {
+                        const auto lifetime = last - first;
+                        const auto traceLen = m_worker.GetLastTime();
+
+                        TextFocused( "Appeared at", TimeToString( first ) );
+                        TextFocused( "Last event at", TimeToString( last ) );
+                        TextFocused( "Lifetime:", TimeToString( lifetime ) );
+                        ImGui::SameLine();
+                        char buf[64];
+                        PrintStringPercent( buf, lifetime / double( traceLen ) * 100 );
+                        TextDisabledUnformatted( buf );
+
+                        if( ctx )
+                        {
+                            TextFocused( "Time in running state:", TimeToString( ctx->runningTime ) );
+                            ImGui::SameLine();
+                            PrintStringPercent( buf, ctx->runningTime / double( lifetime ) * 100 );
+                            TextDisabledUnformatted( buf );
+                        }
+                    }
+
+                    ImGui::Separator();
+                    if( !v->timeline.empty() )
+                    {
+                        TextFocused( "Zone count:", RealToString( v->count ) );
+                        TextFocused( "Top-level zones:", RealToString( v->timeline.size() ) );
+                    }
+                    if( !v->messages.empty() )
+                    {
+                        TextFocused( "Messages:", RealToString( v->messages.size() ) );
+                    }
+                    if( lockCnt != 0 )
+                    {
+                        TextFocused( "Locks:", RealToString( lockCnt ) );
+                    }
                     if( ctx )
                     {
-                        TextFocused( "Time in running state:", TimeToString( ctx->runningTime ) );
-                        ImGui::SameLine();
-                        PrintStringPercent( buf, ctx->runningTime / double( lifetime ) * 100 );
-                        TextDisabledUnformatted( buf );
+                        TextFocused( "Running state regions:", RealToString( ctx->v.size() ) );
                     }
-                }
+                    ImGui::EndTooltip();
 
-                ImGui::Separator();
-                if( !v->timeline.empty() )
-                {
-                    TextFocused( "Zone count:", RealToString( v->count ) );
-                    TextFocused( "Top-level zones:", RealToString( v->timeline.size() ) );
-                }
-                if( !v->messages.empty() )
-                {
-                    TextFocused( "Messages:", RealToString( v->messages.size() ) );
-                }
-                if( lockCnt != 0 )
-                {
-                    TextFocused( "Locks:", RealToString( lockCnt ) );
-                }
-                if( ctx )
-                {
-                    TextFocused( "Running state regions:", RealToString( ctx->v.size() ) );
-                }
-                ImGui::EndTooltip();
-
-                if( ImGui::IsMouseClicked( 0 ) )
-                {
-                    Vis( v ).showFull = !showFull;
-                }
-                if( last >= 0 && ImGui::IsMouseClicked( 2 ) )
-                {
-                    ZoomToRange( first, last );
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        Vis( v ).showFull = !showFull;
+                    }
+                    if( last >= 0 && ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( first, last );
+                    }
                 }
             }
         }

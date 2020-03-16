@@ -2850,6 +2850,10 @@ void View::DrawZones()
                     {
                         TextFocused( "Running state regions:", RealToString( ctx->v.size() ) );
                     }
+                    if( !v->samples.empty() )
+                    {
+                        TextFocused( "Call stack samples:", RealToString( v->samples.size() ) );
+                    }
                     ImGui::EndTooltip();
 
                     if( ImGui::IsMouseClicked( 0 ) )

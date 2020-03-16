@@ -7384,9 +7384,9 @@ void View::DrawOptions()
         ImGui::Indent();
         val = m_vd.darkenContextSwitches;
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::Checkbox( ICON_FA_MOON " Darken inactive threads", &val );
+        SmallCheckbox( ICON_FA_MOON " Darken inactive threads", &val );
 #else
-        ImGui::Checkbox( "Darken inactive threads", &val );
+        SmallCheckbox( "Darken inactive threads", &val );
 #endif
         m_vd.darkenContextSwitches = val;
         ImGui::Unindent();
@@ -7400,9 +7400,9 @@ void View::DrawOptions()
         ImGui::Indent();
         val = m_vd.drawCpuUsageGraph;
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::Checkbox( ICON_FA_SIGNATURE " Draw CPU usage graph", &val );
+        SmallCheckbox( ICON_FA_SIGNATURE " Draw CPU usage graph", &val );
 #else
-        ImGui::Checkbox( "Draw CPU usage graph", &val );
+        SmallCheckbox( "Draw CPU usage graph", &val );
 #endif
         m_vd.drawCpuUsageGraph = val;
         ImGui::Unindent();

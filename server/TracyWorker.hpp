@@ -464,6 +464,7 @@ public:
     const unordered_flat_map<uint64_t, SymbolStats>& GetSymbolStats() const { return m_data.symbolStats; }
     const SymbolStats* GetSymbolStats( uint64_t symAddr ) const;
     bool AreCallstackSamplesReady() const { return m_data.callstackSamplesReady; }
+    bool AreGhostZonesReady() const { return m_data.ghostZonesReady; }
 #endif
 
     tracy_force_inline uint16_t CompressThread( uint64_t thread ) { return m_data.localThreadCompress.CompressThread( thread ); }

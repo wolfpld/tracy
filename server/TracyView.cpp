@@ -2509,7 +2509,17 @@ void View::DrawZones()
         if( showFull )
         {
             const auto sampleOffset = offset;
-            if( m_vd.drawSamples && !v->samples.empty() ) offset += round( ostep * 0.5f );
+            if( m_vd.drawSamples && !v->samples.empty() )
+            {
+                if( m_vd.drawContextSwitches )
+                {
+                    offset += round( ostep * 0.5f );
+                }
+                else
+                {
+                    offset += round( ostep * 0.75f );
+                }
+            }
 
             const auto ctxOffset = offset;
             if( m_vd.drawContextSwitches ) offset += round( ostep * 0.75f );

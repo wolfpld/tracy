@@ -125,6 +125,11 @@ private:
     void DrawZones();
     void DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset );
     void DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset );
+#ifndef TRACY_NO_STATISTICS
+    int DispatchGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    int DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    int SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+#endif
     int DispatchZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
     template<typename Adapter, typename V>
     int DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );

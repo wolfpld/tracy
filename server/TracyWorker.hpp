@@ -447,6 +447,7 @@ public:
     tracy_force_inline const Vector<short_ptr<GpuEvent>>& GetGpuChildren( int32_t idx ) const { return m_data.gpuChildren[idx]; }
 #ifndef TRACY_NO_STATISTICS
     tracy_force_inline const Vector<GhostZone>& GetGhostChildren( int32_t idx ) const { return m_data.ghostChildren[idx]; }
+    tracy_force_inline const CallstackFrameId& GetGhostFrame( const Int24& frame ) const { return m_data.ghostFrames[frame.Val()]; }
 #endif
 
     tracy_force_inline const bool HasZoneExtra( const ZoneEvent& ev ) const { return ev.extra != 0; }

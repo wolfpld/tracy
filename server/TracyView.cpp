@@ -2544,7 +2544,16 @@ void View::DrawZones()
 
             if( m_vd.drawZones )
             {
-                depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, v->id );
+#ifndef TRACY_NO_STATISTICS
+                if( vis.ghost )
+                {
+                    depth = DispatchGhostLevel( v->ghostZones, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, v->id );
+                }
+                else
+#endif
+                {
+                    depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, v->id );
+                }
                 offset += ostep * depth;
             }
 
@@ -3374,6 +3383,188 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
         it = next;
     }
 }
+
+#ifndef TRACY_NO_STATISTICS
+int View::DispatchGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
+{
+    const auto ty = ImGui::GetFontSize();
+    const auto ostep = ty + 1;
+    const auto offset = _offset + ostep * depth;
+
+    const auto yPos = wpos.y + offset;
+    if( yPos + ostep >= yMin && yPos <= yMax )
+    {
+        return DrawGhostLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+    }
+    else
+    {
+        return SkipGhostLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
+    }
+}
+
+int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
+{
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
+    if( it == vec.end() ) return depth;
+
+    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.start.Val() < r; } );
+    if( it == zitend ) return depth;
+
+    const auto w = ImGui::GetWindowContentRegionWidth() - 1;
+    const auto ty = ImGui::GetFontSize();
+    const auto ostep = ty + 1;
+    const auto offset = _offset + ostep * depth;
+    auto draw = ImGui::GetWindowDrawList();
+
+    depth++;
+    int maxdepth = depth;
+
+    while( it < zitend )
+    {
+        auto& ev = *it;
+        const auto end = ev.end.Val();
+        const auto zsz = std::max( ( end - ev.start.Val() ) * pxns, pxns * 0.5 );
+        if( zsz < MinVisSize )
+        {
+            const auto px0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
+            auto px1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
+            auto rend = end;
+            auto nextTime = end + MinVisSize * nspx;
+            for(;;)
+            {
+                const auto prevIt = it;
+                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
+                if( it == prevIt ) ++it;
+                if( it == zitend ) break;
+                const auto nend = it->end.Val();
+                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
+                if( pxnext - px1 >= MinVisSize * 2 ) break;
+                px1 = pxnext;
+                rend = nend;
+                nextTime = nend + nspx;
+            }
+            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), 0xFF665555 );
+            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( 0xFF665555 ) );
+            if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ) ) )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Multiple ghost zones" );
+                ImGui::Separator();
+                TextFocused( "Execution time:", TimeToString( rend - ev.start.Val() ) );
+                ImGui::EndTooltip();
+
+                if( ImGui::IsMouseClicked( 2 ) && rend - ev.start.Val() > 0 )
+                {
+                    ZoomToRange( ev.start.Val(), rend );
+                }
+            }
+        }
+        else
+        {
+            const auto& ghostFrame = m_worker.GetGhostFrame( ev.frame );
+            const auto frame = m_worker.GetCallstackFrame( ghostFrame );
+            const auto pr0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
+            const auto pr1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
+            const auto px0 = std::max( pr0, -10.0 );
+            const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
+            const auto fsz = int( frame->size );
+            maxdepth = std::max( maxdepth, depth + fsz - 1 );
+
+            if( ev.child >= 0 )
+            {
+                const auto d = DispatchGhostLevel( m_worker.GetGhostChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth + fsz - 1, yMin, yMax, tid );
+                if( d > maxdepth ) maxdepth = d;
+            }
+
+            auto foff = offset;
+            for( int i=fsz-1; i>=0; i-- )
+            {
+                const auto isInline = i != fsz-1;
+                const auto outline = 0xFFBB9999;
+                const auto color = isInline ? 0xFF554444 : 0xFF665555;
+                const auto sym = m_worker.GetSymbolData( frame->data[i].symAddr );
+                const auto symName = m_worker.GetString( frame->data[i].name );
+                uint32_t txtColor = symName[0] == '[' ? 0xFF999999 : 0xFFFFFFFF;
+                const auto tsz = ImGui::CalcTextSize( symName );
+
+                draw->AddRectFilled( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ), color );
+                draw->AddRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ), outline, 0.f, -1 );
+
+                if( tsz.x < zsz )
+                {
+                    const auto x = ( ev.start.Val() - m_vd.zvStart ) * pxns + ( ( end - ev.start.Val() ) * pxns - tsz.x ) / 2;
+                    if( x < 0 || x > w - tsz.x )
+                    {
+                        ImGui::PushClipRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y * 2 ), true );
+                        DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), foff ), txtColor, symName );
+                        ImGui::PopClipRect();
+                    }
+                    else if( ev.start.Val() == ev.end.Val() )
+                    {
+                        DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, foff ), txtColor, symName );
+                    }
+                    else
+                    {
+                        DrawTextContrast( draw, wpos + ImVec2( x, foff ), txtColor, symName );
+                    }
+                }
+                else
+                {
+                    ImGui::PushClipRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y * 2 ), true );
+                    DrawTextContrast( draw, wpos + ImVec2( ( ev.start.Val() - m_vd.zvStart ) * pxns, foff ), txtColor, symName );
+                    ImGui::PopClipRect();
+                }
+
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( symName );
+                    if( isInline )
+                    {
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( "[inline]" );
+                    }
+                    if( sym ) TextFocused( "Image:", m_worker.GetString( sym->imageName ) );
+                    TextDisabledUnformatted( "Location:" );
+                    ImGui::SameLine();
+                    const auto file = m_worker.GetString( frame->data[i].file );
+                    const auto line = frame->data[i].line;
+                    ImGui::Text( "%s:%i", file, line );
+                    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                    ImGui::Separator();
+                    TextFocused( "Execution time:", TimeToString( ev.end.Val() - ev.start.Val() ) );
+                    ImGui::EndTooltip();
+
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        if( line != 0 )
+                        {
+                            SetTextEditorFile( file, line );
+                        }
+                    }
+                    else if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( ev.start.Val(), ev.end.Val() );
+                    }
+                }
+
+                foff += ostep;
+            }
+
+            ++it;
+        }
+    }
+
+    return maxdepth;
+}
+
+int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
+{
+    return depth;
+}
+#endif
 
 int View::DispatchZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {

@@ -3535,6 +3535,8 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                     const auto file = m_worker.GetString( frame->data[i].file );
                     const auto line = frame->data[i].line;
                     ImGui::Text( "%s:%i", file, line );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(0x%" PRIx64 ")", m_worker.GetCanonicalPointer( ghostFrame ) );
                     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%s)", RealToString( tid ) );

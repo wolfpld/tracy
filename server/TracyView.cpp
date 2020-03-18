@@ -3463,6 +3463,11 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         {
             const auto& ghostFrame = m_worker.GetGhostFrame( ev.frame );
             const auto frame = m_worker.GetCallstackFrame( ghostFrame );
+            if( !frame )
+            {
+                ++it;
+                continue;
+            }
             const auto pr0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
             const auto pr1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );

@@ -3392,7 +3392,8 @@ int View::DispatchGhostLevel( const Vector<GhostZone>& vec, bool hover, double p
     const auto offset = _offset + ostep * depth;
 
     const auto yPos = wpos.y + offset;
-    if( yPos + ostep >= yMin && yPos <= yMax )
+    // Inline frames have to be taken into account, hence the multiply by 16 (arbitrary limit for inline frames in client)
+    if( yPos + 16 * ostep >= yMin && yPos <= yMax )
     {
         return DrawGhostLevel( vec, hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
     }
@@ -3569,7 +3570,60 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
 
 int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int _offset, int depth, float yMin, float yMax, uint64_t tid )
 {
-    return depth;
+    auto it = std::lower_bound( vec.begin(), vec.end(), std::max<int64_t>( 0, m_vd.zvStart ), [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
+    if( it == vec.end() ) return depth;
+
+    const auto zitend = std::lower_bound( it, vec.end(), m_vd.zvEnd, [] ( const auto& l, const auto& r ) { return l.start.Val() < r; } );
+    if( it == zitend ) return depth;
+
+    depth++;
+    int maxdepth = depth;
+
+    while( it < zitend )
+    {
+        auto& ev = *it;
+        const auto end = ev.end.Val();
+        const auto zsz = std::max( ( end - ev.start.Val() ) * pxns, pxns * 0.5 );
+        if( zsz < MinVisSize )
+        {
+            auto px1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
+            auto rend = end;
+            auto nextTime = end + MinVisSize * nspx;
+            for(;;)
+            {
+                const auto prevIt = it;
+                it = std::lower_bound( it, zitend, nextTime, [] ( const auto& l, const auto& r ) { return l.end.Val() < r; } );
+                if( it == prevIt ) ++it;
+                if( it == zitend ) break;
+                const auto nend = it->end.Val();
+                const auto pxnext = ( nend - m_vd.zvStart ) * pxns;
+                if( pxnext - px1 >= MinVisSize * 2 ) break;
+                px1 = pxnext;
+                rend = nend;
+                nextTime = nend + nspx;
+            }
+        }
+        else
+        {
+            const auto& ghostFrame = m_worker.GetGhostFrame( ev.frame );
+            const auto frame = m_worker.GetCallstackFrame( ghostFrame );
+            if( !frame )
+            {
+                ++it;
+                continue;
+            }
+            const auto fsz = int( frame->size );
+            maxdepth = std::max( maxdepth, depth + fsz - 1 );
+            if( ev.child >= 0 )
+            {
+                const auto d = DispatchGhostLevel( m_worker.GetGhostChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth + fsz - 1, yMin, yMax, tid );
+                if( d > maxdepth ) maxdepth = d;
+            }
+            ++it;
+        }
+    }
+
+    return maxdepth;
 }
 #endif
 

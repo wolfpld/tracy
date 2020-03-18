@@ -2545,7 +2545,7 @@ void View::DrawZones()
             if( m_vd.drawZones )
             {
 #ifndef TRACY_NO_STATISTICS
-                if( vis.ghost )
+                if( vis.ghost || ( m_vd.ghostZones && v->timeline.empty() ) )
                 {
                     depth = DispatchGhostLevel( v->ghostZones, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, v->id );
                 }
@@ -2725,7 +2725,7 @@ void View::DrawZones()
 #ifndef TRACY_NO_STATISTICS
             const bool hasGhostZones = showFull && m_worker.AreGhostZonesReady() && !v->ghostZones.empty();
             float ghostSz;
-            if( hasGhostZones )
+            if( hasGhostZones && !v->timeline.empty() )
             {
                 auto& vis = Vis( v );
                 const auto color = vis.ghost ? 0xFFAA9999 : 0x88AA7777;
@@ -2742,7 +2742,7 @@ void View::DrawZones()
             if( hover )
             {
 #ifndef TRACY_NO_STATISTICS
-                if( hasGhostZones && ImGui::IsMouseHoveringRect( wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), wpos + ImVec2( 1.5f * ty + txtsz.x + ghostSz, oldOffset + ty ) ) )
+                if( hasGhostZones && !v->timeline.empty() && ImGui::IsMouseHoveringRect( wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), wpos + ImVec2( 1.5f * ty + txtsz.x + ghostSz, oldOffset + ty ) ) )
                 {
                     if( ImGui::IsMouseClicked( 0 ) )
                     {

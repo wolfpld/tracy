@@ -1668,16 +1668,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         m_backgroundDone.store( false, std::memory_order_relaxed );
 #ifndef TRACY_NO_STATISTICS
         m_threadBackground = std::thread( [this, reconstructMemAllocPlot, eventMask] {
+            std::vector<std::thread> jobs;
+
             if( !m_data.ctxSwitch.empty() )
             {
-                ReconstructContextSwitchUsage();
-                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                jobs.emplace_back( std::thread( [this] { ReconstructContextSwitchUsage(); } ) );
             }
 
             if( reconstructMemAllocPlot )
             {
-                ReconstructMemAllocPlot();
-                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                jobs.emplace_back( std::thread( [this] { ReconstructMemAllocPlot(); } ) );
             }
 
             std::function<void(Vector<short_ptr<ZoneEvent>>&, uint16_t)> ProcessTimeline;
@@ -1693,15 +1693,146 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 }
             };
 
-            for( auto& t : m_data.threads )
-            {
-                if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-                if( !t->timeline.empty() )
+            jobs.emplace_back( std::thread( [this, ProcessTimeline] {
+                for( auto& t : m_data.threads )
                 {
-                    // Don't touch thread compression cache in a thread.
-                    ProcessTimeline( t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
+                    if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                    if( !t->timeline.empty() )
+                    {
+                        // Don't touch thread compression cache in a thread.
+                        ProcessTimeline( t->timeline, m_data.localThreadCompress.DecompressMustRaw( t->id ) );
+                    }
                 }
+            } ) );
+
+            if( eventMask & EventType::Samples )
+            {
+                jobs.emplace_back( std::thread( [this] {
+                    unordered_flat_map<uint32_t, uint32_t> counts;
+                    uint32_t total = 0;
+                    for( auto& t : m_data.threads ) total += t->samples.size();
+                    if( total != 0 )
+                    {
+                        for( auto& t : m_data.threads )
+                        {
+                            if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                            for( auto& sd : t->samples )
+                            {
+                                const auto cs = sd.callstack.Val();
+                                auto it = counts.find( cs );
+                                if( it == counts.end() )
+                                {
+                                    counts.emplace( cs, 1 );
+                                }
+                                else
+                                {
+                                    it->second++;
+                                }
+                            }
+                        }
+                        for( auto& v : counts ) UpdateSampleStatistics( v.first, v.second, false );
+                    }
+                    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                    m_data.callstackSamplesReady = true;
+                } ) );
+
+                jobs.emplace_back( std::thread( [this] {
+                    uint32_t gcnt = 0;
+                    for( auto& t : m_data.threads )
+                    {
+                        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+                        for( auto& sd : t->samples )
+                        {
+                            const auto& cs = GetCallstack( sd.callstack.Val() );
+                            const auto time = sd.time.Val();
+                            auto vec = &t->ghostZones;
+
+                            auto idx = cs.size() - 1;
+                            do
+                            {
+                                auto& entry = cs[idx];
+                                uint32_t fid;
+                                auto it = m_data.ghostFramesMap.find( entry.data );
+                                if( it == m_data.ghostFramesMap.end() )
+                                {
+                                    fid = uint32_t( m_data.ghostFrames.size() );
+                                    m_data.ghostFrames.push_back( entry );
+                                    m_data.ghostFramesMap.emplace( entry.data, fid );
+                                }
+                                else
+                                {
+                                    fid = it->second;
+                                }
+                                if( vec->empty() )
+                                {
+                                    gcnt++;
+                                    auto& zone = vec->push_next();
+                                    zone.start.SetVal( time );
+                                    zone.end.SetVal( time + m_samplingPeriod );
+                                    zone.frame.SetVal( fid );
+                                    zone.child = -1;
+                                }
+                                else
+                                {
+                                    auto& back = vec->back();
+                                    const auto backFrame = GetCallstackFrame( m_data.ghostFrames[back.frame.Val()] );
+                                    const auto thisFrame = GetCallstackFrame( entry );
+                                    bool match = false;
+                                    if( backFrame && thisFrame )
+                                    {
+                                        match = backFrame->size == thisFrame->size;
+                                        if( match )
+                                        {
+                                            for( uint8_t i=0; i<thisFrame->size; i++ )
+                                            {
+                                                if( backFrame->data[i].symAddr != thisFrame->data[i].symAddr )
+                                                {
+                                                    match = false;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if( match )
+                                    {
+                                        back.end.SetVal( time + m_samplingPeriod );
+                                    }
+                                    else
+                                    {
+                                        gcnt++;
+                                        back.end.SetVal( time );
+                                        auto& zone = vec->push_next();
+                                        zone.start.SetVal( time );
+                                        zone.end.SetVal( time + m_samplingPeriod );
+                                        zone.frame.SetVal( fid );
+                                        zone.child = -1;
+                                    }
+                                }
+                                if( idx > 0 )
+                                {
+                                    auto& zone = vec->back();
+                                    if( zone.child < 0 )
+                                    {
+                                        zone.child = m_data.ghostChildren.size();
+                                        vec = &m_data.ghostChildren.push_next();
+                                    }
+                                    else
+                                    {
+                                        vec = &m_data.ghostChildren[zone.child];
+                                    }
+                                }
+                            }
+                            while( idx-- > 0 );
+                        }
+                    }
+                    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                    m_data.ghostZonesReady = true;
+                    m_data.ghostCnt = gcnt;
+                } ) );
             }
+
+            for( auto& job : jobs ) job.join();
+
             for( auto& v : m_data.sourceLocationZones )
             {
                 if( m_shutdown.load( std::memory_order_relaxed ) ) return;
@@ -1715,132 +1846,6 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             {
                 std::lock_guard<std::shared_mutex> lock( m_data.lock );
                 m_data.sourceLocationZonesReady = true;
-            }
-
-            if( eventMask & EventType::Samples )
-            {
-                unordered_flat_map<uint32_t, uint32_t> counts;
-                uint32_t total = 0;
-                for( auto& t : m_data.threads ) total += t->samples.size();
-                if( total != 0 )
-                {
-                    for( auto& t : m_data.threads )
-                    {
-                        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-                        for( auto& sd : t->samples )
-                        {
-                            const auto cs = sd.callstack.Val();
-                            auto it = counts.find( cs );
-                            if( it == counts.end() )
-                            {
-                                counts.emplace( cs, 1 );
-                            }
-                            else
-                            {
-                                it->second++;
-                            }
-                        }
-                    }
-                    for( auto& v : counts ) UpdateSampleStatistics( v.first, v.second, false );
-                }
-
-                {
-                    std::lock_guard<std::shared_mutex> lock( m_data.lock );
-                    m_data.callstackSamplesReady = true;
-                }
-
-                uint32_t gcnt = 0;
-                for( auto& t : m_data.threads )
-                {
-                    if( m_shutdown.load( std::memory_order_relaxed ) ) return;
-                    for( auto& sd : t->samples )
-                    {
-                        const auto& cs = GetCallstack( sd.callstack.Val() );
-                        const auto time = sd.time.Val();
-                        auto vec = &t->ghostZones;
-
-                        auto idx = cs.size() - 1;
-                        do
-                        {
-                            auto& entry = cs[idx];
-                            uint32_t fid;
-                            auto it = m_data.ghostFramesMap.find( entry.data );
-                            if( it == m_data.ghostFramesMap.end() )
-                            {
-                                fid = uint32_t( m_data.ghostFrames.size() );
-                                m_data.ghostFrames.push_back( entry );
-                                m_data.ghostFramesMap.emplace( entry.data, fid );
-                            }
-                            else
-                            {
-                                fid = it->second;
-                            }
-                            if( vec->empty() )
-                            {
-                                gcnt++;
-                                auto& zone = vec->push_next();
-                                zone.start.SetVal( time );
-                                zone.end.SetVal( time + m_samplingPeriod );
-                                zone.frame.SetVal( fid );
-                                zone.child = -1;
-                            }
-                            else
-                            {
-                                auto& back = vec->back();
-                                const auto backFrame = GetCallstackFrame( m_data.ghostFrames[back.frame.Val()] );
-                                const auto thisFrame = GetCallstackFrame( entry );
-                                bool match = false;
-                                if( backFrame && thisFrame )
-                                {
-                                    match = backFrame->size == thisFrame->size;
-                                    if( match )
-                                    {
-                                        for( uint8_t i=0; i<thisFrame->size; i++ )
-                                        {
-                                            if( backFrame->data[i].symAddr != thisFrame->data[i].symAddr )
-                                            {
-                                                match = false;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                if( match )
-                                {
-                                    back.end.SetVal( time + m_samplingPeriod );
-                                }
-                                else
-                                {
-                                    gcnt++;
-                                    back.end.SetVal( time );
-                                    auto& zone = vec->push_next();
-                                    zone.start.SetVal( time );
-                                    zone.end.SetVal( time + m_samplingPeriod );
-                                    zone.frame.SetVal( fid );
-                                    zone.child = -1;
-                                }
-                            }
-                            if( idx > 0 )
-                            {
-                                auto& zone = vec->back();
-                                if( zone.child < 0 )
-                                {
-                                    zone.child = m_data.ghostChildren.size();
-                                    vec = &m_data.ghostChildren.push_next();
-                                }
-                                else
-                                {
-                                    vec = &m_data.ghostChildren[zone.child];
-                                }
-                            }
-                        }
-                        while( idx-- > 0 );
-                    }
-                }
-
-                std::lock_guard<std::shared_mutex> lock( m_data.lock );
-                m_data.ghostZonesReady = true;
-                m_data.ghostCnt = gcnt;
             }
 
             m_backgroundDone.store( true, std::memory_order_relaxed );

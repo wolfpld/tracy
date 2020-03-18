@@ -1800,7 +1800,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                     else
                                     {
                                         gcnt++;
-                                        back.end.SetVal( time );
+                                        auto ptr = &back;
+                                        for(;;)
+                                        {
+                                            ptr->end.SetVal( time );
+                                            if( ptr->child < 0 ) break;
+                                            ptr = &GetGhostChildrenMutable( ptr->child ).back();
+                                        }
                                         auto& zone = vec->push_next();
                                         zone.start.SetVal( time );
                                         zone.end.SetVal( time + m_samplingPeriod );

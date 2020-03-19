@@ -99,13 +99,13 @@
 
 \section{A quick look at Tracy Profiler}
 
-Tracy is a real-time, nanosecond resolution \emph{frame profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
+Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
 
-While Tracy can perform statistical analysis of sampled call stack data, just like other \emph{statistical profilers} (such as VTune, perf or Very Sleepy), it mainly focuses on manual markup of the source code, which allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it is unable to pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
+While Tracy can perform statistical analysis of sampled call stack data, just like other \emph{statistical profilers} (such as VTune, perf or Very Sleepy), it mainly focuses on manual markup of the source code, which allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it is unable to accurately pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 
-Even though Tracy is a \emph{frame} profiler, with the emphasis on analysis of \emph{frame time} in real-time applications (i.e.~games), it does work with utilities that do not employ the concept of a frame. There's nothing that would prohibit profiling of, for example, a compression tool, or an event-driven UI application.
+Even though Tracy targets \emph{frame} profiling, with the emphasis on analysis of \emph{frame time} in real-time applications (i.e.~games), it does work with utilities that do not employ the concept of a frame. There's nothing that would prohibit profiling of, for example, a compression tool, or an event-driven UI application.
 
-The close analogues of Tracy are: RAD Telemetry, Optick, microprofile.
+You may think of Tracy as the RAD Telemetry plus Intel VTune, on overdrive.
 
 \subsection{Real-time}
 
@@ -237,6 +237,7 @@ You may wonder, why should you use Tracy, when there are so many other profilers
 \item Tracy uses low-level kernel APIs, or even raw assembly, where other profilers rely on layers of abstraction.
 \item Tracy is multi-platform right from the very beginning. Both on the client and server side. Other profilers tend to have Windows-specific graphical interfaces.
 \item Tracy can handle millions of frames, zones, memory events, and so on, while other profilers tend to target very short captures.
+\item Tracy doesn't require manual markup of interesting areas in your code to start profiling. You may rely on automated call stack sampling and add instrumentation later, when you know where it's needed.
 \end{itemize}
 
 With all that being said, Tracy may not be the right choice for you, if you need to profile games targetting PS4, Xbox, or other consoles behind a NDA wall.
@@ -595,9 +596,9 @@ On MSVC the debugger has priority over the application in handling exceptions. I
 \section{Client markup}
 \label{client}
 
-With the aforementioned steps you will be able to connect to the profiled program, but there won't be any data collection performed\footnote{With some small exceptions, see section~\ref{automated}.}. In order to begin profiling, Tracy requires that you manually instrument the application\footnote{Automatic tracing of every entered function is not feasible due to the amount of data that would generate.}. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
+With the aforementioned steps you will be able to connect to the profiled program, but there probably won't be any data collection performed\footnote{With some small exceptions, see section~\ref{automated}.}. Unless you're able to perform automatic call stack sampling (see chapter~\ref{sampling}), you will have to manually instrument the application. All the user-facing interface is contained in the \texttt{tracy/Tracy.hpp} header file.
 
-The best way to start is to add markup to the main loop of the application, along with a few function that are called there. This will give you a rough outline of the function's time cost, which you may then further refine by instrumenting functions deeper in the call stack.
+Manual instrumentation is best started with adding markup to the main loop of the application, along with a few function that are called there. This will give you a rough outline of the function's time cost, which you may then further refine by instrumenting functions deeper in the call stack. Alternatively, automated sampling might guide you more quickly to places of interest.
 
 \subsection{Handling text strings}
 
@@ -1754,6 +1755,7 @@ If drawing of timeline elements was disabled in the options menu (section~\ref{o
 \item \faMicrochip{} -- CPU zones are hidden.
 \item \faLock{} -- Locks are hidden.
 \item \faSignature{} -- Plots are hidden.
+\item \faGhost{} -- Ghost zones are not displayed.
 \item \faLowVision{} -- At least one timeline item (e.g. a single thread, a single plot, a single lock, etc.) is hidden.
 \end{itemize}
 
@@ -1955,7 +1957,7 @@ On this combined view you will find the zones with locks and their associated th
 \draw[pattern=crosshatch dots] (3.1, -2.5) rectangle+(2.5, -0.5);
 
 \draw(0, -3.65) -- (0.2, -3.65) -- (0.1, -3.85) -- (0, -3.65);
-\draw(0.25, -3.5) node[anchor=north west] {Streaming thread};
+\draw(0.25, -3.5) node[anchor=north west] {Streaming thread \faGhost};
 \draw[densely dotted] (0, -4) -- +(15, 0);
 
 \draw[thick] (0, -4.25) -- (6.1, -4.25);
@@ -1978,7 +1980,7 @@ The left hand side \emph{index area} of the timeline view displays various label
 \begin{itemize}
 \item \emph{Light blue label} -- OpenGL/Vulkan context. Multi-threaded Vulkan contexts are additionally split into separate threads.
 \item \emph{Pink label} -- CPU data graph.
-\item \emph{White label} -- A CPU thread. Will be replaced by a bright red label in a thread that has crashed (section~\ref{crashhandling}).
+\item \emph{White label} -- A CPU thread. Will be replaced by a bright red label in a thread that has crashed (section~\ref{crashhandling}). If automated sampling was performed, clicking the~\LMB{}~left mouse button on the \emph{\faGhost{}~ghost zones} button will switch zone display mode between 'instrumented' and 'ghost'.
 \item \emph{Light red label} -- Indicates a lock.
 \item \emph{Yellow label} -- Plot.
 \end{itemize}
@@ -2014,6 +2016,16 @@ At high zoom levels, the zones will be displayed with additional markers, as pre
 The GPU zones are displayed just like CPU zones, with an OpenGL/Vulkan context in place of a thread name.
 
 Hovering the \faMousePointer{} mouse pointer over a zone will highlight all other zones that have the same source location with a white outline. Clicking the \LMB{}~left mouse button on a zone will open zone information window (section~\ref{zoneinfo}). Holding the \keys{\ctrl} key and clicking the \LMB{}~left mouse button on a zone will open zone statistics window (section~\ref{findzone}). Clicking the \MMB{}~middle mouse button on a zone will zoom the view to the extent of the zone.
+
+\subparagraph{Ghost zones}
+
+Display of ghost zones (not pictured on figure~\ref{zoneslocks}, but similar to normal zones view) can be enabled by clicking on the \emph{\faGhost{}~ghost zones} icon next to thread label, if automated sampling (see chapter~\ref{sampling}) was performed. Ghost zones will also be displayed by default, if no instrumented zones are available for a given thread.
+
+Ghost zones represent true function calls in the program, periodically reported by the operating system. Due to the limited resolution of sampling, you need to take great care when looking at reported timing data. While it may be apparent that some small function requires a relatively long time to execute, for example 125~\si{\micro\second} (8~kHz~sampling rate), in reality this time represents a period between taking two distinct samples, not the actual function run time.
+
+Another common pitfall to watch for is the order of presented functions. \emph{It is not what you expect it to be!} Read chapter~\ref{readingcallstacks} for a critical insight on how call stacks might seem nonsensical at first, and why they aren't.
+
+The available information about ghost zones is quite limited, but it's enough to give you a rough outlook on the execution of your application. The timeline view alone is more than any other statistical profiler is able to present. In addition to that, Tracy properly handles inlined function calls, which are indicated by darker colored ghost zones.
 
 \subparagraph{Call stack samples}
 
@@ -2126,11 +2138,17 @@ In this window you can set various trace-related options. The timeline view migh
 \begin{itemize}
 \item \emph{\faExpand{} Draw empty labels} -- By default threads that don't have anything to display at the current zoom level are hidden. Enabling this option will show them anyway.
 \item \emph{\faHiking{} Draw context switches} -- Allows disabling context switch display in threads.
+\begin{itemize}
 \item \emph{\faMoon{} Darken inactive thread} -- If enabled, inactive regions in threads will be dimmed out.
+\end{itemize}
 \item \emph{\faSlidersH{} Draw CPU data} -- Per-CPU behavior graph can be disabled here.
+\begin{itemize}
 \item \emph{\faSignature{} Draw CPU usage graph} -- You can disable drawing of the CPU usage graph here.
+\end{itemize}
 \item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
 \item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed.
+\begin{itemize}
+\item \emph{\faGhost{} Draw ghost zones} -- Controls if ghost zones should be displayed in threads which don't have any instrumented zones available.
 \item \emph{\faPalette{} Zone colors} -- Zones with no user-set color may be colored according to the following schemes:
 \begin{itemize}
 \item \emph{Disabled} -- A constant color (blue) will be used.
@@ -2142,6 +2160,7 @@ In this window you can set various trace-related options. The timeline view migh
 \item \emph{Full} -- Zone names are always fully displayed (e.g.\ \texttt{std::sort}).
 \item \emph{Shortened} -- Namespaces are shortened to one letter (e.g.\ \texttt{s::sort}).
 \item \emph{None} -- Namespaces are completely omitted (e.g.\ \texttt{sort}).
+\end{itemize}
 \end{itemize}
 \item \emph{\faLock{} Draw locks} -- Controls the display of locks. If the \emph{Only contended} option is selected, the non-blocking regions of locks won't be displayed (see section~\ref{zoneslocksplots}). The \emph{Locks} drop-down allows disabling display of locks on a per-lock basis. As a convenience, the list of locks is split into the single-threaded and multi-threaded (contended and uncontended) categories. Clicking the \RMB{}~right mouse button on a lock label opens the lock information window (section~\ref{lockwindow}).
 \item \emph{\faSignature{} Draw plots} -- Allows disabling display of plots. Individual plots can be disabled in the \emph{Plots} drop-down.
@@ -2530,6 +2549,7 @@ In some cases it may be not possible to properly decode stack frame address. Suc
 If the displayed call stack is a sampled call stack (chapter~\ref{sampling}), an additional button will be available, \emph{\faDoorOpen{}~Global entry statistics}. Clicking it will open the call stack sample parents window (chapter~\ref{sampleparents}) for the current call stack.
 
 \subsubsection{Reading call stacks}
+\label{readingcallstacks}
 
 You need to take special care when reading call stacks. Contrary to their name, call stacks do not show \emph{function call stacks}, but rather \emph{function return stacks}. This might be a bit confusing at first, but this is how programs do work. Consider the following source code:
 
@@ -2685,33 +2705,33 @@ User settings are never pruned by the profiler.
 
 \section{Inventory of external libraries}
 
-The following libraries are included with and used by the Tracy Profiler:
+The following libraries are included with and used by the Tracy Profiler. Entries marked with a \faStar{}~icon are used in the client code.
 
 \begin{itemize}
 \item 3-clause BSD license
 \begin{itemize}
 \item getopt\_port -- \url{https://github.com/kimgr/getopt\_port}
-\item libbacktrace -- \url{https://github.com/ianlancetaylor/libbacktrace}
+\item libbacktrace \faStar{} -- \url{https://github.com/ianlancetaylor/libbacktrace}
 \item Zstandard -- \url{https://github.com/facebook/zstd}
 \end{itemize}
 
 \item 2-clause BSD license
 \begin{itemize}
-\item concurrentqueue -- \url{https://github.com/cameron314/concurrentqueue}
-\item LZ4 -- \url{https://github.com/lz4/lz4}
+\item concurrentqueue \faStar{} -- \url{https://github.com/cameron314/concurrentqueue}
+\item LZ4 \faStar{} -- \url{https://github.com/lz4/lz4}
 \item xxHash -- \url{https://github.com/Cyan4973/xxHash}
 \end{itemize}
 
 \item Public domain
 \begin{itemize}
-\item rpmalloc -- \url{https://github.com/rampantpixels/rpmalloc}
+\item rpmalloc \faStar{} -- \url{https://github.com/rampantpixels/rpmalloc}
 \item gl3w -- \url{https://github.com/skaslev/gl3w}
 \item stb\_image -- \url{https://github.com/nothings/stb}
 \end{itemize}
 
 \item zlib license
 \begin{itemize}
-\item benaphore -- \url{https://github.com/preshing/cpp11-on-multicore}
+\item benaphore \faStar{} -- \url{https://github.com/preshing/cpp11-on-multicore}
 \item Native File Dialog -- \url{https://github.com/mlabbe/nativefiledialog}
 \item GLFW -- \url{https://github.com/glfw/glfw}
 \item IconFontCppHeaders -- \url{https://github.com/juliettef/IconFontCppHeaders}

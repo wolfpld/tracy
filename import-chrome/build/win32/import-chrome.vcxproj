@@ -175,10 +175,8 @@
     <ClInclude Include="..\..\..\common\TracyQueue.hpp" />
     <ClInclude Include="..\..\..\common\TracySocket.hpp" />
     <ClInclude Include="..\..\..\common\TracySystem.hpp" />
-    <ClInclude Include="..\..\..\common\tracy_benaphore.h" />
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp" />
-    <ClInclude Include="..\..\..\common\tracy_sema.h" />
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp" />
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileRead.hpp" />

@@ -185,12 +185,6 @@
     <ClInclude Include="..\..\..\common\TracyAlign.hpp">
       <Filter>common</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\common\tracy_benaphore.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\tracy_sema.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp">
       <Filter>common</Filter>
     </ClInclude>

@@ -10,15 +10,6 @@ namespace tracy
 using TracyMutex = std::shared_mutex;
 }
 
-#elif defined __CYGWIN__
-
-#include "tracy_benaphore.h"
-
-namespace tracy
-{
-using TracyMutex = NonRecursiveBenaphore;
-}
-
 #else
 
 #include <mutex>

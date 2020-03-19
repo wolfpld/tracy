@@ -326,12 +326,6 @@
     <ClInclude Include="..\..\src\imgui_impl_opengl3.h">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\common\tracy_benaphore.h">
-      <Filter>common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\common\tracy_sema.h">
-      <Filter>common</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>

@@ -114,6 +114,7 @@ public:
     tracy_force_inline void push_back_non_empty( const T& v )
     {
         assert( m_capacity != MaxCapacity() );
+        assert( m_ptr );
         if( m_size == CapacityNoNullptrCheck() ) AllocMore();
         new(m_ptr+m_size) T( v );
         m_size++;
@@ -139,6 +140,15 @@ public:
     {
         assert( m_capacity != MaxCapacity() );
         if( m_size == Capacity() ) AllocMore();
+        new(m_ptr+m_size) T();
+        return m_ptr[m_size++];
+    }
+
+    tracy_force_inline T& push_next_non_empty()
+    {
+        assert( m_capacity != MaxCapacity() );
+        assert( m_ptr );
+        if( m_size == CapacityNoNullptrCheck() ) AllocMore();
         new(m_ptr+m_size) T();
         return m_ptr[m_size++];
     }

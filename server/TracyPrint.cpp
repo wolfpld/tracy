@@ -69,6 +69,27 @@ static inline void PrintSmallInt( char*& buf, uint64_t v )
     *buf++ = '0' + v%10;
 }
 
+static inline void PrintSmallInt0( char*& buf, uint64_t v )
+{
+    assert( v < 1000 );
+    if( v >= 100 )
+    {
+        memcpy( buf, IntTable100 + v/10*2, 2 );
+        buf += 2;
+    }
+    else if( v >= 10 )
+    {
+        *buf++ = '0';
+        *buf++ = '0' + v/10;
+    }
+    else
+    {
+        memcpy( buf, "00", 2 );
+        buf += 2;
+    }
+    *buf++ = '0' + v%10;
+}
+
 static inline void PrintFrac00( char*& buf, uint64_t v )
 {
     *buf++ = '.';
@@ -283,24 +304,34 @@ const char* TimeToStringExact( int64_t _ns )
         if( buf != numStart ) *buf++ = ' ';
         if( ns >= 1000ll * 1000 )
         {
-            PrintSmallInt( buf, int64_t( ns / ( 1000ll * 1000 ) ) );
+            PrintSmallInt0( buf, int64_t( ns / ( 1000ll * 1000 ) ) );
             *buf++ = ',';
             ns %= 1000ll * 1000;
         }
+        else
+        {
+            memcpy( buf, "000,", 4 );
+            buf += 4;
+        }
         if( ns >= 1000ll )
         {
-            PrintSmallInt( buf, int64_t( ns / 1000ll ) );
+            PrintSmallInt0( buf, int64_t( ns / 1000ll ) );
             *buf++ = ',';
             ns %= 1000ll;
         }
-        PrintSmallInt( buf, ns );
+        else
+        {
+            memcpy( buf, "000,", 4 );
+            buf += 4;
+        }
+        PrintSmallInt0( buf, ns );
         *buf++ = 'n';
         *buf++ = 's';
     }
     else
     {
-        memcpy( buf, "0ns", 3 );
-        buf += 3;
+        memcpy( buf, "000,000,000ns", 13 );
+        buf += 13;
     }
 
     *buf++ = '\0';

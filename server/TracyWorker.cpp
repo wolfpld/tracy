@@ -4893,26 +4893,8 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     }
     else
     {
-        if( td->samples.back().time.Val() < t )
-        {
-            td->samples.push_back_non_empty( sd );
-        }
-        else if( td->samples.back().time.Val() == t )
-        {
-            td->samples.back() = sd;
-        }
-        else
-        {
-            const auto it = std::lower_bound( td->samples.begin(), td->samples.end(), t, [] ( const auto& l, const auto& r ) { return l.time.Val() < r; } );
-            if( it->time.Val() == t )
-            {
-                *it = sd;
-            }
-            else
-            {
-                td->samples.insert( it, sd );
-            }
-        }
+        assert( td->samples.back().time.Val() < t );
+        td->samples.push_back_non_empty( sd );
     }
 
 #ifndef TRACY_NO_STATISTICS

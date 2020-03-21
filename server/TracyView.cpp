@@ -2545,7 +2545,7 @@ void View::DrawZones()
             if( m_vd.drawZones )
             {
 #ifndef TRACY_NO_STATISTICS
-                if( vis.ghost || ( m_vd.ghostZones && v->timeline.empty() ) )
+                if( m_worker.AreGhostZonesReady() && ( vis.ghost || ( m_vd.ghostZones && v->timeline.empty() ) ) )
                 {
                     depth = DispatchGhostLevel( v->ghostZones, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax, v->id );
                 }

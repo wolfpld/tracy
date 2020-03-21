@@ -4898,6 +4898,93 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     }
 
 #ifndef TRACY_NO_STATISTICS
+    int gcnt = 0;
+    const auto& cs = GetCallstack( m_pendingCallstackId );
+    int idx = cs.size() - 1;
+    auto vec = &td->ghostZones;
+    do
+    {
+        auto& entry = cs[idx];
+        uint32_t fid;
+        auto it = m_data.ghostFramesMap.find( entry.data );
+        if( it == m_data.ghostFramesMap.end() )
+        {
+            fid = uint32_t( m_data.ghostFrames.size() );
+            m_data.ghostFrames.push_back( entry );
+            m_data.ghostFramesMap.emplace( entry.data, fid );
+        }
+        else
+        {
+            fid = it->second;
+        }
+        if( vec->empty() )
+        {
+            gcnt++;
+            auto& zone = vec->push_next();
+            zone.start.SetVal( t );
+            zone.end.SetVal( t + m_samplingPeriod );
+            zone.frame.SetVal( fid );
+            zone.child = -1;
+        }
+        else
+        {
+            auto& back = vec->back();
+            const auto backFrame = GetCallstackFrame( m_data.ghostFrames[back.frame.Val()] );
+            const auto thisFrame = GetCallstackFrame( entry );
+            bool match = false;
+            if( backFrame && thisFrame )
+            {
+                match = backFrame->size == thisFrame->size;
+                if( match )
+                {
+                    for( uint8_t i=0; i<thisFrame->size; i++ )
+                    {
+                        if( backFrame->data[i].symAddr != thisFrame->data[i].symAddr )
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if( match )
+            {
+                back.end.SetVal( t + m_samplingPeriod );
+            }
+            else
+            {
+                gcnt++;
+                auto ptr = &back;
+                for(;;)
+                {
+                    ptr->end.SetVal( t );
+                    if( ptr->child < 0 ) break;
+                    ptr = &GetGhostChildrenMutable( ptr->child ).back();
+                }
+                auto& zone = vec->push_next_non_empty();
+                zone.start.SetVal( t );
+                zone.end.SetVal( t + m_samplingPeriod );
+                zone.frame.SetVal( fid );
+                zone.child = -1;
+            }
+        }
+        if( idx > 0 )
+        {
+            auto& zone = vec->back();
+            if( zone.child < 0 )
+            {
+                zone.child = m_data.ghostChildren.size();
+                vec = &m_data.ghostChildren.push_next();
+            }
+            else
+            {
+                vec = &m_data.ghostChildren[zone.child];
+            }
+        }
+    }
+    while( idx-- > 0 );
+    m_data.ghostCnt += gcnt;
+
     UpdateSampleStatistics( m_pendingCallstackId, 1, true );
 #endif
 }

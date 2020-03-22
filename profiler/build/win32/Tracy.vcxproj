@@ -105,7 +105,6 @@
     <ClCompile Include="..\..\..\common\TracySystem.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp" />
-    <ClCompile Include="..\..\..\imguicolortextedit\TextEditor.cpp" />
     <ClCompile Include="..\..\..\imgui\imgui.cpp" />
     <ClCompile Include="..\..\..\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\..\..\imgui\imgui_draw.cpp" />
@@ -116,6 +115,7 @@
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
     <ClCompile Include="..\..\..\server\TracyMmap.cpp" />
     <ClCompile Include="..\..\..\server\TracyPrint.cpp" />
+    <ClCompile Include="..\..\..\server\TracySourceView.cpp" />
     <ClCompile Include="..\..\..\server\TracyStorage.cpp" />
     <ClCompile Include="..\..\..\server\TracyTaskDispatch.cpp" />
     <ClCompile Include="..\..\..\server\TracyTexture.cpp" />
@@ -171,7 +171,6 @@
     <ClInclude Include="..\..\..\common\TracySystem.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp" />
-    <ClInclude Include="..\..\..\imguicolortextedit\TextEditor.h" />
     <ClInclude Include="..\..\..\imgui\imconfig.h" />
     <ClInclude Include="..\..\..\imgui\imgui.h" />
     <ClInclude Include="..\..\..\imgui\imgui_internal.h" />
@@ -199,6 +198,7 @@
     <ClInclude Include="..\..\..\server\TracyShortPtr.hpp" />
     <ClInclude Include="..\..\..\server\TracySlab.hpp" />
     <ClInclude Include="..\..\..\server\TracySort.hpp" />
+    <ClInclude Include="..\..\..\server\TracySourceView.hpp" />
     <ClInclude Include="..\..\..\server\TracyStorage.hpp" />
     <ClInclude Include="..\..\..\server\TracyStringDiscovery.hpp" />
     <ClInclude Include="..\..\..\server\TracyTaskDispatch.hpp" />

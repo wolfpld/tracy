@@ -19,9 +19,6 @@
     <Filter Include="nfd">
       <UniqueIdentifier>{46eb6aa0-de1c-447a-a6dd-aee2a06f85ef}</UniqueIdentifier>
     </Filter>
-    <Filter Include="imguicolortextedit">
-      <UniqueIdentifier>{96740ecd-86b9-452d-991c-8743dde61551}</UniqueIdentifier>
-    </Filter>
     <Filter Include="zstd">
       <UniqueIdentifier>{c67291b2-9e67-4915-b80f-6891ceb683a3}</UniqueIdentifier>
     </Filter>
@@ -59,9 +56,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp">
       <Filter>server</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\imguicolortextedit\TextEditor.cpp">
-      <Filter>imguicolortextedit</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\imgui_freetype.cpp">
       <Filter>src</Filter>
@@ -195,6 +189,9 @@
     <ClCompile Include="..\..\..\server\TracyTextureCompression.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\server\TracySourceView.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -295,9 +292,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyFilesystem.hpp">
       <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\imguicolortextedit\TextEditor.h">
-      <Filter>imguicolortextedit</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\FontAwesomeSolid.hpp">
       <Filter>src</Filter>
@@ -477,6 +471,9 @@
       <Filter>server</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyTextureCompression.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracySourceView.hpp">
       <Filter>server</Filter>
     </ClInclude>
   </ItemGroup>

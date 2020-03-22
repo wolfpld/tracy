@@ -28,7 +28,7 @@ namespace tracy
 struct MemoryPage;
 struct QueueItem;
 class FileRead;
-class TextEditor;
+class SourceView;
 struct ZoneTimeData;
 
 class View
@@ -108,7 +108,7 @@ private:
         uint64_t mem;
     };
 
-    void InitTextEditor();
+    void InitTextEditor( ImFont* font );
 
     const char* ShortenNamespace( const char* name ) const;
 
@@ -380,10 +380,8 @@ private:
     Vector<const ZoneEvent*> m_zoneInfoStack;
     Vector<const GpuEvent*> m_gpuInfoStack;
 
-    std::unique_ptr<TextEditor> m_textEditor;
-    const char* m_textEditorFile;
-    ImFont* m_textEditorFont;
-    bool m_textEditorWhitespace = true;
+    std::unique_ptr<SourceView> m_sourceView;
+    const char* m_sourceViewFile;
 
     ImFont* m_smallFont;
     ImFont* m_bigFont;

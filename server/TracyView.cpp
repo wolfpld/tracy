@@ -35,9 +35,8 @@
 #include "TracyPopcnt.hpp"
 #include "TracyPrint.hpp"
 #include "TracySort.hpp"
+#include "TracySourceView.hpp"
 #include "TracyView.hpp"
-
-#include "../imguicolortextedit/TextEditor.h"
 
 #ifdef TRACY_FILESELECTOR
 #  include "../nfd/nfd.h"
@@ -134,7 +133,6 @@ View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, I
     , m_pause( false )
     , m_frames( nullptr )
     , m_messagesScrollBottom( true )
-    , m_textEditorFont( fixedWidth )
     , m_smallFont( smallFont )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
@@ -143,7 +141,7 @@ View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, I
     assert( s_instance == nullptr );
     s_instance = this;
 
-    InitTextEditor();
+    InitTextEditor( fixedWidth );
 }
 
 View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb )
@@ -153,7 +151,6 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
     , m_pause( true )
     , m_frames( m_worker.GetFramesBase() )
     , m_messagesScrollBottom( false )
-    , m_textEditorFont( fixedWidth )
     , m_smallFont( smallFont )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
@@ -165,7 +162,7 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
     m_notificationTime = 4;
     m_notificationText = std::string( "Trace loaded in " ) + TimeToString( m_worker.GetLoadTime() );
 
-    InitTextEditor();
+    InitTextEditor( fixedWidth );
     SetViewToLastFrames();
     m_userData.StateShouldBePreserved();
     m_userData.LoadState( m_vd );
@@ -190,18 +187,19 @@ View::~View()
     s_instance = nullptr;
 }
 
-void View::InitTextEditor()
+void View::InitTextEditor( ImFont* font )
 {
-    m_textEditor = std::make_unique<TextEditor>();
-    m_textEditor->SetReadOnly( true );
-    m_textEditor->SetLanguageDefinition( TextEditor::LanguageDefinition::CPlusPlus() );
-    m_textEditor->SetShowWhitespaces( m_textEditorWhitespace );
-
-    m_textEditorFile = nullptr;
+    m_sourceView = std::make_unique<SourceView>( font );
+    m_sourceViewFile = nullptr;
 }
 
 void View::SetTextEditorFile( const char* fileName, int line )
 {
+    m_sourceViewFile = fileName;
+    m_sourceView->Open( fileName, line );
+
+#if 0
+    // DUPA
     if( !m_textEditorFile || strcmp( m_textEditorFile, fileName ) != 0 )
     {
         FILE* f = fopen( fileName, "rb" );
@@ -219,6 +217,7 @@ void View::SetTextEditorFile( const char* fileName, int line )
     m_textEditor->SetCursorPosition( TextEditor::Coordinates( line-1, 0 ) );
 
     m_textEditorFile = fileName;
+#endif
 }
 
 const char* View::ShortenNamespace( const char* name ) const
@@ -722,7 +721,7 @@ bool View::DrawImpl()
     if( m_callstackInfoWindow != 0 ) DrawCallstackWindow();
     if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
     if( m_showInfo ) DrawInfo();
-    if( m_textEditorFile ) DrawTextEditor();
+    if( m_sourceViewFile ) DrawTextEditor();
     if( m_goToFrame ) DrawGoToFrame();
     if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
     if( m_showPlayback ) DrawPlayback();
@@ -6364,7 +6363,7 @@ void View::DrawZoneInfoWindow()
     if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
     {
         ImGui::SameLine();
-        bool hilite = m_textEditorFile == fileName;
+        bool hilite = m_sourceViewFile == fileName;
         if( hilite )
         {
             SetButtonHighlightColor();
@@ -7341,7 +7340,7 @@ void View::DrawGpuInfoWindow()
     if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
     {
         ImGui::SameLine();
-        bool hilite = m_textEditorFile == fileName;
+        bool hilite = m_sourceViewFile == fileName;
         if( hilite )
         {
             SetButtonHighlightColor();
@@ -13059,16 +13058,10 @@ void View::DrawTextEditor()
 #else
     TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif
-    TextFocused( "File:", m_textEditorFile );
-    if( SmallCheckbox( "Show whitespace", &m_textEditorWhitespace ) )
-    {
-        m_textEditor->SetShowWhitespaces( m_textEditorWhitespace );
-    }
-    if( m_textEditorFont ) ImGui::PushFont( m_textEditorFont );
-    m_textEditor->Render( m_textEditorFile, ImVec2(), true );
-    if( m_textEditorFont ) ImGui::PopFont();
+    TextFocused( "File:", m_sourceViewFile );
+    m_sourceView->Render();
     ImGui::End();
-    if( !show ) m_textEditorFile = nullptr;
+    if( !show ) m_sourceViewFile = nullptr;
 }
 
 void View::DrawGoToFrame()

@@ -26,6 +26,7 @@ v0.7 (xxxx-xx-xx)
 - Added time percentage display to instrumentation statistics.
 - Display of ghost zones (generated from automated call stack sampling).
 - Notify when empty labels display is enabled.
+- More reliable source file viewer.
 
 v0.6.3 (2020-02-13)
 -------------------

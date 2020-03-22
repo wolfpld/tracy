@@ -786,6 +786,22 @@ void View::DrawNotificationArea()
             }
         }
     }
+    if( m_vd.drawEmptyLabels )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EXPAND );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "labels" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Displaying empty labels." );
+            ImGui::EndTooltip();
+            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawEmptyLabels = false;
+        }
+    }
     if( !m_vd.drawContextSwitches )
     {
         ImGui::SameLine();

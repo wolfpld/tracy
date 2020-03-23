@@ -2020,13 +2020,21 @@ Hovering the \faMousePointer{} mouse pointer over a zone will highlight all othe
 
 \subparagraph{Ghost zones}
 
-Display of ghost zones (not pictured on figure~\ref{zoneslocks}, but similar to normal zones view) can be enabled by clicking on the \emph{\faGhost{}~ghost zones} icon next to thread label, if automated sampling (see chapter~\ref{sampling}) was performed. Ghost zones will also be displayed by default, if no instrumented zones are available for a given thread.
+Display of ghost zones (not pictured on figure~\ref{zoneslocks}, but similar to normal zones view) can be enabled by clicking on the \emph{\faGhost{}~ghost zones} icon next to thread label, available if automated sampling (see chapter~\ref{sampling}) was performed. Ghost zones will also be displayed by default, if no instrumented zones are available for a given thread, to help with pinpointing functions that should be instrumented.
 
-Ghost zones represent true function calls in the program, periodically reported by the operating system. Due to the limited resolution of sampling, you need to take great care when looking at reported timing data. While it may be apparent that some small function requires a relatively long time to execute, for example 125~\si{\micro\second} (8~kHz~sampling rate), in reality this time represents a period between taking two distinct samples, not the actual function run time.
+Ghost zones represent true function calls in the program, periodically reported by the operating system. Due to the limited resolution of sampling, you need to take great care when looking at reported timing data. While it may be apparent that some small function requires a relatively long time to execute, for example 125~\si{\micro\second} (8~kHz~sampling rate), in reality this time represents a period between taking two distinct samples, not the actual function run time. Similarly, two (or more) distinct function calls may be represented as a single ghost zone, because the profiler doesn't have the information needed to know about true lifetime of a sampled function.
 
 Another common pitfall to watch for is the order of presented functions. \emph{It is not what you expect it to be!} Read chapter~\ref{readingcallstacks} for a critical insight on how call stacks might seem nonsensical at first, and why they aren't.
 
 The available information about ghost zones is quite limited, but it's enough to give you a rough outlook on the execution of your application. The timeline view alone is more than any other statistical profiler is able to present. In addition to that, Tracy properly handles inlined function calls, which are indicated by darker colored ghost zones.
+
+Clicking the \LMB{}~left mouse button on a ghost zone will open the corresponding source file location, if able (see chapter~\ref{sourceview} for conditions). There are three ways in which source locations can be assigned to a ghost zone:
+
+\begin{enumerate}
+\item If the selected ghost zone is \emph{not} an inline frame and its symbol data has been retrieved, the source location points to the function entry location (first line of the function).
+\item If the selected ghost zone is \emph{not} an inline frame, but its symbol data is not available, the source location will point to a semi-random location within the function body (i.e. to one of the sampled addresses in the program, but not necessarily the one representing the selected time stamp, as multiple samples with different addresses may be merged into one ghost zone).
+\item If the selected ghost zone \emph{is} an inline frame, the source location will point to a semi-random location within the inlined function body (see details in the above point). It is not possible to go to the entry location of such function, as it doesn't exist in the program binary. Inlined functions begin in the parent function.
+\end{enumerate}
 
 \subparagraph{Call stack samples}
 
@@ -2597,7 +2605,8 @@ logo=\bcbombe
 Source file view works on the local files you have on your disk. The traces themselves do not contain any source code! This has the following implications:
 
 \begin{itemize}
-\item The source files can only be viewed, if the source file location recorded in the trace matches the files you have on your disk.
+\item Source files can only be viewed, if the source file location recorded in the trace matches the files you have on your disk.
+\item Time stamp of the source file cannot be newer than the trace, as it typically would indicate that the file has been changed and no longer contains the code that was profiled.
 \item \textbf{The displayed source files might not reflect the code that was profiled!} It is up to you to verify that you don't have a modified version of the code, with regards to the trace.
 \end{itemize}
 \end{bclogo}

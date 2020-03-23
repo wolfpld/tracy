@@ -3591,8 +3591,18 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                         if( sym ) TextFocused( "Image:", m_worker.GetString( sym->imageName ) );
                         TextDisabledUnformatted( "Location:" );
                         ImGui::SameLine();
-                        const auto file = m_worker.GetString( frame->data[i].file );
-                        const auto line = frame->data[i].line;
+                        const char* file;
+                        uint32_t line;
+                        if( sym && !isInline )
+                        {
+                            file = m_worker.GetString( sym->file );
+                            line = sym->line;
+                        }
+                        else
+                        {
+                            file = m_worker.GetString( frame->data[i].file );
+                            line = frame->data[i].line;
+                        }
                         ImGui::Text( "%s:%i", file, line );
                         ImGui::SameLine();
                         ImGui::TextDisabled( "(0x%" PRIx64 ")", m_worker.GetCanonicalPointer( ghostFrame ) );

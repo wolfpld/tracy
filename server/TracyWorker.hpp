@@ -231,6 +231,8 @@ private:
         unordered_flat_map<CallstackFrameId, CallstackFrameData*, CallstackFrameIdHash, CallstackFrameIdCompare> parentCallstackFrameMap;
         unordered_flat_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revParentFrameMap;
         unordered_flat_map<uint32_t, uint32_t> postponedSamples;
+        unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> pendingInstructionPointers;
+        unordered_flat_map<uint64_t, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare>> instructionPointersMap;
         bool newFramesWereReceived = false;
         bool callstackSamplesReady = false;
         bool ghostZonesReady = false;

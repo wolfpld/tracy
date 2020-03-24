@@ -4898,8 +4898,45 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
     }
 
 #ifndef TRACY_NO_STATISTICS
-    int gcnt = 0;
     const auto& cs = GetCallstack( m_pendingCallstackId );
+    {
+        auto& ip = cs[0];
+        auto frame = GetCallstackFrame( ip );
+        if( frame )
+        {
+            const auto symAddr = frame->data[0].symAddr;
+            auto it = m_data.instructionPointersMap.find( symAddr );
+            if( it == m_data.instructionPointersMap.end() )
+            {
+                m_data.instructionPointersMap.emplace( symAddr, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> { { ip, 1 } } );
+            }
+            else
+            {
+                auto fit = it->second.find( ip );
+                if( fit == it->second.end() )
+                {
+                    it->second.emplace( ip, 1 );
+                }
+                else
+                {
+                    fit->second++;
+                }
+            }
+        }
+        else
+        {
+            auto it = m_data.pendingInstructionPointers.find( ip );
+            if( it == m_data.pendingInstructionPointers.end() )
+            {
+                m_data.pendingInstructionPointers.emplace( ip, 1 );
+            }
+            else
+            {
+                it->second++;
+            }
+        }
+    }
+    int gcnt = 0;
     int idx = cs.size() - 1;
     auto vec = &td->ghostZones;
     do
@@ -5049,10 +5086,32 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
             Query( ServerQuerySymbol, ev.symAddr );
         }
 
+        const auto frameId = PackPointer( m_callstackFrameStagingPtr );
+#ifndef TRACY_NO_STATISTICS
+        auto it = m_data.pendingInstructionPointers.find( frameId );
+        if( it != m_data.pendingInstructionPointers.end() )
+        {
+            if( ev.symAddr != 0 )
+            {
+                auto sit = m_data.instructionPointersMap.find( ev.symAddr );
+                if( sit == m_data.instructionPointersMap.end() )
+                {
+                    m_data.instructionPointersMap.emplace( ev.symAddr, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> { { it->first, it->second } } );
+                }
+                else
+                {
+                    assert( sit->second.find( it->first ) == sit->second.end() );
+                    sit->second.emplace( it->first, it->second );
+                }
+            }
+            m_data.pendingInstructionPointers.erase( it );
+        }
+#endif
+
         if( --m_pendingCallstackSubframes == 0 )
         {
-            assert( m_data.callstackFrameMap.find( PackPointer( m_callstackFrameStagingPtr ) ) == m_data.callstackFrameMap.end() );
-            m_data.callstackFrameMap.emplace( PackPointer( m_callstackFrameStagingPtr ), m_callstackFrameStaging );
+            assert( m_data.callstackFrameMap.find( frameId ) == m_data.callstackFrameMap.end() );
+            m_data.callstackFrameMap.emplace( frameId, m_callstackFrameStaging );
             m_callstackFrameStaging = nullptr;
         }
     }

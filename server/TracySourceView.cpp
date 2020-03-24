@@ -74,15 +74,29 @@ void SourceView::Render()
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
     if( m_font ) ImGui::PushFont( m_font );
     const auto nw = ImGui::CalcTextSize( "123,345" ).x;
-    int lineNum = 1;
-    for( auto& line : m_lines )
+    if( m_targetLine != 0 )
     {
-        if( m_targetLine == lineNum )
+        int lineNum = 1;
+        for( auto& line : m_lines )
         {
-            m_targetLine = 0;
-            ImGui::SetScrollHereY();
+            if( m_targetLine == lineNum )
+            {
+                m_targetLine = 0;
+                ImGui::SetScrollHereY();
+            }
+            RenderLine( line, lineNum++ );
         }
-        RenderLine( line, lineNum++ );
+    }
+    else
+    {
+        ImGuiListClipper clipper( m_lines.size() );
+        while( clipper.Step() )
+        {
+            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+            {
+                RenderLine( m_lines[i], i+1 );
+            }
+        }
     }
     if( m_font ) ImGui::PopFont();
     ImGui::EndChild();

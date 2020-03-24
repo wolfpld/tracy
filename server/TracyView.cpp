@@ -197,27 +197,6 @@ void View::SetTextEditorFile( const char* fileName, int line )
 {
     m_sourceViewFile = fileName;
     m_sourceView->Open( fileName, line );
-
-#if 0
-    // DUPA
-    if( !m_textEditorFile || strcmp( m_textEditorFile, fileName ) != 0 )
-    {
-        FILE* f = fopen( fileName, "rb" );
-        fseek( f, 0, SEEK_END );
-        const auto sz = ftell( f );
-        fseek( f, 0, SEEK_SET );
-        auto data = new char[sz+1];
-        fread( data, 1, sz, f );
-        fclose( f );
-        data[sz] = '\0';
-        m_textEditor->SetText( data );
-        delete[] data;
-    }
-
-    m_textEditor->SetCursorPosition( TextEditor::Coordinates( line-1, 0 ) );
-
-    m_textEditorFile = fileName;
-#endif
 }
 
 const char* View::ShortenNamespace( const char* name ) const

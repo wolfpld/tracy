@@ -12,6 +12,7 @@ namespace tracy
 SourceView::SourceView( ImFont* font )
     : m_font( font )
     , m_file( nullptr )
+    , m_symAddr( 0 )
     , m_data( nullptr )
     , m_dataSize( 0 )
     , m_targetLine( 0 )
@@ -24,10 +25,11 @@ SourceView::~SourceView()
     delete[] m_data;
 }
 
-void SourceView::Open( const char* fileName, int line )
+void SourceView::Open( const char* fileName, int line, uint64_t symAddr )
 {
     m_targetLine = line;
     m_selectedLine = line;
+    m_symAddr = symAddr;
 
     if( m_file != fileName )
     {

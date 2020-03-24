@@ -193,10 +193,10 @@ void View::InitTextEditor( ImFont* font )
     m_sourceViewFile = nullptr;
 }
 
-void View::SetTextEditorFile( const char* fileName, int line )
+void View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
 {
     m_sourceViewFile = fileName;
-    m_sourceView->Open( fileName, line );
+    m_sourceView->Open( fileName, line, symAddr );
 }
 
 const char* View::ShortenNamespace( const char* name ) const
@@ -3596,7 +3596,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                         {
                             if( line != 0 )
                             {
-                                SetTextEditorFile( file, line );
+                                SetTextEditorFile( file, line, frame->data[i].symAddr );
                             }
                         }
                         else if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
@@ -6103,7 +6103,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                     {
                         if( frame->line != 0 && SourceFileValid( fileName, worker.GetCaptureTime() ) )
                         {
-                            view.SetTextEditorFile( fileName, frame->line );
+                            view.SetTextEditorFile( fileName, frame->line, 0 );
                         }
                         else
                         {
@@ -6165,7 +6165,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             {
                 if( frame->line != 0 && SourceFileValid( fileName, worker.GetCaptureTime() ) )
                 {
-                    view.SetTextEditorFile( fileName, frame->line );
+                    view.SetTextEditorFile( fileName, frame->line, 0 );
                 }
                 else
                 {
@@ -6363,7 +6363,7 @@ void View::DrawZoneInfoWindow()
         if( ImGui::Button( "Source" ) )
 #endif
         {
-            SetTextEditorFile( fileName, srcloc.line );
+            SetTextEditorFile( fileName, srcloc.line, 0 );
         }
         if( hilite )
         {
@@ -6894,7 +6894,7 @@ void View::DrawZoneInfoWindow()
         {
             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
             {
-                SetTextEditorFile( fileName, srcloc.line );
+                SetTextEditorFile( fileName, srcloc.line, 0 );
             }
             else
             {
@@ -7340,7 +7340,7 @@ void View::DrawGpuInfoWindow()
         if( ImGui::Button( "Source" ) )
 #endif
         {
-            SetTextEditorFile( fileName, srcloc.line );
+            SetTextEditorFile( fileName, srcloc.line, 0 );
         }
         if( hilite )
         {
@@ -7451,7 +7451,7 @@ void View::DrawGpuInfoWindow()
         {
             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
             {
-                SetTextEditorFile( fileName, srcloc.line );
+                SetTextEditorFile( fileName, srcloc.line, 0 );
             }
             else
             {
@@ -8079,7 +8079,7 @@ void View::DrawOptions()
                         {
                             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                             {
-                                SetTextEditorFile( fileName, sl.line );
+                                SetTextEditorFile( fileName, sl.line, 0 );
                             }
                             else
                             {
@@ -8153,7 +8153,7 @@ void View::DrawOptions()
                         {
                             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                             {
-                                SetTextEditorFile( fileName, sl.line );
+                                SetTextEditorFile( fileName, sl.line, 0 );
                             }
                             else
                             {
@@ -8227,7 +8227,7 @@ void View::DrawOptions()
                         {
                             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                             {
-                                SetTextEditorFile( fileName, sl.line );
+                                SetTextEditorFile( fileName, sl.line, 0 );
                             }
                             else
                             {
@@ -8854,7 +8854,7 @@ void View::DrawFindZone()
                 {
                     if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                     {
-                        SetTextEditorFile( fileName, srcloc.line );
+                        SetTextEditorFile( fileName, srcloc.line, 0 );
                     }
                     else
                     {
@@ -11560,7 +11560,7 @@ void View::DrawStatistics()
             {
                 if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
                 {
-                    SetTextEditorFile( file, srcloc.line );
+                    SetTextEditorFile( file, srcloc.line, 0 );
                 }
                 else
                 {
@@ -11779,7 +11779,7 @@ void View::DrawStatistics()
                 {
                     if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
                     {
-                        SetTextEditorFile( file, line );
+                        SetTextEditorFile( file, line, v->first );
                     }
                     else
                     {
@@ -12058,7 +12058,7 @@ void View::DrawCallstackWindow()
                             const auto symtxt = m_worker.GetString( sym->file );
                             if( SourceFileValid( symtxt, m_worker.GetCaptureTime() ) )
                             {
-                                SetTextEditorFile( symtxt, sym->line );
+                                SetTextEditorFile( symtxt, sym->line, frame.symAddr );
                             }
                             else
                             {
@@ -12074,7 +12074,7 @@ void View::DrawCallstackWindow()
                     {
                         if( SourceFileValid( txt, m_worker.GetCaptureTime() ) )
                         {
-                            SetTextEditorFile( txt, frame.line );
+                            SetTextEditorFile( txt, frame.line, frame.symAddr );
                         }
                         else
                         {
@@ -13181,7 +13181,7 @@ void View::DrawLockInfoWindow()
     {
         if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
         {
-            SetTextEditorFile( fileName, srcloc.line );
+            SetTextEditorFile( fileName, srcloc.line, 0 );
         }
         else
         {
@@ -13790,7 +13790,7 @@ void View::DrawSampleParents()
     {
         if( SourceFileValid( callFile, m_worker.GetCaptureTime() ) )
         {
-            SetTextEditorFile( callFile, symbol->callLine );
+            SetTextEditorFile( callFile, symbol->callLine, m_sampleParents.symAddr );
         }
     }
     TextDisabledUnformatted( "Entry point:" );
@@ -13808,7 +13808,7 @@ void View::DrawSampleParents()
     {
         if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
         {
-            SetTextEditorFile( file, symbol->line );
+            SetTextEditorFile( file, symbol->line, m_sampleParents.symAddr );
         }
     }
     ImGui::SameLine();
@@ -14033,7 +14033,7 @@ void View::DrawSampleParents()
                         const auto symtxt = m_worker.GetString( sym->file );
                         if( SourceFileValid( symtxt, m_worker.GetCaptureTime() ) )
                         {
-                            SetTextEditorFile( symtxt, sym->line );
+                            SetTextEditorFile( symtxt, sym->line, 0 );
                         }
                         else
                         {
@@ -14049,7 +14049,7 @@ void View::DrawSampleParents()
                 {
                     if( SourceFileValid( txt, m_worker.GetCaptureTime() ) )
                     {
-                        SetTextEditorFile( txt, frame.line );
+                        SetTextEditorFile( txt, frame.line, 0 );
                     }
                     else
                     {
@@ -15058,7 +15058,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             {
                 if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                 {
-                    SetTextEditorFile( fileName, frame.line );
+                    SetTextEditorFile( fileName, frame.line, 0 );
                 }
                 else
                 {

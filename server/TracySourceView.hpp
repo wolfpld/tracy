@@ -17,7 +17,7 @@ public:
     SourceView( ImFont* font );
     ~SourceView();
 
-    void Open( const char* fileName, int line );
+    void Open( const char* fileName, int line, uint64_t symAddr );
     void Render();
 
 private:
@@ -25,6 +25,7 @@ private:
 
     ImFont* m_font;
     const char* m_file;
+    uint64_t m_symAddr;
     char* m_data;
     size_t m_dataSize;
     int m_targetLine;

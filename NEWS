@@ -27,6 +27,7 @@ v0.7 (xxxx-xx-xx)
 - Display of ghost zones (generated from automated call stack sampling).
 - Notify when empty labels display is enabled.
 - More reliable source file viewer.
+- Added display of profiling data to source file viewer.
 
 v0.6.3 (2020-02-13)
 -------------------

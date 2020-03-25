@@ -1744,7 +1744,7 @@ The next two items show the \faEye{}~view time range and \faDatabase{}~time span
 
 \paragraph{Notification area}
 
-The notification area is used to display informational notices, for example how long it took to load a trace from disk. A pulsating dot next to the \faTasks~icon indicates that some background tasks are being performed, that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section~\ref{crashhandling}), a \emph{\faSkull{}~crash} icon will be displayed.
+The notification area is used to display informational notices, for example how long it took to load a trace from disk. A pulsating dot next to the \faTasks~icon indicates that some background tasks are being performed, that may need to be completed before full capabilities of the profiler are available. If a crash was captured during profiling (section~\ref{crashhandling}), a \emph{\faSkull{}~crash} icon will be displayed. The red \faTachometer*{}~icon indicates that queries are currently being backlogged (see chapter~\ref{connectionpopup} for more information).
 
 If drawing of timeline elements was disabled in the options menu (section~\ref{options}), the following orange icons will be used to remind the user about that fact. Click on the icons to enable drawing of the selected elements. Note that collapsed labels (section~\ref{zoneslocksplots}) are not taken into account here.
 
@@ -2227,7 +2227,9 @@ The \emph{Location} column displays the corresponding source file name and line 
 
 Some function locations may not be found, due to insufficient debugging data available on the client side. To filter out such entries, use the \emph{\faEyeSlash{}~Hide unknown} option.
 
-The last column, \emph{Time} or \emph{Count} (depending on the \emph{\faStopwatch{}~Show time} option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format.
+The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Show time} option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format.
+
+The last column, \emph{Code size}, displays the size of symbol in the executable image of the program. In some cases this data won't be available.
 
 Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case, and the exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch.
 

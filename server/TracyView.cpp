@@ -12358,6 +12358,13 @@ void View::DrawInfo()
         TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount() ) );
         TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );
         TextFocused( "Symbols:", RealToString( m_worker.GetSymbolsCount() ) );
+        TextFocused( "Symbols code:", RealToString( m_worker.GetSymbolCodeCount() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( MemSizeToString( m_worker.GetSymbolCodeSize() ) );
+            ImGui::EndTooltip();
+        }
         TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount() ) );
         if( m_worker.AreCallstackSamplesReady() )
         {

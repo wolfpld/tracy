@@ -3795,6 +3795,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ParamSetup:
         ProcessParamSetup( ev.paramSetup );
         break;
+    case QueueType::ParamPingback:
+        m_serverQuerySpaceLeft++;
+        break;
     case QueueType::CpuTopology:
         ProcessCpuTopology( ev.cpuTopology );
         break;

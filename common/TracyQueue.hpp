@@ -71,6 +71,7 @@ enum class QueueType : uint8_t
     TidToPid,
     PlotConfig,
     ParamSetup,
+    ParamPingback,
     CpuTopology,
     StringData,
     ThreadName,
@@ -518,6 +519,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
+    sizeof( QueueHeader ),                                  // param pingback
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data

@@ -208,6 +208,7 @@ private:
         int64_t baseTime = 0;
         int64_t lastTime = 0;
         uint64_t frameOffset = 0;
+        CpuArchitecture cpuArch = CpuArchUnknown;
 
         unordered_flat_map<uint64_t, const char*> strings;
         Vector<const char*> stringData;

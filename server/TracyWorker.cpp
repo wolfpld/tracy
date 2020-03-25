@@ -441,6 +441,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     {
         m_samplingPeriod = 0;
     }
+    if( fileVer >= FileVersion( 0, 6, 7 ) )
+    {
+        f.Read( m_data.cpuArch );
+    }
 
     uint64_t sz;
     {
@@ -2680,6 +2684,7 @@ void Worker::Exec()
         m_captureProgram = welcome.programName;
         m_captureTime = welcome.epoch;
         m_ignoreMemFreeFaults = welcome.onDemand || welcome.isApple;
+        m_data.cpuArch = (CpuArchitecture)welcome.cpuArch;
 
         char dtmp[64];
         time_t date = welcome.epoch;
@@ -6238,6 +6243,7 @@ void Worker::Write( FileWrite& f )
     f.Write( &m_data.frameOffset, sizeof( m_data.frameOffset ) );
     f.Write( &m_pid, sizeof( m_pid ) );
     f.Write( &m_samplingPeriod, sizeof( m_samplingPeriod ) );
+    f.Write( &m_data.cpuArch, sizeof( m_data.cpuArch ) );
 
     uint64_t sz = m_captureName.size();
     f.Write( &sz, sizeof( sz ) );

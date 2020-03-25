@@ -5121,7 +5121,9 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
 
         if( ev.symAddr != 0 && m_data.symbolMap.find( ev.symAddr ) == m_data.symbolMap.end() && m_pendingSymbols.find( ev.symAddr ) == m_pendingSymbols.end() )
         {
-            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName, file, ev.line, idx < m_callstackFrameStaging->size - 1 } );
+            uint32_t size = 0;
+            memcpy( &size, ev.symLen, 3 );
+            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName, file, ev.line, size, idx < m_callstackFrameStaging->size - 1 } );
             Query( ServerQuerySymbol, ev.symAddr );
         }
 
@@ -5176,6 +5178,7 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     sd.callFile = it->second.file;
     sd.callLine = it->second.line;
     sd.isInline = it->second.isInline;
+    sd.size.SetVal( it->second.size );
     m_data.symbolMap.emplace( ev.symAddr, std::move( sd ) );
 
     m_pendingSymbols.erase( it );

@@ -2281,6 +2281,14 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
         MemWrite( &item.callstackFrame.file, (uint64_t)frame.file );
         MemWrite( &item.callstackFrame.line, frame.line );
         MemWrite( &item.callstackFrame.symAddr, frame.symAddr );
+        if( frame.symLen > ( 1 << 24 ) )
+        {
+            memset( item.callstackFrame.symLen, 0, 3 );
+        }
+        else
+        {
+            memcpy( item.callstackFrame.symLen, &frame.symLen, 3 );
+        }
 
         AppendData( &item, QueueDataSize[(int)QueueType::CallstackFrame] );
 

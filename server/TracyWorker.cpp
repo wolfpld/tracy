@@ -1728,6 +1728,31 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                 {
                                     it->second++;
                                 }
+
+                                const auto& callstack = GetCallstack( cs );
+                                auto& ip = callstack[0];
+                                auto frame = GetCallstackFrame( ip );
+                                if( frame )
+                                {
+                                    const auto symAddr = frame->data[0].symAddr;
+                                    auto it = m_data.instructionPointersMap.find( symAddr );
+                                    if( it == m_data.instructionPointersMap.end() )
+                                    {
+                                        m_data.instructionPointersMap.emplace( symAddr, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> { { ip, 1 } } );
+                                    }
+                                    else
+                                    {
+                                        auto fit = it->second.find( ip );
+                                        if( fit == it->second.end() )
+                                        {
+                                            it->second.emplace( ip, 1 );
+                                        }
+                                        else
+                                        {
+                                            fit->second++;
+                                        }
+                                    }
+                                }
                             }
                         }
                         for( auto& v : counts ) UpdateSampleStatistics( v.first, v.second, false );

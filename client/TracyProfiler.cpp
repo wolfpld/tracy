@@ -1210,6 +1210,18 @@ void Profiler::Worker()
     uint8_t isApple = 0;
 #endif
 
+#if defined __i386 || defined _M_IX86
+    uint8_t cpuArch = CpuArchX86;
+#elif defined __x86_64__ || defined _M_X64
+    uint8_t cpuArch = CpuArchX64;
+#elif defined __aarch64__
+    uint8_t cpuArch = CpuArchArm64;
+#elif defined __ARM_ARCH
+    uint8_t cpuArch = CpuArchArm32;
+#else
+    uint8_t cpuArch = CpuArchUnknown;
+#endif
+
     WelcomeMessage welcome;
     MemWrite( &welcome.timerMul, m_timerMul );
     MemWrite( &welcome.initBegin, GetInitTime() );
@@ -1221,6 +1233,7 @@ void Profiler::Worker()
     MemWrite( &welcome.samplingPeriod, m_samplingPeriod );
     MemWrite( &welcome.onDemand, onDemand );
     MemWrite( &welcome.isApple, isApple );
+    MemWrite( &welcome.cpuArch, cpuArch );
     memcpy( welcome.programName, procname, pnsz );
     memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
     memcpy( welcome.hostInfo, hostinfo, hisz );

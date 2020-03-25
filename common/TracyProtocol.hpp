@@ -63,6 +63,16 @@ struct ServerQueryPacket
 enum { ServerQueryPacketSize = sizeof( ServerQueryPacket ) };
 
 
+enum CpuArchitecture : uint8_t
+{
+    CpuArchUnknown,
+    CpuArchX86,
+    CpuArchX64,
+    CpuArchArm32,
+    CpuArchArm64
+};
+
+
 struct WelcomeMessage
 {
     double timerMul;
@@ -75,6 +85,7 @@ struct WelcomeMessage
     int64_t samplingPeriod;
     uint8_t onDemand;
     uint8_t isApple;
+    uint8_t cpuArch;
     char programName[WelcomeMessageProgramNameSize];
     char hostInfo[WelcomeMessageHostInfoSize];
 };

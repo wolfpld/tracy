@@ -545,12 +545,12 @@ On Windows you will need to use the \texttt{vcpkg} utility, which will automatic
 
 \begin{lstlisting}[language=sh]
 vcpkg integrate install
-vcpkg install --triplet x64-windows-static freetype glfw3
+vcpkg install --triplet x64-windows-static freetype glfw3 capstone[core,arm,arm64,x86]
 \end{lstlisting}
 
 \paragraph{Unix}
 
-On Unix systems you will need to install the \texttt{pkg-config} utility and the following libraries: \texttt{glfw}, \texttt{freetype}. Some Linux distributions will require you to add a \texttt{lib} prefix and a \texttt{-dev}, or \texttt{-devel} postfix to library names. You may also need to add a seemingly random number to the library name (for example: \texttt{freetype2}, or \texttt{freetype6}). How fun!
+On Unix systems you will need to install the \texttt{pkg-config} utility and the following libraries: \texttt{glfw}, \texttt{freetype}, \texttt{capstone}. Some Linux distributions will require you to add a \texttt{lib} prefix and a \texttt{-dev}, or \texttt{-devel} postfix to library names. You may also need to add a seemingly random number to the library name (for example: \texttt{freetype2}, or \texttt{freetype6}). How fun!
 
 Installation of the libraries on OSX can be facilitated using the \texttt{brew} package manager.
 
@@ -1429,6 +1429,13 @@ In this manual, the word \emph{core} is typically used as a short term for \emph
 Manual markup of zones doesn't cover every function existing in a program and cannot be performed in system libraries, or in kernel. This can leave blank spaces on the trace, leaving you with no clue what the application was doing. Tracy is able to periodically inspect state of running threads, providing you with a snapshot of call stack at the time when sampling was performed. While this information doesn't have the fidelity of manually inserted zones, it can sometimes give you an insight where to go next.
 
 This feature is only available on Windows and requires privilege elevation, as described in chapter~\ref{contextswitches}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
+
+\subsubsection{Executable code retrieval}
+\label{executableretrieval}
+
+To enable deep insight into program execution, Tracy will capture small chunks of the executable image during profiling. The retrieved code can be subsequently disassembled to be inspected in detail. This functionality will be performed only for functions that are no larger than 64 KB and only if symbol information is present.
+
+You should be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace.
 
 \subsection{Trace parameters}
 \label{traceparameters}
@@ -2615,11 +2622,17 @@ Source file view works on the local files you have on your disk. The traces them
 
 \subsubsection{Instruction pointer statistics}
 
-If automated call stack sampling (see chapter~\ref{sampling}) was performed and the source file view was opened with a call stack context (e.g. from a ghost zone, or from statistics of sampled functions), additional profiling information will be available. Symbol name of the selected function will be displayed in the header, along with a count of collected samples. The first column of listing will contain percentage counts of collected instruction pointer samples for each line within the symbol.
+If automated call stack sampling (see chapter~\ref{sampling}) was performed and the source file view was opened with a symbol context (e.g. from a ghost zone, or from statistics of sampled functions), additional profiling information will be available. Symbol name of the selected function will be displayed in the header, along with a count of collected samples. The first column of listing will contain percentage counts of collected instruction pointer samples for each line within the symbol.
 
 This can be used to determine which line of the function takes the most time. Be aware that this information is not fully accurate, as it is the result of random sampling of program execution. Furthermore, undocumented implementation details of an out-of-order CPU architecture will highly impact the measurement. Read chapter~\ref{checkenvironmentcpu} to see the tip of an iceberg.
 
 Unlike other profilers, Tracy doesn't include inlined function statistics in the parent function. Instead, you can view the sampling data even in inlined functions.
+
+\subsubsection{Assembly view}
+
+If executable code retrieval was performed, as described in section~\ref{executableretrieval}, and the view has symbol context available, you will be presented with an additional option, \emph{\faMicrochip{}~Show assembly}. Selecting it will replace the source code view with disassembly of the relevant portion of the program that was profiled.
+
+Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.
 
 \subsection{Lock information window}
 \label{lockwindow}
@@ -2733,6 +2746,7 @@ The following libraries are included with and used by the Tracy Profiler. Entrie
 \item getopt\_port -- \url{https://github.com/kimgr/getopt\_port}
 \item libbacktrace \faStar{} -- \url{https://github.com/ianlancetaylor/libbacktrace}
 \item Zstandard -- \url{https://github.com/facebook/zstd}
+\item capstone -- \url{https://github.com/aquynh/capstone}
 \end{itemize}
 
 \item 2-clause BSD license

@@ -2488,6 +2488,20 @@ const SymbolStats* Worker::GetSymbolStats( uint64_t symAddr ) const
         return &it->second;
     }
 }
+
+const unordered_flat_map<CallstackFrameId, uint32_t, Worker::CallstackFrameIdHash, Worker::CallstackFrameIdCompare>* Worker::GetSymbolInstructionPointers( uint64_t symAddr ) const
+{
+    assert( AreCallstackSamplesReady() );
+    auto it = m_data.instructionPointersMap.find( symAddr );
+    if( it == m_data.instructionPointersMap.end() )
+    {
+        return nullptr;
+    }
+    else
+    {
+        return &it->second;
+    }
+}
 #endif
 
 void Worker::Network()

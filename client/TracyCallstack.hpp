@@ -34,6 +34,7 @@ struct CallstackEntry
     const char* name;
     const char* file;
     uint32_t line;
+    uint32_t symLen;
     uint64_t symAddr;
 };
 

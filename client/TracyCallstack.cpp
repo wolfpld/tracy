@@ -286,7 +286,16 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
         cb_data[write].name = symValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName );
         cb_data[write].file = CopyString( filename );
-        cb_data[write].symAddr = symValid ? si->Address : 0;
+        if( symValid )
+        {
+            cb_data[write].symLen = si->Size;
+            cb_data[write].symAddr = si->Address;
+        }
+        else
+        {
+            cb_data[write].symLen = 0;
+            cb_data[write].symAddr = 0;
+        }
     }
 
 #ifndef __CYGWIN__
@@ -310,7 +319,16 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
             cb.name = symInlineValid ? CopyString( si->Name, si->NameLen ) : CopyString( moduleName );
             cb.file = CopyString( filename );
-            cb.symAddr = symInlineValid ? si->Address : 0;
+            if( symInlineValid )
+            {
+                cb.symLen = si->Size;
+                cb.symAddr = si->Address;
+            }
+            else
+            {
+                cb.symLen = 0;
+                cb.symAddr = 0;
+            }
 
             ctx++;
         }
@@ -413,6 +431,7 @@ static int CallstackDataCb( void* /*data*/, uintptr_t pc, const char* fn, int li
     enum { DemangleBufLen = 64*1024 };
     char demangled[DemangleBufLen];
 
+    cb_data[cb_num].symLen = 0;
     cb_data[cb_num].symAddr = (uint64_t)pc;
 
     if( !fn && !function )
@@ -524,11 +543,13 @@ static void CallstackErrorCb( void* /*data*/, const char* /*msg*/, int /*errnum*
 
 void SymInfoCallback( void* /*data*/, uintptr_t pc, const char* symname, uintptr_t symval, uintptr_t symsize )
 {
+    cb_data[cb_fixup].symLen = (uint32_t)symsize;
     cb_data[cb_fixup].symAddr = (uint64_t)symval;
 }
 
 void SymInfoError( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
 {
+    cb_data[cb_fixup].symLen = 0;
     cb_data[cb_fixup].symAddr = 0;
 }
 
@@ -647,6 +668,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     loc[loclen + addrlen] = '\0';
     cb.file = loc;
 
+    cb.symLen = 0;
     cb.symAddr = (uint64_t)symaddr;
 
     if( demangled ) free( demangled );

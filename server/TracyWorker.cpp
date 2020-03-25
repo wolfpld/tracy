@@ -6674,7 +6674,7 @@ void Worker::Write( FileWrite& f )
     {
         f.Write( &v.first, sizeof( v.first ) );
         f.Write( &v.second.len, sizeof( v.second.len ) );
-        f.Write( &v.second.data, v.second.len );
+        f.Write( v.second.data, v.second.len );
     }
 }
 

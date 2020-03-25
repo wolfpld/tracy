@@ -558,6 +558,7 @@ private:
     void HandleDisconnect();
     void HandleParameter( uint64_t payload );
     void HandleSymbolQuery( uint64_t symbol );
+    void HandleSymbolCodeQuery( uint64_t symbol, uint32_t size );
 
     void CalibrateTimer();
     void CalibrateDelay();

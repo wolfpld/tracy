@@ -121,6 +121,12 @@ public:
         uint32_t core;
     };
 
+    struct SymbolCodeData
+    {
+        const char* data;
+        uint32_t len;
+    };
+
 private:
     struct SourceLocationZones
     {
@@ -283,6 +289,9 @@ private:
 
         unordered_flat_map<uint32_t, unordered_flat_map<uint32_t, std::vector<uint32_t>>> cpuTopology;
         unordered_flat_map<uint32_t, CpuThreadTopology> cpuTopologyMap;
+
+        unordered_flat_map<uint64_t, SymbolCodeData> symbolCode;
+        uint64_t symbolCodeSize = 0;
     };
 
     struct MbpsBlock
@@ -654,6 +663,7 @@ private:
     void AddExternalName( uint64_t ptr, const char* str, size_t sz );
     void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );
     void AddFrameImageData( uint64_t ptr, const char* data, size_t sz );
+    void AddSymbolCode( uint64_t ptr, const char* data, size_t sz );
 
     tracy_force_inline void AddCallstackPayload( uint64_t ptr, const char* data, size_t sz );
     tracy_force_inline void AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t sz );
@@ -754,6 +764,7 @@ private:
     unordered_flat_map<uint64_t, NextCallstack> m_nextCallstack;
     unordered_flat_map<uint64_t, FrameImagePending> m_pendingFrameImageData;
     unordered_flat_map<uint64_t, SymbolPending> m_pendingSymbols;
+    unordered_flat_set<uint64_t> m_pendingSymbolCode;
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;

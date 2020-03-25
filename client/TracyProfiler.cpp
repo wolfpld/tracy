@@ -2130,7 +2130,8 @@ void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
 
 void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueType type )
 {
-    assert( type == QueueType::FrameImageData );
+    assert( type == QueueType::FrameImageData ||
+            type == QueueType::SymbolCode );
 
     QueueItem item;
     MemWrite( &item.hdr.type, type );
@@ -2353,6 +2354,9 @@ bool Profiler::HandleServerQuery()
         break;
     case ServerQuerySymbol:
         HandleSymbolQuery( ptr );
+        break;
+    case ServerQuerySymbolCode:
+        HandleSymbolCodeQuery( ptr, extra );
         break;
     default:
         assert( false );
@@ -2745,6 +2749,11 @@ void Profiler::HandleSymbolQuery( uint64_t symbol )
 
     if( sym.needFree ) tracy_free( (void*)sym.file );
 #endif
+}
+
+void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
+{
+    SendLongString( symbol, (const char*)symbol, size, QueueType::SymbolCode );
 }
 
 }

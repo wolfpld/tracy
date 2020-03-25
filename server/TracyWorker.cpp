@@ -2761,7 +2761,7 @@ void Worker::Exec()
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
                 !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
                 m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() ||
-                !m_pendingSymbols.empty() )
+                !m_pendingSymbols.empty() || !m_pendingSymbolCode.empty() )
             {
                 continue;
             }
@@ -2815,12 +2815,24 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
     if( ev.hdr.idx >= (int)QueueType::StringData )
     {
         ptr += sizeof( QueueHeader ) + sizeof( QueueStringTransfer );
-        if( ev.hdr.type == QueueType::FrameImageData )
+        if( ev.hdr.type == QueueType::FrameImageData ||
+            ev.hdr.type == QueueType::SymbolCode )
         {
             uint32_t sz;
             memcpy( &sz, ptr, sizeof( sz ) );
             ptr += sizeof( sz );
-            AddFrameImageData( ev.stringTransfer.ptr, ptr, sz );
+            switch( ev.hdr.type )
+            {
+            case QueueType::FrameImageData:
+                AddFrameImageData( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            case QueueType::SymbolCode:
+                AddSymbolCode( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            default:
+                assert( false );
+                break;
+            }
             ptr += sz;
         }
         else
@@ -3315,6 +3327,18 @@ void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
     uint32_t csz;
     auto image = m_texcomp.Pack( m_frameImageBuffer, sz, csz, m_slab );
     m_pendingFrameImageData.emplace( ptr, FrameImagePending { image, csz } );
+}
+
+void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
+{
+    auto it = m_pendingSymbolCode.find( ptr );
+    assert( it != m_pendingSymbolCode.end() );
+    m_pendingSymbolCode.erase( it );
+
+    auto code = (char*)m_slab.AllocBig( sz );
+    memcpy( code, data, sz );
+    m_data.symbolCode.emplace( ptr, SymbolCodeData{ code, uint32_t( sz ) } );
+    m_data.symbolCodeSize += sz;
 }
 
 uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
@@ -5195,6 +5219,13 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     sd.isInline = it->second.isInline;
     sd.size.SetVal( it->second.size );
     m_data.symbolMap.emplace( ev.symAddr, std::move( sd ) );
+
+    if( it->second.size > 0 && it->second.size <= 64*1024 )
+    {
+        assert( m_pendingSymbolCode.find( ev.symAddr ) == m_pendingSymbolCode.end() );
+        m_pendingSymbolCode.emplace( ev.symAddr );
+        Query( ServerQuerySymbolCode, ev.symAddr, it->second.size );
+    }
 
     m_pendingSymbols.erase( it );
     m_pendingCustomStrings.erase( fit );

@@ -83,6 +83,7 @@ enum class QueueType : uint8_t
     FrameImageData,
     ExternalName,
     ExternalThreadName,
+    SymbolCode,
     NUM_TYPES
 };
 
@@ -530,6 +531,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // frame image data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // external name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // external thread name
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // symbol code
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

@@ -1641,7 +1641,22 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
-    if( fileVer >= FileVersion( 0, 6, 5 ) )
+    if( fileVer >= FileVersion( 0, 6, 7 ) )
+    {
+        f.Read( sz );
+        m_data.symbolMap.reserve( sz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint64_t symAddr;
+            StringIdx name, file, imageName, callFile;
+            uint32_t line, callLine;
+            uint8_t isInline;
+            Int24 size;
+            f.Read9( symAddr, name, file, line, imageName, callFile, callLine, isInline, size );
+            m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine, isInline, size } );
+        }
+    }
+    else if( fileVer >= FileVersion( 0, 6, 5 ) )
     {
         f.Read( sz );
         m_data.symbolMap.reserve( sz );

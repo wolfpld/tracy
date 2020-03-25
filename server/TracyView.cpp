@@ -742,6 +742,22 @@ void View::DrawNotificationArea()
 {
     auto& io = ImGui::GetIO();
     const auto ty = ImGui::GetFontSize();
+    const auto sqs = m_worker.GetSendQueueSize();
+    if( sqs != 0 )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_TACHOMETER_ALT );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "slow" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            TextFocused( "Query backlog:", RealToString( sqs ) );
+            ImGui::EndTooltip();
+        }
+    }
     auto& crash = m_worker.GetCrashEvent();
     if( crash.thread != 0 )
     {

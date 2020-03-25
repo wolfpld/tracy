@@ -11681,14 +11681,15 @@ void View::DrawStatistics()
 
         const auto w = ImGui::GetWindowWidth();
         static bool widthSet = false;
-        ImGui::Columns( 4 );
+        ImGui::Columns( 5 );
         if( !widthSet )
         {
             widthSet = true;
             ImGui::SetColumnWidth( 0, w * 0.3f );
-            ImGui::SetColumnWidth( 1, w * 0.45f );
+            ImGui::SetColumnWidth( 1, w * 0.375f );
             ImGui::SetColumnWidth( 2, w * 0.125f );
             ImGui::SetColumnWidth( 3, w * 0.125f );
+            ImGui::SetColumnWidth( 4, w * 0.075f );
         }
         ImGui::TextUnformatted( "Name" );
         ImGui::NextColumn();
@@ -11697,6 +11698,8 @@ void View::DrawStatistics()
         ImGui::TextUnformatted( "Image" );
         ImGui::NextColumn();
         ImGui::TextUnformatted( m_statSampleTime ? "Time" : "Count" );
+        ImGui::NextColumn();
+        ImGui::TextUnformatted( "Code size" );
         ImGui::NextColumn();
         ImGui::Separator();
 
@@ -11712,6 +11715,7 @@ void View::DrawStatistics()
                 const char* imageName = "[unknown]";
                 uint32_t line = 0;
                 bool isInline = false;
+                uint32_t symlen = 0;
 
                 auto sit = symMap.find( v->first );
                 if( sit != symMap.end() )
@@ -11730,6 +11734,7 @@ void View::DrawStatistics()
                         line = sit->second.callLine;
                     }
                     if( m_statHideUnknown && file[0] == '[' ) continue;
+                    symlen = sit->second.size.Val();
                 }
                 else if( m_statHideUnknown )
                 {
@@ -11805,6 +11810,8 @@ void View::DrawStatistics()
                 PrintStringPercent( buf, 100. * cnt / m_worker.GetCallstackSampleCount() );
                 ImGui::SameLine();
                 TextDisabledUnformatted( buf );
+                ImGui::NextColumn();
+                if( symlen != 0 ) TextDisabledUnformatted( MemSizeToString( symlen ) );
                 ImGui::NextColumn();
             }
         }

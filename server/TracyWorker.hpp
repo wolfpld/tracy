@@ -366,6 +366,7 @@ public:
     int64_t GetDelay() const { return m_delay; }
     int64_t GetResolution() const { return m_resolution; }
     uint64_t GetPid() const { return m_pid; };
+    CpuArchitecture GetCpuArch() const { return m_data.cpuArch; }
 
     std::shared_mutex& GetDataLock() { return m_data.lock; }
     size_t GetFrameCount( const FrameData& fd ) const { return fd.frames.size(); }

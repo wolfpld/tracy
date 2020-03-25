@@ -2611,6 +2611,14 @@ Source file view works on the local files you have on your disk. The traces them
 \end{itemize}
 \end{bclogo}
 
+\subsubsection{Instruction pointer statistics}
+
+If automated call stack sampling (see chapter~\ref{sampling}) was performed and the source file view was opened with a call stack context (e.g. from a ghost zone, or from statistics of sampled functions), additional profiling information will be available. Symbol name of the selected function will be displayed in the header, along with a count of collected samples. The first column of listing will contain percentage counts of collected instruction pointer samples for each line within the symbol.
+
+This can be used to determine which line of the function takes the most time. Be aware that this information is not fully accurate, as it is the result of random sampling of program execution. Furthermore, undocumented implementation details of an out-of-order CPU architecture will highly impact the measurement. Read chapter~\ref{checkenvironmentcpu} to see the tip of an iceberg.
+
+Unlike other profilers, Tracy doesn't include inlined function statistics in the parent function. Instead, you can view the sampling data even in inlined functions.
+
 \subsection{Lock information window}
 \label{lockwindow}
 

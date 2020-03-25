@@ -5,6 +5,8 @@ struct ImFont;
 namespace tracy
 {
 
+class Worker;
+
 class SourceView
 {
     struct Line
@@ -18,10 +20,10 @@ public:
     ~SourceView();
 
     void Open( const char* fileName, int line, uint64_t symAddr );
-    void Render();
+    void Render( const Worker& worker );
 
 private:
-    void RenderLine( const Line& line, int lineNum );
+    void RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal );
 
     ImFont* m_font;
     const char* m_file;

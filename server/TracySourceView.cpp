@@ -1,10 +1,11 @@
+#include <inttypes.h>
 #include <stdio.h>
 
 #include "../imgui/imgui.h"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
-
 #include "TracySourceView.hpp"
+#include "TracyWorker.hpp"
 
 namespace tracy
 {
@@ -71,8 +72,44 @@ void SourceView::Open( const char* fileName, int line, uint64_t symAddr )
     }
 }
 
-void SourceView::Render()
+void SourceView::Render( const Worker& worker )
 {
+    uint32_t iptotal = 0;
+    unordered_flat_map<uint32_t, uint32_t> ipcount;
+    auto ipmap = m_symAddr != 0 ? worker.GetSymbolInstructionPointers( m_symAddr ) : nullptr;
+    if( ipmap )
+    {
+        for( auto& ip : *ipmap )
+        {
+            auto frame = worker.GetCallstackFrame( ip.first );
+            if( frame )
+            {
+                auto ffn = worker.GetString( frame->data[0].file );
+                if( strcmp( ffn, m_file ) == 0 )
+                {
+                    const auto line = frame->data[0].line;
+                    auto it = ipcount.find( line );
+                    if( it == ipcount.end() )
+                    {
+                        ipcount.emplace( line, ip.second );
+                    }
+                    else
+                    {
+                        it->second += ip.second;
+                    }
+                    iptotal += ip.second;
+                }
+            }
+        }
+        auto sym = worker.GetSymbolData( m_symAddr );
+        if( sym )
+        {
+            TextFocused( "Showing profiling data for:", worker.GetString( sym->name ) );
+            ImGui::SameLine();
+            ImGui::TextDisabled( "(%" PRIu32 " samples)", iptotal );
+        }
+    }
+
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
     if( m_font ) ImGui::PushFont( m_font );
     const auto nw = ImGui::CalcTextSize( "123,345" ).x;
@@ -86,7 +123,7 @@ void SourceView::Render()
                 m_targetLine = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderLine( line, lineNum++ );
+            RenderLine( line, lineNum++, 0, iptotal );
         }
     }
     else
@@ -94,9 +131,21 @@ void SourceView::Render()
         ImGuiListClipper clipper( m_lines.size() );
         while( clipper.Step() )
         {
-            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+            if( iptotal == 0 )
             {
-                RenderLine( m_lines[i], i+1 );
+                for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                {
+                    RenderLine( m_lines[i], i+1, 0, 0 );
+                }
+            }
+            else
+            {
+                for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                {
+                    auto it = ipcount.find( i+1 );
+                    const auto ipcnt = it == ipcount.end() ? 0 : it->second;
+                    RenderLine( m_lines[i], i+1, ipcnt, iptotal );
+                }
             }
         }
     }
@@ -104,7 +153,7 @@ void SourceView::Render()
     ImGui::EndChild();
 }
 
-void SourceView::RenderLine( const Line& line, int lineNum )
+void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -113,6 +162,27 @@ void SourceView::RenderLine( const Line& line, int lineNum )
     if( lineNum == m_selectedLine )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF333322 );
+    }
+
+    if( iptotal != 0 )
+    {
+        if( ipcnt == 0 )
+        {
+            ImGui::TextUnformatted( "       " );
+        }
+        else
+        {
+            char tmp[16];
+            auto end = PrintFloat( tmp, tmp+16, 100.f * ipcnt / iptotal, 2 );
+            memcpy( end, "%", 2 );
+            end++;
+            const auto sz = end - tmp;
+            char buf[16];
+            memset( buf, ' ', 7-sz );
+            memcpy( buf + 7 - sz, tmp, sz+1 );
+            ImGui::TextUnformatted( buf );
+        }
+        ImGui::SameLine( 0, ty );
     }
 
     const auto lineString = RealToString( lineNum );

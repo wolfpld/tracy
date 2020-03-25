@@ -13048,7 +13048,7 @@ void View::DrawTextEditor()
     TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif
     TextFocused( "File:", m_sourceViewFile );
-    m_sourceView->Render();
+    m_sourceView->Render( m_worker );
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;
 }

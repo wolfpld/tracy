@@ -55,6 +55,7 @@ struct ServerQueryPacket
 {
     ServerQuery type;
     uint64_t ptr;
+    uint32_t extra;
 };
 
 enum { ServerQueryPacketSize = sizeof( ServerQueryPacket ) };

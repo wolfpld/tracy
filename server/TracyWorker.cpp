@@ -2790,9 +2790,9 @@ close:
     m_connected.store( false, std::memory_order_relaxed );
 }
 
-void Worker::Query( ServerQuery type, uint64_t data )
+void Worker::Query( ServerQuery type, uint64_t data, uint32_t extra )
 {
-    ServerQueryPacket query { type, data };
+    ServerQueryPacket query { type, data, extra };
     if( m_serverQuerySpaceLeft > 0 )
     {
         m_serverQuerySpaceLeft--;
@@ -2806,7 +2806,7 @@ void Worker::Query( ServerQuery type, uint64_t data )
 
 void Worker::QueryTerminate()
 {
-    ServerQueryPacket query { ServerQueryTerminate, 0 };
+    ServerQueryPacket query { ServerQueryTerminate, 0, 0 };
     m_sock.Send( &query, ServerQueryPacketSize );
 }
 

@@ -2304,10 +2304,12 @@ static bool DontExit() { return false; }
 bool Profiler::HandleServerQuery()
 {
     uint8_t type;
-    if( !m_sock->Read( &type, sizeof( type ), 10, DontExit ) ) return false;
-
     uint64_t ptr;
+    uint32_t extra;
+
+    if( !m_sock->Read( &type, sizeof( type ), 10, DontExit ) ) return false;
     if( !m_sock->Read( &ptr, sizeof( ptr ), 10, DontExit ) ) return false;
+    if( !m_sock->Read( &extra, sizeof( extra ), 10, DontExit ) ) return false;
 
     switch( type )
     {

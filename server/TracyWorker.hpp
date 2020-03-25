@@ -515,7 +515,7 @@ public:
 private:
     void Network();
     void Exec();
-    void Query( ServerQuery type, uint64_t data );
+    void Query( ServerQuery type, uint64_t data, uint32_t extra = 0 );
     void QueryTerminate();
 
     tracy_force_inline bool DispatchProcess( const QueueItem& ev, const char*& ptr );

@@ -36,6 +36,7 @@ enum { WelcomeMessageHostInfoSize = 1024 };
 
 #pragma pack( 1 )
 
+// Must increase left query space after handling!
 enum ServerQuery : uint8_t
 {
     ServerQueryTerminate,

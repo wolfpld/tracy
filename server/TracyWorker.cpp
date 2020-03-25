@@ -2828,6 +2828,7 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
                 break;
             case QueueType::SymbolCode:
                 AddSymbolCode( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
                 break;
             default:
                 assert( false );
@@ -2872,6 +2873,7 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
                 break;
             case QueueType::ExternalName:
                 AddExternalName( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
                 break;
             case QueueType::ExternalThreadName:
                 AddExternalThreadName( ev.stringTransfer.ptr, ptr, sz );
@@ -3765,6 +3767,7 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::SymbolInformation:
         ProcessSymbolInformation( ev.symbolInformation );
+        m_serverQuerySpaceLeft++;
         break;
     case QueueType::Terminate:
         m_terminate = true;

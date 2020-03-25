@@ -1,6 +1,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 
+#include <capstone/capstone.h>
+
 #include "../imgui/imgui.h"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
@@ -26,7 +28,7 @@ SourceView::~SourceView()
     delete[] m_data;
 }
 
-void SourceView::Open( const char* fileName, int line, uint64_t symAddr )
+void SourceView::Open( const char* fileName, int line, uint64_t symAddr, const Worker& worker )
 {
     m_targetLine = line;
     m_selectedLine = line;
@@ -70,6 +72,47 @@ void SourceView::Open( const char* fileName, int line, uint64_t symAddr )
             txt = end;
         }
     }
+
+    m_asm.clear();
+    if( symAddr == 0 ) return;
+    const auto arch = worker.GetCpuArch();
+    if( arch == CpuArchUnknown ) return;
+    uint32_t len;
+    auto code = worker.GetSymbolCode( symAddr, len );
+    if( !code ) return;
+    csh handle;
+    cs_err rval;
+    switch( arch )
+    {
+    case CpuArchX86:
+        rval = cs_open( CS_ARCH_X86, CS_MODE_32, &handle );
+        break;
+    case CpuArchX64:
+        rval = cs_open( CS_ARCH_X86, CS_MODE_64, &handle );
+        break;
+    case CpuArchArm32:
+        rval = cs_open( CS_ARCH_ARM, CS_MODE_ARM, &handle );
+        break;
+    case CpuArchArm64:
+        rval = cs_open( CS_ARCH_ARM64, CS_MODE_ARM, &handle );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+    if( rval != CS_ERR_OK ) return;
+    cs_insn* insn;
+    size_t cnt = cs_disasm( handle, (const uint8_t*)code, len, symAddr, 0, &insn );
+    if( cnt > 0 )
+    {
+        m_asm.reserve( cnt );
+        for( size_t i=0; i<cnt; i++ )
+        {
+            m_asm.emplace_back( AsmLine { insn[i].address, insn[i].mnemonic, insn[i].op_str } );
+        }
+        cs_free( insn, cnt );
+    }
+    cs_close( &handle );
 }
 
 void SourceView::Render( const Worker& worker )

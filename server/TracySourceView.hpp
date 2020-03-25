@@ -1,3 +1,4 @@
+#include <string>
 #include <vector>
 
 struct ImFont;
@@ -15,11 +16,18 @@ class SourceView
         const char* end;
     };
 
+    struct AsmLine
+    {
+        uint64_t addr;
+        std::string mnemonic;
+        std::string operands;
+    };
+
 public:
     SourceView( ImFont* font );
     ~SourceView();
 
-    void Open( const char* fileName, int line, uint64_t symAddr );
+    void Open( const char* fileName, int line, uint64_t symAddr, const Worker& worker );
     void Render( const Worker& worker );
 
 private:
@@ -34,6 +42,7 @@ private:
     int m_selectedLine;
 
     std::vector<Line> m_lines;
+    std::vector<AsmLine> m_asm;
 };
 
 }

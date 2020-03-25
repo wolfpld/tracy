@@ -196,7 +196,7 @@ void View::InitTextEditor( ImFont* font )
 void View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
 {
     m_sourceViewFile = fileName;
-    m_sourceView->Open( fileName, line, symAddr );
+    m_sourceView->Open( fileName, line, symAddr, m_worker );
 }
 
 const char* View::ShortenNamespace( const char* name ) const

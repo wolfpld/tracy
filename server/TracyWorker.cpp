@@ -1671,6 +1671,36 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 6, 7 ) )
+    {
+        f.Read( sz );
+        if( eventMask & EventType::SymbolCode )
+        {
+            uint64_t ssz = 0;
+            m_data.symbolCode.reserve( sz );
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint64_t symAddr;
+                uint32_t len;
+                f.Read2( symAddr, len );
+                ssz += len;
+                auto ptr = (char*)m_slab.AllocBig( len );
+                f.Read( ptr, len );
+                m_data.symbolCode.emplace( symAddr, SymbolCodeData { ptr, len } );
+            }
+            m_data.symbolCodeSize = ssz;
+        }
+        else
+        {
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint64_t symAddr, len;
+                f.Read2( symAddr, len );
+                f.Skip( len );
+            }
+        }
+    }
+
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
@@ -6622,6 +6652,15 @@ void Worker::Write( FileWrite& f )
     {
         f.Write( &v.first, sizeof( v.first ) );
         f.Write( &v.second, sizeof( v.second ) );
+    }
+
+    sz = m_data.symbolCode.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.symbolCode )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        f.Write( &v.second.len, sizeof( v.second.len ) );
+        f.Write( &v.second.data, v.second.len );
     }
 }
 

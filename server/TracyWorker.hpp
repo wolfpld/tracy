@@ -429,6 +429,7 @@ public:
     const CallstackFrameData* GetCallstackFrame( const CallstackFrameId& ptr ) const;
     uint64_t GetCanonicalPointer( const CallstackFrameId& id ) const;
     const SymbolData* GetSymbolData( uint64_t sym ) const;
+    const char* GetSymbolCode( uint64_t sym, uint32_t& len ) const;
 
 #ifndef TRACY_NO_STATISTICS
     const VarArray<CallstackFrameId>& GetParentCallstack( uint32_t idx ) const { return *m_data.parentCallstackPayload[idx]; }

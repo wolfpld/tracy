@@ -2265,6 +2265,14 @@ const SymbolData* Worker::GetSymbolData( uint64_t sym ) const
     }
 }
 
+const char* Worker::GetSymbolCode( uint64_t sym, uint32_t& len ) const
+{
+    auto it = m_data.symbolCode.find( sym );
+    if( it == m_data.symbolCode.end() ) return nullptr;
+    len = it->second.len;
+    return it->second.data;
+}
+
 int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
 {
     auto ptr = &ev;

@@ -11435,9 +11435,9 @@ void View::DrawStatistics()
     if( m_statMode == 0 )
     {
 #ifdef TRACY_EXTENDED_FONT
-        m_statisticsFilter.Draw( ICON_FA_FILTER " Filter zones", 200 );
+        m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
 #else
-        m_statisticsFilter.Draw( "Filter zones", 200 );
+        m_statisticsFilter.Draw( "Filter", 200 );
 #endif
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -11608,9 +11608,9 @@ void View::DrawStatistics()
     else
     {
 #ifdef TRACY_EXTENDED_FONT
-        m_statisticsFilter.Draw( ICON_FA_FILTER " Filter symbols", 200 );
+        m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
 #else
-        m_statisticsFilter.Draw( "Filter symbols", 200 );
+        m_statisticsFilter.Draw( "Filter", 200 );
 #endif
         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
@@ -11650,9 +11650,9 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::TextUnformatted( "Location:" );
         ImGui::SameLine();
-        ImGui::RadioButton( "Function entry", &m_statSampleLocation, 0 );
+        ImGui::RadioButton( "Entry point", &m_statSampleLocation, 0 );
         ImGui::SameLine();
-        ImGui::RadioButton( "Instruction", &m_statSampleLocation, 1 );
+        ImGui::RadioButton( "Sample", &m_statSampleLocation, 1 );
         ImGui::Separator();
         ImGui::BeginChild( "##statisticsSampling" );
 

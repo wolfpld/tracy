@@ -12374,7 +12374,7 @@ void View::DrawInfo()
         TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount() ) );
         TextFocused( "Strings:", RealToString( m_worker.GetStringsCount() ) );
         TextFocused( "Symbols:", RealToString( m_worker.GetSymbolsCount() ) );
-        TextFocused( "Symbols code:", RealToString( m_worker.GetSymbolCodeCount() ) );
+        TextFocused( "Symbol code fragments:", RealToString( m_worker.GetSymbolCodeCount() ) );
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();

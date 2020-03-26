@@ -1378,6 +1378,8 @@ void Profiler::Worker()
                 ptr = MemRead<uint64_t>( &item.lockName.name );
                 SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
                 break;
+            default:
+                break;
             }
             AppendData( &item, QueueDataSize[idx] );
         }

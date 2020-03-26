@@ -11700,30 +11700,68 @@ void View::DrawStatistics()
         };
 
         Vector<SymList> data;
-        data.reserve( symStat.size() );
-        auto statit = symStat.begin();
-        if( m_statisticsFilter.IsActive() )
+        if( m_showAllSymbols )
         {
-            while( statit != symStat.end() )
+            data.reserve( symMap.size() );
+            if( m_statisticsFilter.IsActive() )
             {
-                auto sit = symMap.find( statit->first );
-                if( sit != symMap.end() )
+                for( auto& v : symMap )
                 {
-                    auto name = m_worker.GetString( sit->second.name );
+                    auto name = m_worker.GetString( v.second.name );
                     if( m_statisticsFilter.PassFilter( name ) )
                     {
-                        data.push_back_no_space_check( SymList { statit->first, statit->second.incl, statit->second.excl } );
+                        auto it = symStat.find( v.first );
+                        if( it == symStat.end() )
+                        {
+                            data.push_back_no_space_check( SymList { v.first, 0, 0 } );
+                        }
+                        else
+                        {
+                            data.push_back_no_space_check( SymList { v.first, it->second.incl, it->second.excl } );
+                        }
                     }
                 }
-                ++statit;
+            }
+            else
+            {
+                for( auto& v : symMap )
+                {
+                    auto it = symStat.find( v.first );
+                    if( it == symStat.end() )
+                    {
+                        data.push_back_no_space_check( SymList { v.first, 0, 0 } );
+                    }
+                    else
+                    {
+                        data.push_back_no_space_check( SymList { v.first, it->second.incl, it->second.excl } );
+                    }
+                }
             }
         }
         else
         {
-            while( statit != symStat.end() )
+            data.reserve( symStat.size() );
+            if( m_statisticsFilter.IsActive() )
             {
-                data.push_back_no_space_check( SymList { statit->first, statit->second.incl, statit->second.excl } );
-                ++statit;
+                for( auto& v : symStat )
+                {
+                    auto sit = symMap.find( v.first );
+                    if( sit != symMap.end() )
+                    {
+                        auto name = m_worker.GetString( sit->second.name );
+                        if( m_statisticsFilter.PassFilter( name ) )
+                        {
+                            data.push_back_no_space_check( SymList { v.first, v.second.incl, v.second.excl } );
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for( auto& v : symStat )
+                {
+                    data.push_back_no_space_check( SymList { v.first, v.second.incl, v.second.excl } );
+                }
             }
         }
 
@@ -11767,12 +11805,13 @@ void View::DrawStatistics()
             ImGui::NextColumn();
             ImGui::Separator();
 
+            const bool showAll = m_showAllSymbols;
             const auto period = m_worker.GetSamplingPeriod();
             int idx = 0;
             for( auto& v : data )
             {
                 const auto cnt = m_statSelf ? v.excl : v.incl;
-                if( cnt > 0 )
+                if( cnt > 0 || showAll )
                 {
                     const char* name = "[unknown]";
                     const char* file = "[unknown]";
@@ -11862,18 +11901,21 @@ void View::DrawStatistics()
                     ImGui::NextColumn();
                     TextDisabledUnformatted( imageName );
                     ImGui::NextColumn();
-                    if( m_statSampleTime )
+                    if( cnt > 0 )
                     {
-                        ImGui::TextUnformatted( TimeToString( cnt * period ) );
+                        if( m_statSampleTime )
+                        {
+                            ImGui::TextUnformatted( TimeToString( cnt * period ) );
+                        }
+                        else
+                        {
+                            ImGui::TextUnformatted( RealToString( cnt ) );
+                        }
+                        char buf[64];
+                        PrintStringPercent( buf, 100. * cnt / m_worker.GetCallstackSampleCount() );
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( buf );
                     }
-                    else
-                    {
-                        ImGui::TextUnformatted( RealToString( cnt ) );
-                    }
-                    char buf[64];
-                    PrintStringPercent( buf, 100. * cnt / m_worker.GetCallstackSampleCount() );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( buf );
                     ImGui::NextColumn();
                     if( symlen != 0 ) TextDisabledUnformatted( MemSizeToString( symlen ) );
                     ImGui::NextColumn();

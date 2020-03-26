@@ -2209,7 +2209,7 @@ The message list can be filtered in the following ways:
 
 Looking at the timeline view gives you a very localized outlook on things. Sometimes you want to take a look at the general overview of the program's behavior, for example you want to know which function takes the most of application's execution time. The statistics window provides you exactly that information.
 
-If the trace capture was performed with call stack sampling enabled (as described in chapter~\ref{sampling}), you will be presented with an option to switch between \emph{\faSyringe{}~Instrumentation} and \emph{\faEyeDropper{}~Sampling} modes. Otherwise only the instrumentation view will be available.
+If the trace capture was performed with call stack sampling enabled (as described in chapter~\ref{sampling}), you will be presented with an option to switch between \emph{\faSyringe{}~Instrumentation} and \emph{\faEyeDropper{}~Sampling} modes. If no sampling data was collected, but symbols were retrieved, the second mode will be displayed as \emph{\faPuzzlePiece{}~Symbols}, enabling you to list available symbols. Otherwise only the instrumentation view will be present.
 
 \subsubsection{Instrumentation mode}
 
@@ -2238,7 +2238,7 @@ The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Sh
 
 The last column, \emph{Code size}, displays the size of symbol in the executable image of the program. In some cases this data won't be available.
 
-Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case, and the exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch.
+Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case, and the exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only call stack samples, but also all other symbols collected during the profiling process (this is enabled by default, if no sampling was performed).
 
 \subsection{Find zone window}
 \label{findzone}

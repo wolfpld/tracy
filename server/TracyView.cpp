@@ -11414,22 +11414,40 @@ void View::DrawStatistics()
         return;
     }
 
-    if( m_worker.AreCallstackSamplesReady() && m_worker.GetCallstackSampleCount() > 0 )
+    if( m_worker.AreCallstackSamplesReady() )
     {
+        const auto hasSamples = m_worker.GetCallstackSampleCount() > 0;
+        const auto hasSymbols = m_worker.GetSymbolsCount() > 0;
+
+        if( hasSamples || hasSymbols )
+        {
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_statMode, 0 );
+            ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_statMode, 0 );
 #else
-        ImGui::RadioButton( "Instrumentation", &m_statMode, 0 );
+            ImGui::RadioButton( "Instrumentation", &m_statMode, 0 );
 #endif
-        ImGui::SameLine();
+            ImGui::SameLine();
+
+            if( hasSamples )
+            {
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_statMode, 1 );
+                ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_statMode, 1 );
 #else
-        ImGui::RadioButton( "Sampling", &m_statMode, 1 );
+                ImGui::RadioButton( "Sampling", &m_statMode, 1 );
 #endif
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
+            }
+            else
+            {
+#ifdef TRACY_EXTENDED_FONT
+                ImGui::RadioButton( ICON_FA_PUZZLE_PIECE " Symbols", &m_statMode, 1 );
+#else
+                ImGui::RadioButton( "Symbols", &m_statMode, 1 );
+#endif
+            }
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+        }
     }
 
     if( m_statMode == 0 )

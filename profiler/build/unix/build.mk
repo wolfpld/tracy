@@ -1,6 +1,6 @@
 CFLAGS += 
 CXXFLAGS := $(CFLAGS) -std=c++17
-DEFINES += -DTRACY_FILESELECTOR -DTRACY_ROOT_WINDOW -DIMGUI_IMPL_OPENGL_LOADER_GL3W
+DEFINES += -DTRACY_FILESELECTOR -DIMGUI_IMPL_OPENGL_LOADER_GL3W
 INCLUDES := $(shell pkg-config --cflags glfw3 freetype2 capstone) -I../../../imgui -I../../libs/gl3w
 LIBS := $(shell pkg-config --libs glfw3 freetype2 capstone) -lpthread -ldl
 PROJECT := Tracy

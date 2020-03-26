@@ -423,7 +423,7 @@ bool View::DrawImpl()
         keepOpenPtr = &keepOpen;
     }
 
-#ifdef TRACY_ROOT_WINDOW
+#ifndef TRACY_NO_ROOT_WINDOW
     if( !m_titleSet && m_stcb )
     {
         m_titleSet = true;

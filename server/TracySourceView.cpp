@@ -9,9 +9,7 @@
 #include "TracySourceView.hpp"
 #include "TracyWorker.hpp"
 
-#ifdef TRACY_EXTENDED_FONT
-#  include "IconsFontAwesome5.h"
-#endif
+#include "IconsFontAwesome5.h"
 
 namespace tracy
 {
@@ -139,11 +137,7 @@ void SourceView::Render( const Worker& worker )
     {
         if( !m_asm.empty() )
         {
-#ifdef TRACY_EXTENDED_FONT
             if( SmallCheckbox( ICON_FA_MICROCHIP " Show assembly", &m_showAsm ) )
-#else
-            if( SmallCheckbox( "Show assembly", &m_showAsm ) )
-#endif
             {
                 if( m_showAsm )
                 {

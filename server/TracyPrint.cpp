@@ -176,11 +176,7 @@ const char* TimeToString( int64_t _ns )
     else if( ns < 1000ll * 1000 )
     {
         PrintSmallIntFrac( buf, ns );
-#ifdef TRACY_EXTENDED_FONT
         memcpy( buf, " \xce\xbcs", 5 );
-#else
-        memcpy( buf, " us", 4 );
-#endif
     }
     else if( ns < 1000ll * 1000 * 1000 )
     {

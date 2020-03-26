@@ -42,9 +42,7 @@
 #  include "../nfd/nfd.h"
 #endif
 
-#ifdef TRACY_EXTENDED_FONT
-#  include "IconsFontAwesome5.h"
-#endif
+#include "IconsFontAwesome5.h"
 
 #ifndef M_PI_2
 #define M_PI_2 1.57079632679489661923
@@ -276,9 +274,7 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Protocol mismatch", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-#ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
-#endif
         ImGui::TextUnformatted( "The client you are trying to connect to uses incompatible protocol version.\nMake sure you are using the same Tracy version on both client and server." );
         ImGui::Separator();
         if( ImGui::Button( "My bad" ) )
@@ -292,9 +288,7 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client not ready", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-#ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_LIGHTBULB );
-#endif
         ImGui::TextUnformatted( "The client you are trying to connect to is no longer able to sent profiling data,\nbecause another server was already connected to it.\nYou can do the following:\n\n  1. Restart the client application.\n  2. Rebuild the client application with on-demand mode enabled." );
         ImGui::Separator();
         if( ImGui::Button( "I understand" ) )
@@ -308,9 +302,7 @@ bool View::Draw()
 
     if( ImGui::BeginPopupModal( "Client disconnected", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-#ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_HANDSHAKE );
-#endif
         ImGui::TextUnformatted( "The client you are trying to connect to has disconnected during the initial\nconnection handshake. Please check your network configuration." );
         ImGui::Separator();
         if( ImGui::Button( "Will do" ) )
@@ -326,9 +318,7 @@ bool View::Draw()
     {
         const auto& data = s_instance->m_worker.GetFailureData();
 
-#ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_SKULL );
-#endif
         ImGui::TextUnformatted( "Profiling session terminated due to improper instrumentation.\nPlease correct your program and try again." );
         ImGui::TextUnformatted( "Reason:" );
         ImGui::SameLine();
@@ -366,15 +356,9 @@ bool View::Draw()
 }
 
 static const char* MainWindowButtons[] = {
-#ifdef TRACY_EXTENDED_FONT
     ICON_FA_PLAY " Resume",
     ICON_FA_PAUSE " Pause",
     ICON_FA_SQUARE " Stopped"
-#else
-    "Resume",
-    "Pause",
-    "Stopped"
-#endif
 };
 
 enum { MainWindowButtonsCount = sizeof( MainWindowButtons ) / sizeof( *MainWindowButtons ) };
@@ -386,9 +370,7 @@ bool View::DrawImpl()
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
         ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
-#ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_WIFI );
-#endif
         ImGui::TextUnformatted( "Waiting for connection..." );
         DrawWaitingDots( s_time );
         ImGui::Spacing();
@@ -474,11 +456,7 @@ bool View::DrawImpl()
 
     if( !m_staticView )
     {
-#if defined TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_WIFI ) )
-#else
-        if( ImGui::Button( "Connection" ) )
-#endif
         {
             ImGui::OpenPopup( "TracyConnectionPopup" );
         }
@@ -512,98 +490,46 @@ bool View::DrawImpl()
         ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor::HSV( 0.f, 0.6f, 0.6f) );
         ImGui::PushStyleColor( ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV( 0.f, 0.7f, 0.7f) );
         ImGui::PushStyleColor( ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV( 0.f, 0.8f, 0.8f) );
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_POWER_OFF ) ) keepOpen = false;
-#else
-        if( ImGui::Button( "Close" ) ) keepOpen = false;
-#endif
         ImGui::PopStyleColor( 3 );
     }
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ToggleButton( ICON_FA_COG " Options", m_showOptions );
-#else
-    ToggleButton( "Options", m_showOptions );
-#endif
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ToggleButton( ICON_FA_TAGS " Messages", m_showMessages );
-#else
-    ToggleButton( "Messages", m_showMessages );
-#endif
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ToggleButton( ICON_FA_SEARCH " Find zone", m_findZone.show );
-#else
-    ToggleButton( "Find zone", m_findZone.show );
-#endif
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ToggleButton( ICON_FA_SORT_AMOUNT_UP " Statistics", m_showStatistics );
-#else
-    ToggleButton( "Statistics", m_showStatistics );
-#endif
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ToggleButton( ICON_FA_MEMORY " Memory", m_memInfo.show );
-#else
-    ToggleButton( "Memory", m_memInfo.show );
-#endif
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ToggleButton( ICON_FA_BALANCE_SCALE " Compare", m_compare.show );
-#else
-    ToggleButton( "Compare", m_compare.show );
-#endif
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
-#else
-    ToggleButton( "Info", m_showInfo );
-#endif
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_TOOLS ) ) ImGui::OpenPopup( "ToolsPopup" );
-#else
-    if( ImGui::Button( "Tools" ) ) ImGui::OpenPopup( "ToolsPopup" );
-#endif
     if( ImGui::BeginPopup( "ToolsPopup" ) )
     {
         const auto ficnt = m_worker.GetFrameImageCount();
-#ifdef TRACY_EXTENDED_FONT
         if( ButtonDisablable( ICON_FA_PLAY " Playback", ficnt == 0 ) )
-#else
-        if( ButtonDisablable( "Playback", , ficnt == 0)  )
-#endif
         {
             m_showPlayback = true;
         }
         const auto& ctd = m_worker.GetCpuThreadData();
-#ifdef TRACY_EXTENDED_FONT
         if( ButtonDisablable( ICON_FA_SLIDERS_H " CPU data", ctd.empty() ) )
-#else
-        if( ButtonDisablable( "CPU data", ctd.empty() ) )
-#endif
         {
             m_showCpuDataWindow = true;
         }
         const auto anncnt = m_annotations.size();
-#ifdef TRACY_EXTENDED_FONT
         if( ButtonDisablable( ICON_FA_STICKY_NOTE " Annotations", anncnt == 0 ) )
-#else
-        if( ButtonDisablable( "Annotations", , anncnt == 0)  )
-#endif
         {
             m_showAnnotationList = true;
         }
         ImGui::EndPopup();
     }
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) ) ZoomToPrevFrame();
-#else
-    if( ImGui::SmallButton( " < " ) ) ZoomToPrevFrame();
-#endif
     ImGui::SameLine();
     {
         const auto vis = Vis( m_frames ).visible;
@@ -618,11 +544,7 @@ bool View::DrawImpl()
         }
     }
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) ) ZoomToNextFrame();
-#else
-    if( ImGui::SmallButton( " > " ) ) ZoomToNextFrame();
-#endif
     ImGui::SameLine();
     if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
     {
@@ -644,7 +566,6 @@ bool View::DrawImpl()
         ImGui::EndCombo();
     }
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ToggleButton( ICON_FA_CROSSHAIRS, m_goToFrame );
     if( ImGui::IsItemHovered() )
     {
@@ -652,13 +573,9 @@ bool View::DrawImpl()
         ImGui::TextUnformatted( "Go to frame" );
         ImGui::EndTooltip();
     }
-#else
-    ToggleButton( "Go to", m_goToFrame );
-#endif
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ImGui::Text( ICON_FA_EYE " %-10s", TimeToString( m_vd.zvEnd - m_vd.zvStart ) );
     if( ImGui::IsItemHovered() )
     {
@@ -674,9 +591,6 @@ bool View::DrawImpl()
         ImGui::Text( "Time span" );
         ImGui::EndTooltip();
     }
-#else
-    ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_vd.zvEnd - m_vd.zvStart ), TimeToString( m_worker.GetLastTime() ) );
-#endif
     DrawNotificationArea();
 
     m_frameHover = -1;
@@ -747,11 +661,7 @@ void View::DrawNotificationArea()
     if( sqs != 0 )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_TACHOMETER_ALT );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "slow" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -763,11 +673,7 @@ void View::DrawNotificationArea()
     if( crash.thread != 0 )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_SKULL );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "crash" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             CrashTooltip();
@@ -784,11 +690,7 @@ void View::DrawNotificationArea()
     if( m_vd.drawEmptyLabels )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EXPAND );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "labels" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -800,11 +702,7 @@ void View::DrawNotificationArea()
     if( !m_vd.drawContextSwitches )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_HIKING );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "ctx" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -816,11 +714,7 @@ void View::DrawNotificationArea()
     if( !m_vd.drawCpuData )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_SLIDERS_H );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "cpu" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -832,11 +726,7 @@ void View::DrawNotificationArea()
     if( !m_vd.drawGpuZones )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_EYE );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "gpu" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -848,11 +738,7 @@ void View::DrawNotificationArea()
     if( !m_vd.drawZones )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_MICROCHIP );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "zones" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -865,11 +751,7 @@ void View::DrawNotificationArea()
     if( !m_vd.ghostZones )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_GHOST );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "ghost" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -882,11 +764,7 @@ void View::DrawNotificationArea()
     if( !m_vd.drawLocks )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_LOCK );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "locks" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -898,11 +776,7 @@ void View::DrawNotificationArea()
     if( !m_vd.drawPlots )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_SIGNATURE );
-#else
-        TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "plots" );
-#endif
         if( ImGui::IsItemHovered() )
         {
             ImGui::BeginTooltip();
@@ -924,11 +798,7 @@ void View::DrawNotificationArea()
         if( hidden )
         {
             ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
             TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), ICON_FA_LOW_VISION );
-#else
-            TextColoredUnformatted( ImVec4( 1, 0.5, 0, 1 ), "hidden" );
-#endif
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
@@ -941,17 +811,11 @@ void View::DrawNotificationArea()
     if( !m_worker.IsBackgroundDone() )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         TextDisabledUnformatted( ICON_FA_TASKS );
         ImGui::SameLine();
         const auto pos = ImGui::GetCursorPos();
         ImGui::TextUnformatted( "  " );
         ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.75f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
-#else
-        const auto pos = ImGui::GetCursorPos();
-        ImGui::TextUnformatted( "  " );
-        ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.75f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
-#endif
         auto rmin = ImGui::GetItemRectMin();
         rmin.x -= ty * 0.5f;
         const auto rmax = ImGui::GetItemRectMax();
@@ -965,11 +829,7 @@ void View::DrawNotificationArea()
     if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Saving )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         ImGui::TextUnformatted( ICON_FA_SAVE " Saving trace..." );
-#else
-        ImGui::TextUnformatted( "Saving trace..." );
-#endif
         m_notificationTime = 0;
     }
     else if( m_notificationTime > 0 )
@@ -1033,11 +893,7 @@ bool View::DrawConnection()
         }
     }
 
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_SAVE " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
-#else
-    if( ImGui::Button( "Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
-#endif
     {
 #ifdef TRACY_FILESELECTOR
         nfdchar_t* fn;
@@ -1079,11 +935,7 @@ bool View::DrawConnection()
     }
 
     ImGui::SameLine( 0, 2 * ty );
-#ifdef TRACY_EXTENDED_FONT
     const char* stopStr = ICON_FA_PLUG " Stop";
-#else
-    const char* stopStr = "Stop";
-#endif
     std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
     if( !m_disconnectIssued && m_worker.IsConnected() )
     {
@@ -1101,20 +953,14 @@ bool View::DrawConnection()
     }
 
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_EXCLAMATION_TRIANGLE " Discard" ) )
-#else
-    if( ImGui::Button( "Discard" ) )
-#endif
     {
         ImGui::OpenPopup( "Confirm trace discard" );
     }
 
     if( ImGui::BeginPopupModal( "Confirm trace discard", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
-#ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_EXCLAMATION_TRIANGLE );
-#endif
         ImGui::TextUnformatted( "All unsaved profiling data will be lost!" );
         ImGui::TextUnformatted( "Are you sure you want to proceed?" );
         ImGui::Separator();
@@ -2687,12 +2533,7 @@ void View::DrawZones()
                     draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px, oldOffset + to + th ), 0xFF2222FF );
                     draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px + (ty - to) * 0.25f, oldOffset + to + th * 0.5f ), wpos + ImVec2( px, oldOffset + to + th ), 0xFF2222FF, 2.0f );
 
-#ifdef TRACY_EXTENDED_FONT
                     const auto crashText = ICON_FA_SKULL " crash " ICON_FA_SKULL;
-#else
-                    const auto crashText = "crash";
-#endif
-
                     auto ctw = ImGui::CalcTextSize( crashText ).x;
                     DrawTextContrast( draw, wpos + ImVec2( px - ctw * 0.5f, oldOffset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
 
@@ -2740,13 +2581,8 @@ void View::DrawZones()
             {
                 auto& vis = Vis( v );
                 const auto color = vis.ghost ? 0xFFAA9999 : 0x88AA7777;
-#ifdef TRACY_EXTENDED_FONT
                 draw->AddText( wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), color, ICON_FA_GHOST );
                 ghostSz = ImGui::CalcTextSize( ICON_FA_GHOST ).x;
-#else
-                draw->AddText( draw, wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), color, "ghost" );
-                ghostSz = ImGui::CalcTextSize( "ghost" ).x;
-#endif
             }
 #endif
 
@@ -2776,11 +2612,7 @@ void View::DrawZones()
                     if( crash.thread == v->id )
                     {
                         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                         TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
-#else
-                        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
-#endif
                     }
 
                     const auto ctx = m_worker.GetContextSwitchData( v->id );
@@ -3191,11 +3023,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     {
                         TextFocused( "CPU:", RealToString( pit->Cpu() ) );
                         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                         TextFocused( ICON_FA_LONG_ARROW_ALT_RIGHT, RealToString( ev.Cpu() ) );
-#else
-                        TextFocused( "->", RealToString( ev.Cpu() ) );
-#endif
                     }
                     else
                     {
@@ -4527,16 +4355,9 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             }
             ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
             ImGui::Separator();
-#ifdef TRACY_EXTENDED_FONT
             TextFocused( ICON_FA_RANDOM " Appeared at", TimeToString( range.start ) );
             TextFocused( ICON_FA_RANDOM " Last event at", TimeToString( range.end ) );
             TextFocused( ICON_FA_RANDOM " Activity time:", TimeToString( activity ) );
-#else
-            ImGui::TextUnformatted( "This thread" );
-            TextFocused( "Appeared at", TimeToString( range.start ) );
-            TextFocused( "Last event at", TimeToString( range.end ) );
-            TextFocused( "Activity time:", TimeToString( activity ) );
-#endif
             ImGui::SameLine();
             ImGui::TextDisabled( "(%.2f%% of lock lifetime)", activity / double( lockLen ) * 100 );
             ImGui::Separator();
@@ -6303,11 +6124,7 @@ void View::DrawZoneInfoWindow()
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
-#else
-    if( ImGui::Button( "Zoom to zone" ) )
-#endif
     {
         ZoomToZone( ev );
     }
@@ -6315,11 +6132,7 @@ void View::DrawZoneInfoWindow()
     if( parent )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
-#else
-        if( ImGui::Button( "Go to parent" ) )
-#endif
         {
             ShowZoneInfo( *parent );
         }
@@ -6332,11 +6145,7 @@ void View::DrawZoneInfoWindow()
         if( !slz.zones.empty() )
         {
             ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
             if( ImGui::Button( ICON_FA_CHART_BAR " Statistics" ) )
-#else
-            if( ImGui::Button( "Statistics" ) )
-#endif
             {
                 m_findZone.ShowZone( sl, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
             }
@@ -6352,11 +6161,7 @@ void View::DrawZoneInfoWindow()
         {
             SetButtonHighlightColor();
         }
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
-#else
-        if( ImGui::Button( "Call stack" ) )
-#endif
         {
             m_callstackInfoWindow = extra.callstack.Val();
         }
@@ -6374,11 +6179,7 @@ void View::DrawZoneInfoWindow()
         {
             SetButtonHighlightColor();
         }
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
-#else
-        if( ImGui::Button( "Source" ) )
-#endif
         {
             SetTextEditorFile( fileName, srcloc.line, 0 );
         }
@@ -6390,11 +6191,7 @@ void View::DrawZoneInfoWindow()
     if( !m_zoneInfoStack.empty() )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ARROW_LEFT " Go back" ) )
-#else
-        if( ImGui::Button( "Go back" ) )
-#endif
         {
             m_zoneInfoWindow = m_zoneInfoStack.back_and_pop();
         }
@@ -6642,11 +6439,7 @@ void View::DrawZoneInfoWindow()
                             }
                             else
                             {
-#ifdef TRACY_EXTENDED_FONT
                                 ImGui::Text( "%i " ICON_FA_LONG_ARROW_ALT_RIGHT " %i", cpu0, cpu1 );
-#else
-                                ImGui::Text( "%i -> %i", cpu0, cpu1 );
-#endif
                                 const auto tt0 = m_worker.GetThreadTopology( cpu0 );
                                 const auto tt1 = m_worker.GetThreadTopology( cpu1 );
                                 if( tt0 && tt1 )
@@ -7300,11 +7093,7 @@ void View::DrawGpuInfoWindow()
     bool show = true;
     ImGui::Begin( "Zone info", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to zone" ) )
-#else
-    if( ImGui::Button( "Zoom to zone" ) )
-#endif
     {
         ZoomToZone( ev );
     }
@@ -7312,11 +7101,7 @@ void View::DrawGpuInfoWindow()
     if( parent )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ARROW_UP " Go to parent" ) )
-#else
-        if( ImGui::Button( "Go to parent" ) )
-#endif
         {
             ShowZoneInfo( *parent, m_gpuInfoWindowThread );
         }
@@ -7329,11 +7114,7 @@ void View::DrawGpuInfoWindow()
         {
             SetButtonHighlightColor();
         }
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
-#else
-        if( ImGui::Button( "Call stack" ) )
-#endif
         {
             m_callstackInfoWindow = ev.callstack.Val();
         }
@@ -7351,11 +7132,7 @@ void View::DrawGpuInfoWindow()
         {
             SetButtonHighlightColor();
         }
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
-#else
-        if( ImGui::Button( "Source" ) )
-#endif
         {
             SetTextEditorFile( fileName, srcloc.line, 0 );
         }
@@ -7367,11 +7144,7 @@ void View::DrawGpuInfoWindow()
     if( !m_gpuInfoStack.empty() )
     {
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_ARROW_LEFT " Go back" ) )
-#else
-        if( ImGui::Button( "Go back" ) )
-#endif
         {
             m_gpuInfoWindow = m_gpuInfoStack.back_and_pop();
         }
@@ -7736,45 +7509,25 @@ void View::DrawOptions()
     ImGui::Begin( "Options", &m_showOptions, ImGuiWindowFlags_AlwaysAutoResize );
 
     bool val = m_vd.drawEmptyLabels;
-#ifdef TRACY_EXTENDED_FONT
     ImGui::Checkbox( ICON_FA_EXPAND " Draw empty labels", &val );
-#else
-    ImGui::Checkbox( "Draw empty labels", &val );
-#endif
     m_vd.drawEmptyLabels = val;
     if( m_worker.HasContextSwitches() )
     {
         ImGui::Separator();
         val = m_vd.drawContextSwitches;
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_HIKING " Draw context switches", &val );
-#else
-        ImGui::Checkbox( "Draw context switches", &val );
-#endif
         m_vd.drawContextSwitches = val;
         ImGui::Indent();
         val = m_vd.darkenContextSwitches;
-#ifdef TRACY_EXTENDED_FONT
         SmallCheckbox( ICON_FA_MOON " Darken inactive threads", &val );
-#else
-        SmallCheckbox( "Darken inactive threads", &val );
-#endif
         m_vd.darkenContextSwitches = val;
         ImGui::Unindent();
         val = m_vd.drawCpuData;
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_SLIDERS_H " Draw CPU data", &val );
-#else
-        ImGui::Checkbox( "Draw CPU data", &val );
-#endif
         m_vd.drawCpuData = val;
         ImGui::Indent();
         val = m_vd.drawCpuUsageGraph;
-#ifdef TRACY_EXTENDED_FONT
         SmallCheckbox( ICON_FA_SIGNATURE " Draw CPU usage graph", &val );
-#else
-        SmallCheckbox( "Draw CPU usage graph", &val );
-#endif
         m_vd.drawCpuUsageGraph = val;
         ImGui::Unindent();
     }
@@ -7782,11 +7535,7 @@ void View::DrawOptions()
     if( m_worker.GetCallstackSampleCount() != 0 )
     {
         val = m_vd.drawSamples;
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_EYE_DROPPER " Draw stack samples", &val );
-#else
-        ImGui::Checkbox( "Draw stack samples", &val );
-#endif
         m_vd.drawSamples = val;
     }
 
@@ -7795,11 +7544,7 @@ void View::DrawOptions()
     {
         ImGui::Separator();
         val = m_vd.drawGpuZones;
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_EYE " Draw GPU zones", &val );
-#else
-        ImGui::Checkbox( "Draw GPU zones", &val );
-#endif
         m_vd.drawGpuZones = val;
         const auto expand = ImGui::TreeNode( "GPU zones" );
         ImGui::SameLine();
@@ -7838,11 +7583,7 @@ void View::DrawOptions()
                 if( timeline.size() > 1 )
                 {
                     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                     if( ImGui::Button( ICON_FA_ROBOT " Auto" ) )
-#else
-                    if( ImGui::Button( "Auto" ) )
-#endif
                     {
                         size_t lastidx = 0;
                         if( timeline.is_magic() )
@@ -7914,11 +7655,7 @@ void View::DrawOptions()
 
     ImGui::Separator();
     val = m_vd.drawZones;
-#ifdef TRACY_EXTENDED_FONT
     ImGui::Checkbox( ICON_FA_MICROCHIP " Draw CPU zones", &val );
-#else
-    ImGui::Checkbox( "Draw CPU zones", &val );
-#endif
     ImGui::Indent();
     m_vd.drawZones = val;
 
@@ -7926,21 +7663,13 @@ void View::DrawOptions()
     if( m_worker.AreGhostZonesReady() && m_worker.GetGhostZonesCount() != 0 )
     {
         val = m_vd.ghostZones;
-#ifdef TRACY_EXTENDED_FONT
         SmallCheckbox( ICON_FA_GHOST " Draw ghost zones", &val );
-#else
-        SmallCheckbox( "Draw ghost zones", &val );
-#endif
         m_vd.ghostZones = val;
     }
 #endif
 
     int ival = m_vd.dynamicColors;
-#ifdef TRACY_EXTENDED_FONT
     ImGui::TextUnformatted( ICON_FA_PALETTE " Zone colors" );
-#else
-    ImGui::TextUnformatted( "Zone colors" );
-#endif
     ImGui::Indent();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     ImGui::RadioButton( "Static", &ival, 0 );
@@ -7950,11 +7679,7 @@ void View::DrawOptions()
     ImGui::Unindent();
     m_vd.dynamicColors = ival;
     ival = (int)m_namespace;
-#ifdef TRACY_EXTENDED_FONT
     ImGui::TextUnformatted( ICON_FA_BOX_OPEN " Namespaces" );
-#else
-    ImGui::TextUnformatted( "Namespaces" );
-#endif
     ImGui::Indent();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     ImGui::RadioButton( "Full", &ival, 0 );
@@ -7993,11 +7718,7 @@ void View::DrawOptions()
 
         ImGui::Separator();
         val = m_vd.drawLocks;
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_LOCK " Draw locks", &val );
-#else
-        ImGui::Checkbox( "Draw locks", &val );
-#endif
         m_vd.drawLocks = val;
         ImGui::SameLine();
         val = m_vd.onlyContendedLocks;
@@ -8263,11 +7984,7 @@ void View::DrawOptions()
     {
         ImGui::Separator();
         val = m_vd.drawPlots;
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_SIGNATURE " Draw plots", &val );
-#else
-        ImGui::Checkbox( "Draw plots", &val );
-#endif
         m_vd.drawPlots = val;
         const auto expand = ImGui::TreeNode( "Plots" );
         ImGui::SameLine();
@@ -8302,11 +8019,7 @@ void View::DrawOptions()
     }
 
     ImGui::Separator();
-#ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
-#else
-    auto expand = ImGui::TreeNode( "Visible threads:" );
-#endif
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", m_threadOrder.size() );
     if( expand )
@@ -8345,10 +8058,8 @@ void View::DrawOptions()
             if( ImGui::BeginDragDropSource( ImGuiDragDropFlags_SourceNoHoldToOpenOthers ) )
             {
                 ImGui::SetDragDropPayload( "ThreadOrder", &idx, sizeof(int) );
-#ifdef TRACY_EXTENDED_FONT
                 ImGui::TextUnformatted( ICON_FA_RANDOM );
                 ImGui::SameLine();
-#endif
                 SmallColorBox( threadColor );
                 ImGui::SameLine();
                 ImGui::TextUnformatted( threadName );
@@ -8360,7 +8071,6 @@ void View::DrawOptions()
             if( crash.thread == t->id )
             {
                 ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                 TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL );
                 if( ImGui::IsItemHovered() )
                 {
@@ -8376,9 +8086,6 @@ void View::DrawOptions()
                         CenterAtTime( crash.time );
                     }
                 }
-#else
-                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
-#endif
             }
             ImGui::SameLine();
             ImGui::TextDisabled( "%s top level zones", RealToString( t->timeline.size() ) );
@@ -8428,11 +8135,7 @@ void View::DrawOptions()
     }
 
     ImGui::Separator();
-#ifdef TRACY_EXTENDED_FONT
     expand = ImGui::TreeNode( ICON_FA_IMAGES " Visible frame sets:" );
-#else
-    expand = ImGui::TreeNode( "Visible frame sets:" );
-#endif
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", m_worker.GetFrames().size() );
     if( expand )
@@ -8485,17 +8188,9 @@ void View::DrawMessages()
     size_t tsz = 0;
     for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
 
-#ifdef TRACY_EXTENDED_FONT
     m_messageFilter.Draw( ICON_FA_FILTER " Filter messages", 200 );
-#else
-    m_messageFilter.Draw( "Filter messages", 200 );
-#endif
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
-#else
-    if( ImGui::Button( "Clear" ) )
-#endif
     {
         m_messageFilter.Clear();
     }
@@ -8512,18 +8207,10 @@ void View::DrawMessages()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_IMAGE " Show frame images", &m_showMessageImages );
-#else
-        ImGui::Checkbox( "Show frame images", &m_showMessageImages );
-#endif
     }
 
-#ifdef TRACY_EXTENDED_FONT
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
-#else
-    auto expand = ImGui::TreeNode( "Visible threads:" );
-#endif
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", tsz );
     if( expand )
@@ -8562,11 +8249,7 @@ void View::DrawMessages()
             if( crash.thread == t->id )
             {
                 ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                 TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
-#else
-                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
-#endif
             }
         }
         ImGui::TreePop();
@@ -8673,11 +8356,7 @@ void View::DrawMessages()
                     const auto cs = v->callstack.Val();
                     if( cs != 0 )
                     {
-#ifdef TRACY_EXTENDED_FONT
                         SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
-#else
-                        SmallCallstackButton( "Show", cs, idx );
-#endif
                         ImGui::SameLine();
                         DrawCallstackCalls( cs, 4 );
                     }
@@ -8739,11 +8418,7 @@ static void DrawHistogramMinMaxLabel( ImDrawList* draw, int64_t tmin, int64_t tm
     draw->AddText( wpos + ImVec2( w-1-maxsz, ty15 ), 0x66FFFFFF, maxtxt );
 
     char range[64];
-#ifdef TRACY_EXTENDED_FONT
     sprintf( range, ICON_FA_LONG_ARROW_ALT_LEFT " %s " ICON_FA_LONG_ARROW_ALT_RIGHT, TimeToString( tmax - tmin ) );
-#else
-    sprintf( range, "<- %s ->", TimeToString( tmax - tmin ) );
-#endif
 
     const auto rsz = ImGui::CalcTextSize( range ).x;
     draw->AddText( wpos + ImVec2( round( (w-1-rsz) * 0.5 ), ty15 ), 0x66FFFFFF, range );
@@ -8778,18 +8453,10 @@ void View::DrawFindZone()
     findClicked |= ImGui::InputTextWithHint( "###findzone", "Enter zone name to search for", m_findZone.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
     ImGui::PopItemWidth();
 
-#ifdef TRACY_EXTENDED_FONT
     findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
-#else
-    findClicked |= ImGui::Button( "Find" );
-#endif
     ImGui::SameLine();
 
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_BAN " Clear" ) )
-#else
-    if( ImGui::Button( "Clear" ) )
-#endif
     {
         m_findZone.Reset();
     }
@@ -8807,10 +8474,8 @@ void View::DrawFindZone()
     }
     if( m_findZone.limitRange )
     {
-#ifdef TRACY_EXTENDED_FONT
         ImGui::TextUnformatted( ICON_FA_LOCK );
         ImGui::SameLine();
-#endif
         TextFocused( "Zone time range:", TimeToStringExact( m_findZone.rangeMin ) );
         ImGui::SameLine();
         TextFocused( "-", TimeToStringExact( m_findZone.rangeMax ) );
@@ -9458,11 +9123,7 @@ void View::DrawFindZone()
                             ImGui::SameLine();
                             ImGui::Spacing();
                             ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                             TextFocused( "\xcf\x83:", TimeToString( sd ) );
-#else
-                            TextFocused( "s:", TimeToString( sd ) );
-#endif
                             if( ImGui::IsItemHovered() )
                             {
                                 ImGui::BeginTooltip();
@@ -10034,33 +9695,21 @@ void View::DrawFindZone()
 
                 const bool selHilite = m_findZone.selGroup == group->first;
                 if( selHilite ) SetButtonHighlightColor();
-#ifdef TRACY_EXTENDED_FONT
                 if( ImGui::SmallButton( " " ICON_FA_CHECK " " ) )
-#else
-                if( ImGui::SmallButton( "Select" ) )
-#endif
                 {
                     m_findZone.selGroup = group->first;
                     m_findZone.ResetSelection();
                 }
                 if( selHilite ) ImGui::PopStyleColor( 3 );
                 ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                 if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
-#else
-                if( ImGui::SmallButton( " < " ) )
-#endif
                 {
                     m_findZone.selCs = std::max( m_findZone.selCs - 1, 0 );
                 }
                 ImGui::SameLine();
                 ImGui::Text( "%s / %s", RealToString( m_findZone.selCs + 1 ), RealToString( gsz ) );
                 ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                 if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
-#else
-                if( ImGui::SmallButton( " > " ) )
-#endif
                 {
                     m_findZone.selCs = std::min<int>( m_findZone.selCs + 1, gsz - 1 );
                 }
@@ -10078,11 +9727,7 @@ void View::DrawFindZone()
                 {
                     ImGui::SameLine();
                     int idx = 0;
-#ifdef TRACY_EXTENDED_FONT
                     SmallCallstackButton( " " ICON_FA_ALIGN_JUSTIFY " ", group->first, idx, false );
-#else
-                    SmallCallstackButton( "Call stack", group->first, idx, false );
-#endif
 
                     int fidx = 0;
                     ImGui::Spacing();
@@ -10126,11 +9771,7 @@ void View::DrawFindZone()
                                 }
                                 else
                                 {
-#ifdef TRACY_EXTENDED_FONT
                                     TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
-#else
-                                    TextDisabledUnformatted( "--" );
-#endif
                                 }
                                 ImGui::SameLine();
                                 ImGui::TextUnformatted( txt );
@@ -10371,11 +10012,7 @@ void View::DrawCompare()
     if( !m_compare.second )
     {
         ImGui::TextWrapped( "Please load a second trace to compare results." );
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open second trace" ) && !m_compare.loadThread.joinable() )
-#else
-        if( ImGui::Button( "Open second trace" ) && !m_compare.loadThread.joinable() )
-#endif
         {
             nfdchar_t* fn;
             auto res = NFD_OpenDialog( "tracy", nullptr, &fn );
@@ -10425,10 +10062,8 @@ void View::DrawCompare()
         return;
     }
 
-#ifdef TRACY_EXTENDED_FONT
     TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
     ImGui::SameLine();
-#endif
     TextDisabledUnformatted( "This trace:" );
     ImGui::SameLine();
     const auto& desc0 = m_userData.GetDescription();
@@ -10443,10 +10078,8 @@ void View::DrawCompare()
         ImGui::TextDisabled( "(%s)", m_worker.GetCaptureName().c_str() );
     }
 
-#ifdef TRACY_EXTENDED_FONT
     TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
     ImGui::SameLine();
-#endif
     TextDisabledUnformatted( "External trace:" );
     ImGui::SameLine();
     const auto& desc1 = m_compare.userData->GetDescription();
@@ -10461,11 +10094,7 @@ void View::DrawCompare()
         ImGui::TextDisabled( "(%s)", m_compare.second->GetCaptureName().c_str() );
     }
 
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_TRASH_ALT " Unload" ) )
-#else
-    if( ImGui::Button( "Unload" ) )
-#endif
     {
         m_compare.Reset();
         m_compare.second.reset();
@@ -10495,18 +10124,10 @@ void View::DrawCompare()
         findClicked |= ImGui::InputTextWithHint( "###compare", "Enter zone name to search for", m_compare.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::PopItemWidth();
 
-#ifdef TRACY_EXTENDED_FONT
         findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
-#else
-        findClicked |= ImGui::Button( "Find" );
-#endif
         ImGui::SameLine();
 
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_BAN " Clear" ) )
-#else
-        if( ImGui::Button( "Clear" ) )
-#endif
         {
             m_compare.Reset();
         }
@@ -10535,18 +10156,14 @@ void View::DrawCompare()
 
             ImGui::Separator();
             ImGui::Columns( 2 );
-#ifdef TRACY_EXTENDED_FONT
             TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
             ImGui::SameLine();
-#endif
             ImGui::TextUnformatted( "This trace" );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%zu)", m_compare.match[0].size() );
             ImGui::NextColumn();
-#ifdef TRACY_EXTENDED_FONT
             TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
             ImGui::SameLine();
-#endif
             ImGui::TextUnformatted( "External trace" );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%zu)", m_compare.match[1].size() );
@@ -10662,18 +10279,14 @@ void View::DrawCompare()
 
             ImGui::Separator();
             ImGui::Columns( 2 );
-#ifdef TRACY_EXTENDED_FONT
             TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
             ImGui::SameLine();
-#endif
             ImGui::TextUnformatted( "This trace" );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%zu)", f0.size() );
             ImGui::NextColumn();
-#ifdef TRACY_EXTENDED_FONT
             TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
             ImGui::SameLine();
-#endif
             ImGui::TextUnformatted( "External trace" );
             ImGui::SameLine();
             ImGui::TextDisabled( "(%zu)", f1.size() );
@@ -11037,18 +10650,14 @@ void View::DrawCompare()
                         }
                     }
 
-#ifdef TRACY_EXTENDED_FONT
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
-#endif
                     TextFocused( "Total time (this):", TimeToString( total0 * adj0 ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
-#endif
                     TextFocused( "Total time (ext.):", TimeToString( total1 * adj1 ) );
                     TextFocused( "Savings:", TimeToString( total1 * adj1 - total0 * adj0 ) );
                     ImGui::SameLine();
@@ -11057,18 +10666,14 @@ void View::DrawCompare()
                     TextDisabledUnformatted( buf );
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ) ) );
 
-#ifdef TRACY_EXTENDED_FONT
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
-#endif
                     TextFocused( "Mean time (this):", TimeToString( m_compare.average[0] ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
-#endif
                     TextFocused( "Median time (this):", TimeToString( m_compare.median[0] ) );
                     if( sorted[0].size() > 1 )
                     {
@@ -11080,13 +10685,9 @@ void View::DrawCompare()
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                         TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (this):", TimeToString( sd ) );
-#else
-                        TextFocused( "s (this):", TimeToString( sd ) );
-#endif
                         if( ImGui::IsItemHovered() )
                         {
                             ImGui::BeginTooltip();
@@ -11096,18 +10697,14 @@ void View::DrawCompare()
                     }
 
 
-#ifdef TRACY_EXTENDED_FONT
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
-#endif
                     TextFocused( "Mean time (ext.):", TimeToString( m_compare.average[1] ) );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                     TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
-#endif
                     TextFocused( "Median time (ext.):", TimeToString( m_compare.median[1] ) );
                     if( sorted[1].size() > 1 )
                     {
@@ -11119,13 +10716,9 @@ void View::DrawCompare()
                         ImGui::SameLine();
                         ImGui::Spacing();
                         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                         TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (ext.):", TimeToString( sd ) );
-#else
-                        TextFocused( "s (ext.):", TimeToString( sd ) );
-#endif
                         if( ImGui::IsItemHovered() )
                         {
                             ImGui::BeginTooltip();
@@ -11134,32 +10727,24 @@ void View::DrawCompare()
                         }
                     }
 
-#ifdef TRACY_EXTENDED_FONT
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_ButtonHovered, ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_ButtonActive, ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ) );
                     ImGui::Button( ICON_FA_LEMON );
                     ImGui::PopStyleColor( 4 );
-#else
-                    ImGui::ColorButton( "c1", ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
-#endif
                     ImGui::SameLine();
                     ImGui::TextUnformatted( "This trace" );
                     ImGui::SameLine();
                     ImGui::Spacing();
                     ImGui::SameLine();
 
-#ifdef TRACY_EXTENDED_FONT
                     ImGui::PushStyleColor( ImGuiCol_Text, ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_ButtonHovered, ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ) );
                     ImGui::PushStyleColor( ImGuiCol_ButtonActive, ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ) );
                     ImGui::Button( ICON_FA_GEM );
                     ImGui::PopStyleColor( 4 );
-#else
-                    ImGui::ColorButton( "c2", ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
-#endif
                     ImGui::SameLine();
                     ImGui::TextUnformatted( "External trace" );
                     ImGui::SameLine();
@@ -11375,16 +10960,12 @@ void View::DrawCompare()
                         ImGui::Text( "%s / %s", TimeToString( tAfter[0] ), TimeToString( tAfter[1] ) );
                         TextDisabledUnformatted( "(Data is displayed as:" );
                         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                         TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                         ImGui::SameLine();
-#endif
                         TextDisabledUnformatted( "[this trace] /" );
                         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                         TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
-#endif
                         TextDisabledUnformatted( "[external trace])" );
                         ImGui::EndTooltip();
                     }
@@ -11422,28 +11003,16 @@ void View::DrawStatistics()
 
         if( hasSamples || hasSymbols )
         {
-#ifdef TRACY_EXTENDED_FONT
             ImGui::RadioButton( ICON_FA_SYRINGE " Instrumentation", &m_statMode, 0 );
-#else
-            ImGui::RadioButton( "Instrumentation", &m_statMode, 0 );
-#endif
             ImGui::SameLine();
 
             if( hasSamples )
             {
-#ifdef TRACY_EXTENDED_FONT
                 ImGui::RadioButton( ICON_FA_EYE_DROPPER " Sampling", &m_statMode, 1 );
-#else
-                ImGui::RadioButton( "Sampling", &m_statMode, 1 );
-#endif
             }
             else
             {
-#ifdef TRACY_EXTENDED_FONT
                 ImGui::RadioButton( ICON_FA_PUZZLE_PIECE " Symbols", &m_statMode, 1 );
-#else
-                ImGui::RadioButton( "Symbols", &m_statMode, 1 );
-#endif
             }
             ImGui::SameLine();
             ImGui::Spacing();
@@ -11453,17 +11022,9 @@ void View::DrawStatistics()
 
     if( m_statMode == 0 )
     {
-#ifdef TRACY_EXTENDED_FONT
         m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
-#else
-        m_statisticsFilter.Draw( "Filter", 200 );
-#endif
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
-#else
-        if( ImGui::Button( "Clear" ) )
-#endif
         {
             m_statisticsFilter.Clear();
         }
@@ -11535,11 +11096,7 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
-#else
-        ImGui::Checkbox( "Self time", &m_statSelf );
-#endif
 
         ImGui::Separator();
 
@@ -11634,52 +11191,28 @@ void View::DrawStatistics()
     }
     else
     {
-#ifdef TRACY_EXTENDED_FONT
         m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
-#else
-        m_statisticsFilter.Draw( "Filter", 200 );
-#endif
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
-#else
-        if( ImGui::Button( "Clear" ) )
-#endif
         {
             m_statisticsFilter.Clear();
         }
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
-#else
-        ImGui::Checkbox( "Show time", &m_statSampleTime );
-#endif
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
-#else
-        ImGui::Checkbox( "Self time", &m_statSelf );
-#endif
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
-#else
-        ImGui::Checkbox( "Hide unknown", &m_statHideUnknown );
-#endif
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         ImGui::Checkbox( ICON_FA_PUZZLE_PIECE " Show all", &m_showAllSymbols );
-#else
-        ImGui::Checkbox( "Show all", &m_showAllSymbols );
-#endif
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
@@ -11846,11 +11379,7 @@ void View::DrawStatistics()
 
                     if( isInline )
                     {
-#ifdef TRACY_EXTENDED_FONT
                         TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
-#else
-                        TextDisabledUnformatted( "inline" );
-#endif
                         ImGui::SameLine();
                     }
                     if( v.symAddr == 0 || v.excl == 0 )
@@ -11935,11 +11464,7 @@ void View::DrawCallstackWindow()
     ImGui::SetNextWindowSize( ImVec2( 1400, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Call stack", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
-#ifdef TRACY_EXTENDED_FONT
     ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
-#else
-    ImGui::Checkbox( "Frame location:" );
-#endif
     ImGui::SameLine();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
     ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
@@ -11961,11 +11486,7 @@ void View::DrawCallstackWindow()
                 ImGui::SameLine();
                 ImGui::Spacing();
                 ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                 if( ImGui::Button( ICON_FA_DOOR_OPEN " Global entry statistics" ) )
-#else
-                if( ImGui::Button( "Global entry statistics" ) )
-#endif
                 {
                     m_sampleParents.symAddr = frame->data[0].symAddr;
                     m_sampleParents.sel = 0;
@@ -12232,11 +11753,7 @@ void View::DrawMemoryAllocWindow()
     const auto tidFree = m_worker.DecompressThread( ev.ThreadFree() );
     int idx = 0;
 
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to allocation" ) )
-#else
-    if( ImGui::Button( "Zoom to allocation" ) )
-#endif
     {
         ZoomToRange( ev.TimeAlloc(), ev.TimeFree() >= 0 ? ev.TimeFree() : m_worker.GetLastTime() );
     }
@@ -12262,11 +11779,7 @@ void View::DrawMemoryAllocWindow()
     if( ev.CsAlloc() != 0 )
     {
         const auto cs = ev.CsAlloc();
-#ifdef TRACY_EXTENDED_FONT
         SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
-#else
-        SmallCallstackButton( "Call stack", cs, idx );
-#endif
         ImGui::SameLine();
         DrawCallstackCalls( cs, 2 );
     }
@@ -12287,11 +11800,7 @@ void View::DrawMemoryAllocWindow()
         if( ev.csFree.Val() != 0 )
         {
             const auto cs = ev.csFree.Val();
-#ifdef TRACY_EXTENDED_FONT
             SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
-#else
-            SmallCallstackButton( "Call stack", cs, idx );
-#endif
             ImGui::SameLine();
             DrawCallstackCalls( cs, 2 );
         }
@@ -12384,11 +11893,7 @@ void View::DrawInfo()
             if( save )
             {
                 ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
                 if( ImGui::SmallButton( ICON_FA_FOLDER ) )
-#else
-                if( ImGui::SmallButton( "Settings" ) )
-#endif
                 {
                     ImGui::SetClipboardText( save );
                 }
@@ -13037,11 +12542,7 @@ void View::DrawInfo()
             char buf[128];
             for( auto& package : tsort )
             {
-#ifdef TRACY_EXTENDED_FONT
                 sprintf( buf, ICON_FA_BOX " Package %i", package->first );
-#else
-                sprintf( buf, "Package %i", package->first );
-#endif
                 if( ImGui::TreeNodeEx( buf, ImGuiTreeNodeFlags_DefaultOpen ) )
                 {
                     std::vector<decltype(package->second.begin())> csort;
@@ -13050,21 +12551,13 @@ void View::DrawInfo()
                     std::sort( csort.begin(), csort.end(), [] ( const auto& l, const auto& r ) { return l->first < r->first; } );
                     for( auto& core : csort )
                     {
-#ifdef TRACY_EXTENDED_FONT
                         sprintf( buf, ICON_FA_MICROCHIP " Core %i", core->first );
-#else
-                        sprintf( buf, "Core %i", core->first );
-#endif
                         if( ImGui::TreeNodeEx( buf, ImGuiTreeNodeFlags_DefaultOpen ) )
                         {
                             ImGui::Indent();
                             for( auto& thread : core->second )
                             {
-#ifdef TRACY_EXTENDED_FONT
                                 sprintf( buf, ICON_FA_RANDOM " Thread %i", thread );
-#else
-                                sprintf( buf, "Thread %i", thread );
-#endif
                                 ImGui::TextUnformatted( buf );
                             }
                             ImGui::Unindent();
@@ -13097,11 +12590,7 @@ void View::DrawInfo()
     if( crash.thread != 0 )
     {
         ImGui::Separator();
-#ifdef TRACY_EXTENDED_FONT
         TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Application has crashed. " ICON_FA_SKULL );
-#else
-        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Application has crashed." );
-#endif
         TextFocused( "Time of crash:", TimeToString( crash.time ) );
         SmallColorBox( GetThreadColor( crash.thread, 0 ) );
         ImGui::SameLine();
@@ -13111,11 +12600,7 @@ void View::DrawInfo()
         TextDisabledUnformatted( "Reason:" );
         ImGui::SameLine();
         ImGui::TextWrapped( "%s", m_worker.GetString( crash.message ) );
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_MICROSCOPE " Focus" ) )
-#else
-        if( ImGui::Button( "Focus" ) )
-#endif
         {
             CenterAtTime( crash.time );
         }
@@ -13127,11 +12612,7 @@ void View::DrawInfo()
             {
                 SetButtonHighlightColor();
             }
-#ifdef TRACY_EXTENDED_FONT
             if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
-#else
-            if( ImGui::Button( "Call stack" ) )
-#endif
             {
                 m_callstackInfoWindow = crash.callstack;
             }
@@ -13155,19 +12636,11 @@ void View::DrawTextEditor()
     ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show );
-#ifdef TRACY_EXTENDED_FONT
     TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-#else
-    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
-#endif
     ImGui::SameLine();
     TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-#else
-    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
-#endif
     TextFocused( "File:", m_sourceViewFile );
     m_sourceView->Render( m_worker );
     ImGui::End();
@@ -13188,11 +12661,7 @@ void View::DrawGoToFrame()
     goClicked |= ImGui::InputInt( "##goToFrame", &frameNum, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
     frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     goClicked |= ImGui::Button( ICON_FA_CROSSHAIRS " Go to" );
-#else
-    goClicked |= ImGui::Button( "Go to" );
-#endif
     if( goClicked )
     {
         ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
@@ -13387,13 +12856,8 @@ void View::SetPlaybackFrame( uint32_t idx )
 }
 
 static const char* PlaybackWindowButtons[] = {
-#ifdef TRACY_EXTENDED_FONT
     ICON_FA_PLAY " Play",
     ICON_FA_PAUSE " Pause",
-#else
-    "Play",
-    "Pause",
-#endif
 };
 
 enum { PlaybackWindowButtonsCount = sizeof( PlaybackWindowButtons ) / sizeof( *PlaybackWindowButtons ) };
@@ -13485,11 +12949,7 @@ void View::DrawPlayback()
     }
     bw += th;
 
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( " " ICON_FA_CARET_LEFT " " ) )
-#else
-    if( ImGui::Button( "<" ) )
-#endif
     {
         if( m_playback.frame > 0 )
         {
@@ -13498,11 +12958,7 @@ void View::DrawPlayback()
         }
     }
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( " " ICON_FA_CARET_RIGHT " " ) )
-#else
-    if( ImGui::Button( ">" ) )
-#endif
     {
         if( m_playback.frame < ficnt - 1 )
         {
@@ -13763,20 +13219,12 @@ void View::DrawSelectedAnnotation()
     assert( m_selectedAnnotation );
     bool show = true;
     ImGui::Begin( "Annotation", &show, ImGuiWindowFlags_AlwaysAutoResize );
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to annotation" ) )
-#else
-    if( ImGui::Button( "Zoom to annotation" ) )
-#endif
     {
         ZoomToRange( m_selectedAnnotation->start, m_selectedAnnotation->end );
     }
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::Button( ICON_FA_TRASH_ALT " Remove" ) )
-#else
-    if( ImGui::Button( "Remove" ) )
-#endif
     {
         for( auto it = m_annotations.begin(); it != m_annotations.end(); ++it )
         {
@@ -13835,29 +13283,17 @@ void View::DrawAnnotationList()
     for( auto& ann : m_annotations )
     {
         ImGui::PushID( idx );
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_EDIT ) )
-#else
-        if( ImGui::Button( "Edit" ) )
-#endif
         {
             m_selectedAnnotation = ann.get();
         }
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_MICROSCOPE ) )
-#else
-        if( ImGui::Button( "Zoom" ) )
-#endif
         {
             ZoomToRange( ann->start, ann->end );
         }
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         if( ButtonDisablable( ICON_FA_TRASH_ALT, !ctrl ) )
-#else
-        if( ButtonDisablable( "Remove", !ctrl ) )
-#endif
         {
             remove = idx;
         }
@@ -13939,22 +13375,14 @@ void View::DrawSampleParents()
     ImGui::Separator();
     TextDisabledUnformatted( "Parent call stack:" );
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::SmallButton( " " ICON_FA_CARET_LEFT " " ) )
-#else
-    if( ImGui::SmallButton( " < " ) )
-#endif
     {
         m_sampleParents.sel = std::max( m_sampleParents.sel - 1, 0 );
     }
     ImGui::SameLine();
     ImGui::Text( "%s / %s", RealToString( m_sampleParents.sel + 1 ), RealToString( stats.parents.size() ) );
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) )
-#else
-    if( ImGui::SmallButton( " > " ) )
-#endif
     {
         m_sampleParents.sel = std::min<int>( m_sampleParents.sel + 1, stats.parents.size() - 1 );
     }
@@ -13975,19 +13403,11 @@ void View::DrawSampleParents()
     ImGui::Spacing();
     ImGui::SameLine();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-#ifdef TRACY_EXTENDED_FONT
     ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
-#else
-    ImGui::Checkbox( "Show time", &m_statSampleTime );
-#endif
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
     ImGui::TextUnformatted( ICON_FA_AT " Frame location:" );
-#else
-    ImGui::Checkbox( "Frame location:" );
-#endif
     ImGui::SameLine();
     ImGui::RadioButton( "Source code", &m_showCallstackFrameAddress, 0 );
     ImGui::SameLine();
@@ -14806,11 +14226,7 @@ void View::DrawMemory()
         return;
     }
 
-#ifdef TRACY_EXTENDED_FONT
     ImGui::Checkbox( ICON_FA_HISTORY " Restrict time", &m_memInfo.restrictTime );
-#else
-    ImGui::Checkbox( "Restrict time", &m_memInfo.restrictTime );
-#endif
     ImGui::SameLine();
     DrawHelpMarker( "Don't show allocations beyond the middle of timeline display (it is indicated by purple line)." );
     ImGui::SameLine();
@@ -14834,29 +14250,17 @@ void View::DrawMemory()
 
     ImGui::Separator();
     ImGui::BeginChild( "##memory" );
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::TreeNode( ICON_FA_AT " Allocations" ) )
-#else
-    if( ImGui::TreeNode( "Allocations" ) )
-#endif
     {
         bool findClicked =  ImGui::InputTextWithHint( "###address", "Enter memory address to search for", m_memInfo.pattern, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         findClicked |= ImGui::Button( ICON_FA_SEARCH " Find" );
-#else
-        findClicked |= ImGui::Button( "Find" );
-#endif
         if( findClicked )
         {
             m_memInfo.ptrFind = strtoull( m_memInfo.pattern, nullptr, 0 );
         }
         ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
         if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
-#else
-        if( ImGui::Button( "Clear" ) )
-#endif
         {
             m_memInfo.ptrFind = 0;
             m_memInfo.pattern[0] = '\0';
@@ -14909,11 +14313,7 @@ void View::DrawMemory()
     }
 
     ImGui::Separator();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::TreeNode( ICON_FA_HEARTBEAT " Active allocations" ) )
-#else
-    if( ImGui::TreeNode( "Active allocations" ) )
-#endif
     {
         uint64_t total = 0;
         std::vector<const MemEvent*> items;
@@ -14961,11 +14361,7 @@ void View::DrawMemory()
     }
 
     ImGui::Separator();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::TreeNode( ICON_FA_MAP " Memory map" ) )
-#else
-    if( ImGui::TreeNode( "Memory map" ) )
-#endif
     {
         ImGui::SameLine();
         ImGui::Spacing();
@@ -15020,11 +14416,7 @@ void View::DrawMemory()
 
 
     ImGui::Separator();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Bottom-up call stack tree" ) )
-#else
-    if( ImGui::TreeNode( "Bottom-up call stack tree" ) )
-#endif
     {
         ImGui::SameLine();
         DrawHelpMarker( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
@@ -15056,11 +14448,7 @@ void View::DrawMemory()
     }
 
     ImGui::Separator();
-#ifdef TRACY_EXTENDED_FONT
     if( ImGui::TreeNode( ICON_FA_ALIGN_JUSTIFY " Top-down call stack tree" ) )
-#else
-    if( ImGui::TreeNode( "Top-down call stack tree" ) )
-#endif
     {
         ImGui::SameLine();
         DrawHelpMarker( "Press ctrl key to display allocation info tooltip. Right click on function name to display allocations list." );
@@ -15232,17 +14620,9 @@ const char* View::GetPlotName( const PlotData* plot ) const
     case PlotType::User:
         return m_worker.GetString( plot->name );
     case PlotType::Memory:
-#ifdef TRACY_EXTENDED_FONT
         return ICON_FA_MEMORY " Memory usage";
-#else
-        return "Memory usage";
-#endif
     case PlotType::SysTime:
-#ifdef TRACY_EXTENDED_FONT
         return ICON_FA_TACHOMETER_ALT " CPU usage";
-#else
-        return "CPU usage";
-#endif
     default:
         assert( false );
         return nullptr;
@@ -15750,11 +15130,7 @@ void View::CallstackTooltip( uint32_t idx )
                 }
                 else
                 {
-#ifdef TRACY_EXTENDED_FONT
                     TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
-#else
-                    TextDisabledUnformatted( "--" );
-#endif
                 }
                 ImGui::SameLine();
                 if( txt[0] == '[' )
@@ -16169,11 +15545,7 @@ void View::DrawCallstackCalls( uint32_t callstack, uint8_t limit ) const
         else
         {
             ImGui::SameLine();
-#ifdef TRACY_EXTENDED_FONT
             TextDisabledUnformatted( ICON_FA_LONG_ARROW_ALT_LEFT );
-#else
-            TextDisabledUnformatted( "<-" );
-#endif
             ImGui::SameLine();
         }
         const auto& frame = frameData->data[frameData->size - 1];

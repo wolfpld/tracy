@@ -169,6 +169,7 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
     m_userData.LoadAnnotations( m_annotations );
 
     if( m_worker.GetCallstackFrameCount() == 0 ) m_showUnknownFrames = false;
+    if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
 }
 
 View::~View()
@@ -11670,6 +11671,14 @@ void View::DrawStatistics()
         ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
 #else
         ImGui::Checkbox( "Hide unknown", &m_statHideUnknown );
+#endif
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::Checkbox( ICON_FA_PUZZLE_PIECE " Show all", &m_showAllSymbols );
+#else
+        ImGui::Checkbox( "Show all", &m_showAllSymbols );
 #endif
         ImGui::SameLine();
         ImGui::Spacing();

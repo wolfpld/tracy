@@ -358,6 +358,7 @@ private:
     int m_statMode = 0;
     int m_statSampleLocation = 0;
     bool m_statHideUnknown = true;
+    bool m_showAllSymbols = false;
     int m_showCallstackFrameAddress = 0;
     bool m_showUnknownFrames = true;
     bool m_groupChildrenLocations = false;

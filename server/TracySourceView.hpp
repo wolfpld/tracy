@@ -45,6 +45,7 @@ private:
     int m_targetLine;
     int m_selectedLine;
     bool m_showAsm;
+    uint32_t m_codeLen;
 
     std::vector<Line> m_lines;
     std::vector<AsmLine> m_asm;

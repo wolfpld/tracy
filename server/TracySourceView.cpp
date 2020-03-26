@@ -26,6 +26,7 @@ SourceView::SourceView( ImFont* font )
     , m_targetLine( 0 )
     , m_selectedLine( 0 )
     , m_showAsm( false )
+    , m_codeLen( 0 )
 {
 }
 
@@ -125,6 +126,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
         cs_free( insn, cnt );
     }
     cs_close( &handle );
+    m_codeLen = len;
     return true;
 }
 
@@ -193,6 +195,10 @@ void SourceView::Render( const Worker& worker )
         {
             if( !m_asm.empty() )
             {
+                ImGui::SameLine();
+                ImGui::Spacing();
+                ImGui::SameLine();
+                TextFocused( "Code size:", MemSizeToString( m_codeLen ) );
                 ImGui::SameLine();
                 ImGui::Spacing();
                 ImGui::SameLine();

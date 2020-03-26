@@ -79,9 +79,9 @@ void SourceView::Open( const char* fileName, int line, uint64_t symAddr, const W
             if( *end == '\0' ) break;
             txt = end;
         }
-
-        if( !Disassemble( symAddr, worker ) ) m_showAsm = false;
     }
+
+    if( !Disassemble( symAddr, worker ) ) m_showAsm = false;
 }
 
 bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )

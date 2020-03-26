@@ -566,7 +566,7 @@ Be aware that while the Tracy client uses its own separate memory allocator, the
 The following defines may be of interest:
 
 \begin{itemize}
-\item \texttt{TRACY\_FILESELECTOR} -- controls whether a system load/save dialog is compiled in. If it's left out, the saved traces will be named \texttt{trace.tracy}.
+\item \texttt{TRACY\_NO\_FILESELECTOR} -- controls whether a system load/save dialog is compiled in. If it's enabled, the saved traces will be named \texttt{trace.tracy}.
 \item \texttt{TRACY\_NO\_STATISTICS} -- Tracy will perform statistical data collection on the fly, if this macro is \emph{not} defined. This allows extended analysis of the trace (for example, you can perform a live search for matching zones) at a small CPU processing cost and a considerable memory usage increase (at least 8 bytes per zone).
 \item \texttt{TRACY\_NO\_ROOT\_WINDOW} -- the main profiler view won't occupy whole window if this macro is defined. Additional setup is required for this to work. If you are embedding the server into your application you probably want to enable this option.
 \end{itemize}

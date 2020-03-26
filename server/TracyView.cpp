@@ -38,7 +38,7 @@
 #include "TracySourceView.hpp"
 #include "TracyView.hpp"
 
-#ifdef TRACY_FILESELECTOR
+#ifndef TRACY_NO_FILESELECTOR
 #  include "../nfd/nfd.h"
 #endif
 
@@ -895,7 +895,7 @@ bool View::DrawConnection()
 
     if( ImGui::Button( ICON_FA_SAVE " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
     {
-#ifdef TRACY_FILESELECTOR
+#ifndef TRACY_NO_FILESELECTOR
         nfdchar_t* fn;
         auto res = NFD_SaveDialog( "tracy", nullptr, &fn );
         if( res == NFD_OKAY )
@@ -10005,9 +10005,9 @@ void View::DrawCompare()
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable trace comparison." );
-#elif !defined TRACY_FILESELECTOR
+#elif defined TRACY_NO_FILESELECTOR
     ImGui::TextWrapped( "File selector is disabled in this build." );
-    ImGui::TextWrapped( "Rebuild with the TRACY_FILESELECTOR macro to enable trace comparison." );
+    ImGui::TextWrapped( "Rebuild without the TRACY_NO_FILESELECTOR macro to enable trace comparison." );
 #else
     if( !m_compare.second )
     {

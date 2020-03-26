@@ -11693,7 +11693,13 @@ void View::DrawStatistics()
         const auto& symMap = m_worker.GetSymbolMap();
         const auto& symStat = m_worker.GetSymbolStats();
 
-        Vector<decltype(symStat.begin())> data;
+        struct SymList
+        {
+            uint64_t symAddr;
+            uint32_t incl, excl;
+        };
+
+        Vector<SymList> data;
         data.reserve( symStat.size() );
         auto statit = symStat.begin();
         if( m_statisticsFilter.IsActive() )
@@ -11706,7 +11712,7 @@ void View::DrawStatistics()
                     auto name = m_worker.GetString( sit->second.name );
                     if( m_statisticsFilter.PassFilter( name ) )
                     {
-                        data.push_back_no_space_check( statit );
+                        data.push_back_no_space_check( SymList { statit->first, statit->second.incl, statit->second.excl } );
                     }
                 }
                 ++statit;
@@ -11716,7 +11722,7 @@ void View::DrawStatistics()
         {
             while( statit != symStat.end() )
             {
-                data.push_back_no_space_check( statit );
+                data.push_back_no_space_check( SymList { statit->first, statit->second.incl, statit->second.excl } );
                 ++statit;
             }
         }
@@ -11729,11 +11735,11 @@ void View::DrawStatistics()
         {
             if( m_statSelf )
             {
-                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second.excl > r->second.excl; } );
+                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.excl > r.excl; } );
             }
             else
             {
-                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l->second.incl > r->second.incl; } );
+                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.incl > r.incl; } );
             }
 
             ImGui::BeginChild( "##statisticsSampling" );
@@ -11765,7 +11771,7 @@ void View::DrawStatistics()
             int idx = 0;
             for( auto& v : data )
             {
-                const auto cnt = m_statSelf ? v->second.excl : v->second.incl;
+                const auto cnt = m_statSelf ? v.excl : v.incl;
                 if( cnt > 0 )
                 {
                     const char* name = "[unknown]";
@@ -11775,7 +11781,7 @@ void View::DrawStatistics()
                     bool isInline = false;
                     uint32_t symlen = 0;
 
-                    auto sit = symMap.find( v->first );
+                    auto sit = symMap.find( v.symAddr );
                     if( sit != symMap.end() )
                     {
                         name = m_worker.GetString( sit->second.name );
@@ -11808,23 +11814,23 @@ void View::DrawStatistics()
 #endif
                         ImGui::SameLine();
                     }
-                    if( v->first == 0 || v->second.excl == 0 )
+                    if( v.symAddr == 0 || v.excl == 0 )
                     {
                         ImGui::TextUnformatted( name );
                     }
                     else
                     {
                         ImGui::PushID( idx++ );
-                        if( ImGui::Selectable( name, m_sampleParents.symAddr == v->first, ImGuiSelectableFlags_SpanAllColumns ) )
+                        if( ImGui::Selectable( name, m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
                         {
-                            m_sampleParents.symAddr = v->first;
+                            m_sampleParents.symAddr = v.symAddr;
                             m_sampleParents.sel = 0;
                         }
                         ImGui::PopID();
                     }
                     ImGui::NextColumn();
                     float indentVal = 0.f;
-                    if( m_statBuzzAnim.Match( v->first ) )
+                    if( m_statBuzzAnim.Match( v.symAddr ) )
                     {
                         const auto time = m_statBuzzAnim.Time();
                         indentVal = sin( time * 60.f ) * 10.f * time;
@@ -11842,11 +11848,11 @@ void View::DrawStatistics()
                     {
                         if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
                         {
-                            SetTextEditorFile( file, line, v->first );
+                            SetTextEditorFile( file, line, v.symAddr );
                         }
                         else
                         {
-                            m_statBuzzAnim.Enable( v->first, 0.5f );
+                            m_statBuzzAnim.Enable( v.symAddr, 0.5f );
                         }
                     }
                     if( indentVal != 0.f )

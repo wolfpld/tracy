@@ -11373,6 +11373,7 @@ void View::DrawStatistics()
                     uint32_t line = 0;
                     bool isInline = false;
                     uint32_t symlen = 0;
+                    auto codeAddr = v.symAddr;
 
                     auto sit = symMap.find( v.symAddr );
                     if( sit != symMap.end() )
@@ -11396,6 +11397,21 @@ void View::DrawStatistics()
                     else if( m_statHideUnknown )
                     {
                         continue;
+                    }
+
+                    if( symlen == 0 )
+                    {
+                        uint32_t offset;
+                        const auto parentAddr = m_worker.GetSymbolForAddress( v.symAddr, offset );
+                        if( parentAddr != 0 )
+                        {
+                            auto pit = symMap.find( parentAddr );
+                            if( pit != symMap.end() )
+                            {
+                                codeAddr = parentAddr;
+                                symlen = pit->second.size.Val();
+                            }
+                        }
                     }
 
                     if( isInline )
@@ -11437,14 +11453,14 @@ void View::DrawStatistics()
                     {
                         if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
                         {
-                            SetTextEditorFile( file, line, v.symAddr );
+                            SetTextEditorFile( file, line, codeAddr, v.symAddr );
                         }
                         else if( symlen != 0 )
                         {
                             uint32_t len;
-                            if( m_worker.GetSymbolCode( v.symAddr, len ) )
+                            if( m_worker.GetSymbolCode( codeAddr, len ) )
                             {
-                                SetTextEditorFile( nullptr, 0, v.symAddr );
+                                SetTextEditorFile( nullptr, 0, codeAddr, v.symAddr );
                             }
                             else
                             {
@@ -11479,7 +11495,15 @@ void View::DrawStatistics()
                         TextDisabledUnformatted( buf );
                     }
                     ImGui::NextColumn();
-                    if( symlen != 0 ) TextDisabledUnformatted( MemSizeToString( symlen ) );
+                    if( symlen != 0 )
+                    {
+                        if( isInline )
+                        {
+                            TextDisabledUnformatted( "<" );
+                            ImGui::SameLine();
+                        }
+                        TextDisabledUnformatted( MemSizeToString( symlen ) );
+                    }
                     ImGui::NextColumn();
                 }
             }

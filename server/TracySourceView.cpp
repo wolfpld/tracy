@@ -232,7 +232,6 @@ void SourceView::Render( const Worker& worker )
 
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
     if( m_font ) ImGui::PushFont( m_font );
-    const auto nw = ImGui::CalcTextSize( "123,345" ).x;
     if( m_showAsm )
     {
         if( m_targetAddr != 0 )

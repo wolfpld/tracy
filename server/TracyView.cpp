@@ -14624,8 +14624,16 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             {
                 ImGui::SameLine();
             }
-            const auto fileName = m_worker.GetString( frame.file );
-            ImGui::TextDisabled( "%s:%i", fileName, frame.line );
+            const char* fileName = nullptr;
+            if( frame.line == 0 )
+            {
+                ImGui::TextDisabled( m_worker.GetString( frameDataPtr->imageName ) );
+            }
+            else
+            {
+                fileName = m_worker.GetString( frame.file );
+                ImGui::TextDisabled( "%s:%i", fileName, frame.line );
+            }
             if( ImGui::IsItemClicked( 1 ) )
             {
                 if( !SetTextEditorFile( fileName, frame.line, frame.symAddr ) )

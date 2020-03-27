@@ -135,6 +135,8 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 
 void SourceView::Render( const Worker& worker )
 {
+    if( m_file ) TextFocused( "File:", m_file );
+
     if( !m_asm.empty() && !m_lines.empty() )
     {
         if( SmallCheckbox( ICON_FA_MICROCHIP " Show assembly", &m_showAsm ) )
@@ -217,6 +219,15 @@ void SourceView::Render( const Worker& worker )
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Symbol:", worker.GetString( sym->name ) );
+    }
+
+    if( !m_showAsm )
+    {
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
     }
 
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );

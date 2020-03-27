@@ -12669,15 +12669,6 @@ void View::DrawTextEditor()
     ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show );
-    if( m_sourceViewFile != (const char*)~uint64_t( 0 ) )
-    {
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-        TextFocused( "File:", m_sourceViewFile );
-    }
     m_sourceView->Render( m_worker );
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;

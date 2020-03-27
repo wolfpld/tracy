@@ -199,6 +199,33 @@ void View::SetTextEditorFile( const char* fileName, int line, uint64_t baseAddr,
     m_sourceView->Open( fileName, line, baseAddr, symAddr, m_worker );
 }
 
+void View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
+{
+    if( symAddr == 0 )
+    {
+        SetTextEditorFile( fileName, line, 0, 0 );
+    }
+    else
+    {
+        const auto& symMap = m_worker.GetSymbolMap();
+        auto sit = symMap.find( symAddr );
+        auto baseAddr = symAddr;
+        uint32_t symlen = 0;
+        if( sit != symMap.end() ) symlen = sit->second.size.Val();
+        if( symlen == 0 )
+        {
+            uint32_t offset;
+            const auto parentAddr = m_worker.GetSymbolForAddress( symAddr, offset );
+            if( parentAddr != 0 )
+            {
+                auto pit = symMap.find( parentAddr );
+                if( pit != symMap.end() ) baseAddr = parentAddr;
+            }
+        }
+        SetTextEditorFile( fileName, line, baseAddr, symAddr );
+    }
+}
+
 const char* View::ShortenNamespace( const char* name ) const
 {
     if( m_namespace == Namespace::Full ) return name;

@@ -39,7 +39,6 @@ private:
     ImFont* m_font;
     const char* m_file;
     uint64_t m_symAddr;
-    uint64_t m_baseAddr;
     uint64_t m_targetAddr;
     char* m_data;
     size_t m_dataSize;

@@ -194,7 +194,8 @@ void View::InitTextEditor( ImFont* font )
 
 void View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
 {
-    m_sourceViewFile = fileName;
+    assert( fileName || symAddr );
+    m_sourceViewFile = fileName ? fileName : (const char*)~uint64_t( 0 );
     m_sourceView->Open( fileName, line, symAddr, m_worker );
 }
 
@@ -11418,6 +11419,18 @@ void View::DrawStatistics()
                         {
                             SetTextEditorFile( file, line, v.symAddr );
                         }
+                        else if( symlen != 0 )
+                        {
+                            uint32_t len;
+                            if( m_worker.GetSymbolCode( v.symAddr, len ) )
+                            {
+                                SetTextEditorFile( nullptr, 0, v.symAddr );
+                            }
+                            else
+                            {
+                                m_statBuzzAnim.Enable( v.symAddr, 0.5f );
+                            }
+                        }
                         else
                         {
                             m_statBuzzAnim.Enable( v.symAddr, 0.5f );
@@ -12636,12 +12649,15 @@ void View::DrawTextEditor()
     ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show );
-    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-    ImGui::SameLine();
-    TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
-    ImGui::SameLine();
-    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-    TextFocused( "File:", m_sourceViewFile );
+    if( m_sourceViewFile != (const char*)~uint64_t( 0 ) )
+    {
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        TextFocused( "File:", m_sourceViewFile );
+    }
     m_sourceView->Render( m_worker );
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;

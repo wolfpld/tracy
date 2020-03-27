@@ -43,43 +43,48 @@ void SourceView::Open( const char* fileName, int line, uint64_t symAddr, const W
     if( m_file != fileName )
     {
         m_file = fileName;
-        FILE* f = fopen( fileName, "rb" );
-        fseek( f, 0, SEEK_END );
-        const auto sz = ftell( f );
-        fseek( f, 0, SEEK_SET );
-        if( sz > m_dataSize )
-        {
-            delete[] m_data;
-            m_data = new char[sz+1];
-            m_dataSize = sz;
-        }
-        fread( m_data, 1, sz, f );
-        m_data[sz] = '\0';
-        fclose( f );
-
         m_lines.clear();
-        auto txt = m_data;
-        for(;;)
+        if( fileName )
         {
-            auto end = txt;
-            while( *end != '\n' && *end != '\r' && end - m_data < sz ) end++;
-            m_lines.emplace_back( Line { txt, end } );
-            if( *end == '\n' )
+            FILE* f = fopen( fileName, "rb" );
+            fseek( f, 0, SEEK_END );
+            const auto sz = ftell( f );
+            fseek( f, 0, SEEK_SET );
+            if( sz > m_dataSize )
             {
-                end++;
-                if( *end == '\r' ) end++;
+                delete[] m_data;
+                m_data = new char[sz+1];
+                m_dataSize = sz;
             }
-            else if( *end == '\r' )
+            fread( m_data, 1, sz, f );
+            m_data[sz] = '\0';
+            fclose( f );
+
+            auto txt = m_data;
+            for(;;)
             {
-                end++;
-                if( *end == '\n' ) end++;
+                auto end = txt;
+                while( *end != '\n' && *end != '\r' && end - m_data < sz ) end++;
+                m_lines.emplace_back( Line { txt, end } );
+                if( *end == '\n' )
+                {
+                    end++;
+                    if( *end == '\r' ) end++;
+                }
+                else if( *end == '\r' )
+                {
+                    end++;
+                    if( *end == '\n' ) end++;
+                }
+                if( *end == '\0' ) break;
+                txt = end;
             }
-            if( *end == '\0' ) break;
-            txt = end;
         }
     }
 
+    if( m_lines.empty() ) m_showAsm = true;
     if( !Disassemble( symAddr, worker ) ) m_showAsm = false;
+    assert( m_showAsm || !m_lines.empty() );
 }
 
 bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
@@ -130,7 +135,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 
 void SourceView::Render( const Worker& worker )
 {
-    if( !m_asm.empty() )
+    if( !m_asm.empty() && !m_lines.empty() )
     {
         if( SmallCheckbox( ICON_FA_MICROCHIP " Show assembly", &m_showAsm ) )
         {
@@ -143,9 +148,15 @@ void SourceView::Render( const Worker& worker )
                 m_targetLine = m_selectedLine;
             }
         }
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
+    }
+    if( !m_asm.empty() )
+    {
+        if( !m_lines.empty() )
+        {
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+        }
         TextFocused( "Code size:", MemSizeToString( m_codeLen ) );
     }
 

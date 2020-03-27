@@ -495,6 +495,7 @@ public:
     const std::vector<float>& GetMbpsData() const { return m_mbpsData.mbps; }
     float GetCompRatio() const { return m_mbpsData.compRatio; }
     size_t GetSendQueueSize() const { return m_mbpsData.queue; }
+    size_t GetSendInFlight() const { return m_serverQuerySpaceBase - m_serverQuerySpaceLeft; }
     uint64_t GetDataTransferred() const { return m_mbpsData.transferred; }
 
     bool HasData() const { return m_hasData.load( std::memory_order_acquire ); }
@@ -804,7 +805,7 @@ private:
     PlotData* m_sysTimePlot = nullptr;
 
     Vector<ServerQueryPacket> m_serverQueryQueue;
-    size_t m_serverQuerySpaceLeft;
+    size_t m_serverQuerySpaceLeft, m_serverQuerySpaceBase;
 
     unordered_flat_map<uint64_t, int32_t> m_frameImageStaging;
     char* m_frameImageBuffer = nullptr;

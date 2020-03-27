@@ -658,16 +658,34 @@ void View::DrawNotificationArea()
 {
     auto& io = ImGui::GetIO();
     const auto ty = ImGui::GetFontSize();
-    const auto sqs = m_worker.GetSendQueueSize();
-    if( sqs != 0 )
+    if( m_worker.IsConnected() )
     {
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_TACHOMETER_ALT );
-        if( ImGui::IsItemHovered() )
+        const auto sqs = m_worker.GetSendQueueSize();
+        if( sqs != 0 )
         {
-            ImGui::BeginTooltip();
-            TextFocused( "Query backlog:", RealToString( sqs ) );
-            ImGui::EndTooltip();
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_TACHOMETER_ALT );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                TextFocused( "Query backlog:", RealToString( sqs ) );
+                ImGui::EndTooltip();
+            }
+        }
+        else
+        {
+            const auto sif = m_worker.GetSendInFlight();
+            if( sif != 0 )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 1, 0.75f, 0, 1 ), ICON_FA_TACHOMETER_ALT );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    TextFocused( "Queries in flight:", RealToString( sif ) );
+                    ImGui::EndTooltip();
+                }
+            }
         }
     }
     auto& crash = m_worker.GetCrashEvent();
@@ -872,6 +890,8 @@ bool View::DrawConnection()
         ImGui::Text( "%6.2f Mbps", mbps / m_worker.GetCompRatio() );
         TextFocused( "Data transferred:", MemSizeToString( m_worker.GetDataTransferred() ) );
         TextFocused( "Query backlog:", RealToString( m_worker.GetSendQueueSize() ) );
+        ImGui::SameLine();
+        TextFocused( "+", RealToString( m_worker.GetSendInFlight() ) );
     }
 
     TextFocused( "Memory usage:", MemSizeToString( memUsage ) );

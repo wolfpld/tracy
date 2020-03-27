@@ -339,6 +339,16 @@ enum { CallstackFrameBasicSize = sizeof( CallstackFrameBasic ) };
 enum { CallstackFrameSize = sizeof( CallstackFrame ) };
 enum { SymbolDataSize = sizeof( SymbolData ) };
 
+
+struct SymbolLocation
+{
+    uint64_t addr;
+    uint32_t len;
+};
+
+enum { SymbolLocationSize = sizeof( SymbolLocation ) };
+
+
 struct CallstackFrameData
 {
     short_ptr<CallstackFrame> data;

@@ -233,6 +233,8 @@ private:
         unordered_flat_map<CallstackFrameData*, CallstackFrameId, RevFrameHash, RevFrameComp> revFrameMap;
         unordered_flat_map<uint64_t, SymbolData> symbolMap;
         unordered_flat_map<uint64_t, SymbolStats> symbolStats;
+        Vector<SymbolLocation> symbolLoc;
+        bool newSymbolsWereAdded = false;
 
 #ifndef TRACY_NO_STATISTICS
         unordered_flat_map<VarArray<CallstackFrameId>*, uint32_t, VarArrayHasher<CallstackFrameId>, VarArrayComparator<CallstackFrameId>> parentCallstackMap;

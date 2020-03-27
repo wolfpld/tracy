@@ -1658,7 +1658,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             Int24 size;
             f.Read9( symAddr, name, file, line, imageName, callFile, callLine, isInline, size );
             m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine, isInline, size } );
+            m_data.symbolLoc.push_back( SymbolLocation { symAddr, size.Val() } );
         }
+#ifdef NO_PARALLEL_SORT
+        pdqsort_branchless( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+#else
+        std::sort( std::execution::par_unseq, m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+#endif
     }
     else if( fileVer >= FileVersion( 0, 6, 5 ) )
     {
@@ -2773,6 +2779,15 @@ void Worker::Exec()
             HandlePostponedSamples();
             m_data.newFramesWereReceived = false;
 #endif
+            if( m_data.newSymbolsWereAdded )
+            {
+                m_data.newSymbolsWereAdded = false;
+#ifdef NO_PARALLEL_SORT
+                pdqsort_branchless( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+#else
+                std::sort( std::execution::par_unseq, m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+#endif
+            }
 
             while( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
             {
@@ -5275,6 +5290,8 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
         m_pendingSymbolCode.emplace( ev.symAddr );
         Query( ServerQuerySymbolCode, ev.symAddr, it->second.size );
     }
+
+    m_data.symbolLoc.push_back( SymbolLocation { ev.symAddr, it->second.size } );
 
     m_pendingSymbols.erase( it );
     m_pendingCustomStrings.erase( fit );

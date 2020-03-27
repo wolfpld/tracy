@@ -199,11 +199,28 @@ void View::SetTextEditorFile( const char* fileName, int line, uint64_t baseAddr,
     m_sourceView->Open( fileName, line, baseAddr, symAddr, m_worker );
 }
 
-void View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
+bool View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
 {
+    if( line == 0 )
+    {
+        fileName = nullptr;
+    }
+    else
+    {
+        if( !SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+        {
+            fileName = nullptr;
+            line = 0;
+        }
+    }
     if( symAddr == 0 )
     {
-        SetTextEditorFile( fileName, line, 0, 0 );
+        if( line != 0 )
+        {
+            SetTextEditorFile( fileName, line, 0, 0 );
+            return true;
+        }
+        return false;
     }
     else
     {
@@ -222,7 +239,12 @@ void View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
                 if( pit != symMap.end() ) baseAddr = parentAddr;
             }
         }
-        SetTextEditorFile( fileName, line, baseAddr, symAddr );
+        if( symlen != 0 || line != 0 )
+        {
+            SetTextEditorFile( fileName, line, baseAddr, symAddr );
+            return true;
+        }
+        return false;
     }
 }
 

@@ -14627,7 +14627,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             const char* fileName = nullptr;
             if( frame.line == 0 )
             {
-                ImGui::TextDisabled( m_worker.GetString( frameDataPtr->imageName ) );
+                TextDisabledUnformatted( m_worker.GetString( frameDataPtr->imageName ) );
             }
             else
             {

@@ -33,11 +33,12 @@ SourceView::~SourceView()
     delete[] m_data;
 }
 
-void SourceView::Open( const char* fileName, int line, uint64_t symAddr, const Worker& worker )
+void SourceView::Open( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker )
 {
     m_targetLine = line;
     m_selectedLine = line;
     m_targetAddr = symAddr;
+    m_baseAddr = baseAddr;
     m_symAddr = symAddr;
 
     if( m_file != fileName )
@@ -83,7 +84,7 @@ void SourceView::Open( const char* fileName, int line, uint64_t symAddr, const W
     }
 
     if( m_lines.empty() ) m_showAsm = true;
-    if( !Disassemble( symAddr, worker ) ) m_showAsm = false;
+    if( !Disassemble( baseAddr, worker ) ) m_showAsm = false;
     assert( m_showAsm || !m_lines.empty() );
 }
 

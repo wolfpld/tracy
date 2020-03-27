@@ -80,7 +80,8 @@ public:
     static bool Draw();
 
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
-    void SetTextEditorFile( const char* fileName, int line, uint64_t symAddr );
+    void SetTextEditorFile( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr );
+    void SetTextEditorFile( const char* fileName, int line, uint64_t symAddr ) { SetTextEditorFile( fileName, line, symAddr, symAddr ); }
 
     bool ReconnectRequested() const { return m_reconnectRequested; }
     std::string GetAddress() const { return m_worker.GetAddr(); }

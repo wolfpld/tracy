@@ -192,11 +192,11 @@ void View::InitTextEditor( ImFont* font )
     m_sourceViewFile = nullptr;
 }
 
-void View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
+void View::SetTextEditorFile( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr )
 {
     assert( fileName || symAddr );
     m_sourceViewFile = fileName ? fileName : (const char*)~uint64_t( 0 );
-    m_sourceView->Open( fileName, line, symAddr, m_worker );
+    m_sourceView->Open( fileName, line, baseAddr, symAddr, m_worker );
 }
 
 const char* View::ShortenNamespace( const char* name ) const

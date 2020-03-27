@@ -2821,7 +2821,7 @@ void Worker::Exec()
                 }
                 if( !done ) continue;
             }
-            Query( ServerQueryTerminate, 0 );
+            QueryTerminate();
             break;
         }
     }

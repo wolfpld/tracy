@@ -38,6 +38,7 @@ void SourceView::Open( const char* fileName, int line, uint64_t baseAddr, uint64
     m_targetLine = line;
     m_selectedLine = line;
     m_targetAddr = symAddr;
+    m_baseAddr = baseAddr;
     m_symAddr = symAddr;
 
     if( m_file != fileName )

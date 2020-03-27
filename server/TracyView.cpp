@@ -3509,10 +3509,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
 
                         if( ImGui::IsMouseClicked( 0 ) )
                         {
-                            if( line != 0 )
-                            {
-                                SetTextEditorFile( file, line, frame->data[i].symAddr );
-                            }
+                            SetTextEditorFile( file, line, frame->data[i].symAddr );
                         }
                         else if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
                         {
@@ -6009,11 +6006,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                     }
                     if( ImGui::IsItemClicked( 1 ) )
                     {
-                        if( frame->line != 0 && SourceFileValid( fileName, worker.GetCaptureTime() ) )
-                        {
-                            view.SetTextEditorFile( fileName, frame->line, 0 );
-                        }
-                        else
+                        if( !view.SetTextEditorFile( fileName, frame->line, frame->symAddr ) )
                         {
                             anim.Enable( frame, 0.5f );
                         }
@@ -6071,11 +6064,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             }
             if( ImGui::IsItemClicked( 1 ) )
             {
-                if( frame->line != 0 && SourceFileValid( fileName, worker.GetCaptureTime() ) )
-                {
-                    view.SetTextEditorFile( fileName, frame->line, 0 );
-                }
-                else
+                if( !view.SetTextEditorFile( fileName, frame->line, frame->symAddr ) )
                 {
                     anim.Enable( frame, 0.5f );
                 }
@@ -11797,11 +11786,7 @@ void View::DrawCallstackWindow()
                         if( sym )
                         {
                             const auto symtxt = m_worker.GetString( sym->file );
-                            if( SourceFileValid( symtxt, m_worker.GetCaptureTime() ) )
-                            {
-                                SetTextEditorFile( symtxt, sym->line, frame.symAddr );
-                            }
-                            else
+                            if( !SetTextEditorFile( symtxt, sym->line, frame.symAddr ) )
                             {
                                 m_callstackBuzzAnim.Enable( bidx, 0.5f );
                             }
@@ -11813,11 +11798,7 @@ void View::DrawCallstackWindow()
                     }
                     else
                     {
-                        if( SourceFileValid( txt, m_worker.GetCaptureTime() ) )
-                        {
-                            SetTextEditorFile( txt, frame.line, frame.symAddr );
-                        }
-                        else
+                        if( !SetTextEditorFile( txt, frame.line, frame.symAddr ) )
                         {
                             m_callstackBuzzAnim.Enable( bidx, 0.5f );
                         }
@@ -12869,11 +12850,7 @@ void View::DrawLockInfoWindow()
     ImGui::Text( "%s:%i", fileName, srcloc.line );
     if( ImGui::IsItemClicked( 1 ) )
     {
-        if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
-        {
-            SetTextEditorFile( fileName, srcloc.line, 0 );
-        }
-        else
+        if( !SetTextEditorFile( fileName, srcloc.line, 0 ) )
         {
             m_lockInfoAnim.Enable( m_lockInfoWindow, 0.5f );
         }
@@ -13445,10 +13422,7 @@ void View::DrawSampleParents()
     }
     if( ImGui::IsItemClicked( 1 ) )
     {
-        if( SourceFileValid( callFile, m_worker.GetCaptureTime() ) )
-        {
-            SetTextEditorFile( callFile, symbol->callLine, m_sampleParents.symAddr );
-        }
+        SetTextEditorFile( callFile, symbol->callLine, m_sampleParents.symAddr );
     }
     TextDisabledUnformatted( "Entry point:" );
     ImGui::SameLine();
@@ -13463,10 +13437,7 @@ void View::DrawSampleParents()
     }
     if( ImGui::IsItemClicked( 1 ) )
     {
-        if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
-        {
-            SetTextEditorFile( file, symbol->line, m_sampleParents.symAddr );
-        }
+        SetTextEditorFile( file, symbol->line, m_sampleParents.symAddr );
     }
     ImGui::SameLine();
     ImGui::Spacing();
@@ -13672,11 +13643,7 @@ void View::DrawSampleParents()
                     if( sym )
                     {
                         const auto symtxt = m_worker.GetString( sym->file );
-                        if( SourceFileValid( symtxt, m_worker.GetCaptureTime() ) )
-                        {
-                            SetTextEditorFile( symtxt, sym->line, 0 );
-                        }
-                        else
+                        if( !SetTextEditorFile( symtxt, sym->line, frame.symAddr ) )
                         {
                             m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
                         }
@@ -13688,11 +13655,7 @@ void View::DrawSampleParents()
                 }
                 else
                 {
-                    if( SourceFileValid( txt, m_worker.GetCaptureTime() ) )
-                    {
-                        SetTextEditorFile( txt, frame.line, 0 );
-                    }
-                    else
+                    if( !SetTextEditorFile( txt, frame.line, frame.symAddr ) )
                     {
                         m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
                     }
@@ -14665,11 +14628,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             ImGui::TextDisabled( "%s:%i", fileName, frame.line );
             if( ImGui::IsItemClicked( 1 ) )
             {
-                if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
-                {
-                    SetTextEditorFile( fileName, frame.line, 0 );
-                }
-                else
+                if( !SetTextEditorFile( fileName, frame.line, frame.symAddr ) )
                 {
                     m_callstackTreeBuzzAnim.Enable( idx, 0.5f );
                 }

@@ -19,6 +19,7 @@ class SourceView
     struct AsmLine
     {
         uint64_t addr;
+        uint64_t jumpAddr;
         std::string mnemonic;
         std::string operands;
     };

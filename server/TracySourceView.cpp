@@ -117,6 +117,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
         break;
     }
     if( rval != CS_ERR_OK ) return false;
+    cs_option( handle, CS_OPT_DETAIL, CS_OPT_ON );
     cs_insn* insn;
     size_t cnt = cs_disasm( handle, (const uint8_t*)code, len, symAddr, 0, &insn );
     if( cnt > 0 )
@@ -124,7 +125,76 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
         m_asm.reserve( cnt );
         for( size_t i=0; i<cnt; i++ )
         {
-            m_asm.emplace_back( AsmLine { insn[i].address, insn[i].mnemonic, insn[i].op_str } );
+            const auto& op = insn[i];
+            const auto& detail = *op.detail;
+            bool hasJump = false;
+            switch( arch )
+            {
+            case CpuArchX86:
+            case CpuArchX64:
+                for( auto j=0; j<detail.groups_count; j++ )
+                {
+                    if( detail.groups[j] == X86_GRP_JUMP || detail.groups[j] == X86_GRP_CALL )
+                    {
+                        hasJump = true;
+                        break;
+                    }
+                }
+                break;
+            case CpuArchArm32:
+                for( auto j=0; j<detail.groups_count; j++ )
+                {
+                    if( detail.groups[j] == ARM_GRP_JUMP || detail.groups[j] == ARM_GRP_CALL )
+                    {
+                        hasJump = true;
+                        break;
+                    }
+                }
+                break;
+            case CpuArchArm64:
+                for( auto j=0; j<detail.groups_count; j++ )
+                {
+                    if( detail.groups[j] == ARM64_GRP_JUMP || detail.groups[j] == ARM64_GRP_CALL )
+                    {
+                        hasJump = true;
+                        break;
+                    }
+                }
+                break;
+            default:
+                assert( false );
+                break;
+            }
+            uint64_t jumpAddr = 0;
+            if( hasJump )
+            {
+                switch( arch )
+                {
+                case CpuArchX86:
+                case CpuArchX64:
+                    if( detail.x86.op_count == 1 && detail.x86.operands[0].type == X86_OP_IMM )
+                    {
+                        jumpAddr = (uint64_t)detail.x86.operands[0].imm;
+                    }
+                    break;
+                case CpuArchArm32:
+                    if( detail.arm.op_count == 1 && detail.arm.operands[0].type == ARM_OP_IMM )
+                    {
+                        jumpAddr = (uint64_t)detail.arm.operands[0].imm;
+                    }
+                    break;
+                case CpuArchArm64:
+                    if( detail.arm64.op_count == 1 && detail.arm64.operands[0].type == ARM64_OP_IMM )
+                    {
+                        jumpAddr = (uint64_t)detail.arm64.operands[0].imm;
+                    }
+                    break;
+                default:
+                    assert( false );
+                    break;
+                }
+            }
+            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str } );
         }
         cs_free( insn, cnt );
     }

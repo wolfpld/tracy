@@ -1658,7 +1658,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             Int24 size;
             f.Read9( symAddr, name, file, line, imageName, callFile, callLine, isInline, size );
             m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine, isInline, size } );
-            m_data.symbolLoc.push_back( SymbolLocation { symAddr, size.Val() } );
+            if( !isInline) m_data.symbolLoc.push_back( SymbolLocation { symAddr, size.Val() } );
         }
 #ifdef NO_PARALLEL_SORT
         pdqsort_branchless( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
@@ -5299,7 +5299,7 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
         Query( ServerQuerySymbolCode, ev.symAddr, it->second.size );
     }
 
-    m_data.symbolLoc.push_back( SymbolLocation { ev.symAddr, it->second.size } );
+    if( !it->second.isInline ) m_data.symbolLoc.push_back( SymbolLocation { ev.symAddr, it->second.size } );
 
     m_pendingSymbols.erase( it );
     m_pendingCustomStrings.erase( fit );

@@ -97,7 +97,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     auto code = worker.GetSymbolCode( symAddr, len );
     if( !code ) return false;
     csh handle;
-    cs_err rval;
+    cs_err rval = CS_ERR_ARCH;
     switch( arch )
     {
     case CpuArchX86:

@@ -32,6 +32,7 @@ v0.7 (xxxx-xx-xx)
 - Small fragments of executable code will be now sent from client to server.
 - Added notification about query backlog.
 - Source file view can now display disassembly of executable code.
+- Display number of in-flight queries, in addition to query backlog.
 
 v0.6.3 (2020-02-13)
 -------------------

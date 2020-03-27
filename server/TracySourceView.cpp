@@ -130,25 +130,30 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 
 void SourceView::Render( const Worker& worker )
 {
+    if( !m_asm.empty() )
+    {
+        if( SmallCheckbox( ICON_FA_MICROCHIP " Show assembly", &m_showAsm ) )
+        {
+            if( m_showAsm )
+            {
+                m_targetAddr = m_symAddr;
+            }
+            else
+            {
+                m_targetLine = m_selectedLine;
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Code size:", MemSizeToString( m_codeLen ) );
+    }
+
     uint32_t iptotal = 0;
     unordered_flat_map<uint64_t, uint32_t> ipcount;
     auto ipmap = m_symAddr != 0 ? worker.GetSymbolInstructionPointers( m_symAddr ) : nullptr;
     if( ipmap )
     {
-        if( !m_asm.empty() )
-        {
-            if( SmallCheckbox( ICON_FA_MICROCHIP " Show assembly", &m_showAsm ) )
-            {
-                if( m_showAsm )
-                {
-                    m_targetAddr = m_symAddr;
-                }
-                else
-                {
-                    m_targetLine = m_selectedLine;
-                }
-            }
-        }
         if( m_showAsm )
         {
             for( auto& ip : *ipmap )
@@ -184,25 +189,23 @@ void SourceView::Render( const Worker& worker )
                 }
             }
         }
-        auto sym = worker.GetSymbolData( m_symAddr );
-        if( sym )
+
+        if( iptotal > 0 )
         {
-            if( !m_asm.empty() )
-            {
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-                TextFocused( "Code size:", MemSizeToString( m_codeLen ) );
-                ImGui::SameLine();
-                ImGui::Spacing();
-                ImGui::SameLine();
-            }
-            TextFocused( "Samples:", RealToString( iptotal ) );
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
-            TextFocused( "Symbol:", worker.GetString( sym->name ) );
+            TextFocused( "Samples:", RealToString( iptotal ) );
         }
+    }
+
+    auto sym = worker.GetSymbolData( m_symAddr );
+    if( sym )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Symbol:", worker.GetString( sym->name ) );
     }
 
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );

@@ -1,7 +1,9 @@
+#include <new>
 #include <stdio.h>
 #include <string.h>
 #include "TracyCallstack.hpp"
 #include "TracyFastVector.hpp"
+#include "../common/TracyAlloc.hpp"
 
 #ifdef TRACY_HAS_CALLSTACK
 
@@ -97,7 +99,8 @@ void InitCallstack()
     HANDLE proc = GetCurrentProcess();
 
 #ifndef __CYGWIN__
-    s_modCache = new FastVector<ModuleCache>( 512 );
+    s_modCache = (FastVector<ModuleCache>*)tracy_malloc( sizeof( FastVector<ModuleCache> ) );
+    new(s_modCache) FastVector<ModuleCache>( 512 );
 
     if( EnumProcessModules( proc, mod, sizeof( mod ), &needed ) != 0 )
     {

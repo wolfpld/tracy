@@ -132,42 +132,13 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             const auto& op = insn[i];
             const auto& detail = *op.detail;
             bool hasJump = false;
-            switch( arch )
+            for( auto j=0; j<detail.groups_count; j++ )
             {
-            case CpuArchX86:
-            case CpuArchX64:
-                for( auto j=0; j<detail.groups_count; j++ )
+                if( detail.groups[j] == CS_GRP_JUMP || detail.groups[j] == CS_GRP_CALL )
                 {
-                    if( detail.groups[j] == X86_GRP_JUMP || detail.groups[j] == X86_GRP_CALL )
-                    {
-                        hasJump = true;
-                        break;
-                    }
+                    hasJump = true;
+                    break;
                 }
-                break;
-            case CpuArchArm32:
-                for( auto j=0; j<detail.groups_count; j++ )
-                {
-                    if( detail.groups[j] == ARM_GRP_JUMP || detail.groups[j] == ARM_GRP_CALL )
-                    {
-                        hasJump = true;
-                        break;
-                    }
-                }
-                break;
-            case CpuArchArm64:
-                for( auto j=0; j<detail.groups_count; j++ )
-                {
-                    if( detail.groups[j] == ARM64_GRP_JUMP || detail.groups[j] == ARM64_GRP_CALL )
-                    {
-                        hasJump = true;
-                        break;
-                    }
-                }
-                break;
-            default:
-                assert( false );
-                break;
             }
             uint64_t jumpAddr = 0;
             if( hasJump )

@@ -144,14 +144,17 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
             if( sw->stackProcess == s_pid && ( sw->stack[0] & 0x8000000000000000 ) == 0 )
             {
                 const uint64_t sz = ( record->UserDataLength - 16 ) / 8;
-                auto trace = (uint64_t*)tracy_malloc( ( 1 + sz ) * sizeof( uint64_t ) );
-                memcpy( trace, &sz, sizeof( uint64_t ) );
-                memcpy( trace+1, sw->stack, sizeof( uint64_t ) * sz );
-                TracyLfqPrepare( QueueType::CallstackSample );
-                MemWrite( &item->callstackSample.time, sw->eventTimeStamp );
-                MemWrite( &item->callstackSample.thread, (uint64_t)sw->stackThread );
-                MemWrite( &item->callstackSample.ptr, (uint64_t)trace );
-                TracyLfqCommit;
+                if( sz > 0 )
+                {
+                    auto trace = (uint64_t*)tracy_malloc( ( 1 + sz ) * sizeof( uint64_t ) );
+                    memcpy( trace, &sz, sizeof( uint64_t ) );
+                    memcpy( trace+1, sw->stack, sizeof( uint64_t ) * sz );
+                    TracyLfqPrepare( QueueType::CallstackSample );
+                    MemWrite( &item->callstackSample.time, sw->eventTimeStamp );
+                    MemWrite( &item->callstackSample.thread, (uint64_t)sw->stackThread );
+                    MemWrite( &item->callstackSample.ptr, (uint64_t)trace );
+                    TracyLfqCommit;
+                }
             }
         }
         break;

@@ -52,6 +52,7 @@ private:
     bool m_showAsm;
     uint32_t m_codeLen;
     DecayValue<uint64_t> m_highlightAddr;
+    bool m_asmRelative;
 
     std::vector<Line> m_lines;
     std::vector<AsmLine> m_asm;

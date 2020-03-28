@@ -27,6 +27,7 @@ SourceView::SourceView( ImFont* font )
     , m_showAsm( false )
     , m_codeLen( 0 )
     , m_highlightAddr( 0 )
+    , m_asmRelative( false )
 {
 }
 
@@ -276,6 +277,10 @@ void SourceView::Render( const Worker& worker )
         ImGui::SameLine();
         TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
     }
+    else
+    {
+        SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative locations", &m_asmRelative );
+    }
 
     uint64_t jumpOut = 0;
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
@@ -452,7 +457,14 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     }
 
     char buf[256];
-    sprintf( buf, "%" PRIx64, line.addr );
+    if( m_asmRelative )
+    {
+        sprintf( buf, "+%" PRIu64, line.addr - m_baseAddr );
+    }
+    else
+    {
+        sprintf( buf, "%" PRIx64, line.addr );
+    }
     const auto asz = strlen( buf );
     memset( buf+asz, ' ', 16-asz );
     buf[16] = '\0';

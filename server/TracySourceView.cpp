@@ -4,6 +4,7 @@
 #include <capstone/capstone.h>
 
 #include "../imgui/imgui.h"
+#include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
 #include "TracySourceView.hpp"
@@ -371,7 +372,14 @@ void SourceView::Render( const Worker& worker )
         auto sym = worker.GetSymbolData( jumpOut );
         if( sym )
         {
-            Open( worker.GetString( sym->file ), sym->line, jumpOut, jumpOut, worker );
+            auto line = sym->line;
+            auto file = line == 0 ? nullptr : worker.GetString( sym->file );
+            if( file && !SourceFileValid( file, worker.GetCaptureTime() ) )
+            {
+                file = nullptr;
+                line = 0;
+            }
+            Open( file, line, jumpOut, jumpOut, worker );
         }
     }
 }

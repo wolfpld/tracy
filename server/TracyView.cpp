@@ -11571,6 +11571,7 @@ void View::DrawCallstackWindow()
     ImGui::RadioButton( "Symbol address", &m_showCallstackFrameAddress, 2 );
 
     auto& cs = m_worker.GetCallstack( m_callstackInfoWindow );
+    if( m_worker.AreCallstackSamplesReady() )
     {
         auto frame = m_worker.GetCallstackFrame( *cs.begin() );
         if( frame && frame->data[0].symAddr != 0 )

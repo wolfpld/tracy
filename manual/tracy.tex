@@ -2631,6 +2631,8 @@ Unlike other profilers, Tracy doesn't include inlined function statistics in the
 
 If executable code retrieval was performed, as described in section~\ref{executableretrieval}, and the view has symbol context available, you will be presented with an additional option, \emph{\faMicrochip{}~Show assembly}. Selecting it will replace the source code view with disassembly of the relevant portion of the program that was profiled.
 
+By default each assembly instruction is displayed with its location in the program memory during execution. If the \emph{\faSearchLocation{}~Relative locations} option is selected, an offset from the symbol beginning will be printed instead.
+
 Machine code instructions jumping to a predefined address will display symbol name of the jump target. If the destination location is within the currently displayed symbol an \texttt{->}~arrow will be prepended to the name. Hovering the \faMousePointer{}~mouse pointer over such symbol name will highlight the target location. Clicking on it with the \LMB{}~left mouse button will focus the view on the destination instruction, or switch view to the destination symbol.
 
 Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.

@@ -5959,8 +5959,8 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                 auto& prevCs = worker.GetCallstack( pcv );
                 auto& currCs = worker.GetCallstack( ccv );
 
-                const auto psz = int8_t( prevCs.size() );
-                int8_t idx;
+                const auto psz = int( prevCs.size() );
+                int idx;
                 for( idx=0; idx<psz; idx++ )
                 {
                     auto pf = prevCs[idx];
@@ -5976,7 +5976,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                     }
                     if( found ) break;
                 }
-                for( int8_t j=1; j<idx; j++ )
+                for( int j=1; j<idx; j++ )
                 {
                     auto frameData = worker.GetCallstackFrame( prevCs[j] );
                     auto frame = frameData->data + frameData->size - 1;
@@ -6034,7 +6034,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
     {
         auto& cs = worker.GetCallstack( lcv );
         const auto csz = cs.size();
-        for( uint8_t i=1; i<csz; i++ )
+        for( uint16_t i=1; i<csz; i++ )
         {
             auto frameData = worker.GetCallstackFrame( cs[i] );
             auto frame = frameData->data + frameData->size - 1;
@@ -14083,7 +14083,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopD
                 treePtr->alloc += path.second.mem;
                 treePtr->callstacks.emplace( path.first );
 
-                for( int i = 1; i < cs.size(); i++ )
+                for( uint16_t i = 1; i < cs.size(); i++ )
                 {
                     treePtr = GetFrameTreeItemGroup( treePtr->children, cs[i], m_worker );
                     if( !treePtr ) break;
@@ -14106,7 +14106,7 @@ unordered_flat_map<uint64_t, CallstackFrameTree> View::GetCallstackFrameTreeTopD
             treePtr->alloc += path.second.mem;
             treePtr->callstacks.emplace( path.first );
 
-            for( int i = 1; i < cs.size(); i++ )
+            for( uint16_t i = 1; i < cs.size(); i++ )
             {
                 treePtr = GetFrameTreeItemNoGroup( treePtr->children, cs[i], m_worker );
                 treePtr->count += path.second.cnt;
@@ -15597,12 +15597,12 @@ void View::SmallCallstackButton( const char* name, uint32_t callstack, int& idx,
     }
 }
 
-void View::DrawCallstackCalls( uint32_t callstack, uint8_t limit ) const
+void View::DrawCallstackCalls( uint32_t callstack, uint16_t limit ) const
 {
     const auto& csdata = m_worker.GetCallstack( callstack );
     const auto cssz = std::min( csdata.size(), limit );
     bool first = true;
-    for( uint8_t i=0; i<cssz; i++ )
+    for( uint16_t i=0; i<cssz; i++ )
     {
         const auto frameData = m_worker.GetCallstackFrame( csdata[i] );
         if( !frameData ) break;

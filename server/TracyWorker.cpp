@@ -1332,21 +1332,43 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     s_loadProgress.progress.store( LoadProgress::CallStacks, std::memory_order_relaxed );
     f.Read( sz );
     m_data.callstackPayload.reserve( sz );
-    for( uint64_t i=0; i<sz; i++ )
+    if( fileVer >= FileVersion( 0, 6, 8 ) )
     {
-        uint8_t csz;
-        f.Read( csz );
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint16_t csz;
+            f.Read( csz );
 
-        const auto memsize = sizeof( VarArray<CallstackFrameId> ) + csz * sizeof( CallstackFrameId );
-        auto mem = (char*)m_slab.AllocRaw( memsize );
+            const auto memsize = sizeof( VarArray<CallstackFrameId> ) + csz * sizeof( CallstackFrameId );
+            auto mem = (char*)m_slab.AllocRaw( memsize );
 
-        auto data = (CallstackFrameId*)mem;
-        f.Read( data, csz * sizeof( CallstackFrameId ) );
+            auto data = (CallstackFrameId*)mem;
+            f.Read( data, csz * sizeof( CallstackFrameId ) );
 
-        auto arr = (VarArray<CallstackFrameId>*)( mem + csz * sizeof( CallstackFrameId ) );
-        new(arr) VarArray<CallstackFrameId>( csz, data );
+            auto arr = (VarArray<CallstackFrameId>*)( mem + csz * sizeof( CallstackFrameId ) );
+            new(arr) VarArray<CallstackFrameId>( csz, data );
 
-        m_data.callstackPayload.push_back_no_space_check( arr );
+            m_data.callstackPayload.push_back_no_space_check( arr );
+        }
+    }
+    else
+    {
+        for( uint64_t i=0; i<sz; i++ )
+        {
+            uint8_t csz;
+            f.Read( csz );
+
+            const auto memsize = sizeof( VarArray<CallstackFrameId> ) + csz * sizeof( CallstackFrameId );
+            auto mem = (char*)m_slab.AllocRaw( memsize );
+
+            auto data = (CallstackFrameId*)mem;
+            f.Read( data, csz * sizeof( CallstackFrameId ) );
+
+            auto arr = (VarArray<CallstackFrameId>*)( mem + csz * sizeof( CallstackFrameId ) );
+            new(arr) VarArray<CallstackFrameId>( csz, data );
+
+            m_data.callstackPayload.push_back_no_space_check( arr );
+        }
     }
 
     if( fileVer >= FileVersion( 0, 6, 5 ) )
@@ -5720,7 +5742,7 @@ void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool ca
     const auto cssz = cs.size();
 
     auto frames = (const CallstackFrameData**)alloca( cssz * sizeof( CallstackFrameData* ) );
-    for( uint8_t i=0; i<cssz; i++ )
+    for( uint16_t i=0; i<cssz; i++ )
     {
         auto frame = GetCallstackFrame( cs[i] );
         if( !frame )
@@ -5764,7 +5786,7 @@ void Worker::UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postpo
     const auto cssz = cs.size();
 
     auto frames = (const CallstackFrameData**)alloca( cssz * sizeof( CallstackFrameData* ) );
-    for( uint8_t i=0; i<cssz; i++ )
+    for( uint16_t i=0; i<cssz; i++ )
     {
         auto frame = GetCallstackFrame( cs[i] );
         if( !frame )
@@ -5779,7 +5801,7 @@ void Worker::UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postpo
     it = m_data.postponedSamples.erase( it );
 }
 
-void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint8_t framesCount, uint32_t count, const VarArray<CallstackFrameId>& cs )
+void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint16_t framesCount, uint32_t count, const VarArray<CallstackFrameId>& cs )
 {
     const auto fexcl = frames[0];
     const auto fxsz = fexcl->size;
@@ -5794,7 +5816,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         if( sym == m_data.symbolStats.end() ) sym = m_data.symbolStats.emplace( frame.symAddr, SymbolStats { 0, 0, unordered_flat_map<uint32_t, uint32_t>() } ).first;
         sym->second.incl += count;
     }
-    for( uint8_t c=1; c<framesCount; c++ )
+    for( uint16_t c=1; c<framesCount; c++ )
     {
         const auto fincl = frames[c];
         const auto fsz = fincl->size;
@@ -6591,7 +6613,7 @@ void Worker::Write( FileWrite& f )
     for( size_t i=1; i<=sz; i++ )
     {
         auto cs = m_data.callstackPayload[i];
-        uint8_t csz = cs->size();
+        uint16_t csz = cs->size();
         f.Write( &csz, sizeof( csz ) );
         f.Write( cs->data(), sizeof( CallstackFrameId ) * csz );
     }

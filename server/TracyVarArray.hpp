@@ -23,7 +23,7 @@ template<typename T>
 class VarArray
 {
 public:
-    VarArray( uint8_t size, const T* data )
+    VarArray( uint16_t size, const T* data )
         : m_size( size )
         , m_ptr( data )
     {
@@ -39,7 +39,7 @@ public:
     tracy_force_inline uint32_t get_hash() const { return m_hash; }
 
     tracy_force_inline bool empty() const { return m_size == 0; }
-    tracy_force_inline uint8_t size() const { return m_size; }
+    tracy_force_inline uint16_t size() const { return m_size; }
 
     tracy_force_inline const T* data() const { return m_ptr; };
 
@@ -54,7 +54,7 @@ public:
 private:
     tracy_force_inline void CalcHash();
 
-    uint8_t m_size;
+    uint16_t m_size;
     uint32_t m_hash;
     const short_ptr<T> m_ptr;
 };

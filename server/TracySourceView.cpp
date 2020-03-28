@@ -277,6 +277,7 @@ void SourceView::Render( const Worker& worker )
         TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
     }
 
+    uint64_t jumpOut = 0;
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
     if( m_font ) ImGui::PushFont( m_font );
     if( m_showAsm )
@@ -290,7 +291,7 @@ void SourceView::Render( const Worker& worker )
                     m_targetAddr = 0;
                     ImGui::SetScrollHereY();
                 }
-                RenderAsmLine( line, 0, iptotal, worker );
+                RenderAsmLine( line, 0, iptotal, worker, jumpOut );
             }
         }
         else
@@ -302,7 +303,7 @@ void SourceView::Render( const Worker& worker )
                 {
                     for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                     {
-                        RenderAsmLine( m_asm[i], 0, 0, worker );
+                        RenderAsmLine( m_asm[i], 0, 0, worker, jumpOut );
                     }
                 }
                 else
@@ -312,7 +313,7 @@ void SourceView::Render( const Worker& worker )
                         auto& line = m_asm[i];
                         auto it = ipcount.find( line.addr );
                         const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                        RenderAsmLine( line, ipcnt, iptotal, worker );
+                        RenderAsmLine( line, ipcnt, iptotal, worker, jumpOut );
                     }
                 }
             }
@@ -359,6 +360,15 @@ void SourceView::Render( const Worker& worker )
     }
     if( m_font ) ImGui::PopFont();
     ImGui::EndChild();
+
+    if( jumpOut != 0 )
+    {
+        auto sym = worker.GetSymbolData( jumpOut );
+        if( sym )
+        {
+            Open( worker.GetString( sym->file ), sym->line, jumpOut, jumpOut, worker );
+        }
+    }
 }
 
 void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal )
@@ -405,7 +415,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker )
+void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker, uint64_t& jumpOut )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -481,6 +491,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             else
             {
                 ImGui::TextDisabled( "[%s+%" PRIu32"]", worker.GetString( sym->name ), offset );
+                if( ImGui::IsItemClicked() ) jumpOut = line.jumpAddr;
             }
         }
     }

@@ -379,7 +379,10 @@ void SourceView::Render( const Worker& worker )
                 file = nullptr;
                 line = 0;
             }
-            Open( file, line, jumpOut, jumpOut, worker );
+            if( line > 0 || sym->size.Val() > 0 )
+            {
+                Open( file, line, jumpOut, jumpOut, worker );
+            }
         }
     }
 }

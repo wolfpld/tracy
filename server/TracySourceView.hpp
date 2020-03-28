@@ -1,6 +1,8 @@
 #include <string>
 #include <vector>
 
+#include "TracyDecayValue.hpp"
+
 struct ImFont;
 
 namespace tracy
@@ -33,13 +35,14 @@ public:
 
 private:
     void RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal );
-    void RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal );
+    void RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker );
 
     bool Disassemble( uint64_t symAddr, const Worker& worker );
 
     ImFont* m_font;
     const char* m_file;
     uint64_t m_symAddr;
+    uint64_t m_currentAddr;
     uint64_t m_baseAddr;
     uint64_t m_targetAddr;
     char* m_data;
@@ -48,6 +51,7 @@ private:
     int m_selectedLine;
     bool m_showAsm;
     uint32_t m_codeLen;
+    DecayValue<uint64_t> m_highlightAddr;
 
     std::vector<Line> m_lines;
     std::vector<AsmLine> m_asm;

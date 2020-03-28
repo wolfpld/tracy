@@ -18,6 +18,7 @@ SourceView::SourceView( ImFont* font )
     : m_font( font )
     , m_file( nullptr )
     , m_symAddr( 0 )
+    , m_currentAddr( 0 )
     , m_targetAddr( 0 )
     , m_data( nullptr )
     , m_dataSize( 0 )
@@ -25,6 +26,7 @@ SourceView::SourceView( ImFont* font )
     , m_selectedLine( 0 )
     , m_showAsm( false )
     , m_codeLen( 0 )
+    , m_highlightAddr( 0 )
 {
 }
 
@@ -40,6 +42,7 @@ void SourceView::Open( const char* fileName, int line, uint64_t baseAddr, uint64
     m_targetAddr = symAddr;
     m_baseAddr = baseAddr;
     m_symAddr = symAddr;
+    m_currentAddr = symAddr;
 
     if( m_file != fileName )
     {
@@ -206,6 +209,8 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 
 void SourceView::Render( const Worker& worker )
 {
+    m_highlightAddr.Decay( 0 );
+
     if( m_file ) TextFocused( "File:", m_file );
 
     if( !m_asm.empty() && !m_lines.empty() )
@@ -314,7 +319,7 @@ void SourceView::Render( const Worker& worker )
                     m_targetAddr = 0;
                     ImGui::SetScrollHereY();
                 }
-                RenderAsmLine( line, 0, iptotal );
+                RenderAsmLine( line, 0, iptotal, worker );
             }
         }
         else
@@ -326,7 +331,7 @@ void SourceView::Render( const Worker& worker )
                 {
                     for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                     {
-                        RenderAsmLine( m_asm[i], 0, 0 );
+                        RenderAsmLine( m_asm[i], 0, 0, worker );
                     }
                 }
                 else
@@ -336,7 +341,7 @@ void SourceView::Render( const Worker& worker )
                         auto& line = m_asm[i];
                         auto it = ipcount.find( line.addr );
                         const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                        RenderAsmLine( line, ipcnt, iptotal );
+                        RenderAsmLine( line, ipcnt, iptotal, worker );
                     }
                 }
             }
@@ -429,15 +434,19 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal )
+void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ImGui::GetWindowWidth();
     const auto wpos = ImGui::GetCursorScreenPos();
-    if( line.addr == m_symAddr )
+    if( line.addr == m_currentAddr )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF333322 );
+    }
+    if( line.addr == m_highlightAddr )
+    {
+        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF222233 );
     }
 
     if( iptotal != 0 )
@@ -474,6 +483,36 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     memset( buf+msz, ' ', 16-msz );
     memcpy( buf+16, line.operands.c_str(), line.operands.size() + 1 );
     ImGui::TextUnformatted( buf );
+
+    if( line.jumpAddr != 0 )
+    {
+        uint32_t offset = 0;
+        const auto base = worker.GetSymbolForAddress( line.jumpAddr, offset );
+        auto sym = base == 0 ? worker.GetSymbolData( line.jumpAddr ) : worker.GetSymbolData( base );
+        if( sym )
+        {
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            if( base == m_baseAddr )
+            {
+                ImGui::TextDisabled( "-> [%s+%" PRIu32"]", worker.GetString( sym->name ), offset );
+                if( ImGui::IsItemHovered() )
+                {
+                    m_highlightAddr = line.jumpAddr;
+                    if( ImGui::IsItemClicked() )
+                    {
+                        m_targetAddr = line.jumpAddr;
+                        m_currentAddr = line.jumpAddr;
+                    }
+                }
+            }
+            else
+            {
+                ImGui::TextDisabled( "[%s+%" PRIu32"]", worker.GetString( sym->name ), offset );
+            }
+        }
+    }
 
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }

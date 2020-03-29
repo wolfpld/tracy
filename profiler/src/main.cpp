@@ -471,7 +471,36 @@ static void DrawContents()
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Web" ) )
         {
-            OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );
+            ImGui::OpenPopup( "web" );
+        }
+        if( ImGui::BeginPopup( "web" ) )
+        {
+            if( ImGui::Selectable( ICON_FA_HOME " Tracy Profiler home page" ) )
+            {
+                OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );
+            }
+            ImGui::Separator();
+            if( ImGui::Selectable( ICON_FA_VIDEO " Overview of v0.2" ) )
+            {
+                OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
+            }
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.3" ) )
+            {
+                OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
+            }
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.4" ) )
+            {
+                OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
+            }
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.5" ) )
+            {
+                OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
+            }
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.6" ) )
+            {
+                OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
+            }
+            ImGui::EndPopup();
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_COMMENT " Chat" ) )
@@ -479,33 +508,9 @@ static void DrawContents()
             OpenWebpage( "https://discord.gg/pk78auc" );
         }
         ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_VIDEO " Tutorial" ) )
+        if( ImGui::Button( ICON_FA_HEART " Sponsor" ) )
         {
-            ImGui::OpenPopup( "tutorial" );
-        }
-        if( ImGui::BeginPopup( "tutorial" ) )
-        {
-            if( ImGui::Selectable( ICON_FA_VIDEO " Introduction to the Tracy Profiler" ) )
-            {
-                OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
-            }
-            if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.3" ) )
-            {
-                OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
-            }
-            if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.4" ) )
-            {
-                OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
-            }
-            if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.5" ) )
-            {
-                OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
-            }
-            if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.6" ) )
-            {
-                OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
-            }
-            ImGui::EndPopup();
+            OpenWebpage( "https://github.com/sponsors/wolfpld/" );
         }
         ImGui::Separator();
         ImGui::TextUnformatted( "Client address" );

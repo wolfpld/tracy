@@ -2,6 +2,8 @@
 
 [![Build status](https://ci.appveyor.com/api/projects/status/968a88arq06gm3el/branch/master?svg=true)](https://ci.appveyor.com/project/wolfpld/tracy/branch/master)
 
+[![Sponsor](.github/sponsor.png)](https://github.com/sponsors/wolfpld/)
+
 ### A real time, nanosecond resolution, remote telemetry frame profiler for games and other applications.
 
 Tracy supports profiling CPU (C, C++11, Lua), GPU (OpenGL, Vulkan), memory, locks, context switches, per-frame screenshots and more.

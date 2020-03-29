@@ -685,6 +685,12 @@ private:
     void HandlePostponedPlots();
     void HandlePostponedSamples();
 
+    bool IsThreadStringRetrieved( uint64_t id );
+    bool IsSourceLocationRetrieved( int16_t srcloc );
+    bool HasAllFailureData();
+    void HandleFailure( const char* ptr, const char* end );
+    void DispatchFailure( const QueueItem& ev, const char*& ptr );
+
     StringLocation StoreString( const char* str, size_t sz );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 

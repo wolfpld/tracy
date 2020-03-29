@@ -2793,6 +2793,7 @@ void Worker::Exec()
                 auto ev = (const QueueItem*)ptr;
                 if( !DispatchProcess( *ev, ptr ) )
                 {
+                    if( m_failure != Failure::None ) HandleFailure( ptr, end );
                     QueryTerminate();
                     goto close;
                 }
@@ -2876,6 +2877,127 @@ close:
     m_netWriteCv.notify_one();
     m_sock.Close();
     m_connected.store( false, std::memory_order_relaxed );
+}
+
+bool Worker::IsThreadStringRetrieved( uint64_t id )
+{
+    const auto name = GetThreadName( m_failureData.thread );
+    return strcmp( name, "???" ) != 0;
+}
+
+bool Worker::IsSourceLocationRetrieved( int16_t srcloc )
+{
+    auto& sl = GetSourceLocation( srcloc );
+    auto func = GetString( sl.function );
+    auto file = GetString( sl.file );
+    return strcmp( func, "???" ) != 0 && strcmp( file, "???" ) != 0;
+}
+
+bool Worker::HasAllFailureData()
+{
+    if( m_failureData.thread != 0 && !IsThreadStringRetrieved( m_failureData.thread ) ) return false;
+    if( m_failureData.srcloc != 0 && !IsSourceLocationRetrieved( m_failureData.srcloc ) ) return false;
+    return true;
+}
+
+void Worker::HandleFailure( const char* ptr, const char* end )
+{
+    if( HasAllFailureData() ) return;
+    for(;;)
+    {
+        while( ptr < end )
+        {
+            auto ev = (const QueueItem*)ptr;
+            DispatchFailure( *ev, ptr );
+        }
+        if( HasAllFailureData() ) return;
+
+        {
+            std::lock_guard<std::mutex> lock( m_netWriteLock );
+            m_netWriteCnt++;
+            m_netWriteCv.notify_one();
+        }
+
+        while( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
+        {
+            m_serverQuerySpaceLeft--;
+            const auto& query = m_serverQueryQueue.back();
+            m_sock.Send( &query, ServerQueryPacketSize );
+            m_serverQueryQueue.pop_back();
+        }
+
+        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+
+        NetBuffer netbuf;
+        {
+            std::unique_lock<std::mutex> lock( m_netReadLock );
+            m_netReadCv.wait( lock, [this] { return !m_netRead.empty(); } );
+            netbuf = m_netRead.front();
+            m_netRead.erase( m_netRead.begin() );
+        }
+        if( netbuf.bufferOffset < 0 ) return;
+
+        ptr = m_buffer + netbuf.bufferOffset;
+        end = ptr + netbuf.size;
+    }
+}
+
+void Worker::DispatchFailure( const QueueItem& ev, const char*& ptr )
+{
+    if( ev.hdr.idx >= (int)QueueType::StringData )
+    {
+        ptr += sizeof( QueueHeader ) + sizeof( QueueStringTransfer );
+        if( ev.hdr.type == QueueType::FrameImageData ||
+            ev.hdr.type == QueueType::SymbolCode )
+        {
+            uint32_t sz;
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz ) + sz;
+        }
+        else
+        {
+            uint16_t sz;
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            switch( ev.hdr.type )
+            {
+            case QueueType::StringData:
+                AddString( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::ThreadName:
+                AddThreadString( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::PlotName:
+            case QueueType::FrameName:
+            case QueueType::ExternalName:
+                m_serverQuerySpaceLeft++;
+                break;
+            default:
+                break;
+            }
+            ptr += sz;
+        }
+    }
+    else
+    {
+        ptr += QueueDataSize[ev.hdr.idx];
+        switch( ev.hdr.type )
+        {
+        case QueueType::SourceLocation:
+            AddSourceLocation( ev.srcloc );
+            m_serverQuerySpaceLeft++;
+            break;
+        case QueueType::CallstackFrameSize:
+        case QueueType::SymbolInformation:
+        case QueueType::ParamPingback:
+            m_serverQuerySpaceLeft++;
+            break;
+        default:
+            break;
+        }
+    }
 }
 
 void Worker::Query( ServerQuery type, uint64_t data, uint32_t extra )
@@ -4912,6 +5034,7 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
     {
         if( !m_ignoreMemFreeFaults )
         {
+            CheckThreadString( ev.thread );
             MemFreeFailure( ev.thread );
         }
         return false;

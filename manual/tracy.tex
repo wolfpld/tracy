@@ -477,6 +477,22 @@ You must be aware that most processors available on the market\footnote{With the
 
 This is a complex subject and the details vary from one CPU to another. You can read a brief rundown of the topic at the following address: \url{https://travisdowns.github.io/blog/2019/06/11/speed-limits.html}.
 
+\subparagraph{Simple example}
+
+Let's consider the following code, which is running in a tight loop. On the left you can find the sampled instruction pointer readings, indicating which part of the code took the longest to execute.
+
+\begin{lstlisting}
+ 2.09%   uint64_t tmp = LoadFromMemory();
+ 2.81%   buf[i][j] = tmp >> 16;
+51.42%   error += tmp & 0xFFFF;
+\end{lstlisting}
+
+It would seem that changing the \texttt{error} variable is somehow much slower than writing to the \texttt{buf} array, even though both of these operations use the \texttt{tmp} variable. Even more so, \texttt{buf} is stored in the memory, while \texttt{error} is held in a register, which makes completely no sense when we consider access latencies. An inexperienced programmer might believe, that there may be something wrong with the addition operation, but it would be a rookie mistake to do so. In reality, the long execution time stems from the data load operation in the first line. The cost of the load is not immediately apparent, as the operation might run in the background, while program execution continues. It is not even visible when we're writing to the array, as each iteration of the loop writes to a separate cell. The store operation will be only performed (also in background) when the loaded data becomes available, but this does not prevent further execution of the program.
+
+Why is the last line different then, why is adding the value to the \texttt{error} variable taking so long? Can't it run in the background also? Well, it actually does, in the first iteration. The second iteration of the loop \emph{depends} on the first value of \texttt{error} being available, which stops the program execution until the first-iteration load is truly performed and the first-iteration \texttt{error} value is modified.
+
+Note that this is mostly guesswork and the exact details will vary from one CPU micro-architecture to another.
+
 \paragraph{Simultaneous multithreading}
 
 Also known as: Hyper-threading. Typically present on Intel and AMD processors.
@@ -520,7 +536,7 @@ Be very careful when using AVX2 or AVX512.
 
 More information can be found at \url{https://travisdowns.github.io/blog/2020/01/17/avxfreq1.html}, \url{https://en.wikichip.org/wiki/intel/frequency_behavior}.
 
-\subsection{Running the server}
+\subsection{Building the server}
 
 The easiest way to get going is to build the data analyzer, available in the \texttt{profiler} directory. With it you can connect to localhost or remote clients and view the collected data right away.
 
@@ -1159,6 +1175,8 @@ To have proper call stack information, the profiled application must be compiled
 \item On MSVC open the project properties and go to \emph{Linker\textrightarrow Debugging\textrightarrow Generate Debug Info}, where the \emph{Generate Debug Information} option should be selected.
 \item On gcc or clang remember to specify the debugging information \texttt{-g} parameter during compilation and omit the strip symbols \texttt{-s} parameter. Link the executable with an additional option \texttt{-rdynamic} (or \texttt{-{}-export-dynamic}, if you are passing parameters directly to the linker).
 \end{itemize}
+
+You may also be interested in symbols from external libraries, especially if you have sampling profiling enabled (section~\ref{sampling}). In MSVC you can retrieve such symbols by going to \emph{Tools\textrightarrow Options\textrightarrow Debugging\textrightarrow Symbols} and selecting appropriate \emph{Symbol file (.pdb) location} servers. Note that additional symbols may significantly increase application startup times.
 \end{bclogo}
 
 \subsection{Lua support}
@@ -2230,9 +2248,11 @@ Data displayed in this mode is in essence very similar to the instrumentation on
 
 First and foremost, the presented information is constructed from a number of call stack samples, which represent real addresses in the application's binary code, mapped to the line numbers in the source files. This reverse mapping may not be always possible, or may be erroneous. Furthermore, due to the nature of the sampling process, it is impossible to obtain exact time measurement. Instead, time values are guesstimated by multiplying number of sample counts by mean time between two distinct samples.
 
-The \emph{Name} column contains name of the function in which the sampling was done. Functions which were inlined are preceded with a '\faCaretRight{}' symbol. Clicking on a function will open the call stack sample parents window (see chapter~\ref{sampleparents}). Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, which will prevent, or limit the capability to display parent call stacks.
+The \emph{Name} column contains name of the function in which the sampling was done. Functions which were inlined are preceded with a '\faCaretRight{}' symbol and additionally display their parent function in parenthesis. Clicking on a function will open the call stack sample parents window (see chapter~\ref{sampleparents}). Note that if inclusive times are displayed, listed functions will be partially or completely coming from mid-stack frames, which will prevent, or limit the capability to display parent call stacks.
 
-The \emph{Location} column displays the corresponding source file name and line number. Depending on the \emph{Location} option selection it can either show function entry address, or the instruction at which the sampling was performed. The \emph{Entry point} mode points at the beginning of a non-inlined function, or at the place where inlined function was inserted in its parent function. The \emph{Sample} mode is not useful for non-inlined functions, as it points to one randomly selected sampling point out of many that were captured. However, in case of inlined functions, this random sampling point is within the inlined function body. Using these options in tandem enable you to look at both the inlined function code and the place where it was inserted. This information is complemented by the originating executable image name in the \emph{Image} column.
+The \emph{Location} column displays the corresponding source file name and line number. Depending on the \emph{Location} option selection it can either show function entry address, or the instruction at which the sampling was performed. The \emph{Entry point} mode points at the beginning of a non-inlined function, or at the place where inlined function was inserted in its parent function. The \emph{Sample} mode is not useful for non-inlined functions, as it points to one randomly selected sampling point out of many that were captured. However, in case of inlined functions, this random sampling point is within the inlined function body. Using these options in tandem enable you to look at both the inlined function code and the place where it was inserted. If the \emph{Smart} location is selected, profiler will display entry point position for non-inlined functions and sample location for inlined functions.
+
+The location data is complemented by the originating executable image name, contained in the \emph{Image} column.
 
 Some function locations may not be found, due to insufficient debugging data available on the client side. To filter out such entries, use the \emph{\faEyeSlash{}~Hide unknown} option.
 
@@ -2624,9 +2644,9 @@ Source file view works on the local files you have on your disk. The traces them
 
 \subsubsection{Instruction pointer statistics}
 
-If automated call stack sampling (see chapter~\ref{sampling}) was performed and the source file view was opened with a symbol context (e.g. from a ghost zone, or from statistics of sampled functions), additional profiling information will be available. Symbol name of the selected function will be displayed in the header, along with a count of collected samples. The first column of listing will contain percentage counts of collected instruction pointer samples for each line within the symbol.
+If automated call stack sampling (see chapter~\ref{sampling}) was performed and the source file view was opened with a symbol context (e.g. from a ghost zone, or from statistics of sampled functions), additional profiling information will be available. Symbol name of the selected function will be displayed in the header (with parent function in parenthesis, in case of inlined functions), along with a count of collected samples and the corresponding code fragment size.
 
-This can be used to determine which line of the function takes the most time. Be aware that this information is not fully accurate, as it is the result of random sampling of program execution. Furthermore, undocumented implementation details of an out-of-order CPU architecture will highly impact the measurement. Read chapter~\ref{checkenvironmentcpu} to see the tip of an iceberg.
+The first column of listing contains percentage counts of collected instruction pointer samples for each line within the symbol, both is numerical and graphical bar form. This information can be used to determine which line of the function takes the most time. Be aware that the data is not fully accurate, as it is the result of random sampling of program execution. Furthermore, undocumented implementation details of an out-of-order CPU architecture will highly impact the measurement. Read chapter~\ref{checkenvironmentcpu} to see the tip of an iceberg.
 
 Unlike other profilers, Tracy doesn't include inlined function statistics in the parent function. Instead, you can view the sampling data even in inlined functions.
 

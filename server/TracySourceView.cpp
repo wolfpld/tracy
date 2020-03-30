@@ -268,6 +268,15 @@ void SourceView::Render( const Worker& worker )
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Symbol:", worker.GetString( sym->name ) );
+        if( sym->isInline )
+        {
+            auto parent = worker.GetSymbolData( m_baseAddr );
+            if( parent )
+            {
+                ImGui::SameLine();
+                ImGui::TextDisabled( "(%s)", worker.GetString( parent->name ) );
+            }
+        }
     }
 
     if( !m_showAsm )

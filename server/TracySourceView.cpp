@@ -398,6 +398,13 @@ void SourceView::Render( const Worker& worker )
 
 static void PrintPercentage( float val )
 {
+    const auto ty = ImGui::GetFontSize();
+    auto draw = ImGui::GetWindowDrawList();
+    const auto wpos = ImGui::GetCursorScreenPos();
+    const auto stw = ImGui::CalcTextSize( " " ).x;
+    const auto htw = stw / 2;
+    const auto tw = stw * 8;
+
     char tmp[16];
     auto end = PrintFloat( tmp, tmp+16, val, 2 );
     memcpy( end, "%", 2 );
@@ -406,7 +413,11 @@ static void PrintPercentage( float val )
     char buf[16];
     memset( buf, ' ', 7-sz );
     memcpy( buf + 7 - sz, tmp, sz+1 );
-    ImGui::TextUnformatted( buf );
+
+    draw->AddRectFilled( wpos, wpos + ImVec2( val * tw / 100, ty+1 ), 0xFF444444 );
+    DrawTextContrast( draw, wpos + ImVec2( htw, 0 ), 0xFFFFFFFF, buf );
+
+    ImGui::ItemSize( ImVec2( stw * 7, ty ), 0 );
 }
 
 void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal )

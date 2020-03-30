@@ -355,7 +355,7 @@ private:
     bool m_statSelf = true;
     bool m_statSampleTime = true;
     int m_statMode = 0;
-    int m_statSampleLocation = 0;
+    int m_statSampleLocation = 2;
     bool m_statHideUnknown = true;
     bool m_showAllSymbols = false;
     int m_showCallstackFrameAddress = 0;

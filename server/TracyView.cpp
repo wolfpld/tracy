@@ -11035,7 +11035,7 @@ void View::DrawCompare()
 
 void View::DrawStatistics()
 {
-    ImGui::SetNextWindowSize( ImVec2( 1350, 600 ), ImGuiCond_FirstUseEver );
+    ImGui::SetNextWindowSize( ImVec2( 1400, 600 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Statistics", &m_showStatistics, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -11166,11 +11166,11 @@ void View::DrawStatistics()
             if( !widthSet )
             {
                 widthSet = true;
-                ImGui::SetColumnWidth( 0, w * 0.3f );
-                ImGui::SetColumnWidth( 1, w * 0.4f );
+                ImGui::SetColumnWidth( 0, w * 0.325f );
+                ImGui::SetColumnWidth( 1, w * 0.425f );
                 ImGui::SetColumnWidth( 2, w * 0.1f );
-                ImGui::SetColumnWidth( 3, w * 0.1f );
-                ImGui::SetColumnWidth( 4, w * 0.1f );
+                ImGui::SetColumnWidth( 3, w * 0.075f );
+                ImGui::SetColumnWidth( 4, w * 0.075f );
             }
             ImGui::TextUnformatted( "Name" );
             ImGui::NextColumn();
@@ -11270,6 +11270,8 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
         ImGui::TextUnformatted( "Location:" );
+        ImGui::SameLine();
+        ImGui::RadioButton( "Smart", &m_statSampleLocation, 2 );
         ImGui::SameLine();
         ImGui::RadioButton( "Entry point", &m_statSampleLocation, 0 );
         ImGui::SameLine();
@@ -11373,10 +11375,10 @@ void View::DrawStatistics()
             if( !widthSet )
             {
                 widthSet = true;
-                ImGui::SetColumnWidth( 0, w * 0.3f );
-                ImGui::SetColumnWidth( 1, w * 0.375f );
-                ImGui::SetColumnWidth( 2, w * 0.125f );
-                ImGui::SetColumnWidth( 3, w * 0.125f );
+                ImGui::SetColumnWidth( 0, w * 0.31f );
+                ImGui::SetColumnWidth( 1, w * 0.4f );
+                ImGui::SetColumnWidth( 2, w * 0.115f );
+                ImGui::SetColumnWidth( 3, w * 0.1f );
                 ImGui::SetColumnWidth( 4, w * 0.075f );
             }
             ImGui::TextUnformatted( "Name" );
@@ -11413,15 +11415,30 @@ void View::DrawStatistics()
                         name = m_worker.GetString( sit->second.name );
                         imageName = m_worker.GetString( sit->second.imageName );
                         isInline = sit->second.isInline;
-                        if( m_statSampleLocation == 0 )
+                        switch( m_statSampleLocation )
                         {
+                        case 0:
                             file = m_worker.GetString( sit->second.file );
                             line = sit->second.line;
-                        }
-                        else
-                        {
+                            break;
+                        case 1:
                             file = m_worker.GetString( sit->second.callFile );
                             line = sit->second.callLine;
+                            break;
+                        case 2:
+                            if( sit->second.isInline )
+                            {
+                                file = m_worker.GetString( sit->second.callFile );
+                                line = sit->second.callLine;
+                            }
+                            else
+                            {
+                                file = m_worker.GetString( sit->second.file );
+                                line = sit->second.line;
+                            }
+                        default:
+                            assert( false );
+                            break;
                         }
                         if( m_statHideUnknown && file[0] == '[' ) continue;
                         symlen = sit->second.size.Val();

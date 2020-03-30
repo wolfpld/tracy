@@ -2434,7 +2434,8 @@ const char* Worker::GetThreadName( uint64_t id ) const
 
 bool Worker::IsThreadLocal( uint64_t id )
 {
-    return m_data.localThreadCompress.Exists( id ) && RetrieveThread( id )->count > 0;
+    auto td = RetrieveThread( id );
+    return td && ( td->count > 0 || !td->ghostZones.empty() );
 }
 
 const SourceLocation& Worker::GetSourceLocation( int16_t srcloc ) const
@@ -6775,7 +6776,8 @@ void Worker::Write( FileWrite& f )
     ctxValid.reserve( m_data.ctxSwitch.size() );
     for( auto it = m_data.ctxSwitch.begin(); it != m_data.ctxSwitch.end(); ++it )
     {
-        if( m_data.localThreadCompress.Exists( it->first ) )
+        auto td = RetrieveThread( it->first );
+        if( td && ( td->count > 0 || !td->ghostZones.empty() ) )
         {
             ctxValid.emplace_back( it );
         }

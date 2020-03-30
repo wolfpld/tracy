@@ -115,8 +115,6 @@ private:
 
     void DrawHelpMarker( const char* desc ) const;
 
-    void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text );
-
     bool DrawImpl();
     void DrawNotificationArea();
     bool DrawConnection();

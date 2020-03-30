@@ -89,6 +89,12 @@ namespace tracy
         }
     }
 
+    static inline void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text )
+    {
+        draw->AddText( pos + ImVec2( 1, 1 ), 0xAA000000, text );
+        draw->AddText( pos, color, text );
+    }
+
 }
 
 #endif

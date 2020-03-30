@@ -396,6 +396,19 @@ void SourceView::Render( const Worker& worker )
     }
 }
 
+static void PrintPercentage( float val )
+{
+    char tmp[16];
+    auto end = PrintFloat( tmp, tmp+16, val, 2 );
+    memcpy( end, "%", 2 );
+    end++;
+    const auto sz = end - tmp;
+    char buf[16];
+    memset( buf, ' ', 7-sz );
+    memcpy( buf + 7 - sz, tmp, sz+1 );
+    ImGui::TextUnformatted( buf );
+}
+
 void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal )
 {
     const auto ty = ImGui::GetFontSize();
@@ -415,15 +428,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
         }
         else
         {
-            char tmp[16];
-            auto end = PrintFloat( tmp, tmp+16, 100.f * ipcnt / iptotal, 2 );
-            memcpy( end, "%", 2 );
-            end++;
-            const auto sz = end - tmp;
-            char buf[16];
-            memset( buf, ' ', 7-sz );
-            memcpy( buf + 7 - sz, tmp, sz+1 );
-            ImGui::TextUnformatted( buf );
+            PrintPercentage( 100.f * ipcnt / iptotal );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -463,15 +468,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
         }
         else
         {
-            char tmp[16];
-            auto end = PrintFloat( tmp, tmp+16, 100.f * ipcnt / iptotal, 2 );
-            memcpy( end, "%", 2 );
-            end++;
-            const auto sz = end - tmp;
-            char buf[16];
-            memset( buf, ' ', 7-sz );
-            memcpy( buf + 7 - sz, tmp, sz+1 );
-            ImGui::TextUnformatted( buf );
+            PrintPercentage( 100.f * ipcnt / iptotal );
         }
         ImGui::SameLine( 0, ty );
     }

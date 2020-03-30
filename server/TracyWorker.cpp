@@ -5444,7 +5444,11 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
         Query( ServerQuerySymbolCode, ev.symAddr, it->second.size );
     }
 
-    if( !it->second.isInline ) m_data.symbolLoc.push_back( SymbolLocation { ev.symAddr, it->second.size } );
+    if( !it->second.isInline )
+    {
+        if( !m_data.newSymbolsWereAdded ) m_data.newSymbolsWereAdded = true;
+        m_data.symbolLoc.push_back( SymbolLocation { ev.symAddr, it->second.size } );
+    }
 
     m_pendingSymbols.erase( it );
     m_pendingCustomStrings.erase( fit );

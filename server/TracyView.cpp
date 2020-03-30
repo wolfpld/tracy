@@ -11437,6 +11437,7 @@ void View::DrawStatistics()
                         continue;
                     }
 
+                    const char* parentName = nullptr;
                     if( symlen == 0 )
                     {
                         uint32_t offset;
@@ -11448,6 +11449,7 @@ void View::DrawStatistics()
                             {
                                 codeAddr = parentAddr;
                                 symlen = pit->second.size.Val();
+                                parentName = m_worker.GetString( pit->second.name );
                             }
                         }
                     }
@@ -11470,6 +11472,11 @@ void View::DrawStatistics()
                             m_sampleParents.sel = 0;
                         }
                         ImGui::PopID();
+                    }
+                    if( parentName )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%s)", parentName );
                     }
                     ImGui::NextColumn();
                     float indentVal = 0.f;

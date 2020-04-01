@@ -38,6 +38,18 @@ static tracy_force_inline CallstackFrameId PackPointer( uint64_t ptr )
     return id;
 }
 
+static tracy_force_inline uint64_t PackFileLine( uint32_t fileIdx, uint32_t line )
+{
+    return ( uint64_t( fileIdx ) << 32 ) | line;
+}
+
+static tracy_force_inline uint32_t UnpackFileLine( uint64_t packed, uint32_t& line )
+{
+    line = packed & 0xFFFFFFFF;
+    return packed >> 32;
+}
+
+
 static const uint8_t FileHeader[8] { 't', 'r', 'a', 'c', 'y', Version::Major, Version::Minor, Version::Patch };
 enum { FileHeaderMagic = 5 };
 static const int CurrentVersion = FileVersion( Version::Major, Version::Minor, Version::Patch );
@@ -2310,6 +2322,21 @@ uint64_t Worker::GetSymbolForAddress( uint64_t address, uint32_t& offset ) const
     if( it == m_data.symbolLoc.end() || address < it->addr ) return 0;
     offset = address - it->addr;
     return it->addr;
+}
+
+StringIdx Worker::GetLocationForAddress( uint64_t address, uint32_t& line ) const
+{
+    auto it = m_data.codeAddressToLocation.find( address );
+    if( it == m_data.codeAddressToLocation.end() )
+    {
+        line = 0;
+        return StringIdx();
+    }
+    else
+    {
+        const auto idx = UnpackFileLine( it->second, line );
+        return StringIdx( idx );
+    }
 }
 
 int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
@@ -5502,11 +5529,6 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
 
     m_pendingSymbols.erase( it );
     m_pendingCustomStrings.erase( fit );
-}
-
-tracy_force_inline uint64_t PackFileLine( uint32_t fileIdx, uint32_t line )
-{
-    return ( uint64_t( fileIdx ) << 32 ) | line;
 }
 
 void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )

@@ -553,6 +553,7 @@ private:
     void SendCallstackPayload64( uint64_t ptr );
     void SendCallstackAlloc( uint64_t ptr );
     void SendCallstackFrame( uint64_t ptr );
+    void SendCodeLocation( uint64_t ptr );
 
     bool HandleServerQuery();
     void HandleDisconnect();

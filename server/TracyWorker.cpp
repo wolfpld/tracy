@@ -13,6 +13,8 @@
 #include <string.h>
 #include <inttypes.h>
 
+#include <capstone/capstone.h>
+
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "TracyFileRead.hpp"
@@ -3559,6 +3561,40 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
     memcpy( code, data, sz );
     m_data.symbolCode.emplace( ptr, SymbolCodeData{ code, uint32_t( sz ) } );
     m_data.symbolCodeSize += sz;
+
+    if( m_data.cpuArch == CpuArchUnknown ) return;
+    csh handle;
+    cs_err rval = CS_ERR_ARCH;
+    switch( m_data.cpuArch )
+    {
+    case CpuArchX86:
+        rval = cs_open( CS_ARCH_X86, CS_MODE_32, &handle );
+        break;
+    case CpuArchX64:
+        rval = cs_open( CS_ARCH_X86, CS_MODE_64, &handle );
+        break;
+    case CpuArchArm32:
+        rval = cs_open( CS_ARCH_ARM, CS_MODE_ARM, &handle );
+        break;
+    case CpuArchArm64:
+        rval = cs_open( CS_ARCH_ARM64, CS_MODE_ARM, &handle );
+        break;
+    default:
+        assert( false );
+        break;
+    }
+    if( rval != CS_ERR_OK ) return;
+    cs_insn* insn;
+    size_t cnt = cs_disasm( handle, (const uint8_t*)code, sz, ptr, 0, &insn );
+    if( cnt > 0 )
+    {
+        for( size_t i=0; i<cnt; i++ )
+        {
+            Query( ServerQueryCodeLocation, insn[i].address );
+        }
+        cs_free( insn, cnt );
+    }
+    cs_close( &handle );
 }
 
 uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
@@ -3985,6 +4021,10 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::SymbolInformation:
         ProcessSymbolInformation( ev.symbolInformation );
+        m_serverQuerySpaceLeft++;
+        break;
+    case QueueType::CodeInformation:
+        // TODO
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::Terminate:

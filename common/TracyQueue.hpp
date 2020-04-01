@@ -21,7 +21,6 @@ enum class QueueType : uint8_t
     Callstack,
     CallstackAlloc,
     CallstackSample,
-    SymbolInformation,
     FrameImage,
     ZoneBegin,
     ZoneBeginCallstack,
@@ -67,6 +66,8 @@ enum class QueueType : uint8_t
     GpuNewContext,
     CallstackFrameSize,
     CallstackFrame,
+    SymbolInformation,
+    CodeInformation,
     SysTimeReport,
     TidToPid,
     PlotConfig,
@@ -331,6 +332,13 @@ struct QueueSymbolInformation
     uint64_t symAddr;
 };
 
+struct QueueCodeInformation
+{
+    uint64_t ptr;
+    uint64_t file;
+    uint32_t line;
+};
+
 struct QueueCrashReport
 {
     int64_t time;
@@ -439,6 +447,7 @@ struct QueueItem
         QueueCallstackFrameSize callstackFrameSize;
         QueueCallstackFrame callstackFrame;
         QueueSymbolInformation symbolInformation;
+        QueueCodeInformation codeInformation;
         QueueCrashReport crashReport;
         QueueSysTime sysTime;
         QueueContextSwitch contextSwitch;
@@ -468,7 +477,6 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstack ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackAlloc ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackSample ),
-    sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
     sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
@@ -515,6 +523,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
+    sizeof( QueueHeader ) + sizeof( QueueSymbolInformation ),
+    sizeof( QueueHeader ) + sizeof( QueueCodeInformation ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),

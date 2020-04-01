@@ -2373,6 +2373,9 @@ bool Profiler::HandleServerQuery()
     case ServerQuerySymbolCode:
         HandleSymbolCodeQuery( ptr, extra );
         break;
+    case ServerQueryCodeLocation:
+        SendCodeLocation( ptr );
+        break;
     default:
         assert( false );
         break;
@@ -2771,6 +2774,25 @@ void Profiler::HandleSymbolQuery( uint64_t symbol )
 void Profiler::HandleSymbolCodeQuery( uint64_t symbol, uint32_t size )
 {
     SendLongString( symbol, (const char*)symbol, size, QueueType::SymbolCode );
+}
+
+void Profiler::SendCodeLocation( uint64_t ptr )
+{
+#ifdef TRACY_HAS_CALLSTACK
+    const auto sym = DecodeCodeAddress( ptr );
+
+    SendString( uint64_t( sym.file ), sym.file, QueueType::CustomStringData );
+
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::CodeInformation );
+    MemWrite( &item.codeInformation.ptr, ptr );
+    MemWrite( &item.codeInformation.file, uint64_t( sym.file ) );
+    MemWrite( &item.codeInformation.line, sym.line );
+
+    AppendData( &item, QueueDataSize[(int)QueueType::CodeInformation] );
+
+    if( sym.needFree ) tracy_free( (void*)sym.file );
+#endif
 }
 
 }

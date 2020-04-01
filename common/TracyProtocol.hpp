@@ -9,7 +9,7 @@ namespace tracy
 
 constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
-enum : uint32_t { ProtocolVersion = 29 };
+enum : uint32_t { ProtocolVersion = 30 };
 enum : uint32_t { BroadcastVersion = 1 };
 
 using lz4sz_t = uint32_t;
@@ -50,7 +50,8 @@ enum ServerQuery : uint8_t
     ServerQueryExternalName,
     ServerQueryParameter,
     ServerQuerySymbol,
-    ServerQuerySymbolCode
+    ServerQuerySymbolCode,
+    ServerQueryCodeLocation
 };
 
 struct ServerQueryPacket

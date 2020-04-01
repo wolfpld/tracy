@@ -1,8 +1,8 @@
 CFLAGS +=
 CXXFLAGS := $(CFLAGS) -std=gnu++17
 DEFINES += -DTRACY_NO_STATISTICS
-INCLUDES :=
-LIBS := -lpthread
+INCLUDES := $(shell pkg-config --cflags capstone)
+LIBS := $(shell pkg-config --libs capstone) -lpthread
 PROJECT := capture
 IMAGE := $(PROJECT)-$(BUILD)
 

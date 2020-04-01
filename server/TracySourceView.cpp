@@ -4,6 +4,7 @@
 #include <capstone/capstone.h>
 
 #include "../imgui/imgui.h"
+#include "TracyColor.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
@@ -497,19 +498,38 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     memset( buf+asz, ' ', 16-asz );
     buf[16] = '\0';
     TextDisabledUnformatted( buf );
-    if( ImGui::IsItemHovered() )
+
+    const auto stw = ImGui::CalcTextSize( " " ).x;
+    ImGui::SameLine();
+    uint32_t srcline;
+    const auto srcidx = worker.GetLocationForAddress( line.addr, srcline );
+    if( srcline != 0 )
     {
-        uint32_t srcline;
-        const auto idx = worker.GetLocationForAddress( line.addr, srcline );
-        if( srcline != 0 )
+        const auto fileName = worker.GetString( srcidx );
+        const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
+        SmallColorBox( fileColor );
+        ImGui::SameLine();
+        const auto lineString = RealToString( srcline );
+        const auto linesz = strlen( lineString );
+        char buf[32];
+        const auto fnsz = strlen( fileName );
+        if( fnsz < 32 - 8 )
+        {
+            sprintf( buf, "%s:%i", fileName, srcline );
+        }
+        else
+        {
+            sprintf( buf, "...%s:%i", fileName+fnsz-(32-3-1-8), srcline );
+        }
+        const auto bufsz = strlen( buf );
+        TextDisabledUnformatted( buf );
+        if( ImGui::IsItemHovered() )
         {
             if( m_font ) ImGui::PopFont();
             ImGui::BeginTooltip();
-            const auto fileName = worker.GetString( idx );
             ImGui::Text( "%s:%i", fileName, srcline );
             ImGui::EndTooltip();
             if( m_font ) ImGui::PushFont( m_font );
-
             if( !m_lines.empty() && m_file == fileName && ImGui::IsItemClicked() )
             {
                 m_currentAddr = line.addr;
@@ -518,6 +538,14 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                 m_showAsm = false;
             }
         }
+        ImGui::SameLine( 0, 0 );
+        ImGui::ItemSize( ImVec2( stw * ( 32 - bufsz ), ty ), 0 );
+    }
+    else
+    {
+        SmallColorBox( 0 );
+        ImGui::SameLine( 0, 0 );
+        ImGui::ItemSize( ImVec2( stw * 32, ty ), 0 );
     }
     ImGui::SameLine( 0, ty );
 

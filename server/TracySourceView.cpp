@@ -505,9 +505,18 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
         {
             if( m_font ) ImGui::PopFont();
             ImGui::BeginTooltip();
-            ImGui::Text( "%s:%i", worker.GetString( idx ), srcline );
+            const auto fileName = worker.GetString( idx );
+            ImGui::Text( "%s:%i", fileName, srcline );
             ImGui::EndTooltip();
             if( m_font ) ImGui::PushFont( m_font );
+
+            if( !m_lines.empty() && m_file == fileName && ImGui::IsItemClicked() )
+            {
+                m_currentAddr = line.addr;
+                m_targetLine = srcline;
+                m_selectedLine = srcline;
+                m_showAsm = false;
+            }
         }
     }
     ImGui::SameLine( 0, ty );

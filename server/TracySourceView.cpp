@@ -30,6 +30,7 @@ SourceView::SourceView( ImFont* font )
     , m_codeLen( 0 )
     , m_highlightAddr( 0 )
     , m_asmRelative( false )
+    , m_asmShowSourceLocation( true )
 {
 }
 
@@ -291,6 +292,10 @@ void SourceView::Render( const Worker& worker )
     else
     {
         SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative locations", &m_asmRelative );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        SmallCheckbox( ICON_FA_FILE_IMPORT " Show source locations", &m_asmShowSourceLocation );
     }
 
     uint64_t jumpOut = 0;
@@ -499,53 +504,56 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     buf[16] = '\0';
     TextDisabledUnformatted( buf );
 
-    const auto stw = ImGui::CalcTextSize( " " ).x;
-    ImGui::SameLine();
-    uint32_t srcline;
-    const auto srcidx = worker.GetLocationForAddress( line.addr, srcline );
-    if( srcline != 0 )
+    if( m_asmShowSourceLocation )
     {
-        const auto fileName = worker.GetString( srcidx );
-        const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
-        SmallColorBox( fileColor );
+        const auto stw = ImGui::CalcTextSize( " " ).x;
         ImGui::SameLine();
-        const auto lineString = RealToString( srcline );
-        const auto linesz = strlen( lineString );
-        char buf[32];
-        const auto fnsz = strlen( fileName );
-        if( fnsz < 32 - 8 )
+        uint32_t srcline;
+        const auto srcidx = worker.GetLocationForAddress( line.addr, srcline );
+        if( srcline != 0 )
         {
-            sprintf( buf, "%s:%i", fileName, srcline );
+            const auto fileName = worker.GetString( srcidx );
+            const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
+            SmallColorBox( fileColor );
+            ImGui::SameLine();
+            const auto lineString = RealToString( srcline );
+            const auto linesz = strlen( lineString );
+            char buf[32];
+            const auto fnsz = strlen( fileName );
+            if( fnsz < 32 - 8 )
+            {
+                sprintf( buf, "%s:%i", fileName, srcline );
+            }
+            else
+            {
+                sprintf( buf, "...%s:%i", fileName+fnsz-(32-3-1-8), srcline );
+            }
+            const auto bufsz = strlen( buf );
+            TextDisabledUnformatted( buf );
+            if( ImGui::IsItemHovered() )
+            {
+                if( m_font ) ImGui::PopFont();
+                ImGui::BeginTooltip();
+                ImGui::Text( "%s:%i", fileName, srcline );
+                ImGui::EndTooltip();
+                if( m_font ) ImGui::PushFont( m_font );
+                if( !m_lines.empty() && m_file == fileName && ImGui::IsItemClicked() )
+                {
+                    m_currentAddr = line.addr;
+                    m_targetLine = srcline;
+                    m_selectedLine = srcline;
+                    m_showAsm = false;
+                }
+            }
+            ImGui::SameLine( 0, 0 );
+            ImGui::ItemSize( ImVec2( stw * ( 32 - bufsz ), ty ), 0 );
         }
         else
         {
-            sprintf( buf, "...%s:%i", fileName+fnsz-(32-3-1-8), srcline );
+            SmallColorBox( 0 );
+            ImGui::SameLine( 0, 0 );
+            ImGui::ItemSize( ImVec2( stw * 32, ty ), 0 );
         }
-        const auto bufsz = strlen( buf );
-        TextDisabledUnformatted( buf );
-        if( ImGui::IsItemHovered() )
-        {
-            if( m_font ) ImGui::PopFont();
-            ImGui::BeginTooltip();
-            ImGui::Text( "%s:%i", fileName, srcline );
-            ImGui::EndTooltip();
-            if( m_font ) ImGui::PushFont( m_font );
-            if( !m_lines.empty() && m_file == fileName && ImGui::IsItemClicked() )
-            {
-                m_currentAddr = line.addr;
-                m_targetLine = srcline;
-                m_selectedLine = srcline;
-                m_showAsm = false;
-            }
-        }
-        ImGui::SameLine( 0, 0 );
-        ImGui::ItemSize( ImVec2( stw * ( 32 - bufsz ), ty ), 0 );
-    }
-    else
-    {
-        SmallColorBox( 0 );
-        ImGui::SameLine( 0, 0 );
-        ImGui::ItemSize( ImVec2( stw * 32, ty ), 0 );
     }
     ImGui::SameLine( 0, ty );
 

@@ -1,3 +1,6 @@
+#ifndef __TRACYSOURCEVIEW_HPP__
+#define __TRACYSOURCEVIEW_HPP__
+
 #include <string>
 #include <vector>
 
@@ -59,3 +62,5 @@ private:
 };
 
 }
+
+#endif

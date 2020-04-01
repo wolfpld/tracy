@@ -11296,7 +11296,22 @@ void View::DrawStatistics()
                 for( auto& v : symMap )
                 {
                     auto name = m_worker.GetString( v.second.name );
-                    if( m_statisticsFilter.PassFilter( name ) )
+                    bool pass = m_statisticsFilter.PassFilter( name );
+                    if( !pass && v.second.size.Val() == 0 )
+                    {
+                        uint32_t offset;
+                        const auto parentAddr = m_worker.GetSymbolForAddress( v.first, offset );
+                        if( parentAddr != 0 )
+                        {
+                            auto pit = symMap.find( parentAddr );
+                            if( pit != symMap.end() )
+                            {
+                                const auto parentName = m_worker.GetString( pit->second.name );
+                                pass = m_statisticsFilter.PassFilter( parentName );
+                            }
+                        }
+                    }
+                    if( pass )
                     {
                         auto it = symStat.find( v.first );
                         if( it == symStat.end() )
@@ -11337,7 +11352,22 @@ void View::DrawStatistics()
                     if( sit != symMap.end() )
                     {
                         auto name = m_worker.GetString( sit->second.name );
-                        if( m_statisticsFilter.PassFilter( name ) )
+                        bool pass = m_statisticsFilter.PassFilter( name );
+                        if( !pass && sit->second.size.Val() == 0 )
+                        {
+                            uint32_t offset;
+                            const auto parentAddr = m_worker.GetSymbolForAddress( v.first, offset );
+                            if( parentAddr != 0 )
+                            {
+                                auto pit = symMap.find( parentAddr );
+                                if( pit != symMap.end() )
+                                {
+                                    const auto parentName = m_worker.GetString( pit->second.name );
+                                    pass = m_statisticsFilter.PassFilter( parentName );
+                                }
+                            }
+                        }
+                        if( pass )
                         {
                             data.push_back_no_space_check( SymList { v.first, v.second.incl, v.second.excl } );
                         }

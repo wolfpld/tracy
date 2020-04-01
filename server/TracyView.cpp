@@ -11436,6 +11436,7 @@ void View::DrawStatistics()
                                 file = m_worker.GetString( sit->second.file );
                                 line = sit->second.line;
                             }
+                            break;
                         default:
                             assert( false );
                             break;

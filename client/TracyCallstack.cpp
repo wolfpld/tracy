@@ -239,6 +239,49 @@ SymbolData DecodeSymbolAddress( uint64_t ptr )
     return sym;
 }
 
+SymbolData DecodeCodeAddress( uint64_t ptr )
+{
+    SymbolData sym;
+    const auto proc = GetCurrentProcess();
+    bool done = false;
+
+    IMAGEHLP_LINE64 line;
+    DWORD displacement = 0;
+    line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+
+#ifndef __CYGWIN__
+    DWORD inlineNum = SymAddrIncludeInlineTrace( proc, ptr );
+    DWORD ctx = 0;
+    DWORD idx;
+    BOOL doInline = FALSE;
+    if( inlineNum != 0 ) doInline = SymQueryInlineTrace( proc, ptr, 0, ptr, ptr, &ctx, &idx );
+    if( doInline )
+    {
+        if( SymGetLineFromInlineContext( proc, ptr, ctx, 0, &displacement, &line ) != 0 )
+        {
+            sym.file = line.FileName;
+            sym.line = line.LineNumber;
+            done = true;
+        }
+    }
+#endif
+    if( !done )
+    {
+        if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
+        {
+            sym.file = "[unknown]";
+            sym.line = 0;
+        }
+        else
+        {
+            sym.file = line.FileName;
+            sym.line = line.LineNumber;
+        }
+    }
+    sym.needFree = false;
+    return sym;
+}
+
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 {
     int write;
@@ -429,6 +472,11 @@ SymbolData DecodeSymbolAddress( uint64_t ptr )
     return sym;
 }
 
+SymbolData DecodeCodeAddress( uint64_t ptr )
+{
+    return DecodeSymbolAddress( ptr );
+}
+
 static int CallstackDataCb( void* /*data*/, uintptr_t pc, const char* fn, int lineno, const char* function )
 {
     enum { DemangleBufLen = 64*1024 };
@@ -609,6 +657,11 @@ SymbolData DecodeSymbolAddress( uint64_t ptr )
     if( dladdr( (void*)ptr, &dlinfo ) ) symloc = dlinfo.dli_fname;
     if( !symloc ) symloc = "[unknown]";
     return SymbolData { symloc, 0, false };
+}
+
+SymbolData DecodeCodeAddress( uint64_t ptr )
+{
+    return DecodeSymbolAddress( ptr );
 }
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )

@@ -12114,6 +12114,7 @@ void View::DrawInfo()
             ImGui::TextUnformatted( MemSizeToString( m_worker.GetSymbolCodeSize() ) );
             ImGui::EndTooltip();
         }
+        TextFocused( "Code locations:", RealToString( m_worker.GetCodeLocationsSize() ) );
         TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount() ) );
         if( m_worker.AreCallstackSamplesReady() )
         {

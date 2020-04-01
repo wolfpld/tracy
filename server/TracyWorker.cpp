@@ -230,6 +230,7 @@ Worker::Worker( const char* addr, int port )
     , m_pendingSourceLocation( 0 )
     , m_pendingCallstackFrames( 0 )
     , m_pendingCallstackSubframes( 0 )
+    , m_pendingCodeInformation( 0 )
     , m_callstackFrameStaging( nullptr )
     , m_traceVersion( CurrentVersion )
     , m_loadTime( 0 )
@@ -2860,7 +2861,7 @@ void Worker::Exec()
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
                 !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
                 m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() ||
-                !m_pendingSymbols.empty() || !m_pendingSymbolCode.empty() )
+                !m_pendingSymbols.empty() || !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 )
             {
                 continue;
             }
@@ -3588,6 +3589,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
     size_t cnt = cs_disasm( handle, (const uint8_t*)code, sz, ptr, 0, &insn );
     if( cnt > 0 )
     {
+        m_pendingCodeInformation += cnt;
         for( size_t i=0; i<cnt; i++ )
         {
             Query( ServerQueryCodeLocation, insn[i].address );
@@ -4024,7 +4026,7 @@ bool Worker::Process( const QueueItem& ev )
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::CodeInformation:
-        // TODO
+        ProcessCodeInformation( ev.codeInformation );
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::Terminate:
@@ -5499,6 +5501,28 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     }
 
     m_pendingSymbols.erase( it );
+    m_pendingCustomStrings.erase( fit );
+}
+
+tracy_force_inline uint64_t PackFileLine( uint32_t fileIdx, uint32_t line )
+{
+    return ( uint64_t( fileIdx ) << 32 ) | line;
+}
+
+void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
+{
+    assert( m_pendingCodeInformation > 0 );
+    m_pendingCodeInformation--;
+
+    auto fit = m_pendingCustomStrings.find( ev.file );
+    assert( fit != m_pendingCustomStrings.end() );
+
+    if( ev.line != 0 )
+    {
+        assert( m_data.codeAddressToLocation.find( ev.ptr ) == m_data.codeAddressToLocation.end() );
+        m_data.codeAddressToLocation.emplace( ev.ptr, PackFileLine( fit->second.idx, ev.line ) );
+    }
+
     m_pendingCustomStrings.erase( fit );
 }
 

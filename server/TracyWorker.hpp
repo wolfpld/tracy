@@ -296,6 +296,8 @@ private:
 
         unordered_flat_map<uint64_t, SymbolCodeData> symbolCode;
         uint64_t symbolCodeSize = 0;
+
+        unordered_flat_map<uint64_t, uint64_t> codeAddressToLocation;
     };
 
     struct MbpsBlock
@@ -589,6 +591,7 @@ private:
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );
     tracy_force_inline void ProcessSymbolInformation( const QueueSymbolInformation& ev );
+    tracy_force_inline void ProcessCodeInformation( const QueueCodeInformation& ev );
     tracy_force_inline void ProcessCrashReport( const QueueCrashReport& ev );
     tracy_force_inline void ProcessSysTime( const QueueSysTime& ev );
     tracy_force_inline void ProcessContextSwitch( const QueueContextSwitch& ev );
@@ -788,6 +791,7 @@ private:
     uint32_t m_pendingSourceLocation;
     uint32_t m_pendingCallstackFrames;
     uint8_t m_pendingCallstackSubframes;
+    uint32_t m_pendingCodeInformation;
 
     CallstackFrameData* m_callstackFrameStaging;
     uint64_t m_callstackFrameStagingPtr;

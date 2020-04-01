@@ -112,6 +112,7 @@
     <ClCompile Include="..\..\..\nfd\nfd_common.c" />
     <ClCompile Include="..\..\..\nfd\nfd_win.cpp" />
     <ClCompile Include="..\..\..\server\TracyBadVersion.cpp" />
+    <ClCompile Include="..\..\..\server\TracyColor.cpp" />
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
     <ClCompile Include="..\..\..\server\TracyMmap.cpp" />
     <ClCompile Include="..\..\..\server\TracyPrint.cpp" />
@@ -184,6 +185,7 @@
     <ClInclude Include="..\..\..\server\TracyBadVersion.hpp" />
     <ClInclude Include="..\..\..\server\TracyBuzzAnim.hpp" />
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp" />
+    <ClInclude Include="..\..\..\server\TracyColor.hpp" />
     <ClInclude Include="..\..\..\server\TracyDecayValue.hpp" />
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileHeader.hpp" />

@@ -2821,12 +2821,19 @@ void Worker::Exec()
 #endif
             }
 
-            while( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
+            if( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
             {
-                m_serverQuerySpaceLeft--;
-                const auto& query = m_serverQueryQueue.back();
-                m_sock.Send( &query, ServerQueryPacketSize );
-                m_serverQueryQueue.pop_back();
+                const auto toSend = std::min( m_serverQuerySpaceLeft, m_serverQueryQueue.size() );
+                m_sock.Send( m_serverQueryQueue.data(), toSend * ServerQueryPacketSize );
+                m_serverQuerySpaceLeft -= toSend;
+                if( toSend == m_serverQueryQueue.size() )
+                {
+                    m_serverQueryQueue.clear();
+                }
+                else
+                {
+                    m_serverQueryQueue.erase( m_serverQueryQueue.begin(), m_serverQueryQueue.begin() + toSend );
+                }
             }
         }
 
@@ -3011,7 +3018,7 @@ void Worker::Query( ServerQuery type, uint64_t data, uint32_t extra )
     }
     else
     {
-        m_serverQueryQueue.insert( m_serverQueryQueue.begin(), query );
+        m_serverQueryQueue.push_back( query );
     }
 }
 

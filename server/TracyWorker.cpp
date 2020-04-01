@@ -28,7 +28,7 @@
 namespace tracy
 {
 
-static inline CallstackFrameId PackPointer( uint64_t ptr )
+static tracy_force_inline CallstackFrameId PackPointer( uint64_t ptr )
 {
     assert( ( ( ptr & 0x3000000000000000 ) << 2 ) == ( ptr & 0xC000000000000000 ) );
     CallstackFrameId id;

@@ -497,6 +497,19 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     memset( buf+asz, ' ', 16-asz );
     buf[16] = '\0';
     TextDisabledUnformatted( buf );
+    if( ImGui::IsItemHovered() )
+    {
+        uint32_t srcline;
+        const auto idx = worker.GetLocationForAddress( line.addr, srcline );
+        if( srcline != 0 )
+        {
+            if( m_font ) ImGui::PopFont();
+            ImGui::BeginTooltip();
+            ImGui::Text( "%s:%i", worker.GetString( idx ), srcline );
+            ImGui::EndTooltip();
+            if( m_font ) ImGui::PushFont( m_font );
+        }
+    }
     ImGui::SameLine( 0, ty );
 
     const auto msz = line.mnemonic.size();

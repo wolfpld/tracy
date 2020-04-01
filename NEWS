@@ -31,6 +31,7 @@ v0.7 (xxxx-xx-xx)
 - Added display of profiling data to source file viewer.
 - Small fragments of executable code will be now sent from client to server.
 - Added notification about query backlog.
+- Fixed performance problem with query backlog.
 - Source file view can now display disassembly of executable code.
 - Display number of in-flight queries, in addition to query backlog.
 - Improved failure reports.

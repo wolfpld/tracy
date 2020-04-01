@@ -319,7 +319,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
 
     {
         const char* filename;
-        if (SymGetLineFromAddr64(proc, ptr, &displacement, &line) == 0)
+        if( SymGetLineFromAddr64( proc, ptr, &displacement, &line ) == 0 )
         {
             filename = "[unknown]";
             cb_data[write].line = 0;

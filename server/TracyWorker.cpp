@@ -2341,6 +2341,19 @@ StringIdx Worker::GetLocationForAddress( uint64_t address, uint32_t& line ) cons
     }
 }
 
+const Vector<uint64_t>* Worker::GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line ) const
+{
+    auto it = m_data.locationCodeAddressList.find( PackFileLine( fileStringIdx, line ) );
+    if( it == m_data.locationCodeAddressList.end() )
+    {
+        return nullptr;
+    }
+    else
+    {
+        return &it->second;
+    }
+}
+
 int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
 {
     auto ptr = &ev;

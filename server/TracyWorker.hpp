@@ -438,6 +438,7 @@ public:
     const char* GetSymbolCode( uint64_t sym, uint32_t& len ) const;
     uint64_t GetSymbolForAddress( uint64_t address, uint32_t& offset ) const;
     StringIdx GetLocationForAddress( uint64_t address, uint32_t& line ) const;
+    const Vector<uint64_t>* GetAddressesForLocation( uint32_t fileStringIdx, uint32_t line ) const;
 
 #ifndef TRACY_NO_STATISTICS
     const VarArray<CallstackFrameId>& GetParentCallstack( uint32_t idx ) const { return *m_data.parentCallstackPayload[idx]; }

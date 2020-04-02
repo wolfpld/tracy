@@ -35,6 +35,7 @@ v0.7 (xxxx-xx-xx)
 - Source file view can now display disassembly of executable code.
 - Display number of in-flight queries, in addition to query backlog.
 - Improved failure reports.
+- The capture utility will connect to localhost by default.
 
 v0.6.3 (2020-02-13)
 -------------------

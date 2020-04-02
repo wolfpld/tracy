@@ -588,6 +588,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     unordered_flat_map<uint64_t, const char*> pointerMap;
 
     f.Read( sz );
+    m_data.stringMap.reserve( sz );
     m_data.stringData.reserve_exact( sz, m_slab );
     for( uint64_t i=0; i<sz; i++ )
     {
@@ -596,6 +597,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         auto dst = m_slab.Alloc<char>( ssz+1 );
         f.Read( dst, ssz );
         dst[ssz] = '\0';
+        m_data.stringMap.emplace( charutil::StringKey { dst, ssz }, i );
         m_data.stringData[i] = ( dst );
         pointerMap.emplace( ptr, dst );
     }

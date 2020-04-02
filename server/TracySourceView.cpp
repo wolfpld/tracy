@@ -476,6 +476,12 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
         sprintf( buf, "@%s", asmString );
         const auto asmsz = strlen( buf );
         TextDisabledUnformatted( buf );
+        if( ImGui::IsItemClicked() )
+        {
+            m_showAsm = true;
+            m_currentAddr = (*addresses)[0];
+            m_targetAddr = (*addresses)[0];
+        }
         ImGui::SameLine( 0, 0 );
         ImGui::ItemSize( ImVec2( stw * ( 8 - asmsz ), ty ), 0 );
     }

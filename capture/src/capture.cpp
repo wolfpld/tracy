@@ -30,7 +30,7 @@ void SigInt( int )
 
 void Usage()
 {
-    printf( "Usage: capture -a address -o output.tracy [-p port]\n" );
+    printf( "Usage: capture -o output.tracy [-a address] [-p port]\n" );
     exit( 1 );
 }
 
@@ -44,7 +44,7 @@ int main( int argc, char** argv )
     }
 #endif
 
-    const char* address = nullptr;
+    const char* address = "localhost";
     const char* output = nullptr;
     int port = 8086;
 

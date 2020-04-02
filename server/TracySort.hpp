@@ -12,9 +12,6 @@
 #  define NO_PARALLEL_SORT
 #endif
 
-#ifdef NO_PARALLEL_SORT
-#  include "tracy_pdqsort.h"
-#endif
-
+#include "tracy_pdqsort.h"
 
 #endif

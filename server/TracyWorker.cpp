@@ -3023,12 +3023,19 @@ void Worker::HandleFailure( const char* ptr, const char* end )
             m_netWriteCv.notify_one();
         }
 
-        while( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
+        if( !m_serverQueryQueue.empty() && m_serverQuerySpaceLeft > 0 )
         {
-            m_serverQuerySpaceLeft--;
-            const auto& query = m_serverQueryQueue.back();
-            m_sock.Send( &query, ServerQueryPacketSize );
-            m_serverQueryQueue.pop_back();
+            const auto toSend = std::min( m_serverQuerySpaceLeft, m_serverQueryQueue.size() );
+            m_sock.Send( m_serverQueryQueue.data(), toSend * ServerQueryPacketSize );
+            m_serverQuerySpaceLeft -= toSend;
+            if( toSend == m_serverQueryQueue.size() )
+            {
+                m_serverQueryQueue.clear();
+            }
+            else
+            {
+                m_serverQueryQueue.erase( m_serverQueryQueue.begin(), m_serverQueryQueue.begin() + toSend );
+            }
         }
 
         if( m_shutdown.load( std::memory_order_relaxed ) ) return;

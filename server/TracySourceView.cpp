@@ -354,7 +354,7 @@ void SourceView::Render( const Worker& worker )
                     m_targetLine = 0;
                     ImGui::SetScrollHereY();
                 }
-                RenderLine( line, lineNum++, 0, iptotal );
+                RenderLine( line, lineNum++, 0, iptotal, worker );
             }
         }
         else
@@ -366,7 +366,7 @@ void SourceView::Render( const Worker& worker )
                 {
                     for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                     {
-                        RenderLine( m_lines[i], i+1, 0, 0 );
+                        RenderLine( m_lines[i], i+1, 0, 0, worker );
                     }
                 }
                 else
@@ -375,7 +375,7 @@ void SourceView::Render( const Worker& worker )
                     {
                         auto it = ipcount.find( i+1 );
                         const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                        RenderLine( m_lines[i], i+1, ipcnt, iptotal );
+                        RenderLine( m_lines[i], i+1, ipcnt, iptotal, worker );
                     }
                 }
             }
@@ -428,7 +428,7 @@ static void PrintPercentage( float val )
     ImGui::ItemSize( ImVec2( stw * 7, ty ), 0 );
 }
 
-void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal )
+void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, const Worker& worker )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -458,6 +458,32 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     memset( buf, ' ', 7 - linesz );
     memcpy( buf + 7 - linesz, lineString, linesz+1 );
     TextDisabledUnformatted( buf );
+    ImGui::SameLine( 0, ty );
+
+    const auto stw = ImGui::CalcTextSize( " " ).x;
+    uint32_t match = 0;
+    auto addresses = worker.GetAddressesForLocation( m_fileStringIdx, lineNum );
+    if( addresses )
+    {
+        for( auto& addr : *addresses )
+        {
+            match += ( addr >= m_symAddr && addr < m_symAddr + m_codeLen );
+        }
+    }
+    if( match > 0 )
+    {
+        const auto asmString = RealToString( match );
+        sprintf( buf, "@%s", asmString );
+        const auto asmsz = strlen( buf );
+        TextDisabledUnformatted( buf );
+        ImGui::SameLine( 0, 0 );
+        ImGui::ItemSize( ImVec2( stw * ( 8 - asmsz ), ty ), 0 );
+    }
+    else
+    {
+        ImGui::ItemSize( ImVec2( stw * 8, ty ), 0 );
+    }
+
     ImGui::SameLine( 0, ty );
     ImGui::TextUnformatted( line.begin, line.end );
 

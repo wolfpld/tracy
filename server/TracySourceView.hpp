@@ -37,7 +37,7 @@ public:
     void Render( const Worker& worker );
 
 private:
-    void RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal );
+    void RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, const Worker& worker );
     void RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker, uint64_t& jumpOut );
 
     bool Disassemble( uint64_t symAddr, const Worker& worker );

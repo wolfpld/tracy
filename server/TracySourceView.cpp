@@ -19,6 +19,7 @@ namespace tracy
 SourceView::SourceView( ImFont* font )
     : m_font( font )
     , m_file( nullptr )
+    , m_fileStringIdx( 0 )
     , m_symAddr( 0 )
     , m_currentAddr( 0 )
     , m_targetAddr( 0 )
@@ -51,6 +52,7 @@ void SourceView::Open( const char* fileName, int line, uint64_t baseAddr, uint64
     if( m_file != fileName )
     {
         m_file = fileName;
+        m_fileStringIdx = worker.FindStringIdx( fileName );
         m_lines.clear();
         if( fileName )
         {

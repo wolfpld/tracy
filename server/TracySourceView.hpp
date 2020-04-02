@@ -44,6 +44,7 @@ private:
 
     ImFont* m_font;
     const char* m_file;
+    uint32_t m_fileStringIdx;
     uint64_t m_symAddr;
     uint64_t m_currentAddr;
     uint64_t m_baseAddr;

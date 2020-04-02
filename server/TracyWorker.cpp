@@ -2379,6 +2379,20 @@ int64_t Worker::GetZoneEnd( const GpuEvent& ev )
     }
 }
 
+uint32_t Worker::FindStringIdx( const char* str ) const
+{
+    charutil::StringKey key = { str, strlen( str ) };
+    auto sit = m_data.stringMap.find( key );
+    if( sit == m_data.stringMap.end() )
+    {
+        return 0;
+    }
+    else
+    {
+        return sit->second;
+    }
+}
+
 const char* Worker::GetString( uint64_t ptr ) const
 {
     const auto it = m_data.strings.find( ptr );

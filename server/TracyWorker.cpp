@@ -1750,6 +1750,43 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 6, 9 ) )
+    {
+        f.Read( sz );
+        if( eventMask & EventType::SymbolCode )
+        {
+            m_data.locationCodeAddressList.reserve( sz );
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint64_t packed;
+                uint16_t lsz;
+                f.Read2( packed, lsz );
+                Vector<uint64_t> data;
+                data.reserve_exact( lsz, m_slab );
+                uint64_t ref = 0;
+                for( uint16_t j=0; j<lsz; j++ )
+                {
+                    uint64_t diff;
+                    f.Read( diff );
+                    ref += diff;
+                    data[j] = ref;
+                    m_data.codeAddressToLocation.emplace( ref, packed );
+                }
+                m_data.locationCodeAddressList.emplace( packed, std::move( data ) );
+            }
+        }
+        else
+        {
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint64_t packed;
+                uint16_t lsz;
+                f.Read2( packed, lsz );
+                f.Skip( lsz * sizeof( uint64_t ) );
+            }
+        }
+    }
+
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
@@ -6986,6 +7023,23 @@ void Worker::Write( FileWrite& f )
         f.Write( &v.first, sizeof( v.first ) );
         f.Write( &v.second.len, sizeof( v.second.len ) );
         f.Write( v.second.data, v.second.len );
+    }
+
+    sz = m_data.locationCodeAddressList.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.locationCodeAddressList )
+    {
+        f.Write( &v.first, sizeof( v.first ) );
+        uint16_t lsz = uint16_t( v.second.size() );
+        f.Write( &lsz, sizeof( lsz ) );
+        uint64_t ref = 0;
+        const uint64_t* ptr = v.second.data();
+        for( uint16_t i=0; i<lsz; i++ )
+        {
+            uint64_t diff = *ptr++ - ref;
+            ref += diff;
+            f.Write( &diff, sizeof( diff ) );
+        }
     }
 }
 

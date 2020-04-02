@@ -5542,7 +5542,20 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
     if( ev.line != 0 )
     {
         assert( m_data.codeAddressToLocation.find( ev.ptr ) == m_data.codeAddressToLocation.end() );
-        m_data.codeAddressToLocation.emplace( ev.ptr, PackFileLine( fit->second.idx, ev.line ) );
+        const auto packed = PackFileLine( fit->second.idx, ev.line );
+        m_data.codeAddressToLocation.emplace( ev.ptr, packed );
+
+        auto lit = m_data.locationCodeAddressList.find( packed );
+        if( lit == m_data.locationCodeAddressList.end() )
+        {
+            m_data.locationCodeAddressList.emplace( packed, Vector<uint64_t>( ev.ptr ) );
+        }
+        else
+        {
+            const bool needSort = lit->second.back() > ev.ptr;
+            lit->second.push_back( ev.ptr );
+            if( needSort ) pdqsort_branchless( lit->second.begin(), lit->second.end() );
+        }
     }
 
     m_pendingCustomStrings.erase( fit );

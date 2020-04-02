@@ -298,6 +298,7 @@ private:
         uint64_t symbolCodeSize = 0;
 
         unordered_flat_map<uint64_t, uint64_t> codeAddressToLocation;
+        unordered_flat_map<uint64_t, Vector<uint64_t>> locationCodeAddressList;
     };
 
     struct MbpsBlock

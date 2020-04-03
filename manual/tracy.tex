@@ -1488,8 +1488,8 @@ After the client application has been instrumented, you will want to connect to 
 You can capture a trace using a command line utility contained in the \texttt{capture} directory. To use it you will need to provide the following parameters:
 
 \begin{itemize}
-\item \texttt{-a address} -- specifies the IP address (or a domain name) of the client application.
 \item \texttt{-o output.tracy} -- the file name of the resulting trace.
+\item \texttt{-a address} -- specifies the IP address (or a domain name) of the client application (uses \texttt{localhost} if not provided).
 \item \texttt{-p port} -- network port which should be used (optional).
 \end{itemize}
 

@@ -2433,6 +2433,7 @@ int64_t Worker::GetZoneEnd( const GpuEvent& ev )
 
 uint32_t Worker::FindStringIdx( const char* str ) const
 {
+    if( !str ) return 0;
     charutil::StringKey key = { str, strlen( str ) };
     auto sit = m_data.stringMap.find( key );
     if( sit == m_data.stringMap.end() )

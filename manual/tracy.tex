@@ -2660,6 +2660,8 @@ If the \emph{\faFileImport{}~Show source locations} option is selected, each lin
 
 Machine code instructions jumping to a predefined address will display symbol name of the jump target. If the destination location is within the currently displayed symbol an \texttt{->}~arrow will be prepended to the name. Hovering the \faMousePointer{}~mouse pointer over such symbol name will highlight the target location. Clicking on it with the \LMB{}~left mouse button will focus the view on the destination instruction, or switch view to the destination symbol.
 
+Enabling the \emph{\faShare{}~Draw jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target. Jumps going out of the symbol\footnote{This includes jumps, procedure calls and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
+
 Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.
 
 \subsection{Lock information window}

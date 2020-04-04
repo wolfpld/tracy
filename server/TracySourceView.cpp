@@ -517,7 +517,8 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     {
         if( ipcnt == 0 )
         {
-            ImGui::TextUnformatted( "       " );
+            const auto ts = ImGui::CalcTextSize( " " );
+            ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
         }
         else
         {
@@ -589,7 +590,8 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     {
         if( ipcnt == 0 )
         {
-            ImGui::TextUnformatted( "       " );
+            const auto ts = ImGui::CalcTextSize( " " );
+            ImGui::ItemSize( ImVec2( 7 * ts.x, ts.y ) );
         }
         else
         {

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "tracy_robin_hood.h"
 #include "TracyDecayValue.hpp"
 
 struct ImFont;
@@ -27,6 +28,14 @@ class SourceView
         uint64_t jumpAddr;
         std::string mnemonic;
         std::string operands;
+    };
+
+    struct JumpData
+    {
+        uint64_t min;
+        uint64_t max;
+        int level;
+        std::vector<uint64_t> source;
     };
 
 public:
@@ -61,6 +70,9 @@ private:
 
     std::vector<Line> m_lines;
     std::vector<AsmLine> m_asm;
+
+    unordered_flat_map<uint64_t, JumpData> m_jumpTable;
+    int m_maxJumpLevel;
 };
 
 }

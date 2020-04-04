@@ -8,6 +8,7 @@
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPrint.hpp"
+#include "TracySort.hpp"
 #include "TracySourceView.hpp"
 #include "TracyWorker.hpp"
 
@@ -100,6 +101,8 @@ void SourceView::Open( const char* fileName, int line, uint64_t baseAddr, uint64
 bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 {
     m_asm.clear();
+    m_jumpTable.clear();
+    m_maxJumpLevel = 0;
     if( symAddr == 0 ) return false;
     const auto arch = worker.GetCpuArch();
     if( arch == CpuArchUnknown ) return false;
@@ -174,10 +177,81 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     assert( false );
                     break;
                 }
+                if( jumpAddr != 0 )
+                {
+                    const auto min = std::min( jumpAddr, op.address );
+                    const auto max = std::max( jumpAddr, op.address );
+                    auto it = m_jumpTable.find( jumpAddr );
+                    if( it == m_jumpTable.end() )
+                    {
+                        m_jumpTable.emplace( jumpAddr, JumpData { min, max, 0, { op.address } } );
+                    }
+                    else
+                    {
+                        if( it->second.min > min ) it->second.min = min;
+                        else if( it->second.max < max ) it->second.max = max;
+                        it->second.source.emplace_back( op.address );
+                    }
+                }
             }
             m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str } );
         }
         cs_free( insn, cnt );
+        if( !m_jumpTable.empty() )
+        {
+            struct JumpRange
+            {
+                uint64_t target;
+                uint64_t len;
+            };
+            std::vector<JumpRange> jumpRange;
+            jumpRange.reserve( m_jumpTable.size() );
+            for( auto& v : m_jumpTable )
+            {
+                pdqsort_branchless( v.second.source.begin(), v.second.source.end() );
+                jumpRange.emplace_back( JumpRange { v.first, v.second.max - v.second.min } );
+            }
+            pdqsort_branchless( jumpRange.begin(), jumpRange.end(), []( const auto& l, const auto& r ) { return l.len < r.len; } );
+            std::vector<std::vector<std::pair<uint64_t, uint64_t>>> levelRanges;
+            for( auto& v : jumpRange )
+            {
+                auto it = m_jumpTable.find( v.target );
+                assert( it != m_jumpTable.end() );
+                int level = 0;
+                for(;;)
+                {
+                    assert( levelRanges.size() >= level );
+                    if( levelRanges.size() == level )
+                    {
+                        it->second.level = level;
+                        levelRanges.push_back( { { it->second.min, it->second.max } } );
+                        break;
+                    }
+                    else
+                    {
+                        bool validFit = true;
+                        auto& lr = levelRanges[level];
+                        for( auto& range : lr )
+                        {
+                            assert( !( it->second.min >= range.first && it->second.max <= range.second ) );
+                            if( it->second.min <= range.second && it->second.max >= range.first )
+                            {
+                                validFit = false;
+                                break;
+                            }
+                        }
+                        if( validFit )
+                        {
+                            it->second.level = level;
+                            lr.emplace_back( it->second.min, it->second.max );
+                            break;
+                        }
+                        level++;
+                    }
+                }
+                if( level > m_maxJumpLevel ) m_maxJumpLevel = level;
+            }
+        }
     }
     cs_close( &handle );
     m_codeLen = len;

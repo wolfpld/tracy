@@ -432,8 +432,8 @@ void SourceView::Render( const Worker& worker )
                 {
                     auto draw = ImGui::GetWindowDrawList();
                     const auto ts = ImGui::CalcTextSize( " " );
-                    const auto th2 = ts.y / 2;
-                    const auto th4 = ts.y / 4;
+                    const auto th2 = floor( ts.y / 2 );
+                    const auto th4 = floor( ts.y / 4 );
                     const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + 19 * ts.x + ( m_asmShowSourceLocation ? 36 * ts.x : 0 );
                     const auto minAddr = m_asm[clipper.DisplayStart].addr;
                     const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
@@ -450,7 +450,7 @@ void SourceView::Render( const Worker& worker )
                             auto iit = std::lower_bound( insList.begin(), insList.end(), v.first );
                             assert( iit != insList.end() );
                             const auto y = ( iit - insList.begin() ) * th;
-                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), col );
+                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow + 1, y + th2 ), col );
                             draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 - th4 ), col );
                             draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 + th4 ), col );
                         }

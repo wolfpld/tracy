@@ -177,7 +177,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     assert( false );
                     break;
                 }
-                if( jumpAddr != 0 )
+                if( jumpAddr >= symAddr && jumpAddr < symAddr + len )
                 {
                     const auto min = std::min( jumpAddr, op.address );
                     const auto max = std::max( jumpAddr, op.address );

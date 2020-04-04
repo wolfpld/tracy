@@ -73,6 +73,7 @@ private:
 
     unordered_flat_map<uint64_t, JumpData> m_jumpTable;
     int m_maxJumpLevel;
+    bool m_showJumps;
 };
 
 }

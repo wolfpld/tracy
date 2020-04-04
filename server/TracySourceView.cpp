@@ -17,6 +17,9 @@
 namespace tracy
 {
 
+enum { JumpSeparation = 6 };
+enum { JumpArrow = 9 };
+
 SourceView::SourceView( ImFont* font )
     : m_font( font )
     , m_file( nullptr )
@@ -33,6 +36,7 @@ SourceView::SourceView( ImFont* font )
     , m_highlightAddr( 0 )
     , m_asmRelative( false )
     , m_asmShowSourceLocation( true )
+    , m_showJumps( true )
 {
 }
 
@@ -372,6 +376,10 @@ void SourceView::Render( const Worker& worker )
         ImGui::Spacing();
         ImGui::SameLine();
         SmallCheckbox( ICON_FA_FILE_IMPORT " Show source locations", &m_asmShowSourceLocation );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        SmallCheckbox( ICON_FA_SHARE " Draw jumps", &m_showJumps );
     }
 
     uint64_t jumpOut = 0;
@@ -393,14 +401,20 @@ void SourceView::Render( const Worker& worker )
         }
         else
         {
-            ImGuiListClipper clipper( (int)m_asm.size() );
+            const auto th = ImGui::GetTextLineHeightWithSpacing();
+            ImGuiListClipper clipper( (int)m_asm.size(), th );
             while( clipper.Step() )
             {
+                assert( clipper.StepNo == 3 );
+                const auto wpos = ImGui::GetCursorScreenPos();
+                static std::vector<uint64_t> insList;
+                insList.clear();
                 if( iptotal == 0 )
                 {
                     for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                     {
                         RenderAsmLine( m_asm[i], 0, 0, worker, jumpOut );
+                        insList.emplace_back( m_asm[i].addr );
                     }
                 }
                 else
@@ -411,6 +425,50 @@ void SourceView::Render( const Worker& worker )
                         auto it = ipcount.find( line.addr );
                         const auto ipcnt = it == ipcount.end() ? 0 : it->second;
                         RenderAsmLine( line, ipcnt, iptotal, worker, jumpOut );
+                        insList.emplace_back( line.addr );
+                    }
+                }
+                if( m_showJumps && !m_jumpTable.empty() )
+                {
+                    auto draw = ImGui::GetWindowDrawList();
+                    const auto ts = ImGui::CalcTextSize( " " );
+                    const auto th2 = ts.y / 2;
+                    const auto th4 = ts.y / 4;
+                    const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + 19 * ts.x + ( m_asmShowSourceLocation ? 36 * ts.x : 0 );
+                    const auto minAddr = m_asm[clipper.DisplayStart].addr;
+                    const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
+                    const auto mjl = m_maxJumpLevel;
+
+                    int i = -1;
+                    for( auto& v : m_jumpTable )
+                    {
+                        i++;
+                        if( v.second.min > maxAddr || v.second.max < minAddr ) continue;
+                        const auto col = GetHsvColor( i, 0 );
+                        if( v.first >= minAddr && v.first <= maxAddr )
+                        {
+                            auto iit = std::lower_bound( insList.begin(), insList.end(), v.first );
+                            assert( iit != insList.end() );
+                            const auto y = ( iit - insList.begin() ) * th;
+                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), col );
+                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 - th4 ), col );
+                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 + th4 ), col );
+                        }
+                        for( auto& s : v.second.source )
+                        {
+                            if( s >= minAddr && s <= maxAddr )
+                            {
+                                auto iit = std::lower_bound( insList.begin(), insList.end(), s );
+                                assert( iit != insList.end() );
+                                const auto y = ( iit - insList.begin() ) * th;
+                                draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), col );
+                            }
+                        }
+                        auto it0 = std::lower_bound( insList.begin(), insList.end(), v.second.min );
+                        auto it1 = std::lower_bound( insList.begin(), insList.end(), v.second.max );
+                        const auto y0 = ( it0 == insList.end() || *it0 != v.second.min ) ? -th : ( it0 - insList.begin() ) * th;
+                        const auto y1 = it1 == insList.end() ? ( insList.size() + 1 ) * th  : ( it1 - insList.begin() ) * th;
+                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y1 + th2 ), col );
                     }
                 }
             }
@@ -665,7 +723,14 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             ImGui::ItemSize( ImVec2( stw * 32, ty ), 0 );
         }
     }
-    ImGui::SameLine( 0, ty );
+    if( m_showJumps )
+    {
+        ImGui::SameLine( 0, 2*ty + JumpArrow + m_maxJumpLevel * JumpSeparation );
+    }
+    else
+    {
+        ImGui::SameLine( 0, ty );
+    }
 
     const auto msz = line.mnemonic.size();
     memcpy( buf, line.mnemonic.c_str(), msz );

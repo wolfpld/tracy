@@ -106,6 +106,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 {
     m_asm.clear();
     m_jumpTable.clear();
+    m_jumpOut.clear();
     m_maxJumpLevel = 0;
     if( symAddr == 0 ) return false;
     const auto arch = worker.GetCpuArch();
@@ -196,6 +197,10 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                         else if( it->second.max < max ) it->second.max = max;
                         it->second.source.emplace_back( op.address );
                     }
+                }
+                else
+                {
+                    m_jumpOut.emplace( op.address );
                 }
             }
             m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str } );

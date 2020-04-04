@@ -148,7 +148,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             bool hasJump = false;
             for( auto j=0; j<detail.groups_count; j++ )
             {
-                if( detail.groups[j] == CS_GRP_JUMP || detail.groups[j] == CS_GRP_CALL )
+                if( detail.groups[j] == CS_GRP_JUMP || detail.groups[j] == CS_GRP_CALL || detail.groups[j] == CS_GRP_RET )
                 {
                     hasJump = true;
                     break;

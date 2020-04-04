@@ -18,7 +18,7 @@ namespace tracy
 {
 
 enum { JumpSeparation = 6 };
-enum { JumpArrow = 9 };
+enum { JumpArrowBase = 9 };
 
 SourceView::SourceView( ImFont* font )
     : m_font( font )
@@ -406,7 +406,7 @@ void SourceView::Render( const Worker& worker )
         }
         else
         {
-            const auto th = ImGui::GetTextLineHeightWithSpacing();
+            const auto th = (int)ImGui::GetTextLineHeightWithSpacing();
             ImGuiListClipper clipper( (int)m_asm.size(), th );
             while( clipper.Step() )
             {
@@ -443,6 +443,7 @@ void SourceView::Render( const Worker& worker )
                     const auto minAddr = m_asm[clipper.DisplayStart].addr;
                     const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
                     const auto mjl = m_maxJumpLevel;
+                    const auto JumpArrow = JumpArrowBase * ts.y / 15;
 
                     int i = -1;
                     for( auto& v : m_jumpTable )

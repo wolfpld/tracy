@@ -1524,7 +1524,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 data[idx].fi = fi;
 
                 data[idx].state.store( JobData::InProgress, std::memory_order_release );
-                td->Queue( [this, &data, idx, fi] {
+                td->Queue( [this, &data, idx, fi, fileVer] {
+                    if( fileVer <= FileVersion( 0, 6, 9 ) ) m_texcomp.Rdo( data[idx].buf, fi->w * fi->h / 16 );
                     fi->csz = m_texcomp.Pack( data[idx].ctx, data[idx].outbuf, data[idx].outsz, data[idx].buf, fi->w * fi->h / 2 );
                     data[idx].state.store( JobData::DataReady, std::memory_order_release );
                 } );
@@ -3625,6 +3626,7 @@ void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
     auto dst = (uint8_t*)m_frameImageBuffer;
     memcpy( dst, src, sz );
     m_texcomp.FixOrder( (char*)dst, sz/8 );
+    m_texcomp.Rdo( (char*)dst, sz/8 );
     uint32_t csz;
     auto image = m_texcomp.Pack( m_frameImageBuffer, sz, csz, m_slab );
     m_pendingFrameImageData.emplace( ptr, FrameImagePending { image, csz } );

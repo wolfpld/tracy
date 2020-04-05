@@ -36,6 +36,7 @@ public:
 
     const char* Unpack( const FrameImage& image );
 
+    void Rdo( char* data, size_t blocks );
     void FixOrder( char* data, size_t blocks );
 
     uint64_t GetInputBytesCount() const { return m_inputBytes.load( std::memory_order_relaxed ); }

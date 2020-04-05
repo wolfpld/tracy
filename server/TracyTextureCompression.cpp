@@ -53,6 +53,150 @@ const char* TextureCompression::Unpack( const FrameImage& image )
     return m_buf;
 }
 
+static constexpr uint8_t Dxtc4To3Table[256] = {
+     85,  84,  86,  86,  81,  80,  82,  82,  89,  88,  90,  90,  89,  88,  90,  90,
+     69,  68,  70,  70,  65,  64,  66,  66,  73,  72,  74,  74,  73,  72,  74,  74,
+    101, 100, 102, 102,  97,  96,  98,  98, 105, 104, 106, 106, 105, 104, 106, 106,
+    101, 100, 102, 102,  97,  96,  98,  98, 105, 104, 106, 106, 105, 104, 106, 106,
+     21,  20,  22,  22,  17,  16,  18,  18,  25,  24,  26,  26,  25,  24,  26,  26,
+      5,   4,   6,   6,   1,   0,   2,   2,   9,   8,  10,  10,   9,   8,  10,  10,
+     37,  36,  38,  38,  33,  32,  34,  34,  41,  40,  42,  42,  41,  40,  42,  42,
+     37,  36,  38,  38,  33,  32,  34,  34,  41,  40,  42,  42,  41,  40,  42,  42,
+    149, 148, 150, 150, 145, 144, 146, 146, 153, 152, 154, 154, 153, 152, 154, 154,
+    133, 132, 134, 134, 129, 128, 130, 130, 137, 136, 138, 138, 137, 136, 138, 138,
+    165, 164, 166, 166, 161, 160, 162, 162, 169, 168, 170, 170, 169, 168, 170, 170,
+    165, 164, 166, 166, 161, 160, 162, 162, 169, 168, 170, 170, 169, 168, 170, 170,
+    149, 148, 150, 150, 145, 144, 146, 146, 153, 152, 154, 154, 153, 152, 154, 154,
+    133, 132, 134, 134, 129, 128, 130, 130, 137, 136, 138, 138, 137, 136, 138, 138,
+    165, 164, 166, 166, 161, 160, 162, 162, 169, 168, 170, 170, 169, 168, 170, 170,
+    165, 164, 166, 166, 161, 160, 162, 162, 169, 168, 170, 170, 169, 168, 170, 170
+};
+
+void TextureCompression::Rdo( char* data, size_t blocks )
+{
+    assert( blocks > 0 );
+    do
+    {
+        uint32_t idx;
+        memcpy( &idx, data+4, 4 );
+        if( idx == 0x55555555 )
+        {
+            data += 8;
+            continue;
+        }
+
+        uint16_t c0, c1;
+        memcpy( &c0, data, 2 );
+        memcpy( &c1, data+2, 2 );
+
+        const int r0b = c0 & 0xF800;
+        const int g0b = c0 & 0x07E0;
+        const int b0b = c0 & 0x001F;
+
+        const int r1b = c1 & 0xF800;
+        const int g1b = c1 & 0x07E0;
+        const int b1b = c1 & 0x001F;
+
+        const int r0 = ( r0b >> 8 ) | ( r0b >> 13 );
+        const int g0 = ( g0b >> 3 ) | ( g0b >> 9 );
+        const int b0 = ( b0b << 3 ) | ( b0b >> 2 );
+
+        const int r1 = ( r1b >> 8 ) | ( r1b >> 13 );
+        const int g1 = ( g1b >> 3 ) | ( g1b >> 9 );
+        const int b1 = ( b1b << 3 ) | ( b1b >> 2 );
+
+        const int dr = abs( r0 - r1 );
+        const int dg = abs( g0 - g1 );
+        const int db = abs( b0 - b1 );
+
+        const int maxChan1 = std::max( { r0-1, g0, b0-2 } );
+        const int maxDelta1 = std::max( { dr-1, dg, db-2 } );
+        const int tr1a = 16;
+        const int tr1b = 45;
+        int tr1;
+        if( maxChan1 < tr1a )
+        {
+            tr1 = 12;
+        }
+        else if( maxChan1 < tr1b )
+        {
+            tr1 = 6;
+        }
+        else
+        {
+            tr1 = 3;
+        }
+
+        if( maxDelta1 <= tr1 )
+        {
+            uint64_t blk =
+                ( ( ( r0b + r1b ) >> 1 ) & 0xF800 ) |
+                ( ( ( g0b + g1b ) >> 1 ) & 0x07E0 ) |
+                ( ( ( b0b + b1b ) >> 1 ) );
+            memcpy( data, &blk, 8 );
+        }
+        else
+        {
+            const int maxChan23 = std::max( { r0-2, g0, b0-5 } );
+            const int maxDelta23 = std::max( { dr-2, dg, db-5 } );
+            const int tr2a = 32;
+            const int tr2b = 48;
+            int tr2 = 0;
+            if( maxChan23 < tr2a )
+            {
+                tr2 = 12;
+            }
+            else if( maxChan23 < tr2b )
+            {
+                tr2 = 6;
+            }
+            else
+            {
+                tr2 = 3;
+            }
+
+            if( maxDelta23 <= tr2 )
+            {
+                uint32_t idx;
+                memcpy( &idx, data+4, 4 );
+                idx &= 0x55555555;
+                memcpy( data+4, &idx, 4 );
+            }
+            else
+            {
+                const int tr3a = 48;
+                const int tr3b = 64;
+                int tr3;
+                if( maxChan23 < tr3a )
+                {
+                    tr3 = 48;
+                }
+                else if( maxChan23 < tr3b )
+                {
+                    tr3 = 32;
+                }
+                else
+                {
+                    tr3 = 24;
+                }
+
+                if( maxDelta23 <= tr3 )
+                {
+                    memcpy( data, &c1, 2 );
+                    memcpy( data+2, &c0, 2 );
+                    uint8_t tmp[4];
+                    memcpy( tmp, &idx, 4 );
+                    for( int k=0; k<4; k++ ) tmp[k] = Dxtc4To3Table[tmp[k]];
+                    memcpy( data+4, tmp, 4 );
+                }
+            }
+        }
+
+        data += 8;
+    }
+    while( --blocks );
+}
+
 static constexpr uint8_t DxtcIndexTable[256] = {
     85,     87,     86,     84,     93,     95,     94,     92,     89,     91,     90,     88,     81,     83,     82,     80,
     117,    119,    118,    116,    125,    127,    126,    124,    121,    123,    122,    120,    113,    115,    114,    112,

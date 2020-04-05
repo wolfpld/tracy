@@ -520,6 +520,22 @@ Be very careful when using AVX2 or AVX512.
 
 More information can be found at \url{https://travisdowns.github.io/blog/2020/01/17/avxfreq1.html}, \url{https://en.wikichip.org/wiki/intel/frequency_behavior}.
 
+\paragraph{Summing it up}
+\label{ryzen}
+
+Power management schemes employed in various CPUs make it hard to reason about true performance of the code. For example, figure~\ref{ryzenimage} contains a histogram of function execution times (as described in chapter~\ref{findzone}), as measured on an AMD Ryzen CPU. The results ranged from 13.05~\si{\micro\second} to 61.25~\si{\micro\second} (extreme outliers were not included on the graph, limiting the longest displayed time to 36.04~\si{\micro\second}).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.5\textwidth]{images/ryzen.png}
+\caption{Example function execution times on a Ryzen CPU}
+\label{ryzenimage}
+\end{figure}
+
+We can immediately see that there are two distinct peaks, at 13.4~\si{\micro\second} and 15.3~\si{\micro\second}. A reasonable assumption would be that there are two paths in the code, one that can omit some work, and the second one which must do some additional job. But here's a catch -- the measured code is actually branchless and is always executed the same way. The two peaks represent two turbo frequencies between which the CPU was aggressively switching.
+
+We can also see that the graph gradually falls off to the right (representing longer times), with a small bump near the end. This can be attributed to running in power saving mode, with differing reaction times to the required operating frequency boost to full power.
+
 \subsection{Building the server}
 
 The easiest way to get going is to build the data analyzer, available in the \texttt{profiler} directory. With it you can connect to localhost or remote clients and view the collected data right away.
@@ -2369,6 +2385,14 @@ couleur=black!5,
 logo=\bclampe
 ]{Keyboard shortcut}
 You may press \keys{\ctrl + F} to open or focus the find zone window and set the keyboard input on the search box.
+\end{bclogo}
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcattention
+]{Caveats}
+When using the execution times histogram you must be aware about the hardware peculiarities. Read section~\ref{checkenvironmentcpu} for more detail.
 \end{bclogo}
 
 \subsubsection{Timeline interaction}

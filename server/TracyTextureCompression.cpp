@@ -157,8 +157,6 @@ void TextureCompression::Rdo( char* data, size_t blocks )
 
             if( maxDelta23 <= tr2 )
             {
-                uint32_t idx;
-                memcpy( &idx, data+4, 4 );
                 idx &= 0x55555555;
                 memcpy( data+4, &idx, 4 );
             }

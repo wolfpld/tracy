@@ -477,22 +477,6 @@ You must be aware that most processors available on the market\footnote{With the
 
 This is a complex subject and the details vary from one CPU to another. You can read a brief rundown of the topic at the following address: \url{https://travisdowns.github.io/blog/2019/06/11/speed-limits.html}.
 
-\subparagraph{Simple example}
-
-Let's consider the following code, which is running in a tight loop. On the left you can find the sampled instruction pointer readings, indicating which part of the code took the longest to execute.
-
-\begin{lstlisting}
- 2.09%   uint64_t tmp = LoadFromMemory();
- 2.81%   buf[i][j] = tmp >> 16;
-51.42%   error += tmp & 0xFFFF;
-\end{lstlisting}
-
-It would seem that changing the \texttt{error} variable is somehow much slower than writing to the \texttt{buf} array, even though both of these operations use the \texttt{tmp} variable. Even more so, \texttt{buf} is stored in the memory, while \texttt{error} is held in a register, which makes completely no sense when we consider access latencies. An inexperienced programmer might believe, that there may be something wrong with the addition operation, but it would be a rookie mistake to do so. In reality, the long execution time stems from the data load operation in the first line. The cost of the load is not immediately apparent, as the operation might run in the background, while program execution continues. It is not even visible when we're writing to the array, as each iteration of the loop writes to a separate cell. The store operation will be only performed (also in background) when the loaded data becomes available, but this does not prevent further execution of the program.
-
-Why is the last line different then, why is adding the value to the \texttt{error} variable taking so long? Can't it run in the background also? Well, it actually does, in the first iteration. The second iteration of the loop \emph{depends} on the first value of \texttt{error} being available, which stops the program execution until the first-iteration load is truly performed and the first-iteration \texttt{error} value is modified.
-
-Note that this is mostly guesswork and the exact details will vary from one CPU micro-architecture to another.
-
 \paragraph{Simultaneous multithreading}
 
 Also known as: Hyper-threading. Typically present on Intel and AMD processors.

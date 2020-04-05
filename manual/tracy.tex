@@ -687,9 +687,9 @@ To further reduce image data size, frame images are internally compressed using 
 \centering
 \begin{tabular}[h]{c|c|c}
 \textbf{Implementation} & \textbf{Required define} & \textbf{Time} \\ \hline
-x86 Reference & --- & 194.5 \si{\micro\second} \\
-x86 SSE4.1\textsuperscript{a} & \texttt{\_\_SSE4\_1\_\_} & 32 \si{\micro\second} \\
-x86 AVX2 & \texttt{\_\_AVX2\_\_} & 18.5 \si{\micro\second} \\
+x86 Reference & --- & 198.2 \si{\micro\second} \\
+x86 SSE4.1\textsuperscript{a} & \texttt{\_\_SSE4\_1\_\_} & 25.4 \si{\micro\second} \\
+x86 AVX2 & \texttt{\_\_AVX2\_\_} & 15.3 \si{\micro\second} \\
 ARM Reference & --- & 1.04 \si{\milli\second} \\
 ARM32 NEON\textsuperscript{b} & \texttt{\_\_ARM\_NEON} & 529 \si{\micro\second} \\
 ARM64 NEON & \texttt{\_\_ARM\_NEON} & 438 \si{\micro\second}
@@ -697,7 +697,7 @@ ARM64 NEON & \texttt{\_\_ARM\_NEON} & 438 \si{\micro\second}
 
 \vspace{1em}
 \textsuperscript{a)} VEX encoding; \hspace{0.5em} \textsuperscript{b)} ARM32 NEON code compiled for ARM64
-\caption{Client compression time of $320\times180$ image. x86: i7 8700K (MSVC); ARM: ODROID-C2 (gcc).}
+\caption{Client compression time of $320\times180$ image. x86: Ryzen 9 3900X (MSVC); ARM: ODROID-C2 (gcc).}
 \label{EtcSimd}
 \end{table}
 

@@ -3610,25 +3610,6 @@ void Worker::AddExternalThreadName( uint64_t ptr, const char* str, size_t sz )
     it->second.second = sl.ptr;
 }
 
-static const uint8_t DxtcIndexTable[256] = {
-    85,     87,     86,     84,     93,     95,     94,     92,     89,     91,     90,     88,     81,     83,     82,     80,
-    117,    119,    118,    116,    125,    127,    126,    124,    121,    123,    122,    120,    113,    115,    114,    112,
-    101,    103,    102,    100,    109,    111,    110,    108,    105,    107,    106,    104,    97,     99,     98,     96,
-    69,     71,     70,     68,     77,     79,     78,     76,     73,     75,     74,     72,     65,     67,     66,     64,
-    213,    215,    214,    212,    221,    223,    222,    220,    217,    219,    218,    216,    209,    211,    210,    208,
-    245,    247,    246,    244,    253,    255,    254,    252,    249,    251,    250,    248,    241,    243,    242,    240,
-    229,    231,    230,    228,    237,    239,    238,    236,    233,    235,    234,    232,    225,    227,    226,    224,
-    197,    199,    198,    196,    205,    207,    206,    204,    201,    203,    202,    200,    193,    195,    194,    192,
-    149,    151,    150,    148,    157,    159,    158,    156,    153,    155,    154,    152,    145,    147,    146,    144,
-    181,    183,    182,    180,    189,    191,    190,    188,    185,    187,    186,    184,    177,    179,    178,    176,
-    165,    167,    166,    164,    173,    175,    174,    172,    169,    171,    170,    168,    161,    163,    162,    160,
-    133,    135,    134,    132,    141,    143,    142,    140,    137,    139,    138,    136,    129,    131,    130,    128,
-    21,     23,     22,     20,     29,     31,     30,     28,     25,     27,     26,     24,     17,     19,     18,     16,
-    53,     55,     54,     52,     61,     63,     62,     60,     57,     59,     58,     56,     49,     51,     50,     48,
-    37,     39,     38,     36,     45,     47,     46,     44,     41,     43,     42,     40,     33,     35,     34,     32,
-    5,      7,      6,      4,      13,     15,     14,     12,     9,      11,     10,     8,      1,      3,      2,      0
-};
-
 void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
 {
     assert( m_pendingFrameImageData.find( ptr ) == m_pendingFrameImageData.end() );
@@ -3642,13 +3623,8 @@ void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
     }
     auto src = (uint8_t*)data;
     auto dst = (uint8_t*)m_frameImageBuffer;
-    for( size_t i=0; i<sz; i+=8 )
-    {
-        memcpy( dst, src, 4 );
-        for( int j=4; j<8; j++ ) dst[j] = DxtcIndexTable[src[j]];
-        src += 8;
-        dst += 8;
-    }
+    memcpy( dst, src, sz );
+    m_texcomp.FixOrder( (char*)dst, sz/8 );
     uint32_t csz;
     auto image = m_texcomp.Pack( m_frameImageBuffer, sz, csz, m_slab );
     m_pendingFrameImageData.emplace( ptr, FrameImagePending { image, csz } );

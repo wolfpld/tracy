@@ -635,6 +635,7 @@ static void DrawContents()
                 ImGui::SetColumnWidth( 2, w * 0.425f );
             }
             std::lock_guard<std::mutex> lock( resolvLock );
+            int idx = 0;
             for( auto& v : clients )
             {
                 const bool badProto = v.second.protocolVersion != tracy::ProtocolVersion;
@@ -643,7 +644,9 @@ static void DrawContents()
                 assert( name != resolvMap.end() );
                 ImGuiSelectableFlags flags = ImGuiSelectableFlags_SpanAllColumns;
                 if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
+                ImGui::PushID( idx++ );
                 const bool selected = ImGui::Selectable( name->second.c_str(), &sel, flags );
+                ImGui::PopID();
                 if( ImGui::IsItemHovered() )
                 {
                     char portstr[32];

@@ -599,34 +599,37 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     TextDisabledUnformatted( buf );
     ImGui::SameLine( 0, ty );
 
-    const auto stw = ImGui::CalcTextSize( " " ).x;
-    uint32_t match = 0;
-    auto addresses = worker.GetAddressesForLocation( m_fileStringIdx, lineNum );
-    if( addresses )
+    if( m_symAddr != 0 )
     {
-        for( auto& addr : *addresses )
+        const auto stw = ImGui::CalcTextSize( " " ).x;
+        uint32_t match = 0;
+        auto addresses = worker.GetAddressesForLocation( m_fileStringIdx, lineNum );
+        if( addresses )
         {
-            match += ( addr >= m_symAddr && addr < m_symAddr + m_codeLen );
+            for( auto& addr : *addresses )
+            {
+                match += ( addr >= m_symAddr && addr < m_symAddr + m_codeLen );
+            }
         }
-    }
-    if( match > 0 )
-    {
-        const auto asmString = RealToString( match );
-        sprintf( buf, "@%s", asmString );
-        const auto asmsz = strlen( buf );
-        TextDisabledUnformatted( buf );
-        if( ImGui::IsItemClicked() )
+        if( match > 0 )
         {
-            m_showAsm = true;
-            m_currentAddr = (*addresses)[0];
-            m_targetAddr = (*addresses)[0];
+            const auto asmString = RealToString( match );
+            sprintf( buf, "@%s", asmString );
+            const auto asmsz = strlen( buf );
+            TextDisabledUnformatted( buf );
+            if( ImGui::IsItemClicked() )
+            {
+                m_showAsm = true;
+                m_currentAddr = (*addresses)[0];
+                m_targetAddr = (*addresses)[0];
+            }
+            ImGui::SameLine( 0, 0 );
+            ImGui::ItemSize( ImVec2( stw * ( 8 - asmsz ), ty ), 0 );
         }
-        ImGui::SameLine( 0, 0 );
-        ImGui::ItemSize( ImVec2( stw * ( 8 - asmsz ), ty ), 0 );
-    }
-    else
-    {
-        ImGui::ItemSize( ImVec2( stw * 8, ty ), 0 );
+        else
+        {
+            ImGui::ItemSize( ImVec2( stw * 8, ty ), 0 );
+        }
     }
 
     ImGui::SameLine( 0, ty );

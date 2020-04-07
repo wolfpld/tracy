@@ -2654,11 +2654,14 @@ Source file view works on the local files you have on your disk. The traces them
 
 If automated call stack sampling (see chapter~\ref{sampling}) was performed and the source file view was opened with a symbol context (e.g. from a ghost zone, or from statistics of sampled functions), additional profiling information will be available. Symbol name of the selected function will be displayed in the header (with parent function in parenthesis, in case of inlined functions), along with a count of collected samples and the corresponding code fragment size.
 
-The first column of listing contains percentage counts of collected instruction pointer samples for each line within the symbol, both is numerical and graphical bar form. This information can be used to determine which line of the function takes the most time. Be aware that the data is not fully accurate, as it is the result of random sampling of program execution. Furthermore, undocumented implementation details of an out-of-order CPU architecture will highly impact the measurement. Read chapter~\ref{checkenvironmentcpu} to see the tip of an iceberg.
+The first column of listing contains percentage counts of collected instruction pointer samples for each line within the symbol, both in numerical and graphical bar form. This information can be used to determine which line of the function takes the most time. Be aware that the data is not fully accurate, as it is the result of random sampling of program execution. Furthermore, undocumented implementation details of an out-of-order CPU architecture will highly impact the measurement. Read chapter~\ref{checkenvironmentcpu} to see the tip of an iceberg.
+
+If symbol code is available (section~\ref{assemblyview}), each source file line will show count of associated assembly instructions, displayed with an '\texttt{@}' prefix. Due to the way optimizing compilers work, some lines may seemingly not produce any machine code, for example because iterating a loop counter index might have been reduced to advancing a data pointer. Some other lines may have disproportionate amount of associated instructions, e.g. when a loop unrolling optimization is applied. This varies from case to case and from compiler to compiler.
 
 Unlike other profilers, Tracy doesn't include inlined function statistics in the parent function. Instead, you can view the sampling data even in inlined functions.
 
 \subsubsection{Assembly view}
+\label{assemblyview}
 
 If executable code retrieval was performed, as described in section~\ref{executableretrieval}, and the view has symbol context available, you will be presented with an additional option, \emph{\faMicrochip{}~Show assembly}. Selecting it will replace the source code view with disassembly of the relevant portion of the program that was profiled.
 

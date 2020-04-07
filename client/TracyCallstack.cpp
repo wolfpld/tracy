@@ -75,6 +75,7 @@ BOOL IMAGEAPI SymGetLineFromInlineContext(HANDLE hProcess, DWORD64 qwAddr, ULONG
 };
 #endif
 
+#ifndef __CYGWIN__
 struct ModuleCache
 {
     uint64_t start;
@@ -83,6 +84,7 @@ struct ModuleCache
 };
 
 static FastVector<ModuleCache>* s_modCache;
+#endif
 
 void InitCallstack()
 {
@@ -91,11 +93,11 @@ void InitCallstack()
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
 
+#ifndef __CYGWIN__
     HMODULE mod[1024];
     DWORD needed;
     HANDLE proc = GetCurrentProcess();
 
-#ifndef __CYGWIN__
     s_modCache = (FastVector<ModuleCache>*)tracy_malloc( sizeof( FastVector<ModuleCache> ) );
     new(s_modCache) FastVector<ModuleCache>( 512 );
 

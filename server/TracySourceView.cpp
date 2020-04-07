@@ -271,7 +271,58 @@ void SourceView::Render( const Worker& worker )
 {
     m_highlightAddr.Decay( 0 );
 
-    if( m_file ) TextFocused( "File:", m_file );
+    if( m_symAddr == 0 )
+    {
+        if( m_file ) TextFocused( "File:", m_file );
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+
+        RenderSimpleSourceView();
+    }
+    else
+    {
+        RenderSymbolView( worker );
+    }
+}
+
+void SourceView::RenderSimpleSourceView()
+{
+    ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
+    if( m_font ) ImGui::PushFont( m_font );
+    if( m_targetLine != 0 )
+    {
+        int lineNum = 1;
+        for( auto& line : m_lines )
+        {
+            if( m_targetLine == lineNum )
+            {
+                m_targetLine = 0;
+                ImGui::SetScrollHereY();
+            }
+            RenderLine( line, lineNum++, 0, 0, nullptr );
+        }
+    }
+    else
+    {
+        ImGuiListClipper clipper( (int)m_lines.size() );
+        while( clipper.Step() )
+        {
+            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+            {
+                RenderLine( m_lines[i], i+1, 0, 0, nullptr );
+            }
+        }
+    }
+    if( m_font ) ImGui::PopFont();
+    ImGui::EndChild();
+}
+
+void SourceView::RenderSymbolView( const Worker& worker )
+{
+    assert( m_symAddr != 0 );
 
     if( !m_asm.empty() && !m_lines.empty() )
     {
@@ -300,7 +351,7 @@ void SourceView::Render( const Worker& worker )
 
     uint32_t iptotal = 0;
     unordered_flat_map<uint64_t, uint32_t> ipcount;
-    auto ipmap = m_symAddr != 0 ? worker.GetSymbolInstructionPointers( m_symAddr ) : nullptr;
+    auto ipmap = worker.GetSymbolInstructionPointers( m_symAddr );
     if( ipmap )
     {
         if( m_showAsm )
@@ -492,7 +543,7 @@ void SourceView::Render( const Worker& worker )
                     m_targetLine = 0;
                     ImGui::SetScrollHereY();
                 }
-                RenderLine( line, lineNum++, 0, iptotal, worker );
+                RenderLine( line, lineNum++, 0, iptotal, &worker );
             }
         }
         else
@@ -504,7 +555,7 @@ void SourceView::Render( const Worker& worker )
                 {
                     for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                     {
-                        RenderLine( m_lines[i], i+1, 0, 0, worker );
+                        RenderLine( m_lines[i], i+1, 0, 0, &worker );
                     }
                 }
                 else
@@ -513,7 +564,7 @@ void SourceView::Render( const Worker& worker )
                     {
                         auto it = ipcount.find( i+1 );
                         const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                        RenderLine( m_lines[i], i+1, ipcnt, iptotal, worker );
+                        RenderLine( m_lines[i], i+1, ipcnt, iptotal, &worker );
                     }
                 }
             }
@@ -566,7 +617,7 @@ static void PrintPercentage( float val )
     ImGui::ItemSize( ImVec2( stw * 7, ty ), 0 );
 }
 
-void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, const Worker& worker )
+void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, const Worker* worker )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -601,9 +652,10 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
 
     if( m_symAddr != 0 )
     {
+        assert( worker );
         const auto stw = ImGui::CalcTextSize( " " ).x;
         uint32_t match = 0;
-        auto addresses = worker.GetAddressesForLocation( m_fileStringIdx, lineNum );
+        auto addresses = worker->GetAddressesForLocation( m_fileStringIdx, lineNum );
         if( addresses )
         {
             for( auto& addr : *addresses )

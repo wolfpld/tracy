@@ -131,7 +131,11 @@ public:
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
 #    endif
 #  elif defined _WIN32 || defined __CYGWIN__
+#    ifdef TRACY_TIMER_QPC
+        return GetTimeQpc();
+#    else
         return int64_t( __rdtsc() );
+#    endif
 #  elif defined __i386 || defined _M_IX86
         uint32_t eax, edx;
         asm volatile ( "rdtsc" : "=a" (eax), "=d" (edx) );
@@ -608,6 +612,10 @@ private:
         MemWrite( &item->memFree.ptr, (uint64_t)ptr );
         GetProfiler().m_serialQueue.commit_next();
     }
+
+#if ( defined _WIN32 || defined __CYGWIN__ ) && defined TRACY_TIMER_QPC
+    static int64_t GetTimeQpc();
+#endif
 
     double m_timerMul;
     uint64_t m_resolution;

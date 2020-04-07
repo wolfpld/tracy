@@ -226,7 +226,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
     s_prop->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
     s_prop->Wnode.BufferSize = psz;
     s_prop->Wnode.Flags = WNODE_FLAG_TRACED_GUID;
+#ifdef TRACY_TIMER_QPC
+    s_prop->Wnode.ClientContext = 1;
+#else
     s_prop->Wnode.ClientContext = 3;
+#endif
     s_prop->Wnode.Guid = SystemTraceControlGuid;
     s_prop->BufferSize = 1024;
     s_prop->LoggerNameOffset = sizeof( EVENT_TRACE_PROPERTIES );

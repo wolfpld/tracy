@@ -220,6 +220,7 @@ static void InitFailure( const char* msg )
 
 static int64_t SetupHwTimer()
 {
+#ifndef TRACY_TIMER_QPC
     uint32_t regs[4];
     CpuId( regs, 0x80000001 );
     if( !( regs[3] & ( 1 << 27 ) ) ) InitFailure( "CPU doesn't support RDTSCP instruction." );
@@ -229,9 +230,10 @@ static int64_t SetupHwTimer()
         const char* noCheck = getenv( "TRACY_NO_INVARIANT_CHECK" );
         if( !noCheck || noCheck[0] != '1' )
         {
-            InitFailure( "CPU doesn't support invariant TSC.\nDefine TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*." );
+            InitFailure( "CPU doesn't support invariant TSC.\nDefine TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*.\nAlternatively you may rebuild the application with the TRACY_TIMER_QPC define to use lower resolution timer." );
         }
     }
+#endif
 
     return Profiler::GetTime();
 }
@@ -2785,6 +2787,15 @@ void Profiler::SendCodeLocation( uint64_t ptr )
     if( sym.needFree ) tracy_free( (void*)sym.file );
 #endif
 }
+
+#if ( defined _WIN32 || defined __CYGWIN__ ) && defined TRACY_TIMER_QPC
+int64_t Profiler::GetTimeQpc()
+{
+    LARGE_INTEGER t;
+    QueryPerformanceCounter( &t );
+    return t.QuadPart;
+}
+#endif
 
 }
 

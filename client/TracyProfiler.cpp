@@ -290,12 +290,7 @@ static const char* GetHostInfo()
     static char buf[1024];
     auto ptr = buf;
 #if defined _WIN32 || defined __CYGWIN__
-#  ifdef UNICODE
-    t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandle( L"ntdll.dll" ), "RtlGetVersion" );
-#  else
-    t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandle( "ntdll.dll" ), "RtlGetVersion" );
-#  endif
-
+    t_RtlGetVersion RtlGetVersion = (t_RtlGetVersion)GetProcAddress( GetModuleHandleA( "ntdll.dll" ), "RtlGetVersion" );
     if( !RtlGetVersion )
     {
 #  ifdef __CYGWIN__
@@ -2556,12 +2551,7 @@ void Profiler::ReportTopology()
     };
 
 #if defined _WIN32 || defined __CYGWIN__
-#  ifdef UNICODE
-    t_GetLogicalProcessorInformationEx _GetLogicalProcessorInformationEx = (t_GetLogicalProcessorInformationEx)GetProcAddress( GetModuleHandle( L"kernel32" ), "GetLogicalProcessorInformationEx" );
-#  else
-    t_GetLogicalProcessorInformationEx _GetLogicalProcessorInformationEx = (t_GetLogicalProcessorInformationEx)GetProcAddress( GetModuleHandle( "kernel32" ), "GetLogicalProcessorInformationEx" );
-#  endif
-
+    t_GetLogicalProcessorInformationEx _GetLogicalProcessorInformationEx = (t_GetLogicalProcessorInformationEx)GetProcAddress( GetModuleHandleA( "kernel32" ), "GetLogicalProcessorInformationEx" );
     if( !_GetLogicalProcessorInformationEx ) return;
 
     DWORD psz = 0;

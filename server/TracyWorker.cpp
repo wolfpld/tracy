@@ -1698,12 +1698,21 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             Int24 size;
             f.Read9( symAddr, name, file, line, imageName, callFile, callLine, isInline, size );
             m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine, isInline, size } );
-            if( !isInline ) m_data.symbolLoc.push_back( SymbolLocation { symAddr, size.Val() } );
+            if( isInline )
+            {
+                m_data.symbolLocInline.push_back( symAddr );
+            }
+            else
+            {
+                m_data.symbolLoc.push_back( SymbolLocation { symAddr, size.Val() } );
+            }
         }
 #ifdef NO_PARALLEL_SORT
         pdqsort_branchless( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+        pdqsort_branchless( m_data.symbolLocInline.begin(), m_data.symbolLocInline.end() );
 #else
         std::sort( std::execution::par_unseq, m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+        std::sort( std::execution::par_unseq, m_data.symbolLocInline.begin(), m_data.symbolLocInline.end() );
 #endif
     }
     else if( fileVer >= FileVersion( 0, 6, 5 ) )
@@ -2916,6 +2925,15 @@ void Worker::Exec()
                 pdqsort_branchless( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
 #else
                 std::sort( std::execution::par_unseq, m_data.symbolLoc.begin(), m_data.symbolLoc.end(), [] ( const auto& l, const auto& r ) { return l.addr < r.addr; } );
+#endif
+            }
+            if( m_data.newInlineSymbolsWereAdded )
+            {
+                m_data.newInlineSymbolsWereAdded = false;
+#ifdef NO_PARALLEL_SORT
+                pdqsort_branchless( m_data.symbolLocInline.begin(), m_data.symbolLocInline.end() );
+#else
+                std::sort( std::execution::par_unseq, m_data.symbolLocInline.begin(), m_data.symbolLocInline.end() );
 #endif
             }
 
@@ -5578,6 +5596,11 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     {
         if( !m_data.newSymbolsWereAdded ) m_data.newSymbolsWereAdded = true;
         m_data.symbolLoc.push_back( SymbolLocation { ev.symAddr, it->second.size } );
+    }
+    else
+    {
+        if( !m_data.newInlineSymbolsWereAdded ) m_data.newInlineSymbolsWereAdded = true;
+        m_data.symbolLocInline.push_back( ev.symAddr );
     }
 
     m_pendingSymbols.erase( it );

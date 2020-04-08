@@ -581,12 +581,19 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 SmallColorBox( color );
                 ImGui::SameLine();
                 auto fstr = worker.GetString( StringIdx( v.first ) );
-                ImGui::PushID( v.first );
-                if( ImGui::Selectable( fstr, fstr == m_file ) )
+                if( SourceFileValid( fstr, worker.GetCaptureTime() ) )
                 {
-                    ParseSource( fstr, &worker );
-                    m_targetLine = v.second;
-                    SelectLine( v.second, &worker );
+                    ImGui::PushID( v.first );
+                    if( ImGui::Selectable( fstr, fstr == m_file ) )
+                    {
+                        ParseSource( fstr, &worker );
+                        m_targetLine = v.second;
+                        SelectLine( v.second, &worker );
+                    }
+                }
+                else
+                {
+                    TextDisabledUnformatted( fstr );
                 }
                 ImGui::PopID();
             }

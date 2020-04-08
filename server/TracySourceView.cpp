@@ -661,6 +661,13 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     ImGui::BeginChild( "##asmView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
     if( m_font ) ImGui::PushFont( m_font );
 
+    int maxAddrLen;
+    {
+        char tmp[32];
+        sprintf( tmp, "%" PRIx64, m_baseAddr + m_codeLen );
+        maxAddrLen = strlen( tmp );
+    }
+
     uint64_t jumpOut = 0;
     if( m_targetAddr != 0 )
     {
@@ -671,7 +678,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 m_targetAddr = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderAsmLine( line, 0, iptotal, worker, jumpOut );
+            RenderAsmLine( line, 0, iptotal, worker, jumpOut, maxAddrLen );
         }
     }
     else
@@ -688,7 +695,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderAsmLine( m_asm[i], 0, 0, worker, jumpOut );
+                    RenderAsmLine( m_asm[i], 0, 0, worker, jumpOut, maxAddrLen );
                     insList.emplace_back( m_asm[i].addr );
                 }
             }
@@ -699,7 +706,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                     auto& line = m_asm[i];
                     auto it = ipcount.find( line.addr );
                     const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                    RenderAsmLine( line, ipcnt, iptotal, worker, jumpOut );
+                    RenderAsmLine( line, ipcnt, iptotal, worker, jumpOut, maxAddrLen );
                     insList.emplace_back( line.addr );
                 }
             }
@@ -709,7 +716,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 const auto ts = ImGui::CalcTextSize( " " );
                 const auto th2 = floor( ts.y / 2 );
                 const auto th4 = floor( ts.y / 4 );
-                const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + 19 * ts.x + ( m_asmShowSourceLocation ? 36 * ts.x : 0 );
+                const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( m_asmShowSourceLocation ? 36 * ts.x : 0 );
                 const auto minAddr = m_asm[clipper.DisplayStart].addr;
                 const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
                 const auto mjl = m_maxJumpLevel;
@@ -890,7 +897,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker, uint64_t& jumpOut )
+void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker, uint64_t& jumpOut, int maxAddrLen )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -929,8 +936,8 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
         sprintf( buf, "%" PRIx64, line.addr );
     }
     const auto asz = strlen( buf );
-    memset( buf+asz, ' ', 16-asz );
-    buf[16] = '\0';
+    memset( buf+asz, ' ', maxAddrLen-asz );
+    buf[maxAddrLen] = '\0';
     TextDisabledUnformatted( buf );
 
     bool lineHovered = false;
@@ -1011,7 +1018,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             const auto th4 = floor( ts.y / 4 );
             const auto& mjl = m_maxJumpLevel;
             const auto col = GetHsvColor( line.jumpAddr, 6 );
-            const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + 19 * ts.x + ( m_asmShowSourceLocation ? 36 * ts.x : 0 );
+            const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( m_asmShowSourceLocation ? 36 * ts.x : 0 );
 
             draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + th2 + JumpArrow / 2, th2 ), col );
             draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + th2 + th4, th2 - th4 ), col );

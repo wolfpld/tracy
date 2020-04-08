@@ -2397,6 +2397,13 @@ const char* Worker::GetSymbolCode( uint64_t sym, uint32_t& len ) const
     return it->second.data;
 }
 
+uint64_t Worker::GetSymbolForAddress( uint64_t address ) const
+{
+    auto it = std::lower_bound( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), address, [] ( const auto& l, const auto& r ) { return l.addr + l.len < r; } );
+    if( it == m_data.symbolLoc.end() || address < it->addr ) return 0;
+    return it->addr;
+}
+
 uint64_t Worker::GetSymbolForAddress( uint64_t address, uint32_t& offset ) const
 {
     auto it = std::lower_bound( m_data.symbolLoc.begin(), m_data.symbolLoc.end(), address, [] ( const auto& l, const auto& r ) { return l.addr + l.len < r; } );

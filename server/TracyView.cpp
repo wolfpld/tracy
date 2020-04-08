@@ -239,8 +239,7 @@ bool View::ViewDispatch( const char* fileName, int line, uint64_t symAddr )
         if( sit != symMap.end() ) symlen = sit->second.size.Val();
         if( symlen == 0 )
         {
-            uint32_t offset;
-            const auto parentAddr = m_worker.GetSymbolForAddress( symAddr, offset );
+            const auto parentAddr = m_worker.GetSymbolForAddress( symAddr );
             if( parentAddr != 0 )
             {
                 auto pit = symMap.find( parentAddr );
@@ -11301,8 +11300,7 @@ void View::DrawStatistics()
                     bool pass = m_statisticsFilter.PassFilter( name );
                     if( !pass && v.second.size.Val() == 0 )
                     {
-                        uint32_t offset;
-                        const auto parentAddr = m_worker.GetSymbolForAddress( v.first, offset );
+                        const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
                         if( parentAddr != 0 )
                         {
                             auto pit = symMap.find( parentAddr );
@@ -11357,8 +11355,7 @@ void View::DrawStatistics()
                         bool pass = m_statisticsFilter.PassFilter( name );
                         if( !pass && sit->second.size.Val() == 0 )
                         {
-                            uint32_t offset;
-                            const auto parentAddr = m_worker.GetSymbolForAddress( v.first, offset );
+                            const auto parentAddr = m_worker.GetSymbolForAddress( v.first );
                             if( parentAddr != 0 )
                             {
                                 auto pit = symMap.find( parentAddr );
@@ -11484,8 +11481,7 @@ void View::DrawStatistics()
                     const char* parentName = nullptr;
                     if( symlen == 0 )
                     {
-                        uint32_t offset;
-                        const auto parentAddr = m_worker.GetSymbolForAddress( v.symAddr, offset );
+                        const auto parentAddr = m_worker.GetSymbolForAddress( v.symAddr );
                         if( parentAddr != 0 )
                         {
                             auto pit = symMap.find( parentAddr );

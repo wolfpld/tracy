@@ -240,10 +240,12 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             const auto mLen = strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;
 
+            uint32_t mLineMax = 0;
             uint32_t srcline;
             const auto srcidx = worker.GetLocationForAddress( op.address, srcline );
             if( srcline != 0 )
             {
+                if( srcline > mLineMax ) mLineMax = srcline;
                 const auto idx = srcidx.Idx();
                 auto sit = m_sourceFiles.find( idx );
                 if( sit == m_sourceFiles.end() )
@@ -251,6 +253,9 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     m_sourceFiles.emplace( idx, srcline );
                 }
             }
+            char tmp[16];
+            sprintf( tmp, "%" PRIu32, mLineMax );
+            m_maxLine = strlen( tmp ) + 1;
         }
         cs_free( insn, cnt );
         m_maxMnemonicLen = mLenMax + 2;
@@ -961,13 +966,13 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             const auto linesz = strlen( lineString );
             char buf[32];
             const auto fnsz = strlen( fileName );
-            if( fnsz < 32 - 8 )
+            if( fnsz < 30 - m_maxLine )
             {
                 sprintf( buf, "%s:%i", fileName, srcline );
             }
             else
             {
-                sprintf( buf, "...%s:%i", fileName+fnsz-(32-3-1-8), srcline );
+                sprintf( buf, "...%s:%i", fileName+fnsz-(30-3-1-m_maxLine), srcline );
             }
             const auto bufsz = strlen( buf );
             TextDisabledUnformatted( buf );

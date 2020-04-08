@@ -950,6 +950,10 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                         SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;
                     }
+                    else
+                    {
+                        SelectAsmLines( srcidx.Idx(), srcline, worker, false );
+                    }
                 }
             }
             ImGui::SameLine( 0, 0 );

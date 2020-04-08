@@ -568,12 +568,18 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         ImGui::SameLine();
         TextDisabledUnformatted( "File:" );
         ImGui::SameLine();
+        const auto fileColor = GetHsvColor( m_fileStringIdx, 0 );
+        SmallColorBox( fileColor );
+        ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
         if( ImGui::BeginCombo( "##fileList", m_file, ImGuiComboFlags_HeightLargest ) )
         {
             for( auto& v : m_sourceFiles )
             {
+                const auto color = GetHsvColor( v.first, 0 );
+                SmallColorBox( color );
+                ImGui::SameLine();
                 auto fstr = worker.GetString( StringIdx( v.first ) );
                 ImGui::PushID( v.first );
                 if( ImGui::Selectable( fstr, fstr == m_file ) )

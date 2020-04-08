@@ -11286,6 +11286,7 @@ void View::DrawStatistics()
         {
             uint64_t symAddr;
             uint32_t incl, excl;
+            uint32_t count;
         };
 
         Vector<SymList> data;
@@ -11393,13 +11394,14 @@ void View::DrawStatistics()
                 auto it = baseMap.find( symAddr );
                 if( it == baseMap.end() )
                 {
-                    baseMap.emplace( symAddr, SymList { symAddr, v.incl, v.excl } );
+                    baseMap.emplace( symAddr, SymList { symAddr, v.incl, v.excl, 0 } );
                 }
                 else
                 {
                     assert( symAddr == it->second.symAddr );
                     it->second.incl += v.incl;
                     it->second.excl += v.excl;
+                    it->second.count++;
                 }
             }
             data.clear();
@@ -11545,6 +11547,11 @@ void View::DrawStatistics()
                     {
                         ImGui::SameLine();
                         ImGui::TextDisabled( "(%s)", parentName );
+                    }
+                    if( !m_statSeparateInlines && v.count > 0 )
+                    {
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(+%s)", RealToString( v.count ) );
                     }
                     ImGui::NextColumn();
                     float indentVal = 0.f;

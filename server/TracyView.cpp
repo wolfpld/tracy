@@ -11382,6 +11382,34 @@ void View::DrawStatistics()
             }
         }
 
+        if( !m_statSeparateInlines )
+        {
+            static unordered_flat_map<uint64_t, SymList> baseMap;
+            assert( baseMap.empty() );
+            for( auto& v : data )
+            {
+                auto sym = m_worker.GetSymbolData( v.symAddr );
+                const auto symAddr = ( sym && sym->isInline ) ? m_worker.GetSymbolForAddress( v.symAddr ) : v.symAddr;
+                auto it = baseMap.find( symAddr );
+                if( it == baseMap.end() )
+                {
+                    baseMap.emplace( symAddr, SymList { symAddr, v.incl, v.excl } );
+                }
+                else
+                {
+                    assert( symAddr == it->second.symAddr );
+                    it->second.incl += v.incl;
+                    it->second.excl += v.excl;
+                }
+            }
+            data.clear();
+            for( auto& v : baseMap )
+            {
+                data.push_back_no_space_check( v.second );
+            }
+            baseMap.clear();
+        }
+
         if( data.empty() )
         {
             ImGui::TextUnformatted( "No entries to be displayed." );

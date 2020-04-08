@@ -68,7 +68,7 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
 
     ParseSource( fileName, &worker );
     Disassemble( baseAddr, worker );
-    SelectLine( line, &worker );
+    SelectLine( line, &worker, true, symAddr );
 
     if( !m_lines.empty() )
     {
@@ -940,14 +940,14 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                     if( m_file == fileName )
                     {
                         m_targetLine = srcline;
-                        SelectLine( srcline, &worker );
+                        SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;
                     }
                     else if( SourceFileValid( fileName, worker.GetCaptureTime() ) )
                     {
                         ParseSource( fileName, &worker );
                         m_targetLine = srcline;
-                        SelectLine( srcline, &worker );
+                        SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;
                     }
                 }
@@ -1032,7 +1032,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::SelectLine( uint32_t line, const Worker* worker )
+void SourceView::SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine, uint64_t targetAddr )
 {
     m_selectedLine = line;
     m_selectedAddresses.clear();
@@ -1042,7 +1042,10 @@ void SourceView::SelectLine( uint32_t line, const Worker* worker )
     if( addresses )
     {
         const auto& addr = *addresses;
-        if( !ImGui::GetIO().KeyCtrl ) m_targetAddr = addr[0];
+        if( changeAsmLine && !ImGui::GetIO().KeyCtrl )
+        {
+            m_targetAddr = targetAddr != 0 ? targetAddr : addr[0];
+        }
         for( auto& v : addr )
         {
             m_selectedAddresses.emplace( v );

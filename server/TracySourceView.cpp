@@ -52,6 +52,7 @@ void SourceView::OpenSource( const char* fileName, int line )
     m_baseAddr = 0;
     m_symAddr = 0;
     m_currentAddr = 0;
+    m_sourceFiles.clear();
 
     ParseSource( fileName, nullptr );
     assert( !m_lines.empty() );
@@ -65,6 +66,7 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
     m_baseAddr = baseAddr;
     m_symAddr = symAddr;
     m_currentAddr = symAddr;
+    m_sourceFiles.clear();
 
     ParseSource( fileName, &worker );
     Disassemble( baseAddr, worker );
@@ -235,6 +237,18 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 }
             }
             m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str } );
+
+            uint32_t srcline;
+            const auto srcidx = worker.GetLocationForAddress( op.address, srcline );
+            if( srcline != 0 )
+            {
+                const auto idx = srcidx.Idx();
+                auto sit = m_sourceFiles.find( idx );
+                if( sit == m_sourceFiles.end() )
+                {
+                    m_sourceFiles.emplace( idx );
+                }
+            }
         }
         cs_free( insn, cnt );
         if( !m_jumpTable.empty() )

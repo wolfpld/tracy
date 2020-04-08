@@ -246,7 +246,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 auto sit = m_sourceFiles.find( idx );
                 if( sit == m_sourceFiles.end() )
                 {
-                    m_sourceFiles.emplace( idx );
+                    m_sourceFiles.emplace( idx, srcline );
                 }
             }
         }
@@ -408,7 +408,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        if( ImGui::BeginCombo( "", worker.GetString( sym->name ), ImGuiComboFlags_HeightLargest ) )
+        if( ImGui::BeginCombo( "##functionList", worker.GetString( sym->name ), ImGuiComboFlags_HeightLargest ) )
         {
             for( auto& v : symInline )
             {
@@ -545,11 +545,50 @@ void SourceView::RenderSymbolView( const Worker& worker )
 
 void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, const Worker& worker )
 {
-    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-    ImGui::SameLine();
-    TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
-    ImGui::SameLine();
-    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+    if( m_sourceFiles.empty() )
+    {
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+    }
+    else
+    {
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            ImGui::EndTooltip();
+        }
+        ImGui::SameLine();
+        TextDisabledUnformatted( "File:" );
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth( -1 );
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        if( ImGui::BeginCombo( "##fileList", m_file, ImGuiComboFlags_HeightLargest ) )
+        {
+            for( auto& v : m_sourceFiles )
+            {
+                auto fstr = worker.GetString( StringIdx( v.first ) );
+                ImGui::PushID( v.first );
+                if( ImGui::Selectable( fstr, fstr == m_file ) )
+                {
+                    ParseSource( fstr, &worker );
+                    m_targetLine = v.second;
+                    m_selectedLine = v.second;
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopStyleVar();
+    }
 
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
     if( m_font ) ImGui::PushFont( m_font );

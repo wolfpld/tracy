@@ -91,7 +91,7 @@ private:
     int m_maxJumpLevel;
     bool m_showJumps;
 
-    unordered_flat_set<uint32_t> m_sourceFiles;
+    unordered_flat_map<uint32_t, uint32_t> m_sourceFiles;
 };
 
 }

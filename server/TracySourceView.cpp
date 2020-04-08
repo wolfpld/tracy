@@ -602,7 +602,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         ImGui::PopStyleVar();
     }
 
-    ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
+    ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
     if( m_font ) ImGui::PushFont( m_font );
 
     if( m_targetLine != 0 )
@@ -658,7 +658,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     ImGui::SameLine();
     SmallCheckbox( ICON_FA_SHARE " Draw jumps", &m_showJumps );
 
-    ImGui::BeginChild( "##asmView", ImVec2( 0, 0 ), true );
+    ImGui::BeginChild( "##asmView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
     if( m_font ) ImGui::PushFont( m_font );
 
     uint64_t jumpOut = 0;

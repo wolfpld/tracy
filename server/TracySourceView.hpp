@@ -95,6 +95,8 @@ private:
 
     unordered_flat_map<uint32_t, uint32_t> m_sourceFiles;
     unordered_flat_set<uint64_t> m_selectedAddresses;
+
+    int m_maxMnemonicLen;
 };
 
 }

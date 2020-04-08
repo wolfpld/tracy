@@ -172,6 +172,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     size_t cnt = cs_disasm( handle, (const uint8_t*)code, len, symAddr, 0, &insn );
     if( cnt > 0 )
     {
+        int mLenMax = 0;
         m_asm.reserve( cnt );
         for( size_t i=0; i<cnt; i++ )
         {
@@ -236,6 +237,8 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 }
             }
             m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str } );
+            const auto mLen = strlen( op.mnemonic );
+            if( mLen > mLenMax ) mLenMax = mLen;
 
             uint32_t srcline;
             const auto srcidx = worker.GetLocationForAddress( op.address, srcline );
@@ -250,6 +253,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             }
         }
         cs_free( insn, cnt );
+        m_maxMnemonicLen = mLenMax + 2;
         if( !m_jumpTable.empty() )
         {
             struct JumpRange
@@ -1032,8 +1036,8 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
 
     const auto msz = line.mnemonic.size();
     memcpy( buf, line.mnemonic.c_str(), msz );
-    memset( buf+msz, ' ', 16-msz );
-    memcpy( buf+16, line.operands.c_str(), line.operands.size() + 1 );
+    memset( buf+msz, ' ', m_maxMnemonicLen-msz );
+    memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
     ImGui::TextUnformatted( buf );
 
     if( line.jumpAddr != 0 )

@@ -1035,10 +1035,15 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
 void SourceView::SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine, uint64_t targetAddr )
 {
     m_selectedLine = line;
-    m_selectedAddresses.clear();
     if( m_symAddr == 0 ) return;
     assert( worker );
-    auto addresses = worker->GetAddressesForLocation( m_fileStringIdx, line );
+    SelectAsmLines( m_fileStringIdx, line, *worker, changeAsmLine, targetAddr );
+}
+
+void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine, uint64_t targetAddr )
+{
+    m_selectedAddresses.clear();
+    auto addresses = worker.GetAddressesForLocation( file, line );
     if( addresses )
     {
         const auto& addr = *addresses;

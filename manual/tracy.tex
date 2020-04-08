@@ -1317,7 +1317,7 @@ In typical use cases the zone context data structure is hidden from your view, r
 \begin{itemize}
 \item The created variable name is exactly what you pass as the \texttt{ctx} parameter.
 \item The data structure is of an opaque, immutable type \texttt{TracyCZoneCtx}.
-\item Contents of the data structure can be copied by assignment.
+\item Contents of the data structure can be copied by assignment. Do not retrieve or use the structure's address -- this is asking for trouble.
 \item You \emph{must} use the data structure (or any of its copies) exactly \emph{once} to end a zone.
 \end{itemize}
 

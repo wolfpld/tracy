@@ -1687,24 +1687,56 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
 
     if( fileVer >= FileVersion( 0, 6, 7 ) )
     {
-        f.Read( sz );
-        m_data.symbolMap.reserve( sz );
-        for( uint64_t i=0; i<sz; i++ )
+        if( fileVer >= FileVersion( 0, 6, 11 ) )
         {
-            uint64_t symAddr;
-            StringIdx name, file, imageName, callFile;
-            uint32_t line, callLine;
-            uint8_t isInline;
-            Int24 size;
-            f.Read9( symAddr, name, file, line, imageName, callFile, callLine, isInline, size );
-            m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine, isInline, size } );
-            if( isInline )
+            f.Read( sz );
+            m_data.symbolLoc.reserve_exact( sz, m_slab );
+            f.Read( sz );
+            m_data.symbolLocInline.reserve_exact( sz, m_slab );
+            f.Read( sz );
+            m_data.symbolMap.reserve( sz );
+            int symIdx = 0;
+            int symInlineIdx = 0;
+            for( uint64_t i=0; i<sz; i++ )
             {
-                m_data.symbolLocInline.push_back( symAddr );
+                uint64_t symAddr;
+                StringIdx name, file, imageName, callFile;
+                uint32_t line, callLine;
+                uint8_t isInline;
+                Int24 size;
+                f.Read9( symAddr, name, file, line, imageName, callFile, callLine, isInline, size );
+                m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine, isInline, size } );
+                if( isInline )
+                {
+                    m_data.symbolLocInline[symInlineIdx++] = symAddr;
+                }
+                else
+                {
+                    m_data.symbolLoc[symIdx++] = SymbolLocation { symAddr, size.Val() };
+                }
             }
-            else
+        }
+        else
+        {
+            f.Read( sz );
+            m_data.symbolMap.reserve( sz );
+            for( uint64_t i=0; i<sz; i++ )
             {
-                m_data.symbolLoc.push_back( SymbolLocation { symAddr, size.Val() } );
+                uint64_t symAddr;
+                StringIdx name, file, imageName, callFile;
+                uint32_t line, callLine;
+                uint8_t isInline;
+                Int24 size;
+                f.Read9( symAddr, name, file, line, imageName, callFile, callLine, isInline, size );
+                m_data.symbolMap.emplace( symAddr, SymbolData { name, file, line, imageName, callFile, callLine, isInline, size } );
+                if( isInline )
+                {
+                    m_data.symbolLocInline.push_back( symAddr );
+                }
+                else
+                {
+                    m_data.symbolLoc.push_back( SymbolLocation { symAddr, size.Val() } );
+                }
             }
         }
 #ifdef NO_PARALLEL_SORT
@@ -7018,6 +7050,10 @@ void Worker::Write( FileWrite& f )
         f.Write( &v.second, sizeof( v.second ) );
     }
 
+    sz = m_data.symbolLoc.size();
+    f.Write( &sz, sizeof( sz ) );
+    sz = m_data.symbolLocInline.size();
+    f.Write( &sz, sizeof( sz ) );
     sz = m_data.symbolMap.size();
     f.Write( &sz, sizeof( sz ) );
     for( auto& v : m_data.symbolMap )

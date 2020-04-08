@@ -2433,6 +2433,14 @@ const Vector<uint64_t>* Worker::GetAddressesForLocation( uint32_t fileStringIdx,
     }
 }
 
+const uint64_t* Worker::GetInlineSymbolList( uint64_t sym, uint32_t len ) const
+{
+    auto it = std::lower_bound( m_data.symbolLocInline.begin(), m_data.symbolLocInline.end(), sym );
+    if( it == m_data.symbolLocInline.end() ) return nullptr;
+    if( *it >= sym + len ) return nullptr;
+    return it;
+}
+
 int64_t Worker::GetZoneEnd( const ZoneEvent& ev )
 {
     auto ptr = &ev;

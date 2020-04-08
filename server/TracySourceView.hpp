@@ -38,6 +38,13 @@ class SourceView
         std::vector<uint64_t> source;
     };
 
+    enum
+    {
+        DisplaySource,
+        DisplayAsm,
+        DisplayMixed
+    };
+
 public:
     SourceView( ImFont* font );
     ~SourceView();
@@ -53,6 +60,9 @@ private:
     void RenderSimpleSourceView();
     void RenderSymbolView( const Worker& worker );
 
+    void RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, const Worker& worker );
+    uint64_t RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, const Worker& worker );
+
     void RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, const Worker* worker );
     void RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker, uint64_t& jumpOut );
 
@@ -67,7 +77,7 @@ private:
     size_t m_dataSize;
     int m_targetLine;
     int m_selectedLine;
-    bool m_showAsm;
+    int m_displayMode;
     uint32_t m_codeLen;
     DecayValue<uint64_t> m_highlightAddr;
     bool m_asmRelative;

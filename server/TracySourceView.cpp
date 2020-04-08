@@ -31,7 +31,6 @@ SourceView::SourceView( ImFont* font )
     , m_dataSize( 0 )
     , m_targetLine( 0 )
     , m_selectedLine( 0 )
-    , m_showAsm( false )
     , m_codeLen( 0 )
     , m_highlightAddr( 0 )
     , m_asmRelative( false )
@@ -53,7 +52,6 @@ void SourceView::OpenSource( const char* fileName, int line )
     m_baseAddr = 0;
     m_symAddr = 0;
     m_currentAddr = 0;
-    m_showAsm = false;
 
     ParseSource( fileName, nullptr );
     assert( !m_lines.empty() );
@@ -69,10 +67,24 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
     m_currentAddr = symAddr;
 
     ParseSource( fileName, &worker );
+    Disassemble( baseAddr, worker );
 
-    if( m_lines.empty() ) m_showAsm = true;
-    if( !Disassemble( baseAddr, worker ) ) m_showAsm = false;
-    assert( m_showAsm || !m_lines.empty() );
+    if( !m_lines.empty() )
+    {
+        if( !m_asm.empty() )
+        {
+            m_displayMode = DisplayMixed;
+        }
+        else
+        {
+            m_displayMode = DisplaySource;
+        }
+    }
+    else
+    {
+        assert( !m_asm.empty() );
+        m_displayMode = DisplayAsm;
+    }
 }
 
 void SourceView::ParseSource( const char* fileName, const Worker* worker )
@@ -343,254 +355,119 @@ void SourceView::RenderSymbolView( const Worker& worker )
 {
     assert( m_symAddr != 0 );
 
-    if( !m_asm.empty() && !m_lines.empty() )
+    auto sym = worker.GetSymbolData( m_symAddr );
+    assert( sym );
+    if( sym->isInline )
     {
-        if( SmallCheckbox( ICON_FA_MICROCHIP " Show assembly", &m_showAsm ) )
+        auto parent = worker.GetSymbolData( m_baseAddr );
+        if( parent )
         {
-            if( m_showAsm )
-            {
-                m_targetAddr = m_symAddr;
-            }
-            else
-            {
-                m_targetLine = m_selectedLine;
-            }
+            TextFocused( "Symbol:", worker.GetString( parent->name ) );
+        }
+        else
+        {
+            char tmp[16];
+            sprintf( tmp, "0x%x", m_baseAddr );
+            TextFocused( "Symbol:", tmp );
         }
     }
-    if( !m_asm.empty() )
+    else
     {
-        if( !m_lines.empty() )
+        TextFocused( "Symbol:", worker.GetString( sym->name ) );
+    }
+
+    TextDisabledUnformatted( "Mode:" );
+    ImGui::SameLine();
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+    if( !m_lines.empty() )
+    {
+        ImGui::RadioButton( "Source", &m_displayMode, DisplaySource );
+        if( !m_asm.empty() )
         {
             ImGui::SameLine();
-            ImGui::Spacing();
+            ImGui::RadioButton( "Assembly", &m_displayMode, DisplayAsm );
             ImGui::SameLine();
+            ImGui::RadioButton( "Mixed", &m_displayMode, DisplayMixed );
         }
+    }
+    else
+    {
+        ImGui::RadioButton( "Assembly", &m_displayMode, DisplayAsm );
+    }
+    ImGui::PopStyleVar();
+
+    if( !m_asm.empty() )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         TextFocused( "Code size:", MemSizeToString( m_codeLen ) );
     }
 
-    uint32_t iptotal = 0;
-    unordered_flat_map<uint64_t, uint32_t> ipcount;
+    uint32_t iptotalSrc = 0, iptotalAsm = 0;
+    unordered_flat_map<uint64_t, uint32_t> ipcountSrc, ipcountAsm;
     auto ipmap = worker.GetSymbolInstructionPointers( m_symAddr );
     if( ipmap )
     {
-        if( m_showAsm )
+        for( auto& ip : *ipmap )
         {
-            for( auto& ip : *ipmap )
+            auto frame = worker.GetCallstackFrame( ip.first );
+            if( frame )
             {
-                auto addr = worker.GetCanonicalPointer( ip.first );
-                assert( ipcount.find( addr ) == ipcount.end() );
-                ipcount.emplace( addr, ip.second );
-                iptotal += ip.second;
-            }
-        }
-        else
-        {
-            for( auto& ip : *ipmap )
-            {
-                auto frame = worker.GetCallstackFrame( ip.first );
-                if( frame )
+                auto ffn = worker.GetString( frame->data[0].file );
+                if( strcmp( ffn, m_file ) == 0 )
                 {
-                    auto ffn = worker.GetString( frame->data[0].file );
-                    if( strcmp( ffn, m_file ) == 0 )
+                    const auto line = frame->data[0].line;
+                    auto it = ipcountSrc.find( line );
+                    if( it == ipcountSrc.end() )
                     {
-                        const auto line = frame->data[0].line;
-                        auto it = ipcount.find( line );
-                        if( it == ipcount.end() )
-                        {
-                            ipcount.emplace( line, ip.second );
-                        }
-                        else
-                        {
-                            it->second += ip.second;
-                        }
-                        iptotal += ip.second;
+                        ipcountSrc.emplace( line, ip.second );
                     }
+                    else
+                    {
+                        it->second += ip.second;
+                    }
+                    iptotalSrc += ip.second;
                 }
             }
+
+            auto addr = worker.GetCanonicalPointer( ip.first );
+            assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
+            ipcountAsm.emplace( addr, ip.second );
+            iptotalAsm += ip.second;
         }
 
-        if( iptotal > 0 )
+        if( iptotalAsm > 0 )
         {
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
-            TextFocused( "Samples:", RealToString( iptotal ) );
+            TextFocused( "Samples:", RealToString( iptotalAsm ) );
         }
     }
 
-    auto sym = worker.GetSymbolData( m_symAddr );
-    if( sym )
-    {
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        TextFocused( "Symbol:", worker.GetString( sym->name ) );
-        if( sym->isInline )
-        {
-            auto parent = worker.GetSymbolData( m_baseAddr );
-            if( parent )
-            {
-                ImGui::SameLine();
-                ImGui::TextDisabled( "(%s)", worker.GetString( parent->name ) );
-            }
-        }
-    }
-
-    if( !m_showAsm )
-    {
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-    }
-    else
-    {
-        SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative locations", &m_asmRelative );
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        SmallCheckbox( ICON_FA_FILE_IMPORT " Show source locations", &m_asmShowSourceLocation );
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        SmallCheckbox( ICON_FA_SHARE " Draw jumps", &m_showJumps );
-    }
+    ImGui::Separator();
 
     uint64_t jumpOut = 0;
-    ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
-    if( m_font ) ImGui::PushFont( m_font );
-    if( m_showAsm )
+    switch( m_displayMode )
     {
-        if( m_targetAddr != 0 )
-        {
-            for( auto& line : m_asm )
-            {
-                if( m_targetAddr == line.addr )
-                {
-                    m_targetAddr = 0;
-                    ImGui::SetScrollHereY();
-                }
-                RenderAsmLine( line, 0, iptotal, worker, jumpOut );
-            }
-        }
-        else
-        {
-            const auto th = (int)ImGui::GetTextLineHeightWithSpacing();
-            ImGuiListClipper clipper( (int)m_asm.size(), th );
-            while( clipper.Step() )
-            {
-                assert( clipper.StepNo == 3 );
-                const auto wpos = ImGui::GetCursorScreenPos();
-                static std::vector<uint64_t> insList;
-                insList.clear();
-                if( iptotal == 0 )
-                {
-                    for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
-                    {
-                        RenderAsmLine( m_asm[i], 0, 0, worker, jumpOut );
-                        insList.emplace_back( m_asm[i].addr );
-                    }
-                }
-                else
-                {
-                    for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
-                    {
-                        auto& line = m_asm[i];
-                        auto it = ipcount.find( line.addr );
-                        const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                        RenderAsmLine( line, ipcnt, iptotal, worker, jumpOut );
-                        insList.emplace_back( line.addr );
-                    }
-                }
-                if( m_showJumps && !m_jumpTable.empty() )
-                {
-                    auto draw = ImGui::GetWindowDrawList();
-                    const auto ts = ImGui::CalcTextSize( " " );
-                    const auto th2 = floor( ts.y / 2 );
-                    const auto th4 = floor( ts.y / 4 );
-                    const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + 19 * ts.x + ( m_asmShowSourceLocation ? 36 * ts.x : 0 );
-                    const auto minAddr = m_asm[clipper.DisplayStart].addr;
-                    const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
-                    const auto mjl = m_maxJumpLevel;
-                    const auto JumpArrow = JumpArrowBase * ts.y / 15;
-
-                    int i = -1;
-                    for( auto& v : m_jumpTable )
-                    {
-                        i++;
-                        if( v.second.min > maxAddr || v.second.max < minAddr ) continue;
-                        const auto col = GetHsvColor( i, 0 );
-                        if( v.first >= minAddr && v.first <= maxAddr )
-                        {
-                            auto iit = std::lower_bound( insList.begin(), insList.end(), v.first );
-                            assert( iit != insList.end() );
-                            const auto y = ( iit - insList.begin() ) * th;
-                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow + 1, y + th2 ), col );
-                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 - th4 ), col );
-                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 + th4 ), col );
-                        }
-                        for( auto& s : v.second.source )
-                        {
-                            if( s >= minAddr && s <= maxAddr )
-                            {
-                                auto iit = std::lower_bound( insList.begin(), insList.end(), s );
-                                assert( iit != insList.end() );
-                                const auto y = ( iit - insList.begin() ) * th;
-                                draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), col );
-                            }
-                        }
-                        auto it0 = std::lower_bound( insList.begin(), insList.end(), v.second.min );
-                        auto it1 = std::lower_bound( insList.begin(), insList.end(), v.second.max );
-                        const auto y0 = ( it0 == insList.end() || *it0 != v.second.min ) ? -th : ( it0 - insList.begin() ) * th;
-                        const auto y1 = it1 == insList.end() ? ( insList.size() + 1 ) * th  : ( it1 - insList.begin() ) * th;
-                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y1 + th2 ), col );
-                    }
-                }
-            }
-        }
+    case DisplaySource:
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, worker );
+        break;
+    case DisplayAsm:
+        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, worker );
+        break;
+    case DisplayMixed:
+        ImGui::Columns( 2 );
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, worker );
+        ImGui::NextColumn();
+        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, worker );
+        ImGui::EndColumns();
+        break;
+    default:
+        assert( false );
+        break;
     }
-    else
-    {
-        if( m_targetLine != 0 )
-        {
-            int lineNum = 1;
-            for( auto& line : m_lines )
-            {
-                if( m_targetLine == lineNum )
-                {
-                    m_targetLine = 0;
-                    ImGui::SetScrollHereY();
-                }
-                RenderLine( line, lineNum++, 0, iptotal, &worker );
-            }
-        }
-        else
-        {
-            ImGuiListClipper clipper( (int)m_lines.size() );
-            while( clipper.Step() )
-            {
-                if( iptotal == 0 )
-                {
-                    for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
-                    {
-                        RenderLine( m_lines[i], i+1, 0, 0, &worker );
-                    }
-                }
-                else
-                {
-                    for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
-                    {
-                        auto it = ipcount.find( i+1 );
-                        const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                        RenderLine( m_lines[i], i+1, ipcnt, iptotal, &worker );
-                    }
-                }
-            }
-        }
-    }
-    if( m_font ) ImGui::PopFont();
-    ImGui::EndChild();
 
     if( jumpOut != 0 )
     {
@@ -610,6 +487,168 @@ void SourceView::RenderSymbolView( const Worker& worker )
             }
         }
     }
+}
+
+void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, const Worker& worker )
+{
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+    ImGui::SameLine();
+    TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+    ImGui::SameLine();
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+
+    ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
+    if( m_font ) ImGui::PushFont( m_font );
+
+    if( m_targetLine != 0 )
+    {
+        int lineNum = 1;
+        for( auto& line : m_lines )
+        {
+            if( m_targetLine == lineNum )
+            {
+                m_targetLine = 0;
+                ImGui::SetScrollHereY();
+            }
+            RenderLine( line, lineNum++, 0, iptotal, &worker );
+        }
+    }
+    else
+    {
+        ImGuiListClipper clipper( (int)m_lines.size() );
+        while( clipper.Step() )
+        {
+            if( iptotal == 0 )
+            {
+                for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                {
+                    RenderLine( m_lines[i], i+1, 0, 0, &worker );
+                }
+            }
+            else
+            {
+                for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                {
+                    auto it = ipcount.find( i+1 );
+                    const auto ipcnt = it == ipcount.end() ? 0 : it->second;
+                    RenderLine( m_lines[i], i+1, ipcnt, iptotal, &worker );
+                }
+            }
+        }
+    }
+
+    if( m_font ) ImGui::PopFont();
+    ImGui::EndChild();
+}
+
+uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, const Worker& worker )
+{
+    SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative locations", &m_asmRelative );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    SmallCheckbox( ICON_FA_FILE_IMPORT " Show source locations", &m_asmShowSourceLocation );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    SmallCheckbox( ICON_FA_SHARE " Draw jumps", &m_showJumps );
+
+    ImGui::BeginChild( "##asmView", ImVec2( 0, 0 ), true );
+    if( m_font ) ImGui::PushFont( m_font );
+
+    uint64_t jumpOut = 0;
+    if( m_targetAddr != 0 )
+    {
+        for( auto& line : m_asm )
+        {
+            if( m_targetAddr == line.addr )
+            {
+                m_targetAddr = 0;
+                ImGui::SetScrollHereY();
+            }
+            RenderAsmLine( line, 0, iptotal, worker, jumpOut );
+        }
+    }
+    else
+    {
+        const auto th = (int)ImGui::GetTextLineHeightWithSpacing();
+        ImGuiListClipper clipper( (int)m_asm.size(), th );
+        while( clipper.Step() )
+        {
+            assert( clipper.StepNo == 3 );
+            const auto wpos = ImGui::GetCursorScreenPos();
+            static std::vector<uint64_t> insList;
+            insList.clear();
+            if( iptotal == 0 )
+            {
+                for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                {
+                    RenderAsmLine( m_asm[i], 0, 0, worker, jumpOut );
+                    insList.emplace_back( m_asm[i].addr );
+                }
+            }
+            else
+            {
+                for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+                {
+                    auto& line = m_asm[i];
+                    auto it = ipcount.find( line.addr );
+                    const auto ipcnt = it == ipcount.end() ? 0 : it->second;
+                    RenderAsmLine( line, ipcnt, iptotal, worker, jumpOut );
+                    insList.emplace_back( line.addr );
+                }
+            }
+            if( m_showJumps && !m_jumpTable.empty() )
+            {
+                auto draw = ImGui::GetWindowDrawList();
+                const auto ts = ImGui::CalcTextSize( " " );
+                const auto th2 = floor( ts.y / 2 );
+                const auto th4 = floor( ts.y / 4 );
+                const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + 19 * ts.x + ( m_asmShowSourceLocation ? 36 * ts.x : 0 );
+                const auto minAddr = m_asm[clipper.DisplayStart].addr;
+                const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
+                const auto mjl = m_maxJumpLevel;
+                const auto JumpArrow = JumpArrowBase * ts.y / 15;
+
+                int i = -1;
+                for( auto& v : m_jumpTable )
+                {
+                    i++;
+                    if( v.second.min > maxAddr || v.second.max < minAddr ) continue;
+                    const auto col = GetHsvColor( i, 0 );
+                    if( v.first >= minAddr && v.first <= maxAddr )
+                    {
+                        auto iit = std::lower_bound( insList.begin(), insList.end(), v.first );
+                        assert( iit != insList.end() );
+                        const auto y = ( iit - insList.begin() ) * th;
+                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow + 1, y + th2 ), col );
+                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 - th4 ), col );
+                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 + th4 ), col );
+                    }
+                    for( auto& s : v.second.source )
+                    {
+                        if( s >= minAddr && s <= maxAddr )
+                        {
+                            auto iit = std::lower_bound( insList.begin(), insList.end(), s );
+                            assert( iit != insList.end() );
+                            const auto y = ( iit - insList.begin() ) * th;
+                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), col );
+                        }
+                    }
+                    auto it0 = std::lower_bound( insList.begin(), insList.end(), v.second.min );
+                    auto it1 = std::lower_bound( insList.begin(), insList.end(), v.second.max );
+                    const auto y0 = ( it0 == insList.end() || *it0 != v.second.min ) ? -th : ( it0 - insList.begin() ) * th;
+                    const auto y1 = it1 == insList.end() ? ( insList.size() + 1 ) * th  : ( it1 - insList.begin() ) * th;
+                    draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y1 + th2 ), col );
+                }
+            }
+        }
+    }
+
+    if( m_font ) ImGui::PopFont();
+    ImGui::EndChild();
+
+    return jumpOut;
 }
 
 static void PrintPercentage( float val )
@@ -690,7 +729,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
             TextDisabledUnformatted( buf );
             if( ImGui::IsItemClicked() )
             {
-                m_showAsm = true;
+                m_displayMode = DisplayMixed;
                 m_currentAddr = (*addresses)[0];
                 m_targetAddr = (*addresses)[0];
             }
@@ -790,7 +829,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                     m_currentAddr = line.addr;
                     m_targetLine = srcline;
                     m_selectedLine = srcline;
-                    m_showAsm = false;
+                    m_displayMode = DisplayMixed;
                 }
             }
             ImGui::SameLine( 0, 0 );

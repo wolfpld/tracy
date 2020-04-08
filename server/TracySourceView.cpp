@@ -864,12 +864,23 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                 ImGui::Text( "%s:%i", fileName, srcline );
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
-                if( !m_lines.empty() && m_file == fileName && ImGui::IsItemClicked() )
+                if( ImGui::IsItemClicked() )
                 {
-                    m_currentAddr = line.addr;
-                    m_targetLine = srcline;
-                    m_selectedLine = srcline;
-                    m_displayMode = DisplayMixed;
+                    if( m_file == fileName )
+                    {
+                        m_currentAddr = line.addr;
+                        m_targetLine = srcline;
+                        m_selectedLine = srcline;
+                        m_displayMode = DisplayMixed;
+                    }
+                    else if( SourceFileValid( fileName, worker.GetCaptureTime() ) )
+                    {
+                        ParseSource( fileName, &worker );
+                        m_currentAddr = line.addr;
+                        m_targetLine = srcline;
+                        m_selectedLine = srcline;
+                        m_displayMode = DisplayMixed;
+                    }
                 }
             }
             ImGui::SameLine( 0, 0 );

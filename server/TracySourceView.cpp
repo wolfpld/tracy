@@ -376,6 +376,46 @@ void SourceView::RenderSymbolView( const Worker& worker )
         TextFocused( "Symbol:", worker.GetString( sym->name ) );
     }
 
+    auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
+    if( inlineList )
+    {
+        const auto symEnd = m_baseAddr + m_codeLen;
+        Vector<uint64_t> symInline( m_baseAddr );
+        while( *inlineList < symEnd )
+        {
+            if( *inlineList != m_baseAddr )
+            {
+                symInline.push_back_non_empty( *inlineList );
+            }
+            inlineList++;
+        }
+
+        ImGui::TextDisabled( "Function:" );
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth( -1 );
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        if( ImGui::BeginCombo( "", worker.GetString( sym->name ), ImGuiComboFlags_HeightLargest ) )
+        {
+            for( auto& v : symInline )
+            {
+                auto isym = worker.GetSymbolData( v );
+                assert( isym );
+                ImGui::PushID( v );
+                if( ImGui::Selectable( worker.GetString( isym->name ), v == m_symAddr ) )
+                {
+                    m_symAddr = v;
+                }
+                ImGui::PopID();
+                ImGui::SameLine();
+                char tmp[32];
+                sprintf( tmp, "(0x%x)", v );
+                TextDisabledUnformatted( tmp );
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopStyleVar();
+    }
+
     TextDisabledUnformatted( "Mode:" );
     ImGui::SameLine();
     ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );

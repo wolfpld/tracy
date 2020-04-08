@@ -66,11 +66,12 @@ private:
     void RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, const Worker* worker );
     void RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker, uint64_t& jumpOut );
 
+    void SelectLine( uint32_t line, const Worker* worker );
+
     ImFont* m_font;
     const char* m_file;
     uint32_t m_fileStringIdx;
     uint64_t m_symAddr;
-    uint64_t m_currentAddr;
     uint64_t m_baseAddr;
     uint64_t m_targetAddr;
     char* m_data;
@@ -92,6 +93,7 @@ private:
     bool m_showJumps;
 
     unordered_flat_map<uint32_t, uint32_t> m_sourceFiles;
+    unordered_flat_set<uint64_t> m_selectedAddresses;
 };
 
 }

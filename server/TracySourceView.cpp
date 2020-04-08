@@ -25,7 +25,6 @@ SourceView::SourceView( ImFont* font )
     , m_file( nullptr )
     , m_fileStringIdx( 0 )
     , m_symAddr( 0 )
-    , m_currentAddr( 0 )
     , m_targetAddr( 0 )
     , m_data( nullptr )
     , m_dataSize( 0 )
@@ -51,7 +50,6 @@ void SourceView::OpenSource( const char* fileName, int line )
     m_targetAddr = 0;
     m_baseAddr = 0;
     m_symAddr = 0;
-    m_currentAddr = 0;
     m_sourceFiles.clear();
 
     ParseSource( fileName, nullptr );
@@ -61,15 +59,16 @@ void SourceView::OpenSource( const char* fileName, int line )
 void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker )
 {
     m_targetLine = line;
-    m_selectedLine = line;
     m_targetAddr = symAddr;
     m_baseAddr = baseAddr;
     m_symAddr = symAddr;
-    m_currentAddr = symAddr;
     m_sourceFiles.clear();
+    m_selectedAddresses.clear();
+    m_selectedAddresses.emplace( symAddr );
 
     ParseSource( fileName, &worker );
     Disassemble( baseAddr, worker );
+    SelectLine( line, &worker );
 
     if( !m_lines.empty() )
     {
@@ -581,7 +580,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 {
                     ParseSource( fstr, &worker );
                     m_targetLine = v.second;
-                    m_selectedLine = v.second;
+                    SelectLine( v.second, &worker );
                 }
                 ImGui::PopID();
             }
@@ -801,11 +800,11 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     TextDisabledUnformatted( buf );
     ImGui::SameLine( 0, ty );
 
+    uint32_t match = 0;
     if( m_symAddr != 0 )
     {
         assert( worker );
         const auto stw = ImGui::CalcTextSize( " " ).x;
-        uint32_t match = 0;
         auto addresses = worker->GetAddressesForLocation( m_fileStringIdx, lineNum );
         if( addresses )
         {
@@ -820,12 +819,6 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
             sprintf( buf, "@%s", asmString );
             const auto asmsz = strlen( buf );
             TextDisabledUnformatted( buf );
-            if( ImGui::IsItemClicked() )
-            {
-                m_displayMode = DisplayMixed;
-                m_currentAddr = (*addresses)[0];
-                m_targetAddr = (*addresses)[0];
-            }
             ImGui::SameLine( 0, 0 );
             ImGui::ItemSize( ImVec2( stw * ( 8 - asmsz ), ty ), 0 );
         }
@@ -838,6 +831,16 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     ImGui::SameLine( 0, ty );
     ImGui::TextUnformatted( line.begin, line.end );
 
+    if( match > 0 && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, ty+1 ) ) )
+    {
+        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x11FFFFFF );
+        if( ImGui::IsMouseClicked( 0 ) )
+        {
+            m_displayMode = DisplayMixed;
+            SelectLine( lineNum, worker );
+        }
+    }
+
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
@@ -847,7 +850,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ImGui::GetWindowWidth();
     const auto wpos = ImGui::GetCursorScreenPos();
-    if( line.addr == m_currentAddr )
+    if( m_selectedAddresses.find( line.addr ) != m_selectedAddresses.end() )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF333322 );
     }
@@ -884,6 +887,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     buf[16] = '\0';
     TextDisabledUnformatted( buf );
 
+    bool lineHovered = false;
     if( m_asmShowSourceLocation )
     {
         const auto stw = ImGui::CalcTextSize( " " ).x;
@@ -912,6 +916,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             TextDisabledUnformatted( buf );
             if( ImGui::IsItemHovered() )
             {
+                lineHovered = true;
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
                 ImGui::Text( "%s:%i", fileName, srcline );
@@ -921,17 +926,15 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                 {
                     if( m_file == fileName )
                     {
-                        m_currentAddr = line.addr;
                         m_targetLine = srcline;
-                        m_selectedLine = srcline;
+                        SelectLine( srcline, &worker );
                         m_displayMode = DisplayMixed;
                     }
                     else if( SourceFileValid( fileName, worker.GetCaptureTime() ) )
                     {
                         ParseSource( fileName, &worker );
-                        m_currentAddr = line.addr;
                         m_targetLine = srcline;
-                        m_selectedLine = srcline;
+                        SelectLine( srcline, &worker );
                         m_displayMode = DisplayMixed;
                     }
                 }
@@ -995,7 +998,8 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                     if( ImGui::IsItemClicked() )
                     {
                         m_targetAddr = line.jumpAddr;
-                        m_currentAddr = line.jumpAddr;
+                        m_selectedAddresses.clear();
+                        m_selectedAddresses.emplace( line.jumpAddr );
                     }
                 }
             }
@@ -1007,8 +1011,30 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
         }
     }
 
+    if( lineHovered )
+    {
+        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x11FFFFFF );
+    }
+
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
+void SourceView::SelectLine( uint32_t line, const Worker* worker )
+{
+    m_selectedLine = line;
+    m_selectedAddresses.clear();
+    if( m_symAddr == 0 ) return;
+    assert( worker );
+    auto addresses = worker->GetAddressesForLocation( m_fileStringIdx, line );
+    if( addresses )
+    {
+        const auto& addr = *addresses;
+        if( !ImGui::GetIO().KeyCtrl ) m_targetAddr = addr[0];
+        for( auto& v : addr )
+        {
+            m_selectedAddresses.emplace( v );
+        }
+    }
+}
 
 }

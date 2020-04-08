@@ -193,14 +193,21 @@ void View::InitTextEditor( ImFont* font )
     m_sourceViewFile = nullptr;
 }
 
-void View::SetTextEditorFile( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr )
+void View::ViewSource( const char* fileName, int line )
+{
+    assert( fileName );
+    m_sourceViewFile = fileName;
+    m_sourceView->OpenSource( fileName, line );
+}
+
+void View::ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr )
 {
     assert( fileName || symAddr );
     m_sourceViewFile = fileName ? fileName : (const char*)~uint64_t( 0 );
-    m_sourceView->Open( fileName, line, baseAddr, symAddr, m_worker );
+    m_sourceView->OpenSymbol( fileName, line, baseAddr, symAddr, m_worker );
 }
 
-bool View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
+bool View::ViewDispatch( const char* fileName, int line, uint64_t symAddr )
 {
     if( line == 0 )
     {
@@ -218,7 +225,7 @@ bool View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
     {
         if( line != 0 )
         {
-            SetTextEditorFile( fileName, line, 0, 0 );
+            ViewSource( fileName, line );
             return true;
         }
         return false;
@@ -242,7 +249,7 @@ bool View::SetTextEditorFile( const char* fileName, int line, uint64_t symAddr )
         }
         if( symlen != 0 || line != 0 )
         {
-            SetTextEditorFile( fileName, line, baseAddr, symAddr );
+            ViewSymbol( fileName, line, baseAddr, symAddr );
             return true;
         }
         return false;
@@ -3504,7 +3511,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
 
                         if( ImGui::IsMouseClicked( 0 ) )
                         {
-                            SetTextEditorFile( file, line, frame->data[i].symAddr );
+                            ViewDispatch( file, line, frame->data[i].symAddr );
                         }
                         else if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
                         {
@@ -6001,7 +6008,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
                     }
                     if( ImGui::IsItemClicked( 1 ) )
                     {
-                        if( !view.SetTextEditorFile( fileName, frame->line, frame->symAddr ) )
+                        if( !view.ViewDispatch( fileName, frame->line, frame->symAddr ) )
                         {
                             anim.Enable( frame, 0.5f );
                         }
@@ -6059,7 +6066,7 @@ void DrawZoneTrace( T zone, const std::vector<T>& trace, const Worker& worker, B
             }
             if( ImGui::IsItemClicked( 1 ) )
             {
-                if( !view.SetTextEditorFile( fileName, frame->line, frame->symAddr ) )
+                if( !view.ViewDispatch( fileName, frame->line, frame->symAddr ) )
                 {
                     anim.Enable( frame, 0.5f );
                 }
@@ -6235,7 +6242,7 @@ void View::DrawZoneInfoWindow()
         }
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
         {
-            SetTextEditorFile( fileName, srcloc.line, 0 );
+            ViewSource( fileName, srcloc.line );
         }
         if( hilite )
         {
@@ -6758,7 +6765,7 @@ void View::DrawZoneInfoWindow()
         {
             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
             {
-                SetTextEditorFile( fileName, srcloc.line, 0 );
+                ViewSource( fileName, srcloc.line );
             }
             else
             {
@@ -7188,7 +7195,7 @@ void View::DrawGpuInfoWindow()
         }
         if( ImGui::Button( ICON_FA_FILE_ALT " Source" ) )
         {
-            SetTextEditorFile( fileName, srcloc.line, 0 );
+            ViewSource( fileName, srcloc.line );
         }
         if( hilite )
         {
@@ -7295,7 +7302,7 @@ void View::DrawGpuInfoWindow()
         {
             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
             {
-                SetTextEditorFile( fileName, srcloc.line, 0 );
+                ViewSource( fileName, srcloc.line );
             }
             else
             {
@@ -7871,7 +7878,7 @@ void View::DrawOptions()
                         {
                             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                             {
-                                SetTextEditorFile( fileName, sl.line, 0 );
+                                ViewSource( fileName, sl.line );
                             }
                             else
                             {
@@ -7945,7 +7952,7 @@ void View::DrawOptions()
                         {
                             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                             {
-                                SetTextEditorFile( fileName, sl.line, 0 );
+                                ViewSource( fileName, sl.line );
                             }
                             else
                             {
@@ -8019,7 +8026,7 @@ void View::DrawOptions()
                         {
                             if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                             {
-                                SetTextEditorFile( fileName, sl.line, 0 );
+                                ViewSource( fileName, sl.line );
                             }
                             else
                             {
@@ -8590,7 +8597,7 @@ void View::DrawFindZone()
                 {
                     if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
                     {
-                        SetTextEditorFile( fileName, srcloc.line, 0 );
+                        ViewSource( fileName, srcloc.line );
                     }
                     else
                     {
@@ -11213,7 +11220,7 @@ void View::DrawStatistics()
                 {
                     if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
                     {
-                        SetTextEditorFile( file, srcloc.line, 0 );
+                        ViewSource( file, srcloc.line );
                     }
                     else
                     {
@@ -11541,14 +11548,14 @@ void View::DrawStatistics()
                     {
                         if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
                         {
-                            SetTextEditorFile( file, line, codeAddr, v.symAddr );
+                            ViewSymbol( file, line, codeAddr, v.symAddr );
                         }
                         else if( symlen != 0 )
                         {
                             uint32_t len;
                             if( m_worker.GetSymbolCode( codeAddr, len ) )
                             {
-                                SetTextEditorFile( nullptr, 0, codeAddr, v.symAddr );
+                                ViewSymbol( nullptr, 0, codeAddr, v.symAddr );
                             }
                             else
                             {
@@ -11837,7 +11844,7 @@ void View::DrawCallstackWindow()
                         if( sym )
                         {
                             const auto symtxt = m_worker.GetString( sym->file );
-                            if( !SetTextEditorFile( symtxt, sym->line, frame.symAddr ) )
+                            if( !ViewDispatch( symtxt, sym->line, frame.symAddr ) )
                             {
                                 m_callstackBuzzAnim.Enable( bidx, 0.5f );
                             }
@@ -11849,7 +11856,7 @@ void View::DrawCallstackWindow()
                     }
                     else
                     {
-                        if( !SetTextEditorFile( txt, frame.line, frame.symAddr ) )
+                        if( !ViewDispatch( txt, frame.line, frame.symAddr ) )
                         {
                             m_callstackBuzzAnim.Enable( bidx, 0.5f );
                         }
@@ -12902,7 +12909,11 @@ void View::DrawLockInfoWindow()
     ImGui::Text( "%s:%i", fileName, srcloc.line );
     if( ImGui::IsItemClicked( 1 ) )
     {
-        if( !SetTextEditorFile( fileName, srcloc.line, 0 ) )
+        if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+        {
+            ViewSource( fileName, srcloc.line );
+        }
+        else
         {
             m_lockInfoAnim.Enable( m_lockInfoWindow, 0.5f );
         }
@@ -13474,7 +13485,7 @@ void View::DrawSampleParents()
     }
     if( ImGui::IsItemClicked( 1 ) )
     {
-        SetTextEditorFile( callFile, symbol->callLine, m_sampleParents.symAddr );
+        ViewDispatch( callFile, symbol->callLine, m_sampleParents.symAddr );
     }
     TextDisabledUnformatted( "Entry point:" );
     ImGui::SameLine();
@@ -13489,7 +13500,7 @@ void View::DrawSampleParents()
     }
     if( ImGui::IsItemClicked( 1 ) )
     {
-        SetTextEditorFile( file, symbol->line, m_sampleParents.symAddr );
+        ViewDispatch( file, symbol->line, m_sampleParents.symAddr );
     }
     ImGui::SameLine();
     ImGui::Spacing();
@@ -13695,7 +13706,7 @@ void View::DrawSampleParents()
                     if( sym )
                     {
                         const auto symtxt = m_worker.GetString( sym->file );
-                        if( !SetTextEditorFile( symtxt, sym->line, frame.symAddr ) )
+                        if( !ViewDispatch( symtxt, sym->line, frame.symAddr ) )
                         {
                             m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
                         }
@@ -13707,7 +13718,7 @@ void View::DrawSampleParents()
                 }
                 else
                 {
-                    if( !SetTextEditorFile( txt, frame.line, frame.symAddr ) )
+                    if( !ViewDispatch( txt, frame.line, frame.symAddr ) )
                     {
                         m_sampleParentBuzzAnim.Enable( bidx, 0.5f );
                     }
@@ -14688,7 +14699,7 @@ void View::DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrame
             }
             if( ImGui::IsItemClicked( 1 ) )
             {
-                if( !SetTextEditorFile( fileName, frame.line, frame.symAddr ) )
+                if( !ViewDispatch( fileName, frame.line, frame.symAddr ) )
                 {
                     m_callstackTreeBuzzAnim.Enable( idx, 0.5f );
                 }

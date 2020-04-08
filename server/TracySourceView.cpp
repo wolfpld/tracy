@@ -45,7 +45,21 @@ SourceView::~SourceView()
     delete[] m_data;
 }
 
-void SourceView::Open( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker )
+void SourceView::OpenSource( const char* fileName, int line )
+{
+    m_targetLine = line;
+    m_selectedLine = line;
+    m_targetAddr = 0;
+    m_baseAddr = 0;
+    m_symAddr = 0;
+    m_currentAddr = 0;
+    m_showAsm = false;
+
+    ParseSource( fileName, nullptr );
+    assert( !m_lines.empty() );
+}
+
+void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker )
 {
     m_targetLine = line;
     m_selectedLine = line;
@@ -54,10 +68,19 @@ void SourceView::Open( const char* fileName, int line, uint64_t baseAddr, uint64
     m_symAddr = symAddr;
     m_currentAddr = symAddr;
 
+    ParseSource( fileName, &worker );
+
+    if( m_lines.empty() ) m_showAsm = true;
+    if( !Disassemble( baseAddr, worker ) ) m_showAsm = false;
+    assert( m_showAsm || !m_lines.empty() );
+}
+
+void SourceView::ParseSource( const char* fileName, const Worker* worker )
+{
     if( m_file != fileName )
     {
         m_file = fileName;
-        m_fileStringIdx = worker.FindStringIdx( fileName );
+        m_fileStringIdx = worker ? worker->FindStringIdx( fileName ) : 0;
         m_lines.clear();
         if( fileName )
         {
@@ -96,10 +119,6 @@ void SourceView::Open( const char* fileName, int line, uint64_t baseAddr, uint64
             }
         }
     }
-
-    if( m_lines.empty() ) m_showAsm = true;
-    if( !Disassemble( baseAddr, worker ) ) m_showAsm = false;
-    assert( m_showAsm || !m_lines.empty() );
 }
 
 bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
@@ -587,7 +606,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
             }
             if( line > 0 || sym->size.Val() > 0 )
             {
-                Open( file, line, jumpOut, jumpOut, worker );
+                OpenSymbol( file, line, jumpOut, jumpOut, worker );
             }
         }
     }

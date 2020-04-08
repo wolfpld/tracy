@@ -42,17 +42,19 @@ public:
     SourceView( ImFont* font );
     ~SourceView();
 
-    void Open( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker );
+    void OpenSource( const char* fileName, int line );
+    void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker );
     void Render( const Worker& worker );
 
 private:
+    void ParseSource( const char* fileName, const Worker* worker );
+    bool Disassemble( uint64_t symAddr, const Worker& worker );
+
     void RenderSimpleSourceView();
     void RenderSymbolView( const Worker& worker );
 
     void RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, const Worker* worker );
     void RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker, uint64_t& jumpOut );
-
-    bool Disassemble( uint64_t symAddr, const Worker& worker );
 
     ImFont* m_font;
     const char* m_file;

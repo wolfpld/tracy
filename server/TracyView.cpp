@@ -11393,11 +11393,11 @@ void View::DrawStatistics()
         {
             if( m_statSelf )
             {
-                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.excl > r.excl; } );
+                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.excl != r.excl ? l.excl > r.excl : l.symAddr < r.symAddr; } );
             }
             else
             {
-                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.incl > r.incl; } );
+                pdqsort_branchless( data.begin(), data.end(), []( const auto& l, const auto& r ) { return l.incl != l.incl ? l.incl > r.incl : l.symAddr < r.symAddr; } );
             }
 
             ImGui::BeginChild( "##statisticsSampling" );

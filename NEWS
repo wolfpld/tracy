@@ -27,16 +27,23 @@ v0.7 (xxxx-xx-xx)
 - Added time percentage display to instrumentation statistics.
 - Display of ghost zones (generated from automated call stack sampling).
 - Notify when empty labels display is enabled.
-- More reliable source file viewer.
-- Added display of profiling data to source file viewer.
 - Small fragments of executable code will be now sent from client to server.
 - Added notification about query backlog.
 - Fixed performance problem with query backlog.
-- Source file view can now display disassembly of executable code.
 - Display number of in-flight queries, in addition to query backlog.
 - Improved failure reports.
 - The capture utility will connect to localhost by default.
 - Added optional support for QPC timer on windows.
+- Complete rewrite of source file viewer. It is now 100% reliable when going
+  to a source location.
+- Symbol source view was added.
+  - Extension of source file viewer.
+  - Can display source file, assembly view, or both at the same time.
+  - May include display of statistical profiling data.
+  - Ability to switch between source files which were used to build the
+    symbol.
+  - Ability to switch between inlined functions which are incorporated into
+    the symbol.
 
 v0.6.3 (2020-02-13)
 -------------------

@@ -721,14 +721,52 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                     i++;
                     if( v.second.min > maxAddr || v.second.max < minAddr ) continue;
                     const auto col = GetHsvColor( i, 0 );
+
+                    auto it0 = std::lower_bound( insList.begin(), insList.end(), v.second.min );
+                    auto it1 = std::lower_bound( insList.begin(), insList.end(), v.second.max );
+                    const auto y0 = ( it0 == insList.end() || *it0 != v.second.min ) ? -th : ( it0 - insList.begin() ) * th;
+                    const auto y1 = it1 == insList.end() ? ( insList.size() + 1 ) * th  : ( it1 - insList.begin() ) * th;
+
+                    float thickness = 1;
+                    if( ImGui::IsMouseHoveringRect( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ) - JumpSeparation / 2, y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ) + JumpSeparation / 2, y1 + th2 ) ) )
+                    {
+                        thickness = 2;
+                        if( m_font ) ImGui::PopFont();
+                        ImGui::BeginTooltip();
+                        char tmp[32];
+                        sprintf( tmp, "+%" PRIu64, v.first - m_baseAddr );
+                        TextFocused( "Jump target:", tmp );
+                        ImGui::SameLine();
+                        sprintf( tmp, "(0x%" PRIx64 ")", v.first );
+                        TextDisabledUnformatted( tmp );
+                        uint32_t srcline;
+                        const auto srcidx = worker.GetLocationForAddress( v.first, srcline );
+                        if( srcline != 0 )
+                        {
+                            const auto fileName = worker.GetString( srcidx );
+                            const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
+                            TextDisabledUnformatted( "Source location:" );
+                            ImGui::SameLine();
+                            SmallColorBox( fileColor );
+                            ImGui::SameLine();
+                            ImGui::Text( "%s:%i", fileName, srcline );
+                        }
+                        TextFocused( "Jump range:", MemSizeToString( v.second.max - v.second.min ) );
+                        TextFocused( "Jump sources:", RealToString( v.second.source.size() ) );
+                        ImGui::EndTooltip();
+                        if( m_font ) ImGui::PushFont( m_font );
+                    }
+
+                    draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y1 + th2 ), col, thickness );
+
                     if( v.first >= minAddr && v.first <= maxAddr )
                     {
                         auto iit = std::lower_bound( insList.begin(), insList.end(), v.first );
                         assert( iit != insList.end() );
                         const auto y = ( iit - insList.begin() ) * th;
-                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow + 1, y + th2 ), col );
-                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 - th4 ), col );
-                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 + th4 ), col );
+                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow + 1, y + th2 ), col, thickness );
+                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 - th4 ), col, thickness );
+                        draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow - th4, y + th2 + th4 ), col, thickness );
                     }
                     for( auto& s : v.second.source )
                     {
@@ -737,14 +775,9 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                             auto iit = std::lower_bound( insList.begin(), insList.end(), s );
                             assert( iit != insList.end() );
                             const auto y = ( iit - insList.begin() ) * th;
-                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), col );
+                            draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y + th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + JumpArrow, y + th2 ), col, thickness );
                         }
                     }
-                    auto it0 = std::lower_bound( insList.begin(), insList.end(), v.second.min );
-                    auto it1 = std::lower_bound( insList.begin(), insList.end(), v.second.max );
-                    const auto y0 = ( it0 == insList.end() || *it0 != v.second.min ) ? -th : ( it0 - insList.begin() ) * th;
-                    const auto y1 = it1 == insList.end() ? ( insList.size() + 1 ) * th  : ( it1 - insList.begin() ) * th;
-                    draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y1 + th2 ), col );
                 }
             }
         }

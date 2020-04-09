@@ -53,6 +53,8 @@ public:
     void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker );
     void Render( const Worker& worker );
 
+    void CalcInlineStats( bool val ) { m_calcInlineStats = val; }
+
 private:
     void ParseSource( const char* fileName, const Worker* worker );
     bool Disassemble( uint64_t symAddr, const Worker& worker );

@@ -11585,6 +11585,7 @@ void View::DrawStatistics()
                         if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
                         {
                             ViewSymbol( file, line, codeAddr, v.symAddr );
+                            if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
                         }
                         else if( symlen != 0 )
                         {
@@ -11592,6 +11593,7 @@ void View::DrawStatistics()
                             if( m_worker.GetSymbolCode( codeAddr, len ) )
                             {
                                 ViewSymbol( nullptr, 0, codeAddr, v.symAddr );
+                                if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
                             }
                             else
                             {
@@ -11741,6 +11743,7 @@ void View::DrawStatistics()
                                     if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
                                     {
                                         ViewSymbol( file, line, codeAddr, iv.symAddr );
+                                        if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
                                     }
                                     else if( symlen != 0 )
                                     {
@@ -11748,6 +11751,7 @@ void View::DrawStatistics()
                                         if( m_worker.GetSymbolCode( codeAddr, len ) )
                                         {
                                             ViewSymbol( nullptr, 0, codeAddr, iv.symAddr );
+                                            if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
                                         }
                                         else
                                         {

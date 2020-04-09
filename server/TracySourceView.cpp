@@ -890,7 +890,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
         {
             for( auto& addr : *addresses )
             {
-                match += ( addr >= m_symAddr && addr < m_symAddr + m_codeLen );
+                match += ( addr >= m_baseAddr && addr < m_baseAddr + m_codeLen );
             }
         }
         if( match > 0 )

@@ -857,11 +857,14 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
         ImGui::SameLine( 0, ty );
     }
 
+    const auto lineCount = m_lines.size();
+    const auto tmp = RealToString( lineCount );
+    const auto maxLine = strlen( tmp );
     const auto lineString = RealToString( lineNum );
     const auto linesz = strlen( lineString );
     char buf[16];
-    memset( buf, ' ', 7 - linesz );
-    memcpy( buf + 7 - linesz, lineString, linesz+1 );
+    memset( buf, ' ', maxLine - linesz );
+    memcpy( buf + maxLine - linesz, lineString, linesz+1 );
     TextDisabledUnformatted( buf );
     ImGui::SameLine( 0, ty );
 

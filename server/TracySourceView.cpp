@@ -771,6 +771,12 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                         TextFocused( "Jump sources:", RealToString( v.second.source.size() ) );
                         ImGui::EndTooltip();
                         if( m_font ) ImGui::PushFont( m_font );
+                        if( ImGui::IsMouseClicked( 0 ) )
+                        {
+                            m_targetAddr = v.first;
+                            m_selectedAddresses.clear();
+                            m_selectedAddresses.emplace( v.first );
+                        }
                     }
 
                     draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y1 + th2 ), col, thickness );

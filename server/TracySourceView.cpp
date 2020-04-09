@@ -899,10 +899,10 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     if( match > 0 && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, ty+1 ) ) )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x11FFFFFF );
-        if( ImGui::IsMouseClicked( 0 ) )
+        if( ImGui::IsMouseClicked( 0 ) || ImGui::IsMouseClicked( 1 ) )
         {
             m_displayMode = DisplayMixed;
-            SelectLine( lineNum, worker );
+            SelectLine( lineNum, worker, ImGui::IsMouseClicked( 1 ) );
         }
         else
         {
@@ -1116,7 +1116,7 @@ void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& wor
     if( addresses )
     {
         const auto& addr = *addresses;
-        if( changeAsmLine && !ImGui::GetIO().KeyCtrl )
+        if( changeAsmLine )
         {
             if( targetAddr != 0 )
             {

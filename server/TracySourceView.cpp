@@ -473,23 +473,26 @@ void SourceView::RenderSymbolView( const Worker& worker )
     {
         for( auto& ip : *ipmap )
         {
-            auto frame = worker.GetCallstackFrame( ip.first );
-            if( frame )
+            if( m_file )
             {
-                auto ffn = worker.GetString( frame->data[0].file );
-                if( strcmp( ffn, m_file ) == 0 )
+                auto frame = worker.GetCallstackFrame( ip.first );
+                if( frame )
                 {
-                    const auto line = frame->data[0].line;
-                    auto it = ipcountSrc.find( line );
-                    if( it == ipcountSrc.end() )
+                    auto ffn = worker.GetString( frame->data[0].file );
+                    if( strcmp( ffn, m_file ) == 0 )
                     {
-                        ipcountSrc.emplace( line, ip.second );
+                        const auto line = frame->data[0].line;
+                        auto it = ipcountSrc.find( line );
+                        if( it == ipcountSrc.end() )
+                        {
+                            ipcountSrc.emplace( line, ip.second );
+                        }
+                        else
+                        {
+                            it->second += ip.second;
+                        }
+                        iptotalSrc += ip.second;
                     }
-                    else
-                    {
-                        it->second += ip.second;
-                    }
-                    iptotalSrc += ip.second;
                 }
             }
 

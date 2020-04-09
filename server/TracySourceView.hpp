@@ -70,6 +70,8 @@ private:
     void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
     void SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker );
 
+    void GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, const Worker& worker );
+
     ImFont* m_font;
     const char* m_file;
     uint32_t m_fileStringIdx;
@@ -87,6 +89,7 @@ private:
     DecayValue<uint64_t> m_highlightAddr;
     bool m_asmRelative;
     bool m_asmShowSourceLocation;
+    bool m_calcInlineStats;
 
     std::vector<Line> m_lines;
     std::vector<AsmLine> m_asm;

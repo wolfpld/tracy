@@ -36,6 +36,7 @@ SourceView::SourceView( ImFont* font )
     , m_highlightAddr( 0 )
     , m_asmRelative( false )
     , m_asmShowSourceLocation( true )
+    , m_calcInlineStats( true )
     , m_showJumps( true )
 {
 }
@@ -416,7 +417,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
             inlineList++;
         }
 
-        ImGui::TextDisabled( ICON_FA_SITEMAP " Function:" );
+        SmallCheckbox( ICON_FA_SITEMAP " Function:", &m_calcInlineStats );
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
@@ -472,47 +473,30 @@ void SourceView::RenderSymbolView( const Worker& worker )
 
     uint32_t iptotalSrc = 0, iptotalAsm = 0;
     unordered_flat_map<uint64_t, uint32_t> ipcountSrc, ipcountAsm;
-    auto ipmap = worker.GetSymbolInstructionPointers( m_symAddr );
-    if( ipmap )
+    if( m_calcInlineStats )
     {
-        for( auto& ip : *ipmap )
+        GatherIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, worker );
+    }
+    else
+    {
+        GatherIpStats( m_baseAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, worker );
+        auto iptr = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
+        if( iptr )
         {
-            if( m_file )
+            const auto symEnd = m_baseAddr + m_codeLen;
+            while( *iptr < symEnd )
             {
-                auto frame = worker.GetCallstackFrame( ip.first );
-                if( frame )
-                {
-                    auto ffn = worker.GetString( frame->data[0].file );
-                    if( strcmp( ffn, m_file ) == 0 )
-                    {
-                        const auto line = frame->data[0].line;
-                        auto it = ipcountSrc.find( line );
-                        if( it == ipcountSrc.end() )
-                        {
-                            ipcountSrc.emplace( line, ip.second );
-                        }
-                        else
-                        {
-                            it->second += ip.second;
-                        }
-                        iptotalSrc += ip.second;
-                    }
-                }
+                GatherIpStats( *iptr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, worker );
+                iptr++;
             }
-
-            auto addr = worker.GetCanonicalPointer( ip.first );
-            assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
-            ipcountAsm.emplace( addr, ip.second );
-            iptotalAsm += ip.second;
         }
-
-        if( iptotalAsm > 0 )
-        {
-            ImGui::SameLine();
-            ImGui::Spacing();
-            ImGui::SameLine();
-            TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm ) );
-        }
+    }
+    if( iptotalAsm > 0 )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm ) );
     }
 
     ImGui::Separator();
@@ -1172,6 +1156,42 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
                 m_selectedAddressesHover.emplace( v );
             }
         }
+    }
+}
+
+void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, const Worker& worker )
+{
+    auto ipmap = worker.GetSymbolInstructionPointers( addr );
+    if( !ipmap ) return;
+    for( auto& ip : *ipmap )
+    {
+        if( m_file )
+        {
+            auto frame = worker.GetCallstackFrame( ip.first );
+            if( frame )
+            {
+                auto ffn = worker.GetString( frame->data[0].file );
+                if( strcmp( ffn, m_file ) == 0 )
+                {
+                    const auto line = frame->data[0].line;
+                    auto it = ipcountSrc.find( line );
+                    if( it == ipcountSrc.end() )
+                    {
+                        ipcountSrc.emplace( line, ip.second );
+                    }
+                    else
+                    {
+                        it->second += ip.second;
+                    }
+                    iptotalSrc += ip.second;
+                }
+            }
+        }
+
+        auto addr = worker.GetCanonicalPointer( ip.first );
+        assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
+        ipcountAsm.emplace( addr, ip.second );
+        iptotalAsm += ip.second;
     }
 }
 

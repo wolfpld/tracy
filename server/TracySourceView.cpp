@@ -1111,7 +1111,21 @@ void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& wor
         const auto& addr = *addresses;
         if( changeAsmLine && !ImGui::GetIO().KeyCtrl )
         {
-            m_targetAddr = targetAddr != 0 ? targetAddr : addr[0];
+            if( targetAddr != 0 )
+            {
+                m_targetAddr == targetAddr;
+            }
+            else
+            {
+                for( auto& v : addr )
+                {
+                    if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
+                    {
+                        m_targetAddr = v;
+                        break;
+                    }
+                }
+            }
         }
         for( auto& v : addr )
         {

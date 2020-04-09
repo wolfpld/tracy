@@ -416,7 +416,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        if( ImGui::BeginCombo( "##functionList", worker.GetString( sym->name ), ImGuiComboFlags_HeightLargest ) )
+        if( ImGui::BeginCombo( "##functionList", worker.GetString( sym->name ), ImGuiComboFlags_HeightLarge ) )
         {
             for( auto& v : symInline )
             {
@@ -585,7 +585,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        if( ImGui::BeginCombo( "##fileList", m_file, ImGuiComboFlags_HeightLargest ) )
+        if( ImGui::BeginCombo( "##fileList", m_file, ImGuiComboFlags_HeightLarge ) )
         {
             for( auto& v : m_sourceFiles )
             {

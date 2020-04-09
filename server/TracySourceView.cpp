@@ -326,7 +326,7 @@ void SourceView::Render( const Worker& worker )
 
     if( m_symAddr == 0 )
     {
-        if( m_file ) TextFocused( "File:", m_file );
+        if( m_file ) TextFocused( ICON_FA_FILE " File:", m_file );
         TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
         ImGui::SameLine();
         TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
@@ -384,18 +384,18 @@ void SourceView::RenderSymbolView( const Worker& worker )
         auto parent = worker.GetSymbolData( m_baseAddr );
         if( parent )
         {
-            TextFocused( "Symbol:", worker.GetString( parent->name ) );
+            TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", worker.GetString( parent->name ) );
         }
         else
         {
             char tmp[16];
             sprintf( tmp, "0x%x", m_baseAddr );
-            TextFocused( "Symbol:", tmp );
+            TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", tmp );
         }
     }
     else
     {
-        TextFocused( "Symbol:", worker.GetString( sym->name ) );
+        TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", worker.GetString( sym->name ) );
     }
 
     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
@@ -412,7 +412,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
             inlineList++;
         }
 
-        ImGui::TextDisabled( "Function:" );
+        ImGui::TextDisabled( ICON_FA_SITEMAP " Function:" );
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
@@ -449,7 +449,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
             ImGui::SameLine();
             ImGui::RadioButton( "Assembly", &m_displayMode, DisplayAsm );
             ImGui::SameLine();
-            ImGui::RadioButton( "Mixed", &m_displayMode, DisplayMixed );
+            ImGui::RadioButton( "Combined", &m_displayMode, DisplayMixed );
         }
     }
     else
@@ -463,7 +463,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        TextFocused( "Code size:", MemSizeToString( m_codeLen ) );
+        TextFocused( ICON_FA_WEIGHT_HANGING " Code size:", MemSizeToString( m_codeLen ) );
     }
 
     uint32_t iptotalSrc = 0, iptotalAsm = 0;
@@ -507,7 +507,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
-            TextFocused( "Samples:", RealToString( iptotalAsm ) );
+            TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm ) );
         }
     }
 
@@ -578,7 +578,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
             ImGui::EndTooltip();
         }
         ImGui::SameLine();
-        TextDisabledUnformatted( "File:" );
+        TextDisabledUnformatted( ICON_FA_FILE " File:" );
         ImGui::SameLine();
         const auto fileColor = GetHsvColor( m_fileStringIdx, 0 );
         SmallColorBox( fileColor );

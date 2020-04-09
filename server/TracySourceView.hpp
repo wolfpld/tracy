@@ -68,6 +68,7 @@ private:
 
     void SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
     void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
+    void SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker );
 
     ImFont* m_font;
     const char* m_file;
@@ -95,6 +96,7 @@ private:
 
     unordered_flat_map<uint32_t, uint32_t> m_sourceFiles;
     unordered_flat_set<uint64_t> m_selectedAddresses;
+    unordered_flat_set<uint64_t> m_selectedAddressesHover;
 
     uint32_t m_maxLine;
     int m_maxMnemonicLen;

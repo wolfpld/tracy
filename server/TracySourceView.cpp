@@ -617,6 +617,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
     if( m_font ) ImGui::PushFont( m_font );
 
+    m_selectedAddressesHover.clear();
     if( m_targetLine != 0 )
     {
         int lineNum = 1;
@@ -910,6 +911,10 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
             m_displayMode = DisplayMixed;
             SelectLine( lineNum, worker );
         }
+        else
+        {
+            SelectAsmLinesHover( m_fileStringIdx, lineNum, *worker );
+        }
     }
 
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
@@ -921,7 +926,11 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ImGui::GetWindowWidth();
     const auto wpos = ImGui::GetCursorScreenPos();
-    if( m_selectedAddresses.find( line.addr ) != m_selectedAddresses.end() )
+    if( m_selectedAddressesHover.find( line.addr ) != m_selectedAddressesHover.end() )
+    {
+        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x22FFFFFF );
+    }
+    else if( m_selectedAddresses.find( line.addr ) != m_selectedAddresses.end() )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF333322 );
     }
@@ -1132,6 +1141,22 @@ void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& wor
             if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
             {
                 m_selectedAddresses.emplace( v );
+            }
+        }
+    }
+}
+
+void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker )
+{
+    assert( m_selectedAddressesHover.empty() );
+    auto addresses = worker.GetAddressesForLocation( file, line );
+    if( addresses )
+    {
+        for( auto& v : *addresses )
+        {
+            if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
+            {
+                m_selectedAddressesHover.emplace( v );
             }
         }
     }

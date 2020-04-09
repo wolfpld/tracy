@@ -1129,7 +1129,10 @@ void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& wor
         }
         for( auto& v : addr )
         {
-            m_selectedAddresses.emplace( v );
+            if( v >= m_baseAddr && v < m_baseAddr + m_codeLen )
+            {
+                m_selectedAddresses.emplace( v );
+            }
         }
     }
 }

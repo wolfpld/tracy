@@ -490,6 +490,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
                 iptr++;
             }
         }
+        iptotalSrc = iptotalAsm;
     }
     if( iptotalAsm > 0 )
     {

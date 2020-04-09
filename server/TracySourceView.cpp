@@ -881,6 +881,8 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
                 match += ( addr >= m_baseAddr && addr < m_baseAddr + m_codeLen );
             }
         }
+        const auto tmp = RealToString( m_asm.size() );
+        const auto maxAsm = strlen( tmp ) + 1;
         if( match > 0 )
         {
             const auto asmString = RealToString( match );
@@ -888,11 +890,11 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
             const auto asmsz = strlen( buf );
             TextDisabledUnformatted( buf );
             ImGui::SameLine( 0, 0 );
-            ImGui::ItemSize( ImVec2( stw * ( 8 - asmsz ), ty ), 0 );
+            ImGui::ItemSize( ImVec2( stw * ( maxAsm - asmsz ), ty ), 0 );
         }
         else
         {
-            ImGui::ItemSize( ImVec2( stw * 8, ty ), 0 );
+            ImGui::ItemSize( ImVec2( stw * maxAsm, ty ), 0 );
         }
     }
 

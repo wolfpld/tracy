@@ -995,11 +995,11 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                 ImGui::Text( "%s:%i", fileName, srcline );
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
-                if( ImGui::IsItemClicked() )
+                if( ImGui::IsItemClicked( 0 ) || ImGui::IsItemClicked( 1 ) )
                 {
                     if( m_file == fileName )
                     {
-                        m_targetLine = srcline;
+                        if( ImGui::IsMouseClicked( 1 ) ) m_targetLine = srcline;
                         SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;
                     }

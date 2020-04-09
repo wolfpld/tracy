@@ -30,6 +30,8 @@ SourceView::SourceView( ImFont* font )
     , m_dataSize( 0 )
     , m_targetLine( 0 )
     , m_selectedLine( 0 )
+    , m_hoveredLine( 0 )
+    , m_hoveredSource( 0 )
     , m_codeLen( 0 )
     , m_highlightAddr( 0 )
     , m_asmRelative( false )
@@ -323,6 +325,8 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 void SourceView::Render( const Worker& worker )
 {
     m_highlightAddr.Decay( 0 );
+    m_hoveredLine.Decay( 0 );
+    m_hoveredSource.Decay( 0 );
 
     if( m_symAddr == 0 )
     {
@@ -845,7 +849,11 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     auto draw = ImGui::GetWindowDrawList();
     const auto w = ImGui::GetWindowWidth();
     const auto wpos = ImGui::GetCursorScreenPos();
-    if( lineNum == m_selectedLine )
+    if( m_fileStringIdx == m_hoveredSource && lineNum == m_hoveredLine )
+    {
+        draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x22FFFFFF );
+    }
+    else if( lineNum == m_selectedLine )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF333322 );
     }
@@ -1021,6 +1029,11 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                     {
                         SelectAsmLines( srcidx.Idx(), srcline, worker, false );
                     }
+                }
+                else
+                {
+                    m_hoveredLine = srcline;
+                    m_hoveredSource = srcidx.Idx();
                 }
             }
             ImGui::SameLine( 0, 0 );

@@ -80,6 +80,8 @@ private:
     size_t m_dataSize;
     int m_targetLine;
     int m_selectedLine;
+    DecayValue<int> m_hoveredLine;
+    DecayValue<uint32_t> m_hoveredSource;
     int m_displayMode;
     uint32_t m_codeLen;
     DecayValue<uint64_t> m_highlightAddr;

@@ -312,6 +312,15 @@ bool ListenSocket::Listen( int port, int backlog )
     if( getaddrinfo( nullptr, portbuf, &hints, &res ) != 0 ) return false;
 
     m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
+    if (m_sock == -1)
+    {
+        // IPV6 protocol may not be available/is disabled. Try to create a socket
+        // with the IPV4 protocol
+        hints.ai_family = AF_INET;
+        if( getaddrinfo( nullptr, portbuf, &hints, &res ) != 0 ) return false;
+        m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
+        if (m_sock == -1) return false;
+    }
 #if defined _WIN32 || defined __CYGWIN__
     unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );

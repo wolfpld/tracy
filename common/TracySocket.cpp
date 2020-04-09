@@ -317,9 +317,11 @@ bool ListenSocket::Listen( int port, int backlog )
         // with the IPV4 protocol
         hints.ai_family = AF_INET;
         if( getaddrinfo( nullptr, portbuf, &hints, &res ) != 0 ) return false;
-    }
-    m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
-    if (m_sock == -1) {
+        m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
+        if (m_sock == -1) {
+            return false;
+        }
+    } else {
         return false;
     }
 #if defined _WIN32 || defined __CYGWIN__

@@ -360,7 +360,7 @@ void SourceView::RenderSimpleSourceView()
                 m_targetLine = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderLine( line, lineNum++, 0, 0, nullptr );
+            RenderLine( line, lineNum++, 0, 0, 0, nullptr );
         }
     }
     else
@@ -370,7 +370,7 @@ void SourceView::RenderSimpleSourceView()
         {
             for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
             {
-                RenderLine( m_lines[i], i+1, 0, 0, nullptr );
+                RenderLine( m_lines[i], i+1, 0, 0, 0, nullptr );
             }
         }
     }
@@ -643,7 +643,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 m_targetLine = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderLine( line, lineNum++, 0, iptotal, &worker );
+            RenderLine( line, lineNum++, 0, iptotal, ipmax, &worker );
         }
     }
     else
@@ -655,7 +655,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderLine( m_lines[i], i+1, 0, 0, &worker );
+                    RenderLine( m_lines[i], i+1, 0, 0, 0, &worker );
                 }
             }
             else
@@ -664,7 +664,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 {
                     auto it = ipcount.find( i+1 );
                     const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                    RenderLine( m_lines[i], i+1, ipcnt, iptotal, &worker );
+                    RenderLine( m_lines[i], i+1, ipcnt, iptotal, ipmax, &worker );
                 }
             }
         }
@@ -754,7 +754,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 m_targetAddr = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderAsmLine( line, 0, iptotal, worker, jumpOut, maxAddrLen );
+            RenderAsmLine( line, 0, iptotal, ipmax, worker, jumpOut, maxAddrLen );
         }
     }
     else
@@ -771,7 +771,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderAsmLine( m_asm[i], 0, 0, worker, jumpOut, maxAddrLen );
+                    RenderAsmLine( m_asm[i], 0, 0, 0, worker, jumpOut, maxAddrLen );
                     insList.emplace_back( m_asm[i].addr );
                 }
             }
@@ -782,7 +782,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                     auto& line = m_asm[i];
                     auto it = ipcount.find( line.addr );
                     const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                    RenderAsmLine( line, ipcnt, iptotal, worker, jumpOut, maxAddrLen );
+                    RenderAsmLine( line, ipcnt, iptotal, ipmax, worker, jumpOut, maxAddrLen );
                     insList.emplace_back( line.addr );
                 }
             }
@@ -1015,7 +1015,7 @@ static bool PrintPercentage( float val )
     return ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( stw * 7, ty ) );
 }
 
-void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, const Worker* worker )
+void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -1048,6 +1048,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
             }
+            draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt, ipmax ) );
         }
         ImGui::SameLine( 0, ty );
     }
@@ -1113,7 +1114,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, const Worker& worker, uint64_t& jumpOut, int maxAddrLen )
+void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -1150,6 +1151,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
             }
+            draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt, ipmax ) );
 
         }
         ImGui::SameLine( 0, ty );

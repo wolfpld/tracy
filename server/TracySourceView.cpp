@@ -543,6 +543,31 @@ void SourceView::RenderSymbolView( const Worker& worker )
     }
 }
 
+static uint32_t GetHotnessColor( uint32_t ipSum, uint32_t maxIpCount )
+{
+    const auto ipPercent = float( ipSum ) / maxIpCount;
+    if( ipPercent <= 0.5f )
+    {
+        const auto a = int( ( ipPercent * 1.5f + 0.25f ) * 255 );
+        return 0x000000FF | ( a << 24 );
+    }
+    else if( ipPercent <= 1.f )
+    {
+        const auto g = int( ( ipPercent - 0.5f ) * 511 );
+        return 0xFF0000FF | ( g << 8 );
+    }
+    else if( ipPercent <= 2.f )
+    {
+        const auto b = int( ( ipPercent - 1.f ) * 255 );
+        return 0xFF00FFFF | ( b << 16 );
+    }
+    else
+    {
+        return 0xFFFFFFFF;
+    }
+
+}
+
 void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, const Worker& worker )
 {
     if( m_sourceFiles.empty() )
@@ -679,34 +704,14 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         while( it != ipData.end() )
         {
             const auto firstLine = it->first;
-            auto ipSum = 0;
+            uint32_t ipSum = 0;
             while( it != ipData.end() && it->first <= firstLine + step )
             {
                 ipSum += it->second;
                 ++it;
             }
             const auto ly = round( rect.Min.y + float( firstLine ) / m_lines.size() * rect.GetHeight() );
-            const auto ipPercent = float( ipSum ) / maxIpCount;
-            uint32_t color;
-            if( ipPercent <= 0.5f )
-            {
-                const auto a = int( ( ipPercent * 1.5f + 0.25f ) * 255 );
-                color = 0x000000FF | ( a << 24 );
-            }
-            else if( ipPercent <= 1.f )
-            {
-                const auto g = int( ( ipPercent - 0.5f ) * 511 );
-                color = 0xFF0000FF | ( g << 8 );
-            }
-            else if( ipPercent <= 2.f )
-            {
-                const auto b = int( ( ipPercent - 1.f ) * 255 );
-                color = 0xFF00FFFF | ( b << 16 );
-            }
-            else
-            {
-                color = 0xFFFFFFFF;
-            }
+            const uint32_t color = GetHotnessColor( ipSum, maxIpCount );
             draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
         }
 
@@ -937,34 +942,14 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         while( it != ipData.end() )
         {
             const auto firstLine = it->first;
-            auto ipSum = 0;
+            uint32_t ipSum = 0;
             while( it != ipData.end() && it->first <= firstLine + step )
             {
                 ipSum += it->second;
                 ++it;
             }
             const auto ly = round( rect.Min.y + float( firstLine ) / m_asm.size() * rect.GetHeight() );
-            const auto ipPercent = float( ipSum ) / maxIpCount;
-            uint32_t color;
-            if( ipPercent <= 0.5f )
-            {
-                const auto a = int( ( ipPercent * 1.5f + 0.25f ) * 255 );
-                color = 0x000000FF | ( a << 24 );
-            }
-            else if( ipPercent <= 1.f )
-            {
-                const auto g = int( ( ipPercent - 0.5f ) * 511 );
-                color = 0xFF0000FF | ( g << 8 );
-            }
-            else if( ipPercent <= 2.f )
-            {
-                const auto b = int( ( ipPercent - 1.f ) * 255 );
-                color = 0xFF00FFFF | ( b << 16 );
-            }
-            else
-            {
-                color = 0xFFFFFFFF;
-            }
+            const uint32_t color = GetHotnessColor( ipSum, maxIpCount );
             draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
         }
     }

@@ -744,7 +744,11 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         maxAddrLen = strlen( tmp );
     }
 
+    uint64_t selJumpStart = 0;
+    uint64_t selJumpEnd;
+    uint64_t selJumpTarget;
     uint64_t jumpOut = 0;
+
     if( m_targetAddr != 0 )
     {
         for( auto& line : m_asm )
@@ -844,6 +848,9 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                             m_selectedAddresses.clear();
                             m_selectedAddresses.emplace( v.first );
                         }
+                        selJumpStart = v.second.min;
+                        selJumpEnd = v.second.max;
+                        selJumpTarget = v.first;
                     }
 
                     draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y0 + th2 ), wpos + ImVec2( xoff + JumpSeparation * ( mjl - v.second.level ), y1 + th2 ), col, thickness );
@@ -922,21 +929,39 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             }
         }
 
+        uint32_t selJumpLineStart, selJumpLineEnd, selJumpLineTarget;
         uint32_t maxIpCount = 0;
         std::vector<std::pair<uint64_t, uint32_t>> ipData;
         ipData.reserve( ipcount.size() );
-        for( size_t i=0; i<m_asm.size(); i++ )
+        if( selJumpStart == 0 )
         {
-            auto it = ipcount.find( m_asm[i].addr );
-            if( it == ipcount.end() ) continue;
-            if( it->second > maxIpCount ) maxIpCount = it->second;
-            ipData.emplace_back( i, it->second );
+            for( size_t i=0; i<m_asm.size(); i++ )
+            {
+                auto it = ipcount.find( m_asm[i].addr );
+                if( it == ipcount.end() ) continue;
+                if( it->second > maxIpCount ) maxIpCount = it->second;
+                ipData.emplace_back( i, it->second );
+            }
+        }
+        else
+        {
+            for( size_t i=0; i<m_asm.size(); i++ )
+            {
+                if( selJumpStart == m_asm[i].addr ) selJumpLineStart = i;
+                if( selJumpEnd == m_asm[i].addr ) selJumpLineEnd = i;
+                if( selJumpTarget == m_asm[i].addr ) selJumpLineTarget = i;
+
+                auto it = ipcount.find( m_asm[i].addr );
+                if( it == ipcount.end() ) continue;
+                if( it->second > maxIpCount ) maxIpCount = it->second;
+                ipData.emplace_back( i, it->second );
+            }
         }
         pdqsort_branchless( ipData.begin(), ipData.end(), []( const auto& l, const auto& r ) { return l.first < r.first; } );
 
         const auto step = uint32_t( m_asm.size() * 2 / rect.GetHeight() );
-        const auto x14 = round( rect.Min.x + rect.GetWidth() * 0.4f );
-        const auto x34 = round( rect.Min.x + rect.GetWidth() * 0.6f );
+        const auto x40 = round( rect.Min.x + rect.GetWidth() * 0.4f );
+        const auto x60 = round( rect.Min.x + rect.GetWidth() * 0.6f );
 
         auto it = ipData.begin();
         while( it != ipData.end() )
@@ -950,7 +975,19 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             }
             const auto ly = round( rect.Min.y + float( firstLine ) / m_asm.size() * rect.GetHeight() );
             const uint32_t color = GetHotnessColor( ipSum, maxIpCount );
-            draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
+            draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
+        }
+
+        if( selJumpStart != 0 )
+        {
+            const auto yStart = rect.Min.y + float( selJumpLineStart ) / m_asm.size() * rect.GetHeight();
+            const auto yEnd = rect.Min.y + float( selJumpLineEnd ) / m_asm.size() * rect.GetHeight();
+            const auto yTarget = rect.Min.y + float( selJumpLineTarget ) / m_asm.size() * rect.GetHeight();
+            const auto x50 = round( rect.Min.x + rect.GetWidth() * 0.5f ) - 1;
+            const auto x25 = round( rect.Min.x + rect.GetWidth() * 0.25f );
+            const auto x75 = round( rect.Min.x + rect.GetWidth() * 0.75f );
+            draw->AddLine( ImVec2( x50, yStart ), ImVec2( x50, yEnd ), 0xFF00FF00 );
+            draw->AddLine( ImVec2( x25, yTarget ), ImVec2( x75, yTarget ), 0xFF00FF00 );
         }
     }
 

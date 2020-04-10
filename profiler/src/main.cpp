@@ -477,7 +477,7 @@ static void DrawContents()
         {
             if( ImGui::Selectable( ICON_FA_HOME " Tracy Profiler home page" ) )
             {
-                OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );
+                OpenWebpage( "https://github.com/wolfpld/tracy" );
             }
             ImGui::Separator();
             if( ImGui::Selectable( ICON_FA_VIDEO " Overview of v0.2" ) )

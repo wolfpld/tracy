@@ -90,7 +90,7 @@
 \vspace{10pt}
 \today
 \vfill
-\url{https://bitbucket.org/wolfpld/tracy}
+\url{https://github.com/wolfpld/tracy}
 \end{titlepage}
 
 \tableofcontents
@@ -245,7 +245,7 @@ With all that being said, Tracy may not be the right choice for you, if you need
 \subsection{Performance impact}
 \label{perfimpact}
 
-To check how much slowdown is introduced by using Tracy, let's profile an example application. For this purpose we have used etcpak\footnote{\url{https://bitbucket.org/wolfpld/etcpak}}. The input data was a $16384 \times 16384$ pixels test image and the $4 \times 4$ pixel block compression function was selected to be instrumented. The image was compressed on 12 parallel threads, and the timing data represents a mean compression time of a single image.
+To check how much slowdown is introduced by using Tracy, let's profile an example application. For this purpose we have used etcpak\footnote{\url{https://github.com/wolfpld/etcpak}}. The input data was a $16384 \times 16384$ pixels test image and the $4 \times 4$ pixel block compression function was selected to be instrumented. The image was compressed on 12 parallel threads, and the timing data represents a mean compression time of a single image.
 
 The results are presented in table~\ref{PerformanceImpact}. Dividing the average of run time differences (37.7 \si{\milli\second}) by a number of captured zones per single image (\num{16777216}) shows us that the impact of profiling is only 2.25 \si{\nano\second} per zone (this includes two events: start and end of a zone).
 
@@ -301,13 +301,13 @@ To see how Tracy can be integrated into an application, you may look at example 
 Tracy can be found at the following web addresses:
 
 \begin{itemize}
-\item Homepage -- \url{https://bitbucket.org/wolfpld/tracy}
-\item Bug tracker -- \url{https://bitbucket.org/wolfpld/tracy/issues?status=new&status=open}
+\item Homepage -- \url{https://github.com/wolfpld/tracy}
+\item Bug tracker -- \url{https://github.com/wolfpld/tracy/issues}
 \item Discord chat -- \url{https://discord.gg/pk78auc}
 \item Sponsoring development -- \url{https://github.com/sponsors/wolfpld/}
 \end{itemize}
 
-If you don't have a Bitbucket account, you may be interested in a GitHub mirror: \url{https://github.com/wolfpld/tracy}.
+You may be also interested in a Bitbucket mirror: \url{https://bitbucket.org/wolfpld/tracy}.
 
 \section{First steps}
 

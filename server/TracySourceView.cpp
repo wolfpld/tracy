@@ -472,21 +472,22 @@ void SourceView::RenderSymbolView( const Worker& worker )
     }
 
     uint32_t iptotalSrc = 0, iptotalAsm = 0;
+    uint32_t ipmaxSrc = 0, ipmaxAsm = 0;
     unordered_flat_map<uint64_t, uint32_t> ipcountSrc, ipcountAsm;
     if( m_calcInlineStats )
     {
-        GatherIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, worker );
+        GatherIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker );
     }
     else
     {
-        GatherIpStats( m_baseAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, worker );
+        GatherIpStats( m_baseAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker );
         auto iptr = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
         if( iptr )
         {
             const auto symEnd = m_baseAddr + m_codeLen;
             while( *iptr < symEnd )
             {
-                GatherIpStats( *iptr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, worker );
+                GatherIpStats( *iptr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker );
                 iptr++;
             }
         }
@@ -506,16 +507,16 @@ void SourceView::RenderSymbolView( const Worker& worker )
     switch( m_displayMode )
     {
     case DisplaySource:
-        RenderSymbolSourceView( iptotalSrc, ipcountSrc, worker );
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipmaxSrc, worker );
         break;
     case DisplayAsm:
-        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, worker );
+        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker );
         break;
     case DisplayMixed:
         ImGui::Columns( 2 );
-        RenderSymbolSourceView( iptotalSrc, ipcountSrc, worker );
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipmaxSrc, worker );
         ImGui::NextColumn();
-        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, worker );
+        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker );
         ImGui::EndColumns();
         break;
     default:
@@ -568,7 +569,7 @@ static uint32_t GetHotnessColor( uint32_t ipSum, uint32_t maxIpCount )
 
 }
 
-void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, const Worker& worker )
+void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker )
 {
     if( m_sourceFiles.empty() )
     {
@@ -686,14 +687,9 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
             draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x88888888, 3 );
         }
 
-        uint32_t maxIpCount = 0;
         std::vector<std::pair<uint64_t, uint32_t>> ipData;
         ipData.reserve( ipcount.size() );
-        for( auto& v : ipcount )
-        {
-            if( v.second > maxIpCount ) maxIpCount = v.second;
-            ipData.emplace_back( v.first, v.second );
-        }
+        for( auto& v : ipcount ) ipData.emplace_back( v.first, v.second );
         pdqsort_branchless( ipData.begin(), ipData.end(), []( const auto& l, const auto& r ) { return l.first < r.first; } );
 
         const auto step = uint32_t( m_lines.size() * 2 / rect.GetHeight() );
@@ -711,7 +707,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 ++it;
             }
             const auto ly = round( rect.Min.y + float( firstLine ) / m_lines.size() * rect.GetHeight() );
-            const uint32_t color = GetHotnessColor( ipSum, maxIpCount );
+            const uint32_t color = GetHotnessColor( ipSum, ipmax );
             draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
         }
 
@@ -722,7 +718,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     ImGui::EndChild();
 }
 
-uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, const Worker& worker )
+uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker )
 {
     SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative locations", &m_asmRelative );
     ImGui::SameLine();
@@ -930,7 +926,6 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         }
 
         uint32_t selJumpLineStart, selJumpLineEnd, selJumpLineTarget;
-        uint32_t maxIpCount = 0;
         std::vector<std::pair<uint64_t, uint32_t>> ipData;
         ipData.reserve( ipcount.size() );
         if( selJumpStart == 0 )
@@ -939,7 +934,6 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             {
                 auto it = ipcount.find( m_asm[i].addr );
                 if( it == ipcount.end() ) continue;
-                if( it->second > maxIpCount ) maxIpCount = it->second;
                 ipData.emplace_back( i, it->second );
             }
         }
@@ -953,7 +947,6 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
 
                 auto it = ipcount.find( m_asm[i].addr );
                 if( it == ipcount.end() ) continue;
-                if( it->second > maxIpCount ) maxIpCount = it->second;
                 ipData.emplace_back( i, it->second );
             }
         }
@@ -974,7 +967,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 ++it;
             }
             const auto ly = round( rect.Min.y + float( firstLine ) / m_asm.size() * rect.GetHeight() );
-            const uint32_t color = GetHotnessColor( ipSum, maxIpCount );
+            const uint32_t color = GetHotnessColor( ipSum, ipmax );
             draw->AddRectFilled( ImVec2( x40, ly ), ImVec2( x60, ly+3 ), color );
         }
 
@@ -1376,7 +1369,7 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
     }
 }
 
-void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, const Worker& worker )
+void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, uint32_t& ipmaxSrc, uint32_t& ipmaxAsm, const Worker& worker )
 {
     auto ipmap = worker.GetSymbolInstructionPointers( addr );
     if( !ipmap ) return;
@@ -1395,10 +1388,13 @@ void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& i
                     if( it == ipcountSrc.end() )
                     {
                         ipcountSrc.emplace( line, ip.second );
+                        if( ipmaxSrc < ip.second ) ipmaxSrc = ip.second;
                     }
                     else
                     {
-                        it->second += ip.second;
+                        const auto sum = it->second + ip.second;
+                        it->second = sum;
+                        if( ipmaxSrc < sum ) ipmaxSrc = sum;
                     }
                     iptotalSrc += ip.second;
                 }
@@ -1409,6 +1405,7 @@ void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& i
         assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
         ipcountAsm.emplace( addr, ip.second );
         iptotalAsm += ip.second;
+        if( ipmaxAsm < ip.second ) ipmaxAsm = ip.second;
     }
 }
 

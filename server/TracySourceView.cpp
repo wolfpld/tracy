@@ -860,6 +860,57 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         }
     }
 
+    auto win = ImGui::GetCurrentWindow();
+    if( win->ScrollbarY )
+    {
+        auto draw = ImGui::GetWindowDrawList();
+        auto rect = ImGui::GetWindowScrollbarRect( win, ImGuiAxis_Y );
+        ImGui::PushClipRect( rect.Min, rect.Max, false );
+        std::vector<uint32_t> lineOff;
+        lineOff.reserve( std::max( m_selectedAddresses.size(), m_selectedAddressesHover.size() ) );
+        if( !m_selectedAddresses.empty() )
+        {
+            for( size_t i=0; i<m_asm.size(); i++ )
+            {
+                if( m_selectedAddresses.find( m_asm[i].addr ) != m_selectedAddresses.end() )
+                {
+                    lineOff.push_back( uint32_t( i ) );
+                }
+            }
+            float lastLine = 0;
+            for( auto& v : lineOff )
+            {
+                const auto ly = round( rect.Min.y + ( v - 0.5f ) / m_asm.size() * rect.GetHeight() );
+                if( ly > lastLine )
+                {
+                    lastLine = ly;
+                    draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x8899994C, 1 );
+                }
+            }
+        }
+        if( !m_selectedAddressesHover.empty() )
+        {
+            lineOff.clear();
+            for( size_t i=0; i<m_asm.size(); i++ )
+            {
+                if( m_selectedAddressesHover.find( m_asm[i].addr ) != m_selectedAddressesHover.end() )
+                {
+                    lineOff.push_back( uint32_t( i ) );
+                }
+            }
+            float lastLine = 0;
+            for( auto& v : lineOff )
+            {
+                const auto ly = round( rect.Min.y + ( v - 0.5f ) / m_asm.size() * rect.GetHeight() );
+                if( ly > lastLine )
+                {
+                    lastLine = ly;
+                    draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x88888888, 1 );
+                }
+            }
+        }
+    }
+
     if( m_font ) ImGui::PopFont();
     ImGui::EndChild();
 

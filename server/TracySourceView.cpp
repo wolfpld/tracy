@@ -644,6 +644,25 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         }
     }
 
+    auto win = ImGui::GetCurrentWindow();
+    if( win->ScrollbarY )
+    {
+        auto draw = ImGui::GetWindowDrawList();
+        auto rect = ImGui::GetWindowScrollbarRect( win, ImGuiAxis_Y );
+        ImGui::PushClipRect( rect.Min, rect.Max, false );
+        if( m_selectedLine != 0 )
+        {
+            const auto ly = round( rect.Min.y + ( m_selectedLine - 0.5f ) / m_lines.size() * rect.GetHeight() );
+            draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x8899994C, 3 );
+        }
+        if( m_fileStringIdx == m_hoveredSource && m_hoveredLine != 0 )
+        {
+            const auto ly = round( rect.Min.y + ( m_hoveredLine - 0.5f ) / m_lines.size() * rect.GetHeight() );
+            draw->AddLine( ImVec2( rect.Min.x, ly ), ImVec2( rect.Max.x, ly ), 0x88888888, 3 );
+        }
+        ImGui::PopClipRect();
+    }
+
     if( m_font ) ImGui::PopFont();
     ImGui::EndChild();
 }

@@ -909,6 +909,50 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 }
             }
         }
+
+        uint32_t maxIpCount = 0;
+        std::vector<std::pair<uint64_t, uint32_t>> ipData;
+        ipData.reserve( ipcount.size() );
+        for( size_t i=0; i<m_asm.size(); i++ )
+        {
+            auto it = ipcount.find( m_asm[i].addr );
+            if( it == ipcount.end() ) continue;
+            if( it->second > maxIpCount ) maxIpCount = it->second;
+            ipData.emplace_back( i, it->second );
+        }
+        pdqsort_branchless( ipData.begin(), ipData.end(), []( const auto& l, const auto& r ) { return l.first < r.first; } );
+
+        const auto step = uint32_t( m_asm.size() * 2 / rect.GetHeight() );
+        const auto x14 = round( rect.Min.x + rect.GetWidth() * 0.4f );
+        const auto x34 = round( rect.Min.x + rect.GetWidth() * 0.6f );
+
+        auto it = ipData.begin();
+        while( it != ipData.end() )
+        {
+            const auto firstLine = it->first;
+            auto ipSum = 0;
+            while( it != ipData.end() && it->first <= firstLine + step )
+            {
+                ipSum += it->second;
+                ++it;
+            }
+            const auto ly = round( rect.Min.y + float( firstLine ) / m_asm.size() * rect.GetHeight() );
+            const auto ipPercent = float( ipSum ) / maxIpCount;
+            if( ipPercent <= 0.5f )
+            {
+                const auto a = int( ( ipPercent * 1.5f + 0.25f ) * 255 );
+                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), 0x000000FF | ( a << 24 ) );
+            }
+            else if( ipPercent <= 1.f )
+            {
+                const auto g = int( ( ipPercent - 0.5f ) * 511 );
+                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), 0xFF0000FF | ( g << 8 ) );
+            }
+            else
+            {
+                draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), 0xFF00FFFF );
+            }
+        }
     }
 
     if( m_font ) ImGui::PopFont();

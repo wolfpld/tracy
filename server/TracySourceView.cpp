@@ -698,9 +698,14 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 const auto g = int( ( ipPercent - 0.5f ) * 511 );
                 color = 0xFF0000FF | ( g << 8 );
             }
+            else if( ipPercent <= 2.f )
+            {
+                const auto b = int( ( ipPercent - 1.f ) * 255 );
+                color = 0xFF00FFFF | ( b << 16 );
+            }
             else
             {
-                color = 0xFF00FFFF;
+                color = 0xFFFFFFFF;
             }
             draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
         }
@@ -951,9 +956,14 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 const auto g = int( ( ipPercent - 0.5f ) * 511 );
                 color = 0xFF0000FF | ( g << 8 );
             }
+            else if( ipPercent <= 2.f )
+            {
+                const auto b = int( ( ipPercent - 1.f ) * 255 );
+                color = 0xFF00FFFF | ( b << 16 );
+            }
             else
             {
-                color = 0xFF00FFFF;
+                color = 0xFFFFFFFF;
             }
             draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
         }

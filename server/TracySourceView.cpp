@@ -961,7 +961,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     return jumpOut;
 }
 
-static void PrintPercentage( float val )
+static bool PrintPercentage( float val )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -983,6 +983,7 @@ static void PrintPercentage( float val )
     DrawTextContrast( draw, wpos + ImVec2( htw, 0 ), 0xFFFFFFFF, buf );
 
     ImGui::ItemSize( ImVec2( stw * 7, ty ), 0 );
+    return ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( stw * 7, ty ) );
 }
 
 void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, const Worker* worker )
@@ -1009,7 +1010,15 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
         }
         else
         {
-            PrintPercentage( 100.f * ipcnt / iptotal );
+            if( PrintPercentage( 100.f * ipcnt / iptotal ) )
+            {
+                if( m_font ) ImGui::PopFont();
+                ImGui::BeginTooltip();
+                if( worker ) TextFocused( "Time:", TimeToString( ipcnt * worker->GetSamplingPeriod() ) );
+                TextFocused( "Sample count:", RealToString( ipcnt ) );
+                ImGui::EndTooltip();
+                if( m_font ) ImGui::PushFont( m_font );
+            }
         }
         ImGui::SameLine( 0, ty );
     }
@@ -1103,7 +1112,16 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
         }
         else
         {
-            PrintPercentage( 100.f * ipcnt / iptotal );
+            if( PrintPercentage( 100.f * ipcnt / iptotal ) )
+            {
+                if( m_font ) ImGui::PopFont();
+                ImGui::BeginTooltip();
+                TextFocused( "Time:", TimeToString( ipcnt * worker.GetSamplingPeriod() ) );
+                TextFocused( "Sample count:", RealToString( ipcnt ) );
+                ImGui::EndTooltip();
+                if( m_font ) ImGui::PushFont( m_font );
+            }
+
         }
         ImGui::SameLine( 0, ty );
     }

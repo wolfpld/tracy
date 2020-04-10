@@ -466,7 +466,7 @@ static void DrawContents()
         ImGui::Spacing();
         if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
         {
-            OpenWebpage( "https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf" );
+            OpenWebpage( "https://github.com/wolfpld/tracy/releases" );
         }
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Web" ) )

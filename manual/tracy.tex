@@ -425,6 +425,14 @@ Network communication between the client and the server by default is performed 
 
 If for some reason you want to use another port\footnote{For example, other programs may already be using it, or you may have overzealous firewall rules, or you may want to run two clients on the same IP address.}, you can change it using the \texttt{TRACY\_DATA\_PORT} macro for the data connection, and \texttt{TRACY\_BROADCAST\_PORT} macro for client broadcasts. Alternatively, both ports may be changed at the same time by declaring the \texttt{TRACY\_PORT} macro (specific macros listed before have higher priority). The data connection port may be also changed without recompiling the client application, by setting the \texttt{TRACY\_PORT} environment variable.
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+To enable network communication, Tracy needs to open a listening port. Make sure it is not blocked by an overzealous firewall or anti-virus program.
+\end{bclogo}
+
 \subsubsection{Limitations}
 
 When using Tracy Profiler, keep in mind the following requirements:
@@ -2638,7 +2646,7 @@ The layout of frame list and the \emph{\faAt{}~Frame location} option selection 
 \subsection{Source file view window}
 \label{sourceview}
 
-In this window you can view the source code of the profiled application, to take a quick glance at the context of the function behavior you are analyzing.
+In this window you can view the source code of the profiled application, to take a quick glance at the context of the function behavior you are analyzing. The selected line (for example, a location of a profiling zone) will be highlighted both in the source code listing and on the scroll bar.
 
 \begin{bclogo}[
 noborder=true,
@@ -2654,30 +2662,64 @@ Source file view works on the local files you have on your disk. The traces them
 \end{itemize}
 \end{bclogo}
 
-\subsubsection{Instruction pointer statistics}
+\subsubsection{Symbol view}
 
-If automated call stack sampling (see chapter~\ref{sampling}) was performed and the source file view was opened with a symbol context (e.g. from a ghost zone, or from statistics of sampled functions), additional profiling information will be available. Symbol name of the selected function will be displayed in the header (with parent function in parenthesis, in case of inlined functions), along with a count of collected samples and the corresponding code fragment size.
+If the inspected source location has an associated symbol context (i.e. if it comes from a call stack capture, from call stack sampling, etc.), a much more capable symbol view is available. A symbol is an unit of machine code, basically a callable function. It may be generated using multiple source files and may consist of multiple inlined functions. A list of all captured symbols is available in the statistics window, as described in chapter~\ref{statisticssampling}.
 
-The first column of listing contains percentage counts of collected instruction pointer samples for each line within the symbol, both in numerical and graphical bar form. This information can be used to determine which line of the function takes the most time. Be aware that the data is not fully accurate, as it is the result of random sampling of program execution. Furthermore, undocumented implementation details of an out-of-order CPU architecture will highly impact the measurement. Read chapter~\ref{checkenvironmentcpu} to see the tip of an iceberg.
+The header of symbol view window contains a name of the selected \emph{\faPuzzlePiece{}~symbol}, a list of \emph{\faSitemap{}~functions} that contribute to the symbol, and information such as \emph{\faWeightHanging{}~Code size} in the program, or count of probed \emph{\faEyeDropper{}~Samples}.
 
-If symbol code is available (section~\ref{assemblyview}), each source file line will show count of associated assembly instructions, displayed with an '\texttt{@}' prefix. Due to the way optimizing compilers work, some lines may seemingly not produce any machine code, for example because iterating a loop counter index might have been reduced to advancing a data pointer. Some other lines may have disproportionate amount of associated instructions, e.g. when a loop unrolling optimization is applied. This varies from case to case and from compiler to compiler.
+Additionally, you may use the \emph{Mode} selector to decide what content should be displayed in the panels below:
 
-Unlike other profilers, Tracy doesn't include inlined function statistics in the parent function. Instead, you can view the sampling data even in inlined functions.
+\begin{itemize}
+\item \emph{Source} -- only the source code will be displayed.
+\item \emph{Assembly} -- only the machine code disassembly will be shown.
+\item \emph{Combined} -- both source code and disassembly will be listed next to each other.
+\end{itemize}
 
-\subsubsection{Assembly view}
-\label{assemblyview}
+In some circumstances (missing or outdated source files, lack of machine code) some modes may be unavailable.
 
-If executable code retrieval was performed, as described in section~\ref{executableretrieval}, and the view has symbol context available, you will be presented with an additional option, \emph{\faMicrochip{}~Show assembly}. Selecting it will replace the source code view with disassembly of the relevant portion of the program that was profiled.
+\paragraph{Source mode}
 
-By default each assembly instruction is displayed with its location in the program memory during execution. If the \emph{\faSearchLocation{}~Relative locations} option is selected, an offset from the symbol beginning will be printed instead.
+This is pretty much the original source file view window, but with the ability to select one of the source files that were used to build the symbol. Additionally, each source file line will show count of associated assembly instructions, displayed with an '\texttt{@}' prefix. Due to the way optimizing compilers work, some lines may seemingly not produce any machine code, for example because iterating a loop counter index might have been reduced to advancing a data pointer. Some other lines may have disproportionate amount of associated instructions, e.g. when a loop unrolling optimization is applied. This varies from case to case and from compiler to compiler.
 
-If the \emph{\faFileImport{}~Show source locations} option is selected, each line of the assembly code will also contain information about the originating source file name and line number. For easier differentiation between different source files, each file is assigned its own color. Clicking the \LMB{}~left mouse button on a displayed source location will focus the source view on selected line (only if source file name matches the currently displayed file).
+\paragraph{Assembly mode}
+
+This mode shows the disassembly of the symbol machine code. Each assembly instruction is displayed listed with its location in the program memory during execution. If the \emph{\faSearchLocation{}~Relative locations} option is selected, an offset from the symbol beginning will be printed instead.
+
+If the \emph{\faFileImport{}~Show source locations} option is selected, each line of the assembly code will also contain information about the originating source file name and line number. For easier differentiation between different source files, each file is assigned its own color. Clicking the \LMB{}~left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on selected line.
 
 Machine code instructions jumping to a predefined address will display symbol name of the jump target. If the destination location is within the currently displayed symbol an \texttt{->}~arrow will be prepended to the name. Hovering the \faMousePointer{}~mouse pointer over such symbol name will highlight the target location. Clicking on it with the \LMB{}~left mouse button will focus the view on the destination instruction, or switch view to the destination symbol.
 
-Enabling the \emph{\faShare{}~Draw jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target. Jumps going out of the symbol\footnote{This includes jumps, procedure calls and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
+Enabling the \emph{\faShare{}~Draw jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target. Hovering the \faMousePointer{}~mouse pointer over the jump arrow will display jump information tooltip and will also draw the jump range on the scroll bar, as a green line. Jump target location will be marked by a horizontal green line. Jumps going out of the symbol\footnote{This includes jumps, procedure calls and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
 
 Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.
+
+\paragraph{Combined mode}
+
+In this mode both the source and assembly panes will be displayed together, providing the best way to gain insight into the code. Hovering the \faMousePointer{}~mouse pointer over the source file line, or the location of the assembly line will highlight the corresponding lines in the second pane (both in the listing and on the scroll bar). Clicking the \LMB{}~left mouse button on a line will select it in both panes. Clicking the \RMB{}~right mouse button will also focus the secondary view on the selected line (or first of the selected lines, if more than one).
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+An assembly instruction may be associated with only a single source line, but a source line might be associated with multiple assembly lines, sometimes intermixed with other assembly instructions.
+\end{bclogo}
+
+\paragraph{Instruction pointer statistics}
+
+If automated call stack sampling (see chapter~\ref{sampling}) was performed, additional profiling information will be available. The first column of source and assembly views will contain percentage counts of collected instruction pointer samples for each displayed line, both in numerical and graphical bar form. This information can be used to determine which line of the function takes the most time. The displayed percentage values are heat map color coded, with the lowest values mapped to dark red, and the highest values mapped to bright yellow. The color code will appear next to the percentage value, and on the scroll bar, so that 'hot' places in code can be identified at a glance.
+
+Sample data source is controlled by the \emph{\faSitemap{}~Function} control, in the window header. If this option is disabled, the sample data represents the whole symbol. If it is enabled, then the sample data will only include the selected function.
+
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Be aware that the data is not fully accurate, as it is the result of random sampling of program execution. Furthermore, undocumented implementation details of an out-of-order CPU architecture will highly impact the measurement. Read chapter~\ref{checkenvironmentcpu} to see the tip of an iceberg.
+\end{bclogo}
 
 \subsection{Lock information window}
 \label{lockwindow}

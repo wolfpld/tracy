@@ -498,6 +498,10 @@ void SourceView::RenderSymbolView( const Worker& worker )
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
+        TextFocused( ICON_FA_STOPWATCH " Time:", TimeToString( iptotalAsm * worker.GetSamplingPeriod() ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
         TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm ) );
     }
 

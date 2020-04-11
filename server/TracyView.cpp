@@ -11048,7 +11048,7 @@ void View::DrawStatistics()
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
     ImGui::TextWrapped( "Rebuild without the TRACY_NO_STATISTICS macro to enable statistics view." );
 #else
-    if( !m_worker.AreSourceLocationZonesReady() )
+    if( !m_worker.AreSourceLocationZonesReady() && ( !m_worker.AreCallstackSamplesReady() || m_worker.GetCallstackSampleCount() == 0 ) )
     {
         ImGui::TextWrapped( "Please wait, computing data..." );
         DrawWaitingDots( s_time );
@@ -11082,6 +11082,16 @@ void View::DrawStatistics()
 
     if( m_statMode == 0 )
     {
+        if( !m_worker.AreSourceLocationZonesReady() )
+        {
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::TextWrapped( "Please wait, computing data..." );
+            DrawWaitingDots( s_time );
+            ImGui::End();
+            return;
+        }
+
         m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )

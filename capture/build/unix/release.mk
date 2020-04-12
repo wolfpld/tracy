@@ -1,6 +1,6 @@
 ARCH := $(shell uname -m)
 
-CFLAGS := -O3 -s -fomit-frame-pointer
+CFLAGS := -O3 -s
 DEFINES := -DNDEBUG
 BUILD := release
 

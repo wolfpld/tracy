@@ -423,21 +423,46 @@ void SourceView::RenderSymbolView( const Worker& worker )
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
         if( ImGui::BeginCombo( "##functionList", worker.GetString( sym->name ), ImGuiComboFlags_HeightLarge ) )
         {
+            ImGui::Columns( 3 );
+            static bool widthSet = false;
+            if( !widthSet )
+            {
+                widthSet = true;
+                const auto w = ImGui::GetWindowWidth();
+                const auto c0 = ImGui::CalcTextSize( "1234567890m" ).x;
+                const auto c2 = ImGui::CalcTextSize( "0xeeeeeeeeeeeeee" ).x;
+                ImGui::SetColumnWidth( 0, c0 );
+                ImGui::SetColumnWidth( 1, w - c0 - c2 );
+                ImGui::SetColumnWidth( 2, c2 );
+            }
+            const auto& symStat = worker.GetSymbolStats();
             for( auto& v : symInline )
             {
+                auto istat = symStat.find( v );
+                if( istat != symStat.end() && istat->second.excl != 0 )
+                {
+                    ImGui::TextUnformatted( TimeToString( istat->second.excl * worker.GetSamplingPeriod() ) );
+                    if( ImGui::IsItemHovered() )
+                    {
+                        ImGui::BeginTooltip();
+                        TextFocused( "Sample count:", RealToString( istat->second.excl ) );
+                        ImGui::EndTooltip();
+                    }
+                }
+                ImGui::NextColumn();
                 auto isym = worker.GetSymbolData( v );
                 assert( isym );
                 ImGui::PushID( v );
-                if( ImGui::Selectable( worker.GetString( isym->name ), v == m_symAddr ) )
+                if( ImGui::Selectable( worker.GetString( isym->name ), v == m_symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
                     m_symAddr = v;
                 }
                 ImGui::PopID();
-                ImGui::SameLine();
-                char tmp[32];
-                sprintf( tmp, "(0x%x)", v );
-                TextDisabledUnformatted( tmp );
+                ImGui::NextColumn();
+                ImGui::TextDisabled( "0x%" PRIx64, v );
+                ImGui::NextColumn();
             }
+            ImGui::EndColumns();
             ImGui::EndCombo();
         }
         ImGui::PopStyleVar();

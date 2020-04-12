@@ -1143,7 +1143,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     ImGui::SameLine( 0, ty );
     ImGui::TextUnformatted( line.begin, line.end );
 
-    if( match > 0 && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, ty+1 ) ) )
+    if( match > 0 && ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, ty+1 ) ) )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x11FFFFFF );
         if( ImGui::IsMouseClicked( 0 ) || ImGui::IsMouseClicked( 1 ) )

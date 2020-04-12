@@ -288,6 +288,8 @@ private:
         return it->second;
     }
 
+    void AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset );
+
     Worker m_worker;
     std::string m_filename;
     bool m_staticView;
@@ -419,6 +421,7 @@ private:
     UserData m_userData;
 
     bool m_reconnectRequested = false;
+    bool m_firstFrame = true;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

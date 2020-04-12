@@ -701,6 +701,7 @@ bool View::DrawImpl()
     m_lockInfoAnim.Update( io.DeltaTime );
     m_statBuzzAnim.Update( io.DeltaTime );
 
+    if( m_firstFrame ) m_firstFrame = false;
     return keepOpen;
 }
 
@@ -2069,7 +2070,7 @@ static float AdjustThreadPosition( View::VisData& vis, float wy, int& offset )
     return offset + wy;
 }
 
-static void AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset )
+void View::AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset )
 {
     const auto h = offset - oldOffset;
     if( vis.height > h )
@@ -2079,10 +2080,18 @@ static void AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset )
     }
     else if( vis.height < h )
     {
-        const auto diff = h - vis.height;
-        const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
-        vis.height = int( std::min<double>( vis.height + move, h ) );
-        offset = oldOffset + vis.height;
+        if( m_firstFrame )
+        {
+            vis.height = h;
+            offset = oldOffset + h;
+        }
+        else
+        {
+            const auto diff = h - vis.height;
+            const auto move = std::max( 2.0, diff * 10.0 * ImGui::GetIO().DeltaTime );
+            vis.height = int( std::min<double>( vis.height + move, h ) );
+            offset = oldOffset + vis.height;
+        }
     }
 }
 

@@ -22,6 +22,7 @@
 //  Only override if your GL version doesn't handle this GLSL version. See GLSL version table at the top of imgui_impl_opengl3.cpp.
 
 #pragma once
+#include "imgui.h"      // IMGUI_IMPL_API
 
 // Backend API
 IMGUI_IMPL_API bool     ImGui_ImplOpenGL3_Init(const char* glsl_version = NULL);
@@ -46,7 +47,8 @@ IMGUI_IMPL_API void     ImGui_ImplOpenGL3_DestroyDeviceObjects();
 #if !defined(IMGUI_IMPL_OPENGL_LOADER_GL3W) \
  && !defined(IMGUI_IMPL_OPENGL_LOADER_GLEW) \
  && !defined(IMGUI_IMPL_OPENGL_LOADER_GLAD) \
- && !defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING) \
+ && !defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING2) \
+ && !defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING3) \
  && !defined(IMGUI_IMPL_OPENGL_LOADER_CUSTOM)
     #if defined(__has_include)
         #if __has_include(<GL/glew.h>)
@@ -55,8 +57,10 @@ IMGUI_IMPL_API void     ImGui_ImplOpenGL3_DestroyDeviceObjects();
             #define IMGUI_IMPL_OPENGL_LOADER_GLAD
         #elif __has_include(<GL/gl3w.h>)
             #define IMGUI_IMPL_OPENGL_LOADER_GL3W
-        #elif __has_include(<glbinding/gl/gl.h>)
-            #define IMGUI_IMPL_OPENGL_LOADER_GLBINDING
+        #elif __has_include(<glbinding/glbinding.h>)
+            #define IMGUI_IMPL_OPENGL_LOADER_GLBINDING3
+        #elif __has_include(<glbinding/Binding.h>)
+            #define IMGUI_IMPL_OPENGL_LOADER_GLBINDING2
         #else
             #error "Cannot detect OpenGL loader!"
         #endif

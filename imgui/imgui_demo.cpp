@@ -1,4 +1,4 @@
-// dear imgui, v1.75
+// dear imgui, v1.76
 // (demo code)
 
 // Help:
@@ -629,7 +629,7 @@ static void ShowDemoWindowWidgets()
                 {
                     ImGui::Text("blah blah");
                     ImGui::SameLine();
-                    if (ImGui::SmallButton("button")) {};
+                    if (ImGui::SmallButton("button")) {}
                     ImGui::TreePop();
                 }
             }
@@ -643,9 +643,9 @@ static void ShowDemoWindowWidgets()
             static bool align_label_with_current_x_position = false;
             ImGui::CheckboxFlags("ImGuiTreeNodeFlags_OpenOnArrow", (unsigned int*)&base_flags, ImGuiTreeNodeFlags_OpenOnArrow);
             ImGui::CheckboxFlags("ImGuiTreeNodeFlags_OpenOnDoubleClick", (unsigned int*)&base_flags, ImGuiTreeNodeFlags_OpenOnDoubleClick);
-            ImGui::CheckboxFlags("ImGuiTreeNodeFlags_SpanAvailWidth", (unsigned int*)&base_flags, ImGuiTreeNodeFlags_SpanAvailWidth);
+            ImGui::CheckboxFlags("ImGuiTreeNodeFlags_SpanAvailWidth", (unsigned int*)&base_flags, ImGuiTreeNodeFlags_SpanAvailWidth); ImGui::SameLine(); HelpMarker("Extend hit area to all available width instead of allowing more items to be layed out after the node.");
             ImGui::CheckboxFlags("ImGuiTreeNodeFlags_SpanFullWidth", (unsigned int*)&base_flags, ImGuiTreeNodeFlags_SpanFullWidth);
-            ImGui::Checkbox("Align label with current X position)", &align_label_with_current_x_position);
+            ImGui::Checkbox("Align label with current X position", &align_label_with_current_x_position);
             ImGui::Text("Hello!");
             if (align_label_with_current_x_position)
                 ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
@@ -980,7 +980,7 @@ static void ShowDemoWindowWidgets()
         }
         if (ImGui::TreeNode("Alignment"))
         {
-            HelpMarker("Alignment applies when a selectable is larger than its text content.\nBy default, Selectables uses style.SelectableTextAlign but it can be overriden on a per-item basis using PushStyleVar().");
+            HelpMarker("By default, Selectables uses style.SelectableTextAlign but it can be overriden on a per-item basis using PushStyleVar(). You'll probably want to always keep your default situation to left-align otherwise it becomes difficult to layout multiple items on a same line");
             static bool selected[3*3] = { true, false, true, false, true, false, true, false, true };
             for (int y = 0; y < 3; y++)
             {
@@ -1040,11 +1040,11 @@ static void ShowDemoWindowWidgets()
             static char buf6[64] = ""; ImGui::InputText("\"imgui\" letters", buf6, 64, ImGuiInputTextFlags_CallbackCharFilter, TextFilters::FilterImGuiLetters);
 
             ImGui::Text("Password input");
-            static char bufpass[64] = "password123";
-            ImGui::InputText("password", bufpass, 64, ImGuiInputTextFlags_Password | ImGuiInputTextFlags_CharsNoBlank);
+            static char password[64] = "password123";
+            ImGui::InputText("password", password, IM_ARRAYSIZE(password), ImGuiInputTextFlags_Password);
             ImGui::SameLine(); HelpMarker("Display all characters as '*'.\nDisable clipboard cut and copy.\nDisable logging.\n");
-            ImGui::InputTextWithHint("password (w/ hint)", "<password>", bufpass, 64, ImGuiInputTextFlags_Password | ImGuiInputTextFlags_CharsNoBlank);
-            ImGui::InputText("password (clear)", bufpass, 64, ImGuiInputTextFlags_CharsNoBlank);
+            ImGui::InputTextWithHint("password (w/ hint)", "<password>", password, IM_ARRAYSIZE(password), ImGuiInputTextFlags_Password);
+            ImGui::InputText("password (clear)", password, IM_ARRAYSIZE(password));
             ImGui::TreePop();
         }
 
@@ -1264,7 +1264,9 @@ static void ShowDemoWindowWidgets()
         }
 
         ImGui::Text("Color button only:");
-        ImGui::ColorButton("MyColor##3c", *(ImVec4*)&color, misc_flags, ImVec2(80,80));
+        static bool no_border = false;
+        ImGui::Checkbox("ImGuiColorEditFlags_NoBorder", &no_border);
+        ImGui::ColorButton("MyColor##3c", *(ImVec4*)&color, misc_flags | (no_border ? ImGuiColorEditFlags_NoBorder : 0), ImVec2(80,80));
 
         ImGui::Text("Color picker:");
         static bool alpha = true;
@@ -3441,6 +3443,15 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
                         // Display all glyphs of the fonts in separate pages of 256 characters
                         for (unsigned int base = 0; base <= IM_UNICODE_CODEPOINT_MAX; base += 256)
                         {
+                            // Skip ahead if a large bunch of glyphs are not present in the font (test in chunks of 4k)
+                            // This is only a small optimization to reduce the number of iterations when IM_UNICODE_MAX_CODEPOINT is large.
+                            // (if ImWchar==ImWchar32 we will do at least about 272 queries here)
+                            if (!(base & 4095) && font->IsGlyphRangeUnused(base, base + 4095))
+                            {
+                                base += 4096 - 256;
+                                continue;
+                            }
+
                             int count = 0;
                             for (unsigned int n = 0; n < 256; n++)
                                 count += font->FindGlyphNoFallback((ImWchar)(base + n)) ? 1 : 0;
@@ -3463,6 +3474,7 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
                                         ImGui::BeginTooltip();
                                         ImGui::Text("Codepoint: U+%04X", base + n);
                                         ImGui::Separator();
+                                        ImGui::Text("Visible: %d", glyph->Visible);
                                         ImGui::Text("AdvanceX: %.1f", glyph->AdvanceX);
                                         ImGui::Text("Pos: (%.2f,%.2f)->(%.2f,%.2f)", glyph->X0, glyph->Y0, glyph->X1, glyph->Y1);
                                         ImGui::Text("UV: (%.3f,%.3f)->(%.3f,%.3f)", glyph->U0, glyph->V0, glyph->U1, glyph->V1);
@@ -3577,6 +3589,7 @@ static void ShowExampleMenuFile()
     }
     if (ImGui::MenuItem("Save", "Ctrl+S")) {}
     if (ImGui::MenuItem("Save As..")) {}
+
     ImGui::Separator();
     if (ImGui::BeginMenu("Options"))
     {
@@ -3588,13 +3601,12 @@ static void ShowExampleMenuFile()
         ImGui::EndChild();
         static float f = 0.5f;
         static int n = 0;
-        static bool b = true;
         ImGui::SliderFloat("Value", &f, 0.0f, 1.0f);
         ImGui::InputFloat("Input", &f, 0.1f);
         ImGui::Combo("Combo", &n, "Yes\0No\0Maybe\0\0");
-        ImGui::Checkbox("Check", &b);
         ImGui::EndMenu();
     }
+
     if (ImGui::BeginMenu("Colors"))
     {
         float sz = ImGui::GetTextLineHeight();
@@ -3609,6 +3621,17 @@ static void ShowExampleMenuFile()
         }
         ImGui::EndMenu();
     }
+
+    // Here we demonstrate appending again to the "Options" menu (which we already created above)
+    // Of course in this demo it is a little bit silly that this function calls BeginMenu("Options") twice.
+    // In a real code-base using it would make senses to use this feature from very different code locations.
+    if (ImGui::BeginMenu("Options")) // <-- Append!
+    {
+        static bool b = true;
+        ImGui::Checkbox("SomeOption", &b);
+        ImGui::EndMenu();
+    }
+
     if (ImGui::BeginMenu("Disabled", false)) // Disabled
     {
         IM_ASSERT(0);
@@ -4451,16 +4474,37 @@ static void ShowExampleAppCustomRendering(bool* p_open)
 
     if (ImGui::BeginTabBar("##TabBar"))
     {
-        // Primitives
         if (ImGui::BeginTabItem("Primitives"))
         {
+            ImGui::PushItemWidth(-ImGui::GetFontSize() * 10);
+
+            // Draw gradients
+            // (note that those are currently exacerbating our sRGB/Linear issues)
+            ImGui::Text("Gradients");
+            ImVec2 gradient_size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+            {
+                ImVec2 p = ImGui::GetCursorScreenPos();
+                ImU32 col_a = ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+                ImU32 col_b = ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+                draw_list->AddRectFilledMultiColor(p, ImVec2(p.x + gradient_size.x, p.y + gradient_size.y), col_a, col_b, col_b, col_a);
+                ImGui::InvisibleButton("##gradient1", gradient_size);
+            }
+            {
+                ImVec2 p = ImGui::GetCursorScreenPos();
+                ImU32 col_a = ImGui::GetColorU32(ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
+                ImU32 col_b = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+                draw_list->AddRectFilledMultiColor(p, ImVec2(p.x + gradient_size.x, p.y + gradient_size.y), col_a, col_b, col_b, col_a);
+                ImGui::InvisibleButton("##gradient2", gradient_size);
+            }
+
+            // Draw a bunch of primitives
+            ImGui::Text("All primitives");
             static float sz = 36.0f;
             static float thickness = 3.0f;
             static int ngon_sides = 6;
             static bool circle_segments_override = false;
             static int circle_segments_override_v = 12;
             static ImVec4 colf = ImVec4(1.0f, 1.0f, 0.4f, 1.0f);
-            ImGui::PushItemWidth(-ImGui::GetFontSize() * 10);
             ImGui::DragFloat("Size", &sz, 0.2f, 2.0f, 72.0f, "%.0f");
             ImGui::DragFloat("Thickness", &thickness, 0.05f, 1.0f, 8.0f, "%.02f");
             ImGui::SliderInt("N-gon sides", &ngon_sides, 3, 12);
@@ -4469,7 +4513,6 @@ static void ShowExampleAppCustomRendering(bool* p_open)
             if (ImGui::SliderInt("Circle segments", &circle_segments_override_v, 3, 40))
                 circle_segments_override = true;
             ImGui::ColorEdit4("Color", &colf.x);
-            ImGui::PopItemWidth();
             const ImVec2 p = ImGui::GetCursorScreenPos();
             const ImU32 col = ImColor(colf);
             const float spacing = 10.0f;
@@ -4508,6 +4551,8 @@ static void ShowExampleAppCustomRendering(bool* p_open)
             draw_list->AddRectFilled(ImVec2(x, y), ImVec2(x + 1, y + 1), col);                          x += sz;            // Pixel (faster than AddLine)
             draw_list->AddRectFilledMultiColor(ImVec2(x, y), ImVec2(x + sz, y + sz), IM_COL32(0, 0, 0, 255), IM_COL32(255, 0, 0, 255), IM_COL32(255, 255, 0, 255), IM_COL32(0, 255, 0, 255));
             ImGui::Dummy(ImVec2((sz + spacing) * 9.8f, (sz + spacing) * 3));
+
+            ImGui::PopItemWidth();
             ImGui::EndTabItem();
         }
 
@@ -4574,9 +4619,9 @@ static void ShowExampleAppCustomRendering(bool* p_open)
             ImVec2 window_size = ImGui::GetWindowSize();
             ImVec2 window_center = ImVec2(window_pos.x + window_size.x * 0.5f, window_pos.y + window_size.y * 0.5f);
             if (draw_bg)
-                ImGui::GetBackgroundDrawList()->AddCircle(window_center, window_size.x * 0.6f, IM_COL32(255, 0, 0, 200), 48, 10+4);
+                ImGui::GetBackgroundDrawList()->AddCircle(window_center, window_size.x * 0.6f, IM_COL32(255, 0, 0, 200), 0, 10+4);
             if (draw_fg)
-                ImGui::GetForegroundDrawList()->AddCircle(window_center, window_size.y * 0.6f, IM_COL32(0, 255, 0, 200), 48, 10);
+                ImGui::GetForegroundDrawList()->AddCircle(window_center, window_size.y * 0.6f, IM_COL32(0, 255, 0, 200), 0, 10);
             ImGui::EndTabItem();
         }
 

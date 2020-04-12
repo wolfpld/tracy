@@ -13,7 +13,9 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
-//  2020-01-07: OpenGL: Added support for glbindings OpenGL loader.
+//  2020-04-12: OpenGL: Fixed context version check mistakenly testing for 4.0+ instead of 3.2+ to enable ImGuiBackendFlags_RendererHasVtxOffset.
+//  2020-03-24: OpenGL: Added support for glbinding 2.x OpenGL loader.
+//  2020-01-07: OpenGL: Added support for glbinding 3.x OpenGL loader.
 //  2019-10-25: OpenGL: Using a combination of GL define and runtime GL version to decide whether to use glDrawElementsBaseVertex(). Fix building with pre-3.2 GL loaders.
 //  2019-09-22: OpenGL: Detect default GL loader using __has_include compiler facility.
 //  2019-09-16: OpenGL: Tweak initialization code to allow application calling ImGui_ImplOpenGL3_CreateFontsTexture() before the first NewFrame() call.
@@ -83,19 +85,18 @@
 #if !defined(IMGUI_IMPL_OPENGL_ES2) && !defined(IMGUI_IMPL_OPENGL_ES3)
 #if (defined(__APPLE__) && (TARGET_OS_IOS || TARGET_OS_TV)) || (defined(__ANDROID__))
 #define IMGUI_IMPL_OPENGL_ES3           // iOS, Android  -> GL ES 3, "#version 300 es"
-#undef IMGUI_IMPL_OPENGL_LOADER_GL3W
-#undef IMGUI_IMPL_OPENGL_LOADER_GLEW
-#undef IMGUI_IMPL_OPENGL_LOADER_GLAD
-#undef IMGUI_IMPL_OPENGL_LOADER_GLBINDING
-#undef IMGUI_IMPL_OPENGL_LOADER_CUSTOM
 #elif defined(__EMSCRIPTEN__)
 #define IMGUI_IMPL_OPENGL_ES2           // Emscripten    -> GL ES 2, "#version 100"
+#endif
+#endif
+
+#if defined(IMGUI_IMPL_OPENGL_ES2) || defined(IMGUI_IMPL_OPENGL_ES3)
 #undef IMGUI_IMPL_OPENGL_LOADER_GL3W
 #undef IMGUI_IMPL_OPENGL_LOADER_GLEW
 #undef IMGUI_IMPL_OPENGL_LOADER_GLAD
-#undef IMGUI_IMPL_OPENGL_LOADER_GLBINDING
+#undef IMGUI_IMPL_OPENGL_LOADER_GLBINDING2
+#undef IMGUI_IMPL_OPENGL_LOADER_GLBINDING3
 #undef IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-#endif
 #endif
 
 // GL includes
@@ -113,14 +114,20 @@
 //  Helper libraries are often used for this purpose! Here we are supporting a few common ones (gl3w, glew, glad).
 //  You may use another loader/header of your choice (glext, glLoadGen, etc.), or chose to manually implement your own.
 #if defined(IMGUI_IMPL_OPENGL_LOADER_GL3W)
-#include <GL/gl3w.h>    // Needs to be initialized with gl3wInit() in user's code
+#include <GL/gl3w.h>            // Needs to be initialized with gl3wInit() in user's code
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLEW)
-#include <GL/glew.h>    // Needs to be initialized with glewInit() in user's code
+#include <GL/glew.h>            // Needs to be initialized with glewInit() in user's code.
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
-#include <glad/glad.h>  // Needs to be initialized with gladLoadGL() in user's code
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING)
-#include <glbinding/gl/gl.h>  // Initialize with glbinding::initialize()
-#include <glbinding/glbinding.h>
+#include <glad/glad.h>          // Needs to be initialized with gladLoadGL() in user's code.
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING2)
+#define GLFW_INCLUDE_NONE       // GLFW including OpenGL headers causes ambiguity or multiple definition errors.
+#include <glbinding/Binding.h>  // Needs to be initialized with glbinding::Binding::initialize() in user's code.
+#include <glbinding/gl/gl.h>
+using namespace gl;
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING3)
+#define GLFW_INCLUDE_NONE       // GLFW including OpenGL headers causes ambiguity or multiple definition errors.
+#include <glbinding/glbinding.h>// Needs to be initialized with glbinding::initialize() in user's code.
+#include <glbinding/gl/gl.h>
 using namespace gl;
 #else
 #include IMGUI_IMPL_OPENGL_LOADER_CUSTOM
@@ -135,7 +142,7 @@ using namespace gl;
 #endif
 
 // OpenGL Data
-static GLuint       g_GlVersion = 0;                // Extracted at runtime using GL_MAJOR_VERSION, GL_MINOR_VERSION queries.
+static GLuint       g_GlVersion = 0;                // Extracted at runtime using GL_MAJOR_VERSION, GL_MINOR_VERSION queries (e.g. 320 for GL 3.2)
 static char         g_GlslVersionString[32] = "";   // Specified by user or detected based on compile time GL settings.
 static GLuint       g_FontTexture = 0;
 static GLuint       g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
@@ -146,21 +153,21 @@ static unsigned int g_VboHandle = 0, g_ElementsHandle = 0;
 // Functions
 bool    ImGui_ImplOpenGL3_Init(const char* glsl_version)
 {
-    // Query for GL version
+    // Query for GL version (e.g. 320 for GL 3.2)
 #if !defined(IMGUI_IMPL_OPENGL_ES2)
     GLint major, minor;
     glGetIntegerv(GL_MAJOR_VERSION, &major);
     glGetIntegerv(GL_MINOR_VERSION, &minor);
-    g_GlVersion = major * 1000 + minor;
+    g_GlVersion = major * 100 + minor * 10;
 #else
-    g_GlVersion = 2000; // GLES 2
+    g_GlVersion = 200; // GLES 2
 #endif
 
     // Setup back-end capabilities flags
     ImGuiIO& io = ImGui::GetIO();
     io.BackendRendererName = "imgui_impl_opengl3";
 #if IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
-    if (g_GlVersion >= 3200)
+    if (g_GlVersion >= 320)
         io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset;  // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
 #endif
 
@@ -193,10 +200,14 @@ bool    ImGui_ImplOpenGL3_Init(const char* glsl_version)
     gl_loader = "GLEW";
 #elif defined(IMGUI_IMPL_OPENGL_LOADER_GLAD)
     gl_loader = "GLAD";
-#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING)
-    gl_loader = "glbinding";
-#else // IMGUI_IMPL_OPENGL_LOADER_CUSTOM
-    gl_loader = "Custom";
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING2)
+    gl_loader = "glbinding2";
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_GLBINDING3)
+    gl_loader = "glbinding3";
+#elif defined(IMGUI_IMPL_OPENGL_LOADER_CUSTOM)
+    gl_loader = "custom";
+#else
+    gl_loader = "none";
 #endif
 
     // Make a dummy GL call (we don't actually need the result)
@@ -368,7 +379,7 @@ void    ImGui_ImplOpenGL3_RenderDrawData(ImDrawData* draw_data)
                     // Bind texture, Draw
                     glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
 #if IMGUI_IMPL_OPENGL_MAY_HAVE_VTX_OFFSET
-                    if (g_GlVersion >= 3200)
+                    if (g_GlVersion >= 320)
                         glDrawElementsBaseVertex(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)(intptr_t)(pcmd->IdxOffset * sizeof(ImDrawIdx)), (GLint)pcmd->VtxOffset);
                     else
 #endif

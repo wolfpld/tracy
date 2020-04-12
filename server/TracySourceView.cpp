@@ -440,6 +440,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
                 }
                 inlineList++;
             }
+            pdqsort_branchless( symInline.begin(), symInline.end(), []( const auto& l, const auto& r ) { return l.second == r.second ? l.first < r.first : l.second > r.second; } );
 
             ImGui::Columns( 3 );
             static bool widthSet = false;

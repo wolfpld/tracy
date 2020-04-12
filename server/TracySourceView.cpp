@@ -553,14 +553,14 @@ void SourceView::RenderSymbolView( const Worker& worker )
     switch( m_displayMode )
     {
     case DisplaySource:
-        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipmaxSrc, worker );
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker );
         break;
     case DisplayAsm:
         jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker );
         break;
     case DisplayMixed:
         ImGui::Columns( 2 );
-        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipmaxSrc, worker );
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker );
         ImGui::NextColumn();
         jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker );
         ImGui::EndColumns();
@@ -615,7 +615,7 @@ static uint32_t GetHotnessColor( uint32_t ipSum, uint32_t maxIpCount )
 
 }
 
-void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker )
+void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, unordered_flat_map<uint64_t, uint32_t> ipcountAsm, uint32_t ipmax, const Worker& worker )
 {
     if( m_sourceFiles.empty() )
     {
@@ -648,27 +648,116 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
         if( ImGui::BeginCombo( "##fileList", m_file, ImGuiComboFlags_HeightLarge ) )
         {
-            for( auto& v : m_sourceFiles )
+            if( m_asm.empty() )
             {
-                const auto color = GetHsvColor( v.first, 0 );
-                SmallColorBox( color );
-                ImGui::SameLine();
-                auto fstr = worker.GetString( StringIdx( v.first ) );
-                if( SourceFileValid( fstr, worker.GetCaptureTime() ) )
+                for( auto& v : m_sourceFiles )
                 {
-                    ImGui::PushID( v.first );
-                    if( ImGui::Selectable( fstr, fstr == m_file ) )
+                    const auto color = GetHsvColor( v.first, 0 );
+                    SmallColorBox( color );
+                    ImGui::SameLine();
+                    auto fstr = worker.GetString( StringIdx( v.first ) );
+                    if( SourceFileValid( fstr, worker.GetCaptureTime() ) )
                     {
-                        ParseSource( fstr, &worker );
-                        m_targetLine = v.second;
-                        SelectLine( v.second, &worker );
+                        ImGui::PushID( v.first );
+                        if( ImGui::Selectable( fstr, fstr == m_file ) )
+                        {
+                            ParseSource( fstr, &worker );
+                            m_targetLine = v.second;
+                            SelectLine( v.second, &worker );
+                        }
+                    }
+                    else
+                    {
+                        TextDisabledUnformatted( fstr );
+                    }
+                    ImGui::PopID();
+                }
+            }
+            else
+            {
+                unordered_flat_map<uint32_t, uint32_t> fileCounts;
+                for( auto& v : m_asm )
+                {
+                    uint32_t srcline;
+                    const auto srcidx = worker.GetLocationForAddress( v.addr, srcline );
+                    if( srcline != 0 )
+                    {
+                        uint32_t cnt = 0;
+                        auto ait = ipcountAsm.find( v.addr );
+                        if( ait != ipcountAsm.end() ) cnt = ait->second;
+
+                        auto fit = fileCounts.find( srcidx.Idx() );
+                        if( fit == fileCounts.end() )
+                        {
+                            fileCounts.emplace( srcidx.Idx(), cnt );
+                        }
+                        else if( cnt != 0 )
+                        {
+                            fit->second += cnt;
+                        }
                     }
                 }
-                else
+                std::vector<std::pair<uint32_t, uint32_t>> fileCountsVec;
+                fileCountsVec.reserve( fileCounts.size() );
+                for( auto& v : fileCounts ) fileCountsVec.emplace_back( v.first, v.second );
+                pdqsort_branchless( fileCountsVec.begin(), fileCountsVec.end(), [&worker] (const auto& l, const auto& r ) { return l.second == r.second ? strcmp( worker.GetString( l.first ), worker.GetString( r.first ) ) < 0 : l.second > r.second; } );
+
+                ImGui::Columns( 2 );
+                static bool widthSet = false;
+                if( !widthSet )
                 {
-                    TextDisabledUnformatted( fstr );
+                    widthSet = true;
+                    const auto w = ImGui::GetWindowWidth();
+                    const auto c0 = ImGui::CalcTextSize( "1234567890m" ).x;
+                    ImGui::SetColumnWidth( 0, c0 );
+                    ImGui::SetColumnWidth( 1, w - c0 );
                 }
-                ImGui::PopID();
+                for( auto& v : fileCountsVec )
+                {
+                    auto fit = fileCounts.find( v.first );
+                    assert( fit != fileCounts.end() );
+                    if( fit->second != 0 )
+                    {
+                        ImGui::TextUnformatted( TimeToString( fit->second * worker.GetSamplingPeriod() ) );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            TextFocused( "Sample count:", RealToString( fit->second ) );
+                            ImGui::EndTooltip();
+                        }
+                    }
+                    ImGui::NextColumn();
+                    const auto color = GetHsvColor( v.first, 0 );
+                    SmallColorBox( color );
+                    ImGui::SameLine();
+                    auto fstr = worker.GetString( StringIdx( v.first ) );
+                    if( SourceFileValid( fstr, worker.GetCaptureTime() ) )
+                    {
+                        ImGui::PushID( v.first );
+                        if( ImGui::Selectable( fstr, fstr == m_file, ImGuiSelectableFlags_SpanAllColumns ) )
+                        {
+                            uint32_t line = 0;
+                            for( auto& file : m_sourceFiles )
+                            {
+                                if( file.first == v.first )
+                                {
+                                    line = file.second;
+                                    break;
+                                }
+                            }
+                            ParseSource( fstr, &worker );
+                            m_targetLine = line;
+                            SelectLine( line, &worker );
+                        }
+                    }
+                    else
+                    {
+                        TextDisabledUnformatted( fstr );
+                    }
+                    ImGui::PopID();
+                    ImGui::NextColumn();
+                }
+                ImGui::EndColumns();
             }
             ImGui::EndCombo();
         }

@@ -11537,7 +11537,7 @@ void View::DrawStatistics()
                     bool expand = false;
                     if( !m_statSeparateInlines )
                     {
-                        if( v.count > 0 )
+                        if( v.count > 0 && v.symAddr != 0 )
                         {
                             ImGui::PushID( v.symAddr );
                             expand = ImGui::TreeNodeEx( "", v.count == 0 ? ImGuiTreeNodeFlags_Leaf : 0 );
@@ -11569,7 +11569,7 @@ void View::DrawStatistics()
                         ImGui::SameLine();
                         ImGui::TextDisabled( "(%s)", parentName );
                     }
-                    if( !m_statSeparateInlines && v.count > 0 )
+                    if( !m_statSeparateInlines && v.count > 0 && v.symAddr != 0 )
                     {
                         ImGui::SameLine();
                         ImGui::TextDisabled( "(+%s)", RealToString( v.count ) );

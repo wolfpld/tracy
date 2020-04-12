@@ -406,23 +406,23 @@ void SourceView::RenderSymbolView( const Worker& worker )
     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
     if( inlineList )
     {
-        const auto symEnd = m_baseAddr + m_codeLen;
-        Vector<uint64_t> symInline( m_baseAddr );
-        while( *inlineList < symEnd )
-        {
-            if( *inlineList != m_baseAddr )
-            {
-                symInline.push_back_non_empty( *inlineList );
-            }
-            inlineList++;
-        }
-
         SmallCheckbox( ICON_FA_SITEMAP " Function:", &m_calcInlineStats );
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
         if( ImGui::BeginCombo( "##functionList", worker.GetString( sym->name ), ImGuiComboFlags_HeightLarge ) )
         {
+            const auto symEnd = m_baseAddr + m_codeLen;
+            Vector<uint64_t> symInline( m_baseAddr );
+            while( *inlineList < symEnd )
+            {
+                if( *inlineList != m_baseAddr )
+                {
+                    symInline.push_back_non_empty( *inlineList );
+                }
+                inlineList++;
+            }
+
             ImGui::Columns( 3 );
             static bool widthSet = false;
             if( !widthSet )

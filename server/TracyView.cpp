@@ -12982,7 +12982,7 @@ void View::DrawTextEditor()
 {
     ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
     bool show = true;
-    ImGui::Begin( "Source view", &show );
+    ImGui::Begin( "Source view", &show, ImGuiWindowFlags_NoScrollbar );
     m_sourceView->Render( m_worker );
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;

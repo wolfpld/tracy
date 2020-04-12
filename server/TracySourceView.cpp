@@ -412,13 +412,31 @@ void SourceView::RenderSymbolView( const Worker& worker )
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
         if( ImGui::BeginCombo( "##functionList", worker.GetString( sym->name ), ImGuiComboFlags_HeightLarge ) )
         {
+            const auto& symStat = worker.GetSymbolStats();
             const auto symEnd = m_baseAddr + m_codeLen;
-            Vector<uint64_t> symInline( m_baseAddr );
+            Vector<std::pair<uint64_t, uint32_t>> symInline;
+            auto baseStatIt = symStat.find( m_baseAddr );
+            if( baseStatIt == symStat.end() || baseStatIt->second.excl == 0 )
+            {
+                symInline.push_back( std::make_pair( m_baseAddr, 0 ) );
+            }
+            else
+            {
+                symInline.push_back( std::make_pair( m_baseAddr, baseStatIt->second.excl ) );
+            }
             while( *inlineList < symEnd )
             {
                 if( *inlineList != m_baseAddr )
                 {
-                    symInline.push_back_non_empty( *inlineList );
+                    auto statIt = symStat.find( *inlineList );
+                    if( statIt == symStat.end() || statIt->second.excl == 0 )
+                    {
+                        symInline.push_back_non_empty( std::make_pair( *inlineList, 0 ) );
+                    }
+                    else
+                    {
+                        symInline.push_back_non_empty( std::make_pair( *inlineList, statIt->second.excl ) );
+                    }
                 }
                 inlineList++;
             }
@@ -435,31 +453,29 @@ void SourceView::RenderSymbolView( const Worker& worker )
                 ImGui::SetColumnWidth( 1, w - c0 - c2 );
                 ImGui::SetColumnWidth( 2, c2 );
             }
-            const auto& symStat = worker.GetSymbolStats();
             for( auto& v : symInline )
             {
-                auto istat = symStat.find( v );
-                if( istat != symStat.end() && istat->second.excl != 0 )
+                if( v.second != 0 )
                 {
-                    ImGui::TextUnformatted( TimeToString( istat->second.excl * worker.GetSamplingPeriod() ) );
+                    ImGui::TextUnformatted( TimeToString( v.second * worker.GetSamplingPeriod() ) );
                     if( ImGui::IsItemHovered() )
                     {
                         ImGui::BeginTooltip();
-                        TextFocused( "Sample count:", RealToString( istat->second.excl ) );
+                        TextFocused( "Sample count:", RealToString( v.second ) );
                         ImGui::EndTooltip();
                     }
                 }
                 ImGui::NextColumn();
-                auto isym = worker.GetSymbolData( v );
+                auto isym = worker.GetSymbolData( v.first );
                 assert( isym );
-                ImGui::PushID( v );
-                if( ImGui::Selectable( worker.GetString( isym->name ), v == m_symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
+                ImGui::PushID( v.first );
+                if( ImGui::Selectable( worker.GetString( isym->name ), v.first == m_symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
-                    m_symAddr = v;
+                    m_symAddr = v.first;
                 }
                 ImGui::PopID();
                 ImGui::NextColumn();
-                ImGui::TextDisabled( "0x%" PRIx64, v );
+                ImGui::TextDisabled( "0x%" PRIx64, v.first );
                 ImGui::NextColumn();
             }
             ImGui::EndColumns();

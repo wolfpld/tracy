@@ -825,6 +825,24 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         std::vector<std::pair<uint64_t, uint32_t>> ipData;
         ipData.reserve( ipcount.size() );
         for( auto& v : ipcount ) ipData.emplace_back( v.first, v.second );
+        for( uint32_t lineNum = 1; lineNum <= m_lines.size(); lineNum++ )
+        {
+            if( ipcount.find( lineNum ) == ipcount.end() )
+            {
+                auto addresses = worker.GetAddressesForLocation( m_fileStringIdx, lineNum );
+                if( addresses )
+                {
+                    for( auto& addr : *addresses )
+                    {
+                        if( addr >= m_baseAddr && addr < m_baseAddr + m_codeLen )
+                        {
+                            ipData.emplace_back( lineNum, 0 );
+                            break;
+                        }
+                    }
+                }
+            }
+        }
         pdqsort_branchless( ipData.begin(), ipData.end(), []( const auto& l, const auto& r ) { return l.first < r.first; } );
 
         const auto step = uint32_t( m_lines.size() * 2 / rect.GetHeight() );
@@ -842,7 +860,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 ++it;
             }
             const auto ly = round( rect.Min.y + float( firstLine ) / m_lines.size() * rect.GetHeight() );
-            const uint32_t color = GetHotnessColor( ipSum, ipmax );
+            const uint32_t color = ipSum == 0 ? 0x22FFFFFF : GetHotnessColor( ipSum, ipmax );
             draw->AddRectFilled( ImVec2( x14, ly ), ImVec2( x34, ly+3 ), color );
         }
 

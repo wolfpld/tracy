@@ -1562,7 +1562,7 @@ You can use the \faSave{}~\emph{Save trace} button to save the current profile d
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
-\draw (0, 0.5) rectangle (6.1, -3.7);
+\draw (0, 0.5) rectangle (6.1, -3.2);
 \draw (0, 0.5) node[anchor=north west] {Connected to: 127.0.0.1};
 \draw[pattern=north east lines] (0.35, -0.35) circle(0.2);
 \draw (0.7, -0.1) rectangle+(3.5, -0.5) node[midway] {Bandwidth graph};
@@ -1570,11 +1570,10 @@ You can use the \faSave{}~\emph{Save trace} button to save the current profile d
 \draw (0.1, -0.6) node[anchor=north west] {Ratio 40.4\% \hspace{5pt} Real: 3.29 Mbps};
 \draw (0.1, -1.1) node[anchor=north west] {Data transferred: 23.11 MB};
 \draw (0.1, -1.6) node[anchor=north west] {Query backlog: 0 + 12};
-\draw (0.1, -2.1) node[anchor=north west] {Memory usage: 77.57 MB};
-\draw (0.1, -2.6) node[anchor=north west] {FPS: 60 \hspace{5pt} Frame time: 16.7 ms};
-\draw[rounded corners=5pt] (0.1, -3.1) rectangle+(2.2, -0.5) node [midway] {\faSave{}~Save trace};
-\draw[rounded corners=5pt] (2.6, -3.1) rectangle+(1.3, -0.5) node [midway] {\faPlug{}~Stop};
-\draw[rounded corners=5pt] (4.0, -3.1) rectangle+(2, -0.5) node [midway] {\faExclamationTriangle{}~Discard};
+\draw (0.1, -2.1) node[anchor=north west] {FPS: 60 \hspace{5pt} Frame time: 16.7 ms};
+\draw[rounded corners=5pt] (0.1, -2.6) rectangle+(2.2, -0.5) node [midway] {\faSave{}~Save trace};
+\draw[rounded corners=5pt] (2.6, -2.6) rectangle+(1.3, -0.5) node [midway] {\faPlug{}~Stop};
+\draw[rounded corners=5pt] (4.0, -2.6) rectangle+(2, -0.5) node [midway] {\faExclamationTriangle{}~Discard};
 \end{tikzpicture}
 \caption{Connection information pop-up.}
 \label{connectioninfo}
@@ -1741,8 +1740,8 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 \draw[rounded corners=5pt] (2.8, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretRight};
 \draw[rounded corners=5pt] (3.3, -0.7) rectangle+(0.5, -0.5) node [midway] {\faCaretDown};
 \draw[rounded corners=5pt] (3.9, -0.7) rectangle+(0.5, -0.5) node [midway] {\faCrosshairs};
-\draw (4.5, -0.65) node[anchor=north west] {\faEye~52.7 ms \hspace{5pt} \faDatabase~6.06 s};
-\draw[dashed] (8.2, -0.75) rectangle+(3.2, -0.4) node[midway] {Notification area};
+\draw (4.5, -0.65) node[anchor=north west] {\faEye~52.7 ms \hspace{5pt} \faDatabase~6.06 s \hspace{5pt} \faMemory~195.2 MB};
+\draw[dashed] (10.6, -0.75) rectangle+(3.2, -0.4) node[midway] {Notification area};
 
 \draw (0.1, -1.3) rectangle+(15.3, -1) node [midway] {Frame time graph};
 \draw (0.1, -2.4) rectangle+(15.3, -3) node [midway] {Timeline view};
@@ -1779,7 +1778,7 @@ The control menu (top row of buttons) provides access to various features of the
 
 The frame information block consists of four elements: the current frame set name along with the number of captured frames, the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to a another frame set\footnote{See section~\ref{framesets} for another way to change the active frame set.}. The \emph{\faCrosshairs{}~Go to frame} button allows zooming the timeline view on the specified frame. For more information about marking frames, see section~\ref{markingframes}.
 
-The next two items show the \faEye{}~view time range and \faDatabase{}~time span of the whole capture.
+The next three items show the \emph{\faEye{}~view time range}, the \emph{\faDatabase{}~time span} of the whole capture, and the \emph{\faMemory{}~memory usage} of the profiler.
 
 \paragraph{Notification area}
 
@@ -2548,8 +2547,6 @@ The information about the selected memory allocation is displayed in this window
 \label{traceinfo}
 
 This window contains information about the current trace: captured program name, time of the capture, profiler version which performed the capture and a custom trace description, which you can fill in.
-
-The \emph{Profiler statistics} section displays profiler health information, such as memory usage, or number of frames per second.
 
 Open the \emph{Trace statistics} section to see information about the trace, such as achieved timer resolution, number of captured zones, lock events, plot data points, memory allocations, etc.
 

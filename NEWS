@@ -44,6 +44,8 @@ v0.7 (xxxx-xx-xx)
     symbol.
   - Ability to switch between inlined functions which are incorporated into
     the symbol.
+- If the default listening port is occupied, profiler will now try listening
+  on other ports.
 
 v0.6.3 (2020-02-13)
 -------------------

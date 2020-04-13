@@ -596,7 +596,8 @@ private:
         else
         {
             assert( sizeof( size ) == 8 );
-            memcpy( &item->memAlloc.size, &size, 6 );
+            memcpy( &item->memAlloc.size, &size, 4 );
+            memcpy( ((char*)&item->memAlloc.size)+4, ((char*)&size)+4, 2 );
         }
         GetProfiler().m_serialQueue.commit_next();
     }

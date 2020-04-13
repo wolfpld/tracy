@@ -1173,9 +1173,11 @@ void Profiler::Worker()
     SetThreadName( "Tracy Profiler" );
 
 #ifdef TRACY_DATA_PORT
-    const auto dataPort = m_userPort != 0 ? m_userPort : TRACY_DATA_PORT;
+    const bool dataPortSearch = false;
+    auto dataPort = m_userPort != 0 ? m_userPort : TRACY_DATA_PORT;
 #else
-    const auto dataPort = m_userPort != 0 ? m_userPort : 8086;
+    const bool dataPortSearch = m_userPort == 0;
+    auto dataPort = m_userPort != 0 ? m_userPort : 8086;
 #endif
 #ifdef TRACY_BROADCAST_PORT
     const auto broadcastPort = TRACY_BROADCAST_PORT;
@@ -1239,7 +1241,24 @@ void Profiler::Worker()
     moodycamel::ConsumerToken token( GetQueue() );
 
     ListenSocket listen;
-    if( !listen.Listen( dataPort, 8 ) )
+    bool isListening = false;
+    if( !dataPortSearch )
+    {
+        isListening = listen.Listen( dataPort, 4 );
+    }
+    else
+    {
+        for( uint32_t i=0; i<20; i++ )
+        {
+            if( listen.Listen( dataPort+i, 4 ) )
+            {
+                dataPort += i;
+                isListening = true;
+                break;
+            }
+        }
+    }
+    if( !isListening )
     {
         for(;;)
         {

@@ -624,31 +624,49 @@ bool View::DrawImpl()
         ImGui::TextUnformatted( "Go to frame" );
         ImGui::EndTooltip();
     }
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    ImGui::Text( ICON_FA_EYE " %-10s", TimeToString( m_vd.zvEnd - m_vd.zvStart ) );
-    if( ImGui::IsItemHovered() )
+
     {
-        ImGui::BeginTooltip();
-        ImGui::Text( "View span" );
-        ImGui::EndTooltip();
-    }
-    ImGui::SameLine();
-    ImGui::Text( ICON_FA_DATABASE " %-10s", TimeToString( m_worker.GetLastTime() ) );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text( "Time span" );
-        ImGui::EndTooltip();
-    }
-    ImGui::SameLine();
-    ImGui::Text( ICON_FA_MEMORY " %-10s", MemSizeToString( memUsage ) );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::Text( "Profiler memory usage" );
-        ImGui::EndTooltip();
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        const auto targetLabelSize = ImGui::CalcTextSize( "WWWWWWW" ).x;
+
+        auto cx = ImGui::GetCursorPosX();
+        ImGui::Text( ICON_FA_EYE " %s", TimeToString( m_vd.zvEnd - m_vd.zvStart ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "View span" );
+            ImGui::EndTooltip();
+        }
+        ImGui::SameLine();
+        auto dx = ImGui::GetCursorPosX() - cx;
+        if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );
+
+        cx = ImGui::GetCursorPosX();
+        ImGui::Text( ICON_FA_DATABASE " %s", TimeToString( m_worker.GetLastTime() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "Time span" );
+            ImGui::EndTooltip();
+        }
+        ImGui::SameLine();
+        dx = ImGui::GetCursorPosX() - cx;
+        if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );
+
+        cx = ImGui::GetCursorPosX();
+        ImGui::Text( ICON_FA_MEMORY " %s", MemSizeToString( memUsage ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::Text( "Profiler memory usage" );
+            ImGui::EndTooltip();
+        }
+        ImGui::SameLine();
+        dx = ImGui::GetCursorPosX() - cx;
+        if( dx < targetLabelSize ) ImGui::SameLine( cx + targetLabelSize );
+        ImGui::Spacing();
     }
     DrawNotificationArea();
 

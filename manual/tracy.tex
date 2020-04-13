@@ -2677,7 +2677,7 @@ In some circumstances (missing or outdated source files, lack of machine code) s
 
 \paragraph{Source mode}
 
-This is pretty much the original source file view window, but with the ability to select one of the source files that were used to build the symbol. Additionally, each source file line will show count of associated assembly instructions, displayed with an '\texttt{@}' prefix. Due to the way optimizing compilers work, some lines may seemingly not produce any machine code, for example because iterating a loop counter index might have been reduced to advancing a data pointer. Some other lines may have disproportionate amount of associated instructions, e.g. when a loop unrolling optimization is applied. This varies from case to case and from compiler to compiler.
+This is pretty much the original source file view window, but with the ability to select one of the source files that were used to build the symbol. Additionally, each source file line which produced machine code in the symbol will show count of associated assembly instructions, displayed with an '\texttt{@}' prefix, and will be marked with a grey color on the scroll bar. Due to the way optimizing compilers work, some lines may seemingly not produce any machine code, for example because iterating a loop counter index might have been reduced to advancing a data pointer. Some other lines may have disproportionate amount of associated instructions, e.g. when a loop unrolling optimization is applied. This varies from case to case and from compiler to compiler.
 
 \paragraph{Assembly mode}
 

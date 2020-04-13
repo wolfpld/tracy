@@ -221,33 +221,26 @@ int Socket::Recv( void* _buf, int len, int timeout )
     }
 }
 
-bool Socket::Read( void* _buf, int len, int timeout, std::function<bool()> exitCb )
+bool Socket::ReadImpl( char*& buf, int& len, int timeout )
 {
-    auto buf = (char*)_buf;
-
-    while( len > 0 )
+    const auto sz = RecvBuffered( buf, len, timeout );
+    switch( sz )
     {
-        if( exitCb() ) return false;
-        const auto sz = RecvBuffered( buf, len, timeout );
-        switch( sz )
-        {
-        case 0:
-            return false;
-        case -1:
+    case 0:
+        return false;
+    case -1:
 #ifdef _WIN32
-        {
-            auto err = WSAGetLastError();
-            if( err == WSAECONNABORTED || err == WSAECONNRESET ) return false;
-        }
-#endif
-            break;
-        default:
-            len -= sz;
-            buf += sz;
-            break;
-        }
+    {
+        auto err = WSAGetLastError();
+        if( err == WSAECONNABORTED || err == WSAECONNRESET ) return false;
     }
-
+#endif
+    break;
+    default:
+        len -= sz;
+        buf += sz;
+        break;
+    }
     return true;
 }
 

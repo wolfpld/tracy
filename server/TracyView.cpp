@@ -642,6 +642,14 @@ bool View::DrawImpl()
         ImGui::Text( "Time span" );
         ImGui::EndTooltip();
     }
+    ImGui::SameLine();
+    ImGui::Text( ICON_FA_MEMORY " %-10s", MemSizeToString( memUsage ) );
+    if( ImGui::IsItemHovered() )
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text( "Profiler memory usage" );
+        ImGui::EndTooltip();
+    }
     DrawNotificationArea();
 
     m_frameHover = -1;
@@ -944,8 +952,6 @@ bool View::DrawConnection()
         ImGui::SameLine();
         TextFocused( "+", RealToString( m_worker.GetSendInFlight() ) );
     }
-
-    TextFocused( "Memory usage:", MemSizeToString( memUsage ) );
 
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 1.75 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
@@ -12277,13 +12283,6 @@ void View::DrawInfo()
     ImGui::Separator();
     ImGui::BeginChild( "##info" );
 
-    if( ImGui::TreeNode( "Profiler statistics" ) )
-    {
-        TextFocused( "Profiler memory usage:", MemSizeToString( memUsage ) );
-        TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ) ) );
-        ImGui::TreePop();
-    }
-
     const auto ficnt = m_worker.GetFrameImageCount();
     if( ImGui::TreeNode( "Trace statistics" ) )
     {
@@ -12926,6 +12925,9 @@ void View::DrawInfo()
             ImGui::TreePop();
         }
     }
+
+    ImGui::Separator();
+    TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ) ) );
 
     ImGui::Separator();
     TextFocused( "PID:", RealToString( m_worker.GetPid() ) );

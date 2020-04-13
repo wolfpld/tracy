@@ -425,6 +425,8 @@ Network communication between the client and the server by default is performed 
 
 If for some reason you want to use another port\footnote{For example, other programs may already be using it, or you may have overzealous firewall rules, or you may want to run two clients on the same IP address.}, you can change it using the \texttt{TRACY\_DATA\_PORT} macro for the data connection, and \texttt{TRACY\_BROADCAST\_PORT} macro for client broadcasts. Alternatively, both ports may be changed at the same time by declaring the \texttt{TRACY\_PORT} macro (specific macros listed before have higher priority). The data connection port may be also changed without recompiling the client application, by setting the \texttt{TRACY\_PORT} environment variable.
 
+If a custom port is not specified and the default listening port is already occupied, the profiler will automatically try to listen on a number of other ports.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,

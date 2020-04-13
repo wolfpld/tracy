@@ -221,6 +221,16 @@ int Socket::Recv( void* _buf, int len, int timeout )
     }
 }
 
+bool Socket::Read( void* buf, int len, int timeout )
+{
+    auto cbuf = (char*)buf;
+    while( len > 0 )
+    {
+        if( !ReadImpl( cbuf, len, timeout ) ) return false;
+    }
+    return true;
+}
+
 bool Socket::ReadImpl( char*& buf, int& len, int timeout )
 {
     const auto sz = RecvBuffered( buf, len, timeout );

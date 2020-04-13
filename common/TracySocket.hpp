@@ -27,6 +27,8 @@ public:
     int Send( const void* buf, int len );
     int GetSendBufSize();
 
+    bool Read( void* buf, int len, int timeout );
+
     template<typename ShouldExit>
     bool Read( void* buf, int len, int timeout, ShouldExit exitCb )
     {

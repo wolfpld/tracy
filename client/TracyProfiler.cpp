@@ -2313,17 +2313,15 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
 }
 
 
-static bool DontExit() { return false; }
-
 bool Profiler::HandleServerQuery()
 {
     uint8_t type;
     uint64_t ptr;
     uint32_t extra;
 
-    if( !m_sock->Read( &type, sizeof( type ), 10, DontExit ) ) return false;
-    if( !m_sock->Read( &ptr, sizeof( ptr ), 10, DontExit ) ) return false;
-    if( !m_sock->Read( &extra, sizeof( extra ), 10, DontExit ) ) return false;
+    if( !m_sock->Read( &type, sizeof( type ), 10 ) ) return false;
+    if( !m_sock->Read( &ptr, sizeof( ptr ), 10 ) ) return false;
+    if( !m_sock->Read( &extra, sizeof( extra ), 10 ) ) return false;
 
     switch( type )
     {

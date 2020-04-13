@@ -336,8 +336,8 @@ bool ListenSocket::Listen( int port, int backlog )
     int val = 1;
     setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof( val ) );
 #endif
-    if( bind( m_sock, res->ai_addr, res->ai_addrlen ) == -1 ) { freeaddrinfo( res ); return false; }
-    if( listen( m_sock, backlog ) == -1 ) { freeaddrinfo( res ); return false; }
+    if( bind( m_sock, res->ai_addr, res->ai_addrlen ) == -1 ) { freeaddrinfo( res ); Close(); return false; }
+    if( listen( m_sock, backlog ) == -1 ) { freeaddrinfo( res ); Close(); return false; }
     freeaddrinfo( res );
     return true;
 }

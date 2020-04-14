@@ -394,7 +394,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
         else
         {
             char tmp[16];
-            sprintf( tmp, "0x%x", m_baseAddr );
+            sprintf( tmp, "0x%" PRIx64, m_baseAddr );
             TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", tmp );
         }
     }

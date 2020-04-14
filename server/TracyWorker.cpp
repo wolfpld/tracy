@@ -2109,6 +2109,10 @@ Worker::~Worker()
     {
         v.~Vector();
     }
+    for( auto& v : m_data.ctxSwitch )
+    {
+        v.second->v.~Vector();
+    }
     for( auto& v : m_data.gpuChildren )
     {
         v.~Vector();

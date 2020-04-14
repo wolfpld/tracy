@@ -2105,6 +2105,14 @@ Worker::~Worker()
     {
         v.second->~LockMap();
     }
+    for( auto& v : m_data.zoneChildren )
+    {
+        v.~Vector();
+    }
+    for( auto& v : m_data.gpuChildren )
+    {
+        v.~Vector();
+    }
 #ifndef TRACY_NO_STATISTICS
     for( auto& v : m_data.ghostChildren )
     {

@@ -1487,7 +1487,7 @@ void SourceView::SelectAsmLines( uint32_t file, uint32_t line, const Worker& wor
         {
             if( targetAddr != 0 )
             {
-                m_targetAddr == targetAddr;
+                m_targetAddr = targetAddr;
             }
             else
             {

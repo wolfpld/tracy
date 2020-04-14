@@ -6211,7 +6211,7 @@ void Worker::UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint
         if( it == m_data.revParentFrameMap.end() )
         {
             auto frame = m_slab.Alloc<CallstackFrame>( fxsz-1 );
-            memcpy( frame, cfdata, fxsz * sizeof( CallstackFrame ) );
+            memcpy( frame, cfdata, ( fxsz-1 ) * sizeof( CallstackFrame ) );
             auto frameData = m_slab.AllocInit<CallstackFrameData>();
             frameData->data = frame;
             frameData->size = fxsz - 1;

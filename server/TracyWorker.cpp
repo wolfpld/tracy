@@ -7001,15 +7001,18 @@ void Worker::Write( FileWrite& f )
     f.Write( &sz, sizeof( sz ) );
     if( sz != 0 ) f.Write( m_data.appInfo.data(), sizeof( m_data.appInfo[0] ) * sz );
 
-    sz = m_data.frameImage.size();
-    f.Write( &sz, sizeof( sz ) );
-    for( auto& fi : m_data.frameImage )
     {
-        f.Write( &fi->w, sizeof( fi->w ) );
-        f.Write( &fi->h, sizeof( fi->h ) );
-        f.Write( &fi->flip, sizeof( fi->flip ) );
-        const auto image = m_texcomp.Unpack( *fi );
-        f.Write( image, fi->w * fi->h / 2 );
+        TextureCompression texcomp;
+        sz = m_data.frameImage.size();
+        f.Write( &sz, sizeof( sz ) );
+        for( auto& fi : m_data.frameImage )
+        {
+            f.Write( &fi->w, sizeof( fi->w ) );
+            f.Write( &fi->h, sizeof( fi->h ) );
+            f.Write( &fi->flip, sizeof( fi->flip ) );
+            const auto image = texcomp.Unpack( *fi );
+            f.Write( image, fi->w * fi->h / 2 );
+        }
     }
 
     // Only save context switches relevant to active threads.

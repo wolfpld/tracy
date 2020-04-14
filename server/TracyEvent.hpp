@@ -135,7 +135,7 @@ public:
         memcpy( &hi, m_val+4, 2 );
         uint32_t lo;
         memcpy( &lo, m_val, 4 );
-        return ( int64_t( hi ) << 32 ) | lo;
+        return ( int64_t( uint64_t( hi ) << 32 ) ) | lo;
     }
 
     tracy_force_inline bool IsNonNegative() const

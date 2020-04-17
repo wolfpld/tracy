@@ -412,6 +412,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
         if( ImGui::BeginCombo( "##functionList", worker.GetString( sym->name ), ImGuiComboFlags_HeightLarge ) )
         {
+            uint32_t totalSamples = 0;
             const auto& symStat = worker.GetSymbolStats();
             const auto symEnd = m_baseAddr + m_codeLen;
             Vector<std::pair<uint64_t, uint32_t>> symInline;
@@ -423,6 +424,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
             else
             {
                 symInline.push_back( std::make_pair( m_baseAddr, baseStatIt->second.excl ) );
+                totalSamples += baseStatIt->second.excl;
             }
             while( *inlineList < symEnd )
             {
@@ -436,6 +438,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
                     else
                     {
                         symInline.push_back_non_empty( std::make_pair( *inlineList, statIt->second.excl ) );
+                        totalSamples += statIt->second.excl;
                     }
                 }
                 inlineList++;
@@ -448,7 +451,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
             {
                 widthSet = true;
                 const auto w = ImGui::GetWindowWidth();
-                const auto c0 = ImGui::CalcTextSize( "1234567890m" ).x;
+                const auto c0 = ImGui::CalcTextSize( "12345678901234567890" ).x;
                 const auto c2 = ImGui::CalcTextSize( "0xeeeeeeeeeeeeee" ).x;
                 ImGui::SetColumnWidth( 0, c0 );
                 ImGui::SetColumnWidth( 1, w - c0 - c2 );
@@ -459,6 +462,8 @@ void SourceView::RenderSymbolView( const Worker& worker )
                 if( v.second != 0 )
                 {
                     ImGui::TextUnformatted( TimeToString( v.second * worker.GetSamplingPeriod() ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%.2f%%)", 100.f * v.second / totalSamples );
                     if( ImGui::IsItemHovered() )
                     {
                         ImGui::BeginTooltip();
@@ -675,6 +680,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
             }
             else
             {
+                uint32_t totalSamples = 0;
                 unordered_flat_map<uint32_t, uint32_t> fileCounts;
                 for( auto& v : m_asm )
                 {
@@ -695,6 +701,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                         {
                             fit->second += cnt;
                         }
+                        totalSamples += cnt;
                     }
                 }
                 std::vector<std::pair<uint32_t, uint32_t>> fileCountsVec;
@@ -708,7 +715,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 {
                     widthSet = true;
                     const auto w = ImGui::GetWindowWidth();
-                    const auto c0 = ImGui::CalcTextSize( "1234567890m" ).x;
+                    const auto c0 = ImGui::CalcTextSize( "12345678901234567890" ).x;
                     ImGui::SetColumnWidth( 0, c0 );
                     ImGui::SetColumnWidth( 1, w - c0 );
                 }
@@ -719,6 +726,8 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                     if( fit->second != 0 )
                     {
                         ImGui::TextUnformatted( TimeToString( fit->second * worker.GetSamplingPeriod() ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%.2f%%)", 100.f * fit->second / totalSamples );
                         if( ImGui::IsItemHovered() )
                         {
                             ImGui::BeginTooltip();

@@ -46,6 +46,7 @@ v0.7 (xxxx-xx-xx)
     the symbol.
 - If the default listening port is occupied, profiler will now try listening
   on other ports.
+- Added possibility to perform source file names substitution.
 
 v0.6.3 (2020-02-13)
 -------------------

@@ -50,14 +50,14 @@ public:
     SourceView( ImFont* font );
     ~SourceView();
 
-    void OpenSource( const char* fileName, int line );
-    void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker );
+    void OpenSource( const char* fileName, int line, const View& view );
+    void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker, const View& view );
     void Render( const Worker& worker, const View& view );
 
     void CalcInlineStats( bool val ) { m_calcInlineStats = val; }
 
 private:
-    void ParseSource( const char* fileName, const Worker* worker );
+    void ParseSource( const char* fileName, const Worker* worker, const View& view );
     bool Disassemble( uint64_t symAddr, const Worker& worker );
 
     void RenderSimpleSourceView();

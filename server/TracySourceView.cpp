@@ -10,6 +10,7 @@
 #include "TracyPrint.hpp"
 #include "TracySort.hpp"
 #include "TracySourceView.hpp"
+#include "TracyView.hpp"
 #include "TracyWorker.hpp"
 
 #include "IconsFontAwesome5.h"
@@ -46,7 +47,7 @@ SourceView::~SourceView()
     delete[] m_data;
 }
 
-void SourceView::OpenSource( const char* fileName, int line )
+void SourceView::OpenSource( const char* fileName, int line, const View& view )
 {
     m_targetLine = line;
     m_selectedLine = line;
@@ -55,11 +56,11 @@ void SourceView::OpenSource( const char* fileName, int line )
     m_symAddr = 0;
     m_sourceFiles.clear();
 
-    ParseSource( fileName, nullptr );
+    ParseSource( fileName, nullptr, view );
     assert( !m_lines.empty() );
 }
 
-void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker )
+void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker, const View& view )
 {
     m_targetLine = line;
     m_targetAddr = symAddr;
@@ -69,7 +70,7 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
     m_selectedAddresses.clear();
     m_selectedAddresses.emplace( symAddr );
 
-    ParseSource( fileName, &worker );
+    ParseSource( fileName, &worker, view );
     Disassemble( baseAddr, worker );
     SelectLine( line, &worker, true, symAddr );
 
@@ -91,7 +92,7 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
     }
 }
 
-void SourceView::ParseSource( const char* fileName, const Worker* worker )
+void SourceView::ParseSource( const char* fileName, const Worker* worker, const View& view )
 {
     if( m_file != fileName )
     {
@@ -100,7 +101,7 @@ void SourceView::ParseSource( const char* fileName, const Worker* worker )
         m_lines.clear();
         if( fileName )
         {
-            FILE* f = fopen( fileName, "rb" );
+            FILE* f = fopen( view.SourceSubstitution( fileName ), "rb" );
             fseek( f, 0, SEEK_END );
             const auto sz = ftell( f );
             fseek( f, 0, SEEK_SET );
@@ -589,7 +590,7 @@ void SourceView::RenderSymbolView( const Worker& worker, const View& view )
             }
             if( line > 0 || sym->size.Val() > 0 )
             {
-                OpenSymbol( file, line, jumpOut, jumpOut, worker );
+                OpenSymbol( file, line, jumpOut, jumpOut, worker, view );
             }
         }
     }
@@ -666,7 +667,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                         ImGui::PushID( v.first );
                         if( ImGui::Selectable( fstr, fstr == m_file ) )
                         {
-                            ParseSource( fstr, &worker );
+                            ParseSource( fstr, &worker, view );
                             m_targetLine = v.second;
                             SelectLine( v.second, &worker );
                         }
@@ -754,7 +755,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                                     break;
                                 }
                             }
-                            ParseSource( fstr, &worker );
+                            ParseSource( fstr, &worker, view );
                             m_targetLine = line;
                             SelectLine( line, &worker );
                         }
@@ -1381,7 +1382,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                     }
                     else if( SourceFileValid( fileName, worker.GetCaptureTime(), view ) )
                     {
-                        ParseSource( fileName, &worker );
+                        ParseSource( fileName, &worker, view );
                         m_targetLine = srcline;
                         SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;

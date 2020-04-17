@@ -195,14 +195,14 @@ void View::ViewSource( const char* fileName, int line )
 {
     assert( fileName );
     m_sourceViewFile = fileName;
-    m_sourceView->OpenSource( fileName, line );
+    m_sourceView->OpenSource( fileName, line, *this );
 }
 
 void View::ViewSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr )
 {
     assert( fileName || symAddr );
     m_sourceViewFile = fileName ? fileName : (const char*)~uint64_t( 0 );
-    m_sourceView->OpenSymbol( fileName, line, baseAddr, symAddr, m_worker );
+    m_sourceView->OpenSymbol( fileName, line, baseAddr, symAddr, m_worker, *this );
 }
 
 bool View::ViewDispatch( const char* fileName, int line, uint64_t symAddr )

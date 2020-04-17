@@ -670,12 +670,12 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                             m_targetLine = v.second;
                             SelectLine( v.second, &worker );
                         }
+                        ImGui::PopID();
                     }
                     else
                     {
                         TextDisabledUnformatted( fstr );
                     }
-                    ImGui::PopID();
                 }
             }
             else
@@ -758,12 +758,12 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                             m_targetLine = line;
                             SelectLine( line, &worker );
                         }
+                        ImGui::PopID();
                     }
                     else
                     {
                         TextDisabledUnformatted( fstr );
                     }
-                    ImGui::PopID();
                     ImGui::NextColumn();
                 }
                 ImGui::EndColumns();

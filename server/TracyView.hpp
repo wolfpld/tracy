@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <regex>
 #include <vector>
 
 #include "TracyBuzzAnim.hpp"
@@ -422,6 +423,16 @@ private:
 
     bool m_reconnectRequested = false;
     bool m_firstFrame = true;
+
+    struct SourceRegex
+    {
+        std::string pattern;
+        std::string target;
+        std::regex regex;
+    };
+
+    std::vector<SourceRegex> m_sourceSubstitutions;
+    bool m_sourceRegexValid = true;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

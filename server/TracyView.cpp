@@ -12292,7 +12292,7 @@ void View::DrawInfo()
         buf[descsz] = '\0';
         memcpy( buf, desc.c_str(), descsz );
         ImGui::SetNextItemWidth( -1 );
-        if( ImGui::InputTextWithHint( "", "Enter description of the trace", buf, 256 ) )
+        if( ImGui::InputTextWithHint( "##traceDesc", "Enter description of the trace", buf, 256 ) )
         {
             m_userData.SetDescription( buf );
         }
@@ -12942,6 +12942,79 @@ void View::DrawInfo()
             }
             ImGui::TreePop();
         }
+    }
+
+    if( ImGui::TreeNode( "Source location substitutions" ) )
+    {
+        static char test[1024] = {};
+        ImGui::SetNextItemWidth( -1 );
+        ImGui::InputTextWithHint( "##srcSubstTest", "Enter example source location to test substitutions", test, 1024 );
+        std::string res = test;
+        std::string tmp;
+        if( m_sourceRegexValid )
+        {
+            for( auto& v : m_sourceSubstitutions )
+            {
+                tmp = std::regex_replace( res, v.regex, v.target );
+                std::swap( tmp, res );
+            }
+            TextFocused( "Result:", res.c_str() );
+        }
+        else
+        {
+            ImGui::TextColored( ImVec4( 255, 0, 0, 255 ), "Error in regular expression" );
+        }
+        if( ImGui::SmallButton( "Add new substitution" ) ) m_sourceSubstitutions.emplace_back( SourceRegex {} );
+        int idx = 0, remove = -1;
+        bool changed = false;
+        ImGui::Columns( 2, nullptr, false );
+        for( auto& v : m_sourceSubstitutions )
+        {
+            ImGui::PushID( idx );
+            if( ImGui::Button( ICON_FA_TRASH_ALT ) ) remove = idx;
+            ImGui::SameLine();
+            char tmp[1024];
+            strncpy( tmp, v.pattern.c_str(), 1024 );
+            ImGui::SetNextItemWidth( -1 );
+            if( ImGui::InputTextWithHint( "##pattern", "Regex pattern", tmp, 1024 ) )
+            {
+                v.pattern.assign( tmp );
+                changed = true;
+            }
+            ImGui::NextColumn();
+            strncpy( tmp, v.target.c_str(), 1024 );
+            ImGui::SetNextItemWidth( -1 );
+            if( ImGui::InputTextWithHint( "##replacement", "Regex replacement", tmp, 1024 ) ) v.target.assign( tmp );
+            ImGui::PopID();
+            ImGui::NextColumn();
+            idx++;
+        }
+        ImGui::EndColumns();
+        if( remove != -1 )
+        {
+            m_sourceSubstitutions.erase( m_sourceSubstitutions.begin() + remove );
+            changed = true;
+        }
+
+        if( changed )
+        {
+            bool regexValid = true;
+            for( auto& v : m_sourceSubstitutions )
+            {
+                try
+                {
+                    v.regex.assign( v.pattern );
+                }
+                catch( std::regex_error& err )
+                {
+                    regexValid = false;
+                    break;
+                }
+            }
+            m_sourceRegexValid = regexValid;
+        }
+
+        ImGui::TreePop();
     }
 
     ImGui::Separator();

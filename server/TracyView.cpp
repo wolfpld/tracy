@@ -12949,16 +12949,9 @@ void View::DrawInfo()
         static char test[1024] = {};
         ImGui::SetNextItemWidth( -1 );
         ImGui::InputTextWithHint( "##srcSubstTest", "Enter example source location to test substitutions", test, 1024 );
-        std::string res = test;
-        std::string tmp;
         if( m_sourceRegexValid )
         {
-            for( auto& v : m_sourceSubstitutions )
-            {
-                tmp = std::regex_replace( res, v.regex, v.target );
-                std::swap( tmp, res );
-            }
-            TextFocused( "Result:", res.c_str() );
+            TextFocused( "Result:", SourceSubstitution( test ) );
         }
         else
         {
@@ -16120,6 +16113,19 @@ bool View::GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, in
         time = running;
     }
     return true;
+}
+
+const char* View::SourceSubstitution( const char* srcFile ) const
+{
+    if( !m_sourceRegexValid || m_sourceSubstitutions.empty() ) return srcFile;
+    static std::string res, tmp;
+    res.assign( srcFile );
+    for( auto& v : m_sourceSubstitutions )
+    {
+        tmp = std::regex_replace( res, v.regex, v.target );
+        std::swap( tmp, res );
+    }
+    return res.c_str();
 }
 
 }

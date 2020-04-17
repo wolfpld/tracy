@@ -89,6 +89,8 @@ public:
     std::string GetAddress() const { return m_worker.GetAddr(); }
     int GetPort() const { return m_worker.GetPort(); }
 
+    const char* SourceSubstitution( const char* srcFile ) const;
+
 private:
     enum class Namespace : uint8_t
     {

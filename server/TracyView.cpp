@@ -27,12 +27,10 @@
 #endif
 
 #include "tracy_pdqsort.h"
-#include "TracyBadVersion.hpp"
 #include "TracyColor.hpp"
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracyFilesystem.hpp"
-#include "TracyImGui.hpp"
 #include "TracyPopcnt.hpp"
 #include "TracyPrint.hpp"
 #include "TracySort.hpp"
@@ -215,7 +213,7 @@ bool View::ViewDispatch( const char* fileName, int line, uint64_t symAddr )
     }
     else
     {
-        if( !SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+        if( !SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
         {
             fileName = nullptr;
             line = 0;
@@ -6264,7 +6262,7 @@ void View::DrawZoneInfoWindow()
         }
     }
     const auto fileName = m_worker.GetString( srcloc.file );
-    if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+    if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
     {
         ImGui::SameLine();
         bool hilite = m_sourceViewFile == fileName;
@@ -6795,7 +6793,7 @@ void View::DrawZoneInfoWindow()
         ImGui::PopID();
         if( ImGui::IsItemClicked( 1 ) )
         {
-            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
             {
                 ViewSource( fileName, srcloc.line );
             }
@@ -7217,7 +7215,7 @@ void View::DrawGpuInfoWindow()
         }
     }
     const auto fileName = m_worker.GetString( srcloc.file );
-    if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+    if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
     {
         ImGui::SameLine();
         bool hilite = m_sourceViewFile == fileName;
@@ -7332,7 +7330,7 @@ void View::DrawGpuInfoWindow()
         ImGui::PopID();
         if( ImGui::IsItemClicked( 1 ) )
         {
-            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
             {
                 ViewSource( fileName, srcloc.line );
             }
@@ -7908,7 +7906,7 @@ void View::DrawOptions()
                         ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
-                            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+                            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
                             {
                                 ViewSource( fileName, sl.line );
                             }
@@ -7982,7 +7980,7 @@ void View::DrawOptions()
                         ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
-                            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+                            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
                             {
                                 ViewSource( fileName, sl.line );
                             }
@@ -8056,7 +8054,7 @@ void View::DrawOptions()
                         ImGui::TextDisabled( "(%s) %s:%i", RealToString( l.second->timeline.size() ), fileName, sl.line );
                         if( ImGui::IsItemClicked( 1 ) )
                         {
-                            if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+                            if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
                             {
                                 ViewSource( fileName, sl.line );
                             }
@@ -8627,7 +8625,7 @@ void View::DrawFindZone()
                 ImGui::TextColored( ImVec4( 0.5, 0.5, 0.5, 1 ), "(%s) %s:%i", RealToString( zones.size() ), fileName, srcloc.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {
-                    if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+                    if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
                     {
                         ViewSource( fileName, srcloc.line );
                     }
@@ -11260,7 +11258,7 @@ void View::DrawStatistics()
                 ImGui::TextDisabled( "%s:%i", file, srcloc.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {
-                    if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
+                    if( SourceFileValid( file, m_worker.GetCaptureTime(), *this ) )
                     {
                         ViewSource( file, srcloc.line );
                     }
@@ -11625,7 +11623,7 @@ void View::DrawStatistics()
                     }
                     if( ImGui::IsItemClicked( 1 ) )
                     {
-                        if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
+                        if( SourceFileValid( file, m_worker.GetCaptureTime(), *this ) )
                         {
                             ViewSymbol( file, line, codeAddr, v.symAddr );
                             if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( false );
@@ -11783,7 +11781,7 @@ void View::DrawStatistics()
                                 }
                                 if( ImGui::IsItemClicked( 1 ) )
                                 {
-                                    if( SourceFileValid( file, m_worker.GetCaptureTime() ) )
+                                    if( SourceFileValid( file, m_worker.GetCaptureTime(), *this ) )
                                     {
                                         ViewSymbol( file, line, codeAddr, iv.symAddr );
                                         if( !m_statSeparateInlines ) m_sourceView->CalcInlineStats( true );
@@ -13078,7 +13076,7 @@ void View::DrawTextEditor()
     ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show, ImGuiWindowFlags_NoScrollbar );
-    m_sourceView->Render( m_worker );
+    m_sourceView->Render( m_worker, *this );
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;
 }
@@ -13205,7 +13203,7 @@ void View::DrawLockInfoWindow()
     ImGui::Text( "%s:%i", fileName, srcloc.line );
     if( ImGui::IsItemClicked( 1 ) )
     {
-        if( SourceFileValid( fileName, m_worker.GetCaptureTime() ) )
+        if( SourceFileValid( fileName, m_worker.GetCaptureTime(), *this ) )
         {
             ViewSource( fileName, srcloc.line );
         }

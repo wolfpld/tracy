@@ -10,8 +10,10 @@
 #include <regex>
 #include <vector>
 
+#include "TracyBadVersion.hpp"
 #include "TracyBuzzAnim.hpp"
 #include "TracyDecayValue.hpp"
+#include "TracyImGui.hpp"
 #include "TracyShortPtr.hpp"
 #include "TracyTexture.hpp"
 #include "TracyUserData.hpp"

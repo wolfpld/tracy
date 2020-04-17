@@ -323,7 +323,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     return true;
 }
 
-void SourceView::Render( const Worker& worker )
+void SourceView::Render( const Worker& worker, const View& view )
 {
     m_highlightAddr.Decay( 0 );
     m_hoveredLine.Decay( 0 );
@@ -342,7 +342,7 @@ void SourceView::Render( const Worker& worker )
     }
     else
     {
-        RenderSymbolView( worker );
+        RenderSymbolView( worker, view );
     }
 }
 
@@ -378,7 +378,7 @@ void SourceView::RenderSimpleSourceView()
     ImGui::EndChild();
 }
 
-void SourceView::RenderSymbolView( const Worker& worker )
+void SourceView::RenderSymbolView( const Worker& worker, const View& view )
 {
     assert( m_symAddr != 0 );
 
@@ -558,16 +558,16 @@ void SourceView::RenderSymbolView( const Worker& worker )
     switch( m_displayMode )
     {
     case DisplaySource:
-        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker );
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker, view );
         break;
     case DisplayAsm:
-        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker );
+        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker, view );
         break;
     case DisplayMixed:
         ImGui::Columns( 2 );
-        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker );
+        RenderSymbolSourceView( iptotalSrc, ipcountSrc, ipcountAsm, ipmaxSrc, worker, view );
         ImGui::NextColumn();
-        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker );
+        jumpOut = RenderSymbolAsmView( iptotalAsm, ipcountAsm, ipmaxAsm, worker, view );
         ImGui::EndColumns();
         break;
     default:
@@ -582,7 +582,7 @@ void SourceView::RenderSymbolView( const Worker& worker )
         {
             auto line = sym->line;
             auto file = line == 0 ? nullptr : worker.GetString( sym->file );
-            if( file && !SourceFileValid( file, worker.GetCaptureTime() ) )
+            if( file && !SourceFileValid( file, worker.GetCaptureTime(), view ) )
             {
                 file = nullptr;
                 line = 0;
@@ -620,7 +620,7 @@ static uint32_t GetHotnessColor( uint32_t ipSum, uint32_t maxIpCount )
 
 }
 
-void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, unordered_flat_map<uint64_t, uint32_t> ipcountAsm, uint32_t ipmax, const Worker& worker )
+void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, unordered_flat_map<uint64_t, uint32_t> ipcountAsm, uint32_t ipmax, const Worker& worker, const View& view )
 {
     if( m_sourceFiles.empty() )
     {
@@ -661,7 +661,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                     SmallColorBox( color );
                     ImGui::SameLine();
                     auto fstr = worker.GetString( StringIdx( v.first ) );
-                    if( SourceFileValid( fstr, worker.GetCaptureTime() ) )
+                    if( SourceFileValid( fstr, worker.GetCaptureTime(), view ) )
                     {
                         ImGui::PushID( v.first );
                         if( ImGui::Selectable( fstr, fstr == m_file ) )
@@ -740,7 +740,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                     SmallColorBox( color );
                     ImGui::SameLine();
                     auto fstr = worker.GetString( StringIdx( v.first ) );
-                    if( SourceFileValid( fstr, worker.GetCaptureTime() ) )
+                    if( SourceFileValid( fstr, worker.GetCaptureTime(), view ) )
                     {
                         ImGui::PushID( v.first );
                         if( ImGui::Selectable( fstr, fstr == m_file, ImGuiSelectableFlags_SpanAllColumns ) )
@@ -880,7 +880,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     ImGui::EndChild();
 }
 
-uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker )
+uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker, const View& view )
 {
     SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative locations", &m_asmRelative );
     if( !m_sourceFiles.empty() )
@@ -919,7 +919,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 m_targetAddr = 0;
                 ImGui::SetScrollHereY();
             }
-            RenderAsmLine( line, 0, iptotal, ipmax, worker, jumpOut, maxAddrLen );
+            RenderAsmLine( line, 0, iptotal, ipmax, worker, jumpOut, maxAddrLen, view );
         }
     }
     else
@@ -936,7 +936,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             {
                 for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
                 {
-                    RenderAsmLine( m_asm[i], 0, 0, 0, worker, jumpOut, maxAddrLen );
+                    RenderAsmLine( m_asm[i], 0, 0, 0, worker, jumpOut, maxAddrLen, view );
                     insList.emplace_back( m_asm[i].addr );
                 }
             }
@@ -947,7 +947,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                     auto& line = m_asm[i];
                     auto it = ipcount.find( line.addr );
                     const auto ipcnt = it == ipcount.end() ? 0 : it->second;
-                    RenderAsmLine( line, ipcnt, iptotal, ipmax, worker, jumpOut, maxAddrLen );
+                    RenderAsmLine( line, ipcnt, iptotal, ipmax, worker, jumpOut, maxAddrLen, view );
                     insList.emplace_back( line.addr );
                 }
             }
@@ -1279,7 +1279,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen )
+void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, const View& view )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -1379,7 +1379,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                         SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;
                     }
-                    else if( SourceFileValid( fileName, worker.GetCaptureTime() ) )
+                    else if( SourceFileValid( fileName, worker.GetCaptureTime(), view ) )
                     {
                         ParseSource( fileName, &worker );
                         m_targetLine = srcline;

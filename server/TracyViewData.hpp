@@ -2,6 +2,7 @@
 #define __TRACYVIEWDATA_HPP__
 
 #include <stdint.h>
+#include <regex>
 
 namespace tracy
 {
@@ -36,6 +37,13 @@ struct Annotation
     int64_t start;
     int64_t end;
     uint32_t color;
+};
+
+struct SourceRegex
+{
+    std::string pattern;
+    std::string target;
+    std::regex regex;
 };
 
 }

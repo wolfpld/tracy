@@ -164,6 +164,7 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
     m_userData.StateShouldBePreserved();
     m_userData.LoadState( m_vd );
     m_userData.LoadAnnotations( m_annotations );
+    m_sourceRegexValid = m_userData.LoadSourceSubstitutions( m_sourceSubstitutions );
 
     if( m_worker.GetCallstackFrameCount() == 0 ) m_showUnknownFrames = false;
     if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
@@ -172,8 +173,10 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
 View::~View()
 {
     m_worker.Shutdown();
+
     m_userData.SaveState( m_vd );
     m_userData.SaveAnnotations( m_annotations );
+    m_userData.SaveSourceSubstitutions( m_sourceSubstitutions );
 
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
     if( m_saveThread.joinable() ) m_saveThread.join();

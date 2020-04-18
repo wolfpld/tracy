@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 #include <thread>
-#include <regex>
 #include <vector>
 
 #include "TracyBadVersion.hpp"
@@ -427,13 +426,6 @@ private:
 
     bool m_reconnectRequested = false;
     bool m_firstFrame = true;
-
-    struct SourceRegex
-    {
-        std::string pattern;
-        std::string target;
-        std::regex regex;
-    };
 
     std::vector<SourceRegex> m_sourceSubstitutions;
     bool m_sourceRegexValid = true;

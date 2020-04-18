@@ -11,6 +11,7 @@ namespace tracy
 {
 
 struct Annotation;
+struct SourceRegex;
 struct ViewData;
 
 class UserData
@@ -31,6 +32,9 @@ public:
 
     void LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data );
     void SaveAnnotations( const std::vector<std::unique_ptr<Annotation>>& data );
+
+    bool LoadSourceSubstitutions( std::vector<SourceRegex>& data );
+    void SaveSourceSubstitutions( const std::vector<SourceRegex>& data );
 
     const char* GetConfigLocation() const;
 

@@ -2554,7 +2554,22 @@ Open the \emph{Trace statistics} section to see information about the trace, suc
 
 There's also a section containing the selected frame set timing statistics and histogram\footnote{See section~\ref{findzone} for a description of the histogram. Note that there are subtle differences in the available functionality.}. As a convenience you can switch the active frame set here and limit the displayed frame statistics to the frame range visible on the screen.
 
-If CPU topology data is available (see section~\ref{cputopology}), you will be able to view the package, core and thread hierarchy.
+If \emph{CPU topology} data is available (see section~\ref{cputopology}), you will be able to view the package, core and thread hierarchy.
+
+The \emph{Source location substitutions} section allows adapting the source file paths, as captured by the profiler to the actual on-disk locations. You can create a new substitution by clicking the \emph{Add new substitution} button. This will add a new entry, with input fields for ECMAScript-conforming regular expression pattern and its corresponding replacement string. The outcome of substitutions can be quickly tested in the \emph{example source location} input field, which will be transformed and displayed below, as \emph{result}.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Quick example}
+Let's say we have an unix-based operating system with program sources in \texttt{/home/user/program/src/} directory. We have also performed a capture of an application running under Windows, with sources in \texttt{C:\textbackslash{}Users\textbackslash{}user\textbackslash{}Desktop\textbackslash{}program\textbackslash{}src} directory. Obviously, the source locations don't match and the profiler can't access the source files we have on our disk. We can fix that by adding two substitution patterns:
+
+\begin{itemize}
+\item \texttt{\^{}C:\textbackslash{}\textbackslash{}Users\textbackslash{}\textbackslash{}user\textbackslash{}\textbackslash{}Desktop} \hspace{1em}\textrightarrow\hspace{1em} \texttt{/home/user}
+\item \texttt{\textbackslash{}\textbackslash{}} \hspace{1em}\textrightarrow\hspace{1em} \texttt{/}
+\end{itemize}
+\end{bclogo}
 
 In this window you can view the information about the machine on which the profiled application was running. This includes the operating system, used compiler, CPU name, amount of total available RAM, etc. If application information was provided (see section~\ref{appinfo}), it will also be displayed here.
 
@@ -2655,7 +2670,7 @@ logo=\bcbombe
 Source file view works on the local files you have on your disk. The traces themselves do not contain any source code! This has the following implications:
 
 \begin{itemize}
-\item Source files can only be viewed, if the source file location recorded in the trace matches the files you have on your disk.
+\item Source files can only be viewed, if the source file location recorded in the trace matches the files you have on your disk. See section~\ref{traceinfo} for information on redirecting source file locations.
 \item Time stamp of the source file cannot be newer than the trace, as it typically would indicate that the file has been changed and no longer contains the code that was profiled.
 \item \textbf{The displayed source files might not reflect the code that was profiled!} It is up to you to verify that you don't have a modified version of the code, with regards to the trace.
 \end{itemize}

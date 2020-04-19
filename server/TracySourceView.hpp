@@ -29,6 +29,7 @@ class SourceView
         uint64_t jumpAddr;
         std::string mnemonic;
         std::string operands;
+        uint8_t len;
     };
 
     struct JumpData

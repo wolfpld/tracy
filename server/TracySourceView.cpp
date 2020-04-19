@@ -250,7 +250,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     m_jumpOut.emplace( op.address );
                 }
             }
-            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str } );
+            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size } );
             const auto mLen = strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;
 

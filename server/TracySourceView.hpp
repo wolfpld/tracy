@@ -89,6 +89,7 @@ private:
     DecayValue<uint32_t> m_hoveredSource;
     int m_displayMode;
     uint32_t m_codeLen;
+    int32_t m_disasmFail;
     DecayValue<uint64_t> m_highlightAddr;
     bool m_asmRelative;
     bool m_asmShowSourceLocation;

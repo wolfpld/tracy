@@ -150,6 +150,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     uint32_t len;
     auto code = worker.GetSymbolCode( symAddr, len );
     if( !code ) return false;
+    m_disasmFail = -1;
     csh handle;
     cs_err rval = CS_ERR_ARCH;
     switch( arch )
@@ -176,6 +177,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     size_t cnt = cs_disasm( handle, (const uint8_t*)code, len, symAddr, 0, &insn );
     if( cnt > 0 )
     {
+        if( insn[cnt-1].address - symAddr + insn[cnt-1].size < len ) m_disasmFail = insn[cnt-1].address - symAddr;
         int mLenMax = 0;
         m_asm.reserve( cnt );
         for( size_t i=0; i<cnt; i++ )

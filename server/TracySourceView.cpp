@@ -994,7 +994,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                         {
                             const auto fileName = worker.GetString( srcidx );
                             const auto fileColor = GetHsvColor( srcidx.Idx(), 0 );
-                            TextDisabledUnformatted( "Source location:" );
+                            TextDisabledUnformatted( "Target location:" );
                             ImGui::SameLine();
                             SmallColorBox( fileColor );
                             ImGui::SameLine();

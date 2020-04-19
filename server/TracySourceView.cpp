@@ -223,18 +223,26 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 }
                 if( jumpAddr >= symAddr && jumpAddr < symAddr + len )
                 {
-                    const auto min = std::min( jumpAddr, op.address );
-                    const auto max = std::max( jumpAddr, op.address );
-                    auto it = m_jumpTable.find( jumpAddr );
-                    if( it == m_jumpTable.end() )
+                    auto fit = std::lower_bound( insn, insn+cnt, jumpAddr, []( const auto& l, const auto& r ) { return l.address < r; } );
+                    if( fit != insn+cnt && fit->address == jumpAddr )
                     {
-                        m_jumpTable.emplace( jumpAddr, JumpData { min, max, 0, { op.address } } );
+                        const auto min = std::min( jumpAddr, op.address );
+                        const auto max = std::max( jumpAddr, op.address );
+                        auto it = m_jumpTable.find( jumpAddr );
+                        if( it == m_jumpTable.end() )
+                        {
+                            m_jumpTable.emplace( jumpAddr, JumpData { min, max, 0, { op.address } } );
+                        }
+                        else
+                        {
+                            if( it->second.min > min ) it->second.min = min;
+                            else if( it->second.max < max ) it->second.max = max;
+                            it->second.source.emplace_back( op.address );
+                        }
                     }
                     else
                     {
-                        if( it->second.min > min ) it->second.min = min;
-                        else if( it->second.max < max ) it->second.max = max;
-                        it->second.source.emplace_back( op.address );
+                        jumpAddr = 0;
                     }
                 }
                 else

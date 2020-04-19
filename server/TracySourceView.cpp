@@ -883,8 +883,48 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     ImGui::EndChild();
 }
 
+static int PrintHexBytes( char* buf, const uint8_t* bytes, size_t len )
+{
+    static constexpr char HexPrint[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+    const auto start = buf;
+    for( size_t i=0; i<len; i++ )
+    {
+        const auto byte = bytes[i];
+        *buf++ = HexPrint[byte >> 4];
+        *buf++ = HexPrint[byte & 0xF];
+        *buf++ = ' ';
+    }
+    *--buf = '\0';
+    return buf - start;
+}
+
 uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker, const View& view )
 {
+    if( m_disasmFail >= 0 )
+    {
+        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        if( ImGui::IsItemHovered() )
+        {
+            const bool clicked = ImGui::IsItemClicked();
+            ImGui::BeginTooltip();
+            TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "Disassembly failure." );
+            ImGui::TextUnformatted( "Some instructions weren't properly decoded. Possible reasons:" );
+            ImGui::TextUnformatted( " 1. Old version of capstone library doesn't support some instructions." );
+            ImGui::TextUnformatted( " 2. Trying to decode data part of the symbol (e.g. jump arrays, etc.)" );
+            TextFocused( "Code size:", RealToString( m_codeLen ) );
+            TextFocused( "Disassembled bytes:", RealToString( m_disasmFail ) );
+            char tmp[64];
+            auto bytesLeft = std::min( 16u, m_codeLen - m_disasmFail );
+            auto code = worker.GetSymbolCode( m_symAddr, m_codeLen );
+            assert( code );
+            PrintHexBytes( tmp, (const uint8_t*)code, bytesLeft );
+            TextFocused( "Failure bytes:", tmp );
+            TextDisabledUnformatted( "Click to copy to clipboard." );
+            ImGui::EndTooltip();
+            if( clicked ) ImGui::SetClipboardText( tmp );
+        }
+        ImGui::SameLine();
+    }
     SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative locations", &m_asmRelative );
     if( !m_sourceFiles.empty() )
     {

@@ -1785,7 +1785,8 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         {
             for( uint64_t i=0; i<sz; i++ )
             {
-                uint64_t symAddr, len;
+                uint64_t symAddr;
+                uint32_t len;
                 f.Read2( symAddr, len );
                 f.Skip( len );
             }

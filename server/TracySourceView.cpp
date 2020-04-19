@@ -36,6 +36,7 @@ SourceView::SourceView( ImFont* font )
     , m_codeLen( 0 )
     , m_highlightAddr( 0 )
     , m_asmRelative( false )
+    , m_asmBytes( false )
     , m_asmShowSourceLocation( true )
     , m_calcInlineStats( true )
     , m_showJumps( true )
@@ -178,6 +179,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     if( cnt > 0 )
     {
         if( insn[cnt-1].address - symAddr + insn[cnt-1].size < len ) m_disasmFail = insn[cnt-1].address - symAddr;
+        int bytesMax = 0;
         int mLenMax = 0;
         m_asm.reserve( cnt );
         for( size_t i=0; i<cnt; i++ )
@@ -253,6 +255,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size } );
             const auto mLen = strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;
+            if( op.size > bytesMax ) bytesMax = op.size;
 
             uint32_t mLineMax = 0;
             uint32_t srcline;
@@ -273,6 +276,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
         }
         cs_free( insn, cnt );
         m_maxMnemonicLen = mLenMax + 2;
+        m_maxAsmBytes = bytesMax;
         if( !m_jumpTable.empty() )
         {
             struct JumpRange
@@ -944,6 +948,10 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
+    SmallCheckbox( ICON_FA_MICROCHIP " Show bytes", &m_asmBytes );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
     SmallCheckbox( ICON_FA_SHARE " Draw jumps", &m_showJumps );
 
     ImGui::BeginChild( "##asmView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
@@ -1008,7 +1016,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 const auto ts = ImGui::CalcTextSize( " " );
                 const auto th2 = floor( ts.y / 2 );
                 const auto th4 = floor( ts.y / 4 );
-                const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 );
+                const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) + ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 );
                 const auto minAddr = m_asm[clipper.DisplayStart].addr;
                 const auto maxAddr = m_asm[clipper.DisplayEnd-1].addr;
                 const auto mjl = m_maxJumpLevel;
@@ -1387,10 +1395,10 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     buf[maxAddrLen] = '\0';
     TextDisabledUnformatted( buf );
 
+    const auto stw = ImGui::CalcTextSize( " " ).x;
     bool lineHovered = false;
     if( m_asmShowSourceLocation && !m_sourceFiles.empty() )
     {
-        const auto stw = ImGui::CalcTextSize( " " ).x;
         ImGui::SameLine();
         uint32_t srcline;
         const auto srcidx = worker.GetLocationForAddress( line.addr, srcline );
@@ -1458,6 +1466,17 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             ImGui::ItemSize( ImVec2( stw * 32, ty ), 0 );
         }
     }
+    if( m_asmBytes )
+    {
+        auto code = (const uint8_t*)worker.GetSymbolCode( m_symAddr, m_codeLen );
+        assert( code );
+        char tmp[64];
+        const auto len = PrintHexBytes( tmp, code + line.addr - m_symAddr, line.len );
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.5, 0.5, 1, 1 ), tmp );
+        ImGui::SameLine( 0, 0 );
+        ImGui::ItemSize( ImVec2( stw * ( m_maxAsmBytes*3 - len ), ty ), 0 );
+    }
     if( m_showJumps )
     {
         const auto JumpArrow = JumpArrowBase * ty / 15;;
@@ -1470,7 +1489,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             const auto th4 = floor( ts.y / 4 );
             const auto& mjl = m_maxJumpLevel;
             const auto col = GetHsvColor( line.jumpAddr, 6 );
-            const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 );
+            const auto xoff = ( iptotal == 0 ? 0 : ( 7 * ts.x + ts.y ) ) + (3+maxAddrLen) * ts.x + ( ( m_asmShowSourceLocation && !m_sourceFiles.empty() ) ? 36 * ts.x : 0 ) + ( m_asmBytes ? m_maxAsmBytes*3 * ts.x : 0 );
 
             draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + th2 + JumpArrow / 2, th2 ), col );
             draw->AddLine( wpos + ImVec2( xoff + JumpSeparation * mjl + th2, th2 ), wpos + ImVec2( xoff + JumpSeparation * mjl + th2 + th4, th2 - th4 ), col );

@@ -574,12 +574,10 @@ To build the application contained in the \texttt{profiler} directory, you will 
 
 \paragraph{Windows}
 
-On Windows you will need to use the \texttt{vcpkg} utility, which will automatically download and build the required files. If you are not familiar with this tool, please read the description at the following address: \url{https://docs.microsoft.com/en-us/cpp/build/vcpkg}. Please follow the installation instructions, then execute the following commands:
-
-\begin{lstlisting}[language=sh]
-vcpkg integrate install
-vcpkg install --triplet x64-windows-static freetype glfw3 capstone[arm,arm64,x86]
-\end{lstlisting}
+On Windows you will need to first run the script \texttt{vcpkg\\install\_vcpkg\_dependencies.bat}, which will
+automatically download and build the required files using \texttt{vcpkg}. If you are not familiar with this tool, please
+read the description at the following address: \url{https://docs.microsoft.com/en-us/cpp/build/vcpkg}. The batch file
+downloads files to the \texttt{vcpkg} and modifies no other state on the machine.
 
 \paragraph{Unix}
 

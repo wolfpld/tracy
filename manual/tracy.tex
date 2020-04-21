@@ -579,12 +579,12 @@ On Windows you will need to use the \texttt{vcpkg} utility. If you are not famil
 There are two ways you can run \texttt{vcpkg} to install the dependencies for Tracy:
 
 \begin{itemize}
-\item \texttt{STANDALONE} -- run this script to download and build both \texttt{vcpkg} and the required dependencies:
+\item Local installation within the project directory -- run this script to download and build both \texttt{vcpkg} and the required dependencies:
 \begin{lstlisting}[language=sh]
-tracy\vcpkg\install_vcpkg_dependencies.bat
+vcpkg\install_vcpkg_dependencies.bat
 \end{lstlisting}
-This writes files only to the \texttt{tracy\textbackslash{}vcpkg\textbackslash{}vcpkg} directory and makes no other changes on your machine.
-\item \texttt{SEPARATE} -- install \texttt{vcpkg} by following the instructions on its website, and then execute the following commands:
+This writes files only to the \texttt{vcpkg\textbackslash{}vcpkg} directory and makes no other changes on your machine.
+\item System-wide installation -- install \texttt{vcpkg} by following the instructions on its website, and then execute the following commands:
 \begin{lstlisting}[language=sh]
 vcpkg integrate install
 vcpkg install --triplet x64-windows-static freetype glfw3 capstone[arm,arm64,x86]

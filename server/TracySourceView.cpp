@@ -460,33 +460,52 @@ void SourceView::RenderSymbolView( const Worker& worker, const View& view )
             }
             pdqsort_branchless( symInline.begin(), symInline.end(), []( const auto& l, const auto& r ) { return l.second == r.second ? l.first < r.first : l.second > r.second; } );
 
-            ImGui::Columns( 3 );
-            static bool widthSet = false;
-            if( !widthSet )
+            if( totalSamples == 0 )
             {
-                widthSet = true;
-                const auto w = ImGui::GetWindowWidth();
-                const auto c0 = ImGui::CalcTextSize( "12345678901234567890" ).x;
-                const auto c2 = ImGui::CalcTextSize( "0xeeeeeeeeeeeeee" ).x;
-                ImGui::SetColumnWidth( 0, c0 );
-                ImGui::SetColumnWidth( 1, w - c0 - c2 );
-                ImGui::SetColumnWidth( 2, c2 );
+                ImGui::Columns( 2 );
+                static bool widthSet = false;
+                if( !widthSet )
+                {
+                    widthSet = true;
+                    const auto w = ImGui::GetWindowWidth();
+                    const auto c1 = ImGui::CalcTextSize( "0xeeeeeeeeeeeeee" ).x;
+                    ImGui::SetColumnWidth( 0, w - c1 );
+                    ImGui::SetColumnWidth( 1, c1 );
+                }
+            }
+            else
+            {
+                ImGui::Columns( 3 );
+                static bool widthSet = false;
+                if( !widthSet )
+                {
+                    widthSet = true;
+                    const auto w = ImGui::GetWindowWidth();
+                    const auto c0 = ImGui::CalcTextSize( "12345678901234567890" ).x;
+                    const auto c2 = ImGui::CalcTextSize( "0xeeeeeeeeeeeeee" ).x;
+                    ImGui::SetColumnWidth( 0, c0 );
+                    ImGui::SetColumnWidth( 1, w - c0 - c2 );
+                    ImGui::SetColumnWidth( 2, c2 );
+                }
             }
             for( auto& v : symInline )
             {
-                if( v.second != 0 )
+                if( totalSamples != 0 )
                 {
-                    ImGui::TextUnformatted( TimeToString( v.second * worker.GetSamplingPeriod() ) );
-                    ImGui::SameLine();
-                    ImGui::TextDisabled( "(%.2f%%)", 100.f * v.second / totalSamples );
-                    if( ImGui::IsItemHovered() )
+                    if( v.second != 0 )
                     {
-                        ImGui::BeginTooltip();
-                        TextFocused( "Sample count:", RealToString( v.second ) );
-                        ImGui::EndTooltip();
+                        ImGui::TextUnformatted( TimeToString( v.second * worker.GetSamplingPeriod() ) );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(%.2f%%)", 100.f * v.second / totalSamples );
+                        if( ImGui::IsItemHovered() )
+                        {
+                            ImGui::BeginTooltip();
+                            TextFocused( "Sample count:", RealToString( v.second ) );
+                            ImGui::EndTooltip();
+                        }
                     }
+                    ImGui::NextColumn();
                 }
-                ImGui::NextColumn();
                 auto isym = worker.GetSymbolData( v.first );
                 assert( isym );
                 ImGui::PushID( v.first );
@@ -724,33 +743,39 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                 for( auto& v : fileCounts ) fileCountsVec.emplace_back( v.first, v.second );
                 pdqsort_branchless( fileCountsVec.begin(), fileCountsVec.end(), [&worker] (const auto& l, const auto& r ) { return l.second == r.second ? strcmp( worker.GetString( l.first ), worker.GetString( r.first ) ) < 0 : l.second > r.second; } );
 
-                ImGui::Columns( 2 );
-                static bool widthSet = false;
-                if( !widthSet )
+                if( totalSamples != 0 )
                 {
-                    widthSet = true;
-                    const auto w = ImGui::GetWindowWidth();
-                    const auto c0 = ImGui::CalcTextSize( "12345678901234567890" ).x;
-                    ImGui::SetColumnWidth( 0, c0 );
-                    ImGui::SetColumnWidth( 1, w - c0 );
+                    ImGui::Columns( 2 );
+                    static bool widthSet = false;
+                    if( !widthSet )
+                    {
+                        widthSet = true;
+                        const auto w = ImGui::GetWindowWidth();
+                        const auto c0 = ImGui::CalcTextSize( "12345678901234567890" ).x;
+                        ImGui::SetColumnWidth( 0, c0 );
+                        ImGui::SetColumnWidth( 1, w - c0 );
+                    }
                 }
                 for( auto& v : fileCountsVec )
                 {
-                    auto fit = fileCounts.find( v.first );
-                    assert( fit != fileCounts.end() );
-                    if( fit->second != 0 )
+                    if( totalSamples != 0 )
                     {
-                        ImGui::TextUnformatted( TimeToString( fit->second * worker.GetSamplingPeriod() ) );
-                        ImGui::SameLine();
-                        ImGui::TextDisabled( "(%.2f%%)", 100.f * fit->second / totalSamples );
-                        if( ImGui::IsItemHovered() )
+                        auto fit = fileCounts.find( v.first );
+                        assert( fit != fileCounts.end() );
+                        if( fit->second != 0 )
                         {
-                            ImGui::BeginTooltip();
-                            TextFocused( "Sample count:", RealToString( fit->second ) );
-                            ImGui::EndTooltip();
+                            ImGui::TextUnformatted( TimeToString( fit->second * worker.GetSamplingPeriod() ) );
+                            ImGui::SameLine();
+                            ImGui::TextDisabled( "(%.2f%%)", 100.f * fit->second / totalSamples );
+                            if( ImGui::IsItemHovered() )
+                            {
+                                ImGui::BeginTooltip();
+                                TextFocused( "Sample count:", RealToString( fit->second ) );
+                                ImGui::EndTooltip();
+                            }
                         }
+                        ImGui::NextColumn();
                     }
-                    ImGui::NextColumn();
                     const auto color = GetHsvColor( v.first, 0 );
                     SmallColorBox( color );
                     ImGui::SameLine();
@@ -779,9 +804,9 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                     {
                         TextDisabledUnformatted( fstr );
                     }
-                    ImGui::NextColumn();
+                    if( totalSamples != 0 ) ImGui::NextColumn();
                 }
-                ImGui::EndColumns();
+                if( totalSamples != 0 ) ImGui::EndColumns();
             }
             ImGui::EndCombo();
         }

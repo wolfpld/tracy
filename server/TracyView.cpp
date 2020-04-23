@@ -6433,29 +6433,11 @@ void View::DrawZoneInfoWindow()
                             if( numCpus == 0 )
                             {
                                 ImGui::Text( "%i", i );
-                                auto tt = m_worker.GetThreadTopology( i );
-                                if( tt && ImGui::IsItemHovered() )
-                                {
-                                    ImGui::BeginTooltip();
-                                    TextFocused( "Package:", RealToString( tt->package ) );
-                                    ImGui::SameLine();
-                                    TextFocused( "Core:", RealToString( tt->core ) );
-                                    ImGui::EndTooltip();
-                                }
                                 break;
                             }
                             else
                             {
                                 ImGui::Text( "%i,", i );
-                                auto tt = m_worker.GetThreadTopology( i );
-                                if( tt && ImGui::IsItemHovered() )
-                                {
-                                    ImGui::BeginTooltip();
-                                    TextFocused( "Package:", RealToString( tt->package ) );
-                                    ImGui::SameLine();
-                                    TextFocused( "Core:", RealToString( tt->core ) );
-                                    ImGui::EndTooltip();
-                                }
                             }
                         }
                     }

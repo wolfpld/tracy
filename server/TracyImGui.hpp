@@ -25,10 +25,10 @@ namespace tracy
         ImGui::TextUnformatted( text );
     }
 
-    static inline void TextColoredUnformatted( const ImVec4& col, const char* text )
+    static inline void TextColoredUnformatted( const ImVec4& col, const char* text, const char* end = nullptr )
     {
         ImGui::PushStyleColor( ImGuiCol_Text, col );
-        ImGui::TextUnformatted( text );
+        ImGui::TextUnformatted( text, end );
         ImGui::PopStyleColor();
     }
 

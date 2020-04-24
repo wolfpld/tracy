@@ -1274,8 +1274,10 @@ static const ImVec4 SyntaxColors[] = {
     { 0.64f, 0.64f, 1,     1 },    // string
     { 0.64f, 0.82f, 1,     1 },    // char literal
     { 1,     0.91f, 0.53f, 1 },    // keyword
-    { 0.76f, 0.55f, 0.86f, 1 },    // number
+    { 0.81f, 0.6f,  0.91f, 1 },    // number
     { 0.9f,  0.9f,  0.9f,  1 },    // punctuation
+    { 0.78f, 0.46f, 0.75f, 1 },    // type
+    { 0.21f, 0.69f, 0.89f, 1 },    // special
 };
 
 void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker )
@@ -1711,16 +1713,63 @@ static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> G
     unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> ret;
     for( auto& v : {
         "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel", "atomic_commit", "atomic_noexcept",
-        "auto", "bitand", "bitor", "bool", "break", "case", "catch", "char", "char8_t", "char16_t", "char32_t",
-        "class", "compl", "concept", "const", "consteval", "constexpr", "constinit", "const_cast", "continue",
-        "co_await", "co_return", "co_yield", "decltype", "default", "delete", "do", "double", "dynamic_cast",
-        "else", "enum", "explicit", "export", "extern", "false", "float", "for", "friend", "goto", "if", "inline",
-        "int", "long", "mutable", "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator", "or",
-        "or_eq", "private", "protected", "public", "reflexpr", "register", "reinterpret_cast", "requires",
-        "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch",
-        "synchronized", "template", "this", "thread_local", "throw", "true", "try", "typedef", "typeid",
-        "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor",
-        "xor_eq", "override", "final", "import", "module", "transaction_safe", "transaction_safe_dynamic" } )
+        "bitand", "bitor", "break", "case", "catch", "class", "compl", "concept", "const", "consteval",
+        "constexpr", "constinit", "const_cast", "continue", "co_await", "co_return", "co_yield", "decltype",
+        "default", "delete", "do", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "for",
+        "friend", "if", "inline", "mutable", "namespace", "new", "noexcept", "not", "not_eq", "operator",
+        "or", "or_eq", "private", "protected", "public", "reflexpr", "register", "reinterpret_cast",
+        "return", "requires", "sizeof", "static", "static_assert", "static_cast", "struct", "switch",
+        "synchronized", "template", "thread_local", "throw", "try", "typedef", "typeid", "typename",
+        "union", "using", "virtual", "volatile", "while", "xor", "xor_eq", "override", "final", "import",
+        "module", "transaction_safe", "transaction_safe_dynamic" } )
+    {
+        ret.insert( v );
+    }
+    return ret;
+}
+static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> GetTypes()
+{
+    unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> ret;
+    for( auto& v : {
+        "bool", "char", "char8_t", "char16_t", "char32_t", "double", "float", "int", "long", "short", "signed",
+        "unsigned", "void", "wchar_t", "size_t", "int8_t", "int16_t", "int32_t", "int64_t", "int_fast8_t",
+        "int_fast16_t", "int_fast32_t", "int_fast64_t", "int_least8_t", "int_least16_t", "int_least32_t",
+        "int_least64_t", "intmax_t", "intptr_t", "uint8_t", "uint16_t", "uint32_t", "uint64_t", "uint_fast8_t",
+        "uint_fast16_t", "uint_fast32_t", "uint_fast64_t", "uint_least8_t", "uint_least16_t", "uint_least32_t",
+        "uint_least64_t", "uintmax_t", "uintptr_t", "type_info", "bad_typeid", "bad_cast", "type_index",
+        "clock_t", "time_t", "tm", "timespec", "ptrdiff_t", "nullptr_t", "max_align_t", "auto",
+
+        "__m64", "__m128", "__m128i", "__m128d", "__m256", "__m256i", "__m256d", "__m512", "__m512i",
+        "__m512d", "__mmask8", "__mmask16", "__mmask32", "__mmask64",
+
+        "int8x8_t", "int16x4_t", "int32x2_t", "int64x1_t", "uint8x8_t", "uint16x4_t", "uint32x2_t",
+        "uint64x1_t", "float32x2_t", "poly8x8_t", "poly16x4_t", "int8x16_t", "int16x8_t", "int32x4_t",
+        "int64x2_t", "uint8x16_t", "uint16x8_t", "uint32x4_t", "uint64x2_t", "float32x4_t", "poly8x16_t",
+        "poly16x8_t",
+
+        "int8x8x2_t", "int16x4x2_t", "int32x2x2_t", "int64x1x2_t", "uint8x8x2_t", "uint16x4x2_t",
+        "uint32x2x2_t", "uint64x1x2_t", "float32x2x2_t", "poly8x8x2_t", "poly16x4x2_t", "int8x16x2_t",
+        "int16x8x2_t", "int32x4x2_t", "int64x2x2_t", "uint8x16x2_t", "uint16x8x2_t", "uint32x4x2_t",
+        "uint64x2x2_t", "float32x4x2_t", "poly8x16x2_t", "poly16x8x2_t",
+
+        "int8x8x3_t", "int16x4x3_t", "int32x2x3_t", "int64x1x3_t", "uint8x8x3_t", "uint16x4x3_t",
+        "uint32x2x3_t", "uint64x1x3_t", "float32x2x3_t", "poly8x8x3_t", "poly16x4x3_t", "int8x16x3_t",
+        "int16x8x3_t", "int32x4x3_t", "int64x2x3_t", "uint8x16x3_t", "uint16x8x3_t", "uint32x4x3_t",
+        "uint64x2x3_t", "float32x4x3_t", "poly8x16x3_t", "poly16x8x3_t",
+
+        "int8x8x4_t", "int16x4x4_t", "int32x2x4_t", "int64x1x4_t", "uint8x8x4_t", "uint16x4x4_t",
+        "uint32x2x4_t", "uint64x1x4_t", "float32x2x4_t", "poly8x8x4_t", "poly16x4x4_t", "int8x16x4_t",
+        "int16x8x4_t", "int32x4x4_t", "int64x2x4_t", "uint8x16x4_t", "uint16x8x4_t", "uint32x4x4_t",
+        "uint64x2x4_t", "float32x4x4_t", "poly8x16x4_t", "poly16x8x4_t" } )
+    {
+        ret.insert( v );
+    }
+    return ret;
+}
+static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> GetSpecial()
+{
+    unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> ret;
+    for( auto& v : { "this", "nullptr", "true", "false", "goto", "NULL" } )
     {
         ret.insert( v );
     }
@@ -1729,6 +1778,8 @@ static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> G
 }
 
 static const auto s_keywords = GetKeywords();
+static const auto s_types = GetTypes();
+static const auto s_special = GetSpecial();
 
 static bool TokenizeNumber( const char*& begin, const char* end )
 {
@@ -1823,6 +1874,8 @@ SourceView::TokenColor SourceView::IdentifyToken( const char*& begin, const char
             memcpy( buf, tmp, begin-tmp );
             buf[begin-tmp] = '\0';
             if( s_keywords.find( buf ) != s_keywords.end() ) return TokenColor::Keyword;
+            if( s_types.find( buf ) != s_types.end() ) return TokenColor::Type;
+            if( s_special.find( buf ) != s_special.end() ) return TokenColor::Special;
         }
         return TokenColor::Default;
     }

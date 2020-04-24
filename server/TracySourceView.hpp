@@ -26,7 +26,9 @@ class SourceView
         CharacterLiteral,
         Keyword,
         Number,
-        Punctuation
+        Punctuation,
+        Type,
+        Special
     };
 
     struct Token

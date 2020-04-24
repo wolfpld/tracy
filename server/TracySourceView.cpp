@@ -1267,6 +1267,17 @@ static bool PrintPercentage( float val )
     return ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( stw * 7, ty ) );
 }
 
+static const ImVec4 SyntaxColors[] = {
+    { 0.7f,  0.7f,  0.7f,  1 },    // default
+    { 0.45f, 0.68f, 0.32f, 1 },    // comment
+    { 0.72f, 0.37f, 0.12f, 1 },    // preprocessor
+    { 0.64f, 0.64f, 1,     1 },    // string
+    { 0.64f, 0.82f, 1,     1 },    // char literal
+    { 1,     0.91f, 0.53f, 1 },    // keyword
+    { 0.76f, 0.55f, 0.86f, 1 },    // number
+    { 0.9f,  0.9f,  0.9f,  1 },    // punctuation
+};
+
 void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker )
 {
     const auto ty = ImGui::GetFontSize();
@@ -1347,7 +1358,27 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     }
 
     ImGui::SameLine( 0, ty );
-    ImGui::TextUnformatted( line.begin, line.end );
+    auto ptr = line.begin;
+    auto it = line.tokens.begin();
+    while( ptr < line.end )
+    {
+        if( it == line.tokens.end() )
+        {
+            ImGui::TextUnformatted( ptr, line.end );
+            ImGui::SameLine( 0, 0 );
+            break;
+        }
+        if( ptr < it->begin )
+        {
+            ImGui::TextUnformatted( ptr, it->begin );
+            ImGui::SameLine( 0, 0 );
+        }
+        TextColoredUnformatted( SyntaxColors[(int)it->color], it->begin, it->end );
+        ImGui::SameLine( 0, 0 );
+        ptr = it->end;
+        ++it;
+    }
+    ImGui::ItemSize( ImVec2( 0, 0 ), 0 );
 
     if( match > 0 && ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, ty+1 ) ) )
     {

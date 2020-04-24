@@ -6437,7 +6437,32 @@ void View::DrawZoneInfoWindow()
                             }
                             else
                             {
-                                ImGui::Text( "%i,", i );
+                                int consecutive = 1;
+                                int remaining = numCpus;
+                                for(;;)
+                                {
+                                    if( cpus[i+consecutive] == 0 ) break;
+                                    consecutive++;
+                                    if( --remaining == 0 ) break;
+                                }
+                                if( consecutive > 2 )
+                                {
+                                    if( remaining == 0 )
+                                    {
+                                        ImGui::Text( "%i \xE2\x80\x93 %i", i, i+consecutive-1 );
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        ImGui::Text( "%i \xE2\x80\x93 %i,", i, i+consecutive-1 );
+                                        i += consecutive - 1;
+                                        numCpus = remaining;
+                                    }
+                                }
+                                else
+                                {
+                                    ImGui::Text( "%i,", i );
+                                }
                             }
                         }
                     }

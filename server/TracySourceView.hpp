@@ -17,10 +17,30 @@ class Worker;
 
 class SourceView
 {
+    enum class TokenColor : uint8_t
+    {
+        Default,
+        Comment,
+        Preprocessor,
+        String,
+        CharacterLiteral,
+        Keyword,
+        Number,
+        Punctuation
+    };
+
+    struct Token
+    {
+        const char* begin;
+        const char* end;
+        TokenColor color;
+    };
+
     struct Line
     {
         const char* begin;
         const char* end;
+        std::vector<Token> tokens;
     };
 
     struct AsmLine
@@ -76,6 +96,21 @@ private:
 
     void GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, uint32_t& ipmaxSrc, uint32_t& ipmaxAsm, const Worker& worker );
 
+    TokenColor IdentifyToken( const char*& begin, const char* end );
+    std::vector<Token> Tokenize( const char* begin, const char* end );
+
+    struct TokenizerState
+    {
+        void Reset()
+        {
+            isInComment = false;
+            isInPreprocessor = false;
+        }
+
+        bool isInComment;
+        bool isInPreprocessor;
+    };
+
     ImFont* m_font;
     const char* m_file;
     uint32_t m_fileStringIdx;
@@ -112,6 +147,8 @@ private:
 
     uint32_t m_maxLine;
     int m_maxMnemonicLen;
+
+    TokenizerState m_tokenizer;
 };
 
 }

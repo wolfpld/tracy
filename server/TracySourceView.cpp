@@ -1,9 +1,11 @@
+#include <ctype.h>
 #include <inttypes.h>
 #include <stdio.h>
 
 #include <capstone/capstone.h>
 
 #include "../imgui/imgui.h"
+#include "TracyCharUtil.hpp"
 #include "TracyColor.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
@@ -116,12 +118,13 @@ void SourceView::ParseSource( const char* fileName, const Worker* worker, const 
             m_data[sz] = '\0';
             fclose( f );
 
+            m_tokenizer.Reset();
             auto txt = m_data;
             for(;;)
             {
                 auto end = txt;
                 while( *end != '\n' && *end != '\r' && end - m_data < sz ) end++;
-                m_lines.emplace_back( Line { txt, end } );
+                m_lines.emplace_back( Line { txt, end, Tokenize( txt, end ) } );
                 if( *end == '\n' )
                 {
                     end++;
@@ -1669,6 +1672,255 @@ void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& i
         iptotalAsm += ip.second;
         if( ipmaxAsm < ip.second ) ipmaxAsm = ip.second;
     }
+}
+
+namespace {
+static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> GetKeywords()
+{
+    unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> ret;
+    for( auto& v : {
+        "alignas", "alignof", "and", "and_eq", "asm", "atomic_cancel", "atomic_commit", "atomic_noexcept",
+        "auto", "bitand", "bitor", "bool", "break", "case", "catch", "char", "char8_t", "char16_t", "char32_t",
+        "class", "compl", "concept", "const", "consteval", "constexpr", "constinit", "const_cast", "continue",
+        "co_await", "co_return", "co_yield", "decltype", "default", "delete", "do", "double", "dynamic_cast",
+        "else", "enum", "explicit", "export", "extern", "false", "float", "for", "friend", "goto", "if", "inline",
+        "int", "long", "mutable", "namespace", "new", "noexcept", "not", "not_eq", "nullptr", "operator", "or",
+        "or_eq", "private", "protected", "public", "reflexpr", "register", "reinterpret_cast", "requires",
+        "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast", "struct", "switch",
+        "synchronized", "template", "this", "thread_local", "throw", "true", "try", "typedef", "typeid",
+        "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor",
+        "xor_eq", "override", "final", "import", "module", "transaction_safe", "transaction_safe_dynamic" } )
+    {
+        ret.insert( v );
+    }
+    return ret;
+}
+}
+
+static const auto s_keywords = GetKeywords();
+
+static bool TokenizeNumber( const char*& begin, const char* end )
+{
+    const bool startNum = *begin >= '0' && *begin <= '9';
+    if( *begin != '+' && *begin != '-' && !startNum ) return false;
+    begin++;
+    bool hasNum = startNum;
+    while( begin < end && ( ( *begin >= '0' && *begin <= '9' ) || *begin == '\'' ) )
+    {
+        hasNum = true;
+        begin++;
+    }
+    if( !hasNum ) return false;
+    bool isFloat = false, isHex = false, isBinary = false;
+    if( begin < end )
+    {
+        if( *begin == '.' )
+        {
+            isFloat = true;
+            begin++;
+            while( begin < end && ( ( *begin >= '0' && *begin <= '9' ) || *begin == '\'' ) ) begin++;
+        }
+        else if( *begin == 'x' || *begin == 'X' )
+        {
+            isHex = true;
+            begin++;
+            while( begin < end && ( ( *begin >= '0' && *begin <= '9' ) || ( *begin >= 'a' && *begin <= 'f' ) || ( *begin >= 'A' && *begin <= 'F' ) || *begin == '\'' ) ) begin++;
+        }
+        else if( *begin == 'b' || *begin == 'B' )
+        {
+            isBinary = true;
+            begin++;
+            while( begin < end && ( *begin == '0' || *begin == '1' ) || *begin == '\'' ) begin++;
+        }
+    }
+    if( !isBinary )
+    {
+        if( begin < end && ( *begin == 'e' || *begin == 'E' || *begin == 'p' || *begin == 'P' ) )
+        {
+            isFloat = true;
+            begin++;
+            if( begin < end && ( *begin == '+' || *begin == '-' ) ) begin++;
+            bool hasDigits = false;
+            while( begin < end && ( ( *begin >= '0' && *begin <= '9' ) || ( *begin >= 'a' && *begin <= 'f' ) || ( *begin >= 'A' && *begin <= 'F' ) || *begin == '\'' ) )
+            {
+                hasDigits = true;
+                begin++;
+            }
+            if( !hasDigits ) return false;
+        }
+        if( begin < end && ( *begin == 'f' || *begin == 'F' || *begin == 'l' || *begin == 'L' ) ) begin++;
+    }
+    if( !isFloat )
+    {
+        while( begin < end && ( *begin == 'u' || *begin == 'U' || *begin == 'l' || *begin == 'L' ) ) begin++;
+    }
+    return true;
+}
+
+SourceView::TokenColor SourceView::IdentifyToken( const char*& begin, const char* end )
+{
+    if( *begin == '"' )
+    {
+        begin++;
+        while( begin < end )
+        {
+            if( *begin == '"' )
+            {
+                begin++;
+                break;
+            }
+            begin += 1 + ( *begin == '\\' && end - begin > 1 && *(begin+1) == '"' );
+        }
+        return TokenColor::String;
+    }
+    if( *begin == '\'' )
+    {
+        begin++;
+        if( begin < end && *begin == '\\' ) begin++;
+        if( begin < end ) begin++;
+        if( begin < end && *begin == '\'' ) begin++;
+        return TokenColor::CharacterLiteral;
+    }
+    if( ( *begin >= 'a' && *begin <= 'z' ) || ( *begin >= 'A' && *begin <= 'Z' ) || *begin == '_' )
+    {
+        const char* tmp = begin;
+        begin++;
+        while( begin < end && ( *begin >= 'a' && *begin <= 'z' ) || ( *begin >= 'A' && *begin <= 'Z' ) || ( *begin >= '0' && *begin <= '9' ) || *begin == '_' ) begin++;
+        if( begin - tmp <= 24 )
+        {
+            char buf[25];
+            memcpy( buf, tmp, begin-tmp );
+            buf[begin-tmp] = '\0';
+            if( s_keywords.find( buf ) != s_keywords.end() ) return TokenColor::Keyword;
+        }
+        return TokenColor::Default;
+    }
+    const char* tmp = begin;
+    if( TokenizeNumber( begin, end ) ) return TokenColor::Number;
+    begin = tmp;
+    if( *begin == '/' && end - begin > 1 )
+    {
+        if( *(begin+1) == '/' )
+        {
+            begin = end;
+            return TokenColor::Comment;
+        }
+        if( *(begin+1) == '*' )
+        {
+            begin += 2;
+            for(;;)
+            {
+                while( begin < end && *begin != '*' ) begin++;
+                if( begin == end )
+                {
+                    m_tokenizer.isInComment = true;
+                    return TokenColor::Comment;
+                }
+                begin++;
+                if( begin < end && *begin == '/' )
+                {
+                    begin++;
+                    return TokenColor::Comment;
+                }
+            }
+        }
+    }
+    while( begin < end )
+    {
+        switch( *begin )
+        {
+        case '[':
+        case ']':
+        case '{':
+        case '}':
+        case '!':
+        case '%':
+        case '^':
+        case '&':
+        case '*':
+        case '(':
+        case ')':
+        case '-':
+        case '+':
+        case '=':
+        case '~':
+        case '|':
+        case '<':
+        case '>':
+        case '?':
+        case ':':
+        case '/':
+        case ';':
+        case ',':
+        case '.':
+            begin++;
+            break;
+        default:
+            goto out;
+        }
+    }
+out:
+    if( begin != tmp ) return TokenColor::Punctuation;
+    begin = end;
+    return TokenColor::Default;
+}
+
+std::vector<SourceView::Token> SourceView::Tokenize( const char* begin, const char* end )
+{
+    std::vector<Token> ret;
+    if( m_tokenizer.isInPreprocessor )
+    {
+        if( begin == end )
+        {
+            m_tokenizer.isInPreprocessor = false;
+            return ret;
+        }
+        if( *(end-1) != '\\' ) m_tokenizer.isInPreprocessor = false;
+        ret.emplace_back( Token { begin, end, TokenColor::Preprocessor } );
+        return ret;
+    }
+    const bool first = !m_tokenizer.isInComment;
+    while( begin != end )
+    {
+        if( m_tokenizer.isInComment )
+        {
+            const auto pos = begin;
+            for(;;)
+            {
+                while( begin != end && *begin != '*' ) begin++;
+                begin++;
+                if( begin < end )
+                {
+                    if( *begin == '/' )
+                    {
+                        begin++;
+                        ret.emplace_back( Token { pos, begin, TokenColor::Comment } );
+                        m_tokenizer.isInComment = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    ret.emplace_back( Token { pos, end, TokenColor::Comment } );
+                    return ret;
+                }
+            }
+        }
+        else
+        {
+            while( begin != end && isspace( *begin ) ) begin++;
+            if( first && begin < end && *begin == '#' )
+            {
+                if( *(end-1) == '\\' ) m_tokenizer.isInPreprocessor = true;
+                ret.emplace_back( Token { begin, end, TokenColor::Preprocessor } );
+                return ret;
+            }
+            const auto pos = begin;
+            const auto col = IdentifyToken( begin, end );
+            ret.emplace_back( Token { pos, begin, col } );
+        }
+    }
+    return ret;
 }
 
 }

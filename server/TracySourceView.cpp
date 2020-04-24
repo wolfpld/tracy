@@ -1493,10 +1493,10 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     }
     if( m_asmBytes )
     {
-        auto code = (const uint8_t*)worker.GetSymbolCode( m_symAddr, m_codeLen );
+        auto code = (const uint8_t*)worker.GetSymbolCode( m_baseAddr, m_codeLen );
         assert( code );
         char tmp[64];
-        const auto len = PrintHexBytes( tmp, code + line.addr - m_symAddr, line.len );
+        const auto len = PrintHexBytes( tmp, code + line.addr - m_baseAddr, line.len );
         ImGui::SameLine();
         TextColoredUnformatted( ImVec4( 0.5, 0.5, 1, 1 ), tmp );
         ImGui::SameLine( 0, 0 );

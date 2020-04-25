@@ -368,6 +368,18 @@ void SourceView::RenderSimpleSourceView()
 {
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
     if( m_font ) ImGui::PushFont( m_font );
+
+    auto draw = ImGui::GetWindowDrawList();
+    const auto wpos = ImGui::GetWindowPos();
+    const auto wh = ImGui::GetWindowHeight();
+    const auto ty = ImGui::GetFontSize();
+    const auto ts = ImGui::CalcTextSize( " " ).x;
+    const auto lineCount = m_lines.size();
+    const auto tmp = RealToString( lineCount );
+    const auto maxLine = strlen( tmp );
+    const auto lx = ts * maxLine + ty + round( ts*0.4f );
+    draw->AddLine( wpos + ImVec2( lx, 0 ), wpos + ImVec2( lx, wh ), 0x08FFFFFF );
+
     if( m_targetLine != 0 )
     {
         int lineNum = 1;
@@ -818,6 +830,24 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
 
     ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
     if( m_font ) ImGui::PushFont( m_font );
+
+    auto draw = ImGui::GetWindowDrawList();
+    const auto wpos = ImGui::GetWindowPos();
+    const auto wh = ImGui::GetWindowHeight();
+    const auto ty = ImGui::GetFontSize();
+    const auto ts = ImGui::CalcTextSize( " " ).x;
+    const auto lineCount = m_lines.size();
+    const auto tmp = RealToString( lineCount );
+    const auto maxLine = strlen( tmp );
+    auto lx = ts * maxLine + ty + round( ts*0.4f );
+    if( iptotal != 0 ) lx += ts * 7 + ty;
+    if( !m_asm.empty() )
+    {
+        const auto tmp = RealToString( m_asm.size() );
+        const auto maxAsm = strlen( tmp ) + 1;
+        lx += ts * maxAsm + ty;
+    }
+    draw->AddLine( wpos + ImVec2( lx, 0 ), wpos + ImVec2( lx, wh ), 0x08FFFFFF );
 
     m_selectedAddressesHover.clear();
     if( m_targetLine != 0 )

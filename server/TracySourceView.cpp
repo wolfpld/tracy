@@ -1330,7 +1330,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     ImGui::SameLine( 0, ty );
 
     uint32_t match = 0;
-    if( m_symAddr != 0 )
+    if( !m_asm.empty() )
     {
         assert( worker );
         const auto stw = ImGui::CalcTextSize( " " ).x;

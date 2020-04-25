@@ -298,6 +298,7 @@ private:
     std::string m_filename;
     bool m_staticView;
     bool m_pause;
+    bool m_forceConnectionPopup = false;
 
     ViewData m_vd;
 

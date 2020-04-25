@@ -128,6 +128,7 @@ View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, I
     : m_worker( addr, port )
     , m_staticView( false )
     , m_pause( false )
+    , m_forceConnectionPopup( true )
     , m_frames( nullptr )
     , m_messagesScrollBottom( true )
     , m_smallFont( smallFont )
@@ -508,8 +509,13 @@ bool View::DrawImpl()
 
     if( !m_staticView )
     {
-        if( ImGui::Button( ICON_FA_WIFI ) )
+        if( ImGui::Button( ICON_FA_WIFI ) || m_forceConnectionPopup )
         {
+            if( m_forceConnectionPopup )
+            {
+                m_forceConnectionPopup = false;
+                ImGui::SetNextWindowPos( ImGui::GetCursorPos() );
+            }
             ImGui::OpenPopup( "TracyConnectionPopup" );
         }
         ImGui::SameLine();
@@ -11265,6 +11271,7 @@ void View::DrawStatistics()
                     ImGui::Indent( indentVal );
                 }
                 const auto file = m_worker.GetString( srcloc.file );
+
                 ImGui::TextDisabled( "%s:%i", file, srcloc.line );
                 if( ImGui::IsItemClicked( 1 ) )
                 {

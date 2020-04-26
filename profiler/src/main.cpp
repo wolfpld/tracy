@@ -268,6 +268,7 @@ int main( int argc, char** argv )
         0x03BC, 0x03BC, // micro
         0x03C3, 0x03C3, // small sigma
         0x2013, 0x2013, // en dash
+        0x2264, 0x2264, // less-than or equal to
         0,
     };
     static const ImWchar rangesIcons[] = {

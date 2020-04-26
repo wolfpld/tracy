@@ -42,6 +42,7 @@ SourceView::SourceView( ImFont* font )
     , m_asmShowSourceLocation( true )
     , m_calcInlineStats( true )
     , m_showJumps( true )
+    , m_cpuArch( CpuArchUnknown )
 {
 }
 
@@ -149,15 +150,15 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     m_jumpOut.clear();
     m_maxJumpLevel = 0;
     if( symAddr == 0 ) return false;
-    const auto arch = worker.GetCpuArch();
-    if( arch == CpuArchUnknown ) return false;
+    m_cpuArch = worker.GetCpuArch();
+    if( m_cpuArch == CpuArchUnknown ) return false;
     uint32_t len;
     auto code = worker.GetSymbolCode( symAddr, len );
     if( !code ) return false;
     m_disasmFail = -1;
     csh handle;
     cs_err rval = CS_ERR_ARCH;
-    switch( arch )
+    switch( m_cpuArch )
     {
     case CpuArchX86:
         rval = cs_open( CS_ARCH_X86, CS_MODE_32, &handle );
@@ -201,7 +202,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             uint64_t jumpAddr = 0;
             if( hasJump )
             {
-                switch( arch )
+                switch( m_cpuArch )
                 {
                 case CpuArchX86:
                 case CpuArchX64:

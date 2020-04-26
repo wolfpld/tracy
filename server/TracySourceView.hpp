@@ -6,6 +6,7 @@
 
 #include "tracy_robin_hood.h"
 #include "TracyDecayValue.hpp"
+#include "../common/TracyProtocol.hpp"
 
 struct ImFont;
 
@@ -151,6 +152,8 @@ private:
     int m_maxMnemonicLen;
 
     TokenizerState m_tokenizer;
+
+    CpuArchitecture m_cpuArch;
 };
 
 }

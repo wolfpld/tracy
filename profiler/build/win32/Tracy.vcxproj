@@ -117,6 +117,7 @@
     <ClCompile Include="..\..\..\server\TracyColor.cpp" />
     <ClCompile Include="..\..\..\server\TracyFilesystem.cpp" />
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
+    <ClCompile Include="..\..\..\server\TracyMicroArchitecture.cpp" />
     <ClCompile Include="..\..\..\server\TracyMmap.cpp" />
     <ClCompile Include="..\..\..\server\TracyPrint.cpp" />
     <ClCompile Include="..\..\..\server\TracySourceView.cpp" />
@@ -197,6 +198,7 @@
     <ClInclude Include="..\..\..\server\TracyFileWrite.hpp" />
     <ClInclude Include="..\..\..\server\TracyImGui.hpp" />
     <ClInclude Include="..\..\..\server\TracyMemory.hpp" />
+    <ClInclude Include="..\..\..\server\TracyMicroArchitecture.hpp" />
     <ClInclude Include="..\..\..\server\TracyMmap.hpp" />
     <ClInclude Include="..\..\..\server\TracyPopcnt.hpp" />
     <ClInclude Include="..\..\..\server\TracyPrint.hpp" />

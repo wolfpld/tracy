@@ -9,6 +9,7 @@
 #include "TracyColor.hpp"
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
+#include "TracyMicroArchitecture.hpp"
 #include "TracyPrint.hpp"
 #include "TracySort.hpp"
 #include "TracySourceView.hpp"
@@ -70,8 +71,14 @@ SourceView::SourceView( ImFont* font )
     , m_calcInlineStats( true )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
-    , m_selMicroArch( sizeof( s_uArchUx ) / sizeof( *s_uArchUx ) - 1 )
 {
+    SelectMicroArchitecture( "ZEN2" );
+
+    m_microArchOpMap.reserve( OpsNum );
+    for( int i=0; i<OpsNum; i++ )
+    {
+        m_microArchOpMap.emplace( OpsList[i], i );
+    }
 }
 
 SourceView::~SourceView()
@@ -284,7 +291,81 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     m_jumpOut.emplace( op.address );
                 }
             }
-            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size } );
+            std::vector<AsmOpParams> params;
+            switch( m_cpuArch )
+            {
+            case CpuArchX86:
+            case CpuArchX64:
+                for( uint8_t i=0; i<detail.x86.op_count; i++ )
+                {
+                    uint8_t type = 0;
+                    switch( detail.x86.operands[i].type )
+                    {
+                    case X86_OP_IMM:
+                        type = 0;
+                        break;
+                    case X86_OP_REG:
+                        type = 1;
+                        break;
+                    case X86_OP_MEM:
+                        type = 2;
+                        break;
+                    default:
+                        assert( false );
+                        break;
+                    }
+                    params.emplace_back( AsmOpParams { type, uint16_t( detail.x86.operands[i].size * 8 ) } );
+                }
+                break;
+            case CpuArchArm32:
+                for( uint8_t i=0; i<detail.arm.op_count; i++ )
+                {
+                    uint8_t type = 0;
+                    switch( detail.arm.operands[i].type )
+                    {
+                    case ARM_OP_IMM:
+                        type = 0;
+                        break;
+                    case ARM_OP_REG:
+                        type = 1;
+                        break;
+                    case ARM_OP_MEM:
+                        type = 2;
+                        break;
+                    default:
+                        type = 255;
+                        break;
+                    }
+                    params.emplace_back( AsmOpParams { type, 0 } );
+                }
+                break;
+            case CpuArchArm64:
+                for( uint8_t i=0; i<detail.arm64.op_count; i++ )
+                {
+                    uint8_t type = 0;
+                    switch( detail.arm64.operands[i].type )
+                    {
+                    case ARM64_OP_IMM:
+                        type = 0;
+                        break;
+                    case ARM64_OP_REG:
+                        type = 1;
+                        break;
+                    case ARM64_OP_MEM:
+                        type = 2;
+                        break;
+                    default:
+                        type = 255;
+                        break;
+                    }
+                    params.emplace_back( AsmOpParams { type, 0 } );
+                }
+                break;
+            default:
+                assert( false );
+                break;
+            }
+            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, std::move( params ) } );
             const auto mLen = strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;
             if( op.size > bytesMax ) bytesMax = op.size;
@@ -1061,7 +1142,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             int idx = 0;
             for( auto& v : s_uArchUx )
             {
-                if( ImGui::Selectable( v.uArch, idx == m_selMicroArch ) ) m_selMicroArch = idx;
+                if( ImGui::Selectable( v.uArch, idx == m_selMicroArch ) ) SelectMicroArchitecture( v.moniker );
                 ImGui::SameLine();
                 TextDisabledUnformatted( v.cpuName );
                 idx++;
@@ -1656,6 +1737,136 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     memset( buf+msz, ' ', m_maxMnemonicLen-msz );
     memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
     ImGui::TextUnformatted( buf );
+    if( ( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 ) && ImGui::IsItemHovered() )
+    {
+        auto uarch = MicroArchitectureData[m_idxMicroArch];
+        char tmp[32];
+        for( size_t i=0; i<line.mnemonic.size(); i++ )
+        {
+            auto c = line.mnemonic[i];
+            if( c >= 'a' && c <= 'z' ) c = c - 'a' + 'A';
+            tmp[i] = c;
+        }
+        tmp[line.mnemonic.size()] = '\0';
+        auto it = m_microArchOpMap.find( tmp );
+        if( it != m_microArchOpMap.end() )
+        {
+            const auto opid = it->second;
+            auto oit = std::lower_bound( uarch->ops, uarch->ops + uarch->numOps, opid, []( const auto& l, const auto& r ) { return l->id < r; } );
+            if( oit != uarch->ops + uarch->numOps && (*oit)->id == opid )
+            {
+                int selVar = -1;
+                const auto& op = *oit;
+                for( int i=0; i<op->numVariants; i++ )
+                {
+                    const auto& var = *op->variant[i];
+                    if( var.descNum == line.params.size() )
+                    {
+                        bool match = true;
+                        for( int j=0; j<var.descNum; j++ )
+                        {
+                            if( var.desc[j].type  != line.params[j].type ||
+                                var.desc[j].width != line.params[j].width )
+                            {
+                                match = false;
+                                break;
+                            }
+                        }
+                        if( match )
+                        {
+                            selVar = i;
+                            break;
+                        }
+                    }
+                }
+                if( selVar != -1 )
+                {
+                    const auto& var = *op->variant[selVar];
+                    if( m_font ) ImGui::PopFont();
+                    ImGui::BeginTooltip();
+                    TextFocused( "Throughput:", RealToString( var.tp ) );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( "(cycles per instruction, lower is better)" );
+                    if( var.maxlat >= 0 )
+                    {
+                        TextDisabledUnformatted( "Latency:" );
+                        ImGui::SameLine();
+                        if( var.minlat == var.maxlat && var.minbound == var.maxbound )
+                        {
+                            if( var.minbound )
+                            {
+                                ImGui::Text( "\xe2\x89\xa4%s", RealToString( var.minlat ) );
+                            }
+                            else
+                            {
+                                ImGui::TextUnformatted( RealToString( var.minlat ) );
+                            }
+                        }
+                        else
+                        {
+                            if( var.minbound )
+                            {
+                                ImGui::Text( "[\xe2\x89\xa4%s", RealToString( var.minlat ) );
+                            }
+                            else
+                            {
+                                ImGui::Text( "[%s", RealToString( var.minlat ) );
+                            }
+                            ImGui::SameLine( 0, 0 );
+                            if( var.maxbound )
+                            {
+                                ImGui::Text( " \xE2\x80\x93 \xe2\x89\xa4%s]", RealToString( var.maxlat ) );
+                            }
+                            else
+                            {
+                                ImGui::Text( " \xE2\x80\x93 %s]", RealToString( var.maxlat ) );
+                            }
+                        }
+                        ImGui::SameLine();
+                        TextDisabledUnformatted( "(cycles in execution, may vary by used output)" );
+                    }
+                    TextFocused( "\xce\xbcops:", RealToString( var.uops ) );
+                    if( var.port != -1 ) TextFocused( "Ports:", PortList[var.port] );
+                    ImGui::Separator();
+                    TextFocused( "ISA set:", IsaList[var.isaSet] );
+                    TextDisabledUnformatted( "Operands:" );
+                    ImGui::SameLine();
+                    bool first = true;
+                    for( auto& v : line.params )
+                    {
+                        char t = '?';
+                        switch( v.type )
+                        {
+                        case 0:
+                            t = 'I';
+                            break;
+                        case 1:
+                            t = 'R';
+                            break;
+                        case 2:
+                            t = 'M';
+                            break;
+                        default:
+                            assert( false );
+                            break;
+                        }
+                        if( first )
+                        {
+                            first = false;
+                            ImGui::Text( "%c%i", t, v.width );
+                        }
+                        else
+                        {
+                            ImGui::SameLine( 0, 0 );
+                            ImGui::Text( ", %c%i", t, v.width );
+                        }
+                    }
+                    ImGui::EndTooltip();
+                    if( m_font ) ImGui::PushFont( m_font );
+                }
+            }
+        }
+    }
 
     if( line.jumpAddr != 0 )
     {
@@ -2094,6 +2305,29 @@ std::vector<SourceView::Token> SourceView::Tokenize( const char* begin, const ch
         }
     }
     return ret;
+}
+
+void SourceView::SelectMicroArchitecture( const char* moniker )
+{
+    int idx = 0;
+    for( auto& v : s_uArchUx )
+    {
+        if( strcmp( v.moniker, moniker ) == 0 )
+        {
+            m_selMicroArch = idx;
+            break;
+        }
+        idx++;
+    }
+    for( idx=0; idx<MicroArchitectureNum; idx++ )
+    {
+        if( strcmp( MicroArchitectureList[idx], moniker ) == 0 )
+        {
+            m_idxMicroArch = idx;
+            break;
+        }
+    }
+    assert( idx != MicroArchitectureNum );
 }
 
 }

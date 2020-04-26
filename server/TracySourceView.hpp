@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "tracy_robin_hood.h"
+#include "TracyCharUtil.hpp"
 #include "TracyDecayValue.hpp"
 #include "../common/TracyProtocol.hpp"
 
@@ -46,6 +47,12 @@ class SourceView
         std::vector<Token> tokens;
     };
 
+    struct AsmOpParams
+    {
+        uint8_t type;
+        uint16_t width;
+    };
+
     struct AsmLine
     {
         uint64_t addr;
@@ -53,6 +60,7 @@ class SourceView
         std::string mnemonic;
         std::string operands;
         uint8_t len;
+        std::vector<AsmOpParams> params;
     };
 
     struct JumpData
@@ -98,6 +106,8 @@ private:
     void SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker& worker );
 
     void GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, uint32_t& ipmaxSrc, uint32_t& ipmaxAsm, const Worker& worker );
+
+    void SelectMicroArchitecture( const char* moniker );
 
     TokenColor IdentifyToken( const char*& begin, const char* end );
     std::vector<Token> Tokenize( const char* begin, const char* end );
@@ -153,8 +163,10 @@ private:
 
     TokenizerState m_tokenizer;
 
+    unordered_flat_map<const char*, int, charutil::Hasher, charutil::Comparator> m_microArchOpMap;
     CpuArchitecture m_cpuArch;
     int m_selMicroArch;
+    int m_idxMicroArch;
 };
 
 }

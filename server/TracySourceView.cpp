@@ -20,6 +20,33 @@
 namespace tracy
 {
 
+struct MicroArchUx
+{
+    const char* uArch;
+    const char* cpuName;
+    const char* moniker;
+};
+
+static constexpr MicroArchUx s_uArchUx[] = {
+    { "Conroe", "Core 2 Duo E6750", "CON" },
+    { "Wolfdale", "Core 2 Duo E8400", "WOL" },
+    { "Nehalem", "Core i5-750", "NHM" },
+    { "Westmere", "Core i5-650", "WSM" },
+    { "Sandy Bridge", "Core i7-2600", "SNB" },
+    { "Ivy Bridge", "Core i5-3470", "IVB" },
+    { "Haswell", "Xeon E3-1225 v3", "HSW" },
+    { "Broadwell", "Core i5-5200U", "BDW" },
+    { "Skylake", "Core i7-6500U", "SKL" },
+    { "Skylake-X", "Core i9-7900X", "SKX" },
+    { "Kaby Lake", "Core i7-7700", "KBL" },
+    { "Coffee Lake", "Core i7-8700K", "CFL" },
+    { "Cannon Lake", "Core i3-8121U", "CNL" },
+    { "Ice Lake", "Core i5-1035G1", "ICL" },
+    { "AMD Zen+", "Ryzen 5 2600", "ZEN+" },
+    { "AMD Zen 2", "Ryzen 7 3700X", "ZEN2" },
+};
+
+
 enum { JumpSeparation = 6 };
 enum { JumpArrowBase = 9 };
 
@@ -43,6 +70,7 @@ SourceView::SourceView( ImFont* font )
     , m_calcInlineStats( true )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
+    , m_selMicroArch( sizeof( s_uArchUx ) / sizeof( *s_uArchUx ) - 1 )
 {
 }
 
@@ -1012,6 +1040,36 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     ImGui::Spacing();
     ImGui::SameLine();
     SmallCheckbox( ICON_FA_SHARE " Draw jumps", &m_showJumps );
+
+    if( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        float mw = 0;
+        for( auto& v : s_uArchUx )
+        {
+            const auto w = ImGui::CalcTextSize( v.uArch ).x;
+            if( w > mw ) mw = w;
+        }
+        ImGui::TextUnformatted( ICON_FA_MICROCHIP " \xce\xbc""arch:" );
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth( mw + ImGui::GetFontSize() );
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        if( ImGui::BeginCombo( "##uarch", s_uArchUx[m_selMicroArch].uArch, ImGuiComboFlags_HeightLarge ) )
+        {
+            int idx = 0;
+            for( auto& v : s_uArchUx )
+            {
+                if( ImGui::Selectable( v.uArch, idx == m_selMicroArch ) ) m_selMicroArch = idx;
+                ImGui::SameLine();
+                TextDisabledUnformatted( v.cpuName );
+                idx++;
+            }
+            ImGui::EndCombo();
+        }
+        ImGui::PopStyleVar();
+    }
 
     ImGui::BeginChild( "##asmView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
     if( m_font ) ImGui::PushFont( m_font );

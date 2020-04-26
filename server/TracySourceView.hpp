@@ -154,6 +154,7 @@ private:
     TokenizerState m_tokenizer;
 
     CpuArchitecture m_cpuArch;
+    int m_selMicroArch;
 };
 
 }

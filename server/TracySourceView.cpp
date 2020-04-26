@@ -1755,33 +1755,35 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             auto oit = std::lower_bound( uarch->ops, uarch->ops + uarch->numOps, opid, []( const auto& l, const auto& r ) { return l->id < r; } );
             if( oit != uarch->ops + uarch->numOps && (*oit)->id == opid )
             {
-                int selVar = -1;
                 const auto& op = *oit;
+                std::vector<std::pair<int, int>> res;
+                res.reserve( op->numVariants );
                 for( int i=0; i<op->numVariants; i++ )
                 {
                     const auto& var = *op->variant[i];
                     if( var.descNum == line.params.size() )
                     {
+                        int penalty = 0;
                         bool match = true;
                         for( int j=0; j<var.descNum; j++ )
                         {
-                            if( var.desc[j].type  != line.params[j].type ||
-                                var.desc[j].width != line.params[j].width )
+                            if( var.desc[j].type != line.params[j].type )
                             {
                                 match = false;
                                 break;
                             }
+                            if( var.desc[j].width != line.params[j].width ) penalty++;
                         }
                         if( match )
                         {
-                            selVar = i;
-                            break;
+                            res.emplace_back( i, penalty );
                         }
                     }
                 }
-                if( selVar != -1 )
+                if( !res.empty() )
                 {
-                    const auto& var = *op->variant[selVar];
+                    pdqsort_branchless( res.begin(), res.end(), []( const auto& l, const auto& r ) { return l.second < r.second; } );
+                    const auto& var = *op->variant[res[0].first];
                     if( m_font ) ImGui::PopFont();
                     ImGui::BeginTooltip();
                     TextFocused( "Throughput:", RealToString( var.tp ) );
@@ -1832,10 +1834,10 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                     TextDisabledUnformatted( "Operands:" );
                     ImGui::SameLine();
                     bool first = true;
-                    for( auto& v : line.params )
+                    for( int i=0; i<var.descNum; i++ )
                     {
                         char t = '?';
-                        switch( v.type )
+                        switch( var.desc[i].type )
                         {
                         case 0:
                             t = 'I';
@@ -1853,12 +1855,12 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                         if( first )
                         {
                             first = false;
-                            ImGui::Text( "%c%i", t, v.width );
+                            ImGui::Text( "%c%i", t, var.desc[i].width );
                         }
                         else
                         {
                             ImGui::SameLine( 0, 0 );
-                            ImGui::Text( ", %c%i", t, v.width );
+                            ImGui::Text( ", %c%i", t, var.desc[i].width );
                         }
                     }
                     ImGui::EndTooltip();

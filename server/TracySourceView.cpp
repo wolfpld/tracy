@@ -365,7 +365,40 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 assert( false );
                 break;
             }
-            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, std::move( params ) } );
+            LeaData leaData = LeaData::none;
+            if( ( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 ) && op.id == X86_INS_LEA )
+            {
+                assert( op.detail->x86.op_count == 2 );
+                assert( op.detail->x86.operands[1].type == X86_OP_MEM );
+                auto& mem = op.detail->x86.operands[1].mem;
+                if( mem.base == X86_REG_INVALID )
+                {
+                    if( mem.index == X86_REG_INVALID )
+                    {
+                        leaData = LeaData::d;
+                    }
+                    else
+                    {
+                        leaData = mem.disp == 0 ? LeaData::i : LeaData::id;
+                    }
+                }
+                else if( mem.base == X86_REG_RIP )
+                {
+                    leaData = mem.disp == 0 ? LeaData::r : LeaData::rd;
+                }
+                else
+                {
+                    if( mem.index == X86_REG_INVALID )
+                    {
+                        leaData = mem.disp == 0 ? LeaData::b : LeaData::bd;
+                    }
+                    else
+                    {
+                        leaData = mem.disp == 0 ? LeaData::bi : LeaData::bid;
+                    }
+                }
+            }
+            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, leaData, std::move( params ) } );
             const auto mLen = strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;
             if( op.size > bytesMax ) bytesMax = op.size;
@@ -1748,7 +1781,13 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             tmp[i] = c;
         }
         tmp[line.mnemonic.size()] = '\0';
-        auto it = m_microArchOpMap.find( tmp );
+        const char* mnemonic = tmp;
+        if( strcmp( mnemonic, "LEA" ) == 0 )
+        {
+            static constexpr const char* LeaTable[] = { "LEA", "LEA_B", "LEA_BD", "LEA_BI", "LEA_BID", "LEA_D", "LEA_I", "LEA_ID", "LEA_R", "LEA_RD" };
+            mnemonic = LeaTable[(int)line.leaData];
+        }
+        auto it = m_microArchOpMap.find( mnemonic );
         if( it != m_microArchOpMap.end() )
         {
             const auto opid = it->second;
@@ -1836,17 +1875,17 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                     bool first = true;
                     for( int i=0; i<var.descNum; i++ )
                     {
-                        char t = '?';
+                        const char* t = "?";
                         switch( var.desc[i].type )
                         {
                         case 0:
-                            t = 'I';
+                            t = "Imm";
                             break;
                         case 1:
-                            t = 'R';
+                            t = "Reg";
                             break;
                         case 2:
-                            t = 'M';
+                            t = var.desc[i].width == 0 ? "AGen" : "Mem";
                             break;
                         default:
                             assert( false );
@@ -1855,12 +1894,26 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                         if( first )
                         {
                             first = false;
-                            ImGui::Text( "%c%i", t, var.desc[i].width );
+                            if( var.desc[i].width == 0 )
+                            {
+                                ImGui::TextUnformatted( t );
+                            }
+                            else
+                            {
+                                ImGui::Text( "%s%i", t, var.desc[i].width );
+                            }
                         }
                         else
                         {
                             ImGui::SameLine( 0, 0 );
-                            ImGui::Text( ", %c%i", t, var.desc[i].width );
+                            if( var.desc[i].width == 0 )
+                            {
+                                ImGui::Text( ", %s", t );
+                            }
+                            else
+                            {
+                                ImGui::Text( ", %s%i", t, var.desc[i].width );
+                            }
                         }
                     }
                     ImGui::EndTooltip();

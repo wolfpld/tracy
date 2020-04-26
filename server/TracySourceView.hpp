@@ -53,6 +53,20 @@ class SourceView
         uint16_t width;
     };
 
+    enum class LeaData : uint8_t
+    {
+        none,
+        b,
+        bd,
+        bi,
+        bid,
+        d,
+        i,
+        id,
+        r,
+        rd
+    };
+
     struct AsmLine
     {
         uint64_t addr;
@@ -60,6 +74,7 @@ class SourceView
         std::string mnemonic;
         std::string operands;
         uint8_t len;
+        LeaData leaData;
         std::vector<AsmOpParams> params;
     };
 

@@ -71,6 +71,7 @@ SourceView::SourceView( ImFont* font )
     , m_calcInlineStats( true )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
+    , m_showLatency( false )
 {
     SelectMicroArchitecture( "ZEN2" );
 
@@ -1183,6 +1184,11 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             ImGui::EndCombo();
         }
         ImGui::PopStyleVar();
+
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        SmallCheckbox( "Show latency", &m_showLatency );
     }
 
     ImGui::BeginChild( "##asmView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
@@ -1821,6 +1827,25 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                     asmVar = op->variant[res[0].first];
                 }
             }
+        }
+    }
+
+    if( m_showLatency && asmVar && asmVar->minlat >= 0 )
+    {
+        const auto pos = ImVec2( (int)ImGui::GetCursorScreenPos().x, (int)ImGui::GetCursorScreenPos().y );
+        const auto ty = ImGui::GetFontSize();
+
+        if( asmVar->minlat == 0 )
+        {
+            draw->AddLine( pos + ImVec2( 0, -1 ), pos + ImVec2( 0, ty ), 0x660000FF );
+        }
+        else
+        {
+            draw->AddRectFilled( pos, pos + ImVec2( ty * asmVar->minlat + 1, ty + 1 ), 0x660000FF );
+        }
+        if( asmVar->minlat != asmVar->maxlat )
+        {
+            draw->AddRectFilled( pos + ImVec2( ty * asmVar->minlat + 1, 0 ), pos + ImVec2( ty * asmVar->maxlat + 1, ty + 1 ), 0x5500FFFF );
         }
     }
 

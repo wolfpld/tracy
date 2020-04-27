@@ -182,6 +182,7 @@ private:
     CpuArchitecture m_cpuArch;
     int m_selMicroArch;
     int m_idxMicroArch;
+    bool m_showLatency;
 };
 
 }

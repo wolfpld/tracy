@@ -1145,16 +1145,16 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        SmallCheckbox( ICON_FA_FILE_IMPORT " Show source locations", &m_asmShowSourceLocation );
+        SmallCheckbox( ICON_FA_FILE_IMPORT " Source locations", &m_asmShowSourceLocation );
     }
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    SmallCheckbox( ICON_FA_COGS " Show machine code", &m_asmBytes );
+    SmallCheckbox( ICON_FA_COGS " Machine code", &m_asmBytes );
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    SmallCheckbox( ICON_FA_SHARE " Draw jumps", &m_showJumps );
+    SmallCheckbox( ICON_FA_SHARE " Jumps", &m_showJumps );
 
     if( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 )
     {
@@ -1188,7 +1188,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        SmallCheckbox( "Show latency", &m_showLatency );
+        SmallCheckbox( ICON_FA_TRUCK_LOADING " Latency", &m_showLatency );
     }
 
     ImGui::BeginChild( "##asmView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );

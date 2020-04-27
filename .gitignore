@@ -18,6 +18,8 @@ manual/t*.out
 manual/t*.pdf
 manual/t*.synctex.gz
 manual/t*.toc
+manual/t*.bbl
+manual/t*.blg
 profiler/build/win32/packages
 profiler/build/win32/Tracy.aps
 

@@ -238,6 +238,7 @@ You may wonder, why should you use Tracy, when there are so many other profilers
 \item Tracy is multi-platform right from the very beginning. Both on the client and server side. Other profilers tend to have Windows-specific graphical interfaces.
 \item Tracy can handle millions of frames, zones, memory events, and so on, while other profilers tend to target very short captures.
 \item Tracy doesn't require manual markup of interesting areas in your code to start profiling. You may rely on automated call stack sampling and add instrumentation later, when you know where it's needed.
+\item Tracy provides mapping of source code to the assembly, with detailed information about cost of executing each instruction on the CPU.
 \end{itemize}
 
 With all that being said, Tracy may not be the right choice for you, if you need to profile games targetting PS4, Xbox, or other consoles behind a NDA wall.
@@ -2710,13 +2711,26 @@ This is pretty much the original source file view window, but with the ability t
 
 This mode shows the disassembly of the symbol machine code. Each assembly instruction is displayed listed with its location in the program memory during execution. If the \emph{\faSearchLocation{}~Relative locations} option is selected, an offset from the symbol beginning will be printed instead.
 
-If the \emph{\faFileImport{}~Show source locations} option is selected, each line of the assembly code will also contain information about the originating source file name and line number. For easier differentiation between different source files, each file is assigned its own color. Clicking the \LMB{}~left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on selected line.
+If the \emph{\faFileImport{}~Source locations} option is selected, each line of the assembly code will also contain information about the originating source file name and line number. For easier differentiation between different source files, each file is assigned its own color. Clicking the \LMB{}~left mouse button on a displayed source location will switch the source file, if necessary, and focus the source view on selected line.
 
-Selecting the \emph{\faCogs{}~Show machine code} option will enable display of raw machine code bytes for each line.
+Selecting the \emph{\faCogs{}~Machine code} option will enable display of raw machine code bytes for each line.
 
 If any instruction would jump to a predefined address, symbolic name of the jump target will be additionally displayed. If the destination location is within the currently displayed symbol an \texttt{->}~arrow will be prepended to the name. Hovering the \faMousePointer{}~mouse pointer over such symbol name will highlight the target location. Clicking on it with the \LMB{}~left mouse button will focus the view on the destination instruction, or switch view to the destination symbol.
 
-Enabling the \emph{\faShare{}~Draw jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target. Hovering the \faMousePointer{}~mouse pointer over the jump arrow will display jump information tooltip and will also draw the jump range on the scroll bar, as a green line. Jump target location will be marked by a horizontal green line. Jumps going out of the symbol\footnote{This includes jumps, procedure calls and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
+Enabling the \emph{\faShare{}~Jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target. Hovering the \faMousePointer{}~mouse pointer over the jump arrow will display jump information tooltip and will also draw the jump range on the scroll bar, as a green line. Jump target location will be marked by a horizontal green line. Jumps going out of the symbol\footnote{This includes jumps, procedure calls and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
+
+If the listed assembly code targets x86 or x64 instruction set architectures, hovering \faMousePointer{}~mouse pointer over an instruction will display a tooltip with microarchitectural data, based on measurements made in \cite{Abel19a}. \emph{This information is retrieved from instruction cycle tables, and does not represent true behavior of the profiled code.} Reading the cited article will give you a detailed definition of the presented data, but here's a quick (and inaccurate) explanation:
+
+\begin{itemize}
+\item \emph{Throughput} -- How many cycles are required to execute an instruction in a stream of independent same instructions. For example, if two independent \texttt{add} instructions may be executed simultaneously on different execution units, then the throughput (cycle cost per instruction) is 0.5.
+\item \emph{Latency} -- How many cycles it takes for an instruction to finish executing. This is reported as a min-max range, as some output values may be available earlier than the rest.
+\item \emph{\textmu{}ops} -- How many microcode operations have to be dispatched for an instruction to retire. For example, adding a value from memory to a register may consist of two microinstructions: first load the value from memory, then add it to the register.
+\item \emph{Ports} -- Which ports (execution units) are required for dispatch of microinstructions. For example, \texttt{2*p0+1*p015} would mean that out of the three microinstructions implementing the assembly instruction, two can only be executed on port 0, and one microinstruction can be executed on ports 0, 1, or 5. Number of available ports and their capabilities vary between different processors architectures. Refer to \url{https://wikichip.org/} for more information.
+\end{itemize}
+
+Selection of the CPU microarchitecture can be performed using the \emph{\faMicrochip{}~\textmu{}arch} drop-down. Each architecture is accompanied with a name of an example CPU implementing it.
+
+Enabling the \emph{\faTruckLoading{}~Latency} option will display graphical representation of instruction latencies on the listing. Minimum latency of an instruction is represented with a red bar, while the maximum latency is represented by a yellow bar.
 
 Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.
 
@@ -2908,5 +2922,8 @@ The following libraries are included with and used by the Tracy Profiler. Entrie
 \end{itemize}
 
 \end{itemize}
+
+\bibliographystyle{alpha}
+\bibliography{tracy}
 
 \end{document}

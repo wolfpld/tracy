@@ -1765,12 +1765,8 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
         ImGui::SameLine( 0, ty );
     }
 
-    const auto msz = line.mnemonic.size();
-    memcpy( buf, line.mnemonic.c_str(), msz );
-    memset( buf+msz, ' ', m_maxMnemonicLen-msz );
-    memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
-    ImGui::TextUnformatted( buf );
-    if( ( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 ) && ImGui::IsItemHovered() )
+    const AsmVar* asmVar = nullptr;
+    if( ( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 ) )
     {
         auto uarch = MicroArchitectureData[m_idxMicroArch];
         char tmp[32];
@@ -1822,105 +1818,116 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                 if( !res.empty() )
                 {
                     pdqsort_branchless( res.begin(), res.end(), []( const auto& l, const auto& r ) { return l.second < r.second; } );
-                    const auto& var = *op->variant[res[0].first];
-                    if( m_font ) ImGui::PopFont();
-                    ImGui::BeginTooltip();
-                    TextFocused( "Throughput:", RealToString( var.tp ) );
-                    ImGui::SameLine();
-                    TextDisabledUnformatted( "(cycles per instruction, lower is better)" );
-                    if( var.maxlat >= 0 )
-                    {
-                        TextDisabledUnformatted( "Latency:" );
-                        ImGui::SameLine();
-                        if( var.minlat == var.maxlat && var.minbound == var.maxbound )
-                        {
-                            if( var.minbound )
-                            {
-                                ImGui::Text( "\xe2\x89\xa4%s", RealToString( var.minlat ) );
-                            }
-                            else
-                            {
-                                ImGui::TextUnformatted( RealToString( var.minlat ) );
-                            }
-                        }
-                        else
-                        {
-                            if( var.minbound )
-                            {
-                                ImGui::Text( "[\xe2\x89\xa4%s", RealToString( var.minlat ) );
-                            }
-                            else
-                            {
-                                ImGui::Text( "[%s", RealToString( var.minlat ) );
-                            }
-                            ImGui::SameLine( 0, 0 );
-                            if( var.maxbound )
-                            {
-                                ImGui::Text( " \xE2\x80\x93 \xe2\x89\xa4%s]", RealToString( var.maxlat ) );
-                            }
-                            else
-                            {
-                                ImGui::Text( " \xE2\x80\x93 %s]", RealToString( var.maxlat ) );
-                            }
-                        }
-                        ImGui::SameLine();
-                        TextDisabledUnformatted( "(cycles in execution, may vary by used output)" );
-                    }
-                    TextFocused( "\xce\xbcops:", RealToString( var.uops ) );
-                    if( var.port != -1 ) TextFocused( "Ports:", PortList[var.port] );
-                    ImGui::Separator();
-                    TextFocused( "ISA set:", IsaList[var.isaSet] );
-                    TextDisabledUnformatted( "Operands:" );
-                    ImGui::SameLine();
-                    bool first = true;
-                    for( int i=0; i<var.descNum; i++ )
-                    {
-                        const char* t = "?";
-                        switch( var.desc[i].type )
-                        {
-                        case 0:
-                            t = "Imm";
-                            break;
-                        case 1:
-                            t = "Reg";
-                            break;
-                        case 2:
-                            t = var.desc[i].width == 0 ? "AGen" : "Mem";
-                            break;
-                        default:
-                            assert( false );
-                            break;
-                        }
-                        if( first )
-                        {
-                            first = false;
-                            if( var.desc[i].width == 0 )
-                            {
-                                ImGui::TextUnformatted( t );
-                            }
-                            else
-                            {
-                                ImGui::Text( "%s%i", t, var.desc[i].width );
-                            }
-                        }
-                        else
-                        {
-                            ImGui::SameLine( 0, 0 );
-                            if( var.desc[i].width == 0 )
-                            {
-                                ImGui::Text( ", %s", t );
-                            }
-                            else
-                            {
-                                ImGui::Text( ", %s%i", t, var.desc[i].width );
-                            }
-                        }
-                    }
-                    ImGui::EndTooltip();
-                    if( m_font ) ImGui::PushFont( m_font );
+                    asmVar = op->variant[res[0].first];
                 }
             }
         }
+    }
+
+    const auto msz = line.mnemonic.size();
+    memcpy( buf, line.mnemonic.c_str(), msz );
+    memset( buf+msz, ' ', m_maxMnemonicLen-msz );
+    memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
+    ImGui::TextUnformatted( buf );
+
+    if( asmVar && ImGui::IsItemHovered() )
+    {
+        const auto& var = *asmVar;
+        if( m_font ) ImGui::PopFont();
+        ImGui::BeginTooltip();
+        TextFocused( "Throughput:", RealToString( var.tp ) );
+        ImGui::SameLine();
+        TextDisabledUnformatted( "(cycles per instruction, lower is better)" );
+        if( var.maxlat >= 0 )
+        {
+            TextDisabledUnformatted( "Latency:" );
+            ImGui::SameLine();
+            if( var.minlat == var.maxlat && var.minbound == var.maxbound )
+            {
+                if( var.minbound )
+                {
+                    ImGui::Text( "\xe2\x89\xa4%s", RealToString( var.minlat ) );
+                }
+                else
+                {
+                    ImGui::TextUnformatted( RealToString( var.minlat ) );
+                }
+            }
+            else
+            {
+                if( var.minbound )
+                {
+                    ImGui::Text( "[\xe2\x89\xa4%s", RealToString( var.minlat ) );
+                }
+                else
+                {
+                    ImGui::Text( "[%s", RealToString( var.minlat ) );
+                }
+                ImGui::SameLine( 0, 0 );
+                if( var.maxbound )
+                {
+                    ImGui::Text( " \xE2\x80\x93 \xe2\x89\xa4%s]", RealToString( var.maxlat ) );
+                }
+                else
+                {
+                    ImGui::Text( " \xE2\x80\x93 %s]", RealToString( var.maxlat ) );
+                }
+            }
+            ImGui::SameLine();
+            TextDisabledUnformatted( "(cycles in execution, may vary by used output)" );
+        }
+        TextFocused( "\xce\xbcops:", RealToString( var.uops ) );
+        if( var.port != -1 ) TextFocused( "Ports:", PortList[var.port] );
+        ImGui::Separator();
+        TextFocused( "ISA set:", IsaList[var.isaSet] );
+        TextDisabledUnformatted( "Operands:" );
+        ImGui::SameLine();
+        bool first = true;
+        for( int i=0; i<var.descNum; i++ )
+        {
+            const char* t = "?";
+            switch( var.desc[i].type )
+            {
+            case 0:
+                t = "Imm";
+                break;
+            case 1:
+                t = "Reg";
+                break;
+            case 2:
+                t = var.desc[i].width == 0 ? "AGen" : "Mem";
+                break;
+            default:
+                assert( false );
+                break;
+            }
+            if( first )
+            {
+                first = false;
+                if( var.desc[i].width == 0 )
+                {
+                    ImGui::TextUnformatted( t );
+                }
+                else
+                {
+                    ImGui::Text( "%s%i", t, var.desc[i].width );
+                }
+            }
+            else
+            {
+                ImGui::SameLine( 0, 0 );
+                if( var.desc[i].width == 0 )
+                {
+                    ImGui::Text( ", %s", t );
+                }
+                else
+                {
+                    ImGui::Text( ", %s%i", t, var.desc[i].width );
+                }
+            }
+        }
+        ImGui::EndTooltip();
+        if( m_font ) ImGui::PushFont( m_font );
     }
 
     if( line.jumpAddr != 0 )

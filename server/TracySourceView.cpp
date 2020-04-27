@@ -1743,7 +1743,7 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     }
     if( m_showJumps )
     {
-        const auto JumpArrow = JumpArrowBase * ty / 15;;
+        const auto JumpArrow = JumpArrowBase * ty / 15;
         ImGui::SameLine( 0, 2*ty + JumpArrow + m_maxJumpLevel * JumpSeparation );
         auto jit = m_jumpOut.find( line.addr );
         if( jit != m_jumpOut.end() )

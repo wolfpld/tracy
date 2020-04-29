@@ -3018,14 +3018,7 @@ void Worker::Exec()
         enum { MbpsUpdateTime = 200 };
         if( td > MbpsUpdateTime )
         {
-            const auto bytes = m_bytes.exchange( 0, std::memory_order_relaxed );
-            const auto decBytes = m_decBytes.exchange( 0, std::memory_order_relaxed );
-            std::lock_guard<std::shared_mutex> lock( m_mbpsData.lock );
-            m_mbpsData.mbps.erase( m_mbpsData.mbps.begin() );
-            m_mbpsData.mbps.emplace_back( bytes / ( td * 125.f ) );
-            m_mbpsData.compRatio = float( bytes ) / decBytes;
-            m_mbpsData.queue = m_serverQueryQueue.size();
-            m_mbpsData.transferred += bytes;
+            UpdateMbps( td );
             t0 = t1;
         }
 
@@ -3053,6 +3046,7 @@ void Worker::Exec()
                 if( !done ) continue;
             }
             QueryTerminate();
+            UpdateMbps( 0 );
             break;
         }
     }
@@ -3062,6 +3056,21 @@ close:
     m_netWriteCv.notify_one();
     m_sock.Close();
     m_connected.store( false, std::memory_order_relaxed );
+}
+
+void Worker::UpdateMbps( int64_t td )
+{
+    const auto bytes = m_bytes.exchange( 0, std::memory_order_relaxed );
+    const auto decBytes = m_decBytes.exchange( 0, std::memory_order_relaxed );
+    std::lock_guard<std::shared_mutex> lock( m_mbpsData.lock );
+    if( td != 0 )
+    {
+        m_mbpsData.mbps.erase( m_mbpsData.mbps.begin() );
+        m_mbpsData.mbps.emplace_back( bytes / ( td * 125.f ) );
+    }
+    m_mbpsData.compRatio = float( bytes ) / decBytes;
+    m_mbpsData.queue = m_serverQueryQueue.size();
+    m_mbpsData.transferred += bytes;
 }
 
 bool Worker::IsThreadStringRetrieved( uint64_t id )

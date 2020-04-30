@@ -4337,6 +4337,11 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto td = m_threadCtxData;
     assert( td );
 
+    if( td->zoneIdStack.empty() )
+    {
+        ZoneDoubleEndFailure( m_threadCtx, td->timeline.empty() ? nullptr : td->timeline.back() );
+        return;
+    }
     auto zoneId = td->zoneIdStack.back_and_pop();
     if( zoneId != td->nextZoneId )
     {
@@ -4420,6 +4425,13 @@ void Worker::ZoneStackFailure( uint64_t thread, const ZoneEvent* ev )
     m_failure = Failure::ZoneStack;
     m_failureData.thread = thread;
     m_failureData.srcloc = ev->SrcLoc();
+}
+
+void Worker::ZoneDoubleEndFailure( uint64_t thread, const ZoneEvent* ev )
+{
+    m_failure = Failure::ZoneDoubleEnd;
+    m_failureData.thread = thread;
+    m_failureData.srcloc = ev ? ev->SrcLoc() : 0;
 }
 
 void Worker::ZoneTextFailure( uint64_t thread )
@@ -7215,6 +7227,7 @@ void Worker::WriteTimelineImpl( FileWrite& f, const V& vec, int64_t& refTime, in
 static const char* s_failureReasons[] = {
     "<unknown reason>",
     "Invalid order of zone begin and end events.",
+    "Zone is ended twice.",
     "Zone text transfer destination doesn't match active zone.",
     "Zone name transfer destination doesn't match active zone.",
     "Memory free event without a matching allocation.",

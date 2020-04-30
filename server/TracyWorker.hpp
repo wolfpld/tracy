@@ -349,6 +349,7 @@ public:
     {
         None,
         ZoneStack,
+        ZoneDoubleEnd,
         ZoneText,
         ZoneName,
         MemFree,
@@ -615,6 +616,7 @@ private:
     tracy_force_inline void ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& ev, bool serial );
 
     void ZoneStackFailure( uint64_t thread, const ZoneEvent* ev );
+    void ZoneDoubleEndFailure( uint64_t thread, const ZoneEvent* ev );
     void ZoneTextFailure( uint64_t thread );
     void ZoneNameFailure( uint64_t thread );
     void MemFreeFailure( uint64_t thread );

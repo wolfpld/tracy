@@ -748,7 +748,7 @@ void View::DrawNotificationArea()
         if( sqs != 0 )
         {
             ImGui::SameLine();
-            TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_TACHOMETER_ALT );
+            TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_SATELLITE_DISH );
             if( ImGui::IsItemHovered() )
             {
                 ImGui::BeginTooltip();
@@ -762,7 +762,7 @@ void View::DrawNotificationArea()
             if( sif != 0 )
             {
                 ImGui::SameLine();
-                TextColoredUnformatted( ImVec4( 1, 0.75f, 0, 1 ), ICON_FA_TACHOMETER_ALT );
+                TextColoredUnformatted( ImVec4( 1, 0.75f, 0, 1 ), ICON_FA_SATELLITE_DISH );
                 if( ImGui::IsItemHovered() )
                 {
                     ImGui::BeginTooltip();

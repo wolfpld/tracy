@@ -2141,49 +2141,52 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
             if( var.port != -1 ) TextFocused( "Ports:", PortList[var.port] );
             ImGui::Separator();
             TextFocused( "ISA set:", IsaList[var.isaSet] );
-            TextDisabledUnformatted( "Operands:" );
-            ImGui::SameLine();
-            bool first = true;
-            for( int i=0; i<var.descNum; i++ )
+            if( var.descNum > 0 )
             {
-                const char* t = "?";
-                switch( var.desc[i].type )
+                TextDisabledUnformatted( "Operands:" );
+                ImGui::SameLine();
+                bool first = true;
+                for( int i=0; i<var.descNum; i++ )
                 {
-                case 0:
-                    t = "Imm";
-                    break;
-                case 1:
-                    t = "Reg";
-                    break;
-                case 2:
-                    t = var.desc[i].width == 0 ? "AGen" : "Mem";
-                    break;
-                default:
-                    assert( false );
-                    break;
-                }
-                if( first )
-                {
-                    first = false;
-                    if( var.desc[i].width == 0 )
+                    const char* t = "?";
+                    switch( var.desc[i].type )
                     {
-                        ImGui::TextUnformatted( t );
+                    case 0:
+                        t = "Imm";
+                        break;
+                    case 1:
+                        t = "Reg";
+                        break;
+                    case 2:
+                        t = var.desc[i].width == 0 ? "AGen" : "Mem";
+                        break;
+                    default:
+                        assert( false );
+                        break;
+                    }
+                    if( first )
+                    {
+                        first = false;
+                        if( var.desc[i].width == 0 )
+                        {
+                            ImGui::TextUnformatted( t );
+                        }
+                        else
+                        {
+                            ImGui::Text( "%s%i", t, var.desc[i].width );
+                        }
                     }
                     else
                     {
-                        ImGui::Text( "%s%i", t, var.desc[i].width );
-                    }
-                }
-                else
-                {
-                    ImGui::SameLine( 0, 0 );
-                    if( var.desc[i].width == 0 )
-                    {
-                        ImGui::Text( ", %s", t );
-                    }
-                    else
-                    {
-                        ImGui::Text( ", %s%i", t, var.desc[i].width );
+                        ImGui::SameLine( 0, 0 );
+                        if( var.desc[i].width == 0 )
+                        {
+                            ImGui::Text( ", %s", t );
+                        }
+                        else
+                        {
+                            ImGui::Text( ", %s%i", t, var.desc[i].width );
+                        }
                     }
                 }
             }

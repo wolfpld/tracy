@@ -74,6 +74,7 @@ SourceView::SourceView( ImFont* font )
     , m_dataSize( 0 )
     , m_targetLine( 0 )
     , m_selectedLine( 0 )
+    , m_asmSelected( -1 )
     , m_hoveredLine( 0 )
     , m_hoveredSource( 0 )
     , m_codeLen( 0 )
@@ -2084,11 +2085,20 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
         }
     }
 
+    const auto asmIdx = &line - m_asm.data();
+
     const auto msz = line.mnemonic.size();
     memcpy( buf, line.mnemonic.c_str(), msz );
     memset( buf+msz, ' ', m_maxMnemonicLen-msz );
     memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
-    ImGui::TextUnformatted( buf );
+    if( asmIdx == m_asmSelected )
+    {
+        TextColoredUnformatted( ImVec4( 1, 0.25f, 0.25f, 1 ), buf );
+    }
+    else
+    {
+        ImGui::TextUnformatted( buf );
+    }
 
     if( ImGui::IsItemHovered() )
     {
@@ -2242,6 +2252,14 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
             }
+        }
+        if( ImGui::IsMouseClicked( 0 ) )
+        {
+            m_asmSelected = asmIdx;
+        }
+        else if( ImGui::IsMouseClicked( 1 ) )
+        {
+            m_asmSelected = -1;
         }
     }
 

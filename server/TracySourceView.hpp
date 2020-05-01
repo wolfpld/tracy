@@ -176,6 +176,7 @@ private:
     size_t m_dataSize;
     int m_targetLine;
     int m_selectedLine;
+    int m_asmSelected;
     DecayValue<int> m_hoveredLine;
     DecayValue<uint32_t> m_hoveredSource;
     int m_displayMode;

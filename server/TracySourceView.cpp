@@ -716,6 +716,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     }
     cs_close( &handle );
     m_codeLen = len;
+    ResetAsm();
     return true;
 }
 
@@ -2704,6 +2705,11 @@ void SourceView::SelectMicroArchitecture( const char* moniker )
         }
     }
     assert( idx != MicroArchitectureNum );
+}
+
+void SourceView::ResetAsm()
+{
+    for( auto& line : m_asm ) memset( line.regData, 0, sizeof( line.regData ) );
 }
 
 }

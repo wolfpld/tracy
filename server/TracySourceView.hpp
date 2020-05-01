@@ -98,6 +98,7 @@ private:
         {
             RegsX86 writeX86[20];
         };
+        uint16_t regData[20];
     };
 
     enum { AsmLineSize = sizeof( AsmLine ) };
@@ -150,6 +151,8 @@ private:
 
     TokenColor IdentifyToken( const char*& begin, const char* end );
     std::vector<Token> Tokenize( const char* begin, const char* end );
+
+    void ResetAsm();
 
     struct TokenizerState
     {

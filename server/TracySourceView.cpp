@@ -48,7 +48,7 @@ static constexpr MicroArchUx s_uArchUx[] = {
 };
 
 static constexpr const char* s_regNameX86[] = {
-    "invalid",
+    "invalid", "rflags",
     "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
     "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7",
     "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "xmm8", "xmm9",
@@ -96,6 +96,7 @@ SourceView::SourceView( ImFont* font )
 
     memset( s_regMapX86, 0, sizeof( s_regMapX86 ) );
 
+    s_regMapX86[X86_REG_EFLAGS] = RegsX86::flags;
     s_regMapX86[X86_REG_AH] = RegsX86::rax;
     s_regMapX86[X86_REG_AL] = RegsX86::rax;
     s_regMapX86[X86_REG_AX] = RegsX86::rax;

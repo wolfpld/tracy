@@ -402,6 +402,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     m_jumpTable.clear();
     m_jumpOut.clear();
     m_maxJumpLevel = 0;
+    m_asmSelected = -1;
     if( symAddr == 0 ) return false;
     m_cpuArch = worker.GetCpuArch();
     if( m_cpuArch == CpuArchUnknown ) return false;

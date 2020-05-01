@@ -1858,7 +1858,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, const View& view )
+void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, const View& view )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -2274,10 +2274,40 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
         if( ImGui::IsMouseClicked( 0 ) )
         {
             m_asmSelected = asmIdx;
+            ResetAsm();
+            int idx = 0;
+            for(;;)
+            {
+                if( line.readX86[idx] == RegsX86::invalid ) break;
+                line.regData[idx] = ReadBit | (int)line.readX86[idx];
+                FollowWrite( asmIdx, line.readX86[idx++], 128 );
+            }
+            idx = 0;
+            for(;;)
+            {
+                if( line.writeX86[idx] == RegsX86::invalid ) break;
+                int ridx = 0;
+                for(;;)
+                {
+                    if( line.regData[ridx] == 0 )
+                    {
+                        line.regData[ridx] = WriteBit | (int)line.writeX86[idx];
+                        break;
+                    }
+                    else if( ( line.regData[ridx] & RegMask ) == (int)line.writeX86[idx] )
+                    {
+                        line.regData[ridx] |= WriteBit;
+                        break;
+                    }
+                    ridx++;
+                }
+                FollowRead( asmIdx, line.writeX86[idx++], 128 );
+            }
         }
         else if( ImGui::IsMouseClicked( 1 ) )
         {
             m_asmSelected = -1;
+            ResetAsm();
         }
     }
 
@@ -2774,6 +2804,166 @@ void SourceView::SelectMicroArchitecture( const char* moniker )
 void SourceView::ResetAsm()
 {
     for( auto& line : m_asm ) memset( line.regData, 0, sizeof( line.regData ) );
+}
+
+void SourceView::FollowRead( int line, RegsX86 reg, int limit )
+{
+    if( limit == 0 ) return;
+    const auto& data = m_asm[line];
+    if( m_jumpOut.find( data.addr ) != m_jumpOut.end() && !data.jumpConditional ) return;
+    if( data.jumpAddr != 0 )
+    {
+        auto fit = std::lower_bound( m_asm.begin(), m_asm.end(), data.jumpAddr, []( const auto& l, const auto& r ) { return l.addr < r; } );
+        if( fit != m_asm.end() && fit->addr == data.jumpAddr )
+        {
+            CheckRead( fit - m_asm.begin(), reg, limit );
+        }
+        if( !data.jumpConditional ) return;
+    }
+    if( line+1 < m_asm.size() )
+    {
+        CheckRead( line+1, reg, limit );
+    }
+}
+
+void SourceView::FollowWrite( int line, RegsX86 reg, int limit )
+{
+    if( limit == 0 ) return;
+    const auto& data = m_asm[line];
+    if( m_jumpOut.find( data.addr ) != m_jumpOut.end() && !data.jumpConditional ) return;
+    auto it = m_jumpTable.find( data.addr );
+    if( it != m_jumpTable.end() )
+    {
+        for( auto& v : it->second.source )
+        {
+            auto fit = std::lower_bound( m_asm.begin(), m_asm.end(), v, []( const auto& l, const auto& r ) { return l.addr < r; } );
+            assert( fit != m_asm.end() && fit->addr == v );
+            CheckWrite( fit - m_asm.begin(), reg, limit );
+        }
+    }
+    if( line-1 >= 0 )
+    {
+        CheckWrite( line-1, reg, limit );
+    }
+}
+
+void SourceView::CheckRead( int line, RegsX86 reg, int limit )
+{
+    auto& data = m_asm[line];
+    int idx = 0;
+    for(;;)
+    {
+        if( data.readX86[idx] == RegsX86::invalid )
+        {
+            idx = 0;
+            for(;;)
+            {
+                if( data.writeX86[idx] == RegsX86::invalid )
+                {
+                    FollowRead( line, reg, limit - 1 );
+                    return;
+                }
+                if( data.writeX86[idx] == reg )
+                {
+                    idx = 0;
+                    for(;;)
+                    {
+                        if( data.regData[idx] == 0 )
+                        {
+                            data.regData[idx] = ReuseBit | (int)reg;
+                            return;
+                        }
+                        if( ( data.regData[idx] & RegMask ) == (int)reg )
+                        {
+                            data.regData[idx] |= ReuseBit;
+                            return;
+                        }
+                        idx++;
+                    }
+                }
+                idx++;
+            }
+        }
+        if( data.readX86[idx] == reg )
+        {
+            idx = 0;
+            for(;;)
+            {
+                if( data.regData[idx] == 0 )
+                {
+                    data.regData[idx] = ReadBit | (int)reg;
+                    return;
+                }
+                if( ( data.regData[idx] & RegMask ) == (int)reg )
+                {
+                    data.regData[idx] |= ReadBit;
+                    return;
+                }
+                idx++;
+            }
+        }
+        idx++;
+    }
+}
+
+void SourceView::CheckWrite( int line, RegsX86 reg, int limit )
+{
+    auto& data = m_asm[line];
+    int idx = 0;
+    for(;;)
+    {
+        if( data.writeX86[idx] == RegsX86::invalid )
+        {
+            idx = 0;
+            for(;;)
+            {
+                if( data.readX86[idx] == RegsX86::invalid )
+                {
+                    FollowWrite( line, reg, limit - 1 );
+                    return;
+                }
+                if( data.readX86[idx] == reg )
+                {
+                    idx = 0;
+                    for(;;)
+                    {
+                        if( data.regData[idx] == 0 )
+                        {
+                            data.regData[idx] = ReuseBit | (int)reg;
+                            return;
+                        }
+                        if( ( data.regData[idx] & RegMask ) == (int)reg )
+                        {
+                            data.regData[idx] |= ReuseBit;
+                            return;
+                        }
+                        idx++;
+                    }
+                }
+                idx++;
+            }
+
+        }
+        if( data.writeX86[idx] == reg )
+        {
+            idx = 0;
+            for(;;)
+            {
+                if( data.regData[idx] == 0 )
+                {
+                    data.regData[idx] = WriteBit | (int)reg;
+                    return;
+                }
+                else if( ( data.regData[idx] & RegMask ) == (int)reg )
+                {
+                    data.regData[idx] |= WriteBit;
+                    return;
+                }
+                idx++;
+            }
+        }
+        idx++;
+    }
 }
 
 }

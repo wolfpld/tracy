@@ -145,7 +145,7 @@ private:
     uint64_t RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker, const View& view );
 
     void RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker* worker );
-    void RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, const View& view );
+    void RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, const View& view );
 
     void SelectLine( uint32_t line, const Worker* worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
     void SelectAsmLines( uint32_t file, uint32_t line, const Worker& worker, bool changeAsmLine = true, uint64_t targetAddr = 0 );
@@ -159,6 +159,10 @@ private:
     std::vector<Token> Tokenize( const char* begin, const char* end );
 
     void ResetAsm();
+    void FollowRead( int line, RegsX86 reg, int limit );
+    void FollowWrite( int line, RegsX86 reg, int limit );
+    void CheckRead( int line, RegsX86 reg, int limit );
+    void CheckWrite( int line, RegsX86 reg, int limit );
 
     struct TokenizerState
     {

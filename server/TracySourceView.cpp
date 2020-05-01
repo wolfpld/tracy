@@ -2280,7 +2280,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
             {
                 if( line.readX86[idx] == RegsX86::invalid ) break;
                 line.regData[idx] = ReadBit | (int)line.readX86[idx];
-                FollowWrite( asmIdx, line.readX86[idx++], 128 );
+                FollowWrite( asmIdx, line.readX86[idx++], 64 );
             }
             idx = 0;
             for(;;)
@@ -2301,7 +2301,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                     }
                     ridx++;
                 }
-                FollowRead( asmIdx, line.writeX86[idx++], 128 );
+                FollowRead( asmIdx, line.writeX86[idx++], 64 );
             }
         }
         else if( ImGui::IsMouseClicked( 1 ) )

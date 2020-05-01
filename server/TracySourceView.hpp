@@ -81,6 +81,11 @@ private:
         rd
     };
 
+    enum { ReadBit  = 0x100 };
+    enum { WriteBit = 0x200 };
+    enum { ReuseBit = 0x400 };
+    enum { RegMask  = 0x0FF };
+
     struct AsmLine
     {
         uint64_t addr;

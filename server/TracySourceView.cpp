@@ -2095,6 +2095,10 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     {
         TextColoredUnformatted( ImVec4( 1, 0.25f, 0.25f, 1 ), buf );
     }
+    else if( line.regData[0] != 0 )
+    {
+        TextColoredUnformatted( ImVec4( 1, 0.5f, 1, 1 ), buf );
+    }
     else
     {
         ImGui::TextUnformatted( buf );
@@ -2261,6 +2265,34 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
         {
             m_asmSelected = -1;
         }
+    }
+
+    if( line.regData[0] != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextColoredUnformatted( ImVec4( 0.5f, 0.5, 1, 1 ), "{" );
+        ImGui::SameLine( 0, 0 );
+        int idx = 0;
+        for(;;)
+        {
+            ImVec4 col;
+            if( line.regData[idx] == 0 ) break;
+            if( ( line.regData[idx] & ( WriteBit | ReadBit ) ) == ( WriteBit | ReadBit ) ) col = ImVec4( 1, 1, 0.5f, 1 );
+            else if( line.regData[idx] & WriteBit ) col = ImVec4( 1, 0.5f, 0.5f, 1 );
+            else if( line.regData[idx] & ReadBit ) col = ImVec4( 0.5f, 1, 0.5f, 1 );
+            else col = ImVec4( 0.5f, 0.5f, 0.5f, 1 );
+            if( idx > 0 )
+            {
+                ImGui::SameLine( 0, 0 );
+                TextColoredUnformatted( ImVec4( 0.5f, 0.5, 1, 1 ), ", " );
+                ImGui::SameLine( 0, 0 );
+            }
+            TextColoredUnformatted( col, s_regNameX86[line.regData[idx++] & RegMask] );
+        }
+        ImGui::SameLine( 0, 0 );
+        TextColoredUnformatted( ImVec4( 0.5f, 0.5, 1, 1 ), "}" );
     }
 
     if( line.jumpAddr != 0 )

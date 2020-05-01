@@ -2146,7 +2146,26 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
     }
     else if( line.regData[0] != 0 )
     {
-        TextColoredUnformatted( ImVec4( 1, 0.5f, 1, 1 ), buf );
+        bool hasDepencency = false;
+        int idx = 0;
+        for(;;)
+        {
+            if( line.regData[idx] == 0 ) break;
+            if( line.regData[idx] & ( WriteBit | ReadBit ) )
+            {
+                hasDepencency = true;
+                break;
+            }
+            idx++;
+        }
+        if( hasDepencency )
+        {
+            TextColoredUnformatted( ImVec4( 1, 0.5f, 1, 1 ), buf );
+        }
+        else
+        {
+            ImGui::TextUnformatted( buf );
+        }
     }
     else
     {

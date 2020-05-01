@@ -2367,9 +2367,16 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
 
     if( line.regData[0] != 0 )
     {
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
+        if( !line.params.empty() )
+        {
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+        }
+        else
+        {
+            ImGui::SameLine( 0, 0 );
+        }
         TextColoredUnformatted( ImVec4( 0.5f, 0.5, 1, 1 ), "{" );
         ImGui::SameLine( 0, 0 );
         int idx = 0;

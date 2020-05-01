@@ -89,7 +89,17 @@ private:
         uint8_t len;
         LeaData leaData;
         std::vector<AsmOpParams> params;
+        union
+        {
+            RegsX86 readX86[12];
+        };
+        union
+        {
+            RegsX86 writeX86[20];
+        };
     };
+
+    enum { AsmLineSize = sizeof( AsmLine ) };
 
     struct JumpData
     {

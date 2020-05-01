@@ -593,6 +593,35 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                 }
             }
             m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, leaData, std::move( params ) } );
+
+            auto& entry = m_asm.back();
+            cs_regs read, write;
+            uint8_t rcnt, wcnt;
+            cs_regs_access( handle, &op, read, &rcnt, write, &wcnt );
+            int idx;
+            switch( m_cpuArch )
+            {
+            case CpuArchX86:
+            case CpuArchX64:
+                assert( rcnt < sizeof( entry.readX86 ) );
+                assert( wcnt < sizeof( entry.writeX86 ) );
+                idx = 0;
+                for( int i=0; i<rcnt; i++ )
+                {
+                    if( s_regMapX86[read[i]] != RegsX86::invalid ) entry.readX86[idx++] = s_regMapX86[read[i]];
+                    entry.readX86[idx] = RegsX86::invalid;
+                }
+                idx = 0;
+                for( int i=0; i<wcnt; i++ )
+                {
+                    if( s_regMapX86[write[i]] != RegsX86::invalid ) entry.writeX86[idx++] = s_regMapX86[write[i]];
+                    entry.writeX86[idx] = RegsX86::invalid;
+                }
+                break;
+            default:
+                break;
+            }
+
             const auto mLen = strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;
             if( op.size > bytesMax ) bytesMax = op.size;

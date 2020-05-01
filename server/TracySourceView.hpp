@@ -94,6 +94,7 @@ private:
         std::string operands;
         uint8_t len;
         LeaData leaData;
+        bool jumpConditional;
         std::vector<AsmOpParams> params;
         union
         {

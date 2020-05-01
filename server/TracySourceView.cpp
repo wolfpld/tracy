@@ -385,6 +385,17 @@ void SourceView::ParseSource( const char* fileName, const Worker* worker, const 
     }
 }
 
+static bool IsJumpConditionalX86( const char* op )
+{
+    static constexpr const char* branchX86[] = {
+        "je", "jne", "jg", "jge", "ja", "jae", "jl", "jle", "jb", "jbe", "jo", "jno", "jz", "jnz", "js", "jns", "jcxz", "jecxz", "jrcxz", "loop", "loope",
+        "loopne", "loopnz", "loopz", "jnle", "jnl", "jnge", "jng", "jnbe", "jnb", "jnae", "jna", "jc", "jnc", "jp", "jpe", "jnp", "jpo", nullptr
+    };
+    auto ptr = branchX86;
+    while( *ptr ) if( strcmp( *ptr++, op ) == 0 ) return true;
+    return false;
+}
+
 bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 {
     m_asm.clear();
@@ -433,6 +444,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             const auto& op = insn[i];
             const auto& detail = *op.detail;
             bool hasJump = false;
+            bool jumpConditional = false;
             for( auto j=0; j<detail.groups_count; j++ )
             {
                 if( detail.groups[j] == CS_GRP_JUMP || detail.groups[j] == CS_GRP_CALL || detail.groups[j] == CS_GRP_RET )
@@ -452,6 +464,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     {
                         jumpAddr = (uint64_t)detail.x86.operands[0].imm;
                     }
+                    jumpConditional = IsJumpConditionalX86( op.mnemonic );
                     break;
                 case CpuArchArm32:
                     if( detail.arm.op_count == 1 && detail.arm.operands[0].type == ARM_OP_IMM )
@@ -605,7 +618,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     }
                 }
             }
-            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, leaData, std::move( params ) } );
+            m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, leaData, jumpConditional, std::move( params ) } );
 
             auto& entry = m_asm.back();
             cs_regs read, write;

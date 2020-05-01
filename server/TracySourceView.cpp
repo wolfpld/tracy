@@ -47,6 +47,17 @@ static constexpr MicroArchUx s_uArchUx[] = {
     { "AMD Zen 2", "Ryzen 7 3700X", "ZEN2" },
 };
 
+static constexpr const char* s_regNameX86[] = {
+    "invalid",
+    "rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+    "mm0", "mm1", "mm2", "mm3", "mm4", "mm5", "mm6", "mm7",
+    "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "xmm8", "xmm9",
+    "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15", "xmm16", "xmm17", "xmm18", "xmm19",
+    "xmm20", "xmm21", "xmm22", "xmm23", "xmm24", "xmm25", "xmm26", "xmm27", "xmm28", "xmm29",
+    "xmm30", "xmm31", "k0", "k1", "k2", "k3", "k4", "k5", "k6", "k7"
+};
+static_assert( sizeof( s_regNameX86 ) / sizeof( *s_regNameX86 ) == (size_t)SourceView::RegsX86::NUMBER_OF_ENTRIES, "Invalid x86 register name table" );
+
 static SourceView::RegsX86 s_regMapX86[X86_REG_ENDING];
 
 
@@ -2077,104 +2088,156 @@ void SourceView::RenderAsmLine( const AsmLine& line, uint32_t ipcnt, uint32_t ip
     memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
     ImGui::TextUnformatted( buf );
 
-    if( asmVar && ImGui::IsItemHovered() )
+    if( ImGui::IsItemHovered() )
     {
-        const auto& var = *asmVar;
-        if( m_font ) ImGui::PopFont();
-        ImGui::BeginTooltip();
-        TextFocused( "Throughput:", RealToString( var.tp ) );
-        ImGui::SameLine();
-        TextDisabledUnformatted( "(cycles per instruction, lower is better)" );
-        if( var.maxlat >= 0 )
+        if( asmVar )
         {
-            TextDisabledUnformatted( "Latency:" );
+            const auto& var = *asmVar;
+            if( m_font ) ImGui::PopFont();
+            ImGui::BeginTooltip();
+            TextFocused( "Throughput:", RealToString( var.tp ) );
             ImGui::SameLine();
-            if( var.minlat == var.maxlat && var.minbound == var.maxbound )
+            TextDisabledUnformatted( "(cycles per instruction, lower is better)" );
+            if( var.maxlat >= 0 )
             {
-                if( var.minbound )
+                TextDisabledUnformatted( "Latency:" );
+                ImGui::SameLine();
+                if( var.minlat == var.maxlat && var.minbound == var.maxbound )
                 {
-                    ImGui::Text( "\xe2\x89\xa4%s", RealToString( var.minlat ) );
+                    if( var.minbound )
+                    {
+                        ImGui::Text( "\xe2\x89\xa4%s", RealToString( var.minlat ) );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( RealToString( var.minlat ) );
+                    }
                 }
                 else
                 {
-                    ImGui::TextUnformatted( RealToString( var.minlat ) );
+                    if( var.minbound )
+                    {
+                        ImGui::Text( "[\xe2\x89\xa4%s", RealToString( var.minlat ) );
+                    }
+                    else
+                    {
+                        ImGui::Text( "[%s", RealToString( var.minlat ) );
+                    }
+                    ImGui::SameLine( 0, 0 );
+                    if( var.maxbound )
+                    {
+                        ImGui::Text( " \xE2\x80\x93 \xe2\x89\xa4%s]", RealToString( var.maxlat ) );
+                    }
+                    else
+                    {
+                        ImGui::Text( " \xE2\x80\x93 %s]", RealToString( var.maxlat ) );
+                    }
+                }
+                ImGui::SameLine();
+                TextDisabledUnformatted( "(cycles in execution, may vary by used output)" );
+            }
+            TextFocused( "\xce\xbcops:", RealToString( var.uops ) );
+            if( var.port != -1 ) TextFocused( "Ports:", PortList[var.port] );
+            ImGui::Separator();
+            TextFocused( "ISA set:", IsaList[var.isaSet] );
+            TextDisabledUnformatted( "Operands:" );
+            ImGui::SameLine();
+            bool first = true;
+            for( int i=0; i<var.descNum; i++ )
+            {
+                const char* t = "?";
+                switch( var.desc[i].type )
+                {
+                case 0:
+                    t = "Imm";
+                    break;
+                case 1:
+                    t = "Reg";
+                    break;
+                case 2:
+                    t = var.desc[i].width == 0 ? "AGen" : "Mem";
+                    break;
+                default:
+                    assert( false );
+                    break;
+                }
+                if( first )
+                {
+                    first = false;
+                    if( var.desc[i].width == 0 )
+                    {
+                        ImGui::TextUnformatted( t );
+                    }
+                    else
+                    {
+                        ImGui::Text( "%s%i", t, var.desc[i].width );
+                    }
+                }
+                else
+                {
+                    ImGui::SameLine( 0, 0 );
+                    if( var.desc[i].width == 0 )
+                    {
+                        ImGui::Text( ", %s", t );
+                    }
+                    else
+                    {
+                        ImGui::Text( ", %s%i", t, var.desc[i].width );
+                    }
                 }
             }
-            else
-            {
-                if( var.minbound )
-                {
-                    ImGui::Text( "[\xe2\x89\xa4%s", RealToString( var.minlat ) );
-                }
-                else
-                {
-                    ImGui::Text( "[%s", RealToString( var.minlat ) );
-                }
-                ImGui::SameLine( 0, 0 );
-                if( var.maxbound )
-                {
-                    ImGui::Text( " \xE2\x80\x93 \xe2\x89\xa4%s]", RealToString( var.maxlat ) );
-                }
-                else
-                {
-                    ImGui::Text( " \xE2\x80\x93 %s]", RealToString( var.maxlat ) );
-                }
-            }
-            ImGui::SameLine();
-            TextDisabledUnformatted( "(cycles in execution, may vary by used output)" );
+            ImGui::EndTooltip();
+            if( m_font ) ImGui::PushFont( m_font );
         }
-        TextFocused( "\xce\xbcops:", RealToString( var.uops ) );
-        if( var.port != -1 ) TextFocused( "Ports:", PortList[var.port] );
-        ImGui::Separator();
-        TextFocused( "ISA set:", IsaList[var.isaSet] );
-        TextDisabledUnformatted( "Operands:" );
-        ImGui::SameLine();
-        bool first = true;
-        for( int i=0; i<var.descNum; i++ )
+        if( m_cpuArch == CpuArchX86 || m_cpuArch == CpuArchX64 )
         {
-            const char* t = "?";
-            switch( var.desc[i].type )
+            if( line.readX86[0] != RegsX86::invalid || line.writeX86[0] != RegsX86::invalid )
             {
-            case 0:
-                t = "Imm";
-                break;
-            case 1:
-                t = "Reg";
-                break;
-            case 2:
-                t = var.desc[i].width == 0 ? "AGen" : "Mem";
-                break;
-            default:
-                assert( false );
-                break;
-            }
-            if( first )
-            {
-                first = false;
-                if( var.desc[i].width == 0 )
+                if( m_font ) ImGui::PopFont();
+                ImGui::BeginTooltip();
+                if( asmVar ) ImGui::Separator();
+                if( line.readX86[0] != RegsX86::invalid )
                 {
-                    ImGui::TextUnformatted( t );
+                    TextDisabledUnformatted( "Read:" );
+                    ImGui::SameLine();
+                    int idx = 0;
+                    for(;;)
+                    {
+                        if( line.readX86[idx] == RegsX86::invalid ) break;
+                        if( idx == 0 )
+                        {
+                            ImGui::TextUnformatted( s_regNameX86[(int)line.readX86[idx++]] );
+                        }
+                        else
+                        {
+                            ImGui::SameLine( 0, 0 );
+                            ImGui::Text( ", %s", s_regNameX86[(int)line.readX86[idx++]] );
+                        }
+                    }
                 }
-                else
+                if( line.writeX86[0] != RegsX86::invalid )
                 {
-                    ImGui::Text( "%s%i", t, var.desc[i].width );
+                    TextDisabledUnformatted( "Write:" );
+                    ImGui::SameLine();
+                    int idx = 0;
+                    for(;;)
+                    {
+                        if( line.writeX86[idx] == RegsX86::invalid ) break;
+                        if( idx == 0 )
+                        {
+                            ImGui::TextUnformatted( s_regNameX86[(int)line.writeX86[idx++]] );
+                        }
+                        else
+                        {
+                            ImGui::SameLine( 0, 0 );
+                            ImGui::Text( ", %s", s_regNameX86[(int)line.writeX86[idx++]] );
+                        }
+                    }
                 }
-            }
-            else
-            {
-                ImGui::SameLine( 0, 0 );
-                if( var.desc[i].width == 0 )
-                {
-                    ImGui::Text( ", %s", t );
-                }
-                else
-                {
-                    ImGui::Text( ", %s%i", t, var.desc[i].width );
-                }
+                ImGui::EndTooltip();
+                if( m_font ) ImGui::PushFont( m_font );
             }
         }
-        ImGui::EndTooltip();
-        if( m_font ) ImGui::PushFont( m_font );
     }
 
     if( line.jumpAddr != 0 )

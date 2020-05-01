@@ -28,7 +28,8 @@ public:
         xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7, xmm8, xmm9,
         xmm10, xmm11, xmm12, xmm13, xmm14, xmm15, xmm16, xmm17, xmm18, xmm19,
         xmm20, xmm21, xmm22, xmm23, xmm24, xmm25, xmm26, xmm27, xmm28, xmm29,
-        xmm30, xmm31, k0, k1, k2, k3, k4, k5, k6, k7
+        xmm30, xmm31, k0, k1, k2, k3, k4, k5, k6, k7,
+        NUMBER_OF_ENTRIES
     };
 
 private:

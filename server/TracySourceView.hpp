@@ -85,6 +85,7 @@ private:
     enum { WriteBit = 0x200 };
     enum { ReuseBit = 0x400 };
     enum { RegMask  = 0x0FF };
+    enum { FlagMask = 0xF00 };
 
     struct AsmLine
     {

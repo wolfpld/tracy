@@ -1693,6 +1693,41 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             draw->AddLine( ImVec2( x50, yStart ), ImVec2( x50, yEnd ), 0xFF00FF00 );
             draw->AddLine( ImVec2( x25, yTarget ), ImVec2( x75, yTarget ), 0xFF00FF00 );
         }
+
+        if( m_asmSelected >= 0 )
+        {
+            const auto x0 = rect.Min.x;
+            const auto x1 = rect.Min.x + rect.GetWidth() * 0.2f;
+            float sy;
+            for( size_t i=0; i<m_asm.size(); i++ )
+            {
+                if( i == m_asmSelected )
+                {
+                    sy = round( rect.Min.y + ( i - 0.5f ) / m_asm.size() * rect.GetHeight() );
+                }
+                else if( m_asm[i].regData[0] != 0 )
+                {
+                    int flags = 0;
+                    int idx = 0;
+                    for(;;)
+                    {
+                        const auto& v = m_asm[i].regData[idx++];
+                        if( v == 0 ) break;
+                        flags |= v & FlagMask;
+                    }
+                    uint32_t col = 0;
+                    if( ( flags & ( WriteBit | ReadBit ) ) == ( WriteBit | ReadBit ) ) col = 0xFF00FFFF;
+                    else if( flags & WriteBit ) col = 0xFF0000FF;
+                    else if( flags & ReadBit ) col = 0xFF00FF00;
+                    if( col != 0 )
+                    {
+                        const auto ly = round( rect.Min.y + ( i - 0.5f ) / m_asm.size() * rect.GetHeight() );
+                        draw->AddLine( ImVec2( x0, ly ), ImVec2( x1, ly ), col, 3 );
+                    }
+                }
+            }
+            draw->AddLine( ImVec2( x0, sy ), ImVec2( x1, sy ), 0xFFFF9900, 3 );
+        }
     }
 
     if( m_font ) ImGui::PopFont();

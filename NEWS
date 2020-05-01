@@ -44,6 +44,9 @@ v0.7 (xxxx-xx-xx)
     symbol.
   - Ability to switch between inlined functions which are incorporated into
     the symbol.
+  - Graphical representation of control flow in program.
+  - Display of micro-architectural data for each assembly instruction.
+  - Tracking register dependencies between assembly instructions.
 - If the default listening port is occupied, profiler will now try listening
   on other ports.
 - Added possibility to perform source file names substitution.

@@ -621,6 +621,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             }
             m_asm.emplace_back( AsmLine { op.address, jumpAddr, op.mnemonic, op.op_str, (uint8_t)op.size, leaData, jumpConditional, std::move( params ) } );
 
+#if CS_API_MAJOR >= 4
             auto& entry = m_asm.back();
             cs_regs read, write;
             uint8_t rcnt, wcnt;
@@ -648,6 +649,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
             default:
                 break;
             }
+#endif
 
             const auto mLen = strlen( op.mnemonic );
             if( mLen > mLenMax ) mLenMax = mLen;

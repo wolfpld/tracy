@@ -110,13 +110,17 @@
 #define _Static_assert static_assert
 
 /// Platform and arch specifics
-#if defined(_MSC_VER) && !defined(__clang__)
-#  define FORCEINLINE inline __forceinline
-#else
-#  define FORCEINLINE inline __attribute__((__always_inline__))
+#ifndef FORCEINLINE
+#  if defined(_MSC_VER) && !defined(__clang__)
+#    define FORCEINLINE inline __forceinline
+#  else
+#    define FORCEINLINE inline __attribute__((__always_inline__))
+#  endif
 #endif
 #if PLATFORM_WINDOWS
-#  define WIN32_LEAN_AND_MEAN
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
 #  include <windows.h>
 #  if ENABLE_VALIDATE_ARGS
 #    include <Intsafe.h>

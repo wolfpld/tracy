@@ -350,10 +350,10 @@ void SysTraceSendExternalName( uint64_t thread )
                             {
                                 if( (uint64_t)ptr >= (uint64_t)info.lpBaseOfDll && (uint64_t)ptr <= (uint64_t)info.lpBaseOfDll + (uint64_t)info.SizeOfImage )
                                 {
-                                    char buf[1024];
-                                    if( _GetModuleBaseNameA( phnd, modules[i], buf, 1024 ) != 0 )
+                                    char buf2[1024];
+                                    if( _GetModuleBaseNameA( phnd, modules[i], buf2, 1024 ) != 0 )
                                     {
-                                        GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
+                                        GetProfiler().SendString( thread, buf2, QueueType::ExternalThreadName );
                                         threadSent = true;
                                     }
                                 }
@@ -389,13 +389,13 @@ void SysTraceSendExternalName( uint64_t thread )
                 const auto phnd = OpenProcess( PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid );
                 if( phnd != INVALID_HANDLE_VALUE )
                 {
-                    char buf[1024];
-                    const auto sz = GetProcessImageFileNameA( phnd, buf, 1024 );
+                    char buf2[1024];
+                    const auto sz = GetProcessImageFileNameA( phnd, buf2, 1024 );
                     CloseHandle( phnd );
                     if( sz != 0 )
                     {
-                        auto ptr = buf + sz - 1;
-                        while( ptr > buf && *ptr != '\\' ) ptr--;
+                        auto ptr = buf2 + sz - 1;
+                        while( ptr > buf2 && *ptr != '\\' ) ptr--;
                         if( *ptr == '\\' ) ptr++;
                         GetProfiler().SendString( thread, ptr, QueueType::ExternalName );
                         return;

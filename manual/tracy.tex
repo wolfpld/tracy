@@ -2719,6 +2719,10 @@ If any instruction would jump to a predefined address, symbolic name of the jump
 
 Enabling the \emph{\faShare{}~Jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target. Hovering the \faMousePointer{}~mouse pointer over the jump arrow will display jump information tooltip and will also draw the jump range on the scroll bar, as a green line. Jump target location will be marked by a horizontal green line. Jumps going out of the symbol\footnote{This includes jumps, procedure calls and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
 
+Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.
+
+\subparagraph{Exploring microarchitecture}
+
 If the listed assembly code targets x86 or x64 instruction set architectures, hovering \faMousePointer{}~mouse pointer over an instruction will display a tooltip with microarchitectural data, based on measurements made in \cite{Abel19a}. \emph{This information is retrieved from instruction cycle tables, and does not represent true behavior of the profiled code.} Reading the cited article will give you a detailed definition of the presented data, but here's a quick (and inaccurate) explanation:
 
 \begin{itemize}
@@ -2732,7 +2736,24 @@ Selection of the CPU microarchitecture can be performed using the \emph{\faMicro
 
 Enabling the \emph{\faTruckLoading{}~Latency} option will display graphical representation of instruction latencies on the listing. Minimum latency of an instruction is represented with a red bar, while the maximum latency is represented by a yellow bar.
 
-Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.
+\subparagraph{Instruction dependencies}
+
+Assembly instructions may read values stored in registers and may also write values to registers. A dependency between two instructions is created when one produces some result, which is then consumed by the other one. Combining this dependency graph with information about instruction latencies may give deep understanding of the bottlenecks in code performance.
+
+Clicking the \LMB{}~left mouse button on any assembly instruction will mark it as a target for resolving register dependencies between instructions. To cancel this selection, click on any assembly instruction with \RMB{}~right mouse button.
+
+The selected instruction will be highlighted in red, while its dependencies will be highlighted in violet. Additionally, a list of dependent registers will be listed next to each instruction which reads or writes to them, with the following color code:
+
+\begin{itemize}
+\item \emph{Green} -- Register value is read (is a dependency \emph{after} target instruction).
+\item \emph{Red} -- A value is written to a register (is a dependency \emph{before} target instruction).
+\item \emph{Yellow} -- Register is read and then modified.
+\item \emph{Grey} -- Value in a register is either discarded (overwritten), or was already consumed by an earlier instruction (i.e. it is readily available\footnote{This is actually a bit of simplification. Run a pipeline simulator, e.g. \texttt{llvm-mca} for a better analysis.}). Dependency will be not followed further.
+\end{itemize}
+
+Search for dependencies follows program control flow, so there may be multiple producers and consumers for any single register. While the \emph{after} and \emph{before} guidelines mentioned above hold in general case, things may be more complicated when there's a large amount of conditional jumps in the code. Note that dependencies further away than 64 instructions are not displayed.
+
+For easier navigation, dependencies are also marked on the left side of the scroll bar, following the green, red and yellow convention. The selected instruction is marked in blue.
 
 \paragraph{Combined mode}
 

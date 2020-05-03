@@ -679,9 +679,15 @@ bool View::DrawImpl()
 
     m_frameHover = -1;
 
+    const auto dockspaceId = ImGui::GetID( "tracyDockspace" );
+    ImGui::DockSpace( dockspaceId, ImVec2( 0, 0 ) /*, ImGuiDockNodeFlags_NoDockingInCentralNode*/ );
+    ImGui::SetNextWindowDockID( dockspaceId );
+    ImGui::Begin( "Work area" );
+
     DrawFrames();
     DrawZones();
 
+    ImGui::End();
     ImGui::End();
 
     m_zoneHighlight = nullptr;

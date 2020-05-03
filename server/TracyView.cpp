@@ -5235,6 +5235,54 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                     PrintStringPercent( buf, usageOther * cpuCntRev * 100 );
                     TextDisabledUnformatted( buf );
                     TextFocused( "Number of cores:", RealToString( cpuCnt ) );
+                    if( usageOwn + usageOther != 0 )
+                    {
+                        ImGui::Separator();
+                        for( int i=0; i<cpuCnt; i++ )
+                        {
+                            if( !cpuData[i].cs.empty() )
+                            {
+                                auto& cs = cpuData[i].cs;
+                                auto it = std::lower_bound( cs.begin(), cs.end(), mt, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+                                if( it != cs.end() && it->Start() <= mt && it->End() >= mt )
+                                {
+                                    auto tt = m_worker.GetThreadTopology( i );
+                                    if( tt )
+                                    {
+                                        ImGui::TextDisabled( "[%i:%i] CPU %i:", tt->package, tt->core, i );
+                                    }
+                                    else
+                                    {
+                                        ImGui::TextDisabled( "CPU %i:", i );
+                                    }
+                                    ImGui::SameLine();
+                                    const auto thread = m_worker.DecompressThreadExternal( it->Thread() );
+                                    bool local, untracked;
+                                    const char* txt;
+                                    auto label = GetThreadContextData( thread, local, untracked, txt );
+                                    if( local || untracked )
+                                    {
+                                        uint32_t color;
+                                        if( m_vd.dynamicColors != 0 )
+                                        {
+                                            color = local ? GetThreadColor( thread, 0 ) : ( untracked ? 0xFF663333 : 0xFF444444 );
+                                        }
+                                        else
+                                        {
+                                            color = local ? 0xFF334488 : ( untracked ? 0xFF663333 : 0xFF444444 );
+                                        }
+                                        TextColoredUnformatted( HighlightColor<75>( color ), label );
+                                        ImGui::SameLine();
+                                        ImGui::TextDisabled( "(%s)", RealToString( thread ) );
+                                    }
+                                    else
+                                    {
+                                        TextDisabledUnformatted( label );
+                                    }
+                                }
+                            }
+                        }
+                    }
                     ImGui::EndTooltip();
                 }
             }

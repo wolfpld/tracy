@@ -624,7 +624,7 @@ If context switch capture is active, Tracy will try to capture thread names thro
 \subsection{Crash handling}
 \label{crashhandling}
 
-On selected platforms\footnote{Windows, Linux and Android.} Tracy will intercept application crashes\footnote{For example, invalid memory accesses ('segmentation faults', 'null pointer exceptions'), divisions by zero, etc.}. This serves two purposes. First, the client application will be able to send the remaining profiling data to the server. Second, the server will receive a crash report with information about the crash reason, call stack at the time of crash, etc.
+On selected platforms (see section~\ref{featurematrix}) Tracy will intercept application crashes\footnote{For example, invalid memory accesses ('segmentation faults', 'null pointer exceptions'), divisions by zero, etc.}. This serves two purposes. First, the client application will be able to send the remaining profiling data to the server. Second, the server will receive a crash report with information about the crash reason, call stack at the time of crash, etc.
 
 This is an automatic process and it doesn't require user interaction.
 
@@ -635,6 +635,38 @@ logo=\bcattention
 ]{Caveats}
 On MSVC the debugger has priority over the application in handling exceptions. If you want to finish the profiler data collection with the debugger hooked-up, select the \emph{continue} option in the debugger pop-up dialog.
 \end{bclogo}
+
+\subsection{Feature support matrix}
+\label{featurematrix}
+
+Some features of the profiler are only available on selected platforms. Please refer to table~\ref{featuretable} for details.
+
+\begin{table}[h]
+\centering
+\begin{tabular}[h]{c|c|c|c|c|c|c}
+\textbf{Feature} & \textbf{Windows} & \textbf{Linux} & \textbf{Android} & \textbf{OSX} & \textbf{iOS} & \textbf{BSD} \\ \hline
+Profiling initialization & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & \faCheck \\
+CPU zones & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Locks & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Plots & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Messages & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Memory & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+GPU zones (OpenGL) & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & \\
+GPU zones (Vulkan) & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \\
+Call stacks & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Symbol resolution & \faCheck & \faCheck & \faCheck & \faCheck & \faPoo & \faCheck \\
+Crash handling & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
+CPU usage probing & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
+Context switches & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
+CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
+Call stack sampling & \faCheck & \faTimes & \faTimes & \faTimes & \faPoo & \faTimes \\
+\end{tabular}
+
+\vspace{1em}
+\faPoo{} -- Not possible to support due to platform limitations.
+\caption{Feature support matrix}
+\label{featuretable}
+\end{table}
 
 \section{Client markup}
 \label{client}
@@ -1139,7 +1171,7 @@ Remember that you need to provide your own name for the created stack variable a
 \subsection{Collecting call stacks}
 \label{collectingcallstacks}
 
-Tracy can capture true calls stacks on most platforms. It can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracyMessageS}, \texttt{TracyMessageLS}, \texttt{TracyMessageCS}, \texttt{TracyMessageLCS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named variants.
+Capture of true calls stacks can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracyMessageS}, \texttt{TracyMessageLS}, \texttt{TracyMessageCS}, \texttt{TracyMessageLCS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named variants.
 
 Be aware that call stack collection is a relatively slow operation. Table~\ref{CallstackTimes} and figure~\ref{CallstackPlot} show how long it took to perform a single capture of varying depth on multiple CPU architectures.
 
@@ -1417,7 +1449,7 @@ You can collect call stacks of zones and memory allocation events, as described 
 \subsection{Automated data collection}
 \label{automated}
 
-Tracy will perform automatic collection of system data without user intervention. This behavior is platform specific and may not be available everywhere.
+Tracy will perform automatic collection of system data without user intervention. This behavior is platform specific and may not be available everywhere. Refer to section~\ref{featurematrix} for more information.
 
 \subsubsection{CPU usage}
 
@@ -1473,7 +1505,7 @@ In this manual, the word \emph{core} is typically used as a short term for \emph
 
 Manual markup of zones doesn't cover every function existing in a program and cannot be performed in system libraries, or in kernel. This can leave blank spaces on the trace, leaving you with no clue what the application was doing. Tracy is able to periodically inspect state of running threads, providing you with a snapshot of call stack at the time when sampling was performed. While this information doesn't have the fidelity of manually inserted zones, it can sometimes give you an insight where to go next.
 
-This feature is only available on Windows and requires privilege elevation, as described in chapter~\ref{contextswitches}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
+This feature requires privilege elevation, as described in chapter~\ref{contextswitches}. Proper setup of the required program debugging data is described in chapter~\ref{collectingcallstacks}.
 
 \subsubsection{Executable code retrieval}
 \label{executableretrieval}
@@ -1627,7 +1659,7 @@ The new file contains the same data as the old one, but in the updated internal 
 
 \subsubsection{Archival mode}
 
-The update utility supports optional higher levels of data compression, which reduce disk size of traces, at the cost of increased compression times. With the default settings, the output files have a reasonable size and are quick to save and load. A list of available compression modes, parameters that enable them, and compression results is available in table~\ref{compressiontimes} and figures~\ref{savesize} and~\ref{savetime}.
+The update utility supports optional higher levels of data compression, which reduce disk size of traces, at the cost of increased compression times. With the default settings, the output files have a reasonable size and are quick to save and load. A list of available compression modes, parameters that enable them, and compression results is available in table~\ref{compressiontimes} and figures~\ref{savesize}, \ref{savetime} and~\ref{loadtime}.
 
 \begin{table}[h]
 \centering
@@ -1688,9 +1720,9 @@ The update utility supports optional higher levels of data compression, which re
 \begin{minipage}[c]{.475\textwidth}
 \begin{figure}[H]
 \centering\begin{tikzpicture}
-\begin{axis}[xlabel=Mode,ylabel=Time (s), legend pos=north west, width=\textwidth]
+\begin{semilogyaxis}[xlabel=Mode,ylabel=Time (s), legend pos=north west, width=\textwidth]
 \addplot[mark=x, red] plot coordinates {
-(1, 2.27) (2, 2.31) (3, 2.43) (4, 2.44) (5, 3.98) (6, 4.19) (7, 6.6) (8, 7.84) (9, 9.6) (10, 10.29) (11, 11.23) (12, 15.43) (13, 35.55) (14, 37.74) (15, 61) (16, 94) (17, 104) (18, 137)
+(1, 2.27) (2, 2.31) (3, 2.43) (4, 2.44) (5, 3.98) (6, 4.19) (7, 6.6) (8, 7.84) (9, 9.6) (10, 10.29) (11, 11.23) (12, 15.43) (13, 35.55) (14, 37.74) (15, 61) (16, 94) (17, 104) (18, 137) (19, 429) (20, 428) (21, 781) (22, 911)
 };
 \addlegendentry{zstd}
 \addplot[mark=o, blue] plot coordinates { (23, 1.91) };
@@ -1699,12 +1731,31 @@ The update utility supports optional higher levels of data compression, which re
 \addlegendentry{hc}
 \addplot[mark=triangle*, blue] plot coordinates { (25, 270) };
 \addlegendentry{extreme}
-\end{axis}
+\end{semilogyaxis}
 \end{tikzpicture}
-\caption{Plot of trace compression times for different compression modes (see table~\ref{compressiontimes}). Zstd modes 19-22 omitted.}
+\caption{Logarithmic plot of trace compression times for different compression modes (see table~\ref{compressiontimes}).}
 \label{savetime}
 \end{figure}
 \end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+\centering\begin{tikzpicture}
+\begin{axis}[xlabel=Mode,ylabel=Time (ms), legend pos=south west, width=0.475\textwidth]
+\addplot[mark=x, red] plot coordinates {
+(1, 868) (2, 884) (3, 867) (4, 855) (5, 855) (6, 827) (7, 761) (8, 746) (9, 724) (10, 706) (11, 717) (12, 695) (13, 642) (14, 627) (15, 600) (16, 537) (17, 542) (18, 554) (19, 605) (20, 608) (21, 614) (22, 621)
+};
+\addlegendentry{zstd}
+\addplot[mark=o, blue] plot coordinates { (23, 470) };
+\addlegendentry{default}
+\addplot[mark=*, blue] plot coordinates { (24, 401) };
+\addlegendentry{hc}
+\addplot[mark=triangle*, blue] plot coordinates { (25, 406) };
+\addlegendentry{extreme}
+\end{axis}
+\end{tikzpicture}
+\caption{Plot of trace load times for different compression modes (see table~\ref{compressiontimes}).}
+\label{loadtime}
 \end{figure}
 
 Trace files created using the \emph{default}, \emph{hc} and \emph{extreme} modes are optimized for fast decompression and can be further compressed using file compression utilities. For example, using 7-zip results in archives of the following sizes: 77.2 MB, 54.3 MB, 52.4 MB.
@@ -2108,7 +2159,7 @@ Context switch regions are using the following color key:
 
 This label is only available if context switch data was collected. It is split into two parts: a graph of CPU load by various threads running in the system, and a per-core thread execution display.
 
-The CPU load graph is showing how much CPU resources were used at any given time during program execution. The green part of the graph represents threads belonging to the profiled application and the gray part of the graph shows all other programs running in the system.
+The CPU load graph is showing how much CPU resources were used at any given time during program execution. The green part of the graph represents threads belonging to the profiled application and the gray part of the graph shows all other programs running in the system. Hovering the \faMousePointer{}~mouse pointer over the graph will display a list of threads running on the CPU at the given time.
 
 Each line in the thread execution display represents a separate logical CPU thread. If CPU topology data is available (see section~\ref{cputopology}), package and core assignment will be displayed in brackets, in addition to numerical processor identifier (i.e. \texttt{[\emph{package}:\emph{core}] CPU \emph{thread}}). When a core is busy executing a thread, a zone will be drawn at the appropriate time. Zones are colored according to the following key:
 
@@ -2157,7 +2208,7 @@ The numerical data values (figure~\ref{plot}) are plotted right below the zones 
 
 When memory profiling (section~\ref{memoryprofiling}) is enabled, Tracy will automatically generate a \emph{\faMemory{}~Memory usage} plot, which has extended capabilities. Hovering over a data point (memory allocation event) will visually display duration of the allocation. Clicking the \LMB{} left mouse button on the data point will open the memory allocation information window, which will display the duration of the allocation as long as the window is open.
 
-Another plot that is automatically provided by Tracy is the \emph{\faTachometer*{}~CPU usage} plot. It is only available on some platforms and it represents the total system CPU usage percentage (it is not limited to the profiled application).
+Another plot that is automatically provided by Tracy is the \emph{\faTachometer*{}~CPU usage} plot, which represents the total system CPU usage percentage (it is not limited to the profiled application).
 
 \subsubsection{Navigating the view}
 

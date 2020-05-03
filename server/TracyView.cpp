@@ -119,6 +119,15 @@ static tracy_force_inline void PrintStringPercent( char* buf, double percent )
     memcpy( end, "%)", 3 );
 }
 
+template<int V = 25>
+static tracy_force_inline uint32_t HighlightColor( uint32_t color )
+{
+    return 0xFF000000 |
+        ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + V ) ) << 16 ) |
+        ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + V ) ) << 8  ) |
+        ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + V ) )       );
+}
+
 
 enum { MinVisSize = 3 };
 enum { MinCtxSize = 4 };
@@ -15189,14 +15198,6 @@ uint32_t View::GetZoneColor( const GpuEvent& ev )
 uint32_t View::GetRawZoneColor( const GpuEvent& ev )
 {
     return GetZoneColor( ev );
-}
-
-uint32_t View::HighlightColor( uint32_t color )
-{
-    return 0xFF000000 |
-        ( std::min<int>( 0xFF, ( ( ( color & 0x00FF0000 ) >> 16 ) + 25 ) ) << 16 ) |
-        ( std::min<int>( 0xFF, ( ( ( color & 0x0000FF00 ) >> 8  ) + 25 ) ) << 8  ) |
-        ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) + 25 ) )       );
 }
 
 uint32_t View::GetZoneHighlight( const ZoneEvent& ev, uint64_t thread, int depth )

@@ -117,6 +117,16 @@ namespace tracy
         if( active ) ImGui::PopStyleColor( 3 );
     }
 
+    static void SmallToggleButton( const char* label, bool& toggle )
+    {
+        const auto active = toggle;
+        if( active ) SetButtonHighlightColor();
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        if( ImGui::Button( label ) ) toggle = !toggle;
+        ImGui::PopStyleVar( 1 );
+        if( active ) ImGui::PopStyleColor( 3 );
+    }
+
 }
 
 #endif

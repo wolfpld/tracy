@@ -604,7 +604,7 @@ static void DrawContents()
                                 badVer.state = tracy::BadVersionState::LegacyVersion;
                                 badVer.version = e.version;
                             }
-                            } );
+                        } );
                     }
                 }
                 catch( const tracy::NotTracyDump& )

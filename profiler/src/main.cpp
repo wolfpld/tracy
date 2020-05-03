@@ -126,6 +126,7 @@ static std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> co
 static ViewShutdown viewShutdown = ViewShutdown::False;
 static double animTime = 0;
 static float dpiScale = 1.f;
+static ImGuiTextFilter addrFilter, portFilter, progFilter;
 
 int main( int argc, char** argv )
 {
@@ -368,6 +369,7 @@ static void DrawContents()
     static bool reconnect = false;
     static std::string reconnectAddr;
     static int reconnectPort;
+    static bool showFilter = false;
 
     const ImVec4 clear_color = ImColor( 114, 144, 154 );
 
@@ -628,6 +630,37 @@ static void DrawContents()
         {
             ImGui::Separator();
             ImGui::TextUnformatted( "Discovered clients:" );
+            ImGui::SameLine();
+            tracy::SmallToggleButton( ICON_FA_FILTER " Filter", showFilter );
+            if( addrFilter.IsActive() || portFilter.IsActive() || progFilter.IsActive() )
+            {
+                ImGui::SameLine();
+                tracy::TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+                if( ImGui::IsItemHovered() )
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::TextUnformatted( "Filters are active" );
+                    ImGui::EndTooltip();
+                }
+                if( showFilter )
+                {
+                    ImGui::SameLine();
+                    if( ImGui::SmallButton( ICON_FA_BACKSPACE " Clear" ) )
+                    {
+                        addrFilter.Clear();
+                        portFilter.Clear();
+                        progFilter.Clear();
+                    }
+                }
+            }
+            if( showFilter )
+            {
+                const auto w = ImGui::GetFontSize() * 12;
+                ImGui::Separator();
+                addrFilter.Draw( "Address filter", w );
+                portFilter.Draw( "Port filter", w );
+                progFilter.Draw( "Program filter", w );
+            }
             ImGui::Separator();
             static bool widthSet = false;
             ImGui::Columns( 3 );
@@ -641,12 +674,21 @@ static void DrawContents()
             }
             std::lock_guard<std::mutex> lock( resolvLock );
             int idx = 0;
+            int passed = 0;
             for( auto& v : clients )
             {
                 const bool badProto = v.second.protocolVersion != tracy::ProtocolVersion;
                 bool sel = false;
                 const auto& name = resolvMap.find( v.second.address );
                 assert( name != resolvMap.end() );
+                if( addrFilter.IsActive() && !addrFilter.PassFilter( name->second.c_str() ) && !addrFilter.PassFilter( v.second.address.c_str() ) ) continue;
+                if( portFilter.IsActive() )
+                {
+                    char buf[32];
+                    sprintf( buf, "%" PRIu32, v.second.port );
+                    if( !portFilter.PassFilter( buf ) ) continue;
+                }
+                if( progFilter.IsActive() && !progFilter.PassFilter( v.second.procName.c_str() ) ) continue;
                 ImGuiSelectableFlags flags = ImGuiSelectableFlags_SpanAllColumns;
                 if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
                 ImGui::PushID( idx++ );
@@ -690,8 +732,13 @@ static void DrawContents()
                     ImGui::TextUnformatted( v.second.procName.c_str() );
                 }
                 ImGui::NextColumn();
+                passed++;
             }
             ImGui::EndColumns();
+            if( passed == 0 )
+            {
+                ImGui::TextUnformatted( "All clients are filtered." );
+            }
         }
 
         ImGui::End();

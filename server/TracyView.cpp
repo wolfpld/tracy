@@ -483,23 +483,25 @@ bool View::DrawImpl()
         m_stcb( m_worker.GetCaptureName().c_str() );
     }
 
-    auto& style = ImGui::GetStyle();
-    const auto wrPrev = style.WindowRounding;
-    const auto wbsPrev = style.WindowBorderSize;
-    const auto wpPrev = style.WindowPadding;
-    style.WindowRounding = 0.f;
-    style.WindowBorderSize = 0.f;
-    style.WindowPadding = ImVec2( 4.f, 4.f );
-    style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
+    {
+        auto& style = ImGui::GetStyle();
+        const auto wrPrev = style.WindowRounding;
+        const auto wbsPrev = style.WindowBorderSize;
+        const auto wpPrev = style.WindowPadding;
+        style.WindowRounding = 0.f;
+        style.WindowBorderSize = 0.f;
+        style.WindowPadding = ImVec2( 4.f, 4.f );
+        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
 
-    ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
-    ImGui::SetNextWindowSize( ImVec2( m_rootWidth, m_rootHeight ) );
-    ImGui::Begin( "Timeline view###Profiler", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking );
+        ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+        ImGui::SetNextWindowSize( ImVec2( m_rootWidth, m_rootHeight ) );
+        ImGui::Begin( "Timeline view###Profiler", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking );
 
-    style.WindowRounding = wrPrev;
-    style.WindowBorderSize = wbsPrev;
-    style.WindowPadding = wpPrev;
-    style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 1.f );
+        style.WindowRounding = wrPrev;
+        style.WindowBorderSize = wbsPrev;
+        style.WindowPadding = wpPrev;
+        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 1.f );
+    }
 #else
     char tmp[2048];
     sprintf( tmp, "%s###Profiler", m_worker.GetCaptureName().c_str() );
@@ -682,7 +684,21 @@ bool View::DrawImpl()
     const auto dockspaceId = ImGui::GetID( "tracyDockspace" );
     ImGui::DockSpace( dockspaceId, ImVec2( 0, 0 ), ImGuiDockNodeFlags_NoDockingInCentralNode );
     ImGui::SetNextWindowDockID( dockspaceId );
-    ImGui::Begin( "Work area" );
+    {
+        auto& style = ImGui::GetStyle();
+        const auto wpPrev = style.WindowPadding;
+        style.WindowPadding = ImVec2( 1, 0 );
+#ifndef TRACY_NO_ROOT_WINDOW
+        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
+#endif
+
+        ImGui::Begin( "Work area" );
+
+        style.WindowPadding = wpPrev;
+#ifndef TRACY_NO_ROOT_WINDOW
+        style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 1.f );
+#endif
+    }
 
     DrawFrames();
     DrawZones();

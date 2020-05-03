@@ -161,7 +161,6 @@ private:
     void DrawMemoryAllocWindow();
     void DrawInfo();
     void DrawTextEditor();
-    void DrawGoToFrame();
     void DrawLockInfoWindow();
     void DrawPlayback();
     void DrawCpuDataWindow();
@@ -345,7 +344,6 @@ private:
     bool m_showInfo = false;
     bool m_showPlayback = false;
     bool m_showCpuDataWindow = false;
-    bool m_goToFrame = false;
     bool m_showAnnotationList = false;
 
     enum class CpuDataSortBy

@@ -628,12 +628,30 @@ bool View::DrawImpl()
         ImGui::EndCombo();
     }
     ImGui::SameLine();
-    ToggleButton( ICON_FA_CROSSHAIRS, m_goToFrame );
+    if( ImGui::Button( ICON_FA_CROSSHAIRS ) ) ImGui::OpenPopup( "GoToFramePopup" );
     if( ImGui::IsItemHovered() )
     {
         ImGui::BeginTooltip();
         ImGui::TextUnformatted( "Go to frame" );
         ImGui::EndTooltip();
+    }
+    if( ImGui::BeginPopup( "GoToFramePopup" ) )
+    {
+        static int frameNum = 1;
+        const bool mainFrameSet = m_frames->name == 0;
+        const auto numFrames = mainFrameSet ? m_frames->frames.size() - 1 : m_frames->frames.size();
+        const auto frameOffset = mainFrameSet ? 0 : 1;
+        bool goClicked = false;
+        ImGui::SetNextItemWidth( 120 );
+        goClicked |= ImGui::InputInt( "##goToFrame", &frameNum, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
+        frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
+        ImGui::SameLine();
+        goClicked |= ImGui::Button( ICON_FA_CROSSHAIRS " Go to frame" );
+        if( goClicked )
+        {
+            ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
+        }
+        ImGui::EndPopup();
     }
 
     {
@@ -729,7 +747,6 @@ bool View::DrawImpl()
     if( m_memoryAllocInfoWindow >= 0 ) DrawMemoryAllocWindow();
     if( m_showInfo ) DrawInfo();
     if( m_sourceViewFile ) DrawTextEditor();
-    if( m_goToFrame ) DrawGoToFrame();
     if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
     if( m_showPlayback ) DrawPlayback();
     if( m_showCpuDataWindow ) DrawCpuDataWindow();
@@ -13125,28 +13142,6 @@ void View::DrawTextEditor()
     m_sourceView->Render( m_worker, *this );
     ImGui::End();
     if( !show ) m_sourceViewFile = nullptr;
-}
-
-void View::DrawGoToFrame()
-{
-    static int frameNum = 1;
-
-    const bool mainFrameSet = m_frames->name == 0;
-    const auto numFrames = mainFrameSet ? m_frames->frames.size() - 1 : m_frames->frames.size();
-    const auto frameOffset = mainFrameSet ? 0 : 1;
-
-    bool goClicked = false;
-    ImGui::Begin( "Go to frame", &m_goToFrame, ImGuiWindowFlags_AlwaysAutoResize );
-    ImGui::SetNextItemWidth( 120 );
-    goClicked |= ImGui::InputInt( "##goToFrame", &frameNum, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue );
-    frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
-    ImGui::SameLine();
-    goClicked |= ImGui::Button( ICON_FA_CROSSHAIRS " Go to" );
-    if( goClicked )
-    {
-        ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
-    }
-    ImGui::End();
 }
 
 void View::DrawLockInfoWindow()

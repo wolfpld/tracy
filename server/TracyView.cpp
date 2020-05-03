@@ -37,6 +37,8 @@
 #include "TracySourceView.hpp"
 #include "TracyView.hpp"
 
+#include "../imgui/imgui_internal.h"
+
 #ifndef TRACY_NO_FILESELECTOR
 #  include "../nfd/nfd.h"
 #endif
@@ -683,6 +685,10 @@ bool View::DrawImpl()
 
     const auto dockspaceId = ImGui::GetID( "tracyDockspace" );
     ImGui::DockSpace( dockspaceId, ImVec2( 0, 0 ), ImGuiDockNodeFlags_NoDockingInCentralNode );
+    if( ImGuiDockNode* node = ImGui::DockBuilderGetCentralNode( dockspaceId ) )
+    {
+        node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
+    }
     ImGui::SetNextWindowDockID( dockspaceId );
     {
         auto& style = ImGui::GetStyle();

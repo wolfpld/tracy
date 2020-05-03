@@ -212,6 +212,27 @@ int main( int argc, char** argv )
             connHistVec = RebuildConnectionHistory( connHistMap );
         }
     }
+    std::string filtersFile = tracy::GetSavePath( "client.filters" );
+    {
+        FILE* f = fopen( filtersFile.c_str(), "rb" );
+        if( f )
+        {
+            uint8_t sz;
+            fread( &sz, 1, sizeof( sz ), f );
+            fread( addrFilter.InputBuf, 1, sz, f );
+            addrFilter.Build();
+
+            fread( &sz, 1, sizeof( sz ), f );
+            fread( portFilter.InputBuf, 1, sz, f );
+            portFilter.Build();
+
+            fread( &sz, 1, sizeof( sz ), f );
+            fread( progFilter.InputBuf, 1, sz, f );
+            progFilter.Build();
+
+            fclose( f );
+        }
+    }
 
     // Setup window
     glfwSetErrorCallback(glfw_error_callback);
@@ -357,6 +378,25 @@ int main( int argc, char** argv )
                 fwrite( v.first.c_str(), 1, sz, f );
                 fwrite( &v.second, 1, sizeof( v.second ), f );
             }
+            fclose( f );
+        }
+    }
+    {
+        FILE* f = fopen( filtersFile.c_str(), "wb" );
+        if( f )
+        {
+            uint8_t sz = strlen( addrFilter.InputBuf );
+            fwrite( &sz, 1, sizeof( sz ), f );
+            fwrite( addrFilter.InputBuf, 1, sz, f );
+
+            sz = strlen( portFilter.InputBuf );
+            fwrite( &sz, 1, sizeof( sz ), f );
+            fwrite( portFilter.InputBuf, 1, sz, f );
+
+            sz = strlen( progFilter.InputBuf );
+            fwrite( &sz, 1, sizeof( sz ), f );
+            fwrite( progFilter.InputBuf, 1, sz, f );
+
             fclose( f );
         }
     }

@@ -5221,8 +5221,9 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
 
                 if( hover && ImGui::IsMouseHoveringRect( ImVec2( wpos.x, wpos.y + offset ), ImVec2( wpos.x + w, wpos.y + offset + cpuUsageHeight ), true ) )
                 {
+                    const auto mt = m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspxdbl;
                     int usageOwn, usageOther;
-                    m_worker.GetCpuUsageAtTime( m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspxdbl, usageOwn, usageOther );
+                    m_worker.GetCpuUsageAtTime( mt, usageOwn, usageOther );
                     ImGui::BeginTooltip();
                     TextFocused( "Cores used by profiled program:", RealToString( usageOwn ) );
                     ImGui::SameLine();

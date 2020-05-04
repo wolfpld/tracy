@@ -489,8 +489,10 @@ bool View::DrawImpl()
         style.WindowPadding = ImVec2( 4.f, 4.f );
         style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
 
-        ImGui::SetNextWindowPos( ImVec2( 0, 0 ) );
+        ImGuiViewport* viewport = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(viewport->Pos);
         ImGui::SetNextWindowSize( ImVec2( m_rootWidth, m_rootHeight ) );
+        ImGui::SetNextWindowViewport(viewport->ID);
         ImGui::Begin( "Timeline view###Profiler", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking );
 
         style.WindowRounding = wrPrev;

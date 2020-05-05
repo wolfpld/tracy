@@ -133,7 +133,7 @@ void InitCallstack()
 #endif
 }
 
-TRACY_API tracy_force_inline uintptr_t* CallTrace( int depth )
+TRACY_API uintptr_t* CallTrace( int depth )
 {
     auto trace = (uintptr_t*)tracy_malloc( ( 1 + depth ) * sizeof( uintptr_t ) );
     const auto num = RtlWalkFrameChain( (void**)( trace + 1 ), depth, 0 );

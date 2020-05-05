@@ -22,9 +22,18 @@ jobs:
       run: msbuild .\profiler\build\win32\Tracy.vcxproj /property:Configuration=Debug /property:Platform=x64
     - name: Profiler GUI Release
       run: msbuild .\profiler\build\win32\Tracy.vcxproj /property:Configuration=Release /property:Platform=x64
-    - name: Update utility
-      run: .\update\build\win32\update.vcxproj /property:Configuration=Debug /property:Platform=x64
-    - name: Capture utility
+    - name: Update utility Debug
+      run: msbuild .\update\build\win32\update.vcxproj /property:Configuration=Debug /property:Platform=x64
+    - name: Update utility Release
+      run: msbuild .\update\build\win32\update.vcxproj /property:Configuration=Release /property:Platform=x64
+    - name: Capture utility Debug
       run: msbuild .\capture\build\win32\capture.vcxproj /property:Configuration=Debug /property:Platform=x64
+    - name: Capture utility Release
+      run: msbuild .\capture\build\win32\capture.vcxproj /property:Configuration=Release /property:Platform=x64
     - name: Library
       run: msbuild .\library\win32\TracyProfiler.vcxproj /property:Configuration=Release /property:Platform=x64
+    - name: Package binaries
+      run: 7z a Tracy.7z profiler\build\win32\x64\Release\Tracy.exe update\build\win32\x64\Release\update.exe capture\build\win32\x64\Release\capture.exe library\win32\x64\Release\TracyProfiler.dll library\win32\x64\Release\TracyProfiler.lib
+    - uses: actions/upload-artifact@v2
+      with:
+        path: Tracy.7z

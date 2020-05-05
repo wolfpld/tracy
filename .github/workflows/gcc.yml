@@ -1,0 +1,30 @@
+name: gcc build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install libraries
+      run: sudo apt-get update && sudo apt-get -y install libglfw3-dev libgtk2.0-dev libcapstone-dev
+    - name: Profiler GUI
+      run: make -C profiler/build/unix debug release
+    - name: Update utility
+      run: make -C update/build/unix debug release
+    - name: Capture utility
+      run: make -C capture/build/unix debug release
+    - name: Library
+      run: make -C library/unix debug release
+    - name: Test application
+      run: |
+        make -C test
+        make -C test clean
+        make -C test TRACYFLAGS=-DTRACY_ON_DEMAND

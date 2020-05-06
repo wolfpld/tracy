@@ -87,8 +87,6 @@ SourceView::SourceView( ImFont* font )
     , m_cpuArch( CpuArchUnknown )
     , m_showLatency( false )
 {
-    SelectMicroArchitecture( "ZEN2" );
-
     m_microArchOpMap.reserve( OpsNum );
     for( int i=0; i<OpsNum; i++ )
     {
@@ -291,6 +289,94 @@ SourceView::SourceView( ImFont* font )
 SourceView::~SourceView()
 {
     delete[] m_data;
+}
+
+static constexpr uint32_t PackCpuInfo( uint32_t cpuid )
+{
+    return ( cpuid & 0xFFF ) | ( ( cpuid & 0xFFF0000 ) >> 4 );
+}
+
+struct CpuIdMap
+{
+    uint32_t cpuInfo;
+    const char* moniker;
+};
+
+//                   .------ extended family id
+//                   |.----- extended model id
+//                   || .--- family id
+//                   || |.-- model
+//                   || ||.- stepping
+//                   || |||
+static constexpr CpuIdMap s_cpuIdMap[] = {
+    { PackCpuInfo( 0x810F81 ), "ZEN+" },
+    { PackCpuInfo( 0x800F82 ), "ZEN+" },
+    { PackCpuInfo( 0x870F10 ), "ZEN2" },
+    { PackCpuInfo( 0x830F10 ), "ZEN2" },
+    { PackCpuInfo( 0x860F01 ), "ZEN2" },
+    { PackCpuInfo( 0x0706E5 ), "ICL" },
+    { PackCpuInfo( 0x060663 ), "CNL" },
+    { PackCpuInfo( 0x0906EA ), "CFL" },
+    { PackCpuInfo( 0x0906EB ), "CFL" },
+    { PackCpuInfo( 0x0906EC ), "CFL" },
+    { PackCpuInfo( 0x0906ED ), "CFL" },
+    { PackCpuInfo( 0x0806E9 ), "KBL" },
+    { PackCpuInfo( 0x0806EA ), "KBL" },
+    { PackCpuInfo( 0x0906E9 ), "KBL" },
+    { PackCpuInfo( 0x050654 ), "SKX" },
+    { PackCpuInfo( 0x0406E3 ), "SKL" },
+    { PackCpuInfo( 0x0506E0 ), "SKL" },
+    { PackCpuInfo( 0x0506E3 ), "SKL" },
+    { PackCpuInfo( 0x0306D4 ), "BDW" },
+    { PackCpuInfo( 0x040671 ), "BDW" },
+    { PackCpuInfo( 0x0406F1 ), "BDW" },
+    { PackCpuInfo( 0x0306C3 ), "HSW" },
+    { PackCpuInfo( 0x0306F2 ), "HSW" },
+    { PackCpuInfo( 0x040651 ), "HSW" },
+    { PackCpuInfo( 0x0306A9 ), "IVB" },
+    { PackCpuInfo( 0x0306E3 ), "IVB" },
+    { PackCpuInfo( 0x0306E4 ), "IVB" },
+    { PackCpuInfo( 0x0206A2 ), "SNB" },
+    { PackCpuInfo( 0x0206A7 ), "SNB" },
+    { PackCpuInfo( 0x0206D5 ), "SNB" },
+    { PackCpuInfo( 0x0206D6 ), "SNB" },
+    { PackCpuInfo( 0x0206D7 ), "SNB" },
+    { PackCpuInfo( 0x0206F2 ), "WSM" },
+    { PackCpuInfo( 0x0206C0 ), "WSM" },
+    { PackCpuInfo( 0x0206C1 ), "WSM" },
+    { PackCpuInfo( 0x0206C2 ), "WSM" },
+    { PackCpuInfo( 0x020652 ), "WSM" },
+    { PackCpuInfo( 0x020655 ), "WSM" },
+    { PackCpuInfo( 0x0206E6 ), "NHM" },
+    { PackCpuInfo( 0x0106A1 ), "NHM" },
+    { PackCpuInfo( 0x0106A2 ), "NHM" },
+    { PackCpuInfo( 0x0106A4 ), "NHM" },
+    { PackCpuInfo( 0x0106A5 ), "NHM" },
+    { PackCpuInfo( 0x0106E4 ), "NHM" },
+    { PackCpuInfo( 0x0106E5 ), "NHM" },
+    { PackCpuInfo( 0x010676 ), "WOL" },
+    { PackCpuInfo( 0x01067A ), "WOL" },
+    { PackCpuInfo( 0x0006F2 ), "CON" },
+    { PackCpuInfo( 0x0006F4 ), "CON" },
+    { PackCpuInfo( 0x0006F6 ), "CON" },
+    { PackCpuInfo( 0x0006FB ), "CON" },
+    { PackCpuInfo( 0x0006FD ), "CON" },
+    { 0, 0 }
+};
+
+void SourceView::SetCpuId( uint32_t cpuId )
+{
+    auto ptr = s_cpuIdMap;
+    while( ptr->cpuInfo )
+    {
+        if( cpuId == ptr->cpuInfo )
+        {
+            SelectMicroArchitecture( ptr->moniker );
+            return;
+        }
+        ptr++;
+    }
+    SelectMicroArchitecture( "ZEN2" );
 }
 
 void SourceView::OpenSource( const char* fileName, int line, const View& view )

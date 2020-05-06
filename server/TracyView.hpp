@@ -389,6 +389,7 @@ private:
 
     std::unique_ptr<SourceView> m_sourceView;
     const char* m_sourceViewFile;
+    bool m_uarchSet = false;
 
     ImFont* m_smallFont;
     ImFont* m_bigFont;

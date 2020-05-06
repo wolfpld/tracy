@@ -129,6 +129,8 @@ public:
     SourceView( ImFont* font );
     ~SourceView();
 
+    void SetCpuId( uint32_t cpuid );
+
     void OpenSource( const char* fileName, int line, const View& view );
     void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker, const View& view );
     void Render( const Worker& worker, const View& view );

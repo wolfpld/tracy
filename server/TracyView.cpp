@@ -429,6 +429,11 @@ bool View::DrawImpl()
         return !wasCancelled;
     }
 
+    if( !m_uarchSet )
+    {
+        m_uarchSet = true;
+        m_sourceView->SetCpuId( m_worker.GetCpuId() );
+    }
     if( !m_userData.Valid() ) m_userData.Init( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() );
     if( m_saveThreadState.load( std::memory_order_acquire ) == SaveThreadState::NeedsJoin )
     {

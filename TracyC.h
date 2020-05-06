@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "client/TracyCallstack.h"
+#include "common/TracyApi.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -11,6 +11,10 @@
 #include <cctype>
 #include <chrono>
 #include <string.h>
+
+#ifdef __MINGW32__
+#  define __STDC_FORMAT_MACROS
+#endif
 #include <inttypes.h>
 
 #include <capstone/capstone.h>

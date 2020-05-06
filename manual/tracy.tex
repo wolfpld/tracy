@@ -382,7 +382,7 @@ In projects that consist of multiple DLLs/shared objects things are a bit differ
 
 For that you need a \emph{profiler DLL} to which your executable and the other DLLs link. If that doesn't exist you have to create one explicitly for Tracy\footnote{You may also look at the \texttt{library} directory in the profiler source tree.}. This library should contain the \texttt{tracy/TracyClient.cpp} source file. Link the executable and all DLLs which you want to profile to this DLL.
 
-If you are targeting Windows with Microsoft Visual Studio, add the \texttt{TRACY\_IMPORTS} define to your application. While this is an optional step, it enables more efficient code.
+If you are targeting Windows with Microsoft Visual Studio or MinGW, add the \texttt{TRACY\_IMPORTS} define to your application.
 
 \subsubsection{Problematic platforms}
 

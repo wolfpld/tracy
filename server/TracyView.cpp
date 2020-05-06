@@ -13134,6 +13134,27 @@ void View::DrawInfo()
     TextFocused( "PID:", RealToString( m_worker.GetPid() ) );
     TextFocused( "Host info:", m_worker.GetHostInfo().c_str() );
 
+    const auto cpuId = m_worker.GetCpuId();
+    if( cpuId != 0 )
+    {
+        const auto stepping = cpuId & 0xF;
+        const auto baseModel = ( cpuId >> 4 ) & 0xF;
+        const auto baseFamily = ( cpuId >> 8 ) & 0xF;
+        const auto extModel = ( cpuId >> 12 ) & 0xF;
+        const auto extFamily = ( cpuId >> 16 );
+
+        const uint32_t model = ( baseFamily == 6 || baseFamily == 15 ) ? ( ( extModel << 4 ) | baseModel ) : baseModel;
+        const uint32_t family = baseFamily == 15 ? baseFamily + extFamily : baseFamily;
+
+        TextFocused( "CPU:", m_worker.GetCpuManufacturer() );
+        ImGui::SameLine();
+        TextFocused( "Family", RealToString( family ) );
+        ImGui::SameLine();
+        TextFocused( "Model", RealToString( model ) );
+        ImGui::SameLine();
+        TextFocused( "Stepping", RealToString( stepping ) );
+    }
+
     auto& appInfo = m_worker.GetAppInfo();
     if( !appInfo.empty() )
     {

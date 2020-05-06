@@ -1,4 +1,4 @@
-name: gcc build
+name: gcc
 
 on:
   push:

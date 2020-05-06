@@ -1,4 +1,4 @@
-name: Build manual
+name: Manual
 
 on:
   push:

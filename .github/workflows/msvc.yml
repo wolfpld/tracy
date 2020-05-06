@@ -1,4 +1,4 @@
-name: MSVC build
+name: MSVC
 
 on:
   push:

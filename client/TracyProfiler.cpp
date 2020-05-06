@@ -1217,6 +1217,21 @@ void Profiler::Worker()
     uint8_t cpuArch = CpuArchUnknown;
 #endif
 
+#if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+    uint32_t regs[4];
+    char manufacturer[12];
+    CpuId( regs, 0 );
+    memcpy( manufacturer, regs+1, 4 );
+    memcpy( manufacturer+4, regs+3, 4 );
+    memcpy( manufacturer+8, regs+2, 4 );
+
+    CpuId( regs, 1 );
+    uint32_t cpuId = ( regs[0] & 0xFFF ) | ( ( regs[0] & 0xFFF0000 ) >> 4 );
+#else
+    const char manufacturer[12] = {};
+    uint32_t cpuId = 0;
+#endif
+
     WelcomeMessage welcome;
     MemWrite( &welcome.timerMul, m_timerMul );
     MemWrite( &welcome.initBegin, GetInitTime() );
@@ -1229,6 +1244,8 @@ void Profiler::Worker()
     MemWrite( &welcome.onDemand, onDemand );
     MemWrite( &welcome.isApple, isApple );
     MemWrite( &welcome.cpuArch, cpuArch );
+    memcpy( welcome.cpuManufacturer, manufacturer, 12 );
+    MemWrite( &welcome.cpuId, cpuId );
     memcpy( welcome.programName, procname, pnsz );
     memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
     memcpy( welcome.hostInfo, hostinfo, hisz );

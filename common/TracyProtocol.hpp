@@ -9,7 +9,7 @@ namespace tracy
 
 constexpr unsigned Lz4CompressBound( unsigned isize ) { return isize + ( isize / 255 ) + 16; }
 
-enum : uint32_t { ProtocolVersion = 30 };
+enum : uint32_t { ProtocolVersion = 31 };
 enum : uint32_t { BroadcastVersion = 1 };
 
 using lz4sz_t = uint32_t;
@@ -87,6 +87,8 @@ struct WelcomeMessage
     uint8_t onDemand;
     uint8_t isApple;
     uint8_t cpuArch;
+    char cpuManufacturer[12];
+    uint32_t cpuId;
     char programName[WelcomeMessageProgramNameSize];
     char hostInfo[WelcomeMessageHostInfoSize];
 };

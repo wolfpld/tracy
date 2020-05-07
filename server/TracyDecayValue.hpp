@@ -10,9 +10,9 @@ template<typename T>
 class DecayValue
 {
 public:
-    DecayValue( const T& init )
+    DecayValue( const T& init, bool active = false )
         : m_value( init )
-        , m_active( false )
+        , m_active( active )
     {
     }
 

@@ -1,7 +1,5 @@
 # Tracy Profiler
 
-[![Build status](https://ci.appveyor.com/api/projects/status/968a88arq06gm3el/branch/master?svg=true)](https://ci.appveyor.com/project/wolfpld/tracy/branch/master)
-
 [![Sponsor](.github/sponsor.png)](https://github.com/sponsors/wolfpld/)
 
 ### A real time, nanosecond resolution, remote telemetry frame profiler for games and other applications.

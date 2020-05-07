@@ -224,6 +224,11 @@ private:
     int m_selMicroArch;
     int m_idxMicroArch;
     bool m_showLatency;
+
+    unordered_flat_set<uint32_t> m_asmSampleSelect;
+    unordered_flat_set<uint32_t> m_srcSampleSelect;
+    uint32_t m_asmGroupSelect = -1;
+    uint32_t m_srcGroupSelect = -1;
 };
 
 }

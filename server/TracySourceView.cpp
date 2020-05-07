@@ -1310,7 +1310,8 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         ImGui::PopStyleVar();
     }
 
-    ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
+    const float bottom = m_srcSampleSelect.empty() ? 0 : ImGui::GetFrameHeight();
+    ImGui::BeginChild( "##sourceView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove );
     if( m_font ) ImGui::PushFont( m_font );
 
     auto draw = ImGui::GetWindowDrawList();
@@ -1433,6 +1434,37 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
 
     if( m_font ) ImGui::PopFont();
     ImGui::EndChild();
+
+    if( !m_srcSampleSelect.empty() )
+    {
+        uint32_t count = 0;
+        for( auto& idx : m_srcSampleSelect )
+        {
+            auto it = ipcount.find( idx );
+            if( it != ipcount.end() ) count += it->second;
+        }
+
+        ImGui::BeginChild( "##srcSelect" );
+        if( ImGui::SmallButton( ICON_FA_TIMES ) )
+        {
+            m_srcSampleSelect.clear();
+            m_srcGroupSelect = -1;
+        }
+        ImGui::SameLine();
+        char buf[16];
+        auto end = PrintFloat( buf, buf+16, 100.f * count / iptotal, 2 );
+        memcpy( end, "%", 2 );
+        TextFocused( "Selected:", buf );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Time:", TimeToString( count * worker.GetSamplingPeriod() ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Sample count:", RealToString( count ) );
+        ImGui::EndChild();
+    }
 }
 
 static int PrintHexBytes( char* buf, const uint8_t* bytes, size_t len )
@@ -1529,7 +1561,8 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         SmallCheckbox( ICON_FA_TRUCK_LOADING " Latency", &m_showLatency );
     }
 
-    ImGui::BeginChild( "##asmView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_NoMove );
+    const float bottom = m_asmSampleSelect.empty() ? 0 : ImGui::GetFrameHeight();
+    ImGui::BeginChild( "##asmView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove );
     if( m_font ) ImGui::PushFont( m_font );
 
     int maxAddrLen;
@@ -1821,10 +1854,41 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     if( m_font ) ImGui::PopFont();
     ImGui::EndChild();
 
+    if( !m_asmSampleSelect.empty() )
+    {
+        uint32_t count = 0;
+        for( auto& idx : m_asmSampleSelect )
+        {
+            auto it = ipcount.find( m_asm[idx].addr );
+            if( it != ipcount.end() ) count += it->second;
+        }
+
+        ImGui::BeginChild( "##asmSelect" );
+        if( ImGui::SmallButton( ICON_FA_TIMES ) )
+        {
+            m_asmSampleSelect.clear();
+            m_asmGroupSelect = -1;
+        }
+        ImGui::SameLine();
+        char buf[16];
+        auto end = PrintFloat( buf, buf+16, 100.f * count / iptotal, 2 );
+        memcpy( end, "%", 2 );
+        TextFocused( "Selected:", buf );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Time:", TimeToString( count * worker.GetSamplingPeriod() ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Sample count:", RealToString( count ) );
+        ImGui::EndChild();
+    }
+
     return jumpOut;
 }
 
-static bool PrintPercentage( float val )
+static bool PrintPercentage( float val, uint32_t col = 0xFFFFFFFF )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -1843,7 +1907,7 @@ static bool PrintPercentage( float val )
     memcpy( buf + 7 - sz, tmp, sz+1 );
 
     draw->AddRectFilled( wpos, wpos + ImVec2( val * tw / 100, ty+1 ), 0xFF444444 );
-    DrawTextContrast( draw, wpos + ImVec2( htw, 0 ), 0xFFFFFFFF, buf );
+    DrawTextContrast( draw, wpos + ImVec2( htw, 0 ), col, buf );
 
     ImGui::ItemSize( ImVec2( stw * 7, ty ), 0 );
     return ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( stw * 7, ty ) );
@@ -1877,6 +1941,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF333322 );
     }
 
+    bool mouseHandled = false;
     if( iptotal != 0 )
     {
         if( ipcnt == 0 )
@@ -1886,7 +1951,8 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
         }
         else
         {
-            if( PrintPercentage( 100.f * ipcnt / iptotal ) )
+            auto sit = m_srcSampleSelect.find( lineNum );
+            if( PrintPercentage( 100.f * ipcnt / iptotal, sit == m_srcSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF ) )
             {
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
@@ -1894,6 +1960,62 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
                 TextFocused( "Sample count:", RealToString( ipcnt ) );
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
+
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    mouseHandled = true;
+                    auto& io = ImGui::GetIO();
+                    if( io.KeyCtrl )
+                    {
+                        m_srcGroupSelect = lineNum;
+                        if( sit == m_srcSampleSelect.end() )
+                        {
+                            m_srcSampleSelect.emplace( lineNum );
+                        }
+                        else
+                        {
+                            m_srcSampleSelect.erase( sit );
+                        }
+                    }
+                    else if( io.KeyShift )
+                    {
+                        m_srcSampleSelect.clear();
+                        if( m_srcGroupSelect == -1 )
+                        {
+                            m_srcGroupSelect = lineNum;
+                            m_srcSampleSelect.insert( lineNum );
+                        }
+                        else
+                        {
+                            if( lineNum < m_srcGroupSelect )
+                            {
+                                for( int i=lineNum; i<=m_srcGroupSelect; i++ )
+                                {
+                                    m_srcSampleSelect.insert( i );
+                                }
+                            }
+                            else
+                            {
+                                for( int i=m_srcGroupSelect; i<=lineNum; i++ )
+                                {
+                                    m_srcSampleSelect.insert( i );
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        m_srcSampleSelect.clear();
+                        m_srcSampleSelect.insert( lineNum );
+                        m_srcGroupSelect = lineNum;
+                    }
+                }
+                else if( ImGui::IsMouseClicked( 1 ) )
+                {
+                    mouseHandled = true;
+                    m_srcSampleSelect.clear();
+                    m_srcGroupSelect = -1;
+                }
             }
             draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt, ipmax ) );
         }
@@ -1967,7 +2089,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     if( match > 0 && ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect( wpos, wpos + ImVec2( w, ty+1 ) ) )
     {
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0x11FFFFFF );
-        if( ImGui::IsMouseClicked( 0 ) || ImGui::IsMouseClicked( 1 ) )
+        if( !mouseHandled && ( ImGui::IsMouseClicked( 0 ) || ImGui::IsMouseClicked( 1 ) ) )
         {
             m_displayMode = DisplayMixed;
             SelectLine( lineNum, worker, ImGui::IsMouseClicked( 1 ) );
@@ -2009,7 +2131,9 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
         }
         else
         {
-            if( PrintPercentage( 100.f * ipcnt / iptotal ) )
+            const auto idx = &line - m_asm.data();
+            auto sit = m_asmSampleSelect.find( idx );
+            if( PrintPercentage( 100.f * ipcnt / iptotal, sit == m_asmSampleSelect.end() ? 0xFFFFFFFF : 0xFF8888FF ) )
             {
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
@@ -2017,9 +2141,62 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                 TextFocused( "Sample count:", RealToString( ipcnt ) );
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
+
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    auto& io = ImGui::GetIO();
+                    if( io.KeyCtrl )
+                    {
+                        m_asmGroupSelect = idx;
+                        if( sit == m_asmSampleSelect.end() )
+                        {
+                            m_asmSampleSelect.emplace( idx );
+                        }
+                        else
+                        {
+                            m_asmSampleSelect.erase( sit );
+                        }
+                    }
+                    else if( io.KeyShift )
+                    {
+                        m_asmSampleSelect.clear();
+                        if( m_asmGroupSelect == -1 )
+                        {
+                            m_asmGroupSelect = idx;
+                            m_asmSampleSelect.insert( idx );
+                        }
+                        else
+                        {
+                            if( idx < m_asmGroupSelect )
+                            {
+                                for( int i=idx; i<=m_asmGroupSelect; i++ )
+                                {
+                                    m_asmSampleSelect.insert( i );
+                                }
+                            }
+                            else
+                            {
+                                for( int i=m_asmGroupSelect; i<=idx; i++ )
+                                {
+                                    m_asmSampleSelect.insert( i );
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        m_asmSampleSelect.clear();
+                        m_asmSampleSelect.insert( idx );
+                        m_asmGroupSelect = idx;
+                    }
+                }
+                else if( ImGui::IsMouseClicked( 1 ) )
+                {
+                    m_asmSampleSelect.clear();
+                    m_asmGroupSelect = -1;
+                }
             }
             draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt, ipmax ) );
-
         }
         ImGui::SameLine( 0, ty );
     }

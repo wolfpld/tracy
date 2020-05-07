@@ -484,6 +484,7 @@ bool View::DrawImpl()
         m_stcb( m_worker.GetCaptureName().c_str() );
     }
 
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
     {
         auto& style = ImGui::GetStyle();
         const auto wrPrev = style.WindowRounding;
@@ -494,10 +495,9 @@ bool View::DrawImpl()
         style.WindowPadding = ImVec2( 4.f, 4.f );
         style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
 
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(viewport->Pos);
+        ImGui::SetNextWindowPos( viewport->Pos );
         ImGui::SetNextWindowSize( ImVec2( m_rootWidth, m_rootHeight ) );
-        ImGui::SetNextWindowViewport(viewport->ID);
+        ImGui::SetNextWindowViewport( viewport->ID );
         ImGui::Begin( "Timeline view###Profiler", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking );
 
         style.WindowRounding = wrPrev;
@@ -519,7 +519,7 @@ bool View::DrawImpl()
             if( m_forceConnectionPopup )
             {
                 m_forceConnectionPopup = false;
-                ImGui::SetNextWindowPos( ImGui::GetCursorPos() );
+                ImGui::SetNextWindowPos( viewport->Pos + ImGui::GetCursorPos() );
             }
             ImGui::OpenPopup( "TracyConnectionPopup" );
         }

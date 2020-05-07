@@ -124,7 +124,7 @@ View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, I
     : m_worker( addr, port )
     , m_staticView( false )
     , m_pause( false )
-    , m_forceConnectionPopup( true )
+    , m_forceConnectionPopup( true, true )
     , m_frames( nullptr )
     , m_messagesScrollBottom( true )
     , m_smallFont( smallFont )
@@ -518,7 +518,7 @@ bool View::DrawImpl()
         {
             if( m_forceConnectionPopup )
             {
-                m_forceConnectionPopup = false;
+                m_forceConnectionPopup.Decay( false );
                 ImGui::SetNextWindowPos( viewport->Pos + ImGui::GetCursorPos() );
             }
             ImGui::OpenPopup( "TracyConnectionPopup" );

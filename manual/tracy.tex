@@ -2770,7 +2770,7 @@ If any instruction would jump to a predefined address, symbolic name of the jump
 
 Enabling the \emph{\faShare{}~Jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target. Hovering the \faMousePointer{}~mouse pointer over the jump arrow will display jump information tooltip and will also draw the jump range on the scroll bar, as a green line. Jump target location will be marked by a horizontal green line. Jumps going out of the symbol\footnote{This includes jumps, procedure calls and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
 
-The \emph{AT\&T} switch can be used to select between \emph{Intel} and \emph{AT\&T} assembly syntax.
+The \emph{AT\&T} switch can be used to select between \emph{Intel} and \emph{AT\&T} assembly syntax. Beware that microarchitecture data is only available if Intel syntax is selected.
 
 Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.
 

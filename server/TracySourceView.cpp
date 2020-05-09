@@ -18,6 +18,10 @@
 
 #include "IconsFontAwesome5.h"
 
+#ifndef TRACY_NO_FILESELECTOR
+#  include "../nfd/nfd.h"
+#endif
+
 namespace tracy
 {
 
@@ -1560,6 +1564,97 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         ImGui::SameLine();
         SmallCheckbox( ICON_FA_TRUCK_LOADING " Latency", &m_showLatency );
     }
+
+#ifndef TRACY_NO_FILESELECTOR
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( ImGui::SmallButton( ICON_FA_FILE_IMPORT " Save" ) )
+    {
+        nfdchar_t* fn;
+        auto res = NFD_SaveDialog( "asm", nullptr, &fn );
+        if( res == NFD_OKAY )
+        {
+            FILE* f = nullptr;
+            const auto sz = strlen( fn );
+            if( sz < 5 || memcmp( fn + sz - 4, ".asm", 4 ) != 0 )
+            {
+                char tmp[1024];
+                sprintf( tmp, "%s.asm", fn );
+                f = fopen( tmp, "wb" );
+            }
+            else
+            {
+                f = fopen( fn, "wb" );
+            }
+            if( f )
+            {
+                char tmp[16];
+                auto sym = worker.GetSymbolData( m_symAddr );
+                assert( sym );
+                const char* symName;
+                if( sym->isInline )
+                {
+                    auto parent = worker.GetSymbolData( m_baseAddr );
+                    if( parent )
+                    {
+                        symName = worker.GetString( parent->name );
+                    }
+                    else
+                    {
+                        sprintf( tmp, "0x%" PRIx64, m_baseAddr );
+                        symName = tmp;
+                    }
+                }
+                else
+                {
+                    symName = worker.GetString( sym->name );
+                }
+                fprintf( f, "; Tracy Profiler disassembly of symbol %s [%s]\n\n.intel_syntax\n\n", symName, worker.GetCaptureProgram() );
+
+                unordered_flat_map<uint64_t, uint32_t> locMap;
+                for( auto& v : m_asm )
+                {
+                    if( m_jumpTable.find( v.addr ) != m_jumpTable.end() )
+                    {
+                        const auto idx = locMap.size();
+                        locMap.emplace( v.addr, idx );
+                    }
+                }
+                for( auto& v : m_asm )
+                {
+                    auto it = locMap.find( v.addr );
+                    if( it != locMap.end() )
+                    {
+                        fprintf( f, ".LOC_%" PRIu32 ":\n", it->second );
+                    }
+                    bool hasJump = false;
+                    if( v.jumpAddr != 0 )
+                    {
+                        auto lit = locMap.find( v.jumpAddr );
+                        if( lit != locMap.end() )
+                        {
+                            fprintf( f, "\t%-*s.LOC_%" PRIu32 "\n", m_maxMnemonicLen, v.mnemonic.c_str(), lit->second );
+                            hasJump = true;
+                        }
+                    }
+                    if( !hasJump )
+                    {
+                        if( v.operands.empty() )
+                        {
+                            fprintf( f, "\t%s\n", v.mnemonic.c_str() );
+                        }
+                        else
+                        {
+                            fprintf( f, "\t%-*s%s\n", m_maxMnemonicLen, v.mnemonic.c_str(), v.operands.c_str() );
+                        }
+                    }
+                }
+                fclose( f );
+            }
+        }
+    }
+#endif
 
     const float bottom = m_asmSampleSelect.empty() ? 0 : ImGui::GetFrameHeight();
     ImGui::BeginChild( "##asmView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove );

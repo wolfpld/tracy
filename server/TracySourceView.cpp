@@ -1643,7 +1643,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                     auto it = m_locMap.find( v.addr );
                     if( it != m_locMap.end() )
                     {
-                        fprintf( f, ".LOC_%" PRIu32 ":\n", it->second );
+                        fprintf( f, ".L%" PRIu32 ":\n", it->second );
                     }
                     bool hasJump = false;
                     if( v.jumpAddr != 0 )
@@ -1651,7 +1651,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                         auto lit = m_locMap.find( v.jumpAddr );
                         if( lit != m_locMap.end() )
                         {
-                            fprintf( f, "\t%-*s.LOC_%" PRIu32 "\n", m_maxMnemonicLen, v.mnemonic.c_str(), lit->second );
+                            fprintf( f, "\t%-*s.L%" PRIu32 "\n", m_maxMnemonicLen, v.mnemonic.c_str(), lit->second );
                             hasJump = true;
                         }
                     }

@@ -2770,6 +2770,8 @@ If any instruction would jump to a predefined address, symbolic name of the jump
 
 Enabling the \emph{\faShare{}~Jumps} option will show jumps within the symbol code as a series of arrows from the jump source to the jump target. Hovering the \faMousePointer{}~mouse pointer over the jump arrow will display jump information tooltip and will also draw the jump range on the scroll bar, as a green line. Jump target location will be marked by a horizontal green line. Jumps going out of the symbol\footnote{This includes jumps, procedure calls and returns. For example, in x86 assembly the respective operand names can be: \texttt{jmp}, \texttt{call}, \texttt{ret}.} will be indicated by a smaller arrow pointing away from the code.
 
+The \emph{AT\&T} switch can be used to select between \emph{Intel} and \emph{AT\&T} assembly syntax.
+
 Unlike the source file view, portions of the executable are stored within the captured profile and don't rely on the local disk files being available.
 
 \subparagraph{Exploring microarchitecture}
@@ -2786,6 +2788,8 @@ If the listed assembly code targets x86 or x64 instruction set architectures, ho
 Selection of the CPU microarchitecture can be performed using the \emph{\faMicrochip{}~\textmu{}arch} drop-down. Each architecture is accompanied with a name of an example CPU implementing it.
 
 Enabling the \emph{\faTruckLoading{}~Latency} option will display graphical representation of instruction latencies on the listing. Minimum latency of an instruction is represented with a red bar, while the maximum latency is represented by a yellow bar.
+
+Clicking on the \emph{\faFileImport{}~Save} button lets you write the disassembly listing to a file. You can then manually extract some critical loop kernel and pass it to a CPU simulator, such as \emph{LLVM Machine Code Analyzer} (\texttt{llvm-mca})\footnote{\url{https://llvm.org/docs/CommandGuide/llvm-mca.html}}, in order to see how the code is executed and if there are any pipeline bubbles. Consult the \texttt{llvm-mca} documentation for more details.
 
 \subparagraph{Instruction dependencies}
 
@@ -2821,6 +2825,8 @@ An assembly instruction may be associated with only a single source line, but a 
 \paragraph{Instruction pointer statistics}
 
 If automated call stack sampling (see chapter~\ref{sampling}) was performed, additional profiling information will be available. The first column of source and assembly views will contain percentage counts of collected instruction pointer samples for each displayed line, both in numerical and graphical bar form. This information can be used to determine which line of the function takes the most time. The displayed percentage values are heat map color coded, with the lowest values mapped to dark red, and the highest values mapped to bright yellow. The color code will appear next to the percentage value, and on the scroll bar, so that 'hot' places in code can be identified at a glance.
+
+Instruction timings can be viewed as a group. To begin constructing such group, click the \LMB{}~left mouse button on the percentage value. Additional instructions can be added using the \keys{\ctrl}~key, while holding the \keys{\shift}~key will allow selection of a range. To cancel the selection, click the \RMB{}~right mouse button on a percentage value. Group statistics can be seen at the bottom of the pane.
 
 Sample data source is controlled by the \emph{\faSitemap{}~Function} control, in the window header. If this option is disabled, the sample data represents the whole symbol. If it is enabled, then the sample data will only include the selected function.
 

@@ -1766,6 +1766,10 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                         ImGui::SameLine();
                         sprintf( tmp, "(0x%" PRIx64 ")", v.first );
                         TextDisabledUnformatted( tmp );
+                        auto lit = m_locMap.find( v.first );
+                        assert( lit != m_locMap.end() );
+                        sprintf( tmp, ".L%" PRIu32, lit->second );
+                        TextFocused( "Jump label:", tmp );
                         uint32_t srcline;
                         const auto srcidx = worker.GetLocationForAddress( v.first, srcline );
                         if( srcline != 0 )
@@ -2520,12 +2524,27 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
         }
     }
 
-    const auto asmIdx = &line - m_asm.data();
-
     const auto msz = line.mnemonic.size();
     memcpy( buf, line.mnemonic.c_str(), msz );
     memset( buf+msz, ' ', m_maxMnemonicLen-msz );
-    memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
+    bool hasJump = false;
+    if( line.jumpAddr != 0 )
+    {
+        auto lit = m_locMap.find( line.jumpAddr );
+        if( lit != m_locMap.end() )
+        {
+            char tmp[64];
+            sprintf( tmp, ".L%" PRIu32, lit->second );
+            strcpy( buf+m_maxMnemonicLen, tmp );
+            hasJump = true;
+        }
+    }
+    if( !hasJump )
+    {
+        memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
+    }
+
+    const auto asmIdx = &line - m_asm.data();
     if( asmIdx == m_asmSelected )
     {
         TextColoredUnformatted( ImVec4( 1, 0.25f, 0.25f, 1 ), buf );
@@ -2749,6 +2768,13 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
             m_asmSelected = -1;
             ResetAsm();
         }
+    }
+
+    auto lit = m_locMap.find( line.addr );
+    if( lit != m_locMap.end() )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "; .L%" PRIu32, lit->second );
     }
 
     if( line.regData[0] != 0 )

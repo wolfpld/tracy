@@ -1444,10 +1444,15 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     if( !m_srcSampleSelect.empty() )
     {
         uint32_t count = 0;
+        uint32_t numLines = 0;
         for( auto& idx : m_srcSampleSelect )
         {
             auto it = ipcount.find( idx );
-            if( it != ipcount.end() ) count += it->second;
+            if( it != ipcount.end() )
+            {
+                count += it->second;
+                numLines++;
+            }
         }
 
         ImGui::BeginChild( "##srcSelect" );
@@ -1469,6 +1474,10 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Sample count:", RealToString( count ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Lines:", RealToString( numLines ) );
         ImGui::EndChild();
     }
 }
@@ -1959,10 +1968,15 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     if( !m_asmSampleSelect.empty() )
     {
         uint32_t count = 0;
+        uint32_t numLines = 0;
         for( auto& idx : m_asmSampleSelect )
         {
             auto it = ipcount.find( m_asm[idx].addr );
-            if( it != ipcount.end() ) count += it->second;
+            if( it != ipcount.end() )
+            {
+                count += it->second;
+                numLines++;
+            }
         }
 
         ImGui::BeginChild( "##asmSelect" );
@@ -1984,6 +1998,10 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( "Sample count:", RealToString( count ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        TextFocused( "Lines:", RealToString( numLines ) );
         ImGui::EndChild();
     }
 

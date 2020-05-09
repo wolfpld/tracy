@@ -490,6 +490,7 @@ static bool IsJumpConditionalX86( const char* op )
 bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
 {
     m_asm.clear();
+    m_locMap.clear();
     m_jumpTable.clear();
     m_jumpOut.clear();
     m_maxJumpLevel = 0;
@@ -820,6 +821,15 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
                     }
                 }
                 if( level > m_maxJumpLevel ) m_maxJumpLevel = level;
+            }
+
+            uint32_t locNum = 0;
+            for( auto& v : m_asm )
+            {
+                if( m_jumpTable.find( v.addr ) != m_jumpTable.end() )
+                {
+                    m_locMap.emplace( v.addr, locNum++ );
+                }
             }
         }
     }
@@ -1628,27 +1638,18 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 fprintf( f, "; Tracy Profiler disassembly of symbol %s [%s]\n\n", symName, worker.GetCaptureProgram() );
                 if( !m_atnt ) fprintf( f, ".intel_syntax\n\n" );
 
-                unordered_flat_map<uint64_t, uint32_t> locMap;
                 for( auto& v : m_asm )
                 {
-                    if( m_jumpTable.find( v.addr ) != m_jumpTable.end() )
-                    {
-                        const auto idx = locMap.size();
-                        locMap.emplace( v.addr, idx );
-                    }
-                }
-                for( auto& v : m_asm )
-                {
-                    auto it = locMap.find( v.addr );
-                    if( it != locMap.end() )
+                    auto it = m_locMap.find( v.addr );
+                    if( it != m_locMap.end() )
                     {
                         fprintf( f, ".LOC_%" PRIu32 ":\n", it->second );
                     }
                     bool hasJump = false;
                     if( v.jumpAddr != 0 )
                     {
-                        auto lit = locMap.find( v.jumpAddr );
-                        if( lit != locMap.end() )
+                        auto lit = m_locMap.find( v.jumpAddr );
+                        if( lit != m_locMap.end() )
                         {
                             fprintf( f, "\t%-*s.LOC_%" PRIu32 "\n", m_maxMnemonicLen, v.mnemonic.c_str(), lit->second );
                             hasJump = true;

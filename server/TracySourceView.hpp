@@ -206,6 +206,7 @@ private:
     std::vector<Line> m_lines;
     std::vector<AsmLine> m_asm;
 
+    unordered_flat_map<uint64_t, uint32_t> m_locMap;
     unordered_flat_map<uint64_t, JumpData> m_jumpTable;
     unordered_flat_set<uint64_t> m_jumpOut;
     int m_maxJumpLevel;

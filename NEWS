@@ -47,6 +47,8 @@ v0.7 (xxxx-xx-xx)
   - Graphical representation of control flow in program.
   - Display of micro-architectural data for each assembly instruction.
   - Tracking register dependencies between assembly instructions.
+  - Disassembly may be saved to a file, in order to be processed by external
+    tools.
 - If the default listening port is occupied, profiler will now try listening
   on other ports.
 - Added possibility to perform source file names substitution.

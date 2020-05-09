@@ -201,6 +201,7 @@ private:
     bool m_asmShowSourceLocation;
     bool m_calcInlineStats;
     uint8_t m_maxAsmBytes;
+    bool m_atnt;
 
     std::vector<Line> m_lines;
     std::vector<AsmLine> m_asm;

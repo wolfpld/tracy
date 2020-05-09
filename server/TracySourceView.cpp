@@ -87,6 +87,7 @@ SourceView::SourceView( ImFont* font )
     , m_asmBytes( false )
     , m_asmShowSourceLocation( true )
     , m_calcInlineStats( true )
+    , m_atnt( false )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
     , m_showLatency( false )
@@ -522,6 +523,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     }
     if( rval != CS_ERR_OK ) return false;
     cs_option( handle, CS_OPT_DETAIL, CS_OPT_ON );
+    cs_option( handle, CS_OPT_SYNTAX, m_atnt ? CS_OPT_SYNTAX_ATT : CS_OPT_SYNTAX_INTEL );
     cs_insn* insn;
     size_t cnt = cs_disasm( handle, (const uint8_t*)code, len, symAddr, 0, &insn );
     if( cnt > 0 )
@@ -1513,13 +1515,13 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
         }
         ImGui::SameLine();
     }
-    SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative locations", &m_asmRelative );
+    SmallCheckbox( ICON_FA_SEARCH_LOCATION " Relative loc.", &m_asmRelative );
     if( !m_sourceFiles.empty() )
     {
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        SmallCheckbox( ICON_FA_FILE_IMPORT " Source locations", &m_asmShowSourceLocation );
+        SmallCheckbox( ICON_FA_FILE_IMPORT " Source loc.", &m_asmShowSourceLocation );
     }
     ImGui::SameLine();
     ImGui::Spacing();
@@ -1529,6 +1531,10 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     ImGui::Spacing();
     ImGui::SameLine();
     SmallCheckbox( ICON_FA_SHARE " Jumps", &m_showJumps );
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( SmallCheckbox( "AT&T", &m_atnt ) ) Disassemble( m_baseAddr, worker );
 
     if( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 )
     {
@@ -1610,7 +1616,8 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 {
                     symName = worker.GetString( sym->name );
                 }
-                fprintf( f, "; Tracy Profiler disassembly of symbol %s [%s]\n\n.intel_syntax\n\n", symName, worker.GetCaptureProgram() );
+                fprintf( f, "; Tracy Profiler disassembly of symbol %s [%s]\n\n", symName, worker.GetCaptureProgram() );
+                if( !m_atnt ) fprintf( f, ".intel_syntax\n\n" );
 
                 unordered_flat_map<uint64_t, uint32_t> locMap;
                 for( auto& v : m_asm )

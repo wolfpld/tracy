@@ -13885,6 +13885,11 @@ void View::DrawSampleParents()
     ImGui::Begin( "Call stack sample parents", &show, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
     ImGui::PushFont( m_bigFont );
     TextFocused( "Symbol:", m_worker.GetString( symbol->name ) );
+    if( symbol->isInline )
+    {
+        ImGui::SameLine();
+        TextDisabledUnformatted( "(inline)" );
+    }
     ImGui::PopFont();
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();

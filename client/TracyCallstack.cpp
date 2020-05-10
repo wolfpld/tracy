@@ -44,7 +44,11 @@ static inline char* CopyString( const char* src, size_t sz )
 
 static inline char* CopyString( const char* src )
 {
-    return CopyString( src, strlen( src ) );
+    const auto sz = strlen( src );
+    auto dst = (char*)tracy_malloc( sz + 1 );
+    memcpy( dst, src, sz );
+    dst[sz] = '\0';
+    return dst;
 }
 
 

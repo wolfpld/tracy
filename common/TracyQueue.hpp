@@ -28,6 +28,7 @@ enum class QueueType : uint8_t
     CallstackSample,
     CallstackSampleLean,
     FrameImage,
+    FrameImageLean,
     ZoneBegin,
     ZoneBeginCallstack,
     ZoneEnd,
@@ -133,13 +134,17 @@ struct QueueFrameMark
     uint64_t name;      // ptr
 };
 
-struct QueueFrameImage
+struct QueueFrameImageLean
 {
-    uint64_t image;     // ptr
     uint64_t frame;
     uint16_t w;
     uint16_t h;
     uint8_t flip;
+};
+
+struct QueueFrameImage : public QueueFrameImageLean
+{
+    uint64_t image;     // ptr
 };
 
 struct QueueSourceLocation
@@ -437,6 +442,7 @@ struct QueueItem
         QueueStringTransfer stringTransfer;
         QueueFrameMark frameMark;
         QueueFrameImage frameImage;
+        QueueFrameImage frameImageLean;
         QueueSourceLocation srcloc;
         QueueZoneText zoneText;
         QueueLockAnnounce lockAnnounce;
@@ -499,7 +505,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // lean callstack alloc
     sizeof( QueueHeader ) + sizeof( QueueCallstackSample ), // not for network transfer
     sizeof( QueueHeader ) + sizeof( QueueCallstackSampleLean ),
-    sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
+    sizeof( QueueHeader ) + sizeof( QueueFrameImage ),      // not for network transfer
+    sizeof( QueueHeader ) + sizeof( QueueFrameImageLean ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack
     sizeof( QueueHeader ) + sizeof( QueueZoneEnd ),

@@ -566,7 +566,7 @@ private:
     tracy_force_inline void ProcessFrameMark( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkStart( const QueueFrameMark& ev );
     tracy_force_inline void ProcessFrameMarkEnd( const QueueFrameMark& ev );
-    tracy_force_inline void ProcessFrameImage( const QueueFrameImage& ev );
+    tracy_force_inline void ProcessFrameImage( const QueueFrameImageLean& ev );
     tracy_force_inline void ProcessZoneText( const QueueZoneText& ev );
     tracy_force_inline void ProcessZoneName( const QueueZoneText& ev );
     tracy_force_inline void ProcessLockAnnounce( const QueueLockAnnounce& ev );
@@ -799,7 +799,7 @@ private:
     unordered_flat_map<uint64_t, int16_t> m_sourceLocationShrink;
     unordered_flat_map<uint64_t, ThreadData*> m_threadMap;
     unordered_flat_map<uint64_t, NextCallstack> m_nextCallstack;
-    unordered_flat_map<uint64_t, FrameImagePending> m_pendingFrameImageData;
+    FrameImagePending m_pendingFrameImageData = {};
     unordered_flat_map<uint64_t, SymbolPending> m_pendingSymbols;
     unordered_flat_set<uint64_t> m_pendingSymbolCode;
 

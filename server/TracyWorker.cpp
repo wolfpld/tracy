@@ -3029,7 +3029,7 @@ void Worker::Exec()
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
                 !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
-                m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() ||
+                m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr ||
                 !m_pendingSymbols.empty() || !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 ||
                 !m_serverQueryQueue.empty() || m_pendingSourceLocationPayload != 0 )
             {
@@ -3703,7 +3703,7 @@ void Worker::AddExternalThreadName( uint64_t ptr, const char* str, size_t sz )
 
 void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
 {
-    assert( m_pendingFrameImageData.find( ptr ) == m_pendingFrameImageData.end() );
+    assert( m_pendingFrameImageData.image == nullptr );
     assert( sz % 8 == 0 );
     // Input data buffer cannot be changed, as it is used as LZ4 dictionary.
     if( m_frameImageBufferSize < sz )
@@ -3717,9 +3717,7 @@ void Worker::AddFrameImageData( uint64_t ptr, const char* data, size_t sz )
     memcpy( dst, src, sz );
     m_texcomp.FixOrder( (char*)dst, sz/8 );
     m_texcomp.Rdo( (char*)dst, sz/8 );
-    uint32_t csz;
-    auto image = m_texcomp.Pack( m_frameImageBuffer, sz, csz, m_slab );
-    m_pendingFrameImageData.emplace( ptr, FrameImagePending { image, csz } );
+    m_pendingFrameImageData.image = m_texcomp.Pack( m_frameImageBuffer, sz, m_pendingFrameImageData.csz, m_slab );
 }
 
 void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
@@ -4070,8 +4068,8 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::FrameMarkMsgEnd:
         ProcessFrameMarkEnd( ev.frameMark );
         break;
-    case QueueType::FrameImage:
-        ProcessFrameImage( ev.frameImage );
+    case QueueType::FrameImageLean:
+        ProcessFrameImage( ev.frameImageLean );
         break;
     case QueueType::SourceLocation:
         AddSourceLocation( ev.srcloc );
@@ -4584,16 +4582,15 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
 #endif
 }
 
-void Worker::ProcessFrameImage( const QueueFrameImage& ev )
+void Worker::ProcessFrameImage( const QueueFrameImageLean& ev )
 {
-    auto it = m_pendingFrameImageData.find( ev.image );
-    assert( it != m_pendingFrameImageData.end() );
+    assert( m_pendingFrameImageData.image != nullptr );
 
     auto& frames = m_data.framesBase->frames;
     const auto fidx = int64_t( ev.frame ) - int64_t( m_data.frameOffset ) + 1;
     if( m_onDemand && fidx <= 1 )
     {
-        m_pendingFrameImageData.erase( it );
+        m_pendingFrameImageData.image = nullptr;
         return;
     }
     else if( fidx <= 0 )
@@ -4603,8 +4600,8 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
     }
 
     auto fi = m_slab.Alloc<FrameImage>();
-    fi->ptr = it->second.image;
-    fi->csz = it->second.csz;
+    fi->ptr = m_pendingFrameImageData.image;
+    fi->csz = m_pendingFrameImageData.csz;
     fi->w = ev.w;
     fi->h = ev.h;
     fi->frameRef = uint32_t( fidx );
@@ -4612,7 +4609,7 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
     const auto idx = m_data.frameImage.size();
     m_data.frameImage.push_back( fi );
-    m_pendingFrameImageData.erase( it );
+    m_pendingFrameImageData.image = nullptr;
 
     if( fidx >= (int64_t)frames.size() )
     {

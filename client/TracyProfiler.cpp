@@ -1855,6 +1855,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         const auto csz = size_t( w * h / 2 );
                         SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
                         tracy_free( (void*)ptr );
+                        idx++;
+                        MemWrite( &item->hdr.idx, idx );
                         break;
                     }
                     case QueueType::ZoneBegin:

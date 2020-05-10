@@ -1843,6 +1843,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         int64_t dt = t - refCtx;
                         refCtx = t;
                         MemWrite( &item->callstackSample.time, dt );
+                        idx++;
+                        MemWrite( &item->hdr.idx, idx );
                         break;
                     }
                     case QueueType::FrameImage:

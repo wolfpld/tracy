@@ -26,6 +26,7 @@ enum class QueueType : uint8_t
     CallstackAlloc,
     CallstackAllocLean,
     CallstackSample,
+    CallstackSampleLean,
     FrameImage,
     ZoneBegin,
     ZoneBeginCallstack,
@@ -311,10 +312,14 @@ struct QueueCallstackAlloc
     uint64_t nativePtr;
 };
 
-struct QueueCallstackSample
+struct QueueCallstackSampleLean
 {
     int64_t time;
     uint64_t thread;
+};
+
+struct QueueCallstackSample : public QueueCallstackSampleLean
+{
     uint64_t ptr;
 };
 
@@ -454,6 +459,7 @@ struct QueueItem
         QueueCallstack callstack;
         QueueCallstackAlloc callstackAlloc;
         QueueCallstackSample callstackSample;
+        QueueCallstackSampleLean callstackSampleLean;
         QueueCallstackFrameSize callstackFrameSize;
         QueueCallstackFrame callstackFrame;
         QueueSymbolInformation symbolInformation;
@@ -491,7 +497,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // lean callstack
     sizeof( QueueHeader ) + sizeof( QueueCallstackAlloc ),  // not for network transfer
     sizeof( QueueHeader ),                                  // lean callstack alloc
-    sizeof( QueueHeader ) + sizeof( QueueCallstackSample ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSample ), // not for network transfer
+    sizeof( QueueHeader ) + sizeof( QueueCallstackSampleLean ),
     sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // callstack

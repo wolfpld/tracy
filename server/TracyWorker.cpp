@@ -4182,8 +4182,8 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MemFreeCallstack:
         ProcessMemFreeCallstack( ev.memFree );
         break;
-    case QueueType::CallstackMemory:
-        ProcessCallstackMemory( ev.callstackMemory );
+    case QueueType::CallstackMemoryLean:
+        ProcessCallstackMemory();
         break;
     case QueueType::Callstack:
         ProcessCallstack( ev.callstack );
@@ -5315,9 +5315,9 @@ void Worker::ProcessMemFreeCallstack( const QueueMemFree& ev )
     }
 }
 
-void Worker::ProcessCallstackMemory( const QueueCallstackMemory& ev )
+void Worker::ProcessCallstackMemory()
 {
-    assert( m_pendingCallstackPtr == ev.ptr );
+    assert( m_pendingCallstackPtr != 0 );
     m_pendingCallstackPtr = 0;
 
     if( m_lastMemActionCallstack != std::numeric_limits<uint64_t>::max() )

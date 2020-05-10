@@ -2036,7 +2036,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
         while( item != end )
         {
             uint64_t ptr;
-            const auto idx = MemRead<uint8_t>( &item->hdr.idx );
+            auto idx = MemRead<uint8_t>( &item->hdr.idx );
             if( idx < (int)QueueType::Terminate )
             {
                 switch( (QueueType)idx )
@@ -2045,6 +2045,8 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     ptr = MemRead<uint64_t>( &item->callstackMemory.ptr );
                     SendCallstackPayload( ptr );
                     tracy_free( (void*)ptr );
+                    idx++;
+                    MemWrite( &item->hdr.idx, idx );
                     break;
                 case QueueType::LockWait:
                 case QueueType::LockSharedWait:

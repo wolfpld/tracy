@@ -92,6 +92,8 @@ public:
 
     const char* SourceSubstitution( const char* srcFile ) const;
 
+    void ShowSampleParents( uint64_t symAddr ) { m_sampleParents.symAddr = symAddr; m_sampleParents.sel = 0; }
+
 private:
     enum class Namespace : uint8_t
     {

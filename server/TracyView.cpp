@@ -11714,8 +11714,7 @@ void View::DrawStatistics()
                         ImGui::PushID( idx++ );
                         if( ImGui::Selectable( name, m_sampleParents.symAddr == v.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
                         {
-                            m_sampleParents.symAddr = v.symAddr;
-                            m_sampleParents.sel = 0;
+                            ShowSampleParents( v.symAddr );
                         }
                         ImGui::PopID();
                     }
@@ -11883,8 +11882,7 @@ void View::DrawStatistics()
                                 }
                                 else if( ImGui::Selectable( name, m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
                                 {
-                                    m_sampleParents.symAddr = iv.symAddr;
-                                    m_sampleParents.sel = 0;
+                                    ShowSampleParents( iv.symAddr );
                                 }
                                 ImGui::PopID();
                                 ImGui::NextColumn();
@@ -11997,8 +11995,7 @@ void View::DrawCallstackWindow()
                 ImGui::SameLine();
                 if( ImGui::Button( ICON_FA_DOOR_OPEN " Global entry statistics" ) )
                 {
-                    m_sampleParents.symAddr = frame->data[0].symAddr;
-                    m_sampleParents.sel = 0;
+                    ShowSampleParents( frame->data[0].symAddr );
                 }
             }
         }

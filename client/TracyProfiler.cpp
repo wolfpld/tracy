@@ -1773,7 +1773,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
             while( sz-- > 0 )
             {
                 uint64_t ptr;
-                const auto idx = MemRead<uint8_t>( &item->hdr.idx );
+                auto idx = MemRead<uint8_t>( &item->hdr.idx );
                 if( idx < (int)QueueType::Terminate )
                 {
                     switch( (QueueType)idx )
@@ -1809,6 +1809,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         ptr = MemRead<uint64_t>( &item->zoneBegin.srcloc );
                         SendSourceLocationPayload( ptr );
                         tracy_free( (void*)ptr );
+                        idx++;
+                        MemWrite( &item->hdr.idx, idx );
                         break;
                     }
                     case QueueType::Callstack:

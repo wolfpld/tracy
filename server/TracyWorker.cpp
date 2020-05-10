@@ -3031,7 +3031,7 @@ void Worker::Exec()
                 !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
                 m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() ||
                 !m_pendingSymbols.empty() || !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 ||
-                !m_serverQueryQueue.empty() )
+                !m_serverQueryQueue.empty() || m_pendingSourceLocationPayload != 0 )
             {
                 continue;
             }
@@ -3604,7 +3604,7 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz
 {
     const auto start = data;
 
-    assert( m_pendingSourceLocationPayload.find( ptr ) == m_pendingSourceLocationPayload.end() );
+    assert( m_pendingSourceLocationPayload == 0 );
 
     uint32_t color, line;
     memcpy( &color, data, 4 );
@@ -3635,7 +3635,7 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz
         memcpy( slptr, &srcloc, sizeof( srcloc ) );
         uint32_t idx = m_data.sourceLocationPayload.size();
         m_data.sourceLocationPayloadMap.emplace( slptr, idx );
-        m_pendingSourceLocationPayload.emplace( ptr, -int16_t( idx + 1 ) );
+        m_pendingSourceLocationPayload = -int16_t( idx + 1 );
         m_data.sourceLocationPayload.push_back( slptr );
         const auto key = -int16_t( idx + 1 );
 #ifndef TRACY_NO_STATISTICS
@@ -3651,7 +3651,7 @@ void Worker::AddSourceLocationPayload( uint64_t ptr, const char* data, size_t sz
     }
     else
     {
-        m_pendingSourceLocationPayload.emplace( ptr, -int16_t( it->second + 1 ) );
+        m_pendingSourceLocationPayload = -int16_t( it->second + 1 );
     }
 }
 
@@ -4049,11 +4049,11 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ZoneBeginCallstack:
         ProcessZoneBeginCallstack( ev.zoneBegin );
         break;
-    case QueueType::ZoneBeginAllocSrcLoc:
-        ProcessZoneBeginAllocSrcLoc( ev.zoneBegin );
+    case QueueType::ZoneBeginAllocSrcLocLean:
+        ProcessZoneBeginAllocSrcLoc( ev.zoneBeginLean );
         break;
-    case QueueType::ZoneBeginAllocSrcLocCallstack:
-        ProcessZoneBeginAllocSrcLocCallstack( ev.zoneBegin );
+    case QueueType::ZoneBeginAllocSrcLocCallstackLean:
+        ProcessZoneBeginAllocSrcLocCallstack( ev.zoneBeginLean );
         break;
     case QueueType::ZoneEnd:
         ProcessZoneEnd( ev.zoneEnd );
@@ -4310,15 +4310,14 @@ void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
     next.zone = zone;
 }
 
-void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
+void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBeginLean& ev )
 {
-    auto it = m_pendingSourceLocationPayload.find( ev.srcloc );
-    assert( it != m_pendingSourceLocationPayload.end() );
+    assert( m_pendingSourceLocationPayload != 0 );
 
     const auto refTime = m_refTimeThread + ev.time;
     m_refTimeThread = refTime;
     const auto start = TscTime( refTime - m_data.baseTime );
-    zone->SetStartSrcLoc( start, it->second );
+    zone->SetStartSrcLoc( start, m_pendingSourceLocationPayload );
     zone->SetEnd( -1 );
     zone->SetChild( -1 );
 
@@ -4326,16 +4325,16 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
 
     NewZone( zone, m_threadCtx );
 
-    m_pendingSourceLocationPayload.erase( it );
+    m_pendingSourceLocationPayload = 0;
 }
 
-void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev )
+void Worker::ProcessZoneBeginAllocSrcLoc( const QueueZoneBeginLean& ev )
 {
     auto zone = AllocZoneEvent();
     ProcessZoneBeginAllocSrcLocImpl( zone, ev );
 }
 
-void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBegin& ev )
+void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBeginLean& ev )
 {
     auto zone = AllocZoneEvent();
     ProcessZoneBeginAllocSrcLocImpl( zone, ev );

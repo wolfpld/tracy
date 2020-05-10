@@ -4188,8 +4188,8 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::CallstackLean:
         ProcessCallstack();
         break;
-    case QueueType::CallstackAlloc:
-        ProcessCallstackAlloc( ev.callstackAlloc );
+    case QueueType::CallstackAllocLean:
+        ProcessCallstackAlloc();
         break;
     case QueueType::CallstackSample:
         ProcessCallstackSample( ev.callstackSample );
@@ -5371,9 +5371,9 @@ void Worker::ProcessCallstack()
     }
 }
 
-void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
+void Worker::ProcessCallstackAlloc()
 {
-    assert( m_pendingCallstackPtr == ev.ptr );
+    assert( m_pendingCallstackPtr != 0 );
     m_pendingCallstackPtr = 0;
 
     auto nit = m_nextCallstack.find( m_threadCtx );

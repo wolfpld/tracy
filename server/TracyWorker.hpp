@@ -601,7 +601,7 @@ private:
     tracy_force_inline void ProcessMemFreeCallstack( const QueueMemFree& ev );
     tracy_force_inline void ProcessCallstackMemory();
     tracy_force_inline void ProcessCallstack();
-    tracy_force_inline void ProcessCallstackAlloc( const QueueCallstackAlloc& ev );
+    tracy_force_inline void ProcessCallstackAlloc();
     tracy_force_inline void ProcessCallstackSample( const QueueCallstackSample& ev );
     tracy_force_inline void ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev );
     tracy_force_inline void ProcessCallstackFrame( const QueueCallstackFrame& ev );

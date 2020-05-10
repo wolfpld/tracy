@@ -1817,6 +1817,8 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         ptr = MemRead<uint64_t>( &item->callstack.ptr );
                         SendCallstackPayload( ptr );
                         tracy_free( (void*)ptr );
+                        idx++;
+                        MemWrite( &item->hdr.idx, idx );
                         break;
                     case QueueType::CallstackAlloc:
                         ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );

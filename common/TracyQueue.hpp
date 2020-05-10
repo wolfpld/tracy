@@ -22,6 +22,7 @@ enum class QueueType : uint8_t
     CallstackMemory,
     CallstackMemoryLean,
     Callstack,
+    CallstackLean,
     CallstackAlloc,
     CallstackSample,
     FrameImage,
@@ -485,7 +486,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // lean allocated source location, callstack
     sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ), // not for network transfer
     sizeof( QueueHeader ),                                  // lean callstack memory
-    sizeof( QueueHeader ) + sizeof( QueueCallstack ),
+    sizeof( QueueHeader ) + sizeof( QueueCallstack ),       // not for network transfer
+    sizeof( QueueHeader ),                                  // lean callstack
     sizeof( QueueHeader ) + sizeof( QueueCallstackAlloc ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackSample ),
     sizeof( QueueHeader ) + sizeof( QueueFrameImage ),

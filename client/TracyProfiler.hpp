@@ -674,6 +674,6 @@ private:
     ParameterCallback m_paramCallback;
 };
 
-};
+}
 
 #endif

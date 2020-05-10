@@ -551,6 +551,6 @@ static_assert( sizeof( QueueDataSize ) / sizeof( size_t ) == (uint8_t)QueueType:
 static_assert( sizeof( void* ) <= sizeof( uint64_t ), "Pointer size > 8 bytes" );
 static_assert( sizeof( void* ) == sizeof( uintptr_t ), "Pointer size != uintptr_t" );
 
-};
+}
 
 #endif

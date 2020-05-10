@@ -839,7 +839,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     return true;
 }
 
-void SourceView::Render( const Worker& worker, const View& view )
+void SourceView::Render( const Worker& worker, View& view )
 {
     m_highlightAddr.Decay( 0 );
     m_hoveredLine.Decay( 0 );
@@ -906,7 +906,7 @@ void SourceView::RenderSimpleSourceView()
     ImGui::EndChild();
 }
 
-void SourceView::RenderSymbolView( const Worker& worker, const View& view )
+void SourceView::RenderSymbolView( const Worker& worker, View& view )
 {
     assert( m_symAddr != 0 );
 
@@ -1507,7 +1507,7 @@ static int PrintHexBytes( char* buf, const uint8_t* bytes, size_t len )
     return buf - start;
 }
 
-uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker, const View& view )
+uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<uint64_t, uint32_t> ipcount, uint32_t ipmax, const Worker& worker, View& view )
 {
     if( m_disasmFail >= 0 )
     {
@@ -2228,7 +2228,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
     draw->AddLine( wpos + ImVec2( 0, ty+2 ), wpos + ImVec2( w, ty+2 ), 0x08FFFFFF );
 }
 
-void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, const View& view )
+void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal, uint32_t ipmax, const Worker& worker, uint64_t& jumpOut, int maxAddrLen, View& view )
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
@@ -2319,6 +2319,39 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                 {
                     m_asmSampleSelect.clear();
                     m_asmGroupSelect = -1;
+                }
+                else if( ImGui::IsMouseClicked( 2 ) )
+                {
+                    const auto cfi = worker.PackPointer( line.addr );
+                    const auto& symStat = worker.GetSymbolStats();
+                    auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
+                    if( inlineList )
+                    {
+                        bool found = false;
+                        const auto symEnd = m_baseAddr + m_codeLen;
+                        while( *inlineList < symEnd )
+                        {
+                            auto ipmap = worker.GetSymbolInstructionPointers( *inlineList );
+                            if( ipmap )
+                            {
+                                if( ipmap->find( cfi ) != ipmap->end() )
+                                {
+                                    view.ShowSampleParents( *inlineList );
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            inlineList++;
+                        }
+                        if( !found )
+                        {
+                            view.ShowSampleParents( m_baseAddr );
+                        }
+                    }
+                    else
+                    {
+                        view.ShowSampleParents( m_baseAddr );
+                    }
                 }
             }
             draw->AddLine( wpos + ImVec2( 0, 1 ), wpos + ImVec2( 0, ty-2 ), GetHotnessColor( ipcnt, ipmax ) );

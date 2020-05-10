@@ -32,16 +32,6 @@
 namespace tracy
 {
 
-static tracy_force_inline CallstackFrameId PackPointer( uint64_t ptr )
-{
-    assert( ( ( ptr & 0x3000000000000000 ) << 2 ) == ( ptr & 0xC000000000000000 ) );
-    CallstackFrameId id;
-    id.idx = ptr;
-    id.sel = 0;
-    id.custom = 0;
-    return id;
-}
-
 static tracy_force_inline uint64_t PackFileLine( uint32_t fileIdx, uint32_t line )
 {
     return ( uint64_t( fileIdx ) << 32 ) | line;
@@ -3777,6 +3767,16 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
         cs_free( insn, cnt );
     }
     cs_close( &handle );
+}
+
+CallstackFrameId Worker::PackPointer( uint64_t ptr ) const
+{
+    assert( ( ( ptr & 0x3000000000000000 ) << 2 ) == ( ptr & 0xC000000000000000 ) );
+    CallstackFrameId id;
+    id.idx = ptr;
+    id.sel = 0;
+    id.custom = 0;
+    return id;
 }
 
 uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const

@@ -167,6 +167,8 @@ private:
     void CheckRead( int line, RegsX86 reg, int limit );
     void CheckWrite( int line, RegsX86 reg, int limit );
 
+    void Save( const Worker& worker );
+
     struct TokenizerState
     {
         void Reset()

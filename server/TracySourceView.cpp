@@ -83,6 +83,7 @@ SourceView::SourceView( ImFont* font )
     , m_hoveredSource( 0 )
     , m_codeLen( 0 )
     , m_highlightAddr( 0 )
+    , m_asmCountBase( -1 )
     , m_asmRelative( false )
     , m_asmBytes( false )
     , m_asmShowSourceLocation( true )
@@ -495,6 +496,7 @@ bool SourceView::Disassemble( uint64_t symAddr, const Worker& worker )
     m_jumpOut.clear();
     m_maxJumpLevel = 0;
     m_asmSelected = -1;
+    m_asmCountBase = -1;
     if( symAddr == 0 ) return false;
     m_cpuArch = worker.GetCpuArch();
     if( m_cpuArch == CpuArchUnknown ) return false;
@@ -2247,6 +2249,8 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
         draw->AddRectFilled( wpos, wpos + ImVec2( w, ty+1 ), 0xFF222233 );
     }
 
+    const auto asmIdx = &line - m_asm.data();
+
     if( iptotal != 0 )
     {
         if( ipcnt == 0 )
@@ -2360,7 +2364,11 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
     }
 
     char buf[256];
-    if( m_asmRelative )
+    if( m_asmCountBase >= 0 )
+    {
+        sprintf( buf, "[%i]", asmIdx - m_asmCountBase );
+    }
+    else if( m_asmRelative )
     {
         sprintf( buf, "+%" PRIu64, line.addr - m_baseAddr );
     }
@@ -2371,7 +2379,22 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
     const auto asz = strlen( buf );
     memset( buf+asz, ' ', maxAddrLen-asz );
     buf[maxAddrLen] = '\0';
-    TextDisabledUnformatted( buf );
+    if( m_asmCountBase >= 0 )
+    {
+        TextColoredUnformatted( asmIdx - m_asmCountBase < 0 ? 0xFFBB6666 : 0xFF66BBBB, buf );
+    }
+    else
+    {
+        TextDisabledUnformatted( buf );
+    }
+    if( ImGui::IsItemClicked( 0 ) )
+    {
+        m_asmCountBase = asmIdx;
+    }
+    else if( ImGui::IsItemClicked( 1 ) )
+    {
+        m_asmCountBase = -1;
+    }
 
     const auto stw = ImGui::CalcTextSize( " " ).x;
     bool lineHovered = false;
@@ -2577,7 +2600,6 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
         memcpy( buf+m_maxMnemonicLen, line.operands.c_str(), line.operands.size() + 1 );
     }
 
-    const auto asmIdx = &line - m_asm.data();
     if( asmIdx == m_asmSelected )
     {
         TextColoredUnformatted( ImVec4( 1, 0.25f, 0.25f, 1 ), buf );

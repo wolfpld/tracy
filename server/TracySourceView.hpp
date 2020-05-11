@@ -196,6 +196,7 @@ private:
     uint32_t m_codeLen;
     int32_t m_disasmFail;
     DecayValue<uint64_t> m_highlightAddr;
+    int m_asmCountBase;
     bool m_asmRelative;
     bool m_asmBytes;
     bool m_asmShowSourceLocation;

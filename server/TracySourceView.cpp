@@ -1721,6 +1721,11 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                             m_selectedAddresses.clear();
                             m_selectedAddresses.emplace( v.first );
                         }
+                        else if( ImGui::IsMouseClicked( 1 ) )
+                        {
+                            ImGui::OpenPopup( "jumpPopup" );
+                            m_jumpPopupAddr = v.first;
+                        }
                         selJumpStart = v.second.min;
                         selJumpEnd = v.second.max;
                         selJumpTarget = v.first;
@@ -1750,6 +1755,42 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 }
             }
         }
+
+        if( m_font ) ImGui::PopFont();
+        if( ImGui::BeginPopup( "jumpPopup" ) )
+        {
+            if( ImGui::Button( ICON_FA_FILE_IMPORT " Save jump range" ) )
+            {
+                auto it = m_jumpTable.find( m_jumpPopupAddr );
+                assert( it != m_jumpTable.end() );
+
+                size_t minIdx = 0, maxIdx = 0;
+                size_t i;
+                for( i=0; i<m_asm.size(); i++ )
+                {
+                    if( m_asm[i].addr = it->second.min )
+                    {
+                        minIdx = i++;
+                        break;
+                    }
+                }
+                assert( i != m_asm.size() );
+                for( ; i<m_asm.size(); i++ )
+                {
+                    if( m_asm[i].addr == it->second.max )
+                    {
+                        maxIdx = i+1;
+                        break;
+                    }
+                }
+                assert( i != m_asm.size() );
+
+                Save( worker, minIdx, maxIdx );
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+        if( m_font ) ImGui::PushFont( m_font );
     }
 
     auto win = ImGui::GetCurrentWindow();

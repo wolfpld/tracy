@@ -206,6 +206,7 @@ private:
     bool m_calcInlineStats;
     uint8_t m_maxAsmBytes;
     bool m_atnt;
+    uint64_t m_jumpPopupAddr;
 
     std::vector<Line> m_lines;
     std::vector<AsmLine> m_asm;

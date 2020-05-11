@@ -1721,11 +1721,13 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                             m_selectedAddresses.clear();
                             m_selectedAddresses.emplace( v.first );
                         }
+#ifndef TRACY_NO_FILESELECTOR
                         else if( ImGui::IsMouseClicked( 1 ) )
                         {
                             ImGui::OpenPopup( "jumpPopup" );
                             m_jumpPopupAddr = v.first;
                         }
+#endif
                         selJumpStart = v.second.min;
                         selJumpEnd = v.second.max;
                         selJumpTarget = v.first;
@@ -1756,6 +1758,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             }
         }
 
+#ifndef TRACY_NO_FILESELECTOR
         if( m_font ) ImGui::PopFont();
         if( ImGui::BeginPopup( "jumpPopup" ) )
         {
@@ -1791,6 +1794,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             ImGui::EndPopup();
         }
         if( m_font ) ImGui::PushFont( m_font );
+#endif
     }
 
     auto win = ImGui::GetCurrentWindow();

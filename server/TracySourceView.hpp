@@ -168,7 +168,9 @@ private:
     void CheckRead( int line, RegsX86 reg, int limit );
     void CheckWrite( int line, RegsX86 reg, int limit );
 
+#ifndef TRACY_NO_FILESELECTOR
     void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );
+#endif
 
     struct TokenizerState
     {

@@ -1,6 +1,7 @@
 #ifndef __TRACYSOURCEVIEW_HPP__
 #define __TRACYSOURCEVIEW_HPP__
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -167,7 +168,7 @@ private:
     void CheckRead( int line, RegsX86 reg, int limit );
     void CheckWrite( int line, RegsX86 reg, int limit );
 
-    void Save( const Worker& worker );
+    void Save( const Worker& worker, size_t start = 0, size_t stop = std::numeric_limits<size_t>::max() );
 
     struct TokenizerState
     {

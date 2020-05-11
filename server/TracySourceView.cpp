@@ -3421,8 +3421,11 @@ void SourceView::CheckWrite( int line, RegsX86 reg, int limit )
     }
 }
 
-void SourceView::Save( const Worker& worker )
+void SourceView::Save( const Worker& worker, size_t start, size_t stop )
 {
+    assert( start < m_asm.size() );
+    assert( start < stop );
+
     nfdchar_t* fn;
     auto res = NFD_SaveDialog( "asm", nullptr, &fn );
     if( res == NFD_OKAY )
@@ -3465,8 +3468,10 @@ void SourceView::Save( const Worker& worker )
             fprintf( f, "; Tracy Profiler disassembly of symbol %s [%s]\n\n", symName, worker.GetCaptureProgram().c_str() );
             if( !m_atnt ) fprintf( f, ".intel_syntax\n\n" );
 
-            for( auto& v : m_asm )
+            const auto end = m_asm.size() < stop ? m_asm.size() : stop;
+            for( size_t i=start; i<end; i++ )
             {
+                const auto& v = m_asm[i];
                 auto it = m_locMap.find( v.addr );
                 if( it != m_locMap.end() )
                 {

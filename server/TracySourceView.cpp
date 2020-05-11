@@ -1637,7 +1637,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 {
                     symName = worker.GetString( sym->name );
                 }
-                fprintf( f, "; Tracy Profiler disassembly of symbol %s [%s]\n\n", symName, worker.GetCaptureProgram() );
+                fprintf( f, "; Tracy Profiler disassembly of symbol %s [%s]\n\n", symName, worker.GetCaptureProgram().c_str() );
                 if( !m_atnt ) fprintf( f, ".intel_syntax\n\n" );
 
                 for( auto& v : m_asm )

@@ -70,13 +70,23 @@ int main( int argc, char** argv )
     for( auto& v : j )
     {
         const auto type = v["ph"].get<std::string>();
+
+        std::string zoneText = "";
+        if ( v.contains( "args" ) )
+        {
+            for ( auto& kv : v["args"].items() )
+            {
+                zoneText += kv.key() + ": " + kv.value().dump() + "\n";
+            }
+        }
+
         if( type == "B" )
         {
             timeline.emplace_back( tracy::Worker::ImportEventTimeline {
                 v["tid"].get<uint64_t>(),
                 uint64_t( v["ts"].get<double>() * 1000. ),
                 v["name"].get<std::string>(),
-                "",
+                std::move(zoneText),
                 false
             } );
         }
@@ -86,7 +96,7 @@ int main( int argc, char** argv )
                 v["tid"].get<uint64_t>(),
                 uint64_t( v["ts"].get<double>() * 1000. ),
                 "",
-                "",
+                std::move(zoneText),
                 true
             } );
         }
@@ -96,7 +106,7 @@ int main( int argc, char** argv )
             const auto ts0 = uint64_t( v["ts"].get<double>() * 1000. );
             const auto ts1 = v["dur"].is_object() ? ts0 + uint64_t( v["dur"].get<double>() * 1000. ) : ts0;
             const auto name = v["name"].get<std::string>();
-            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts0, name, "", false } );
+            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts0, name, std::move(zoneText), false } );
             timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts1, "", "", true } );
         }
         else if( type == "i" || type == "I" )

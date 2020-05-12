@@ -95,6 +95,7 @@ public:
         uint64_t tid;
         uint64_t timestamp;
         std::string name;
+        std::string text;
         bool isEnd;
     };
 

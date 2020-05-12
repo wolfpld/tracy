@@ -328,6 +328,12 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
             zone->SetEnd( -1 );
             zone->SetChild( -1 );
 
+            if( !v.text.empty() )
+            {
+                auto& extra = RequestZoneExtra( *zone );
+                extra.text = StringIdx( StoreString( v.text.c_str(), v.text.size() ).idx );
+            }
+
             m_threadCtxData = NoticeThread( v.tid );
             NewZone( zone, v.tid );
         }

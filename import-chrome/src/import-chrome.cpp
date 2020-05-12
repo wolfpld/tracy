@@ -76,6 +76,7 @@ int main( int argc, char** argv )
                 v["tid"].get<uint64_t>(),
                 uint64_t( v["ts"].get<double>() * 1000. ),
                 v["name"].get<std::string>(),
+                "",
                 false
             } );
         }
@@ -84,6 +85,7 @@ int main( int argc, char** argv )
             timeline.emplace_back( tracy::Worker::ImportEventTimeline {
                 v["tid"].get<uint64_t>(),
                 uint64_t( v["ts"].get<double>() * 1000. ),
+                "",
                 "",
                 true
             } );
@@ -94,8 +96,8 @@ int main( int argc, char** argv )
             const auto ts0 = uint64_t( v["ts"].get<double>() * 1000. );
             const auto ts1 = v["dur"].is_object() ? ts0 + uint64_t( v["dur"].get<double>() * 1000. ) : ts0;
             const auto name = v["name"].get<std::string>();
-            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts0, name, false } );
-            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts1, "", true } );
+            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts0, name, "", false } );
+            timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts1, "", "", true } );
         }
         else if( type == "i" || type == "I" )
         {

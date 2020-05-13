@@ -1771,7 +1771,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
                 size_t i;
                 for( i=0; i<m_asm.size(); i++ )
                 {
-                    if( m_asm[i].addr = it->second.min )
+                    if( m_asm[i].addr == it->second.min )
                     {
                         minIdx = i++;
                         break;

@@ -1,7 +1,6 @@
 #include <chrono>
 #include <mutex>
 #include <thread>
-#include <shared_mutex>
 #include <stdlib.h>
 #include "../Tracy.hpp"
 #include "../common/TracySystem.hpp"
@@ -185,6 +184,10 @@ void DepthTest()
     }
 }
 
+#ifdef __cpp_lib_shared_mutex
+
+#include <shared_mutex>
+
 static TracySharedLockable( std::shared_mutex, sharedMutex );
 
 void SharedRead1()
@@ -230,6 +233,8 @@ void SharedWrite2()
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
     }
 }
+
+#endif
 
 void CaptureCallstack()
 {
@@ -286,11 +291,13 @@ int main()
     auto t11 = std::thread( DepthTest );
     auto t12 = std::thread( RecLock );
     auto t13 = std::thread( RecLock );
+#ifdef __cpp_lib_shared_mutex
     auto t14 = std::thread( SharedRead1 );
     auto t15 = std::thread( SharedRead1 );
     auto t16 = std::thread( SharedRead2 );
     auto t17 = std::thread( SharedWrite1 );
     auto t18 = std::thread( SharedWrite2 );
+#endif
     auto t19 = std::thread( CallstackTime );
     auto t20 = std::thread( OnlyMemory );
     auto t21 = std::thread( DeadlockTest1 );

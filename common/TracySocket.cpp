@@ -87,7 +87,7 @@ Socket::Socket( int sock )
 Socket::~Socket()
 {
     tracy_free( m_buf );
-    if( m_sock != -1 )
+    if( m_sock.load( std::memory_order_relaxed ) != -1 )
     {
         Close();
     }
@@ -95,7 +95,7 @@ Socket::~Socket()
 
 bool Socket::Connect( const char* addr, int port )
 {
-    assert( m_sock == -1 );
+    assert( !IsValid() );
 
     struct addrinfo hints;
     struct addrinfo *res, *ptr;
@@ -130,29 +130,31 @@ bool Socket::Connect( const char* addr, int port )
     freeaddrinfo( res );
     if( !ptr ) return false;
 
-    m_sock = sock;
+    m_sock.store( sock, std::memory_order_relaxed );
     return true;
 }
 
 void Socket::Close()
 {
-    assert( m_sock != -1 );
+    const auto sock = m_sock.load( std::memory_order_relaxed );
+    assert( sock != -1 );
 #ifdef _WIN32
-    closesocket( m_sock );
+    closesocket( sock );
 #else
-    close( m_sock );
+    close( sock );
 #endif
-    m_sock = -1;
+    m_sock.store( -1, std::memory_order_relaxed );
 }
 
 int Socket::Send( const void* _buf, int len )
 {
+    const auto sock = m_sock.load( std::memory_order_relaxed );
     auto buf = (const char*)_buf;
-    assert( m_sock != -1 );
+    assert( sock != -1 );
     auto start = buf;
     while( len > 0 )
     {
-        auto ret = send( m_sock, buf, len, MSG_NOSIGNAL );
+        auto ret = send( sock, buf, len, MSG_NOSIGNAL );
         if( ret == -1 ) return -1;
         len -= ret;
         buf += ret;
@@ -162,13 +164,14 @@ int Socket::Send( const void* _buf, int len )
 
 int Socket::GetSendBufSize()
 {
+    const auto sock = m_sock.load( std::memory_order_relaxed );
     int bufSize;
 #if defined _WIN32 || defined __CYGWIN__
     int sz = sizeof( bufSize );
-    getsockopt( m_sock, SOL_SOCKET, SO_SNDBUF, (char*)&bufSize, &sz );
+    getsockopt( sock, SOL_SOCKET, SO_SNDBUF, (char*)&bufSize, &sz );
 #else
     socklen_t sz = sizeof( bufSize );
-    getsockopt( m_sock, SOL_SOCKET, SO_SNDBUF, &bufSize, &sz );
+    getsockopt( sock, SOL_SOCKET, SO_SNDBUF, &bufSize, &sz );
 #endif
     return bufSize;
 }
@@ -205,15 +208,16 @@ int Socket::RecvBuffered( void* buf, int len, int timeout )
 
 int Socket::Recv( void* _buf, int len, int timeout )
 {
+    const auto sock = m_sock.load( std::memory_order_relaxed );
     auto buf = (char*)_buf;
 
     struct pollfd fd;
-    fd.fd = (socket_t)m_sock;
+    fd.fd = (socket_t)sock;
     fd.events = POLLIN;
 
     if( poll( &fd, 1, timeout ) > 0 )
     {
-        return recv( m_sock, buf, len, 0 );
+        return recv( sock, buf, len, 0 );
     }
     else
     {
@@ -269,10 +273,11 @@ bool Socket::ReadRaw( void* _buf, int len, int timeout )
 
 bool Socket::HasData()
 {
+    const auto sock = m_sock.load( std::memory_order_relaxed );
     if( m_bufLeft > 0 ) return true;
 
     struct pollfd fd;
-    fd.fd = (socket_t)m_sock;
+    fd.fd = (socket_t)sock;
     fd.events = POLLIN;
 
     return poll( &fd, 1, 0 ) > 0;
@@ -280,7 +285,7 @@ bool Socket::HasData()
 
 bool Socket::IsValid() const
 {
-    return m_sock >= 0;
+    return m_sock.load( std::memory_order_relaxed ) >= 0;
 }
 
 

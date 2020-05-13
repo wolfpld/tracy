@@ -1,6 +1,7 @@
 #ifndef __TRACYSOCKET_HPP__
 #define __TRACYSOCKET_HPP__
 
+#include <atomic>
 #include <stdint.h>
 
 #include "TracyForceInline.hpp"
@@ -58,7 +59,7 @@ private:
 
     char* m_buf;
     char* m_bufPtr;
-    int m_sock;
+    std::atomic<int> m_sock;
     int m_bufLeft;
 };
 

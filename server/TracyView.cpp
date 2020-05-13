@@ -791,7 +791,11 @@ void View::DrawNotificationArea()
     const auto ty = ImGui::GetFontSize();
     if( m_worker.IsConnected() )
     {
-        const auto sqs = m_worker.GetSendQueueSize();
+        size_t sqs;
+        {
+            std::shared_lock<std::shared_mutex> lock( m_worker.GetMbpsDataLock() );
+            sqs = m_worker.GetSendQueueSize();
+        }
         if( sqs != 0 )
         {
             ImGui::SameLine();
@@ -1021,8 +1025,6 @@ bool View::DrawConnection()
         ImGui::Text( "%6.2f Mbps", mbps / m_worker.GetCompRatio() );
         TextFocused( "Data transferred:", MemSizeToString( m_worker.GetDataTransferred() ) );
         TextFocused( "Query backlog:", RealToString( m_worker.GetSendQueueSize() ) );
-        ImGui::SameLine();
-        TextFocused( "+", RealToString( m_worker.GetSendInFlight() ) );
     }
 
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
@@ -1030,6 +1032,8 @@ bool View::DrawConnection()
 
     {
         std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
+        ImGui::SameLine();
+        TextFocused( "+", RealToString( m_worker.GetSendInFlight() ) );
         const auto sz = m_worker.GetFrameCount( *m_frames );
         if( sz > 1 )
         {

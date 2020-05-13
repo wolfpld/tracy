@@ -2338,7 +2338,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
     char buf[256];
     if( m_asmCountBase >= 0 )
     {
-        sprintf( buf, "[%i]", asmIdx - m_asmCountBase );
+        sprintf( buf, "[%i]", int( asmIdx - m_asmCountBase ) );
     }
     else if( m_asmRelative )
     {

@@ -1718,7 +1718,7 @@ void Profiler::ClearQueues( moodycamel::ConsumerToken& token )
 {
     for(;;)
     {
-        const auto sz = GetQueue().try_dequeue_bulk_single( token, [](auto){}, []( QueueItem* item, size_t sz ) { assert( sz > 0 ); while( sz-- > 0 ) FreeAssociatedMemory( *item++ ); } );
+        const auto sz = GetQueue().try_dequeue_bulk_single( token, [](const uint64_t&){}, []( QueueItem* item, size_t sz ) { assert( sz > 0 ); while( sz-- > 0 ) FreeAssociatedMemory( *item++ ); } );
         if( sz == 0 ) break;
     }
 
@@ -2578,7 +2578,7 @@ void Profiler::CalibrateDelay()
     int left = Events;
     while( left != 0 )
     {
-        const auto sz = GetQueue().try_dequeue_bulk_single( token, [](auto){}, [](auto, auto){} );
+        const auto sz = GetQueue().try_dequeue_bulk_single( token, [](const uint64_t&){}, [](QueueItem* item, size_t sz){} );
         assert( sz > 0 );
         left -= (int)sz;
     }

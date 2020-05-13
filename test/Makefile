@@ -1,7 +1,7 @@
 OPTFLAGS := -g3 -fmerge-constants
 TRACYFLAGS :=
 CFLAGS := $(OPTFLAGS) -Wall -DTRACY_ENABLE $(TRACYFLAGS) -rdynamic
-CXXFLAGS := $(CFLAGS) -std=gnu++17
+CXXFLAGS := $(CFLAGS) -std=gnu++11
 DEFINES +=
 INCLUDES :=
 LIBS := -lpthread -ldl

@@ -241,8 +241,6 @@ You may wonder, why should you use Tracy, when there are so many other profilers
 \item Tracy provides mapping of source code to the assembly, with detailed information about cost of executing each instruction on the CPU.
 \end{itemize}
 
-With all that being said, Tracy may not be the right choice for you, if you need to profile games targetting PS4, Xbox, or other consoles behind a NDA wall.
-
 \subsection{Performance impact}
 \label{perfimpact}
 
@@ -324,6 +322,15 @@ Tracy Profiler supports  MSVC, gcc and clang. A reasonably recent version of the
 \item WSL (x64)
 \item OSX (x64)
 \item iOS (ARM, ARM64)
+\end{itemize}
+
+Moreover, the following platforms are not supported due to how secretive their owners are, but were reported to be working after extending the system integration layer:
+
+\begin{itemize}
+\item PlayStation 4
+\item Xbox One
+\item Nintendo Switch
+\item Google Stadia
 \end{itemize}
 
 \subsection{Initial client setup}

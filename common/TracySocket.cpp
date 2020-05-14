@@ -23,6 +23,8 @@
 #  include <arpa/inet.h>
 #  include <sys/socket.h>
 #  include <sys/param.h>
+#  include <errno.h>
+#  include <fcntl.h>
 #  include <netinet/in.h>
 #  include <netdb.h>
 #  include <unistd.h>
@@ -70,6 +72,7 @@ Socket::Socket()
     , m_bufPtr( nullptr )
     , m_sock( -1 )
     , m_bufLeft( 0 )
+    , m_ptr( nullptr )
 {
 #ifdef _WIN32
     InitWinSock();
@@ -81,6 +84,7 @@ Socket::Socket( int sock )
     , m_bufPtr( nullptr )
     , m_sock( sock )
     , m_bufLeft( 0 )
+    , m_ptr( nullptr )
 {
 }
 
@@ -91,11 +95,58 @@ Socket::~Socket()
     {
         Close();
     }
+    if( m_ptr )
+    {
+        freeaddrinfo( m_res );
+#ifdef _WIN32
+        closesocket( m_connSock );
+#else
+        close( m_connSock );
+#endif
+    }
 }
 
 bool Socket::Connect( const char* addr, int port )
 {
     assert( !IsValid() );
+
+    if( m_ptr )
+    {
+        const auto c = connect( m_connSock, m_ptr->ai_addr, m_ptr->ai_addrlen );
+        assert( c == -1 );
+#if defined _WIN32 || defined __CYGWIN__
+        const auto err = WSAGetLastError();
+        if( err == WSAEALREADY || err == WSAEINPROGRESS ) return false;
+        if( err != WSAEISCONN )
+        {
+            freeaddrinfo( m_res );
+            closesocket( m_connSock );
+            m_ptr = nullptr;
+            return false;
+        }
+#else
+        if( errno == EALREADY || errno == EINPROGRESS ) return false;
+        if( errno != EISCONN )
+        {
+            freeaddrinfo( m_res );
+            close( m_connSock );
+            m_ptr = nullptr;
+            return false;
+        }
+#endif
+
+#if defined _WIN32 || defined __CYGWIN__
+        u_long nonblocking = 0;
+        ioctlsocket( m_connSock, FIONBIO, &nonblocking );
+#else
+        int flags = fcntl( m_connSock, F_GETFL, 0 );
+        fcntl( m_connSock, F_SETFL, flags & ~O_NONBLOCK );
+#endif
+        m_sock.store( m_connSock, std::memory_order_relaxed );
+        freeaddrinfo( m_res );
+        m_ptr = nullptr;
+        return true;
+    }
 
     struct addrinfo hints;
     struct addrinfo *res, *ptr;
@@ -116,19 +167,49 @@ bool Socket::Connect( const char* addr, int port )
         int val = 1;
         setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
-        if( connect( sock, ptr->ai_addr, ptr->ai_addrlen ) == -1 )
-        {
-#ifdef _WIN32
-            closesocket( sock );
+#if defined _WIN32 || defined __CYGWIN__
+        u_long nonblocking = 1;
+        ioctlsocket( sock, FIONBIO, &nonblocking );
 #else
-            close( sock );
+        int flags = fcntl( sock, F_GETFL, 0 );
+        fcntl( sock, F_SETFL, flags | O_NONBLOCK );
 #endif
-            continue;
+        if( connect( sock, ptr->ai_addr, ptr->ai_addrlen ) == 0 )
+        {
+            break;
         }
-        break;
+        else
+        {
+#if defined _WIN32 || defined __CYGWIN__
+            const auto err = WSAGetLastError();
+            if( err != WSAEWOULDBLOCK )
+            {
+                closesocket( sock );
+                continue;
+            }
+#else
+            if( errno != EINPROGRESS )
+            {
+                close( sock );
+                continue;
+            }
+#endif
+        }
+        m_res = res;
+        m_ptr = ptr;
+        m_connSock = sock;
+        return false;
     }
     freeaddrinfo( res );
     if( !ptr ) return false;
+
+#if defined _WIN32 || defined __CYGWIN__
+    u_long nonblocking = 0;
+    ioctlsocket( sock, FIONBIO, &nonblocking );
+#else
+    int flags = fcntl( sock, F_GETFL, 0 );
+    fcntl( sock, F_SETFL, flags & ~O_NONBLOCK );
+#endif
 
     m_sock.store( sock, std::memory_order_relaxed );
     return true;

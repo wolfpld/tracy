@@ -6,6 +6,7 @@
 
 #include "TracyForceInline.hpp"
 
+struct addrinfo;
 struct sockaddr;
 
 namespace tracy
@@ -61,6 +62,10 @@ private:
     char* m_bufPtr;
     std::atomic<int> m_sock;
     int m_bufLeft;
+
+    struct addrinfo *m_res;
+    struct addrinfo *m_ptr;
+    int m_connSock;
 };
 
 class ListenSocket

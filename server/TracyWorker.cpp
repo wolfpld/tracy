@@ -2846,6 +2846,7 @@ void Worker::Exec()
     {
         if( m_shutdown.load( std::memory_order_relaxed ) ) { m_netWriteCv.notify_one(); return; };
         if( m_sock.Connect( m_addr.c_str(), m_port ) ) break;
+        std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     }
 
     std::chrono::time_point<std::chrono::high_resolution_clock> t0;

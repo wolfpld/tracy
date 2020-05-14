@@ -992,6 +992,14 @@ void View::DrawNotificationArea()
         ImGui::SameLine();
         TextDisabledUnformatted( m_notificationText.c_str() );
     }
+
+    if( m_smallFont ) ImGui::PushFont( m_smallFont );
+    const auto wpos = ImGui::GetWindowPos();
+    const auto w = ImGui::GetWindowContentRegionWidth();
+    const auto fps = RealToString( int( io.Framerate + 0.5f ) );
+    const auto fpssz = ImGui::CalcTextSize( fps ).x;
+    ImGui::GetWindowDrawList()->AddText( wpos + ImVec2( w-fpssz, 0 ), 0x88FFFFFF, fps );
+    if( m_smallFont ) ImGui::PopFont();
 }
 
 bool View::DrawConnection()
@@ -13132,9 +13140,6 @@ void View::DrawInfo()
 
         ImGui::TreePop();
     }
-
-    ImGui::Separator();
-    TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ) ) );
 
     ImGui::Separator();
     TextFocused( "PID:", RealToString( m_worker.GetPid() ) );

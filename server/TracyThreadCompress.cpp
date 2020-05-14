@@ -27,12 +27,15 @@ void ThreadCompress::Load( FileRead& f, int fileVer )
     if( fileVer >= FileVersion( 0, 4, 4 ) )
     {
         f.Read( sz );
-        m_threadExpand.reserve_and_use( sz );
-        f.Read( m_threadExpand.data(), sizeof( uint64_t ) * sz );
-        m_threadMap.reserve( sz );
-        for( size_t i=0; i<sz; i++ )
+        if( sz != 0 )
         {
-            m_threadMap.emplace( m_threadExpand[i], i );
+            m_threadExpand.reserve_and_use( sz );
+            f.Read( m_threadExpand.data(), sizeof( uint64_t ) * sz );
+            m_threadMap.reserve( sz );
+            for( size_t i=0; i<sz; i++ )
+            {
+                m_threadMap.emplace( m_threadExpand[i], i );
+            }
         }
     }
     else

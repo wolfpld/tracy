@@ -2401,7 +2401,8 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                 lineHovered = true;
                 if( m_font ) ImGui::PopFont();
                 ImGui::BeginTooltip();
-                ImGui::Text( "%s:%i", fileName, srcline );
+                TextFocused( "File:", fileName );
+                TextFocused( "Line:", RealToString( srcline ) );
                 ImGui::EndTooltip();
                 if( m_font ) ImGui::PushFont( m_font );
                 if( ImGui::IsItemClicked( 0 ) || ImGui::IsItemClicked( 1 ) )

@@ -1863,6 +1863,14 @@ static uint32_t DarkenColor( uint32_t color )
         ( std::min<int>( 0xFF, ( ( ( color & 0x000000FF )       ) * 2 / 3 ) )       );
 }
 
+static uint32_t MixGhostColor( uint32_t c0, uint32_t c1 )
+{
+    return 0xFF000000 |
+        ( std::min<int>( 0xFF, ( ( ( ( c0 & 0x00FF0000 ) >> 16 ) + 3 * ( ( c1 & 0x00FF0000 ) >> 16 ) ) >> 2 ) ) << 16 ) |
+        ( std::min<int>( 0xFF, ( ( ( ( c0 & 0x0000FF00 ) >> 8  ) + 3 * ( ( c1 & 0x0000FF00 ) >> 8  ) ) >> 2 ) ) << 8  ) |
+        ( std::min<int>( 0xFF, ( ( ( ( c0 & 0x000000FF )       ) + 3 * ( ( c1 & 0x000000FF )       ) ) >> 2 ) )       );
+}
+
 static void DrawZigZag( ImDrawList* draw, const ImVec2& wpos, double start, double end, double h, uint32_t color, float thickness = 1.f )
 {
     const auto spanSz = end - start;
@@ -3426,6 +3434,9 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
     const auto offset = _offset + ostep * depth;
     auto draw = ImGui::GetWindowDrawList();
 
+    const auto color = MixGhostColor( GetThreadColor( tid, depth ), 0x665555 );
+    const auto outline = HighlightColor( color );
+
     depth++;
     int maxdepth = depth;
 
@@ -3453,8 +3464,8 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 rend = nend;
                 nextTime = nend + nspx;
             }
-            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), 0xFF665555 );
-            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( 0xFF665555 ) );
+            draw->AddRectFilled( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ), color );
+            DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ) ) )
             {
                 ImGui::BeginTooltip();
@@ -3473,7 +3484,6 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         {
             const auto& ghostFrame = m_worker.GetGhostFrame( ev.frame );
             const auto frame = m_worker.GetCallstackFrame( ghostFrame );
-            const auto outline = 0xFFBB9999;
             const auto pr0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
             const auto pr1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
@@ -3486,9 +3496,8 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 sprintf( symName, "0x%" PRIx64, m_worker.GetCanonicalPointer( ghostFrame ) );
                 const auto tsz = ImGui::CalcTextSize( symName );
 
-                const auto color = 0xFF444444;
                 const auto txtColor = 0xFF888888;
-                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
+                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), DarkenColor( color ) );
                 draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), outline, 0.f, -1 );
 
                 if( tsz.x < zsz )
@@ -3539,13 +3548,13 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 for( int i=fsz-1; i>=0; i-- )
                 {
                     const auto isInline = i != fsz-1;
-                    const auto color = isInline ? 0xFF554444 : 0xFF665555;
+                    const auto col = isInline ? DarkenColor( color ) : color;
                     const auto sym = m_worker.GetSymbolData( frame->data[i].symAddr );
                     const auto symName = m_worker.GetString( frame->data[i].name );
                     uint32_t txtColor = symName[0] == '[' ? 0xFF999999 : 0xFFFFFFFF;
                     const auto tsz = ImGui::CalcTextSize( symName );
 
-                    draw->AddRectFilled( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ), color );
+                    draw->AddRectFilled( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ), col );
                     draw->AddRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ), outline, 0.f, -1 );
 
                     if( tsz.x < zsz )

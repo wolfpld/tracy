@@ -3528,6 +3528,8 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
                 {
                     ImGui::BeginTooltip();
+                    TextDisabledUnformatted( ICON_FA_GHOST " Ghost zone" );
+                    ImGui::Separator();
                     TextFocused( "Unknown frame:", symName );
                     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
                     ImGui::SameLine();
@@ -3585,6 +3587,8 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ) ) )
                     {
                         ImGui::BeginTooltip();
+                        TextDisabledUnformatted( ICON_FA_GHOST " Ghost zone" );
+                        ImGui::Separator();
                         ImGui::TextUnformatted( symName );
                         if( isInline )
                         {

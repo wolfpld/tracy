@@ -1419,14 +1419,14 @@ private:
 	static inline U* create()
 	{
 		auto p = (Traits::malloc)(sizeof(U));
-		return p != nullptr ? new (p) U : nullptr;
+		return new (p) U;
 	}
 	
 	template<typename U, typename A1>
 	static inline U* create(A1&& a1)
 	{
 		auto p = (Traits::malloc)(sizeof(U));
-		return p != nullptr ? new (p) U(std::forward<A1>(a1)) : nullptr;
+		return new (p) U(std::forward<A1>(a1));
 	}
 	
 	template<typename U>

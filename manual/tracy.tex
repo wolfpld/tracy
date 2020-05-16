@@ -18,6 +18,7 @@
 \usepackage[os=win]{menukeys}
 \usepackage{xfrac}
 \usepackage[euler]{textgreek}
+\usepackage{nameref}
 
 \usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
 \geometry{a4paper,textwidth=6.5in,hmarginratio=1:1,
@@ -93,11 +94,28 @@
 \url{https://github.com/wolfpld/tracy}
 \end{titlepage}
 
+\section*{Quick overview}
+
+Hello and welcome to the Tracy Profiler user manual! Here you will find all the information you need to start using the profiler. This manual has the following layout:
+
+\begin{itemize}
+\item Chapter~\ref{quicklook}, \emph{\nameref{quicklook}}, gives a short description of what Tracy is and how it works.
+\item Chapter~\ref{firststeps}, \emph{\nameref{firststeps}}, shows how the profiler can be integrated into your application, and how to build the graphical user interface (section~\ref{buildingserver}). At this point you will be able to establish a connection from the profiler to your application.
+\item Chapter~\ref{client}, \emph{\nameref{client}}, provides information on how to instrument your application, in order to retrieve useful profiling data.
+\item Chapter~\ref{capturing}, \emph{\nameref{capturing}}, goes into more detail on how the profiling information can be captured and stored on disk.
+\item Chapter~\ref{analyzingdata}, \emph{\nameref{analyzingdata}}, guides you through the graphical user interface of the profiler.
+\item Chapter~\ref{importingdata}, \emph{\nameref{importingdata}}, documents how to import data from other profilers.
+\item Chapter~\ref{configurationfiles}, \emph{\nameref{configurationfiles}}, gives information on the profiler settings.
+\end{itemize}
+
+\newpage
+
 \tableofcontents
 
 \newpage
 
 \section{A quick look at Tracy Profiler}
+\label{quicklook}
 
 Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
 
@@ -183,6 +201,10 @@ Here you can see why it is important to use a high precision timer. While there 
 \subsection{Frame profiler}
 
 Tracy is aimed at understanding the inner workings of a tight loop of a game (or any other kind of an interactive application). That's why it slices the execution time of a program using the \emph{frame}\footnote{A frame is used to describe a single image displayed on the screen by the game (or any other program), preferably 60 times per second to achieve smooth animation. You can also think about physics update frames, audio processing frames, etc.} as a basic work-unit\footnote{Frame usage is not required. See section~\ref{markingframes} for more information.}. The most interesting frames are the ones that took longer than the allocated time, producing visible hitches in the on-screen animation. Tracy allows inspection of such misbehavior.
+
+\subsection{Sampling profiler}
+
+Tracy is able to periodically sample what the profiled application is doing, which gives you detailed performance information at the source line/assembly instruction level. This can give you deep understanding of how the program is executed by the processor. Using this information you can get a coarse view at the call stacks, fine-tune your algorithms, or even 'steal' an optimization performed by one compiler and make it available for the others.
 
 \subsection{Remote or embedded telemetry}
 
@@ -309,6 +331,7 @@ Tracy can be found at the following web addresses:
 You may be also interested in a Bitbucket mirror: \url{https://bitbucket.org/wolfpld/tracy}.
 
 \section{First steps}
+\label{firststeps}
 
 Tracy Profiler supports  MSVC, gcc and clang. A reasonably recent version of the compiler is needed, due to C++11 requirement. The following platforms are confirmed to be working (this is not a complete list):
 
@@ -559,6 +582,7 @@ We can immediately see that there are two distinct peaks, at 13.4~\si{\micro\sec
 We can also see that the graph gradually falls off to the right (representing longer times), with a small bump near the end. This can be attributed to running in power saving mode, with differing reaction times to the required operating frequency boost to full power.
 
 \subsection{Building the server}
+\label{buildingserver}
 
 The easiest way to get going is to build the data analyzer, available in the \texttt{profiler} directory. With it you can connect to localhost or remote clients and view the collected data right away.
 
@@ -1372,7 +1396,7 @@ Zone text and name may be set by using the \texttt{TracyCZoneText(ctx, txt, size
 \paragraph{Zone context data structure}
 \label{zonectx}
 
-In typical use cases the zone context data structure is hidden from your view, requiring only to specify its name for the \texttt{TracyCZone} and \texttt{TracyCZoneEnd} macros. However, it is possible to use it in advanced scenarios, for example if you want to start a zone in one function, then end it in another one. To do so you will need to forward the data structure either through a function parameter, or as a return value. To accomplish this you need to keep in mind the following rules:
+In typical use cases the zone context data structure is hidden from your view, requiring only to specify its name for the \texttt{TracyCZone} and \texttt{TracyCZoneEnd} macros. However, it is possible to use it in advanced scenarios, for example if you want to start a zone in one function, then end it in another one. To do so you will need to forward the data structure either through a function parameter, or as a return value, or place it in a thread-local stack structure. To accomplish this you need to keep in mind the following rules:
 
 \begin{itemize}
 \item The created variable name is exactly what you pass as the \texttt{ctx} parameter.
@@ -2904,6 +2928,7 @@ This window lists all annotations marked on the timeline. Each annotation is pre
 \end{figure}
 
 \section{Importing external profiling data}
+\label{importingdata}
 
 Tracy can import data generated by other profilers. This external data cannot be directly loaded, but must be converted first. Currently there's only support for converting chrome:tracing data, through the \texttt{import-chrome} utility.
 
@@ -2920,6 +2945,7 @@ logo=\bcattention
 \end{bclogo}
 
 \section{Configuration files}
+\label{configurationfiles}
 
 While the client part doesn't read or write anything to the disk (with the exception of accessing the \texttt{/proc} filesystem on Linux), the server part has to keep some persistent state. The naming conventions or internal data format of the files are not meant to be known by profiler users, but you may want to do a backup of the configuration, or move it to another machine.
 

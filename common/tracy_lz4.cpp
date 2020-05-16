@@ -479,9 +479,7 @@ unsigned LZ4_NbCommonBytes (reg_t val)
     if (LZ4_isLittleEndian()) {
         if (sizeof(val)==8) {
 #       if defined(_MSC_VER) && defined(_WIN64) && !defined(LZ4_FORCE_SW_BITCOUNT)
-            unsigned long r = 0;
-            _BitScanForward64( &r, (U64)val );
-            return (int)(r>>3);
+            return (unsigned)_tzcnt_u64((U64)val)>>3;
 #       elif (defined(__clang__) || (defined(__GNUC__) && (__GNUC__>=3))) && !defined(LZ4_FORCE_SW_BITCOUNT)
             return (__builtin_ctzll((U64)val) >> 3);
 #       else
@@ -497,9 +495,7 @@ unsigned LZ4_NbCommonBytes (reg_t val)
 #       endif
         } else /* 32 bits */ {
 #       if defined(_MSC_VER) && !defined(LZ4_FORCE_SW_BITCOUNT)
-            unsigned long r;
-            _BitScanForward( &r, (U32)val );
-            return (int)(r>>3);
+            return (unsigned)_tzcnt_u32((U32)val)>>3;
 #       elif (defined(__clang__) || (defined(__GNUC__) && (__GNUC__>=3))) && !defined(LZ4_FORCE_SW_BITCOUNT)
             return (__builtin_ctz((U32)val) >> 3);
 #       else

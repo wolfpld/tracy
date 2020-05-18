@@ -3285,7 +3285,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( minpx, offset + ty ) ) )
                 {
                     ImGui::BeginTooltip();
-                    TextFocused( "Thread is", "chaning activity multiple times" );
+                    TextFocused( "Thread is", "changing activity multiple times" );
                     TextFocused( "Number of running regions:", RealToString( num ) );
                     TextFocused( "Time:", TimeToString( rend - ev.Start() ) );
                     ImGui::EndTooltip();

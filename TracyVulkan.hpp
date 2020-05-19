@@ -271,6 +271,7 @@ private:
 
 static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf )
 {
+    InitRPMallocThread();
     auto ctx = (VkCtx*)tracy_malloc( sizeof( VkCtx ) );
     new(ctx) VkCtx( physdev, device, queue, cmdbuf );
     return ctx;

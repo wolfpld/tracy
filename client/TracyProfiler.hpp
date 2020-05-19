@@ -272,10 +272,10 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
+        TracyLfqPrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        TracyLfqPrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)ptr );
         TracyLfqCommit;
@@ -301,10 +301,10 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
+        TracyLfqPrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        TracyLfqPrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.text, (uint64_t)ptr );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
@@ -333,6 +333,7 @@ public:
 
     static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )
     {
+        InitRPMallocThread();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';

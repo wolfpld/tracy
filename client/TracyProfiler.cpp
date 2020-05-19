@@ -952,6 +952,11 @@ std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().thr
 TRACY_API LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
 #  endif
 
+namespace
+{
+    const auto& __profiler_init = GetProfiler();
+}
+
 #else
 TRACY_API void InitRPMallocThread()
 {

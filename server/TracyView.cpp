@@ -11900,16 +11900,20 @@ void View::DrawStatistics()
                                     break;
                                 }
 
-                                ImGui::PushID( idx++ );
-                                if( iv.symAddr == v.symAddr )
+                                const auto sn = iv.symAddr == v.symAddr ? "[self time]" : name;
+                                if( iv.excl == 0 )
                                 {
-                                    TextDisabledUnformatted( "[self time]" );
+                                    ImGui::TextUnformatted( sn );
                                 }
-                                else if( ImGui::Selectable( name, m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
+                                else
                                 {
-                                    ShowSampleParents( iv.symAddr );
+                                    ImGui::PushID( idx++ );
+                                    if( ImGui::Selectable( sn, m_sampleParents.symAddr == iv.symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
+                                    {
+                                        ShowSampleParents( iv.symAddr );
+                                    }
+                                    ImGui::PopID();
                                 }
-                                ImGui::PopID();
                                 ImGui::NextColumn();
                                 float indentVal = 0.f;
                                 if( m_statBuzzAnim.Match( iv.symAddr ) )

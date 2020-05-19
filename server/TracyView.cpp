@@ -11730,7 +11730,18 @@ void View::DrawStatistics()
                         TextDisabledUnformatted( ICON_FA_CARET_RIGHT );
                         ImGui::SameLine();
                     }
-                    if( v.symAddr == 0 || v.excl == 0 )
+                    uint32_t excl;
+                    if( m_statSeparateInlines )
+                    {
+                        excl = v.excl;
+                    }
+                    else
+                    {
+                        auto it = symStat.find( v.symAddr );
+                        assert( it != symStat.end() );
+                        excl = it->second.excl;
+                    }
+                    if( v.symAddr == 0 || excl == 0 )
                     {
                         ImGui::TextUnformatted( name );
                     }

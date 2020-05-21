@@ -1468,6 +1468,7 @@ _memory_deallocate_large(span_t* span) {
 	//Investigate if it is better to defer large spans as well through span_cache_deferred,
 	//possibly with some heuristics to pick either scheme at runtime per deallocation
 	heap_t* heap = get_thread_heap();
+	if (!heap) return;
 #if ENABLE_ADAPTIVE_THREAD_CACHE || ENABLE_STATISTICS
 	size_t idx = span->span_count - 1;
 	atomic_decr32(&span->heap->span_use[idx].current);

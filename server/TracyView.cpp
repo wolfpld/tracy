@@ -11738,8 +11738,7 @@ void View::DrawStatistics()
                     else
                     {
                         auto it = symStat.find( v.symAddr );
-                        assert( it != symStat.end() );
-                        excl = it->second.excl;
+                        excl = it != symStat.end() ? it->second.excl : 0;
                     }
                     if( v.symAddr == 0 || excl == 0 )
                     {

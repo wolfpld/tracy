@@ -304,6 +304,8 @@ private:
 
         unordered_flat_map<uint64_t, uint64_t> codeAddressToLocation;
         unordered_flat_map<uint64_t, Vector<uint64_t>> locationCodeAddressList;
+
+        unordered_flat_map<const char*, MemoryBlock, charutil::Hasher, charutil::Comparator> sourceFileCache;
     };
 
     struct MbpsBlock
@@ -714,6 +716,8 @@ private:
     StringLocation StoreString( const char* str, size_t sz );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
+    void CacheSource( const StringRef& str );
+
     tracy_force_inline Vector<short_ptr<ZoneEvent>>& GetZoneChildrenMutable( int32_t idx ) { return m_data.zoneChildren[idx]; }
 #ifndef TRACY_NO_STATISTICS
     tracy_force_inline Vector<GhostZone>& GetGhostChildrenMutable( int32_t idx ) { return m_data.ghostChildren[idx]; }
@@ -803,6 +807,8 @@ private:
     FrameImagePending m_pendingFrameImageData = {};
     unordered_flat_map<uint64_t, SymbolPending> m_pendingSymbols;
     unordered_flat_set<uint64_t> m_pendingSymbolCode;
+    unordered_flat_set<StringRef, StringRefHasher, StringRefComparator> m_pendingFileStrings;
+    unordered_flat_set<StringRef, StringRefHasher, StringRefComparator> m_checkedFileStrings;
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;

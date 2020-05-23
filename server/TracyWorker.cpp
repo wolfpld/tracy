@@ -22,6 +22,7 @@
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "TracyFileRead.hpp"
+#include "TracyFilesystem.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracySort.hpp"
 #include "TracyTaskDispatch.hpp"
@@ -7296,6 +7297,30 @@ ZoneExtra& Worker::RequestZoneExtra( ZoneEvent& ev )
     else
     {
         return GetZoneExtraMutable( ev );
+    }
+}
+
+void Worker::CacheSource( const StringRef& str )
+{
+    assert( str.active );
+    assert( m_checkedFileStrings.find( str ) == m_checkedFileStrings.end() );
+    m_checkedFileStrings.emplace( str );
+    auto file = GetString( str );
+    if( SourceFileValid( file, GetCaptureTime() ) )
+    {
+        // Possible duplication of pointer and index strings
+        if( m_data.sourceFileCache.find( file ) == m_data.sourceFileCache.end() )
+        {
+            FILE* f = fopen( file, "rb" );
+            fseek( f, 0, SEEK_END );
+            const auto sz = ftell( f );
+            fseek( f, 0, SEEK_SET );
+            auto src = (char*)m_slab.AllocBig( sz+1 );
+            fread( src, 1, sz, f );
+            src[sz] = '\0';
+            fclose( f );
+            m_data.sourceFileCache.emplace( file, MemoryBlock{ src, uint32_t( sz+1 ) } );
+        }
     }
 }
 

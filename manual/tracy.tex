@@ -2649,7 +2649,7 @@ There's also a section containing the selected frame set timing statistics and h
 
 If \emph{CPU topology} data is available (see section~\ref{cputopology}), you will be able to view the package, core and thread hierarchy.
 
-The \emph{Source location substitutions} section allows adapting the source file paths, as captured by the profiler to the actual on-disk locations. You can create a new substitution by clicking the \emph{Add new substitution} button. This will add a new entry, with input fields for ECMAScript-conforming regular expression pattern and its corresponding replacement string. The outcome of substitutions can be quickly tested in the \emph{example source location} input field, which will be transformed and displayed below, as \emph{result}.
+The \emph{Source location substitutions} section allows adapting the source file paths, as captured by the profiler to the actual on-disk locations\footnote{This has no effect on source files cached during the profiling run.}. You can create a new substitution by clicking the \emph{Add new substitution} button. This will add a new entry, with input fields for ECMAScript-conforming regular expression pattern and its corresponding replacement string. The outcome of substitutions can be quickly tested in the \emph{example source location} input field, which will be transformed and displayed below, as \emph{result}.
 
 \begin{bclogo}[
 noborder=true,
@@ -2760,10 +2760,10 @@ noborder=true,
 couleur=black!5,
 logo=\bcbombe
 ]{Important}
-Source file view works on the local files you have on your disk. The traces themselves do not contain any source code! This has the following implications:
+Source file view depends on local files you have on your disk, as the profiled application doesn't need them to run. If the profiler can access the source files during capture, it will cache them for further reference. Otherwise, you will need to make them available, possibly by using file path substitutions. Keep the following rules in mind:
 
 \begin{itemize}
-\item Source files can only be viewed, if the source file location recorded in the trace matches the files you have on your disk. See section~\ref{traceinfo} for information on redirecting source file locations.
+\item Source files can only be used, if the source file location recorded in the trace matches the files you have on your disk. See section~\ref{traceinfo} for information on redirecting source file locations.
 \item Time stamp of the source file cannot be newer than the trace, as it typically would indicate that the file has been changed and no longer contains the code that was profiled.
 \item \textbf{The displayed source files might not reflect the code that was profiled!} It is up to you to verify that you don't have a modified version of the code, with regards to the trace.
 \end{itemize}

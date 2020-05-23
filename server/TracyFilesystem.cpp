@@ -14,4 +14,14 @@ bool SourceFileValid( const char* fn, uint64_t olderThan, const View& view )
     return false;
 }
 
+bool SourceFileValid( const char* fn, uint64_t olderThan )
+{
+    struct stat buf;
+    if( stat( fn, &buf ) == 0 && ( buf.st_mode & S_IFREG ) != 0 )
+    {
+        return (uint64_t)buf.st_mtime < olderThan;
+    }
+    return false;
+}
+
 }

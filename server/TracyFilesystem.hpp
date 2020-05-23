@@ -16,6 +16,7 @@ static inline bool FileExists( const char* fn )
 }
 
 bool SourceFileValid( const char* fn, uint64_t olderThan, const View& view );
+bool SourceFileValid( const char* fn, uint64_t olderThan );
 
 }
 

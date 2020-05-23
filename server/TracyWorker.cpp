@@ -3559,15 +3559,16 @@ void Worker::InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread,
     if( range.end < time ) range.end = time;
 }
 
-void Worker::CheckString( uint64_t ptr )
+bool Worker::CheckString( uint64_t ptr )
 {
-    if( ptr == 0 ) return;
-    if( m_data.strings.find( ptr ) != m_data.strings.end() ) return;
+    if( ptr == 0 ) return true;
+    if( m_data.strings.find( ptr ) != m_data.strings.end() ) return true;
 
     m_data.strings.emplace( ptr, "???" );
     m_pendingStrings++;
 
     Query( ServerQueryString, ptr );
+    return false;
 }
 
 void Worker::CheckThreadString( uint64_t id )

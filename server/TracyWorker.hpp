@@ -680,7 +680,7 @@ private:
 
     void InsertLockEvent( LockMap& lockmap, LockEvent* lev, uint64_t thread, int64_t time );
 
-    void CheckString( uint64_t ptr );
+    bool CheckString( uint64_t ptr );
     void CheckThreadString( uint64_t id );
     void CheckExternalName( uint64_t id );
 

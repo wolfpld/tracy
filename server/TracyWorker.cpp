@@ -5655,6 +5655,10 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
             Query( ServerQuerySymbol, ev.symAddr );
         }
 
+        StringRef ref( StringRef::Idx, fitidx );
+        auto cit = m_checkedFileStrings.find( ref );
+        if( cit == m_checkedFileStrings.end() ) CacheSource( ref );
+
         const auto frameId = PackPointer( m_callstackFrameStagingPtr );
 #ifndef TRACY_NO_STATISTICS
         auto it = m_data.pendingInstructionPointers.find( frameId );
@@ -5727,6 +5731,10 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
         m_data.symbolLocInline.push_back( ev.symAddr );
     }
 
+    StringRef ref( StringRef::Idx, fit->second.idx );
+    auto cit = m_checkedFileStrings.find( ref );
+    if( cit == m_checkedFileStrings.end() ) CacheSource( ref );
+
     m_pendingSymbols.erase( it );
     m_pendingCustomStrings.erase( fit );
 }
@@ -5756,6 +5764,10 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
             lit->second.push_back( ev.ptr );
             if( needSort ) pdqsort_branchless( lit->second.begin(), lit->second.end() );
         }
+
+        StringRef ref( StringRef::Idx, fit->second.idx );
+        auto cit = m_checkedFileStrings.find( ref );
+        if( cit == m_checkedFileStrings.end() ) CacheSource( ref );
     }
 
     m_pendingCustomStrings.erase( fit );

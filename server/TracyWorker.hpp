@@ -44,6 +44,7 @@ namespace EventType
         ContextSwitches = 1 << 5,
         Samples         = 1 << 6,
         SymbolCode      = 1 << 7,
+        SourceCache     = 1 << 8,
 
         None            = 0,
         All             = std::numeric_limits<uint32_t>::max()

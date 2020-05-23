@@ -1837,6 +1837,38 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 6, 13 ) )
+    {
+        f.Read( sz );
+        if( eventMask & EventType::SourceCache )
+        {
+            m_data.sourceFileCache.reserve( sz );
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint32_t len;
+                f.Read( len );
+                auto key = m_slab.Alloc<char>( len+1 );
+                f.Read( key, len );
+                key[len] = '\0';
+                f.Read( len );
+                auto data = (char*)m_slab.AllocBig( len );
+                f.Read( data, len );
+                m_data.sourceFileCache.emplace( key, MemoryBlock { data, len } );
+            }
+        }
+        else
+        {
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                uint32_t s32;
+                f.Read( s32 );
+                f.Skip( s32 );
+                f.Read( s32 );
+                f.Skip( s32 );
+            }
+        }
+    }
+
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
@@ -7194,6 +7226,17 @@ void Worker::Write( FileWrite& f )
             ref += diff;
             f.Write( &diff, sizeof( diff ) );
         }
+    }
+
+    sz = m_data.sourceFileCache.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& v : m_data.sourceFileCache )
+    {
+        uint32_t s32 = strlen( v.first );
+        f.Write( &s32, sizeof( s32 ) );
+        f.Write( v.first, s32 );
+        f.Write( &v.second.len, sizeof( v.second.len ) );
+        f.Write( v.second.data, v.second.len );
     }
 }
 

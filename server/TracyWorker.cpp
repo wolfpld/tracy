@@ -7324,4 +7324,14 @@ void Worker::CacheSource( const StringRef& str )
     }
 }
 
+uint64_t Worker::GetSourceFileCacheSize() const
+{
+    uint64_t cnt = 0;
+    for( auto& v : m_data.sourceFileCache )
+    {
+        cnt += v.second.len;
+    }
+    return cnt;
+}
+
 }

@@ -12562,6 +12562,13 @@ void View::DrawInfo()
             ImGui::TextUnformatted( "Coarse CPU core context switch data" );
             ImGui::EndTooltip();
         }
+        TextFocused( "Source file cache:", RealToString( m_worker.GetSourceFileCacheCount() ) );
+        if( ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( MemSizeToString( m_worker.GetSourceFileCacheSize() ) );
+            ImGui::EndTooltip();
+        }
         ImGui::TreePop();
     }
 

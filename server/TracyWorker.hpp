@@ -123,7 +123,7 @@ public:
         uint32_t core;
     };
 
-    struct SymbolCodeData
+    struct MemoryBlock
     {
         const char* data;
         uint32_t len;
@@ -299,7 +299,7 @@ private:
         unordered_flat_map<uint32_t, unordered_flat_map<uint32_t, std::vector<uint32_t>>> cpuTopology;
         unordered_flat_map<uint32_t, CpuThreadTopology> cpuTopologyMap;
 
-        unordered_flat_map<uint64_t, SymbolCodeData> symbolCode;
+        unordered_flat_map<uint64_t, MemoryBlock> symbolCode;
         uint64_t symbolCodeSize = 0;
 
         unordered_flat_map<uint64_t, uint64_t> codeAddressToLocation;

@@ -1783,7 +1783,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                 ssz += len;
                 auto ptr = (char*)m_slab.AllocBig( len );
                 f.Read( ptr, len );
-                m_data.symbolCode.emplace( symAddr, SymbolCodeData { ptr, len } );
+                m_data.symbolCode.emplace( symAddr, MemoryBlock { ptr, len } );
             }
             m_data.symbolCodeSize = ssz;
         }
@@ -3736,7 +3736,7 @@ void Worker::AddSymbolCode( uint64_t ptr, const char* data, size_t sz )
 
     auto code = (char*)m_slab.AllocBig( sz );
     memcpy( code, data, sz );
-    m_data.symbolCode.emplace( ptr, SymbolCodeData{ code, uint32_t( sz ) } );
+    m_data.symbolCode.emplace( ptr, MemoryBlock{ code, uint32_t( sz ) } );
     m_data.symbolCodeSize += sz;
 
     if( m_data.cpuArch == CpuArchUnknown ) return;

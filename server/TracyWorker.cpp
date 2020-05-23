@@ -7371,4 +7371,11 @@ uint64_t Worker::GetSourceFileCacheSize() const
     return cnt;
 }
 
+Worker::MemoryBlock Worker::GetSourceFileFromCache( const char* file ) const
+{
+    auto it = m_data.sourceFileCache.find( file );
+    if( it == m_data.sourceFileCache.end() ) return MemoryBlock {};
+    return it->second;
+}
+
 }

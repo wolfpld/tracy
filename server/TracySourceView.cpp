@@ -75,6 +75,7 @@ SourceView::SourceView( ImFont* font )
     , m_symAddr( 0 )
     , m_targetAddr( 0 )
     , m_data( nullptr )
+    , m_dataBuf( nullptr )
     , m_dataSize( 0 )
     , m_targetLine( 0 )
     , m_selectedLine( 0 )
@@ -294,7 +295,7 @@ SourceView::SourceView( ImFont* font )
 
 SourceView::~SourceView()
 {
-    delete[] m_data;
+    delete[] m_dataBuf;
 }
 
 static constexpr uint32_t PackCpuInfo( uint32_t cpuid )
@@ -385,7 +386,7 @@ void SourceView::SetCpuId( uint32_t cpuId )
     SelectMicroArchitecture( "ZEN2" );
 }
 
-void SourceView::OpenSource( const char* fileName, int line, const View& view )
+void SourceView::OpenSource( const char* fileName, int line, const View& view, const Worker& worker )
 {
     m_targetLine = line;
     m_selectedLine = line;
@@ -394,7 +395,7 @@ void SourceView::OpenSource( const char* fileName, int line, const View& view )
     m_symAddr = 0;
     m_sourceFiles.clear();
 
-    ParseSource( fileName, nullptr, view );
+    ParseSource( fileName, worker, view );
     assert( !m_lines.empty() );
 }
 
@@ -408,7 +409,7 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
     m_selectedAddresses.clear();
     m_selectedAddresses.emplace( symAddr );
 
-    ParseSource( fileName, &worker, view );
+    ParseSource( fileName, worker, view );
     Disassemble( baseAddr, worker );
     SelectLine( line, &worker, true, symAddr );
 
@@ -430,28 +431,40 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
     }
 }
 
-void SourceView::ParseSource( const char* fileName, const Worker* worker, const View& view )
+void SourceView::ParseSource( const char* fileName, const Worker& worker, const View& view )
 {
     if( m_file != fileName )
     {
         m_file = fileName;
-        m_fileStringIdx = worker ? worker->FindStringIdx( fileName ) : 0;
+        m_fileStringIdx = worker.FindStringIdx( fileName );
         m_lines.clear();
         if( fileName )
         {
-            FILE* f = fopen( view.SourceSubstitution( fileName ), "rb" );
-            fseek( f, 0, SEEK_END );
-            const auto sz = ftell( f );
-            fseek( f, 0, SEEK_SET );
-            if( sz > m_dataSize )
+            uint32_t sz;
+            const auto srcCache = worker.GetSourceFileFromCache( fileName );
+            if( srcCache.data != nullptr )
             {
-                delete[] m_data;
-                m_data = new char[sz+1];
-                m_dataSize = sz;
+                m_data = srcCache.data;
+                sz = srcCache.len;
             }
-            fread( m_data, 1, sz, f );
-            m_data[sz] = '\0';
-            fclose( f );
+            else
+            {
+                FILE* f = fopen( view.SourceSubstitution( fileName ), "rb" );
+                assert( f );
+                fseek( f, 0, SEEK_END );
+                sz = ftell( f );
+                fseek( f, 0, SEEK_SET );
+                if( sz > m_dataSize )
+                {
+                    delete[] m_dataBuf;
+                    m_dataBuf = new char[sz+1];
+                    m_dataSize = sz;
+                }
+                fread( m_dataBuf, 1, sz, f );
+                m_dataBuf[sz] = '\0';
+                m_data = m_dataBuf;
+                fclose( f );
+            }
 
             m_tokenizer.Reset();
             auto txt = m_data;
@@ -1132,7 +1145,7 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         {
             auto line = sym->line;
             auto file = line == 0 ? nullptr : worker.GetString( sym->file );
-            if( file && !SourceFileValid( file, worker.GetCaptureTime(), view ) )
+            if( file && !SourceFileValid( file, worker.GetCaptureTime(), view, worker ) )
             {
                 file = nullptr;
                 line = 0;
@@ -1211,12 +1224,12 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                     SmallColorBox( color );
                     ImGui::SameLine();
                     auto fstr = worker.GetString( StringIdx( v.first ) );
-                    if( SourceFileValid( fstr, worker.GetCaptureTime(), view ) )
+                    if( SourceFileValid( fstr, worker.GetCaptureTime(), view, worker ) )
                     {
                         ImGui::PushID( v.first );
                         if( ImGui::Selectable( fstr, fstr == m_file ) )
                         {
-                            ParseSource( fstr, &worker, view );
+                            ParseSource( fstr, worker, view );
                             m_targetLine = v.second;
                             SelectLine( v.second, &worker );
                         }
@@ -1296,7 +1309,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                     SmallColorBox( color );
                     ImGui::SameLine();
                     auto fstr = worker.GetString( StringIdx( v.first ) );
-                    if( SourceFileValid( fstr, worker.GetCaptureTime(), view ) )
+                    if( SourceFileValid( fstr, worker.GetCaptureTime(), view, worker ) )
                     {
                         ImGui::PushID( v.first );
                         if( ImGui::Selectable( fstr, fstr == m_file, ImGuiSelectableFlags_SpanAllColumns ) )
@@ -1310,7 +1323,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
                                     break;
                                 }
                             }
-                            ParseSource( fstr, &worker, view );
+                            ParseSource( fstr, worker, view );
                             m_targetLine = line;
                             SelectLine( line, &worker );
                         }
@@ -2413,9 +2426,9 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                         SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;
                     }
-                    else if( SourceFileValid( fileName, worker.GetCaptureTime(), view ) )
+                    else if( SourceFileValid( fileName, worker.GetCaptureTime(), view, worker ) )
                     {
-                        ParseSource( fileName, &worker, view );
+                        ParseSource( fileName, worker, view );
                         m_targetLine = srcline;
                         SelectLine( srcline, &worker, false );
                         m_displayMode = DisplayMixed;

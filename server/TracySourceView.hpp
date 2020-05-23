@@ -132,14 +132,14 @@ public:
 
     void SetCpuId( uint32_t cpuid );
 
-    void OpenSource( const char* fileName, int line, const View& view );
+    void OpenSource( const char* fileName, int line, const View& view, const Worker& worker );
     void OpenSymbol( const char* fileName, int line, uint64_t baseAddr, uint64_t symAddr, const Worker& worker, const View& view );
     void Render( const Worker& worker, View& view );
 
     void CalcInlineStats( bool val ) { m_calcInlineStats = val; }
 
 private:
-    void ParseSource( const char* fileName, const Worker* worker, const View& view );
+    void ParseSource( const char* fileName, const Worker& worker, const View& view );
     bool Disassemble( uint64_t symAddr, const Worker& worker );
 
     void RenderSimpleSourceView();
@@ -190,7 +190,8 @@ private:
     uint64_t m_symAddr;
     uint64_t m_baseAddr;
     uint64_t m_targetAddr;
-    char* m_data;
+    const char* m_data;
+    char* m_dataBuf;
     size_t m_dataSize;
     int m_targetLine;
     int m_selectedLine;

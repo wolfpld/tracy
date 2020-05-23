@@ -8,6 +8,7 @@ namespace tracy
 {
 
 class View;
+class Worker;
 
 static inline bool FileExists( const char* fn )
 {
@@ -15,7 +16,7 @@ static inline bool FileExists( const char* fn )
     return stat( fn, &buf ) == 0 && ( buf.st_mode & S_IFREG ) != 0;
 }
 
-bool SourceFileValid( const char* fn, uint64_t olderThan, const View& view );
+bool SourceFileValid( const char* fn, uint64_t olderThan, const View& view, const Worker& worker );
 bool SourceFileValid( const char* fn, uint64_t olderThan );
 
 }

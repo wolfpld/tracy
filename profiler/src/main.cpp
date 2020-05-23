@@ -131,40 +131,6 @@ static ImGuiTextFilter addrFilter, portFilter, progFilter;
 
 int main( int argc, char** argv )
 {
-    if( argc == 2 )
-    {
-        auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
-        if( f )
-        {
-            view = std::make_unique<tracy::View>( *f );
-        }
-    }
-    else
-    {
-        while( argc >= 3 )
-        {
-            if( strcmp( argv[1], "-a" ) == 0 )
-            {
-                connectTo = argv[2];
-            }
-            else if( strcmp( argv[1], "-p" ) == 0 )
-            {
-                port = atoi( argv[2] );
-            }
-            else
-            {
-                fprintf( stderr, "Bad parameter: %s", argv[1] );
-                exit( 1 );
-            }
-            argc -= 2;
-            argv += 2;
-        }
-    }
-    if( connectTo )
-    {
-        view = std::make_unique<tracy::View>( connectTo, port );
-    }
-
     sprintf( title, "Tracy Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
 
     std::string winPosFile = tracy::GetSavePath( "window.position" );
@@ -319,6 +285,40 @@ int main( int argc, char** argv )
     style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
     style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.45f);
     style.ScaleAllSizes( dpiScale );
+
+    if( argc == 2 )
+    {
+        auto f = std::unique_ptr<tracy::FileRead>( tracy::FileRead::Open( argv[1] ) );
+        if( f )
+        {
+            view = std::make_unique<tracy::View>( *f, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
+        }
+    }
+    else
+    {
+        while( argc >= 3 )
+        {
+            if( strcmp( argv[1], "-a" ) == 0 )
+            {
+                connectTo = argv[2];
+            }
+            else if( strcmp( argv[1], "-p" ) == 0 )
+            {
+                port = atoi( argv[2] );
+            }
+            else
+            {
+                fprintf( stderr, "Bad parameter: %s", argv[1] );
+                exit( 1 );
+            }
+            argc -= 2;
+            argv += 2;
+        }
+    }
+    if( connectTo )
+    {
+        view = std::make_unique<tracy::View>( connectTo, port, fixedWidth, smallFont, bigFont, SetWindowTitleCallback );
+    }
 
     glfwShowWindow( window );
 

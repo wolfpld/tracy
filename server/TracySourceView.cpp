@@ -864,11 +864,20 @@ void SourceView::Render( const Worker& worker, View& view )
     if( m_symAddr == 0 )
     {
         if( m_file ) TextFocused( ICON_FA_FILE " File:", m_file );
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        if( m_data == m_dataBuf )
+        {
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+            ImGui::SameLine();
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+        }
+        else
+        {
+            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
+            ImGui::SameLine();
+            ImGui::TextUnformatted( "Source file cached during profiling run" );
+        }
 
         RenderSimpleSourceView();
     }
@@ -1187,24 +1196,46 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
 {
     if( m_sourceFiles.empty() )
     {
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
-        ImGui::SameLine();
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-    }
-    else
-    {
-        TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-        if( ImGui::IsItemHovered() )
+        if( m_data == m_dataBuf )
         {
-            ImGui::BeginTooltip();
             TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
             ImGui::SameLine();
             TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
-            ImGui::EndTooltip();
+        }
+        else
+        {
+            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
+            ImGui::SameLine();
+            ImGui::TextUnformatted( "Source file cached during profiling run" );
+        }
+    }
+    else
+    {
+        if( m_data == m_dataBuf )
+        {
+            TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+                ImGui::SameLine();
+                TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+                ImGui::EndTooltip();
+            }
+        }
+        else
+        {
+            TextColoredUnformatted( ImVec4( 0.4f, 0.8f, 0.4f, 1.f ), ICON_FA_DATABASE );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Source file cached during profiling run" );
+                ImGui::EndTooltip();
+            }
         }
         ImGui::SameLine();
         TextDisabledUnformatted( ICON_FA_FILE " File:" );

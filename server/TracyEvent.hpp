@@ -44,6 +44,22 @@ struct StringRef
     };
 };
 
+struct StringRefHasher
+{
+    size_t operator()( const StringRef& key ) const
+    {
+        return charutil::hash( (const char*)&key, sizeof( StringRef ) );
+    }
+};
+
+struct StringRefComparator
+{
+    bool operator()( const StringRef& lhs, const StringRef& rhs ) const
+    {
+        return memcmp( &lhs, &rhs, sizeof( StringRef ) ) == 0;
+    }
+};
+
 class StringIdx
 {
 public:

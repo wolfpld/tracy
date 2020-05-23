@@ -3603,7 +3603,24 @@ void Worker::AddSourceLocation( const QueueSourceLocation& srcloc )
     auto it = m_data.sourceLocation.find( ptr );
     assert( it != m_data.sourceLocation.end() );
     CheckString( srcloc.name );
-    CheckString( srcloc.file );
+    if( CheckString( srcloc.file ) )
+    {
+        StringRef ref( StringRef::Ptr, srcloc.file );
+        assert( m_pendingFileStrings.find( ref ) == m_pendingFileStrings.end() );
+        if( srcloc.file != 0 && m_checkedFileStrings.find( ref ) == m_checkedFileStrings.end() )
+        {
+            CacheSource( ref );
+        }
+    }
+    else
+    {
+        StringRef ref( StringRef::Ptr, srcloc.file );
+        assert( m_checkedFileStrings.find( ref ) == m_checkedFileStrings.end() );
+        if( m_pendingFileStrings.find( ref ) == m_pendingFileStrings.end() )
+        {
+            m_pendingFileStrings.emplace( ref );
+        }
+    }
     CheckString( srcloc.function );
     const uint32_t color = ( srcloc.r << 16 ) | ( srcloc.g << 8 ) | srcloc.b;
     it->second = SourceLocation { srcloc.name == 0 ? StringRef() : StringRef( StringRef::Ptr, srcloc.name ), StringRef( StringRef::Ptr, srcloc.function ), StringRef( StringRef::Ptr, srcloc.file ), srcloc.line, color };
@@ -3672,6 +3689,14 @@ void Worker::AddString( uint64_t ptr, const char* str, size_t sz )
     assert( it != m_data.strings.end() && strcmp( it->second, "???" ) == 0 );
     const auto sl = StoreString( str, sz );
     it->second = sl.ptr;
+
+    StringRef ref( StringRef::Ptr, ptr );
+    auto sit = m_pendingFileStrings.find( ref );
+    if( sit != m_pendingFileStrings.end() )
+    {
+        m_pendingFileStrings.erase( sit );
+        CacheSource( ref );
+    }
 }
 
 void Worker::AddThreadString( uint64_t id, const char* str, size_t sz )

@@ -331,6 +331,7 @@ private:
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
     DecayValue<uint64_t> m_drawThreadHighlight = 0;
     Annotation* m_selectedAnnotation = nullptr;
+    bool m_reactToCrash = false;
 
     Region m_highlight;
     Region m_highlightZoom;

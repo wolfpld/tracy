@@ -126,6 +126,7 @@ View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, I
     , m_pause( false )
     , m_forceConnectionPopup( true, true )
     , m_frames( nullptr )
+    , m_reactToCrash( true )
     , m_messagesScrollBottom( true )
     , m_smallFont( smallFont )
     , m_bigFont( bigFont )
@@ -782,6 +783,58 @@ bool View::DrawImpl()
     m_statBuzzAnim.Update( io.DeltaTime );
 
     if( m_firstFrame ) m_firstFrame = false;
+
+    if( m_reactToCrash )
+    {
+        auto& crash = m_worker.GetCrashEvent();
+        if( crash.thread != 0 )
+        {
+            m_reactToCrash = false;
+            ImGui::OpenPopup( "Application crashed!" );
+        }
+    }
+    if( ImGui::BeginPopupModal( "Application crashed!", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+        auto& crash = m_worker.GetCrashEvent();
+        assert( crash.thread != 0 );
+        ImGui::TextUnformatted( ICON_FA_SKULL );
+        ImGui::SameLine();
+        TextColoredUnformatted( 0xFF4444FF, "Application has crashed" );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( ICON_FA_SKULL );
+        ImGui::Separator();
+        TextFocused( "Time:", TimeToString( crash.time ) );
+        TextFocused( "Thread:", m_worker.GetThreadName( crash.thread ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", RealToString( crash.thread ) );
+        TextFocused( "Reason:", m_worker.GetString( crash.message ) );
+        if( crash.callstack != 0 )
+        {
+            bool hilite = m_callstackInfoWindow == crash.callstack;
+            if( hilite )
+            {
+                SetButtonHighlightColor();
+            }
+            if( ImGui::Button( ICON_FA_ALIGN_JUSTIFY " Call stack" ) )
+            {
+                m_callstackInfoWindow = crash.callstack;
+            }
+            if( hilite )
+            {
+                ImGui::PopStyleColor( 3 );
+            }
+            if( ImGui::IsItemHovered() )
+            {
+                CallstackTooltip( crash.callstack );
+            }
+        }
+        ImGui::Separator();
+        if( ImGui::Button( ICON_FA_MICROSCOPE " Focus" ) ) CenterAtTime( crash.time );
+        ImGui::SameLine();
+        if( ImGui::Button( "Dismiss" ) ) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
+    }
+
     return keepOpen;
 }
 

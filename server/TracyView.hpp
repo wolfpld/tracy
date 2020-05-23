@@ -428,7 +428,7 @@ private:
     UserData m_userData;
 
     bool m_reconnectRequested = false;
-    bool m_firstFrame = true;
+    int m_firstFrame = 10;
 
     std::vector<SourceRegex> m_sourceSubstitutions;
     bool m_sourceRegexValid = true;

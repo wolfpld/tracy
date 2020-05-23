@@ -782,7 +782,7 @@ bool View::DrawImpl()
     m_lockInfoAnim.Update( io.DeltaTime );
     m_statBuzzAnim.Update( io.DeltaTime );
 
-    if( m_firstFrame ) m_firstFrame = false;
+    if( m_firstFrame > 0 ) m_firstFrame--;
 
     if( m_reactToCrash )
     {
@@ -2231,7 +2231,7 @@ void View::AdjustThreadHeight( View::VisData& vis, int oldOffset, int& offset )
     }
     else if( vis.height < h )
     {
-        if( m_firstFrame )
+        if( m_firstFrame > 0 )
         {
             vis.height = h;
             offset = oldOffset + h;

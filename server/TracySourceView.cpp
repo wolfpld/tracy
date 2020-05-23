@@ -457,11 +457,10 @@ void SourceView::ParseSource( const char* fileName, const Worker& worker, const 
                 if( sz > m_dataSize )
                 {
                     delete[] m_dataBuf;
-                    m_dataBuf = new char[sz+1];
+                    m_dataBuf = new char[sz];
                     m_dataSize = sz;
                 }
                 fread( m_dataBuf, 1, sz, f );
-                m_dataBuf[sz] = '\0';
                 m_data = m_dataBuf;
                 fclose( f );
             }
@@ -483,7 +482,7 @@ void SourceView::ParseSource( const char* fileName, const Worker& worker, const 
                     end++;
                     if( *end == '\n' ) end++;
                 }
-                if( *end == '\0' ) break;
+                if( end - m_data == sz ) break;
                 txt = end;
             }
         }

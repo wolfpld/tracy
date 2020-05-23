@@ -7404,11 +7404,10 @@ void Worker::CacheSource( const StringRef& str )
             fseek( f, 0, SEEK_END );
             const auto sz = ftell( f );
             fseek( f, 0, SEEK_SET );
-            auto src = (char*)m_slab.AllocBig( sz+1 );
+            auto src = (char*)m_slab.AllocBig( sz );
             fread( src, 1, sz, f );
-            src[sz] = '\0';
             fclose( f );
-            m_data.sourceFileCache.emplace( file, MemoryBlock{ src, uint32_t( sz+1 ) } );
+            m_data.sourceFileCache.emplace( file, MemoryBlock{ src, uint32_t( sz ) } );
         }
     }
 }

@@ -3606,8 +3606,7 @@ void Worker::AddSourceLocation( const QueueSourceLocation& srcloc )
     if( CheckString( srcloc.file ) )
     {
         StringRef ref( StringRef::Ptr, srcloc.file );
-        assert( m_pendingFileStrings.find( ref ) == m_pendingFileStrings.end() );
-        if( srcloc.file != 0 && m_checkedFileStrings.find( ref ) == m_checkedFileStrings.end() )
+        if( srcloc.file != 0 && m_checkedFileStrings.find( ref ) == m_checkedFileStrings.end() && m_pendingFileStrings.find( ref ) == m_pendingFileStrings.end() )
         {
             CacheSource( ref );
         }

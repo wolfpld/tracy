@@ -16,13 +16,13 @@
 #  define __STDC_FORMAT_MACROS
 #endif
 #include <inttypes.h>
+#include <sys/stat.h>
 
 #include <capstone/capstone.h>
 
 #include "../common/TracyProtocol.hpp"
 #include "../common/TracySystem.hpp"
 #include "TracyFileRead.hpp"
-#include "TracyFilesystem.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracySort.hpp"
 #include "TracyTaskDispatch.hpp"
@@ -42,6 +42,16 @@ static tracy_force_inline uint32_t UnpackFileLine( uint64_t packed, uint32_t& li
 {
     line = packed & 0xFFFFFFFF;
     return packed >> 32;
+}
+
+static bool SourceFileValid( const char* fn, uint64_t olderThan )
+{
+    struct stat buf;
+    if( stat( fn, &buf ) == 0 && ( buf.st_mode & S_IFREG ) != 0 )
+    {
+        return (uint64_t)buf.st_mtime < olderThan;
+    }
+    return false;
 }
 
 

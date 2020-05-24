@@ -930,7 +930,7 @@ $2560\times1440$ & 23~FPS & 3300~FPS & 1600~FPS
 
 To record a zone's\footnote{A \texttt{zone} represents the life-time of a special on-stack profiler variable. Typically it would exist for the duration of a whole scope of the profiled function, but you also can measure time spent in scopes of a for-loop, or an if-branch.} execution time add the \texttt{ZoneScoped} macro at the beginning of the scope you want to measure. This will automatically record function name, source file name and location. Optionally you may use the \texttt{ZoneScopedC(color)} macro to set a custom color for the zone. Note that the color value will be constant in the recording (don't try to parametrize it). You may also set a custom name for the zone, using the \texttt{ZoneScopedN(name)} macro. Color and name may be combined by using the \texttt{ZoneScopedNC(name, color)} macro.
 
-Use the \texttt{ZoneText(text, size)} macro to add a custom text string that will be displayed along the zone information (for example, name of the file you are opening). Multiple text strings can be attached to any single zone.
+Use the \texttt{ZoneText(text, size)} macro to add a custom text string that will be displayed along the zone information (for example, name of the file you are opening). Multiple text strings can be attached to any single zone. If you want to send a numeric value and don't want to pay the cost of converting it to a string, you may use the \texttt{ZoneValue(uint64\_t)} macro.
 
 If you want to set zone name on a per-call basis, you may do so using the \texttt{ZoneName(text, size)} macro. This name won't be used in the process of grouping the zones for statistical purposes (sections~\ref{statistics} and~\ref{findzone}).
 
@@ -939,7 +939,7 @@ If you want to set zone name on a per-call basis, you may do so using the \textt
 
 Using the \texttt{ZoneScoped} family of macros creates a stack variable named \texttt{\_\_\_tracy\_scoped\_zone}. If you want to measure more than one zone in the same scope, you will need to use the \texttt{ZoneNamed} macros, which require that you provide a name for the created variable. For example, instead of \texttt{ZoneScopedN("Zone name")}, you would use \texttt{ZoneNamedN(variableName, "Zone name", true)}\footnote{The last parameter is explained in section~\ref{filteringzones}.}.
 
-The \texttt{ZoneText} and \texttt{ZoneName} macros work only for the zones created using the \texttt{ZoneScoped} macros. For the \texttt{ZoneNamed} macros, you will need to invoke the methods \texttt{Text} or \texttt{Name} of the variable you have created.
+The \texttt{ZoneText}, \texttt{ZoneValue} and \texttt{ZoneName} macros work only for the zones created using the \texttt{ZoneScoped} macros. For the \texttt{ZoneNamed} macros, you will need to invoke the methods \texttt{Text}, \texttt{Value} or \texttt{Name} of the variable you have created.
 
 \begin{bclogo}[
 noborder=true,
@@ -1391,7 +1391,7 @@ Refer to sections~\ref{markingzones} and~\ref{multizone} for description of macr
 
 Unlike C++, there's no automatic destruction mechanism in C, so you will need to manually mark where the zone ends. To do so use the \texttt{TracyCZoneEnd(ctx)} macro.
 
-Zone text and name may be set by using the \texttt{TracyCZoneText(ctx, txt, size)} and \texttt{TracyCZoneName(ctx, txt, size)} macros. Make sure you are following the zone stack rules, as described in section~\ref{multizone}!
+Zone text and name may be set by using the \texttt{TracyCZoneText(ctx, txt, size)}, \texttt{TracyCZoneValue(ctx, value)} and \texttt{TracyCZoneName(ctx, txt, size)} macros. Make sure you are following the zone stack rules, as described in section~\ref{multizone}!
 
 \paragraph{Zone context data structure}
 \label{zonectx}

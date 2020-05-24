@@ -2122,6 +2122,7 @@ Worker::~Worker()
     LZ4_freeStreamDecode( (LZ4_streamDecode_t*)m_stream );
 
     delete[] m_frameImageBuffer;
+    delete[] m_tmpBuf;
 
     for( auto& v : m_data.threads )
     {
@@ -4733,11 +4734,18 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
         const auto str1 = it->second.ptr;
         const auto len0 = strlen( str0 );
         const auto len1 = strlen( str1 );
-        char* buf = (char*)alloca( len0+len1+1 );
+        const auto bsz = len0+len1+1;
+        if( m_tmpBufSize < bsz )
+        {
+            delete[] m_tmpBuf;
+            m_tmpBuf = new char[bsz];
+            m_tmpBufSize = bsz;
+        }
+        char* buf = m_tmpBuf;
         memcpy( buf, str0, len0 );
         buf[len0] = '\n';
         memcpy( buf+len0+1, str1, len1 );
-        extra.text = StringIdx( StoreString( buf, len0+len1+1 ).idx );
+        extra.text = StringIdx( StoreString( buf, bsz ).idx );
     }
     m_pendingCustomStrings.erase( it );
 }
@@ -4785,11 +4793,18 @@ void Worker::ProcessZoneValue( const QueueZoneValue& ev )
     {
         const auto str0 = GetString( extra.text );
         const auto len0 = strlen( str0 );
-        char* buf = (char*)alloca( len0+tsz+1 );
+        const auto bsz = len0+tsz+1;
+        if( m_tmpBufSize < bsz )
+        {
+            delete[] m_tmpBuf;
+            m_tmpBuf = new char[bsz];
+            m_tmpBufSize = bsz;
+        }
+        char* buf = m_tmpBuf;
         memcpy( buf, str0, len0 );
         buf[len0] = '\n';
         memcpy( buf+len0+1, tmp, tsz );
-        extra.text = StringIdx( StoreString( buf, len0+tsz+1 ).idx );
+        extra.text = StringIdx( StoreString( buf, bsz ).idx );
     }
 }
 

@@ -884,6 +884,9 @@ private:
 #endif
 
     Vector<Parameter> m_params;
+
+    char* m_tmpBuf = nullptr;
+    size_t m_tmpBufSize = 0;
 };
 
 }

@@ -58,6 +58,7 @@ v0.7 (xxxx-xx-xx)
 - Added possibility to filter discovered clients list.
 - Source files are now cached during capture.
 - Profiler will now display a popup when application crashes.
+- Added ability to send simple integral values as extra payload for zones.
 
 v0.6.3 (2020-02-13)
 -------------------

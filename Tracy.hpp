@@ -18,6 +18,7 @@
 
 #define ZoneText(x,y)
 #define ZoneName(x,y)
+#define ZoneValue(x)
 
 #define FrameMark
 #define FrameMarkNamed(x)
@@ -93,6 +94,7 @@
 
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size );
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
+#define ZoneValue( value ) ___tracy_scoped_zone.Value( value );
 
 #define FrameMark tracy::Profiler::SendFrameMark( nullptr );
 #define FrameMarkNamed( name ) tracy::Profiler::SendFrameMark( name );

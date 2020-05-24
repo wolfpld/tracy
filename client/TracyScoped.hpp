@@ -90,6 +90,17 @@ public:
         TracyLfqCommit;
     }
 
+    tracy_force_inline void Value( uint64_t value )
+    {
+        if( !m_active ) return;
+#ifdef TRACY_ON_DEMAND
+        if( GetProfiler().ConnectionId() != m_connectionId ) return;
+#endif
+        TracyLfqPrepare( QueueType::ZoneValue );
+        MemWrite( &item->zoneValue.value, value );
+        TracyLfqCommit;
+    }
+
 private:
     const bool m_active;
 

@@ -576,6 +576,7 @@ private:
     tracy_force_inline void ProcessFrameImage( const QueueFrameImageLean& ev );
     tracy_force_inline void ProcessZoneText( const QueueZoneText& ev );
     tracy_force_inline void ProcessZoneName( const QueueZoneText& ev );
+    tracy_force_inline void ProcessZoneValue( const QueueZoneValue& ev );
     tracy_force_inline void ProcessLockAnnounce( const QueueLockAnnounce& ev );
     tracy_force_inline void ProcessLockTerminate( const QueueLockTerminate& ev );
     tracy_force_inline void ProcessLockWait( const QueueLockWait& ev );

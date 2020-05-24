@@ -3033,6 +3033,23 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
     }
 }
 
+TRACY_API void ___tracy_emit_zone_value( TracyCZoneCtx ctx, uint64_t value )
+{
+    if( !ctx.active ) return;
+#ifndef TRACY_NO_VERIFY
+    {
+        TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
+        tracy::MemWrite( &item->zoneValidation.id, ctx.id );
+        TracyLfqCommitC;
+    }
+#endif
+    {
+        TracyLfqPrepareC( tracy::QueueType::ZoneValue );
+        tracy::MemWrite( &item->zoneValue.value, value );
+        TracyLfqCommitC;
+    }
+}
+
 TRACY_API void ___tracy_emit_memory_alloc( const void* ptr, size_t size ) { tracy::Profiler::MemAlloc( ptr, size ); }
 TRACY_API void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth ) { tracy::Profiler::MemAllocCallstack( ptr, size, depth ); }
 TRACY_API void ___tracy_emit_memory_free( const void* ptr ) { tracy::Profiler::MemFree( ptr ); }

@@ -4156,6 +4156,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ZoneName:
         ProcessZoneName( ev.zoneText );
         break;
+    case QueueType::ZoneValue:
+        ProcessZoneValue( ev.zoneValue );
+        break;
     case QueueType::LockAnnounce:
         ProcessLockAnnounce( ev.lockAnnounce );
         break;
@@ -4756,6 +4759,38 @@ void Worker::ProcessZoneName( const QueueZoneText& ev )
     auto& extra = RequestZoneExtra( *zone );
     extra.name = StringIdx( it->second.idx );
     m_pendingCustomStrings.erase( it );
+}
+
+void Worker::ProcessZoneValue( const QueueZoneValue& ev )
+{
+    char tmp[32];
+    const auto tsz = sprintf( tmp, "%" PRIu64, ev.value );
+
+    auto td = RetrieveThread( m_threadCtx );
+    if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
+    {
+        ZoneTextFailure( m_threadCtx );
+        return;
+    }
+
+    td->nextZoneId = 0;
+    auto& stack = td->stack;
+    auto zone = stack.back();
+    auto& extra = RequestZoneExtra( *zone );
+    if( !extra.text.Active() )
+    {
+        extra.text = StringIdx( StoreString( tmp, tsz ).idx );
+    }
+    else
+    {
+        const auto str0 = GetString( extra.text );
+        const auto len0 = strlen( str0 );
+        char* buf = (char*)alloca( len0+tsz+1 );
+        memcpy( buf, str0, len0 );
+        buf[len0] = '\n';
+        memcpy( buf+len0+1, tmp, tsz );
+        extra.text = StringIdx( StoreString( buf, len0+tsz+1 ).idx );
+    }
 }
 
 void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )

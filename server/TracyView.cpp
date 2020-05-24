@@ -16270,6 +16270,45 @@ int64_t View::GetZoneChildTimeFast( const ZoneEvent& zone )
     return time;
 }
 
+int64_t View::GetZoneChildTimeFastClamped( const ZoneEvent& zone, uint64_t t0, uint64_t t1 )
+{
+    int64_t time = 0;
+    if( zone.HasChildren() )
+    {
+        auto& children = m_worker.GetZoneChildren( zone.Child() );
+        if( children.is_magic() )
+        {
+            auto& vec = *(Vector<ZoneEvent>*)&children;
+            auto it = std::lower_bound( vec.begin(), vec.end(), t0, [] ( const auto& l, const auto& r ) { return (uint64_t)l.End() < (uint64_t)r; } );
+            if( it == vec.end() ) return 0;
+            const auto zitend = std::lower_bound( it, vec.end(), t1, [] ( const auto& l, const auto& r ) { return l.Start() < r; } );
+            if( it == zitend ) return 0;
+            while( it < zitend )
+            {
+                const auto c0 = std::max<uint64_t>( it->Start(), t0 );
+                const auto c1 = std::min<uint64_t>( it->End(), t1 );
+                time += c1 - c0;
+                ++it;
+            }
+        }
+        else
+        {
+            auto it = std::lower_bound( children.begin(), children.end(), t0, [] ( const auto& l, const auto& r ) { return (uint64_t)l->End() < (uint64_t)r; } );
+            if( it == children.end() ) return 0;
+            const auto zitend = std::lower_bound( it, children.end(), t1, [] ( const auto& l, const auto& r ) { return l->Start() < r; } );
+            if( it == zitend ) return 0;
+            while( it < zitend )
+            {
+                const auto c0 = std::max<uint64_t>( (*it)->Start(), t0 );
+                const auto c1 = std::min<uint64_t>( (*it)->End(), t1 );
+                time += c1 - c0;
+                ++it;
+            }
+        }
+    }
+    return time;
+}
+
 int64_t View::GetZoneSelfTime( const ZoneEvent& zone )
 {
     if( m_cache.zoneSelfTime.first == &zone ) return m_cache.zoneSelfTime.second;

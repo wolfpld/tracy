@@ -482,7 +482,7 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
     const int64_t solid0 = 1 - _mm_testc_si128( _mm256_castsi256_si128( sm ), _mm_set1_epi32( -1 ) );
     const int64_t solid1 = 1 - _mm_testc_si128( _mm256_extracti128_si256( sm, 1 ), _mm_set1_epi32( -1 ) );
 
-    if( !solid0 && !solid1 )
+    if( solid0 + solid1 == 0 )
     {
         const auto c0 = uint64_t( to565( src[0], src[1], src[2] ) ) << 16;
         const auto c1 = uint64_t( to565( src[16], src[17], src[18] ) ) << 16;

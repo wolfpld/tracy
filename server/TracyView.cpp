@@ -11995,7 +11995,7 @@ void View::DrawStatistics()
                                     break;
                                 }
 
-                                const auto sn = iv.symAddr == v.symAddr ? "[self time]" : name;
+                                const auto sn = iv.symAddr == v.symAddr ? "[ - self - ]" : name;
                                 if( iv.excl == 0 )
                                 {
                                     ImGui::TextUnformatted( sn );

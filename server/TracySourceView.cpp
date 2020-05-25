@@ -962,7 +962,8 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         ImGui::SameLine();
         ImGui::SetNextItemWidth( -1 );
         ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        if( ImGui::BeginCombo( "##functionList", worker.GetString( sym->name ), ImGuiComboFlags_HeightLarge ) )
+        const auto currSymName = m_symAddr == m_baseAddr ? "[ - self - ]" : worker.GetString( sym->name );
+        if( ImGui::BeginCombo( "##functionList", currSymName, ImGuiComboFlags_HeightLarge ) )
         {
             uint32_t totalSamples = 0;
             const auto& symStat = worker.GetSymbolStats();
@@ -1046,7 +1047,8 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
                 auto isym = worker.GetSymbolData( v.first );
                 assert( isym );
                 ImGui::PushID( v.first );
-                if( ImGui::Selectable( worker.GetString( isym->name ), v.first == m_symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
+                const auto symName = v.first == m_baseAddr ? "[ - self - ]" : worker.GetString( isym->name );
+                if( ImGui::Selectable( symName, v.first == m_symAddr, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
                     m_symAddr = v.first;
                 }

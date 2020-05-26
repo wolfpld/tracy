@@ -1572,7 +1572,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             TextFocused( "Disassembled bytes:", RealToString( m_disasmFail ) );
             char tmp[64];
             auto bytesLeft = std::min( 16u, m_codeLen - m_disasmFail );
-            auto code = worker.GetSymbolCode( m_symAddr, m_codeLen );
+            auto code = worker.GetSymbolCode( m_baseAddr, m_codeLen );
             assert( code );
             PrintHexBytes( tmp, (const uint8_t*)code, bytesLeft );
             TextFocused( "Failure bytes:", tmp );

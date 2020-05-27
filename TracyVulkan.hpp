@@ -105,6 +105,8 @@ public:
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, uint8_t( 0 ) );
+        MemWrite( &item->gpuNewContext.type, GpuContextType::Vulkan );
+
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );
 #endif

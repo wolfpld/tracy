@@ -258,6 +258,14 @@ struct QueueMessageColor : public QueueMessage
     uint8_t b;
 };
 
+// Don't change order, only add new entries at the end, this is also used on trace dumps!
+enum class GpuContextType : uint8_t
+{
+    Invalid,
+    OpenGl,
+    Vulkan
+};
+
 struct QueueGpuNewContext
 {
     int64_t cpuTime;
@@ -266,6 +274,7 @@ struct QueueGpuNewContext
     float period;
     uint8_t context;
     uint8_t accuracyBits;
+    GpuContextType type;
 };
 
 struct QueueGpuZoneBegin

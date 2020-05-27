@@ -54,7 +54,7 @@ namespace tracy
 
 static double s_time = 0;
 
-static const char* s_tracyStackFrames[] = {
+constexpr const char* s_tracyStackFrames[] = {
     "tracy::Callstack",
     "tracy::Callstack(int)",
     "tracy::GpuCtxScope::{ctor}",
@@ -70,6 +70,12 @@ static const char* s_tracyStackFrames[] = {
     "tracy::CallTrace",
     "tracy::Profiler::Message",
     nullptr
+};
+
+constexpr const char* GpuContextNames[] = {
+    "Invalid",
+    "OpenGL",
+    "Vulkan"
 };
 
 
@@ -2464,16 +2470,10 @@ void View::DrawZones()
                 {
                     draw->AddTriangle( wpos + ImVec2( to/2, oldOffset + to/2 ), wpos + ImVec2( to/2, oldOffset + ty - to/2 ), wpos + ImVec2( to/2 + th, oldOffset + ty * 0.5 ), 0xFF886666, 2.0f );
                 }
-                const bool isVulkan = v->thread == 0;
+
+                const bool isMultithreaded = v->type == GpuContextType::Vulkan;
                 char buf[64];
-                if( isVulkan )
-                {
-                    sprintf( buf, "Vulkan context %zu", i );
-                }
-                else
-                {
-                    sprintf( buf, "OpenGL context %zu", i );
-                }
+                sprintf( buf, "%s context %zu", GpuContextNames[(int)v->type], i );
                 DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
 
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, oldOffset + ty ) ) )
@@ -2513,7 +2513,7 @@ void View::DrawZones()
                     ImGui::BeginTooltip();
                     ImGui::TextUnformatted( buf );
                     ImGui::Separator();
-                    if( !isVulkan )
+                    if( !isMultithreaded )
                     {
                         SmallColorBox( GetThreadColor( v->thread, 0 ) );
                         ImGui::SameLine();
@@ -2590,7 +2590,7 @@ void View::DrawZones()
                     }
                     TextFocused( "Zone count:", RealToString( v->count ) );
                     //TextFocused( "Top-level zones:", RealToString( v->timeline.size() ) );
-                    if( isVulkan )
+                    if( isMultithreaded )
                     {
                         TextFocused( "Timestamp accuracy:", TimeToString( v->period ) );
                     }
@@ -7878,16 +7878,8 @@ void View::DrawOptions()
             for( size_t i=0; i<gpuData.size(); i++ )
             {
                 const auto& timeline = gpuData[i]->threadData.begin()->second.timeline;
-                const bool isVulkan = gpuData[i]->thread == 0;
                 char buf[1024];
-                if( isVulkan )
-                {
-                    sprintf( buf, "Vulkan context %zu", i );
-                }
-                else
-                {
-                    sprintf( buf, "OpenGL context %zu", i );
-                }
+                sprintf( buf, "%s context %zu", GpuContextNames[(int)gpuData[i]->type], i );
                 SmallCheckbox( buf, &Vis( gpuData[i] ).visible );
                 ImGui::SameLine();
                 if( gpuData[i]->threadData.size() == 1 )

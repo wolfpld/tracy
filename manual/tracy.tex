@@ -939,7 +939,7 @@ If you want to set zone name on a per-call basis, you may do so using the \textt
 
 Using the \texttt{ZoneScoped} family of macros creates a stack variable named \texttt{\_\_\_tracy\_scoped\_zone}. If you want to measure more than one zone in the same scope, you will need to use the \texttt{ZoneNamed} macros, which require that you provide a name for the created variable. For example, instead of \texttt{ZoneScopedN("Zone name")}, you would use \texttt{ZoneNamedN(variableName, "Zone name", true)}\footnote{The last parameter is explained in section~\ref{filteringzones}.}.
 
-The \texttt{ZoneText}, \texttt{ZoneValue} and \texttt{ZoneName} macros work only for the zones created using the \texttt{ZoneScoped} macros. For the \texttt{ZoneNamed} macros, you will need to invoke the methods \texttt{Text}, \texttt{Value} or \texttt{Name} of the variable you have created.
+The \texttt{ZoneText}, \texttt{ZoneValue} and \texttt{ZoneName} macros apply to the zones created using the \texttt{ZoneScoped} macros. For zones created using the \texttt{ZoneNamed} macros, you can use the \texttt{ZoneTextV(variableName, text, size)}, \texttt{ZoneValueV(variableName, uint64\_t)}, or \texttt{ZoneNameV(variableName, text, size)} macros, or invoke the methods \texttt{Text}, \texttt{Value} or \texttt{Name} directly on the variable you have created.
 
 \begin{bclogo}[
 noborder=true,

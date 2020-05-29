@@ -60,6 +60,7 @@ v0.7 (xxxx-xx-xx)
 - Profiler will now display a popup when application crashes.
 - Added ability to send simple integral values as extra payload for zones.
 - Per-frame zone times on the frames plot can now display self time.
+- Ability to bind only on localhost interface.
 
 v0.6.3 (2020-02-13)
 -------------------

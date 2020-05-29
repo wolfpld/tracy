@@ -393,7 +393,9 @@ bool ListenSocket::Listen( int port, int backlog )
     memset( &hints, 0, sizeof( hints ) );
     hints.ai_family = AF_INET6;
     hints.ai_socktype = SOCK_STREAM;
+#ifndef TRACY_ONLY_LOCALHOST
     hints.ai_flags = AI_PASSIVE;
+#endif
 
     char portbuf[32];
     sprintf( portbuf, "%i", port );

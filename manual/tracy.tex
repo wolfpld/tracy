@@ -608,6 +608,8 @@ Due to the memory requirements for data storage, Tracy server is only supposed t
 
 To build the application contained in the \texttt{profiler} directory, you will need to install external libraries, which are not bundled with Tracy.
 
+\subparagraph{Capstone library} At the time of writing, the capstone library is in a bit of disarray. The officially released version 4.0.2 can't disassemble some AVX instructions, which are successfully parsed by the \texttt{next} branch. However, the \texttt{next} branch somehow lost information about input/output registers for some functions. You may want to explore the various available versions to find one that suits your needs the best.
+
 \paragraph{Windows}
 
 On Windows you will need to use the \texttt{vcpkg} utility. If you are not familiar with this tool, please read the description at the following address: \url{https://docs.microsoft.com/en-us/cpp/build/vcpkg}.

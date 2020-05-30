@@ -2789,6 +2789,9 @@ elf_add (struct backtrace_state *state, const char *filename, int descriptor,
       backtrace_release_view (state, &shdr_view, error_callback, data);
     }
 
+  if (shnum == 0 || shstrndx == 0)
+    goto fail;
+
   /* To translate PC to file/line when using DWARF, we need to find
      the .debug_info and .debug_line sections.  */
 

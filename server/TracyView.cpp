@@ -11538,6 +11538,8 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_SITEMAP " Inlines", &m_statSeparateInlines );
         ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
+        ImGui::SameLine();
         ImGui::TextUnformatted( "Location:" );
         ImGui::SameLine();
         const char* locationTable = "Entry\0Sample\0Smart";
@@ -11847,7 +11849,11 @@ void View::DrawStatistics()
                         indentVal = sin( time * 60.f ) * 10.f * time;
                         ImGui::Indent( indentVal );
                     }
-                    if( line > 0 )
+                    if( m_statShowAddress )
+                    {
+                        ImGui::TextDisabled( "0x%" PRIx64, v.symAddr );
+                    }
+                    else if( line > 0 )
                     {
                         ImGui::TextDisabled( "%s:%i", file, line );
                     }
@@ -12008,7 +12014,11 @@ void View::DrawStatistics()
                                     indentVal = sin( time * 60.f ) * 10.f * time;
                                     ImGui::Indent( indentVal );
                                 }
-                                if( line > 0 )
+                                if( m_statShowAddress )
+                                {
+                                    ImGui::TextDisabled( "0x%" PRIx64, iv.symAddr );
+                                }
+                                else if( line > 0 )
                                 {
                                     ImGui::TextDisabled( "%s:%i", file, line );
                                 }

@@ -3874,7 +3874,7 @@ report_inlined_functions (uintptr_t pc, struct function *function,
     return ret;
 
   /* Report this inlined call.  */
-  ret = callback (data, pc, *filename, *lineno, inlined->name);
+  ret = callback (data, pc, function_addrs->low, *filename, *lineno, inlined->name);
   if (ret != 0)
     return ret;
 
@@ -4026,7 +4026,7 @@ dwarf_lookup_pc (struct backtrace_state *state, struct dwarf_data *ddata,
       if (new_data)
 	return dwarf_lookup_pc (state, ddata, pc, callback, error_callback,
 				data, found);
-      return callback (data, pc, NULL, 0, NULL);
+      return callback (data, pc, 0, NULL, 0, NULL);
     }
 
   /* Search for PC within this unit.  */
@@ -4073,13 +4073,13 @@ dwarf_lookup_pc (struct backtrace_state *state, struct dwarf_data *ddata,
 	  entry->u->abs_filename = filename;
 	}
 
-      return callback (data, pc, entry->u->abs_filename, 0, NULL);
+      return callback (data, pc, 0, entry->u->abs_filename, 0, NULL);
     }
 
   /* Search for function name within this unit.  */
 
   if (entry->u->function_addrs_count == 0)
-    return callback (data, pc, ln->filename, ln->lineno, NULL);
+    return callback (data, pc, 0, ln->filename, ln->lineno, NULL);
 
   function_addrs = ((struct function_addrs *)
 		    bsearch (&pc, entry->u->function_addrs,
@@ -4087,7 +4087,7 @@ dwarf_lookup_pc (struct backtrace_state *state, struct dwarf_data *ddata,
 			     sizeof (struct function_addrs),
 			     function_addrs_search));
   if (function_addrs == NULL)
-    return callback (data, pc, ln->filename, ln->lineno, NULL);
+    return callback (data, pc, 0, ln->filename, ln->lineno, NULL);
 
   /* If there are multiple function ranges that contain PC, use the
      last one, in order to produce predictable results.  */
@@ -4108,7 +4108,7 @@ dwarf_lookup_pc (struct backtrace_state *state, struct dwarf_data *ddata,
   if (ret != 0)
     return ret;
 
-  return callback (data, pc, filename, lineno, function->name);
+  return callback (data, pc, function_addrs->low, filename, lineno, function->name);
 }
 
 
@@ -4158,7 +4158,7 @@ dwarf_fileline (struct backtrace_state *state, uintptr_t pc,
 
   /* FIXME: See if any libraries have been dlopen'ed.  */
 
-  return callback (data, pc, NULL, 0, NULL);
+  return callback (data, pc, 0, NULL, 0, NULL);
 }
 
 /* Initialize our data structures from the DWARF debug info for a

@@ -95,7 +95,7 @@ extern struct backtrace_state *backtrace_create_state (
    continuing tracing.  The FILENAME and FUNCTION buffers may become
    invalid after this function returns.  */
 
-typedef int (*backtrace_full_callback) (void *data, uintptr_t pc,
+typedef int (*backtrace_full_callback) (void *data, uintptr_t pc, uintptr_t lowaddr,
 					const char *filename, int lineno,
 					const char *function);
 

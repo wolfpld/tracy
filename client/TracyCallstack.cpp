@@ -401,7 +401,7 @@ void InitCallstack()
     cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
 }
 
-static int FastCallstackDataCb( void* data, uintptr_t pc, const char* fn, int lineno, const char* function )
+static int FastCallstackDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
 {
     if( function )
     {
@@ -440,7 +440,7 @@ const char* DecodeCallstackPtrFast( uint64_t ptr )
     return ret;
 }
 
-static int SymbolAddressDataCb( void* data, uintptr_t pc, const char* fn, int lineno, const char* function )
+static int SymbolAddressDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
 {
     auto& sym = *(SymbolData*)data;
     if( !fn )
@@ -480,13 +480,13 @@ SymbolData DecodeCodeAddress( uint64_t ptr )
     return DecodeSymbolAddress( ptr );
 }
 
-static int CallstackDataCb( void* /*data*/, uintptr_t pc, const char* fn, int lineno, const char* function )
+static int CallstackDataCb( void* /*data*/, uintptr_t pc, uintptr_t lowaddr, const char* fn, int lineno, const char* function )
 {
     enum { DemangleBufLen = 64*1024 };
     char demangled[DemangleBufLen];
 
     cb_data[cb_num].symLen = 0;
-    cb_data[cb_num].symAddr = (uint64_t)pc;
+    cb_data[cb_num].symAddr = (uint64_t)lowaddr;
 
     if( !fn && !function )
     {
@@ -597,14 +597,14 @@ static void CallstackErrorCb( void* /*data*/, const char* /*msg*/, int /*errnum*
 
 void SymInfoCallback( void* /*data*/, uintptr_t pc, const char* symname, uintptr_t symval, uintptr_t symsize )
 {
-    cb_data[cb_fixup].symLen = (uint32_t)symsize;
-    cb_data[cb_fixup].symAddr = (uint64_t)symval;
+    cb_data[cb_num-1].symLen = (uint32_t)symsize;
+    cb_data[cb_num-1].symAddr = (uint64_t)symval;
 }
 
 void SymInfoError( void* /*data*/, const char* /*msg*/, int /*errnum*/ )
 {
-    cb_data[cb_fixup].symLen = 0;
-    cb_data[cb_fixup].symAddr = 0;
+    cb_data[cb_num-1].symLen = 0;
+    cb_data[cb_num-1].symAddr = 0;
 }
 
 CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
@@ -613,11 +613,7 @@ CallstackEntryData DecodeCallstackPtr( uint64_t ptr )
     backtrace_pcinfo( cb_bts, ptr, CallstackDataCb, CallstackErrorCb, nullptr );
     assert( cb_num > 0 );
 
-    for( int i=0; i<cb_num; i++ )
-    {
-        cb_fixup = i;
-        backtrace_syminfo( cb_bts, cb_data[i].symAddr, SymInfoCallback, SymInfoError, nullptr );
-    }
+    backtrace_syminfo( cb_bts, ptr, SymInfoCallback, SymInfoError, nullptr );
 
     const char* symloc = nullptr;
     Dl_info dlinfo;

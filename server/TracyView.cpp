@@ -11540,11 +11540,9 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::TextUnformatted( "Location:" );
         ImGui::SameLine();
-        ImGui::RadioButton( "Smart", &m_statSampleLocation, 2 );
-        ImGui::SameLine();
-        ImGui::RadioButton( "Entry", &m_statSampleLocation, 0 );
-        ImGui::SameLine();
-        ImGui::RadioButton( "Sample", &m_statSampleLocation, 1 );
+        const char* locationTable = "Entry\0Sample\0Smart";
+        ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Sample" ).x + ImGui::GetTextLineHeight() * 2 );
+        ImGui::Combo( "##location", &m_statSampleLocation, locationTable );
         ImGui::Separator();
 
         const auto& symMap = m_worker.GetSymbolMap();

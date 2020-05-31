@@ -6283,7 +6283,7 @@ void Worker::ReconstructContextSwitchUsage()
     m_data.ctxUsageReady = true;
 }
 
-void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone )
+bool Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone )
 {
     const auto& cs = GetCallstack( callstack );
     const auto cssz = cs.size();
@@ -6306,7 +6306,7 @@ void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool ca
                     it->second += count;
                 }
             }
-            return;
+            return false;
         }
         else
         {
@@ -6325,6 +6325,7 @@ void Worker::UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool ca
     }
 
     UpdateSampleStatisticsImpl( frames, cssz, count, cs );
+    return true;
 }
 
 void Worker::UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postponedSamples.begin())& it )

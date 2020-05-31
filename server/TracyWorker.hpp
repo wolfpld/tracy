@@ -730,7 +730,7 @@ private:
 
 #ifndef TRACY_NO_STATISTICS
     void ReconstructContextSwitchUsage();
-    void UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone );
+    bool UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone );
     void UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postponedSamples.begin())& it );
     void UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint16_t framesCount, uint32_t count, const VarArray<CallstackFrameId>& cs );
 #endif

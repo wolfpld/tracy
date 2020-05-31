@@ -553,6 +553,7 @@ struct ThreadData
 #ifndef TRACY_NO_STATISTICS
     Vector<int64_t> childTimeStack;
     Vector<GhostZone> ghostZones;
+    uint64_t ghostIdx;
 #endif
     Vector<SampleData> samples;
 };

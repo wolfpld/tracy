@@ -253,6 +253,7 @@ private:
         bool newFramesWereReceived = false;
         bool callstackSamplesReady = false;
         bool ghostZonesReady = false;
+        bool ghostZonesPostponed = false;
 #endif
 
         unordered_flat_map<uint32_t, LockMap*> lockMap;

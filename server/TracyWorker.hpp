@@ -712,6 +712,7 @@ private:
 
     void HandlePostponedPlots();
     void HandlePostponedSamples();
+    void HandlePostponedGhostZones();
 
     bool IsThreadStringRetrieved( uint64_t id );
     bool IsSourceLocationRetrieved( int16_t srcloc );

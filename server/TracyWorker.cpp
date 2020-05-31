@@ -3441,7 +3441,9 @@ ThreadData* Worker::NewThread( uint64_t thread )
     td->id = thread;
     td->count = 0;
     td->nextZoneId = 0;
+#ifndef TRACY_NO_STATISTICS
     td->ghostIdx = 0;
+#endif
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
     m_data.threadDataLast.first = thread;

@@ -130,6 +130,37 @@ public:
         uint32_t len;
     };
 
+    struct InlineStackData
+    {
+        uint64_t symAddr;
+        CallstackFrameId frame;
+        uint8_t inlineFrame;
+    };
+
+#pragma pack( 1 )
+    struct GhostKey
+    {
+        CallstackFrameId frame;
+        uint8_t inlineFrame;
+    };
+#pragma pack()
+
+    struct GhostKeyHasher
+    {
+        size_t operator()( const GhostKey& key ) const
+        {
+            return charutil::hash( (const char*)&key, sizeof( GhostKey ) );
+        }
+    };
+
+    struct GhostKeyComparator
+    {
+        bool operator()( const GhostKey& lhs, const GhostKey& rhs ) const
+        {
+            return memcmp( &lhs, &rhs, sizeof( GhostKey ) ) == 0;
+        }
+    };
+
 private:
     struct SourceLocationZones
     {
@@ -265,8 +296,8 @@ private:
         Vector<Vector<short_ptr<GpuEvent>>> gpuChildren;
 #ifndef TRACY_NO_STATISTICS
         Vector<Vector<GhostZone>> ghostChildren;
-        Vector<CallstackFrameId> ghostFrames;
-        unordered_flat_map<uint64_t, uint32_t> ghostFramesMap;
+        Vector<GhostKey> ghostFrames;
+        unordered_flat_map<GhostKey, uint32_t, GhostKeyHasher, GhostKeyComparator> ghostFramesMap;
 #endif
 
         Vector<Vector<short_ptr<ZoneEvent>>> zoneVectorCache;
@@ -493,7 +524,7 @@ public:
     tracy_force_inline const Vector<short_ptr<GpuEvent>>& GetGpuChildren( int32_t idx ) const { return m_data.gpuChildren[idx]; }
 #ifndef TRACY_NO_STATISTICS
     tracy_force_inline const Vector<GhostZone>& GetGhostChildren( int32_t idx ) const { return m_data.ghostChildren[idx]; }
-    tracy_force_inline const CallstackFrameId& GetGhostFrame( const Int24& frame ) const { return m_data.ghostFrames[frame.Val()]; }
+    tracy_force_inline const GhostKey& GetGhostFrame( const Int24& frame ) const { return m_data.ghostFrames[frame.Val()]; }
 #endif
 
     tracy_force_inline const bool HasZoneExtra( const ZoneEvent& ev ) const { return ev.extra != 0; }
@@ -735,6 +766,7 @@ private:
     bool UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone );
     void UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postponedSamples.begin())& it );
     void UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint16_t framesCount, uint32_t count, const VarArray<CallstackFrameId>& cs );
+    tracy_force_inline void GetStackWithInlines( Vector<InlineStackData>& ret, const VarArray<CallstackFrameId>& cs );
     tracy_force_inline int AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone>* vec, uint64_t t );
 #endif
 

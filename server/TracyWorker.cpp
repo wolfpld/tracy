@@ -4016,91 +4016,91 @@ void Worker::HandlePostponedSamples()
     while( it != m_data.postponedSamples.end() );
 }
 
-int Worker::AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone>* vec, uint64_t t )
+void Worker::GetStackWithInlines( Vector<InlineStackData>& ret, const VarArray<CallstackFrameId>& cs )
 {
-    int gcnt = 0;
+    ret.clear();
     int idx = cs.size() - 1;
     do
     {
         auto& entry = cs[idx];
+        const auto frame = GetCallstackFrame( entry );
+        if( frame )
+        {
+            uint8_t i = frame->size;
+            do
+            {
+                i--;
+                ret.push_back( InlineStackData { frame->data[i].symAddr, entry, i } );
+            }
+            while( i != 0 );
+        }
+        else
+        {
+            ret.push_back( InlineStackData{ GetCanonicalPointer( entry ), entry, 0 } );
+        }
+    }
+    while( idx-- > 0 );
+}
+
+int Worker::AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone>* vec, uint64_t t )
+{
+    static Vector<InlineStackData> stack;
+    GetStackWithInlines( stack, cs );
+
+    const uint64_t refBackTime = vec->empty() ? 0 : vec->back().end.Val();
+    int gcnt = 0;
+    int idx = 0;
+    while( !vec->empty() && idx < stack.size() )
+    {
+        auto& back = vec->back();
+        const auto& backKey = m_data.ghostFrames[back.frame.Val()];
+        const auto backFrame = GetCallstackFrame( backKey.frame );
+        if( !backFrame ) break;
+        const auto& inlineFrame = backFrame->data[backKey.inlineFrame];
+        if( inlineFrame.symAddr != stack[idx].symAddr ) break;
+        if( back.end.Val() != refBackTime ) break;
+        back.end.SetVal( t + m_samplingPeriod );
+        idx++;
+        if( back.child < 0 )
+        {
+            back.child = m_data.ghostChildren.size();
+            vec = &m_data.ghostChildren.push_next();
+        }
+        else
+        {
+            vec = &m_data.ghostChildren[back.child];
+        }
+    }
+    while( idx < stack.size() )
+    {
+        gcnt++;
         uint32_t fid;
-        auto it = m_data.ghostFramesMap.find( entry.data );
+        GhostKey key { stack[idx].frame, stack[idx].inlineFrame };
+        auto it = m_data.ghostFramesMap.find( key );
         if( it == m_data.ghostFramesMap.end() )
         {
             fid = uint32_t( m_data.ghostFrames.size() );
-            m_data.ghostFrames.push_back( entry );
-            m_data.ghostFramesMap.emplace( entry.data, fid );
+            m_data.ghostFrames.push_back( key );
+            m_data.ghostFramesMap.emplace( key, fid );
         }
         else
         {
             fid = it->second;
         }
-        if( vec->empty() )
+        auto& zone = vec->push_next();
+        zone.start.SetVal( t );
+        zone.end.SetVal( t + m_samplingPeriod );
+        zone.frame.SetVal( fid );
+        if( ++idx == stack.size() )
         {
-            gcnt++;
-            auto& zone = vec->push_next();
-            zone.start.SetVal( t );
-            zone.end.SetVal( t + m_samplingPeriod );
-            zone.frame.SetVal( fid );
             zone.child = -1;
         }
         else
         {
-            auto& back = vec->back();
-            const auto backFrame = GetCallstackFrame( m_data.ghostFrames[back.frame.Val()] );
-            const auto thisFrame = GetCallstackFrame( entry );
-            bool match = false;
-            if( backFrame && thisFrame )
-            {
-                match = backFrame->size == thisFrame->size;
-                if( match )
-                {
-                    for( uint8_t i=0; i<thisFrame->size; i++ )
-                    {
-                        if( backFrame->data[i].symAddr != thisFrame->data[i].symAddr )
-                        {
-                            match = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            if( match )
-            {
-                back.end.SetVal( t + m_samplingPeriod );
-            }
-            else
-            {
-                gcnt++;
-                auto ptr = &back;
-                for(;;)
-                {
-                    ptr->end.SetVal( t );
-                    if( ptr->child < 0 ) break;
-                    ptr = &GetGhostChildrenMutable( ptr->child ).back();
-                }
-                auto& zone = vec->push_next_non_empty();
-                zone.start.SetVal( t );
-                zone.end.SetVal( t + m_samplingPeriod );
-                zone.frame.SetVal( fid );
-                zone.child = -1;
-            }
-        }
-        if( idx > 0 )
-        {
-            auto& zone = vec->back();
-            if( zone.child < 0 )
-            {
-                zone.child = m_data.ghostChildren.size();
-                vec = &m_data.ghostChildren.push_next();
-            }
-            else
-            {
-                vec = &m_data.ghostChildren[zone.child];
-            }
+            zone.child = m_data.ghostChildren.size();
+            vec = &m_data.ghostChildren.push_next();
         }
     }
-    while( idx-- > 0 );
     return gcnt;
 }
 

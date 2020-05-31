@@ -3568,18 +3568,16 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         }
         else
         {
-            const auto& ghostFrame = m_worker.GetGhostFrame( ev.frame );
-            const auto frame = m_worker.GetCallstackFrame( ghostFrame );
+            const auto& ghostKey = m_worker.GetGhostFrame( ev.frame );
+            const auto frame = m_worker.GetCallstackFrame( ghostKey.frame );
             const auto pr0 = ( ev.start.Val() - m_vd.zvStart ) * pxns;
             const auto pr1 = ( ev.end.Val() - m_vd.zvStart ) * pxns;
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
-            int fsz;
             if( !frame )
             {
-                fsz = 1;
                 char symName[64];
-                sprintf( symName, "0x%" PRIx64, m_worker.GetCanonicalPointer( ghostFrame ) );
+                sprintf( symName, "0x%" PRIx64, m_worker.GetCanonicalPointer( ghostKey.frame ) );
                 const auto tsz = ImGui::CalcTextSize( symName );
 
                 const auto txtColor = 0xFF888888;
@@ -3631,99 +3629,82 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
             }
             else
             {
-                fsz = int( frame->size );
-                auto foff = offset;
-                for( int i=fsz-1; i>=0; i-- )
+                const auto& sym = frame->data[ghostKey.inlineFrame];
+                const auto isInline = ghostKey.inlineFrame != frame->size-1;
+                const auto col = isInline ? DarkenColor( color ) : color;
+                const auto symName = m_worker.GetString( sym.name );
+                uint32_t txtColor = symName[0] == '[' ? 0xFF999999 : 0xFFFFFFFF;
+                const auto tsz = ImGui::CalcTextSize( symName );
+
+                draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), col );
+                draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), outline, 0.f, -1 );
+
+                if( tsz.x < zsz )
                 {
-                    const auto isInline = i != fsz-1;
-                    const auto col = isInline ? DarkenColor( color ) : color;
-                    const auto sym = m_worker.GetSymbolData( frame->data[i].symAddr );
-                    const auto symName = m_worker.GetString( frame->data[i].name );
-                    uint32_t txtColor = symName[0] == '[' ? 0xFF999999 : 0xFFFFFFFF;
-                    const auto tsz = ImGui::CalcTextSize( symName );
-
-                    draw->AddRectFilled( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ), col );
-                    draw->AddRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ), outline, 0.f, -1 );
-
-                    if( tsz.x < zsz )
+                    const auto x = ( ev.start.Val() - m_vd.zvStart ) * pxns + ( ( end - ev.start.Val() ) * pxns - tsz.x ) / 2;
+                    if( x < 0 || x > w - tsz.x )
                     {
-                        const auto x = ( ev.start.Val() - m_vd.zvStart ) * pxns + ( ( end - ev.start.Val() ) * pxns - tsz.x ) / 2;
-                        if( x < 0 || x > w - tsz.x )
-                        {
-                            ImGui::PushClipRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y * 2 ), true );
-                            DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), foff ), txtColor, symName );
-                            ImGui::PopClipRect();
-                        }
-                        else if( ev.start.Val() == ev.end.Val() )
-                        {
-                            DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, foff ), txtColor, symName );
-                        }
-                        else
-                        {
-                            DrawTextContrast( draw, wpos + ImVec2( x, foff ), txtColor, symName );
-                        }
+                        ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                        DrawTextContrast( draw, wpos + ImVec2( std::max( std::max( 0., px0 ), std::min( double( w - tsz.x ), x ) ), offset ), txtColor, symName );
+                        ImGui::PopClipRect();
+                    }
+                    else if( ev.start.Val() == ev.end.Val() )
+                    {
+                        DrawTextContrast( draw, wpos + ImVec2( px0 + ( px1 - px0 - tsz.x ) * 0.5, offset ), txtColor, symName );
                     }
                     else
                     {
-                        ImGui::PushClipRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y * 2 ), true );
-                        DrawTextContrast( draw, wpos + ImVec2( ( ev.start.Val() - m_vd.zvStart ) * pxns, foff ), txtColor, symName );
-                        ImGui::PopClipRect();
+                        DrawTextContrast( draw, wpos + ImVec2( x, offset ), txtColor, symName );
                     }
+                }
+                else
+                {
+                    ImGui::PushClipRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y * 2 ), true );
+                    DrawTextContrast( draw, wpos + ImVec2( ( ev.start.Val() - m_vd.zvStart ) * pxns, offset ), txtColor, symName );
+                    ImGui::PopClipRect();
+                }
 
-                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, foff ), wpos + ImVec2( px1, foff + tsz.y ) ) )
+                if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
+                {
+                    ImGui::BeginTooltip();
+                    TextDisabledUnformatted( ICON_FA_GHOST " Ghost zone" );
+                    ImGui::Separator();
+                    ImGui::TextUnformatted( symName );
+                    if( isInline )
                     {
-                        ImGui::BeginTooltip();
-                        TextDisabledUnformatted( ICON_FA_GHOST " Ghost zone" );
-                        ImGui::Separator();
-                        ImGui::TextUnformatted( symName );
-                        if( isInline )
-                        {
-                            ImGui::SameLine();
-                            TextDisabledUnformatted( "[inline]" );
-                        }
-                        if( sym ) TextFocused( "Image:", m_worker.GetString( sym->imageName ) );
-                        TextDisabledUnformatted( "Location:" );
                         ImGui::SameLine();
-                        const char* file;
-                        uint32_t line;
-                        if( sym && !isInline )
-                        {
-                            file = m_worker.GetString( sym->file );
-                            line = sym->line;
-                        }
-                        else
-                        {
-                            file = m_worker.GetString( frame->data[i].file );
-                            line = frame->data[i].line;
-                        }
-                        ImGui::Text( "%s:%i", file, line );
-                        ImGui::SameLine();
-                        ImGui::TextDisabled( "(0x%" PRIx64 ")", m_worker.GetCanonicalPointer( ghostFrame ) );
-                        TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
-                        ImGui::SameLine();
-                        ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-                        ImGui::Separator();
-                        TextFocused( "Execution time:", TimeToString( ev.end.Val() - ev.start.Val() ) );
-                        ImGui::EndTooltip();
-
-                        if( ImGui::IsMouseClicked( 0 ) )
-                        {
-                            ViewDispatch( file, line, frame->data[i].symAddr );
-                        }
-                        else if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
-                        {
-                            ZoomToRange( ev.start.Val(), ev.end.Val() );
-                        }
+                        TextDisabledUnformatted( "[inline]" );
                     }
+                    const auto symbol = m_worker.GetSymbolData( sym.symAddr );
+                    if( symbol ) TextFocused( "Image:", m_worker.GetString( symbol->imageName ) );
+                    TextDisabledUnformatted( "Location:" );
+                    ImGui::SameLine();
+                    const char* file = m_worker.GetString( sym.file );
+                    uint32_t line = sym.line;
+                    ImGui::Text( "%s:%i", file, line );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(0x%" PRIx64 ")", sym.symAddr );
+                    TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+                    ImGui::Separator();
+                    TextFocused( "Execution time:", TimeToString( ev.end.Val() - ev.start.Val() ) );
+                    ImGui::EndTooltip();
 
-                    foff += ostep;
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        ViewDispatch( file, line, sym.symAddr );
+                    }
+                    else if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
+                    {
+                        ZoomToRange( ev.start.Val(), ev.end.Val() );
+                    }
                 }
             }
 
-            maxdepth = std::max( maxdepth, depth + fsz - 1 );
             if( ev.child >= 0 )
             {
-                const auto d = DispatchGhostLevel( m_worker.GetGhostChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth + fsz - 1, yMin, yMax, tid );
+                const auto d = DispatchGhostLevel( m_worker.GetGhostChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
                 if( d > maxdepth ) maxdepth = d;
             }
             ++it;
@@ -3770,13 +3751,9 @@ int View::SkipGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
         }
         else
         {
-            const auto& ghostFrame = m_worker.GetGhostFrame( ev.frame );
-            const auto frame = m_worker.GetCallstackFrame( ghostFrame );
-            const auto fsz = frame ? int( frame->size ) : 1;
-            maxdepth = std::max( maxdepth, depth + fsz - 1 );
             if( ev.child >= 0 )
             {
-                const auto d = DispatchGhostLevel( m_worker.GetGhostChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth + fsz - 1, yMin, yMax, tid );
+                const auto d = DispatchGhostLevel( m_worker.GetGhostChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax, tid );
                 if( d > maxdepth ) maxdepth = d;
             }
             ++it;

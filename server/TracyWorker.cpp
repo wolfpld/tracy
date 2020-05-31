@@ -1999,92 +1999,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                         if( m_shutdown.load( std::memory_order_relaxed ) ) return;
                         for( auto& sd : t->samples )
                         {
-                            const auto& cs = GetCallstack( sd.callstack.Val() );
-                            const auto time = sd.time.Val();
-                            auto vec = &t->ghostZones;
-
-                            auto idx = cs.size() - 1;
-                            do
-                            {
-                                auto& entry = cs[idx];
-                                uint32_t fid;
-                                auto it = m_data.ghostFramesMap.find( entry.data );
-                                if( it == m_data.ghostFramesMap.end() )
-                                {
-                                    fid = uint32_t( m_data.ghostFrames.size() );
-                                    m_data.ghostFrames.push_back( entry );
-                                    m_data.ghostFramesMap.emplace( entry.data, fid );
-                                }
-                                else
-                                {
-                                    fid = it->second;
-                                }
-                                if( vec->empty() )
-                                {
-                                    gcnt++;
-                                    auto& zone = vec->push_next();
-                                    zone.start.SetVal( time );
-                                    zone.end.SetVal( time + m_samplingPeriod );
-                                    zone.frame.SetVal( fid );
-                                    zone.child = -1;
-                                }
-                                else
-                                {
-                                    auto& back = vec->back();
-                                    const auto backFrame = GetCallstackFrame( m_data.ghostFrames[back.frame.Val()] );
-                                    const auto thisFrame = GetCallstackFrame( entry );
-                                    bool match = false;
-                                    if( backFrame && thisFrame )
-                                    {
-                                        match = backFrame->size == thisFrame->size;
-                                        if( match )
-                                        {
-                                            for( uint8_t i=0; i<thisFrame->size; i++ )
-                                            {
-                                                if( backFrame->data[i].symAddr != thisFrame->data[i].symAddr )
-                                                {
-                                                    match = false;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if( match )
-                                    {
-                                        back.end.SetVal( time + m_samplingPeriod );
-                                    }
-                                    else
-                                    {
-                                        gcnt++;
-                                        auto ptr = &back;
-                                        for(;;)
-                                        {
-                                            ptr->end.SetVal( time );
-                                            if( ptr->child < 0 ) break;
-                                            ptr = &GetGhostChildrenMutable( ptr->child ).back();
-                                        }
-                                        auto& zone = vec->push_next_non_empty();
-                                        zone.start.SetVal( time );
-                                        zone.end.SetVal( time + m_samplingPeriod );
-                                        zone.frame.SetVal( fid );
-                                        zone.child = -1;
-                                    }
-                                }
-                                if( idx > 0 )
-                                {
-                                    auto& zone = vec->back();
-                                    if( zone.child < 0 )
-                                    {
-                                        zone.child = m_data.ghostChildren.size();
-                                        vec = &m_data.ghostChildren.push_next();
-                                    }
-                                    else
-                                    {
-                                        vec = &m_data.ghostChildren[zone.child];
-                                    }
-                                }
-                            }
-                            while( idx-- > 0 );
+                            gcnt += AddGhostZone( GetCallstack( sd.callstack.Val() ), &t->ghostZones, sd.time.Val() );
                         }
                     }
                     std::lock_guard<std::shared_mutex> lock( m_data.lock );
@@ -4099,6 +4014,94 @@ void Worker::HandlePostponedSamples()
     while( it != m_data.postponedSamples.end() );
 }
 
+int Worker::AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone>* vec, uint64_t t )
+{
+    int gcnt = 0;
+    int idx = cs.size() - 1;
+    do
+    {
+        auto& entry = cs[idx];
+        uint32_t fid;
+        auto it = m_data.ghostFramesMap.find( entry.data );
+        if( it == m_data.ghostFramesMap.end() )
+        {
+            fid = uint32_t( m_data.ghostFrames.size() );
+            m_data.ghostFrames.push_back( entry );
+            m_data.ghostFramesMap.emplace( entry.data, fid );
+        }
+        else
+        {
+            fid = it->second;
+        }
+        if( vec->empty() )
+        {
+            gcnt++;
+            auto& zone = vec->push_next();
+            zone.start.SetVal( t );
+            zone.end.SetVal( t + m_samplingPeriod );
+            zone.frame.SetVal( fid );
+            zone.child = -1;
+        }
+        else
+        {
+            auto& back = vec->back();
+            const auto backFrame = GetCallstackFrame( m_data.ghostFrames[back.frame.Val()] );
+            const auto thisFrame = GetCallstackFrame( entry );
+            bool match = false;
+            if( backFrame && thisFrame )
+            {
+                match = backFrame->size == thisFrame->size;
+                if( match )
+                {
+                    for( uint8_t i=0; i<thisFrame->size; i++ )
+                    {
+                        if( backFrame->data[i].symAddr != thisFrame->data[i].symAddr )
+                        {
+                            match = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if( match )
+            {
+                back.end.SetVal( t + m_samplingPeriod );
+            }
+            else
+            {
+                gcnt++;
+                auto ptr = &back;
+                for(;;)
+                {
+                    ptr->end.SetVal( t );
+                    if( ptr->child < 0 ) break;
+                    ptr = &GetGhostChildrenMutable( ptr->child ).back();
+                }
+                auto& zone = vec->push_next_non_empty();
+                zone.start.SetVal( t );
+                zone.end.SetVal( t + m_samplingPeriod );
+                zone.frame.SetVal( fid );
+                zone.child = -1;
+            }
+        }
+        if( idx > 0 )
+        {
+            auto& zone = vec->back();
+            if( zone.child < 0 )
+            {
+                zone.child = m_data.ghostChildren.size();
+                vec = &m_data.ghostChildren.push_next();
+            }
+            else
+            {
+                vec = &m_data.ghostChildren[zone.child];
+            }
+        }
+    }
+    while( idx-- > 0 );
+    return gcnt;
+}
+
 void Worker::HandlePostponedGhostZones()
 {
     assert( m_data.newFramesWereReceived );
@@ -4120,93 +4123,8 @@ void Worker::HandlePostponedGhostZones()
                 break;
             }
 
-            const auto t = sample.time.Val();
             td->ghostIdx++;
-            int gcnt = 0;
-            int idx = cs.size() - 1;
-            auto vec = &td->ghostZones;
-            do
-            {
-                auto& entry = cs[idx];
-                uint32_t fid;
-                auto it = m_data.ghostFramesMap.find( entry.data );
-                if( it == m_data.ghostFramesMap.end() )
-                {
-                    fid = uint32_t( m_data.ghostFrames.size() );
-                    m_data.ghostFrames.push_back( entry );
-                    m_data.ghostFramesMap.emplace( entry.data, fid );
-                }
-                else
-                {
-                    fid = it->second;
-                }
-                if( vec->empty() )
-                {
-                    gcnt++;
-                    auto& zone = vec->push_next();
-                    zone.start.SetVal( t );
-                    zone.end.SetVal( t + m_samplingPeriod );
-                    zone.frame.SetVal( fid );
-                    zone.child = -1;
-                }
-                else
-                {
-                    auto& back = vec->back();
-                    const auto backFrame = GetCallstackFrame( m_data.ghostFrames[back.frame.Val()] );
-                    const auto thisFrame = GetCallstackFrame( entry );
-                    bool match = false;
-                    if( backFrame && thisFrame )
-                    {
-                        match = backFrame->size == thisFrame->size;
-                        if( match )
-                        {
-                            for( uint8_t i=0; i<thisFrame->size; i++ )
-                            {
-                                if( backFrame->data[i].symAddr != thisFrame->data[i].symAddr )
-                                {
-                                    match = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if( match )
-                    {
-                        back.end.SetVal( t + m_samplingPeriod );
-                    }
-                    else
-                    {
-                        gcnt++;
-                        auto ptr = &back;
-                        for(;;)
-                        {
-                            ptr->end.SetVal( t );
-                            if( ptr->child < 0 ) break;
-                            ptr = &GetGhostChildrenMutable( ptr->child ).back();
-                        }
-                        auto& zone = vec->push_next_non_empty();
-                        zone.start.SetVal( t );
-                        zone.end.SetVal( t + m_samplingPeriod );
-                        zone.frame.SetVal( fid );
-                        zone.child = -1;
-                    }
-                }
-                if( idx > 0 )
-                {
-                    auto& zone = vec->back();
-                    if( zone.child < 0 )
-                    {
-                        zone.child = m_data.ghostChildren.size();
-                        vec = &m_data.ghostChildren.push_next();
-                    }
-                    else
-                    {
-                        vec = &m_data.ghostChildren[zone.child];
-                    }
-                }
-            }
-            while( idx-- > 0 );
-            m_data.ghostCnt += gcnt;
+            m_data.ghostCnt += AddGhostZone( cs, &td->ghostZones, sample.time.Val() );
         }
     }
     m_data.ghostZonesPostponed = postponed;
@@ -5729,91 +5647,7 @@ void Worker::ProcessCallstackSample( const QueueCallstackSampleLean& ev )
     if( framesKnown && td->ghostIdx + 1 == td->samples.size() )
     {
         td->ghostIdx++;
-        int gcnt = 0;
-        int idx = cs.size() - 1;
-        auto vec = &td->ghostZones;
-        do
-        {
-            auto& entry = cs[idx];
-            uint32_t fid;
-            auto it = m_data.ghostFramesMap.find( entry.data );
-            if( it == m_data.ghostFramesMap.end() )
-            {
-                fid = uint32_t( m_data.ghostFrames.size() );
-                m_data.ghostFrames.push_back( entry );
-                m_data.ghostFramesMap.emplace( entry.data, fid );
-            }
-            else
-            {
-                fid = it->second;
-            }
-            if( vec->empty() )
-            {
-                gcnt++;
-                auto& zone = vec->push_next();
-                zone.start.SetVal( t );
-                zone.end.SetVal( t + m_samplingPeriod );
-                zone.frame.SetVal( fid );
-                zone.child = -1;
-            }
-            else
-            {
-                auto& back = vec->back();
-                const auto backFrame = GetCallstackFrame( m_data.ghostFrames[back.frame.Val()] );
-                const auto thisFrame = GetCallstackFrame( entry );
-                bool match = false;
-                if( backFrame && thisFrame )
-                {
-                    match = backFrame->size == thisFrame->size;
-                    if( match )
-                    {
-                        for( uint8_t i=0; i<thisFrame->size; i++ )
-                        {
-                            if( backFrame->data[i].symAddr != thisFrame->data[i].symAddr )
-                            {
-                                match = false;
-                                break;
-                            }
-                        }
-                    }
-                }
-                if( match )
-                {
-                    back.end.SetVal( t + m_samplingPeriod );
-                }
-                else
-                {
-                    gcnt++;
-                    auto ptr = &back;
-                    for(;;)
-                    {
-                        ptr->end.SetVal( t );
-                        if( ptr->child < 0 ) break;
-                        ptr = &GetGhostChildrenMutable( ptr->child ).back();
-                    }
-                    auto& zone = vec->push_next_non_empty();
-                    zone.start.SetVal( t );
-                    zone.end.SetVal( t + m_samplingPeriod );
-                    zone.frame.SetVal( fid );
-                    zone.child = -1;
-                }
-            }
-            if( idx > 0 )
-            {
-                auto& zone = vec->back();
-                if( zone.child < 0 )
-                {
-                    zone.child = m_data.ghostChildren.size();
-                    vec = &m_data.ghostChildren.push_next();
-                }
-                else
-                {
-                    vec = &m_data.ghostChildren[zone.child];
-                }
-            }
-        }
-        while( idx-- > 0 );
-        m_data.ghostCnt += gcnt;
+        m_data.ghostCnt += AddGhostZone( cs, &td->ghostZones, t );
     }
     else
     {

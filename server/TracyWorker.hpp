@@ -735,6 +735,7 @@ private:
     bool UpdateSampleStatistics( uint32_t callstack, uint32_t count, bool canPostpone );
     void UpdateSampleStatisticsPostponed( decltype(Worker::DataBlock::postponedSamples.begin())& it );
     void UpdateSampleStatisticsImpl( const CallstackFrameData** frames, uint16_t framesCount, uint32_t count, const VarArray<CallstackFrameId>& cs );
+    tracy_force_inline int AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone>* vec, uint64_t t );
 #endif
 
     tracy_force_inline int64_t ReadTimeline( FileRead& f, ZoneEvent* zone, int64_t refTime, int32_t& childIdx );

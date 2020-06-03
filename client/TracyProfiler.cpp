@@ -173,6 +173,7 @@ struct ThreadHandleWrapper
 #if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
 static inline void CpuId( uint32_t* regs, uint32_t leaf )
 {
+    memset(regs, 0, sizeof(uint32_t) * 4);
 #if defined _WIN32 || defined __CYGWIN__
     __cpuidex( (int*)regs, leaf, 0 );
 #else

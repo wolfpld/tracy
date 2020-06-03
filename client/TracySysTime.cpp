@@ -47,9 +47,12 @@ void SysTime::ReadTimes()
     FILE* f = fopen( "/proc/stat", "r" );
     if( f )
     {
-        fscanf( f, "cpu %" PRIu64 " %" PRIu64 " %" PRIu64" %" PRIu64, &user, &nice, &system, &idle );
+        int read = fscanf( f, "cpu %" PRIu64 " %" PRIu64 " %" PRIu64" %" PRIu64, &user, &nice, &system, &idle );
         fclose( f );
-        used = user + nice + system;
+        if (read == 4)
+        {
+            used = user + nice + system;
+        }
     }
 }
 

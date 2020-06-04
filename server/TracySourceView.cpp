@@ -394,6 +394,7 @@ void SourceView::OpenSource( const char* fileName, int line, const View& view, c
     m_baseAddr = 0;
     m_symAddr = 0;
     m_sourceFiles.clear();
+    m_asm.clear();
 
     ParseSource( fileName, worker, view );
     assert( !m_lines.empty() );

@@ -740,6 +740,12 @@ static void DrawContents()
                     char portstr[32];
                     sprintf( portstr, "%" PRIu32, v.second.port );
                     ImGui::BeginTooltip();
+                    if( badProto )
+                    {
+                        tracy::TextColoredUnformatted( 0xFF0000FF, "Incompatible protocol!" );
+                        ImGui::SameLine();
+                        ImGui::TextDisabled( "(used: %i, required: %i)", v.second.protocolVersion, tracy::ProtocolVersion );
+                    }
                     tracy::TextFocused( "IP:", v.second.address.c_str() );
                     tracy::TextFocused( "Port:", portstr );
                     ImGui::EndTooltip();

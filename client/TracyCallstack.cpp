@@ -465,7 +465,10 @@ static int SymbolAddressDataCb( void* data, uintptr_t pc, uintptr_t lowaddr, con
 
 static void SymbolAddressErrorCb( void* data, const char* /*msg*/, int /*errnum*/ )
 {
-    memset( data, 0, sizeof( SymbolData ) );
+    auto& sym = *(SymbolData*)data;
+    sym.file = "[unknown]";
+    sym.line = 0;
+    sym.needFree = false;
 }
 
 SymbolData DecodeSymbolAddress( uint64_t ptr )

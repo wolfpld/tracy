@@ -2430,7 +2430,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
             ImGui::SameLine();
             const auto lineString = RealToString( srcline );
             const auto linesz = strlen( lineString );
-            char buf[32];
+            char buf[64];
             const auto fnsz = strlen( fileName );
             if( fnsz < 30 - m_maxLine )
             {

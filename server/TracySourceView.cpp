@@ -2483,8 +2483,10 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
         else
         {
             SmallColorBox( 0 );
+            ImGui::SameLine();
+            TextDisabledUnformatted( "[unknown]" );
             ImGui::SameLine( 0, 0 );
-            ImGui::ItemSize( ImVec2( stw * 32, ty ), 0 );
+            ImGui::ItemSize( ImVec2( stw * 23, ty ), 0 );
         }
     }
     if( m_asmBytes )

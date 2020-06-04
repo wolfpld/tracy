@@ -475,12 +475,12 @@ void SourceView::ParseSource( const char* fileName, const Worker& worker, const 
                 if( *end == '\n' )
                 {
                     end++;
-                    if( *end == '\r' ) end++;
+                    if( end - m_data < sz && *end == '\r' ) end++;
                 }
                 else if( *end == '\r' )
                 {
                     end++;
-                    if( *end == '\n' ) end++;
+                    if( end - m_data < sz && *end == '\n' ) end++;
                 }
                 if( end - m_data == sz ) break;
                 txt = end;

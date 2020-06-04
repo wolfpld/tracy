@@ -2523,7 +2523,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
     }
 
     const AsmVar* asmVar = nullptr;
-    if( ( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 ) )
+    if( !m_atnt && ( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 ) )
     {
         auto uarch = MicroArchitectureData[m_idxMicroArch];
         char tmp[32];

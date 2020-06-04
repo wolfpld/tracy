@@ -1599,44 +1599,48 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
     ImGui::Spacing();
     ImGui::SameLine();
     SmallCheckbox( ICON_FA_SHARE " Jumps", &m_showJumps );
-    ImGui::SameLine();
-    ImGui::Spacing();
-    ImGui::SameLine();
-    if( SmallCheckbox( "AT&T", &m_atnt ) ) Disassemble( m_baseAddr, worker );
 
     if( m_cpuArch == CpuArchX64 || m_cpuArch == CpuArchX86 )
     {
         ImGui::SameLine();
         ImGui::Spacing();
         ImGui::SameLine();
-        float mw = 0;
-        for( auto& v : s_uArchUx )
+        if( SmallCheckbox( "AT&T", &m_atnt ) ) Disassemble( m_baseAddr, worker );
+
+        if( !m_atnt )
         {
-            const auto w = ImGui::CalcTextSize( v.uArch ).x;
-            if( w > mw ) mw = w;
-        }
-        ImGui::TextUnformatted( ICON_FA_MICROCHIP " \xce\xbc""arch:" );
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth( mw + ImGui::GetFontSize() );
-        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
-        if( ImGui::BeginCombo( "##uarch", s_uArchUx[m_selMicroArch].uArch, ImGuiComboFlags_HeightLarge ) )
-        {
-            int idx = 0;
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            float mw = 0;
             for( auto& v : s_uArchUx )
             {
-                if( ImGui::Selectable( v.uArch, idx == m_selMicroArch ) ) SelectMicroArchitecture( v.moniker );
-                ImGui::SameLine();
-                TextDisabledUnformatted( v.cpuName );
-                idx++;
+                const auto w = ImGui::CalcTextSize( v.uArch ).x;
+                if( w > mw ) mw = w;
             }
-            ImGui::EndCombo();
-        }
-        ImGui::PopStyleVar();
+            ImGui::TextUnformatted( ICON_FA_MICROCHIP " \xce\xbc""arch:" );
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth( mw + ImGui::GetFontSize() );
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+            if( ImGui::BeginCombo( "##uarch", s_uArchUx[m_selMicroArch].uArch, ImGuiComboFlags_HeightLarge ) )
+            {
+                int idx = 0;
+                for( auto& v : s_uArchUx )
+                {
+                    if( ImGui::Selectable( v.uArch, idx == m_selMicroArch ) ) SelectMicroArchitecture( v.moniker );
+                    ImGui::SameLine();
+                    TextDisabledUnformatted( v.cpuName );
+                    idx++;
+                }
+                ImGui::EndCombo();
+            }
+            ImGui::PopStyleVar();
 
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
-        SmallCheckbox( ICON_FA_TRUCK_LOADING " Latency", &m_showLatency );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
+            SmallCheckbox( ICON_FA_TRUCK_LOADING " Latency", &m_showLatency );
+        }
     }
 
 #ifndef TRACY_NO_FILESELECTOR

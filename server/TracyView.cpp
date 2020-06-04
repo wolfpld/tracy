@@ -11519,7 +11519,7 @@ void View::DrawStatistics()
         ImGui::SameLine();
         ImGui::TextUnformatted( "Location:" );
         ImGui::SameLine();
-        const char* locationTable = "Entry\0Sample\0Smart";
+        const char* locationTable = "Entry\0Sample\0Smart\0";
         ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Sample" ).x + ImGui::GetTextLineHeight() * 2 );
         ImGui::Combo( "##location", &m_statSampleLocation, locationTable );
         ImGui::Separator();

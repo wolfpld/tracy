@@ -1,35 +1,15 @@
 /* ******************************************************************
-   huff0 huffman decoder,
-   part of Finite State Entropy library
-   Copyright (C) 2013-present, Yann Collet.
-
-   BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
-
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions are
-   met:
-
-       * Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-       * Redistributions in binary form must reproduce the above
-   copyright notice, this list of conditions and the following disclaimer
-   in the documentation and/or other materials provided with the
-   distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-   OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-    You can contact the author at :
-    - FSE+HUF source repository : https://github.com/Cyan4973/FiniteStateEntropy
+ * huff0 huffman decoder,
+ * part of Finite State Entropy library
+ * Copyright (c) 2013-2020, Yann Collet, Facebook, Inc.
+ *
+ *  You can contact the author at :
+ *  - FSE+HUF source repository : https://github.com/Cyan4973/FiniteStateEntropy
+ *
+ * This source code is licensed under both the BSD-style license (found in the
+ * LICENSE file in the root directory of this source tree) and the GPLv2 (found
+ * in the COPYING file in the root directory of this source tree).
+ * You may select, at your option, one of the above-listed licenses.
 ****************************************************************** */
 
 /* **************************************************************
@@ -61,9 +41,6 @@
 *  Error Management
 ****************************************************************/
 #define HUF_isError ERR_isError
-#ifndef CHECK_F
-#define CHECK_F(f) { size_t const err_ = (f); if (HUF_isError(err_)) return err_; }
-#endif
 
 
 /* **************************************************************
@@ -855,7 +832,7 @@ HUF_decompress4X2_usingDTable_internal_body(
             HUF_DECODE_SYMBOLX2_0(op2, &bitD2);
             HUF_DECODE_SYMBOLX2_0(op3, &bitD3);
             HUF_DECODE_SYMBOLX2_0(op4, &bitD4);
-            endSignal = LIKELY(
+            endSignal = (U32)LIKELY(
                         (BIT_reloadDStreamFast(&bitD1) == BIT_DStream_unfinished)
                       & (BIT_reloadDStreamFast(&bitD2) == BIT_DStream_unfinished)
                       & (BIT_reloadDStreamFast(&bitD3) == BIT_DStream_unfinished)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -26,6 +26,7 @@
  * The given block will be compressed into multiple sub blocks that are around targetCBlockSize. */
 size_t ZSTD_compressSuperBlock(ZSTD_CCtx* zc,
                                void* dst, size_t dstCapacity,
+                               void const* src, size_t srcSize,
                                unsigned lastBlock);
 
 #endif /* ZSTD_COMPRESS_ADVANCED_H */

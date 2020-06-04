@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -166,6 +166,7 @@ typedef struct {
 typedef struct {
     ZSTD_window_t window;   /* State for the window round buffer management */
     ldmEntry_t* hashTable;
+    U32 loadedDictEnd;
     BYTE* bucketOffsets;    /* Next position in bucket to insert entry */
     U64 hashPower;          /* Used to compute the rolling hash.
                              * Depends on ldmParams.minMatchLength */
@@ -325,6 +326,31 @@ MEM_STATIC U32 ZSTD_MLcode(U32 mlBase)
     return (mlBase > 127) ? ZSTD_highbit32(mlBase) + ML_deltaCode : ML_Code[mlBase];
 }
 
+typedef struct repcodes_s {
+    U32 rep[3];
+} repcodes_t;
+
+MEM_STATIC repcodes_t ZSTD_updateRep(U32 const rep[3], U32 const offset, U32 const ll0)
+{
+    repcodes_t newReps;
+    if (offset >= ZSTD_REP_NUM) {  /* full offset */
+        newReps.rep[2] = rep[1];
+        newReps.rep[1] = rep[0];
+        newReps.rep[0] = offset - ZSTD_REP_MOVE;
+    } else {   /* repcode */
+        U32 const repCode = offset + ll0;
+        if (repCode > 0) {  /* note : if repCode==0, no change */
+            U32 const currentOffset = (repCode==ZSTD_REP_NUM) ? (rep[0] - 1) : rep[repCode];
+            newReps.rep[2] = (repCode >= 2) ? rep[1] : rep[2];
+            newReps.rep[1] = rep[0];
+            newReps.rep[0] = currentOffset;
+        } else {   /* repCode == 0 */
+            memcpy(&newReps, rep, sizeof(newReps));
+        }
+    }
+    return newReps;
+}
+
 /* ZSTD_cParam_withinBounds:
  * @return 1 if value is within cParam bounds,
  * 0 otherwise */
@@ -344,10 +370,20 @@ MEM_STATIC size_t ZSTD_noCompressBlock (void* dst, size_t dstCapacity, const voi
 {
     U32 const cBlockHeader24 = lastBlock + (((U32)bt_raw)<<1) + (U32)(srcSize << 3);
     RETURN_ERROR_IF(srcSize + ZSTD_blockHeaderSize > dstCapacity,
-                    dstSize_tooSmall);
+                    dstSize_tooSmall, "dst buf too small for uncompressed block");
     MEM_writeLE24(dst, cBlockHeader24);
     memcpy((BYTE*)dst + ZSTD_blockHeaderSize, src, srcSize);
     return ZSTD_blockHeaderSize + srcSize;
+}
+
+MEM_STATIC size_t ZSTD_rleCompressBlock (void* dst, size_t dstCapacity, BYTE src, size_t srcSize, U32 lastBlock)
+{
+    BYTE* const op = (BYTE*)dst;
+    U32 const cBlockHeader = lastBlock + (((U32)bt_rle)<<1) + (U32)(srcSize << 3);
+    RETURN_ERROR_IF(dstCapacity < 4, dstSize_tooSmall, "");
+    MEM_writeLE24(op, cBlockHeader);
+    op[3] = src;
+    return 4;
 }
 
 
@@ -361,6 +397,21 @@ MEM_STATIC size_t ZSTD_minGain(size_t srcSize, ZSTD_strategy strat)
     ZSTD_STATIC_ASSERT(ZSTD_btultra == 8);
     assert(ZSTD_cParam_withinBounds(ZSTD_c_strategy, strat));
     return (srcSize >> minlog) + 2;
+}
+
+MEM_STATIC int ZSTD_disableLiteralsCompression(const ZSTD_CCtx_params* cctxParams)
+{
+    switch (cctxParams->literalCompressionMode) {
+    case ZSTD_lcm_huffman:
+        return 0;
+    case ZSTD_lcm_uncompressed:
+        return 1;
+    default:
+        assert(0 /* impossible: pre-validated */);
+        /* fall-through */
+    case ZSTD_lcm_auto:
+        return (cctxParams->cParams.strategy == ZSTD_fast) && (cctxParams->cParams.targetLength > 0);
+    }
 }
 
 /*! ZSTD_safecopyLiterals() :
@@ -448,8 +499,7 @@ static unsigned ZSTD_NbCommonBytes (size_t val)
         if (MEM_64bits()) {
 #       if defined(_MSC_VER) && defined(_WIN64)
             unsigned long r = 0;
-            _BitScanForward64( &r, (U64)val );
-            return (unsigned)(r>>3);
+            return _BitScanForward64( &r, (U64)val ) ? (unsigned)(r >> 3) : 0;
 #       elif defined(__GNUC__) && (__GNUC__ >= 4)
             return (__builtin_ctzll((U64)val) >> 3);
 #       else
@@ -466,8 +516,7 @@ static unsigned ZSTD_NbCommonBytes (size_t val)
         } else { /* 32 bits */
 #       if defined(_MSC_VER)
             unsigned long r=0;
-            _BitScanForward( &r, (U32)val );
-            return (unsigned)(r>>3);
+            return _BitScanForward( &r, (U32)val ) ? (unsigned)(r >> 3) : 0;
 #       elif defined(__GNUC__) && (__GNUC__ >= 3)
             return (__builtin_ctz((U32)val) >> 3);
 #       else
@@ -482,8 +531,7 @@ static unsigned ZSTD_NbCommonBytes (size_t val)
         if (MEM_64bits()) {
 #       if defined(_MSC_VER) && defined(_WIN64)
             unsigned long r = 0;
-            _BitScanReverse64( &r, val );
-            return (unsigned)(r>>3);
+            return _BitScanReverse64( &r, val ) ? (unsigned)(r >> 3) : 0;
 #       elif defined(__GNUC__) && (__GNUC__ >= 4)
             return (__builtin_clzll(val) >> 3);
 #       else
@@ -497,8 +545,7 @@ static unsigned ZSTD_NbCommonBytes (size_t val)
         } else { /* 32 bits */
 #       if defined(_MSC_VER)
             unsigned long r = 0;
-            _BitScanReverse( &r, (unsigned long)val );
-            return (unsigned)(r>>3);
+            return _BitScanReverse( &r, (unsigned long)val ) ? (unsigned)(r >> 3) : 0;
 #       elif defined(__GNUC__) && (__GNUC__ >= 3)
             return (__builtin_clz((U32)val) >> 3);
 #       else
@@ -907,7 +954,7 @@ MEM_STATIC U32 ZSTD_window_update(ZSTD_window_t* window,
         window->dictLimit = (U32)distanceFromBase;
         window->dictBase = window->base;
         window->base = ip - distanceFromBase;
-        // ms->nextToUpdate = window->dictLimit;
+        /* ms->nextToUpdate = window->dictLimit; */
         if (window->dictLimit - window->lowLimit < HASH_READ_SIZE) window->lowLimit = window->dictLimit;   /* too small extDict */
         contiguous = 0;
     }
@@ -923,10 +970,26 @@ MEM_STATIC U32 ZSTD_window_update(ZSTD_window_t* window,
     return contiguous;
 }
 
+/**
+ * Returns the lowest allowed match index. It may either be in the ext-dict or the prefix.
+ */
 MEM_STATIC U32 ZSTD_getLowestMatchIndex(const ZSTD_matchState_t* ms, U32 current, unsigned windowLog)
 {
     U32    const maxDistance = 1U << windowLog;
     U32    const lowestValid = ms->window.lowLimit;
+    U32    const withinWindow = (current - lowestValid > maxDistance) ? current - maxDistance : lowestValid;
+    U32    const isDictionary = (ms->loadedDictEnd != 0);
+    U32    const matchLowest = isDictionary ? lowestValid : withinWindow;
+    return matchLowest;
+}
+
+/**
+ * Returns the lowest allowed match index in the prefix.
+ */
+MEM_STATIC U32 ZSTD_getLowestPrefixIndex(const ZSTD_matchState_t* ms, U32 current, unsigned windowLog)
+{
+    U32    const maxDistance = 1U << windowLog;
+    U32    const lowestValid = ms->window.dictLimit;
     U32    const withinWindow = (current - lowestValid > maxDistance) ? current - maxDistance : lowestValid;
     U32    const isDictionary = (ms->loadedDictEnd != 0);
     U32    const matchLowest = isDictionary ? lowestValid : withinWindow;
@@ -1055,5 +1118,8 @@ size_t ZSTD_writeLastEmptyBlock(void* dst, size_t dstCapacity);
  */
 size_t ZSTD_referenceExternalSequences(ZSTD_CCtx* cctx, rawSeq* seq, size_t nbSeq);
 
+/** ZSTD_cycleLog() :
+ *  condition for correct operation : hashLog > 1 */
+U32 ZSTD_cycleLog(U32 hashLog, ZSTD_strategy strat);
 
 #endif /* ZSTD_COMPRESS_H */

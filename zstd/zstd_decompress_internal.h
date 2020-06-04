@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-present, Yann Collet, Facebook, Inc.
+ * Copyright (c) 2016-2020, Yann Collet, Facebook, Inc.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -95,6 +95,11 @@ typedef enum {
     ZSTD_use_once = 1            /* Use the dictionary once and set to ZSTD_dont_use */
 } ZSTD_dictUses_e;
 
+typedef enum {
+    ZSTD_obm_buffered = 0,  /* Buffer the output */
+    ZSTD_obm_stable = 1     /* ZSTD_outBuffer is stable */
+} ZSTD_outBufferMode_e;
+
 struct ZSTD_DCtx_s
 {
     const ZSTD_seqSymbol* LLTptr;
@@ -147,10 +152,19 @@ struct ZSTD_DCtx_s
     U32 legacyVersion;
     U32 hostageByte;
     int noForwardProgress;
+    ZSTD_outBufferMode_e outBufferMode;
+    ZSTD_outBuffer expectedOutBuffer;
 
     /* workspace */
     BYTE litBuffer[ZSTD_BLOCKSIZE_MAX + WILDCOPY_OVERLENGTH];
     BYTE headerBuffer[ZSTD_FRAMEHEADERSIZE_MAX];
+
+    size_t oversizedDuration;
+
+#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION
+    void const* dictContentBeginForFuzzing;
+    void const* dictContentEndForFuzzing;
+#endif
 };  /* typedef'd to ZSTD_DCtx within "zstd.h" */
 
 

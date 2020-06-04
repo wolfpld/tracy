@@ -1268,6 +1268,7 @@ To have proper call stack information, the profiled application must be compiled
 \begin{itemize}
 \item On MSVC open the project properties and go to \emph{Linker\textrightarrow Debugging\textrightarrow Generate Debug Info}, where the \emph{Generate Debug Information} option should be selected.
 \item On gcc or clang remember to specify the debugging information \texttt{-g} parameter during compilation and omit the strip symbols \texttt{-s} parameter. Link the executable with an additional option \texttt{-rdynamic} (or \texttt{-{}-export-dynamic}, if you are passing parameters directly to the linker).
+\item On OSX you may need to run \texttt{dsymutil} to extract the debugging data out of the executable binary.
 \end{itemize}
 
 You may also be interested in symbols from external libraries, especially if you have sampling profiling enabled (section~\ref{sampling}). In MSVC you can retrieve such symbols by going to \emph{Tools\textrightarrow Options\textrightarrow Debugging\textrightarrow Symbols} and selecting appropriate \emph{Symbol file (.pdb) location} servers. Note that additional symbols may significantly increase application startup times.

@@ -505,7 +505,7 @@ bool View::DrawImpl()
         ImGui::SetNextWindowPos( viewport->Pos );
         ImGui::SetNextWindowSize( ImVec2( m_rootWidth, m_rootHeight ) );
         ImGui::SetNextWindowViewport( viewport->ID );
-        ImGui::Begin( "Timeline view###Profiler", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking );
+        ImGui::Begin( "Timeline view###Profiler", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoNavFocus );
 
         style.WindowRounding = wrPrev;
         style.WindowBorderSize = wbsPrev;
@@ -726,7 +726,7 @@ bool View::DrawImpl()
         style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
 #endif
 
-        ImGui::Begin( "Work area" );
+        ImGui::Begin( "Work area", nullptr, ImGuiWindowFlags_NoNavFocus );
 
         style.WindowPadding = wpPrev;
 #ifndef TRACY_NO_ROOT_WINDOW

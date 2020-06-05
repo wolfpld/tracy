@@ -889,7 +889,7 @@ void SourceView::Render( const Worker& worker, View& view )
 
 void SourceView::RenderSimpleSourceView()
 {
-    ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true );
+    ImGui::BeginChild( "##sourceView", ImVec2( 0, 0 ), true, ImGuiWindowFlags_HorizontalScrollbar );
     if( m_font ) ImGui::PushFont( m_font );
 
     auto draw = ImGui::GetWindowDrawList();
@@ -1376,7 +1376,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     }
 
     const float bottom = m_srcSampleSelect.empty() ? 0 : ImGui::GetFrameHeight();
-    ImGui::BeginChild( "##sourceView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove );
+    ImGui::BeginChild( "##sourceView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_HorizontalScrollbar );
     if( m_font ) ImGui::PushFont( m_font );
 
     auto draw = ImGui::GetWindowDrawList();
@@ -1654,7 +1654,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
 #endif
 
     const float bottom = m_asmSampleSelect.empty() ? 0 : ImGui::GetFrameHeight();
-    ImGui::BeginChild( "##asmView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove );
+    ImGui::BeginChild( "##asmView", ImVec2( 0, -bottom ), true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_HorizontalScrollbar );
     if( m_font ) ImGui::PushFont( m_font );
 
     int maxAddrLen;

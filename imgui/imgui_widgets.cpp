@@ -2977,7 +2977,7 @@ bool ImGui::TempInputScalar(const ImRect& bb, ImGuiID id, const char* label, ImG
             DataTypeClamp(data_type, p_data, p_clamp_min, p_clamp_max);
 
         // Only mark as edited if new value is different
-        value_changed = memcmp(&data_type, p_data, data_type_size) != 0;
+        value_changed = memcmp(&data_backup, p_data, data_type_size) != 0;
         if (value_changed)
             MarkItemEdited(id);
     }
@@ -7288,6 +7288,11 @@ bool    ImGui::TabItemEx(ImGuiTabBar* tab_bar, const char* label, bool* p_open, 
     if (pressed)
         tab_bar->NextSelectedTabId = id;
     hovered |= (g.HoveredId == id);
+
+    // Transfer active id window so the active id is not owned by the dock host (as StartMouseMovingWindow()
+    // will only do it on the drag). This allows FocusWindow() to be more conservative in how it clears active id.
+    if (held && docked_window && g.ActiveId == id && g.ActiveIdIsJustActivated)
+        g.ActiveIdWindow = docked_window;
 
     // Allow the close button to overlap unless we are dragging (in which case we don't want any overlapping tabs to be hovered)
     if (!held)

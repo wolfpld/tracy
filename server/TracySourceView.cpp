@@ -918,7 +918,7 @@ void SourceView::RenderSimpleSourceView()
             }
             RenderLine( line, lineNum++, 0, 0, 0, nullptr );
         }
-        const auto& win = ImGui::GetCurrentWindow();
+        const auto win = ImGui::GetCurrentWindowRead();
         m_srcWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
     }
     else
@@ -1416,7 +1416,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
             }
             RenderLine( line, lineNum++, 0, iptotal, ipmax, &worker );
         }
-        const auto& win = ImGui::GetCurrentWindow();
+        const auto win = ImGui::GetCurrentWindowRead();
         m_srcWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
     }
     else
@@ -1443,7 +1443,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
         }
     }
 
-    auto win = ImGui::GetCurrentWindow();
+    const auto win = ImGui::GetCurrentWindowRead();
     if( win->ScrollbarY )
     {
         auto draw = ImGui::GetWindowDrawList();
@@ -1689,7 +1689,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
             }
             RenderAsmLine( line, 0, iptotal, ipmax, worker, jumpOut, maxAddrLen, view );
         }
-        const auto& win = ImGui::GetCurrentWindow();
+        const auto win = ImGui::GetCurrentWindowRead();
         m_asmWidth = win->DC.CursorMaxPos.x - win->DC.CursorStartPos.x;
     }
     else
@@ -1859,7 +1859,7 @@ uint64_t SourceView::RenderSymbolAsmView( uint32_t iptotal, unordered_flat_map<u
 #endif
     }
 
-    auto win = ImGui::GetCurrentWindow();
+    const auto win = ImGui::GetCurrentWindowRead();
     if( win->ScrollbarY )
     {
         auto draw = ImGui::GetWindowDrawList();

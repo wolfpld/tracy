@@ -1293,7 +1293,7 @@ void View::DrawFrames()
 
     enum { MaxFrameTime = 50 * 1000 * 1000 };  // 50ms
 
-    ImGuiWindow* window = ImGui::GetCurrentWindow();
+    ImGuiWindow* window = ImGui::GetCurrentWindowRead();
     if( window->SkipItems ) return;
 
     auto& io = ImGui::GetIO();
@@ -2300,7 +2300,7 @@ void View::DrawZones()
     if( m_vd.zvStart == m_vd.zvEnd ) return;
     assert( m_vd.zvStart < m_vd.zvEnd );
 
-    if( ImGui::GetCurrentWindow()->SkipItems ) return;
+    if( ImGui::GetCurrentWindowRead()->SkipItems ) return;
 
     m_gpuThread = 0;
     m_gpuStart = 0;

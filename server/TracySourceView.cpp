@@ -1386,7 +1386,7 @@ void SourceView::RenderSymbolSourceView( uint32_t iptotal, unordered_flat_map<ui
     if( m_font ) ImGui::PushFont( m_font );
 
     auto draw = ImGui::GetWindowDrawList();
-    const auto wpos = ImGui::GetWindowPos();
+    const auto wpos = ImGui::GetWindowPos() - ImVec2( ImGui::GetCurrentWindowRead()->Scroll.x, 0 );
     const auto wh = ImGui::GetWindowHeight();
     const auto ty = ImGui::GetFontSize();
     const auto ts = ImGui::CalcTextSize( " " ).x;

@@ -117,7 +117,7 @@ Hello and welcome to the Tracy Profiler user manual! Here you will find all the 
 \section{A quick look at Tracy Profiler}
 \label{quicklook}
 
-Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan) and memory. It also can monitor locks held by threads and show where contention does happen.
+Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, OpenCL) and memory. It also can monitor locks held by threads and show where contention does happen.
 
 While Tracy can perform statistical analysis of sampled call stack data, just like other \emph{statistical profilers} (such as VTune, perf or Very Sleepy), it mainly focuses on manual markup of the source code, which allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it is unable to accurately pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 

@@ -75,7 +75,8 @@ constexpr const char* s_tracyStackFrames[] = {
 constexpr const char* GpuContextNames[] = {
     "Invalid",
     "OpenGL",
-    "Vulkan"
+    "Vulkan",
+    "Direct3D 12"
 };
 
 
@@ -2472,7 +2473,7 @@ void View::DrawZones()
                     draw->AddTriangle( wpos + ImVec2( to/2, oldOffset + to/2 ), wpos + ImVec2( to/2, oldOffset + ty - to/2 ), wpos + ImVec2( to/2 + th, oldOffset + ty * 0.5 ), 0xFF886666, 2.0f );
                 }
 
-                const bool isMultithreaded = v->type == GpuContextType::Vulkan;
+                const bool isMultithreaded = (v->type == GpuContextType::Vulkan || v->type == GpuContextType::Direct3D12);
                 char buf[64];
                 sprintf( buf, "%s context %zu", GpuContextNames[(int)v->type], i );
                 DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );

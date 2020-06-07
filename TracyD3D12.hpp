@@ -132,7 +132,7 @@ namespace tracy
 			MemWrite(&item->gpuNewContext.period, 1E+09f / static_cast<float>(timestampFrequency));
 			MemWrite(&item->gpuNewContext.context, m_context);
 			MemWrite(&item->gpuNewContext.accuracyBits, uint8_t{ 0 });
-			MemWrite(&item->gpuNewContext.type, GpuContextType::Vulkan);  // #TEMP: Add a Direct3D12 context type in the server.
+			MemWrite(&item->gpuNewContext.type, GpuContextType::Direct3D12);
 
 #ifdef TRACY_ON_DEMAND
 			GetProfiler().DeferItem(*item);

@@ -163,10 +163,12 @@ namespace tracy
 
 			// Batch submit all of our query data to the profiler.
 
+			D3D12_RANGE mapRange{ 0, m_queryLimit * sizeof(uint64_t) };
+
 			// Map the readback buffer so we can fetch the query data from the GPU.
 			void* readbackBufferMapping = nullptr;
 
-			if (FAILED(m_readbackBuffer->Map(0, nullptr, &readbackBufferMapping)))
+			if (FAILED(m_readbackBuffer->Map(0, &mapRange, &readbackBufferMapping)))
 			{
 				assert(false && "Failed to map readback buffer.");
 			}

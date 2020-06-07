@@ -39,7 +39,7 @@ namespace tracy
 	{
 		friend class D3D12ZoneScope;
 
-		static constexpr uint32_t MaxQueries = 64 * 1024;  // Queries are begin and end markers, so we can store half as many total time durations.
+		static constexpr uint32_t MaxQueries = 64 * 1024;  // Queries are begin and end markers, so we can store half as many total time durations. Must be even!
 
 		bool m_initialized = false;
 
@@ -206,7 +206,7 @@ namespace tracy
 			assert(m_queryCounter < m_queryLimit && "Submitted too many GPU queries! Consider increasing MaxQueries.");
 
 			const uint32_t id = (m_previousQueryCounter + m_queryCounter) % m_queryLimit;
-			++m_queryCounter;
+			m_queryCounter += 2;  // Allocate space for a begin and end query.
 
 			return id;
 		}
@@ -222,6 +222,7 @@ namespace tracy
 		const bool m_active;
 		D3D12QueueCtx* m_ctx = nullptr;
 		ID3D12GraphicsCommandList* m_cmdList = nullptr;
+		uint32_t m_queryId = 0;  // Used for tracking in nested zones.
 
 	public:
 		tracy_force_inline D3D12ZoneScope(D3D12QueueCtx* ctx, ID3D12GraphicsCommandList* cmdList, const SourceLocationData* srcLocation, bool active)
@@ -236,8 +237,8 @@ namespace tracy
 			m_ctx = ctx;
 			m_cmdList = cmdList;
 
-			const auto queryId = ctx->NextQueryId();
-			cmdList->EndQuery(ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, queryId);
+			m_queryId = ctx->NextQueryId();
+			cmdList->EndQuery(ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_queryId);
 
 			auto* item = Profiler::QueueSerial();
 #if defined(TRACY_HAS_CALLSTACK) && defined(TRACY_CALLSTACK)
@@ -248,7 +249,7 @@ namespace tracy
 			MemWrite(&item->gpuZoneBegin.cpuTime, Profiler::GetTime());
 			MemWrite(&item->gpuZoneBegin.srcloc, reinterpret_cast<uint64_t>(srcLocation));
 			MemWrite(&item->gpuZoneBegin.thread, GetThreadHandle());
-			MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(queryId));
+			MemWrite(&item->gpuZoneBegin.queryId, static_cast<uint16_t>(m_queryId));
 			MemWrite(&item->gpuZoneBegin.context, ctx->GetId());
 
 			Profiler::QueueSerialFinish();
@@ -262,7 +263,7 @@ namespace tracy
 		{
 			if (!m_active) return;
 
-			const auto queryId = m_ctx->NextQueryId();
+			const auto queryId = m_queryId + 1;  // Our end query slot is immediately after the begin slot.
 			m_cmdList->EndQuery(m_ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, queryId);
 
 			auto* item = Profiler::QueueSerial();
@@ -274,7 +275,7 @@ namespace tracy
 
 			Profiler::QueueSerialFinish();
 
-			m_cmdList->ResolveQueryData(m_ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, queryId - 1, 2, m_ctx->m_readbackBuffer.Get(), (queryId - 1) * sizeof(uint64_t));
+			m_cmdList->ResolveQueryData(m_ctx->m_queryHeap.Get(), D3D12_QUERY_TYPE_TIMESTAMP, m_queryId, 2, m_ctx->m_readbackBuffer.Get(), m_queryId * sizeof(uint64_t));
 		}
 	};
 

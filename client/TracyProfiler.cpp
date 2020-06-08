@@ -224,7 +224,7 @@ static int64_t SetupHwTimer()
 #ifndef TRACY_TIMER_QPC
     uint32_t regs[4];
     CpuId( regs, 0x80000001 );
-    if( !( regs[3] & ( 1 << 27 ) ) ) InitFailure( "CPU doesn't support RDTSCP instruction." );
+    if( !( regs[3] & ( 1 << 4 ) ) ) InitFailure( "CPU doesn't support RDTSC instruction." );
     CpuId( regs, 0x80000007 );
     if( !( regs[3] & ( 1 << 8 ) ) )
     {

@@ -178,7 +178,7 @@ namespace tracy
 			for (uint32_t index = 0; index < m_queryCounter; ++index)
 			{
 				const auto timestamp = timestampData[(m_previousQueryCounter + index) % m_queryLimit];
-				const auto queryId = m_previousQueryCounter + index;
+				const auto queryId = (m_previousQueryCounter + index) % m_queryLimit;
 
 				auto* item = Profiler::QueueSerial();
 				MemWrite(&item->hdr.type, QueueType::GpuTime);

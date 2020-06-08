@@ -2091,7 +2091,7 @@ void SourceView::RenderLine( const Line& line, int lineNum, uint32_t ipcnt, uint
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
-    const auto w = m_srcWidth;
+    const auto w = std::max( m_srcWidth, ImGui::GetWindowWidth() );
     const auto wpos = ImGui::GetCursorScreenPos();
     if( m_fileStringIdx == m_hoveredSource && lineNum == m_hoveredLine )
     {
@@ -2268,7 +2268,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
 {
     const auto ty = ImGui::GetFontSize();
     auto draw = ImGui::GetWindowDrawList();
-    const auto w = m_asmWidth;
+    const auto w = std::max( m_asmWidth, ImGui::GetWindowWidth() );
     const auto wpos = ImGui::GetCursorScreenPos();
     if( m_selectedAddressesHover.find( line.addr ) != m_selectedAddressesHover.end() )
     {

@@ -30,6 +30,8 @@ using TracyD3D12Ctx = void*;
 #include <d3d12.h>
 #include <dxgi.h>
 #include <wrl/client.h>
+#include <algorithm>
+#include <vector>
 
 namespace tracy
 {
@@ -175,9 +177,31 @@ namespace tracy
 
 			auto* timestampData = static_cast<uint64_t*>(readbackBufferMapping);
 
-			for (uint32_t index = 0; index < m_queryCounter; ++index)
+			// First off we need to sort our query data. Without this, out-of-order command list execution (with respect to CPU timeline recording)
+			// would cause view artifacts in the viewer (zones disappear, take up the whole timeline, etc.)
+
+			std::vector<uint64_t> queryData;
+			queryData.resize(m_queryCounter);
+
+			if (m_previousQueryCounter + m_queryCounter <= m_queryLimit)  // Make sure we don't need to loop over.
 			{
-				const auto timestamp = timestampData[(m_previousQueryCounter + index) % m_queryLimit];
+				std::copy(timestampData + m_previousQueryCounter, timestampData + m_previousQueryCounter + m_queryCounter, queryData.begin());
+			}
+
+			else
+			{
+				const auto firstBatch = (m_previousQueryCounter + m_queryCounter) - m_queryLimit;
+				std::copy(timestampData + m_previousQueryCounter, timestampData + m_queryLimit, queryData.begin());
+				std::copy(timestampData, timestampData + (m_queryCounter - firstBatch), std::next(queryData.begin(), m_queryCounter - firstBatch));
+			}
+
+			std::sort(queryData.begin(), queryData.end(), std::less<uint64_t>{});
+
+			// Data is sorted, send it to the profiler.
+
+			for (uint32_t index = 0; index < queryData.size(); ++index)
+			{
+				const auto timestamp = queryData[index];
 				const auto queryId = m_previousQueryCounter + index;
 
 				auto* item = Profiler::QueueSerial();

@@ -65,6 +65,7 @@ update utility to convert your old traces now!
 - Per-frame zone times on the frames plot can now display self time.
 - Ability to bind only on localhost interface.
 - OpenCL profiling.
+- Direct3D 12 profiling.
 
 v0.6.3 (2020-02-13)
 -------------------

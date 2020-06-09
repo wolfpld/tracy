@@ -1199,13 +1199,13 @@ You also need to periodically collect the GPU events using the \texttt{TracyVkCo
 
 \subsubsection{Direct3D 12}
 
-To enable Direct3D 12 support, include the \texttt{tracy/TracyD3D12.hpp} header file. Tracing Direct3D 12 queues is on par with the Vulkan implementation, where a \texttt{TracyD3D12Ctx} is returned from a call to \texttt{TracyD3D12Context(device, queue)}, which should be later cleaned up with the \texttt{TracyD3D12Destroy(ctx)} macro. Multiple contexts can be created, each with any queue type.
+To enable Direct3D 12 support, include the \texttt{tracy/TracyD3D12.hpp} header file. Tracing Direct3D 12 queues is nearly on par with the Vulkan implementation, where a \texttt{TracyD3D12Ctx} is returned from a call to \texttt{TracyD3D12Context(device, queue)}, which should be later cleaned up with the \texttt{TracyD3D12Destroy(ctx)} macro. Multiple contexts can be created, each with any queue type.
 
 The queue must have been created through the specified device, however a command list is not needed for this stage.
 
 Using GPU zones is the same as the Vulkan implementation, where the \texttt{TracyD3D12Zone(ctx, cmdList, name)} macro is used, with \texttt{name} as a string literal. \texttt{TracyD3D12ZoneC(ctx, cmdList, name, color)} can be used to create a custom-colored zone. The given command list must be in an open state.
 
-Event data can then be collected and sent to the profiler using the \texttt{TracyD3D12Collect(ctx)} macro.
+The macro \texttt{TracyD3D12NewFrame(ctx)} is used to mark a new frame, and should appear before or after recording command lists, similar to \texttt{FrameMark}. This macro is a key component that enables automatic query data synchronization, so the user doesn't have to worry about synchronizing GPU execution before invoking a collection. Event data can then be collected and sent to the profiler using the \texttt{TracyD3D12Collect(ctx)} macro.
 
 \subsubsection{Multiple zones in one scope}
 

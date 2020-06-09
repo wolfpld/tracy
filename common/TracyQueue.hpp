@@ -264,6 +264,7 @@ enum class GpuContextType : uint8_t
     Invalid,
     OpenGl,
     Vulkan,
+    OpenCL,
     Direct3D12
 };
 

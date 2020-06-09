@@ -117,7 +117,7 @@ Hello and welcome to the Tracy Profiler user manual! Here you will find all the 
 \section{A quick look at Tracy Profiler}
 \label{quicklook}
 
-Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, Direct3D 12) and memory. It also can monitor locks held by threads and show where contention does happen.
+Tracy is a real-time, nanosecond resolution \emph{hybrid frame and sampling profiler} that can be used for remote or embedded telemetry of games and other applications. It can profile CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, Direct3D 12, OpenCL) and memory. It also can monitor locks held by threads and show where contention does happen.
 
 While Tracy can perform statistical analysis of sampled call stack data, just like other \emph{statistical profilers} (such as VTune, perf or Very Sleepy), it mainly focuses on manual markup of the source code, which allows frame-by-frame inspection of the program execution. You will be able to see exactly which functions are called, how much time is spent in them, and how do they interact with each other in a multi-threaded environment. In contrast, the statistical analysis may show you the hot spots in your code, but it is unable to accurately pinpoint the underlying cause for semi-random frame stutter that may occur every couple of seconds.
 
@@ -452,7 +452,7 @@ The first command will allow access to system CPU statistics. The second one wil
 
 \paragraph{Cloud service providers}
 
-In some cases you actually don't own the hardware, but lend it from someone else. In such circumstances you might be running inside a virtual machine, which may be configured to prohibit you from using the bare metal facilities needed by Tracy\footnote{Or you might just be using a quite old CPU, which doesn't have support for required features.}. One example of such limitation would be lack of access to a reliable time stamp register readings, which will prevent the application from starting with either 'CPU doesn't support RDTSCP instruction' or 'CPU doesn't support invariant TSC' error message. If you are using Windows, you may workaround this issue by rebuilding the profiled application with the \texttt{TRACY\_TIMER\_QPC} macro, but be aware that it will severely lower the resolution of timer readings.
+In some cases you actually don't own the hardware, but lend it from someone else. In such circumstances you might be running inside a virtual machine, which may be configured to prohibit you from using the bare metal facilities needed by Tracy\footnote{Or you might just be using a quite old CPU, which doesn't have support for required features.}. One example of such limitation would be lack of access to a reliable time stamp register readings, which will prevent the application from starting with either 'CPU doesn't support RDTSC instruction' or 'CPU doesn't support invariant TSC' error message. If you are using Windows, you may workaround this issue by rebuilding the profiled application with the \texttt{TRACY\_TIMER\_QPC} macro, but be aware that it will severely lower the resolution of timer readings.
 
 \subsubsection{Changing network port}
 
@@ -691,7 +691,7 @@ Memory & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
 GPU zones (OpenGL) & \faCheck & \faCheck & \faCheck & \faPoo & \faPoo & \\
 GPU zones (Vulkan) & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \\
 Call stacks & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
-Symbol resolution & \faCheck & \faCheck & \faCheck & \faCheck & \faPoo & \faCheck \\
+Symbol resolution & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
 Crash handling & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
 CPU usage probing & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
 Context switches & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
@@ -1207,6 +1207,16 @@ Using GPU zones is the same as the Vulkan implementation, where the \texttt{Trac
 
 The macro \texttt{TracyD3D12NewFrame(ctx)} is used to mark a new frame, and should appear before or after recording command lists, similar to \texttt{FrameMark}. This macro is a key component that enables automatic query data synchronization, so the user doesn't have to worry about synchronizing GPU execution before invoking a collection. Event data can then be collected and sent to the profiler using the \texttt{TracyD3D12Collect(ctx)} macro.
 
+\subsubsection{OpenCL}
+
+OpenCL support is achieved by including the \texttt{tracy/TracyOpenCL.hpp} header file. Tracing OpenCL requires the creation of a Tracy OpenCL context using the macro \texttt{TracyCLContext(context, device)}, which will return an instance of \texttt{TracyCLCtx} object that must be used when creating zones. The specified \texttt{device} must be part of the \texttt{context}. Cleanup is performed using the \texttt{TracyCLDestroy(ctx)} macro. Although not common, it is possible to create multiple OpenCL contexts for the same application.
+
+To mark an OpenCL zone one must make sure that a valid OpenCL \texttt{cl\_event} object is available. The event will be the object that Tracy will use to query profiling information from the OpenCL driver. For this to work, all OpenCL queues must be created with the \texttt{CL\_QUEUE\_PROFILING\_ENABLE} property.
+
+OpenCL zones can be created with the \texttt{TracyCLZone(ctx, name)} where \texttt{name} will usually be a descriptive name for the operation represented by the \texttt{cl\_event}. Within the scope of the zone, you must call \texttt{TracyCLSetEvent(event)} for the event to be registered in Tracy.
+
+Similarly to Vulkan and OpenGL, you also need to periodically collect the OpenCL events using the \texttt{TracyCLCollect(ctx)} macro. A good place to perform this operation is after a \texttt{clFinish}, since this will ensure that any previous queued OpenCL commands will have finished by this point. 
+
 \subsubsection{Multiple zones in one scope}
 
 Putting more than one GPU zone macro in a single scope features the same issue as with the \texttt{ZoneScoped} macros, described in section~\ref{multizone} (but this time the variable name is \texttt{\_\_\_tracy\_gpu\_zone}).
@@ -1279,6 +1289,15 @@ To have proper call stack information, the profiled application must be compiled
 \item On MSVC open the project properties and go to \emph{Linker\textrightarrow Debugging\textrightarrow Generate Debug Info}, where the \emph{Generate Debug Information} option should be selected.
 \item On gcc or clang remember to specify the debugging information \texttt{-g} parameter during compilation and omit the strip symbols \texttt{-s} parameter. Link the executable with an additional option \texttt{-rdynamic} (or \texttt{-{}-export-dynamic}, if you are passing parameters directly to the linker).
 \item On OSX you may need to run \texttt{dsymutil} to extract the debugging data out of the executable binary.
+\item On iOS you will have to add a \emph{New Run Script Phase} to your XCode project, which will execute the following shell script:
+
+\begin{lstlisting}[language=sh]
+cp -rf ${TARGET_BUILD_DIR}/${WRAPPER_NAME}.dSYM/* ${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/${PRODUCT_NAME}.dSYM
+\end{lstlisting}
+
+You will also need to setup proper dependencies, by setting the following input file:\\
+\texttt{\$\{TARGET\_BUILD\_DIR\}/\$\{WRAPPER\_NAME\}.dSYM}, and the following output file:\\
+\texttt{\$\{TARGET\_BUILD\_DIR\}/\$\{UNLOCALIZED\_RESOURCES\_FOLDER\_PATH\}/\$\{PRODUCT\_NAME\}.dSYM}.
 \end{itemize}
 
 You may also be interested in symbols from external libraries, especially if you have sampling profiling enabled (section~\ref{sampling}). In MSVC you can retrieve such symbols by going to \emph{Tools\textrightarrow Options\textrightarrow Debugging\textrightarrow Symbols} and selecting appropriate \emph{Symbol file (.pdb) location} servers. Note that additional symbols may significantly increase application startup times.

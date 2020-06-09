@@ -9,6 +9,9 @@ a mistake.
 v0.7 (xxxx-xx-xx)
 -----------------
 
+This is the last release which will be able to load pre-v0.6 traces. Use the
+update utility to convert your old traces now!
+
 - chrome:tracing importer now imports zone metadata from "args" key.
 - Added display of statistical mode to find zone menu.
 - Automatic stack sampling is now available on windows.
@@ -61,6 +64,7 @@ v0.7 (xxxx-xx-xx)
 - Added ability to send simple integral values as extra payload for zones.
 - Per-frame zone times on the frames plot can now display self time.
 - Ability to bind only on localhost interface.
+- OpenCL profiling.
 
 v0.6.3 (2020-02-13)
 -------------------

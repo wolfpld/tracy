@@ -2,9 +2,9 @@
 
 [![Sponsor](.github/sponsor.png)](https://github.com/sponsors/wolfpld/)
 
-### A real time, nanosecond resolution, remote telemetry frame profiler for games and other applications.
+### A real time, nanosecond resolution, remote telemetry, hybrid frame and sampling profiler for games and other applications.
 
-Tracy supports profiling CPU (C, C++11, Lua), GPU (OpenGL, Vulkan), memory, locks, context switches, per-frame screenshots and more.
+Tracy supports profiling CPU (C, C++11, Lua), GPU (OpenGL, Vulkan, OpenCL), memory, locks, context switches, per-frame screenshots and more.
 
 For usage **and build process** instructions, consult the user manual [at the following address](https://github.com/wolfpld/tracy/releases).
 

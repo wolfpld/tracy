@@ -5265,7 +5265,7 @@ void Worker::ProcessGpuZoneBeginImpl( GpuEvent* zone, const QueueGpuZoneBegin& e
     uint64_t ztid;
     if( ctx->thread == 0 )
     {
-        // Vulkan context is not bound to any single thread.
+        // Vulkan and Direct3D 12 contexts are not bound to any single thread.
         zone->SetThread( CompressThread( ev.thread ) );
         ztid = ev.thread;
     }

@@ -264,7 +264,8 @@ enum class GpuContextType : uint8_t
     Invalid,
     OpenGl,
     Vulkan,
-    OpenCL
+    OpenCL,
+    Direct3D12
 };
 
 struct QueueGpuNewContext

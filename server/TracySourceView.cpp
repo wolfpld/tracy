@@ -68,7 +68,7 @@ static SourceView::RegsX86 s_regMapX86[X86_REG_ENDING];
 enum { JumpSeparation = 6 };
 enum { JumpArrowBase = 9 };
 
-SourceView::SourceView( ImFont* font )
+SourceView::SourceView( ImFont* font, GetWindowCallback gwcb )
     : m_font( font )
     , m_file( nullptr )
     , m_fileStringIdx( 0 )
@@ -93,6 +93,7 @@ SourceView::SourceView( ImFont* font )
     , m_showJumps( true )
     , m_cpuArch( CpuArchUnknown )
     , m_showLatency( false )
+    , m_gwcb( gwcb )
 {
     m_microArchOpMap.reserve( OpsNum );
     for( int i=0; i<OpsNum; i++ )
@@ -3537,7 +3538,7 @@ void SourceView::Save( const Worker& worker, size_t start, size_t stop )
     assert( start < stop );
 
     nfdchar_t* fn;
-    auto res = NFD_SaveDialog( "asm", nullptr, &fn );
+    auto res = NFD_SaveDialog( "asm", nullptr, &fn, m_gwcb ? m_gwcb() : nullptr );
     if( res == NFD_OKAY )
     {
         FILE* f = nullptr;

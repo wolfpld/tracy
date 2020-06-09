@@ -127,7 +127,9 @@ private:
     };
 
 public:
-    SourceView( ImFont* font );
+    using GetWindowCallback = void*(*)();
+
+    SourceView( ImFont* font, GetWindowCallback gwcb );
     ~SourceView();
 
     void SetCpuId( uint32_t cpuid );
@@ -242,6 +244,8 @@ private:
 
     float m_srcWidth;
     float m_asmWidth;
+
+    GetWindowCallback m_gwcb;
 };
 
 }

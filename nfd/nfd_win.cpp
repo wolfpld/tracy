@@ -364,7 +364,8 @@ static nfdresult_t SetDefaultPath( IFileDialog *dialog, const char *defaultPath 
 
 nfdresult_t NFD_OpenDialog( const nfdchar_t *filterList,
                             const nfdchar_t *defaultPath,
-                            nfdchar_t **outPath )
+                            nfdchar_t **outPath,
+                            void* owner )
 {
     HRESULT result;
     nfdresult_t nfdResult = NFD_ERROR;
@@ -407,7 +408,7 @@ nfdresult_t NFD_OpenDialog( const nfdchar_t *filterList,
     }    
 
     // Show the dialog.
-    result = fileOpenDialog->Show(NULL);
+    result = fileOpenDialog->Show((HWND)owner);
     if ( SUCCEEDED(result) )
     {
         // Get the file name
@@ -559,7 +560,8 @@ end:
 
 nfdresult_t NFD_SaveDialog( const nfdchar_t *filterList,
                             const nfdchar_t *defaultPath,
-                            nfdchar_t **outPath )
+                            nfdchar_t **outPath,
+                            void* owner )
 {
     nfdresult_t nfdResult = NFD_ERROR;
     
@@ -600,7 +602,7 @@ nfdresult_t NFD_SaveDialog( const nfdchar_t *filterList,
     }
 
     // Show the dialog.
-    result = fileSaveDialog->Show(NULL);
+    result = fileSaveDialog->Show((HWND)owner);
     if ( SUCCEEDED(result) )
     {
         // Get the file name

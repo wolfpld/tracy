@@ -128,7 +128,7 @@ enum { MinFrameSize = 5 };
 
 static View* s_instance = nullptr;
 
-View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb )
+View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb )
     : m_worker( addr, port )
     , m_staticView( false )
     , m_pause( false )
@@ -139,6 +139,7 @@ View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, I
     , m_smallFont( smallFont )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
+    , m_gwcb( gwcb )
     , m_userData()
 {
     assert( s_instance == nullptr );
@@ -147,7 +148,7 @@ View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, I
     InitTextEditor( fixedWidth );
 }
 
-View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb )
+View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb )
     : m_worker( f )
     , m_filename( f.GetFilename() )
     , m_staticView( true )
@@ -157,6 +158,7 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
     , m_smallFont( smallFont )
     , m_bigFont( bigFont )
     , m_stcb( stcb )
+    , m_gwcb( gwcb )
     , m_userData( m_worker.GetCaptureProgram().c_str(), m_worker.GetCaptureTime() )
 {
     assert( s_instance == nullptr );
@@ -196,7 +198,7 @@ View::~View()
 
 void View::InitTextEditor( ImFont* font )
 {
-    m_sourceView = std::make_unique<SourceView>( font );
+    m_sourceView = std::make_unique<SourceView>( font, m_gwcb );
     m_sourceViewFile = nullptr;
 }
 
@@ -1120,7 +1122,7 @@ bool View::DrawConnection()
     {
 #ifndef TRACY_NO_FILESELECTOR
         nfdchar_t* fn;
-        auto res = NFD_SaveDialog( "tracy", nullptr, &fn );
+        auto res = NFD_SaveDialog( "tracy", nullptr, &fn, m_gwcb ? m_gwcb() : nullptr );
         if( res == NFD_OKAY )
 #else
         const char* fn = "trace.tracy";
@@ -10312,7 +10314,7 @@ void View::DrawCompare()
         if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open second trace" ) && !m_compare.loadThread.joinable() )
         {
             nfdchar_t* fn;
-            auto res = NFD_OpenDialog( "tracy", nullptr, &fn );
+            auto res = NFD_OpenDialog( "tracy", nullptr, &fn, m_gwcb ? m_gwcb() : nullptr );
             if( res == NFD_OKAY )
             {
                 try

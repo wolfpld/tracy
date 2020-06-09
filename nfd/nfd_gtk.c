@@ -167,7 +167,8 @@ static void WaitForCleanup(void)
 
 nfdresult_t NFD_OpenDialog( const nfdchar_t *filterList,
                             const nfdchar_t *defaultPath,
-                            nfdchar_t **outPath )
+                            nfdchar_t **outPath,
+                            void* owner )
 {    
     GtkWidget *dialog;
     nfdresult_t result;
@@ -271,7 +272,8 @@ nfdresult_t NFD_OpenDialogMultiple( const nfdchar_t *filterList,
 
 nfdresult_t NFD_SaveDialog( const nfdchar_t *filterList,
                             const nfdchar_t *defaultPath,
-                            nfdchar_t **outPath )
+                            nfdchar_t **outPath,
+                            void* owner )
 {
     GtkWidget *dialog;
     nfdresult_t result;

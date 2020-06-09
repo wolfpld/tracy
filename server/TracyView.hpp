@@ -73,10 +73,11 @@ public:
     };
 
     using SetTitleCallback = void(*)( const char* );
+    using GetWindowCallback = void*(*)();
 
-    View( ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", 8086, fixedWidth, smallFont, bigFont, stcb ) {}
-    View( const char* addr, int port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
-    View( FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
+    View( ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr ) : View( "127.0.0.1", 8086, fixedWidth, smallFont, bigFont, stcb, gwcb ) {}
+    View( const char* addr, int port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr );
+    View( FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr, GetWindowCallback gwcb = nullptr );
     ~View();
 
     static bool Draw();
@@ -402,6 +403,7 @@ private:
     float m_rootWidth, m_rootHeight;
     SetTitleCallback m_stcb;
     bool m_titleSet = false;
+    GetWindowCallback m_gwcb;
 
     float m_notificationTime = 0;
     std::string m_notificationText;

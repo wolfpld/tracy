@@ -160,7 +160,7 @@ TRACY_API void SetThreadName( const char* name )
         const auto sz = strlen( name );
         char* buf = (char*)tracy_malloc( sz+1 );
         memcpy( buf, name, sz );
-        buf[sz+1] = '\0';
+        buf[sz] = '\0';
         auto data = (ThreadNameData*)tracy_malloc( sizeof( ThreadNameData ) );
         data->id = detail::GetThreadHandleImpl();
         data->name = buf;

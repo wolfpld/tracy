@@ -77,17 +77,18 @@ void TextureCompression::Rdo( char* data, size_t blocks )
     assert( blocks > 0 );
     do
     {
-        uint32_t idx;
-        memcpy( &idx, data+4, 4 );
+        uint64_t blk;
+        memcpy( &blk, data, 8 );
+
+        uint32_t idx = blk >> 32;
         if( idx == 0x55555555 )
         {
             data += 8;
             continue;
         }
 
-        uint16_t c0, c1;
-        memcpy( &c0, data, 2 );
-        memcpy( &c1, data+2, 2 );
+        uint16_t c0 = blk & 0xFFFF;
+        uint16_t c1 = ( blk >> 16 ) & 0xFFFF;
 
         const int r0b = c0 & 0xF800;
         const int g0b = c0 & 0x07E0;
@@ -180,12 +181,9 @@ void TextureCompression::Rdo( char* data, size_t blocks )
 
                 if( maxDelta23 <= tr3 )
                 {
-                    memcpy( data, &c1, 2 );
-                    memcpy( data+2, &c0, 2 );
-                    uint8_t tmp[4];
-                    memcpy( tmp, &idx, 4 );
-                    for( int k=0; k<4; k++ ) tmp[k] = Dxtc4To3Table[tmp[k]];
-                    memcpy( data+4, tmp, 4 );
+                    uint64_t c = c1 | ( uint64_t( c0 ) << 16 );
+                    for( int k=0; k<4; k++ ) c |= uint64_t( Dxtc4To3Table[(idx >> (k*8)) & 0xFF] ) << ( 32 + k*8 );
+                    memcpy( data, &c, 8 );
                 }
             }
         }

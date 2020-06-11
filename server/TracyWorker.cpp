@@ -4047,6 +4047,17 @@ int Worker::AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone
     static Vector<InlineStackData> stack;
     GetStackWithInlines( stack, cs );
 
+    if( !vec->empty() && vec->back().end.Val() > (int64_t)t )
+    {
+        auto tmp = vec;
+        while( tmp->size() > 0 )
+        {
+            auto& back = tmp->back();
+            back.end.SetVal( t );
+            if( back.child < 0 ) break;
+            tmp = &m_data.ghostChildren[back.child];
+        }
+    }
     const uint64_t refBackTime = vec->empty() ? 0 : vec->back().end.Val();
     int gcnt = 0;
     int idx = 0;

@@ -84,6 +84,10 @@ static tracy_force_inline int max3( int a, int b, int c )
     }
 }
 
+static constexpr int TrTbl1[] = { 12, 12, 12, 12, 6, 6, 6, 6, 6, 6, 6, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+static constexpr int TrTbl2[] = { 12, 12, 6, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+static constexpr int TrTbl3[] = { 48, 48, 48, 32, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24 };
+
 void TextureCompression::Rdo( char* data, size_t blocks )
 {
     assert( blocks > 0 );
@@ -124,22 +128,7 @@ void TextureCompression::Rdo( char* data, size_t blocks )
 
         const int maxChan1 = max3( r0-1, g0, b0-2 );
         const int maxDelta1 = max3( dr-1, dg, db-2 );
-        const int tr1a = 16;
-        const int tr1b = 45;
-        int tr1;
-        if( maxChan1 < tr1a )
-        {
-            tr1 = 12;
-        }
-        else if( maxChan1 < tr1b )
-        {
-            tr1 = 6;
-        }
-        else
-        {
-            tr1 = 3;
-        }
-
+        const int tr1 = TrTbl1[maxChan1 / 4];
         if( maxDelta1 <= tr1 )
         {
             uint64_t blk =
@@ -152,22 +141,7 @@ void TextureCompression::Rdo( char* data, size_t blocks )
         {
             const int maxChan23 = max3( r0-2, g0, b0-5 );
             const int maxDelta23 = max3( dr-2, dg, db-5 );
-            const int tr2a = 32;
-            const int tr2b = 48;
-            int tr2 = 0;
-            if( maxChan23 < tr2a )
-            {
-                tr2 = 12;
-            }
-            else if( maxChan23 < tr2b )
-            {
-                tr2 = 6;
-            }
-            else
-            {
-                tr2 = 3;
-            }
-
+            const int tr2 = TrTbl2[maxChan23 / 16];
             if( maxDelta23 <= tr2 )
             {
                 idx &= 0x55555555;
@@ -175,22 +149,7 @@ void TextureCompression::Rdo( char* data, size_t blocks )
             }
             else
             {
-                const int tr3a = 48;
-                const int tr3b = 64;
-                int tr3;
-                if( maxChan23 < tr3a )
-                {
-                    tr3 = 48;
-                }
-                else if( maxChan23 < tr3b )
-                {
-                    tr3 = 32;
-                }
-                else
-                {
-                    tr3 = 24;
-                }
-
+                const int tr3 = TrTbl3[maxChan23 / 16];
                 if( maxDelta23 <= tr3 )
                 {
                     uint64_t c = c1 | ( uint64_t( c0 ) << 16 );

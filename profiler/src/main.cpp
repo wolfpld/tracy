@@ -559,6 +559,10 @@ static void DrawContents()
             {
                 OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
             }
+            if( ImGui::Selectable( ICON_FA_VIDEO " New features in v0.7" ) )
+            {
+                OpenWebpage( "https://www.youtube.com/watch?v=_hU7vw00MZ4" );
+            }
             ImGui::EndPopup();
         }
         ImGui::SameLine();

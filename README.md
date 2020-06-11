@@ -18,4 +18,5 @@ For usage **and build process** instructions, consult the user manual [at the fo
 [New features in Tracy Profiler v0.3](https://www.youtube.com/watch?v=3SXpDpDh2Uo)  
 [New features in Tracy Profiler v0.4](https://www.youtube.com/watch?v=eAkgkaO8B9o)  
 [New features in Tracy Profiler v0.5](https://www.youtube.com/watch?v=P6E7qLMmzTQ)  
-[New features in Tracy Profiler v0.6](https://www.youtube.com/watch?v=uJkrFgriuOo)
+[New features in Tracy Profiler v0.6](https://www.youtube.com/watch?v=uJkrFgriuOo)  
+[New features in Tracy Profiler v0.7](https://www.youtube.com/watch?v=_hU7vw00MZ4)

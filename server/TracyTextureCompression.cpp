@@ -219,10 +219,11 @@ void TextureCompression::FixOrder( char* data, size_t blocks )
     assert( blocks > 0 );
     do
     {
-        uint8_t tmp[4];
-        memcpy( tmp, data+4, 4 );
-        for( int k=0; k<4; k++ ) tmp[k] = DxtcIndexTable[(uint8_t)tmp[k]];
-        memcpy( data+4, tmp, 4 );
+        uint32_t res = 0;
+        uint32_t tmp;
+        memcpy( &tmp, data+4, 4 );
+        for( int k=0; k<4; k++ ) res |= DxtcIndexTable[(tmp >> (k*8)) & 0xFF] << (k*8);
+        memcpy( data+4, &res, 4 );
         data += 8;
     }
     while( --blocks );

@@ -72,6 +72,18 @@ static constexpr uint8_t Dxtc4To3Table[256] = {
     165, 164, 166, 166, 161, 160, 162, 162, 169, 168, 170, 170, 169, 168, 170, 170
 };
 
+static tracy_force_inline int max3( int a, int b, int c )
+{
+    if( a > b )
+    {
+        return a > c ? a : c;
+    }
+    else
+    {
+        return b > c ? b : c;
+    }
+}
+
 void TextureCompression::Rdo( char* data, size_t blocks )
 {
     assert( blocks > 0 );
@@ -110,8 +122,8 @@ void TextureCompression::Rdo( char* data, size_t blocks )
         const int dg = abs( g0 - g1 );
         const int db = abs( b0 - b1 );
 
-        const int maxChan1 = std::max( { r0-1, g0, b0-2 } );
-        const int maxDelta1 = std::max( { dr-1, dg, db-2 } );
+        const int maxChan1 = max3( r0-1, g0, b0-2 );
+        const int maxDelta1 = max3( dr-1, dg, db-2 );
         const int tr1a = 16;
         const int tr1b = 45;
         int tr1;
@@ -138,8 +150,8 @@ void TextureCompression::Rdo( char* data, size_t blocks )
         }
         else
         {
-            const int maxChan23 = std::max( { r0-2, g0, b0-5 } );
-            const int maxDelta23 = std::max( { dr-2, dg, db-5 } );
+            const int maxChan23 = max3( r0-2, g0, b0-5 );
+            const int maxDelta23 = max3( dr-2, dg, db-5 );
             const int tr2a = 32;
             const int tr2b = 48;
             int tr2 = 0;

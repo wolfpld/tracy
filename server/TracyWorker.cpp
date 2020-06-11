@@ -4050,7 +4050,7 @@ int Worker::AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone
     if( !vec->empty() && vec->back().end.Val() > (int64_t)t )
     {
         auto tmp = vec;
-        while( tmp->size() > 0 )
+        for(;;)
         {
             auto& back = tmp->back();
             back.end.SetVal( t );
@@ -4071,7 +4071,7 @@ int Worker::AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone
         if( inlineFrame.symAddr != stack[idx].symAddr ) break;
         if( back.end.Val() != refBackTime ) break;
         back.end.SetVal( t + m_samplingPeriod );
-        idx++;
+        if( ++idx == stack.size() ) break;
         if( back.child < 0 )
         {
             back.child = m_data.ghostChildren.size();

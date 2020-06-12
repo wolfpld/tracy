@@ -940,6 +940,10 @@ Use the \texttt{ZoneText(text, size)} macro to add a custom text string that wil
 
 If you want to set zone name on a per-call basis, you may do so using the \texttt{ZoneName(text, size)} macro. This name won't be used in the process of grouping the zones for statistical purposes (sections~\ref{statistics} and~\ref{findzone}).
 
+\subsubsection{Manual management of zone scope}
+
+The zone markup macros automatically report when they end, through the RAII mechanism\footnote{\url{https://en.cppreference.com/w/cpp/language/raii}}. This is very helpful, but sometimes you may want to mark the zone start and end points yourself, for example if you want to have a zone that crosses the function's boundary. This can be achieved by using the C API, which is described in section~\ref{capi}.
+
 \subsubsection{Multiple zones in one scope}
 \label{multizone}
 
@@ -1025,10 +1029,6 @@ void Graphics::Render()
 	...
 }
 \end{lstlisting}
-
-\subsubsection{Manual management of zone scope}
-
-The zone markup macros automatically report when they end, through the RAII mechanism\footnote{\url{https://en.cppreference.com/w/cpp/language/raii}}. This is very helpful, but sometimes you may want to mark the zone start and end points yourself, for example if you want to have a zone that crosses the function's boundary. This can be achieved by using the C API, which is described in section~\ref{capi}.
 
 \subsubsection{Exiting program from within a zone}
 

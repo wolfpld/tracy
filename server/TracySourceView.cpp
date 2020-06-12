@@ -3114,10 +3114,6 @@ static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> G
 }
 }
 
-static const auto s_keywords = GetKeywords();
-static const auto s_types = GetTypes();
-static const auto s_special = GetSpecial();
-
 static bool TokenizeNumber( const char*& begin, const char* end )
 {
     const bool startNum = *begin >= '0' && *begin <= '9';
@@ -3178,6 +3174,10 @@ static bool TokenizeNumber( const char*& begin, const char* end )
 
 SourceView::TokenColor SourceView::IdentifyToken( const char*& begin, const char* end )
 {
+    static const auto s_keywords = GetKeywords();
+    static const auto s_types = GetTypes();
+    static const auto s_special = GetSpecial();
+
     if( *begin == '"' )
     {
         begin++;

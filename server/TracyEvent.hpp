@@ -94,13 +94,6 @@ private:
     uint8_t m_idx[3];
 };
 
-struct __StringIdxOld
-{
-    uint32_t idx    : 31;
-    uint32_t active : 1;
-};
-
-
 class Int24
 {
 public:

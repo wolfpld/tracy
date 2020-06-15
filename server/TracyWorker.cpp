@@ -3656,10 +3656,12 @@ int Worker::AddGhostZone( const VarArray<CallstackFrameId>& cs, Vector<GhostZone
 
     if( !vec->empty() && vec->back().end.Val() > (int64_t)t )
     {
+        const auto refBackTime = vec->back().end.Val();
         auto tmp = vec;
         for(;;)
         {
             auto& back = tmp->back();
+            if( back.end.Val() != refBackTime ) break;
             back.end.SetVal( t );
             if( back.child < 0 ) break;
             tmp = &m_data.ghostChildren[back.child];

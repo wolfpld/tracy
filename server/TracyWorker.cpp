@@ -892,6 +892,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             f.Read4( ctx->thread, ctx->accuracyBits, ctx->count, ctx->period );
             ctx->type = ctx->thread == 0 ? GpuContextType::Vulkan : GpuContextType::OpenGl;
         }
+        ctx->hasPeriod = ctx->period != 1.f;
         m_data.gpuCnt += ctx->count;
         uint64_t tdsz;
         f.Read( tdsz );
@@ -4849,6 +4850,7 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     gpu->period = ev.period;
     gpu->count = 0;
     gpu->type = ev.type;
+    gpu->hasPeriod = ev.period != 1.f;
     m_data.gpuData.push_back( gpu );
     m_gpuCtxMap[ev.context] = gpu;
 }
@@ -4980,7 +4982,7 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     const int64_t t = std::max<int64_t>( 0, tref );
 
     int64_t gpuTime;
-    if( ctx->period == 1.f )
+    if( !ctx->hasPeriod )
     {
         gpuTime = t;
     }

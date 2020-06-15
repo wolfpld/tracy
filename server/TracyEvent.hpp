@@ -564,9 +564,10 @@ struct GpuCtxData
     uint64_t count;
     uint8_t accuracyBits;
     float period;
+    GpuContextType type;
+    bool hasPeriod;
     unordered_flat_map<uint64_t, GpuCtxThreadData> threadData;
     short_ptr<GpuEvent> query[64*1024];
-    GpuContextType type;
 };
 
 enum { GpuCtxDataSize = sizeof( GpuCtxData ) };

@@ -128,7 +128,7 @@ static Counts& counts() {
 #endif
 
 // count leading/trailing bits
-#if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+#if ( ( defined __i386 || defined __x86_64__ ) && defined __BMI__ ) || defined _M_IX86 || defined _M_X64
 #    ifdef _MSC_VER
 #        include <intrin.h>
 #    else
@@ -139,7 +139,7 @@ static Counts& counts() {
 #    else
 #        define ROBIN_HOOD_PRIVATE_DEFINITION_CTZ() _tzcnt_u64
 #    endif
-#    ifdef __AVX2__
+#    if defined __AVX2__ || defined __BMI__
 #        define ROBIN_HOOD_COUNT_TRAILING_ZEROES(x) ROBIN_HOOD(CTZ)(x)
 #    else
 #        define ROBIN_HOOD_COUNT_TRAILING_ZEROES(x) ((x) ? ROBIN_HOOD(CTZ)(x) : ROBIN_HOOD(BITNESS))

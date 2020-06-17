@@ -12656,7 +12656,7 @@ void View::DrawInfo()
                 pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs->first, rhs->first ) < 0; } );
                 for( auto& v : vec )
                 {
-                    ImGui::BulletText( v->first );
+                    ImGui::BulletText( "%s", v->first );
                     if( ImGui::IsItemClicked() ) ViewSource( v->first, 0 );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%s)", MemSizeToString( v->second.len ) );

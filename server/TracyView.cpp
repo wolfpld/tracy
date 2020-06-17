@@ -12630,12 +12630,39 @@ void View::DrawInfo()
             ImGui::TextUnformatted( "Coarse CPU core context switch data" );
             ImGui::EndTooltip();
         }
-        TextFocused( "Source file cache:", RealToString( m_worker.GetSourceFileCacheCount() ) );
-        if( ImGui::IsItemHovered() )
+        if( m_worker.GetSourceFileCacheCount() == 0 )
         {
-            ImGui::BeginTooltip();
-            ImGui::TextUnformatted( MemSizeToString( m_worker.GetSourceFileCacheSize() ) );
-            ImGui::EndTooltip();
+            TextFocused( "Source file cache:", "0" );
+        }
+        else
+        {
+            ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+            const bool expand = ImGui::TreeNode( "Source file cache:" );
+            ImGui::PopStyleColor();
+            ImGui::SameLine();
+            ImGui::TextUnformatted( RealToString( m_worker.GetSourceFileCacheCount() ) );
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( MemSizeToString( m_worker.GetSourceFileCacheSize() ) );
+                ImGui::EndTooltip();
+            }
+            if( expand )
+            {
+                auto& cache = m_worker.GetSourceFileCache();
+                std::vector<decltype(cache.begin())> vec;
+                vec.reserve( cache.size() );
+                for( auto it = cache.begin(); it != cache.end(); ++it ) vec.emplace_back( it );
+                pdqsort_branchless( vec.begin(), vec.end(), []( const auto& lhs, const auto& rhs ) { return strcmp( lhs->first, rhs->first ) < 0; } );
+                for( auto& v : vec )
+                {
+                    ImGui::BulletText( v->first );
+                    if( ImGui::IsItemClicked() ) ViewSource( v->first, 0 );
+                    ImGui::SameLine();
+                    ImGui::TextDisabled( "(%s)", MemSizeToString( v->second.len ) );
+                }
+                ImGui::TreePop();
+            }
         }
         ImGui::TreePop();
     }

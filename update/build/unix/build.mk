@@ -1,8 +1,8 @@
 CFLAGS +=
 CXXFLAGS := $(CFLAGS) -std=gnu++17
 DEFINES += -DTRACY_NO_STATISTICS
-INCLUDES := $(shell pkg-config --cflags capstone) $(shell pkg-config --silence-errors --cflags tbb)
-LIBS := $(shell pkg-config --libs capstone) $(shell pkg-config --silence-errors --libs tbb) -lpthread
+INCLUDES := $(shell pkg-config --cflags capstone)
+LIBS := $(shell pkg-config --libs capstone) -lpthread
 PROJECT := update
 IMAGE := $(PROJECT)-$(BUILD)
 
@@ -13,6 +13,11 @@ BASE2 := $(shell egrep 'ClCompile.*c"' ../win32/$(PROJECT).vcxproj | sed -e 's/.
 
 SRC := $(filter-out $(FILTER),$(BASE))
 SRC2 := $(filter-out $(FILTER),$(BASE2))
+
+TBB := $(shell ld -ltbb -o /dev/null 2>/dev/null; echo $$?)
+ifeq ($(TBB),0)
+	LIBS += -ltbb
+endif
 
 OBJDIRBASE := obj/$(BUILD)
 OBJDIR := $(OBJDIRBASE)/o/o/o

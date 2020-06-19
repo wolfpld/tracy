@@ -1,8 +1,8 @@
 CFLAGS += 
 CXXFLAGS := $(CFLAGS) -std=c++17
 DEFINES += -DIMGUI_IMPL_OPENGL_LOADER_GL3W
-INCLUDES := $(shell pkg-config --cflags glfw3 freetype2 capstone) $(shell pkg-config --silence-errors --cflags tbb) -I../../../imgui -I../../libs/gl3w
-LIBS := $(shell pkg-config --libs glfw3 freetype2 capstone) $(shell pkg-config --silence-errors --libs tbb) -lpthread -ldl
+INCLUDES := $(shell pkg-config --cflags glfw3 freetype2 capstone) -I../../../imgui -I../../libs/gl3w
+LIBS := $(shell pkg-config --libs glfw3 freetype2 capstone) -lpthread -ldl
 PROJECT := Tracy
 IMAGE := $(PROJECT)-$(BUILD)
 
@@ -23,6 +23,11 @@ else
 	SRC2 += ../../../nfd/nfd_gtk.c
 	INCLUDES += $(shell pkg-config --cflags gtk+-2.0)
 	LIBS += $(shell pkg-config --libs gtk+-2.0) -lGL
+endif
+
+TBB := $(shell ld -ltbb -o /dev/null 2>/dev/null; echo $$?)
+ifeq ($(TBB),0)
+	LIBS += -ltbb
 endif
 
 OBJDIRBASE := obj/$(BUILD)

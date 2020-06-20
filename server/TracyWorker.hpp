@@ -107,6 +107,13 @@ public:
         std::string message;
     };
 
+    struct ImportEventPlots
+    {
+        std::string name;
+        PlotValueFormatting format;
+        std::vector<std::pair<int64_t, double>> data;
+    };
+
     struct ZoneThreadData
     {
         tracy_force_inline ZoneEvent* Zone() const { return (ZoneEvent*)( _zone_thread >> 16 ); }
@@ -399,7 +406,7 @@ public:
     };
 
     Worker( const char* addr, int port );
-    Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages );
+    Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots );
     Worker( FileRead& f, EventType::Type eventMask = EventType::All, bool bgTasks = true );
     ~Worker();
 

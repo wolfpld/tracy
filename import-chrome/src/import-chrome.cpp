@@ -55,6 +55,7 @@ int main( int argc, char** argv )
 
     std::vector<tracy::Worker::ImportEventTimeline> timeline;
     std::vector<tracy::Worker::ImportEventMessages> messages;
+    std::vector<tracy::Worker::ImportEventPlots> plots;
 
     if( j.is_object() && j.contains( "traceEvents" ) )
     {
@@ -121,6 +122,7 @@ int main( int argc, char** argv )
 
     std::stable_sort( timeline.begin(), timeline.end(), [] ( const auto& l, const auto& r ) { return l.timestamp < r.timestamp; } );
     std::stable_sort( messages.begin(), messages.end(), [] ( const auto& l, const auto& r ) { return l.timestamp < r.timestamp; } );
+    for( auto& v : plots ) std::stable_sort( v.data.begin(), v.data.end(), [] ( const auto& l, const auto& r ) { return l.first < r.first; } );
 
     uint64_t mts = 0;
     if( !timeline.empty() )
@@ -141,7 +143,7 @@ int main( int argc, char** argv )
     while( *program ) program++;
     program--;
     while( program > input && ( *program != '/' || *program != '\\' ) ) program--;
-    tracy::Worker worker( program, timeline, messages );
+    tracy::Worker worker( program, timeline, messages, plots );
 
     auto w = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output, clev ) );
     if( !w )

@@ -270,7 +270,7 @@ Worker::Worker( const char* addr, int port )
     m_threadNet = std::thread( [this] { SetThreadName( "Tracy Network" ); Network(); } );
 }
 
-Worker::Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages )
+Worker::Worker( const std::string& program, const std::vector<ImportEventTimeline>& timeline, const std::vector<ImportEventMessages>& messages, const std::vector<ImportEventPlots>& plots )
     : m_hasData( true )
     , m_delay( 0 )
     , m_resolution( 0 )
@@ -295,6 +295,13 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
     if( !messages.empty() )
     {
         if( m_data.lastTime < (int64_t)messages.back().timestamp ) m_data.lastTime = messages.back().timestamp;
+    }
+    if( !plots.empty() )
+    {
+        for( auto& v : plots )
+        {
+            if( m_data.lastTime < v.data.back().first ) m_data.lastTime = v.data.back().first;
+        }
     }
 
     for( auto& v : timeline )
@@ -376,6 +383,39 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
         msg->color = 0xFFFFFFFF;
         msg->callstack.SetVal( 0 );
         InsertMessageData( msg );
+    }
+
+    for( auto& v : plots )
+    {
+        uint64_t nptr = (uint64_t)&v.name;
+        auto it = m_data.strings.find( nptr );
+        if( it == m_data.strings.end() )
+        {
+            const auto sl = StoreString( v.name.c_str(), v.name.size() );
+            m_data.strings.emplace( nptr, sl.ptr );
+        }
+
+        auto plot = m_slab.AllocInit<PlotData>();
+        plot->name = nptr;
+        plot->type = PlotType::User;
+        plot->format = v.format;
+
+        double min = v.data.begin()->first;
+        double max = v.data.begin()->first;
+        plot->data.reserve_exact( v.data.size(), m_slab );
+        size_t idx = 0;
+        for( auto& p : v.data )
+        {
+            plot->data[idx].time.SetVal( p.first );
+            plot->data[idx].val = p.second;
+            idx++;
+            if( min > p.second ) min = p.second;
+            else if( max < p.second ) max = p.second;
+        }
+        plot->min = min;
+        plot->max = max;
+
+        m_data.plots.Data().push_back( plot );
     }
 
     for( auto& t : m_threadMap )

@@ -713,6 +713,7 @@ With the aforementioned steps you will be able to connect to the profiled progra
 Manual instrumentation is best started with adding markup to the main loop of the application, along with a few function that are called there. This will give you a rough outline of the function's time cost, which you may then further refine by instrumenting functions deeper in the call stack. Alternatively, automated sampling might guide you more quickly to places of interest.
 
 \subsection{Handling text strings}
+\label{textstrings}
 
 When dealing with Tracy macros, you will encounter two ways of providing string data to the profiler. In both cases you should pass \texttt{const char*} pointers, but there are differences in expected life-time of the pointed data.
 
@@ -1215,7 +1216,7 @@ To mark an OpenCL zone one must make sure that a valid OpenCL \texttt{cl\_event}
 
 OpenCL zones can be created with the \texttt{TracyCLZone(ctx, name)} where \texttt{name} will usually be a descriptive name for the operation represented by the \texttt{cl\_event}. Within the scope of the zone, you must call \texttt{TracyCLSetEvent(event)} for the event to be registered in Tracy.
 
-Similarly to Vulkan and OpenGL, you also need to periodically collect the OpenCL events using the \texttt{TracyCLCollect(ctx)} macro. A good place to perform this operation is after a \texttt{clFinish}, since this will ensure that any previous queued OpenCL commands will have finished by this point. 
+Similarly to Vulkan and OpenGL, you also need to periodically collect the OpenCL events using the \texttt{TracyCLCollect(ctx)} macro. A good place to perform this operation is after a \texttt{clFinish}, since this will ensure that any previous queued OpenCL commands will have finished by this point.
 
 \subsubsection{Multiple zones in one scope}
 
@@ -1447,41 +1448,6 @@ Since all instrumentation using the C API has to be done by hand, it is possible
 
 The validation comes with a performance cost though, which you may not want to pay. If you are \emph{completely sure} that the instrumentation is not broken in any way, you may use the \texttt{TRACY\_NO\_VERIFY} macro, which will disable the validation code.
 
-\paragraph{Allocated source locations}
-
-Sometimes you might want to provide your own source location data to a zone. For example, you may be integrating Tracy with another programming language, one where there are no guarantees about object lifetime, or how data structures will be laid out in the memory.
-
-To do so, you need to create an \emph{allocated source location}, by calling one of the following functions:
-
-\begin{itemize}
-\item \texttt{\_\_\_tracy\_alloc\_srcloc(uint32\_t line, const char* source, const char* function)}
-\item \texttt{\_\_\_tracy\_alloc\_srcloc\_name(uint32\_t line, const char* source, const char* function, const char* name, size\_t nameSz)}
-\end{itemize}
-
-Where \texttt{line} is line number in the \texttt{source} source file and \texttt{function} is the name of a function in which zone is created. Both \texttt{source} and \texttt{function} must be null-terminated strings. You may additionally specify an optional zone name, by providing it in the \texttt{name} variable, and specifying its size in \texttt{nameSz}. None of the provided text strings has to be kept in memory after source location is allocated.
-
-Both functions return an \texttt{uint64\_t} source location value, which then must be passed to one of the zone begin functions:
-
-\begin{itemize}
-\item \texttt{\_\_\_tracy\_emit\_zone\_begin\_alloc(srcloc, active)}
-\item \texttt{\_\_\_tracy\_emit\_zone\_begin\_alloc\_callstack(srcloc, depth, active)}
-\end{itemize}
-
-These functions return a \texttt{TracyCZoneCtx} context value, which must be handled, as described in sections~\ref{czonemarkup} and~\ref{zonectx}.
-
-The variable representing an allocated source location is of an opaque type. After it is passed to one of the zone begin functions, its value \emph{cannot be reused}. You must allocate a new source location for each zone begin event.
-
-\begin{bclogo}[
-noborder=true,
-couleur=black!5,
-logo=\bcbombe
-]{Important}
-Since you are directly calling the profiler functions here, you will need to take care of manually disabling the code, if the \texttt{TRACY\_ENABLE} macro is not defined.
-
-Additionally, make sure you have called \texttt{\_\_\_tracy\_init\_thread} before calling the
-\textttt{alloc} functions for the first time on a new non-main thread.
-\end{bclogo}
-
 \subsubsection{Memory profiling}
 
 Use the following macros in your implementations of \texttt{malloc} and \texttt{free}:
@@ -1515,6 +1481,61 @@ Consult sections~\ref{plottingdata} and~\ref{messagelog} for more information.
 \subsubsection{Call stacks}
 
 You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using the following \texttt{S} postfixed macros: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}, \texttt{TracyCMessageS}, \texttt{TracyCMessageLS}, \texttt{TracyCMessageCS}, \texttt{TracyCMessageLCS}.
+
+\subsubsection{Using the C API to implement bindings}
+
+The Tracy C API exposes functions with the \texttt{\_\_\_tracy} prefix that may be used to
+integrate Tracy with other programming languages. Most of the functions available are a counterpart
+to macros described in section~\ref{capi}. Some of the functions do not have a macro
+counterpart and are dedicated expressly for binding implementation purposes. This section describes
+these functions.
+
+\begin{itemize}
+\item \texttt{\_\_\_tracy\_init\_thread(void)}
+\item \texttt{\_\_\_tracy\_alloc\_srcloc(uint32\_t line, const char* source, const char* function)}
+\item \texttt{\_\_\_tracy\_alloc\_srcloc\_name(uint32\_t line, const char* source, const char* function, const char* name, size\_t nameSz)}
+\end{itemize}
+
+Here \texttt{line} is line number in the \texttt{source} source file and \texttt{function} is the
+name of a function in which the zone is created. Both \texttt{source} and \texttt{function} must be
+null-terminated strings. You may additionally specify an optional zone name, by providing it in the
+\texttt{name} variable, and specifying its size in \texttt{nameSz}.
+
+The \texttt{\_\_\_tracy\_alloc\_srcloc} and \texttt{\_\_\_tracy\_alloc\_srcloc\_name} functions
+return an \texttt{uint64\_t} source location identifier corresponding to an \emph{allocated source
+location}. As these functions do not require for the provided string data to be alive after they
+return, calling code is free to deallocate them at any time afterwards. This way the string
+lifetime requirements described in section~\ref{textstrings} are relaxed.
+
+Before the \texttt{\_\_\_tracy\_alloc} functions are called on a non-main thread for the first
+time, care should be taken to ensure that \texttt{\_\_\_tracy\_init\_thread} has been called first.
+The \texttt{\_\_\_tracy\_init\_thread} function initializes per-thread structures Tracy uses and
+can be safely called multiple times.
+
+The \texttt{uint64\_t} return value from allocation functions must be passed to one of the zone
+begin functions:
+
+\begin{itemize}
+\item \texttt{\_\_\_tracy\_emit\_zone\_begin\_alloc(srcloc, active)}
+\item \texttt{\_\_\_tracy\_emit\_zone\_begin\_alloc\_callstack(srcloc, depth, active)}
+\end{itemize}
+
+
+These functions return a \texttt{TracyCZoneCtx} context value, which must be handled, as described
+in sections~\ref{czonemarkup} and~\ref{zonectx}.
+
+The variable representing an allocated source location is of an opaque type. After it is passed to
+one of the zone begin functions, its value \emph{cannot be reused}. You must allocate a new source
+location for each zone begin event.
+
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bcbombe
+]{Important}
+Since you are directly calling the profiler functions here, you will need to take care of manually
+disabling the code, if the \texttt{TRACY\_ENABLE} macro is not defined.
+\end{bclogo}
 
 \subsection{Automated data collection}
 \label{automated}

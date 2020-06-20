@@ -135,8 +135,8 @@ bool Socket::Connect( const char* addr, int port )
                 m_ptr = nullptr;
                 return false;
             }
-        }
 #endif
+        }
 
 #if defined _WIN32 || defined __CYGWIN__
         u_long nonblocking = 0;

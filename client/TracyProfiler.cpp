@@ -3073,7 +3073,13 @@ TRACY_API uint64_t ___tracy_alloc_srcloc_name( uint32_t line, const char* source
 // initialized every time a thread is created. As thus, expose to the C API users a simple API to
 // call every time they create a thread. Here we can then put all sorts of per-thread
 // initialization.
-TRACY_API void ___tracy_init_thread(void) { (void)tracy::s_rpmalloc_thread_init; }
+TRACY_API void ___tracy_init_thread(void) {
+#ifdef TRACY_DELAYED_INIT
+    (void)tracy::GetProfilerThreadData();
+#else
+    (void)tracy::s_rpmalloc_thread_init;
+#endif
+}
 
 #ifdef __cplusplus
 }

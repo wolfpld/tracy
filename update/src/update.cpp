@@ -16,6 +16,8 @@
 
 #ifdef __CYGWIN__
 #  define ftello64(x) ftello(x)
+#elif defined __APPLE__
+#  define ftello64(x) ftello(x)
 #elif defined _WIN32
 #  define ftello64(x) _ftelli64(x)
 #endif

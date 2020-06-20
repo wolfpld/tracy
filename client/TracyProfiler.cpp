@@ -3068,6 +3068,13 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size ) { t
 TRACY_API uint64_t ___tracy_alloc_srcloc( uint32_t line, const char* source, const char* function ) { return tracy::Profiler::AllocSourceLocation( line, source, function ); }
 TRACY_API uint64_t ___tracy_alloc_srcloc_name( uint32_t line, const char* source, const char* function, const char* name, size_t nameSz ) { return tracy::Profiler::AllocSourceLocation( line, source, function, name, nameSz ); }
 
+// thread_locals are not initialized on thread creation. At least on GNU/Linux. Instead they are
+// initialized on their first ODR-use. This means that the allocator is not automagically
+// initialized every time a thread is created. As thus, expose to the C API users a simple API to
+// call every time they create a thread. Here we can then put all sorts of per-thread
+// initialization.
+TRACY_API void ___tracy_init_thread(void) { (void)tracy::s_rpmalloc_thread_init; }
+
 #ifdef __cplusplus
 }
 #endif

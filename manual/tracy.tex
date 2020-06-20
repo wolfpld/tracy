@@ -1477,6 +1477,9 @@ couleur=black!5,
 logo=\bcbombe
 ]{Important}
 Since you are directly calling the profiler functions here, you will need to take care of manually disabling the code, if the \texttt{TRACY\_ENABLE} macro is not defined.
+
+Additionally, make sure you have called \texttt{\_\_\_tracy\_init\_thread} before calling the
+\textttt{alloc} functions for the first time on a new non-main thread.
 \end{bclogo}
 
 \subsubsection{Memory profiling}

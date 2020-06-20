@@ -118,6 +118,44 @@ int main( int argc, char** argv )
                 v["name"].get<std::string>()
             } );
         }
+        else if( type == "C" )
+        {
+            auto timestamp = int64_t( v["ts"].get<double>() * 1000 );
+            for( auto& kv : v["args"].items() )
+            {
+                bool plotFound = false;
+                auto& metricName = kv.key();
+                auto dataPoint = std::make_pair( timestamp, kv.value().get<double>() );
+
+                // The input file is assumed to have only very few metrics,
+                // so iterating through plots is not a problem.
+                for( auto& plot : plots )
+                {
+                    if( plot.name == metricName )
+                    {
+                        plot.data.emplace_back( dataPoint );
+                        plotFound = true;
+                        break;
+                    }
+                }
+                if( !plotFound )
+                {
+                    auto formatting = tracy::PlotValueFormatting::Number;
+
+                    // NOTE: With C++20 one could say metricName.ends_with( "_bytes" ) instead of rfind
+                    auto metricNameLen = metricName.size();
+                    if ( metricNameLen >= 6 && metricName.rfind( "_bytes" ) == metricNameLen - 6 ) {
+                        formatting = tracy::PlotValueFormatting::Memory;
+                    }
+
+                    plots.emplace_back( tracy::Worker::ImportEventPlots {
+                        std::move( metricName ),
+                        formatting,
+                        { dataPoint }
+                    } );
+                }
+            }
+        }
     }
 
     std::stable_sort( timeline.begin(), timeline.end(), [] ( const auto& l, const auto& r ) { return l.timestamp < r.timestamp; } );
@@ -135,6 +173,9 @@ int main( int argc, char** argv )
     }
     for( auto& v : timeline ) v.timestamp -= mts;
     for( auto& v : messages ) v.timestamp -= mts;
+    for( auto& plot : plots )
+      for( auto& v : plot.data )
+        v.first -= mts;
 
     printf( "\33[2KProcessing...\r" );
     fflush( stdout );

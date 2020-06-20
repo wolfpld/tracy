@@ -483,30 +483,34 @@ public:
 
     static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, const char* function )
     {
-        const auto fsz = strlen( function );
-        const auto ssz = strlen( source );
-        const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 );
-        auto ptr = (char*)tracy_malloc( sz );
-        memcpy( ptr, &sz, 4 );
-        memset( ptr + 4, 0, 4 );
-        memcpy( ptr + 8, &line, 4 );
-        memcpy( ptr + 12, function, fsz+1 );
-        memcpy( ptr + 12 + fsz + 1, source, ssz + 1 );
-        return uint64_t( ptr );
+        return AllocSourceLocation( line, source, function, nullptr, 0 );
     }
 
     static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, const char* function, const char* name, size_t nameSz )
     {
-        const auto fsz = strlen( function );
-        const auto ssz = strlen( source );
-        const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 + nameSz );
+        return AllocSourceLocation( line, source, strlen(source), function, strlen(function), name, nameSz );
+    }
+
+    static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz )
+    {
+        return AllocSourceLocation( line, source, sourceSz, function, functionSz, nullptr, 0 );
+    }
+
+    static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz )
+    {
+        const uint32_t sz = uint32_t( 4 + 4 + 4 + functionSz + 1 + sourceSz + 1 + nameSz );
         auto ptr = (char*)tracy_malloc( sz );
         memcpy( ptr, &sz, 4 );
         memset( ptr + 4, 0, 4 );
         memcpy( ptr + 8, &line, 4 );
-        memcpy( ptr + 12, function, fsz+1 );
-        memcpy( ptr + 12 + fsz + 1, source, ssz + 1 );
-        memcpy( ptr + 12 + fsz + 1 + ssz + 1, name, nameSz );
+        memcpy( ptr + 12, function, functionSz );
+        ptr[12 + functionSz] = '\0';
+        memcpy( ptr + 12 + functionSz + 1, source, sourceSz );
+        ptr[12 + functionSz + 1 + sourceSz] = '\0';
+        if( nameSz != 0 )
+        {
+            memcpy( ptr + 12 + functionSz + 1 + sourceSz + 1, name, nameSz );
+        }
         return uint64_t( ptr );
     }
 

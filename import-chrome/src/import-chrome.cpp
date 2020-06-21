@@ -171,11 +171,16 @@ int main( int argc, char** argv )
     {
         if( mts > messages[0].timestamp ) mts = messages[0].timestamp;
     }
+    for( auto& plot : plots )
+    {
+        if( mts > plot.data[0].first ) mts = plot.data[0].first;
+    }
     for( auto& v : timeline ) v.timestamp -= mts;
     for( auto& v : messages ) v.timestamp -= mts;
     for( auto& plot : plots )
-      for( auto& v : plot.data )
-        v.first -= mts;
+    {
+      for( auto& v : plot.data ) v.first -= mts;
+    }
 
     printf( "\33[2KProcessing...\r" );
     fflush( stdout );

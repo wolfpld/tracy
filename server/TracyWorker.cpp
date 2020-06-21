@@ -400,8 +400,8 @@ Worker::Worker( const std::string& program, const std::vector<ImportEventTimelin
         plot->type = PlotType::User;
         plot->format = v.format;
 
-        double min = v.data.begin()->first;
-        double max = v.data.begin()->first;
+        double min = v.data.begin()->second;
+        double max = v.data.begin()->second;
         plot->data.reserve_exact( v.data.size(), m_slab );
         size_t idx = 0;
         for( auto& p : v.data )

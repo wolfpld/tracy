@@ -863,13 +863,15 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
 
 enum { QueuePrealloc = 256 * 1024 };
 
-static Profiler* s_instance;
+static Profiler* s_instance = nullptr;
 static Thread* s_thread;
 static Thread* s_compressThread;
 
 #ifdef TRACY_HAS_SYSTEM_TRACING
 static Thread* s_sysTraceThread = nullptr;
 #endif
+
+TRACY_API bool ProfilerAvailable() { return s_instance != nullptr; }
 
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;

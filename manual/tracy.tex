@@ -1155,6 +1155,8 @@ void operator delete(void* ptr) noexcept
 }
 \end{lstlisting}
 
+In some rare cases (e.g. destruction of TLS block), events may be reported after the profiler is no longer available, which would lead to a crash. To workaround this issue, you may use \texttt{TracySecureAlloc} and \texttt{TracySecureFree} variants of the macros.
+
 \begin{bclogo}[
 noborder=true,
 couleur=black!5,
@@ -1164,6 +1166,7 @@ Each tracked memory free event must also have a corresponding memory allocation 
 
 \begin{itemize}
 \item Mismatched \texttt{malloc}/\texttt{new} or \texttt{free}/\texttt{delete}.
+\item Reporting the same memory address being allocated twice (without a free between two allocs).
 \item Double freeing the memory.
 \item Untracked allocations made in external libraries, that are freed in the application.
 \item Places where the memory is allocated, but profiling markup is added.
@@ -1241,7 +1244,7 @@ Remember that you need to provide your own name for the created stack variable a
 \subsection{Collecting call stacks}
 \label{collectingcallstacks}
 
-Capture of true calls stacks can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracyMessageS}, \texttt{TracyMessageLS}, \texttt{TracyMessageCS}, \texttt{TracyMessageLCS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named variants.
+Capture of true calls stacks can be performed by using macros with the \texttt{S} postfix, which require an additional parameter, specifying the depth of call stack to be captured. The greater the depth, the longer it will take to perform capture. Currently you can use the following macros: \texttt{ZoneScopedS}, \texttt{ZoneScopedNS}, \texttt{ZoneScopedCS}, \texttt{ZoneScopedNCS}, \texttt{TracyAllocS}, \texttt{TracyFreeS}, \texttt{TracySecureAllocS}, \texttt{TracySecureFreeS}, \texttt{TracyMessageS}, \texttt{TracyMessageLS}, \texttt{TracyMessageCS}, \texttt{TracyMessageLCS}, \texttt{TracyGpuZoneS}, \texttt{TracyGpuZoneCS}, \texttt{TracyVkZoneS}, \texttt{TracyVkZoneCS}, and the named variants.
 
 Be aware that call stack collection is a relatively slow operation. Table~\ref{CallstackTimes} and figure~\ref{CallstackPlot} show how long it took to perform a single capture of varying depth on multiple CPU architectures.
 
@@ -1467,6 +1470,8 @@ Use the following macros in your implementations of \texttt{malloc} and \texttt{
 \begin{itemize}
 \item \texttt{TracyCAlloc(ptr, size)}
 \item \texttt{TracyCFree(ptr)}
+\item \texttt{TracyCSecureAlloc(ptr, size)}
+\item \texttt{TracyCSecureFree(ptr)}
 \end{itemize}
 
 Using this functionality in a proper way can be quite tricky, as you also will need to handle all the memory allocations made by external libraries (which typically allow usage of custom memory allocation functions), but also the allocations made by system functions. If such an allocation can't be tracked, you will need to make sure freeing is not reported\footnote{It's not uncommon to see a pattern where a system function returns some allocated memory, which you then need to free.}.
@@ -1492,15 +1497,11 @@ Consult sections~\ref{plottingdata} and~\ref{messagelog} for more information.
 
 \subsubsection{Call stacks}
 
-You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using the following \texttt{S} postfixed macros: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}, \texttt{TracyCMessageS}, \texttt{TracyCMessageLS}, \texttt{TracyCMessageCS}, \texttt{TracyCMessageLCS}.
+You can collect call stacks of zones and memory allocation events, as described in section~\ref{collectingcallstacks}, by using the following \texttt{S} postfixed macros: \texttt{TracyCZoneS}, \texttt{TracyCZoneNS}, \texttt{TracyCZoneCS}, \texttt{TracyCZoneNCS}, \texttt{TracyCAllocS}, \texttt{TracyCFreeS}, \texttt{TracyCSecureAllocS}, \texttt{TracyCSecureFreeS}, \texttt{TracyCMessageS}, \texttt{TracyCMessageLS}, \texttt{TracyCMessageCS}, \texttt{TracyCMessageLCS}.
 
 \subsubsection{Using the C API to implement bindings}
 
-The Tracy C API exposes functions with the \texttt{\_\_\_tracy} prefix that may be used to
-integrate Tracy with other programming languages. Most of the functions available are a counterpart
-to macros described in section~\ref{capi}. Some of the functions do not have a macro
-counterpart and are dedicated expressly for binding implementation purposes. This section describes
-these functions.
+Tracy C API exposes functions with the \texttt{\_\_\_tracy} prefix that may be used to write bindings to other programming languages. Most of the functions available are a counterpart to macros described in section~\ref{capi}. Some functions do not have macro equivalents and are dedicated expressly for binding implementation purposes. This includes the following:
 
 \begin{itemize}
 \item \texttt{\_\_\_tracy\_init\_thread(void)}
@@ -1515,11 +1516,11 @@ name, by providing it in the \texttt{name} variable, and specifying its size in 
 
 The \texttt{\_\_\_tracy\_alloc\_srcloc} and \texttt{\_\_\_tracy\_alloc\_srcloc\_name} functions
 return an \texttt{uint64\_t} source location identifier corresponding to an \emph{allocated source
-location}. As these functions do not require for the provided string data to be alive after they
+location}. As these functions do not require for the provided string data to be available after they
 return, calling code is free to deallocate them at any time afterwards. This way the string
 lifetime requirements described in section~\ref{textstrings} are relaxed.
 
-Before the \texttt{\_\_\_tracy\_alloc} functions are called on a non-main thread for the first
+Before the \texttt{\_\_\_tracy\_alloc\_*} functions are called on a non-main thread for the first
 time, care should be taken to ensure that \texttt{\_\_\_tracy\_init\_thread} has been called first.
 The \texttt{\_\_\_tracy\_init\_thread} function initializes per-thread structures Tracy uses and
 can be safely called multiple times.

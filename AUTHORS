@@ -9,3 +9,4 @@ Dedmen Miller <dedmen@dedmen.de>                    (find zone bug fixes, improv
 Michał Cichoń <michcic@gmail.com>                   (OSX call stack decoding backport)
 Thales Sabino <thales@codeplay.com>                 (OpenCL support)
 Andrew Depke <andrewdepke@gmail.com>                (Direct3D 12 support)
+Simonas Kazlauskas <git@kazlauskas.me>              (OSX CI, external bindings)

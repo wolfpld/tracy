@@ -179,7 +179,7 @@ int main( int argc, char** argv )
     for( auto& v : messages ) v.timestamp -= mts;
     for( auto& plot : plots )
     {
-      for( auto& v : plot.data ) v.first -= mts;
+        for( auto& v : plot.data ) v.first -= mts;
     }
 
     printf( "\33[2KProcessing...\r" );

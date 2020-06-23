@@ -2692,8 +2692,9 @@ void Profiler::ReportTopology()
         sprintf( path, "%s%i/topology/physical_package_id", basePath, i );
         char buf[1024];
         FILE* f = fopen( path, "rb" );
-        if( f == nullptr ) {
-            tracy_free(cpuData);
+        if( !f )
+        {
+            tracy_free( cpuData );
             return;
         }
         auto read = fread( buf, 1, 1024, f );

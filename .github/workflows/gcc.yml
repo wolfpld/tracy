@@ -13,13 +13,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macOS-latest]
+        os: [ubuntu-20.04, macOS-latest]
 
     steps:
     - uses: actions/checkout@v2
     - name: Install linux libraries
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: sudo apt-get update && sudo apt-get -y install libglfw3-dev libgtk2.0-dev libcapstone-dev
+      if: ${{ matrix.os == 'ubuntu-20.04' }}
+      run: sudo apt-get update && sudo apt-get -y install libglfw3-dev libgtk2.0-dev libcapstone-dev libtbb-dev
     - name: Install macos libraries
       if: ${{ matrix.os == 'macOS-latest' }}
       run: brew install capstone tbb pkg-config glfw

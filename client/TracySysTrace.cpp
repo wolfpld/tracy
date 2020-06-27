@@ -242,6 +242,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     const auto controlStatus = ControlTrace( 0, KERNEL_LOGGER_NAME, s_prop, EVENT_TRACE_CONTROL_STOP );
     if( controlStatus != ERROR_SUCCESS && controlStatus != ERROR_WMI_INSTANCE_NOT_FOUND )
     {
+        tracy_free( backup );
         tracy_free( s_prop );
         return false;
     }

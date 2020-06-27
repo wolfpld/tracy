@@ -1618,6 +1618,10 @@ To enable deep insight into program execution, Tracy will capture small chunks o
 
 You should be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace.
 
+\subsubsection{Vertical synchronization}
+
+On Windows Tracy will automatically capture hardware Vsync events, if running with elevated privileges (see section~\ref{contextswitches}). These events will be reported as '\texttt{[x] Vsync}' frame sets, where \texttt{x} is the identifier of a specific monitor. Note that hardware vertical synchronization might not correspond to the one seen by your application, due to desktop composition, command queue buffering, etc.
+
 \subsection{Trace parameters}
 \label{traceparameters}
 

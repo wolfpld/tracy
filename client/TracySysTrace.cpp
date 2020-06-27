@@ -21,22 +21,27 @@
 #    include "../common/TracyAlloc.hpp"
 #    include "../common/TracySystem.hpp"
 #    include "TracyProfiler.hpp"
+#    include "TracyThread.hpp"
 
 namespace tracy
 {
 
-DEFINE_GUID ( /* ce1dbfb4-137e-4da6-87b0-3f59aa102cbc */
-    PerfInfoGuid,
-    0xce1dbfb4,
-    0x137e,
-    0x4da6,
-    0x87, 0xb0, 0x3f, 0x59, 0xaa, 0x10, 0x2c, 0xbc
-);
+struct __declspec(uuid("{ce1dbfb4-137e-4da6-87b0-3f59aa102cbc}")) PERFINFOGUID;
+static const auto PerfInfoGuid = __uuidof(PERFINFOGUID);
+
+struct __declspec(uuid("{802EC45A-1E99-4B83-9920-87C98277BA9D}")) DXGKRNLGUID;
+static const auto DxgKrnlGuid = __uuidof(DXGKRNLGUID);
+
 
 static TRACEHANDLE s_traceHandle;
 static TRACEHANDLE s_traceHandle2;
 static EVENT_TRACE_PROPERTIES* s_prop;
 static DWORD s_pid;
+
+static EVENT_TRACE_PROPERTIES* s_propVsync;
+static TRACEHANDLE s_traceHandleVsync;
+static TRACEHANDLE s_traceHandleVsync2;
+Thread* s_threadVsync = nullptr;
 
 struct CSwitch
 {
@@ -83,6 +88,19 @@ struct StackWalkEvent
     uint32_t stackProcess;
     uint32_t stackThread;
     uint64_t stack[192];
+};
+
+struct VSyncInfo
+{
+    void*       dxgAdapter;
+    uint32_t    vidPnTargetId;
+    uint64_t    scannedPhysicalAddress;
+    uint32_t    vidPnSourceId;
+    uint32_t    frameNumber;
+    int64_t     frameQpcTime;
+    void*       hFlipDevice;
+    uint32_t    flipType;
+    uint64_t    flipFenceId;
 };
 
 #ifdef __CYGWIN__
@@ -179,6 +197,133 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
     default:
         break;
     }
+}
+
+static constexpr const char* VsyncName[] = {
+    "[0] Vsync",
+    "[1] Vsync",
+    "[2] Vsync",
+    "[3] Vsync",
+    "[4] Vsync",
+    "[5] Vsync",
+    "[6] Vsync",
+    "[7] Vsync",
+    "Vsync"
+};
+
+static uint32_t VsyncTarget[8] = {};
+
+void WINAPI EventRecordCallbackVsync( PEVENT_RECORD record )
+{
+#ifdef TRACY_ON_DEMAND
+    if( !GetProfiler().IsConnected() ) return;
+#endif
+
+    const auto& hdr = record->EventHeader;
+    assert( hdr.ProviderId.Data1 == 0x802EC45A );
+    assert( hdr.EventDescriptor.Id == 0x0011 );
+
+    const auto vs = (const VSyncInfo*)record->UserData;
+
+    int idx = 0;
+    do
+    {
+        if( VsyncTarget[idx] == 0 )
+        {
+            VsyncTarget[idx] = vs->vidPnTargetId;
+            break;
+        }
+        else if( VsyncTarget[idx] == vs->vidPnTargetId )
+        {
+            break;
+        }
+    }
+    while( ++idx < 8 );
+
+    const char* name = "Vsync";
+    TracyLfqPrepare( QueueType::FrameMarkMsg );
+    MemWrite( &item->frameMark.time, hdr.TimeStamp.QuadPart );
+    MemWrite( &item->frameMark.name, uint64_t( VsyncName[idx] ) );
+    TracyLfqCommit;
+}
+
+static void SetupVsync()
+{
+    const auto psz = sizeof( EVENT_TRACE_PROPERTIES ) + MAX_PATH;
+    s_propVsync = (EVENT_TRACE_PROPERTIES*)tracy_malloc( psz );
+    memset( s_propVsync, 0, sizeof( EVENT_TRACE_PROPERTIES ) );
+    s_propVsync->LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
+    s_propVsync->Wnode.BufferSize = psz;
+#ifdef TRACY_TIMER_QPC
+    s_propVsync->Wnode.ClientContext = 1;
+#else
+    s_propVsync->Wnode.ClientContext = 3;
+#endif
+    s_propVsync->LoggerNameOffset = sizeof( EVENT_TRACE_PROPERTIES );
+    strcpy( ((char*)s_propVsync) + sizeof( EVENT_TRACE_PROPERTIES ), "TracyVsync" );
+
+    auto backup = tracy_malloc( psz );
+    memcpy( backup, s_propVsync, psz );
+
+    const auto controlStatus = ControlTraceA( 0, "TracyVsync", s_propVsync, EVENT_TRACE_CONTROL_STOP );
+    if( controlStatus != ERROR_SUCCESS && controlStatus != ERROR_WMI_INSTANCE_NOT_FOUND )
+    {
+        tracy_free( backup );
+        tracy_free( s_propVsync );
+        return;
+    }
+
+    memcpy( s_propVsync, backup, psz );
+    tracy_free( backup );
+
+    const auto startStatus = StartTraceA( &s_traceHandleVsync, "TracyVsync", s_propVsync );
+    if( startStatus != ERROR_SUCCESS )
+    {
+        tracy_free( s_propVsync );
+        return;
+    }
+
+    EVENT_FILTER_EVENT_ID fe = {};
+    fe.FilterIn = TRUE;
+    fe.Count = 1;
+    fe.Events[0] = 0x0011;  // VSyncDPC_Info
+
+    EVENT_FILTER_DESCRIPTOR desc = {};
+    desc.Ptr = (ULONGLONG)&fe;
+    desc.Size = sizeof( fe );
+    desc.Type = EVENT_FILTER_TYPE_EVENT_ID;
+
+    ENABLE_TRACE_PARAMETERS params = {};
+    params.Version = ENABLE_TRACE_PARAMETERS_VERSION_2;
+    params.EnableProperty = EVENT_ENABLE_PROPERTY_IGNORE_KEYWORD_0;
+    params.SourceId = s_propVsync->Wnode.Guid;
+    params.EnableFilterDesc = &desc;
+    params.FilterDescCount = 1;
+
+    uint64_t mask = 0x4000000000000001;   // Microsoft_Windows_DxgKrnl_Performance | Base
+    EnableTraceEx2( s_traceHandleVsync, &DxgKrnlGuid, EVENT_CONTROL_CODE_ENABLE_PROVIDER, TRACE_LEVEL_INFORMATION, mask, mask, 0, &params );
+
+    char loggerName[MAX_PATH];
+    strcpy( loggerName, "TracyVsync" );
+
+    EVENT_TRACE_LOGFILEA log = {};
+    log.LoggerName = loggerName;
+    log.ProcessTraceMode = PROCESS_TRACE_MODE_REAL_TIME | PROCESS_TRACE_MODE_EVENT_RECORD | PROCESS_TRACE_MODE_RAW_TIMESTAMP;
+    log.EventRecordCallback = EventRecordCallbackVsync;
+
+    s_traceHandleVsync2 = OpenTraceA( &log );
+    if( s_traceHandleVsync2 == (TRACEHANDLE)INVALID_HANDLE_VALUE )
+    {
+        CloseTrace( s_traceHandleVsync );
+        tracy_free( s_propVsync );
+        return;
+    }
+
+    s_threadVsync = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_threadVsync) Thread( [] (void*) {
+        SetThreadName( "Tracy Vsync" );
+        ProcessTrace( &s_traceHandleVsync2, 1, nullptr, nullptr );
+    }, nullptr );
 }
 
 bool SysTraceStart( int64_t& samplingPeriod )
@@ -289,11 +434,21 @@ bool SysTraceStart( int64_t& samplingPeriod )
         return false;
     }
 
+    SetupVsync();
+
     return true;
 }
 
 void SysTraceStop()
 {
+    if( s_threadVsync )
+    {
+        CloseTrace( s_traceHandleVsync2 );
+        CloseTrace( s_traceHandleVsync );
+        s_threadVsync->~Thread();
+        tracy_free( s_threadVsync );
+    }
+
     CloseTrace( s_traceHandle2 );
     CloseTrace( s_traceHandle );
 }

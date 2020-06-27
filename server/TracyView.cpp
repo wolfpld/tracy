@@ -12669,7 +12669,7 @@ void View::DrawInfo()
 
     if( ImGui::TreeNode( "Frame statistics" ) )
     {
-        const auto fsz = m_worker.GetFullFrameCount( *m_frames );
+        auto fsz = m_worker.GetFullFrameCount( *m_frames );
         if( fsz != 0 )
         {
             TextFocused( "Frame set:", m_frames->name == 0 ? "Frames" : m_worker.GetString( m_frames->name ) );
@@ -12686,6 +12686,7 @@ void View::DrawInfo()
                     if( ImGui::Selectable( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), isSelected ) )
                     {
                         m_frames = fd;
+                        fsz = m_worker.GetFullFrameCount( *m_frames );
                     }
                     if( isSelected )
                     {

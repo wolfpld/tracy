@@ -15,6 +15,7 @@ v0.7.1 (xxxx-xx-xx)
 - Added list of cached source files.
 - Added import of plot data.
 - Secure versions of alloc/free macros.
+- Automated tracing of vertical synchronization on Windows.
 
 v0.7 (2020-06-11)
 -----------------

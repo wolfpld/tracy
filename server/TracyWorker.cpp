@@ -4291,11 +4291,14 @@ void Worker::ProcessFrameMark( const QueueFrameMark& ev )
     } );
 
     int32_t frameImage = -1;
-    auto fis = m_frameImageStaging.find( fd->frames.size() );
-    if( fis != m_frameImageStaging.end() )
+    if( ev.name == 0 )
     {
-        frameImage = fis->second;
-        m_frameImageStaging.erase( fis );
+        auto fis = m_frameImageStaging.find( fd->frames.size() );
+        if( fis != m_frameImageStaging.end() )
+        {
+            frameImage = fis->second;
+            m_frameImageStaging.erase( fis );
+        }
     }
 
     assert( fd->continuous == 1 );

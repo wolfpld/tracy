@@ -146,6 +146,8 @@ View::View( const char* addr, int port, ImFont* fixedWidth, ImFont* smallFont, I
     s_instance = this;
 
     InitTextEditor( fixedWidth );
+
+    m_continuousScrollingFirstFrame = true;
 }
 
 View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont, SetTitleCallback stcb, GetWindowCallback gwcb )
@@ -176,6 +178,8 @@ View::View( FileRead& f, ImFont* fixedWidth, ImFont* smallFont, ImFont* bigFont,
 
     if( m_worker.GetCallstackFrameCount() == 0 ) m_showUnknownFrames = false;
     if( m_worker.GetCallstackSampleCount() == 0 ) m_showAllSymbols = true;
+
+    m_continuousScrollingFirstFrame = true;
 }
 
 View::~View()
@@ -582,6 +586,8 @@ bool View::DrawImpl()
     ImGui::SameLine();
     ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
     ImGui::SameLine();
+    ToggleButton( ICON_FA_ARROW_RIGHT " Continuous Scroll", m_continuousScrolling );
+    ImGui::SameLine();
     if( ImGui::Button( ICON_FA_TOOLS ) ) ImGui::OpenPopup( "ToolsPopup" );
     if( ImGui::BeginPopup( "ToolsPopup" ) )
     {
@@ -750,6 +756,7 @@ bool View::DrawImpl()
 
     if( m_showOptions ) DrawOptions();
     if( m_showMessages ) DrawMessages();
+    if( m_continuousScrolling && m_worker.IsConnected() ) ContinuousScrolling();
     if( m_findZone.show ) DrawFindZone();
     if( m_showStatistics ) DrawStatistics();
     if( m_memInfo.show ) DrawMemory();
@@ -1693,6 +1700,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     {
         m_highlight.active = true;
         m_highlight.start = m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        m_continuousScrolling = false;
     }
     else if( ImGui::IsMouseDragging( 0, 0 ) )
     {
@@ -1719,6 +1727,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     {
         m_highlightZoom.active = true;
         m_highlightZoom.start = m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        m_continuousScrolling = false;
     }
     else if( ImGui::IsMouseDragging( 2, 0 ) )
     {
@@ -1794,6 +1803,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             ImGui::SetScrollY( y - delta.y );
             io.MouseClickedPos[1].y = io.MousePos.y;
         }
+        m_continuousScrolling = false;
     }
 
     const auto wheel = io.MouseWheel;
@@ -1826,7 +1836,18 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
             t0 -= std::max( int64_t( 1 ), int64_t( p1 * 0.25 ) );
             t1 += std::max( int64_t( 1 ), int64_t( p2 * 0.25 ) );
         }
-        ZoomToRange( t0, t1 );
+        
+        if (m_continuousScrolling && m_worker.IsConnected()) {
+            // We want to able to increase/decrease the view span even if we are continuously scrolling
+            // and using ZoomToRange would be overwritten by or ContinuousScrolling function so we
+            // set the values directly here
+            m_vd.zvStart = t0;
+            if (t0 == t1)
+                t1 += 1;
+            m_vd.zvEnd = t1;
+        } else {
+            ZoomToRange( t0, t1 );
+        }
     }
 }
 
@@ -8675,6 +8696,21 @@ void View::DrawMessages()
     ImGui::EndColumns();
     ImGui::EndChild();
     ImGui::End();
+}
+
+void View::ContinuousScrolling()
+{
+    if (m_continuousScrollingFirstFrame) {
+        // On the first frame, expand the view span to cover a 5 second range
+        m_continuousScrollingFirstFrame = false;
+        m_vd.zvStart = m_worker.GetLastTime();
+        m_vd.zvEnd = m_vd.zvStart + 5000000000;
+    }
+
+    // Center the end and then move over 25 percent to display more history
+    const auto t = m_worker.GetLastTime();
+    const auto hr = std::max<uint64_t>( 1, ( m_vd.zvEnd - m_vd.zvStart ) / 2 );
+    ZoomToRange( (t - hr) - (hr / 2), (t + hr) - (hr / 2));
 }
 
 uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const

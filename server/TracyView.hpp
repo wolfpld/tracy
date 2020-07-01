@@ -155,6 +155,7 @@ private:
     int DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax );
     void DrawOptions();
     void DrawMessages();
+    void ContinuousScrolling();
     void DrawFindZone();
     void DrawStatistics();
     void DrawMemory();
@@ -347,6 +348,8 @@ private:
     bool m_showMessages = false;
     bool m_showStatistics = false;
     bool m_showInfo = false;
+    bool m_continuousScrolling = true;
+    bool m_continuousScrollingFirstFrame = true;
     bool m_showPlayback = false;
     bool m_showCpuDataWindow = false;
     bool m_showAnnotationList = false;

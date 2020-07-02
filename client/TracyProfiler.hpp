@@ -393,7 +393,7 @@ public:
         SendCallstackMemory( callstack );
         profiler.m_serialLock.unlock();
 #else
-        MemAlloc( ptr, size );
+        MemAlloc( ptr, size, secure );
 #endif
     }
 
@@ -415,7 +415,7 @@ public:
         SendCallstackMemory( callstack );
         profiler.m_serialLock.unlock();
 #else
-        MemFree( ptr );
+        MemFree( ptr, secure );
 #endif
     }
 

@@ -6512,26 +6512,55 @@ void View::DrawZoneInfoWindow()
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", m_worker.GetString( srcloc.name ) );
         }
+        ImGui::SameLine();
+        if( ClipboardButton( 1 ) )
+        {
+            if( srcloc.name.active )
+            {
+                char tmp[1024];
+                sprintf( tmp, "%s (%s)", m_worker.GetString( m_worker.GetZoneExtra( ev ).name ), m_worker.GetString( srcloc.name ) );
+                ImGui::SetClipboardText( tmp );
+            }
+            else
+            {
+                ImGui::SetClipboardText( m_worker.GetString( m_worker.GetZoneExtra( ev ).name ) );
+            }
+        }
         TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+        ImGui::SameLine();
+        if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
     }
     else if( srcloc.name.active )
     {
         if( m_bigFont ) ImGui::PushFont( m_bigFont );
         TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
         if( m_bigFont ) ImGui::PopFont();
+        ImGui::SameLine();
+        if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
         TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+        ImGui::SameLine();
+        if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
     }
     else
     {
         if( m_bigFont ) ImGui::PushFont( m_bigFont );
         TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
         if( m_bigFont ) ImGui::PopFont();
+        ImGui::SameLine();
+        if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
     }
     SmallColorBox( GetSrcLocColor( m_worker.GetSourceLocation( ev.SrcLoc() ), 0 ) );
     ImGui::SameLine();
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    ImGui::SameLine();
+    if( ClipboardButton( 3 ) )
+    {
+        char tmp[1024];
+        sprintf( tmp, "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+        ImGui::SetClipboardText( tmp );
+    }
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );
@@ -7463,12 +7492,23 @@ void View::DrawGpuInfoWindow()
     if( m_bigFont ) ImGui::PushFont( m_bigFont );
     TextFocused( "Zone name:", m_worker.GetString( srcloc.name ) );
     if( m_bigFont ) ImGui::PopFont();
+    ImGui::SameLine();
+    if( ClipboardButton( 1 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.name ) );
     TextFocused( "Function:", m_worker.GetString( srcloc.function ) );
+    ImGui::SameLine();
+    if( ClipboardButton( 2 ) ) ImGui::SetClipboardText( m_worker.GetString( srcloc.function ) );
     SmallColorBox( GetRawZoneColor( ev ) );
     ImGui::SameLine();
     TextDisabledUnformatted( "Location:" );
     ImGui::SameLine();
     ImGui::Text( "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+    ImGui::SameLine();
+    if( ClipboardButton( 3 ) )
+    {
+        char tmp[1024];
+        sprintf( tmp, "%s:%i", m_worker.GetString( srcloc.file ), srcloc.line );
+        ImGui::SetClipboardText( tmp );
+    }
     SmallColorBox( GetThreadColor( tid, 0 ) );
     ImGui::SameLine();
     TextFocused( "Thread:", m_worker.GetThreadName( tid ) );

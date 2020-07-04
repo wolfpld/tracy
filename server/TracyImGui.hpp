@@ -10,6 +10,8 @@
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_internal.h"
 
+#include "IconsFontAwesome5.h"
+
 #if !IMGUI_DEFINE_MATH_OPERATORS
 static inline ImVec2 operator+( const ImVec2& l, const ImVec2& r ) { return ImVec2( l.x + r.x, l.y + r.y ); }
 static inline ImVec2 operator-( const ImVec2& l, const ImVec2& r ) { return ImVec2( l.x - r.x, l.y - r.y ); }
@@ -125,6 +127,20 @@ namespace tracy
         if( ImGui::Button( label ) ) toggle = !toggle;
         ImGui::PopStyleVar( 1 );
         if( active ) ImGui::PopStyleColor( 3 );
+    }
+
+    static bool ClipboardButton( int id = 0 )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Border, ImVec4( 0.43f, 0.43f, 0.50f, 0.25f ) );
+        ImGui::PushStyleColor( ImGuiCol_Button, ImVec4( 0.26f, 0.59f, 0.98f, 0.20f ) );
+        ImGui::PushStyleColor( ImGuiCol_ButtonHovered, ImVec4( 0.26f, 0.59f, 0.98f, 0.5f ) );
+        ImGui::PushStyleColor( ImGuiCol_ButtonActive, ImVec4( 0.06f, 0.53f, 0.98f, 0.5f ) );
+        ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+        ImGui::PushID( id );
+        const auto res = ImGui::SmallButton( ICON_FA_CLIPBOARD );
+        ImGui::PopID();
+        ImGui::PopStyleColor( 5 );
+        return res;
     }
 
 }

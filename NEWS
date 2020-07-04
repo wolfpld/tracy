@@ -18,6 +18,7 @@ v0.7.1 (xxxx-xx-xx)
 - Automated tracing of vertical synchronization on Windows.
 - Fixed attachment of postponed frame images.
 - Source location data can be now copied to clipboard from zone info window.
+- Zones in find zones menu can be now grouped by zone name.
 
 v0.7 (2020-06-11)
 -----------------

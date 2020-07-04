@@ -8730,6 +8730,13 @@ uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::G
         const auto& extra = m_worker.GetZoneExtra( zone );
         return extra.text.Active() ? extra.text.Idx() : std::numeric_limits<uint64_t>::max();
     }
+    case FindZone::GroupBy::ZoneName:
+    {
+        const auto& zone = *ev.Zone();
+        if( !m_worker.HasZoneExtra( zone ) ) return std::numeric_limits<uint64_t>::max();
+        const auto& extra = m_worker.GetZoneExtra( zone );
+        return extra.name.Active() ? extra.name.Idx() : std::numeric_limits<uint64_t>::max();
+    }
     case FindZone::GroupBy::Callstack:
         return m_worker.GetZoneExtra( *ev.Zone() ).callstack.Val();
     case FindZone::GroupBy::Parent:
@@ -9875,6 +9882,8 @@ void View::DrawFindZone()
         ImGui::SameLine();
         groupChanged |= ImGui::RadioButton( "User text", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::UserText );
         ImGui::SameLine();
+        groupChanged |= ImGui::RadioButton( "Zone name", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::ZoneName );
+        ImGui::SameLine();
         groupChanged |= ImGui::RadioButton( "Call stacks", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Callstack );
         ImGui::SameLine();
         groupChanged |= ImGui::RadioButton( "Parent", (int*)( &m_findZone.groupBy ), (int)FindZone::GroupBy::Parent );
@@ -9962,6 +9971,20 @@ void View::DrawFindZone()
                 {
                     const auto& extra = m_worker.GetZoneExtra( zone );
                     gid = extra.text.Active() ? extra.text.Idx() : std::numeric_limits<uint64_t>::max();
+                }
+                break;
+            }
+            case FindZone::GroupBy::ZoneName:
+            {
+                const auto& zone = *ev.Zone();
+                if( !m_worker.HasZoneExtra( zone ) )
+                {
+                    gid = std::numeric_limits<uint64_t>::max();
+                }
+                else
+                {
+                    const auto& extra = m_worker.GetZoneExtra( zone );
+                    gid = extra.name.Active() ? extra.name.Idx() : std::numeric_limits<uint64_t>::max();
                 }
                 break;
             }
@@ -10149,6 +10172,17 @@ void View::DrawFindZone()
                     }
                 case FindZone::GroupBy::UserText:
                     hdrString = v->first == std::numeric_limits<uint64_t>::max() ? "No user text" : m_worker.GetString( StringIdx( v->first ) );
+                    break;
+                case FindZone::GroupBy::ZoneName:
+                    if( v->first == std::numeric_limits<uint64_t>::max() )
+                    {
+                        auto& srcloc = m_worker.GetSourceLocation( m_findZone.match[m_findZone.selMatch] );
+                        hdrString = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                    }
+                    else
+                    {
+                        hdrString = m_worker.GetString( StringIdx( v->first ) );
+                    }
                     break;
                 case FindZone::GroupBy::Callstack:
                     if( v->first == 0 )

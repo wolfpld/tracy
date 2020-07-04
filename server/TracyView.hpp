@@ -439,7 +439,7 @@ private:
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
-        enum class GroupBy : int { Thread, UserText, Callstack, Parent, NoGrouping };
+        enum class GroupBy : int { Thread, UserText, ZoneName, Callstack, Parent, NoGrouping };
         enum class SortBy : int { Order, Count, Time, Mtpc };
         enum class TableSortBy : int { Starttime, Runtime, Name };
 

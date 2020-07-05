@@ -1537,9 +1537,7 @@ begin functions:
 These functions return a \texttt{TracyCZoneCtx} context value, which must be handled, as described
 in sections~\ref{czonemarkup} and~\ref{zonectx}.
 
-The variable representing an allocated source location is of an opaque type. After it is passed to
-one of the zone begin functions, its value \emph{cannot be reused}. You must allocate a new source
-location for each zone begin event.
+The variable representing an allocated source location is of an opaque type. After it is passed to one of the zone begin functions, its value \emph{cannot be reused} (the variable is consumed). You must allocate a new source location for each zone begin event, even if the location data would be the same as in the previous instance.
 
 \begin{bclogo}[
 noborder=true,

@@ -997,11 +997,11 @@ XXH3_accumulate_512_avx512(void* XXH_RESTRICT acc,
         /* data_key    = data_vec ^ key_vec; */
         __m512i const data_key    = _mm512_xor_si512     (data_vec, key_vec);
         /* data_key_lo = data_key >> 32; */
-        __m512i const data_key_lo = _mm512_shuffle_epi32 (data_key, _MM_SHUFFLE(0, 3, 0, 1));
+        __m512i const data_key_lo = _mm512_shuffle_epi32 (data_key, (_MM_PERM_ENUM)_MM_SHUFFLE(0, 3, 0, 1));
         /* product     = (data_key & 0xffffffff) * (data_key_lo & 0xffffffff); */
         __m512i const product     = _mm512_mul_epu32     (data_key, data_key_lo);
         /* xacc[0] += swap(data_vec); */
-        __m512i const data_swap = _mm512_shuffle_epi32(data_vec, _MM_SHUFFLE(1, 0, 3, 2));
+        __m512i const data_swap = _mm512_shuffle_epi32(data_vec, (_MM_PERM_ENUM)_MM_SHUFFLE(1, 0, 3, 2));
         __m512i const sum       = _mm512_add_epi64(*xacc, data_swap);
         /* xacc[0] += product; */
         *xacc = _mm512_add_epi64(product, sum);
@@ -1046,7 +1046,7 @@ XXH3_scrambleAcc_avx512(void* XXH_RESTRICT acc, const void* XXH_RESTRICT secret)
         __m512i const data_key    = _mm512_xor_si512     (data_vec, key_vec);
 
         /* xacc[0] *= XXH_PRIME32_1; */
-        __m512i const data_key_hi = _mm512_shuffle_epi32 (data_key, _MM_SHUFFLE(0, 3, 0, 1));
+        __m512i const data_key_hi = _mm512_shuffle_epi32 (data_key, (_MM_PERM_ENUM)_MM_SHUFFLE(0, 3, 0, 1));
         __m512i const prod_lo     = _mm512_mul_epu32     (data_key, prime32);
         __m512i const prod_hi     = _mm512_mul_epu32     (data_key_hi, prime32);
         *xacc = _mm512_add_epi64(prod_lo, _mm512_slli_epi64(prod_hi, 32));
@@ -1067,12 +1067,13 @@ XXH3_initCustomSecret_avx512(void* XXH_RESTRICT customSecret, xxh_u64 seed64)
         XXH_ALIGN(64)       __m512i* const dest = (      __m512i*) customSecret;
         int i;
         for (i=0; i < nbRounds; ++i) {
-            // GCC has a bug, _mm512_stream_load_si512 accepts 'void*', not 'void const*',
-            // this will warn "discards ‘const’ qualifier".
+            /* GCC has a bug, _mm512_stream_load_si512 accepts 'void*', not 'void const*',
+             * this will warn "discards ‘const’ qualifier". */
             union {
-                XXH_ALIGN(64) const __m512i* const cp;
-                XXH_ALIGN(64) void* const p;
-            } const remote_const_void = { .cp = src + i };
+                XXH_ALIGN(64) const __m512i* cp;
+                XXH_ALIGN(64) void* p;
+            } remote_const_void;
+            remote_const_void.cp = src + i;
             dest[i] = _mm512_add_epi64(_mm512_stream_load_si512(remote_const_void.p), seed);
     }   }
 }
@@ -1701,28 +1702,28 @@ XXH3_mergeAccs(const xxh_u64* XXH_RESTRICT acc, const xxh_u8* XXH_RESTRICT secre
                         XXH_PRIME64_4, XXH_PRIME32_2, XXH_PRIME64_5, XXH_PRIME32_1 }
 
 XXH_FORCE_INLINE XXH64_hash_t
-XXH3_hashLong_64b_internal(const xxh_u8* XXH_RESTRICT input, size_t len,
-                           const xxh_u8* XXH_RESTRICT secret, size_t secretSize,
+XXH3_hashLong_64b_internal(const void* XXH_RESTRICT input, size_t len,
+                           const void* XXH_RESTRICT secret, size_t secretSize,
                            XXH3_f_accumulate_512 f_acc512,
                            XXH3_f_scrambleAcc f_scramble)
 {
     XXH_ALIGN(XXH_ACC_ALIGN) xxh_u64 acc[XXH_ACC_NB] = XXH3_INIT_ACC;
 
-    XXH3_hashLong_internal_loop(acc, input, len, secret, secretSize, f_acc512, f_scramble);
+    XXH3_hashLong_internal_loop(acc, (const xxh_u8*)input, len, (const xxh_u8*)secret, secretSize, f_acc512, f_scramble);
 
     /* converge into final hash */
     XXH_STATIC_ASSERT(sizeof(acc) == 64);
     /* do not align on 8, so that the secret is different from the accumulator */
 #define XXH_SECRET_MERGEACCS_START 11
     XXH_ASSERT(secretSize >= sizeof(acc) + XXH_SECRET_MERGEACCS_START);
-    return XXH3_mergeAccs(acc, secret + XXH_SECRET_MERGEACCS_START, (xxh_u64)len * XXH_PRIME64_1);
+    return XXH3_mergeAccs(acc, (const xxh_u8*)secret + XXH_SECRET_MERGEACCS_START, (xxh_u64)len * XXH_PRIME64_1);
 }
 
 /*
  * It's important for performance that XXH3_hashLong is not inlined.
  */
 XXH_NO_INLINE XXH64_hash_t
-XXH3_hashLong_64b_withSecret(const xxh_u8* XXH_RESTRICT input, size_t len,
+XXH3_hashLong_64b_withSecret(const void* XXH_RESTRICT input, size_t len,
                              XXH64_hash_t seed64, const xxh_u8* XXH_RESTRICT secret, size_t secretLen)
 {
     (void)seed64;
@@ -1737,7 +1738,7 @@ XXH3_hashLong_64b_withSecret(const xxh_u8* XXH_RESTRICT input, size_t len,
  * and uses this opportunity to streamline the generated code for better performance.
  */
 XXH_NO_INLINE XXH64_hash_t
-XXH3_hashLong_64b_default(const xxh_u8* XXH_RESTRICT input, size_t len,
+XXH3_hashLong_64b_default(const void* XXH_RESTRICT input, size_t len,
                           XXH64_hash_t seed64, const xxh_u8* XXH_RESTRICT secret, size_t secretLen)
 {
     (void)seed64; (void)secret; (void)secretLen;
@@ -1756,7 +1757,7 @@ XXH3_hashLong_64b_default(const xxh_u8* XXH_RESTRICT input, size_t len,
  * why (uop cache maybe?), but the difference is large and easily measurable.
  */
 XXH_FORCE_INLINE XXH64_hash_t
-XXH3_hashLong_64b_withSeed_internal(const xxh_u8* input, size_t len,
+XXH3_hashLong_64b_withSeed_internal(const void* input, size_t len,
                                     XXH64_hash_t seed,
                                     XXH3_f_accumulate_512 f_acc512,
                                     XXH3_f_scrambleAcc f_scramble,
@@ -1777,7 +1778,7 @@ XXH3_hashLong_64b_withSeed_internal(const xxh_u8* input, size_t len,
  * It's important for performance that XXH3_hashLong is not inlined.
  */
 XXH_NO_INLINE XXH64_hash_t
-XXH3_hashLong_64b_withSeed(const xxh_u8* input, size_t len,
+XXH3_hashLong_64b_withSeed(const void* input, size_t len,
                            XXH64_hash_t seed, const xxh_u8* secret, size_t secretLen)
 {
     (void)secret; (void)secretLen;
@@ -1786,7 +1787,7 @@ XXH3_hashLong_64b_withSeed(const xxh_u8* input, size_t len,
 }
 
 
-typedef XXH64_hash_t (*XXH3_hashLong64_f)(const xxh_u8* XXH_RESTRICT, size_t,
+typedef XXH64_hash_t (*XXH3_hashLong64_f)(const void* XXH_RESTRICT, size_t,
                                           XXH64_hash_t, const xxh_u8* XXH_RESTRICT, size_t);
 
 XXH_FORCE_INLINE XXH64_hash_t
@@ -1808,7 +1809,7 @@ XXH3_64bits_internal(const void* XXH_RESTRICT input, size_t len,
         return XXH3_len_17to128_64b((const xxh_u8*)input, len, (const xxh_u8*)secret, secretLen, seed64);
     if (len <= XXH3_MIDSIZE_MAX)
         return XXH3_len_129to240_64b((const xxh_u8*)input, len, (const xxh_u8*)secret, secretLen, seed64);
-    return f_hashLong((const xxh_u8*)input, len, seed64, (const xxh_u8*)secret, secretLen);
+    return f_hashLong(input, len, seed64, (const xxh_u8*)secret, secretLen);
 }
 
 
@@ -2275,7 +2276,7 @@ XXH3_len_9to16_128b(const xxh_u8* input, size_t len, const xxh_u8* secret, XXH64
              * On 32-bit, it removes an ADC and delays a dependency between the two
              * halves of m128.high64, but it generates an extra mask on 64-bit.
              */
-            m128.high64 += (input_hi & 0xFFFFFFFF00000000) + XXH_mult32to64((xxh_u32)input_hi, XXH_PRIME32_2);
+            m128.high64 += (input_hi & 0xFFFFFFFF00000000ULL) + XXH_mult32to64((xxh_u32)input_hi, XXH_PRIME32_2);
         } else {
             /*
              * 64-bit optimized (albeit more confusing) version.
@@ -2433,14 +2434,14 @@ XXH3_len_129to240_128b(const xxh_u8* XXH_RESTRICT input, size_t len,
 }
 
 XXH_FORCE_INLINE XXH128_hash_t
-XXH3_hashLong_128b_internal(const xxh_u8* XXH_RESTRICT input, size_t len,
+XXH3_hashLong_128b_internal(const void* XXH_RESTRICT input, size_t len,
                             const xxh_u8* XXH_RESTRICT secret, size_t secretSize,
                             XXH3_f_accumulate_512 f_acc512,
                             XXH3_f_scrambleAcc f_scramble)
 {
     XXH_ALIGN(XXH_ACC_ALIGN) xxh_u64 acc[XXH_ACC_NB] = XXH3_INIT_ACC;
 
-    XXH3_hashLong_internal_loop(acc, input, len, secret, secretSize, f_acc512, f_scramble);
+    XXH3_hashLong_internal_loop(acc, (const xxh_u8*)input, len, secret, secretSize, f_acc512, f_scramble);
 
     /* converge into final hash */
     XXH_STATIC_ASSERT(sizeof(acc) == 64);
@@ -2461,9 +2462,9 @@ XXH3_hashLong_128b_internal(const xxh_u8* XXH_RESTRICT input, size_t len,
  * It's important for performance that XXH3_hashLong is not inlined.
  */
 XXH_NO_INLINE XXH128_hash_t
-XXH3_hashLong_128b_default(const xxh_u8* XXH_RESTRICT input, size_t len,
+XXH3_hashLong_128b_default(const void* XXH_RESTRICT input, size_t len,
                            XXH64_hash_t seed64,
-                           const xxh_u8* XXH_RESTRICT secret, size_t secretLen)
+                           const void* XXH_RESTRICT secret, size_t secretLen)
 {
     (void)seed64; (void)secret; (void)secretLen;
     return XXH3_hashLong_128b_internal(input, len, XXH3_kSecret, sizeof(XXH3_kSecret),
@@ -2474,17 +2475,17 @@ XXH3_hashLong_128b_default(const xxh_u8* XXH_RESTRICT input, size_t len,
  * It's important for performance that XXH3_hashLong is not inlined.
  */
 XXH_NO_INLINE XXH128_hash_t
-XXH3_hashLong_128b_withSecret(const xxh_u8* XXH_RESTRICT input, size_t len,
+XXH3_hashLong_128b_withSecret(const void* XXH_RESTRICT input, size_t len,
                               XXH64_hash_t seed64,
-                              const xxh_u8* XXH_RESTRICT secret, size_t secretLen)
+                              const void* XXH_RESTRICT secret, size_t secretLen)
 {
     (void)seed64;
-    return XXH3_hashLong_128b_internal(input, len, secret, secretLen,
+    return XXH3_hashLong_128b_internal(input, len, (const xxh_u8*)secret, secretLen,
                                        XXH3_accumulate_512, XXH3_scrambleAcc);
 }
 
 XXH_FORCE_INLINE XXH128_hash_t
-XXH3_hashLong_128b_withSeed_internal(const xxh_u8* XXH_RESTRICT input, size_t len,
+XXH3_hashLong_128b_withSeed_internal(const void* XXH_RESTRICT input, size_t len,
                                 XXH64_hash_t seed64,
                                 XXH3_f_accumulate_512 f_acc512,
                                 XXH3_f_scrambleAcc f_scramble,
@@ -2496,7 +2497,7 @@ XXH3_hashLong_128b_withSeed_internal(const xxh_u8* XXH_RESTRICT input, size_t le
                                            f_acc512, f_scramble);
     {   XXH_ALIGN(XXH_SEC_ALIGN) xxh_u8 secret[XXH_SECRET_DEFAULT_SIZE];
         f_initSec(secret, seed64);
-        return XXH3_hashLong_128b_internal(input, len, secret, sizeof(secret),
+        return XXH3_hashLong_128b_internal(input, len, (const xxh_u8*)secret, sizeof(secret),
                                            f_acc512, f_scramble);
     }
 }
@@ -2505,20 +2506,20 @@ XXH3_hashLong_128b_withSeed_internal(const xxh_u8* XXH_RESTRICT input, size_t le
  * It's important for performance that XXH3_hashLong is not inlined.
  */
 XXH_NO_INLINE XXH128_hash_t
-XXH3_hashLong_128b_withSeed(const xxh_u8* input, size_t len,
-                            XXH64_hash_t seed64, const xxh_u8* XXH_RESTRICT secret, size_t secretLen)
+XXH3_hashLong_128b_withSeed(const void* input, size_t len,
+                            XXH64_hash_t seed64, const void* XXH_RESTRICT secret, size_t secretLen)
 {
     (void)secret; (void)secretLen;
     return XXH3_hashLong_128b_withSeed_internal(input, len, seed64,
                 XXH3_accumulate_512, XXH3_scrambleAcc, XXH3_initCustomSecret);
 }
 
-typedef XXH128_hash_t (*XXH3_hashLong128_f)(const xxh_u8* XXH_RESTRICT, size_t,
-                                            XXH64_hash_t, const xxh_u8* XXH_RESTRICT, size_t);
+typedef XXH128_hash_t (*XXH3_hashLong128_f)(const void* XXH_RESTRICT, size_t,
+                                            XXH64_hash_t, const void* XXH_RESTRICT, size_t);
 
 XXH_FORCE_INLINE XXH128_hash_t
 XXH3_128bits_internal(const void* input, size_t len,
-                      XXH64_hash_t seed64, const xxh_u8* XXH_RESTRICT secret, size_t secretLen,
+                      XXH64_hash_t seed64, const void* XXH_RESTRICT secret, size_t secretLen,
                       XXH3_hashLong128_f f_hl128)
 {
     XXH_ASSERT(secretLen >= XXH3_SECRET_SIZE_MIN);
@@ -2529,12 +2530,12 @@ XXH3_128bits_internal(const void* input, size_t len,
      * Adding a check and a branch here would cost performance at every hash.
      */
     if (len <= 16)
-        return XXH3_len_0to16_128b((const xxh_u8*)input, len, secret, seed64);
+        return XXH3_len_0to16_128b((const xxh_u8*)input, len, (const xxh_u8*)secret, seed64);
     if (len <= 128)
-        return XXH3_len_17to128_128b((const xxh_u8*)input, len, secret, secretLen, seed64);
+        return XXH3_len_17to128_128b((const xxh_u8*)input, len, (const xxh_u8*)secret, secretLen, seed64);
     if (len <= XXH3_MIDSIZE_MAX)
-        return XXH3_len_129to240_128b((const xxh_u8*)input, len, secret, secretLen, seed64);
-    return f_hl128((const xxh_u8*)input, len, seed64, secret, secretLen);
+        return XXH3_len_129to240_128b((const xxh_u8*)input, len, (const xxh_u8*)secret, secretLen, seed64);
+    return f_hl128(input, len, seed64, secret, secretLen);
 }
 
 

@@ -2236,16 +2236,17 @@ void Profiler::SendSourceLocationPayload( uint64_t _ptr )
     MemWrite( &item.hdr.type, QueueType::SourceLocationPayload );
     MemWrite( &item.stringTransfer.ptr, _ptr );
 
-    const auto len = *((uint32_t*)ptr);
-    assert( len <= std::numeric_limits<uint16_t>::max() );
-    assert( len > 4 );
-    const auto l16 = uint16_t( len - 4 );
+    uint16_t len;
+    memcpy( &len, ptr, sizeof( len ) );
+    assert( len > 2 );
+    len -= 2;
+    ptr += 2;
 
-    NeedDataSize( QueueDataSize[(int)QueueType::SourceLocationPayload] + sizeof( l16 ) + l16 );
+    NeedDataSize( QueueDataSize[(int)QueueType::SourceLocationPayload] + sizeof( len ) + len );
 
     AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::SourceLocationPayload] );
-    AppendDataUnsafe( &l16, sizeof( l16 ) );
-    AppendDataUnsafe( ptr + 4, l16 );
+    AppendDataUnsafe( &len, sizeof( len ) );
+    AppendDataUnsafe( ptr, len );
 }
 
 void Profiler::SendCallstackPayload( uint64_t _ptr )

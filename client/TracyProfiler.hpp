@@ -477,7 +477,7 @@ public:
 
 
     // Allocated source location data layout:
-    //  4b  payload size
+    //  2b  payload size
     //  4b  color
     //  4b  source line
     //  fsz function name
@@ -503,18 +503,20 @@ public:
 
     static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz )
     {
-        const uint32_t sz = uint32_t( 4 + 4 + 4 + functionSz + 1 + sourceSz + 1 + nameSz );
+        const auto sz32 = uint32_t( 2 + 4 + 4 + functionSz + 1 + sourceSz + 1 + nameSz );
+        assert( sz32 <= std::numeric_limits<uint16_t>::max() );
+        const auto sz = uint16_t( sz32 );
         auto ptr = (char*)tracy_malloc( sz );
-        memcpy( ptr, &sz, 4 );
-        memset( ptr + 4, 0, 4 );
-        memcpy( ptr + 8, &line, 4 );
-        memcpy( ptr + 12, function, functionSz );
-        ptr[12 + functionSz] = '\0';
-        memcpy( ptr + 12 + functionSz + 1, source, sourceSz );
-        ptr[12 + functionSz + 1 + sourceSz] = '\0';
+        memcpy( ptr, &sz, 2 );
+        memset( ptr + 2, 0, 4 );
+        memcpy( ptr + 6, &line, 4 );
+        memcpy( ptr + 10, function, functionSz );
+        ptr[10 + functionSz] = '\0';
+        memcpy( ptr + 10 + functionSz + 1, source, sourceSz );
+        ptr[10 + functionSz + 1 + sourceSz] = '\0';
         if( nameSz != 0 )
         {
-            memcpy( ptr + 12 + functionSz + 1 + sourceSz + 1, name, nameSz );
+            memcpy( ptr + 10 + functionSz + 1 + sourceSz + 1, name, nameSz );
         }
         return uint64_t( ptr );
     }

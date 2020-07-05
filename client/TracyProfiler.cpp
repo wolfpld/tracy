@@ -2307,15 +2307,15 @@ void Profiler::SendCallstackAlloc( uint64_t _ptr )
     MemWrite( &item.hdr.type, QueueType::CallstackAllocPayload );
     MemWrite( &item.stringTransfer.ptr, _ptr );
 
-    const auto len = *((uint32_t*)ptr);
-    assert( len <= std::numeric_limits<uint16_t>::max() );
-    const auto l16 = uint16_t( len );
+    uint16_t len;
+    memcpy( &len, ptr, 2 );
+    ptr += 2;
 
-    NeedDataSize( QueueDataSize[(int)QueueType::CallstackAllocPayload] + sizeof( l16 ) + l16 );
+    NeedDataSize( QueueDataSize[(int)QueueType::CallstackAllocPayload] + sizeof( len ) + len );
 
     AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::CallstackAllocPayload] );
-    AppendDataUnsafe( &l16, sizeof( l16 ) );
-    AppendDataUnsafe( ptr + 4, l16 );
+    AppendDataUnsafe( &len, sizeof( len ) );
+    AppendDataUnsafe( ptr, len );
 }
 
 void Profiler::SendCallstackFrame( uint64_t ptr )

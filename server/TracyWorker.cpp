@@ -3487,16 +3487,17 @@ void Worker::AddCallstackPayload( uint64_t ptr, const char* _data, size_t _sz )
 void Worker::AddCallstackAllocPayload( uint64_t ptr, const char* data, size_t _sz )
 {
     CallstackFrameId stack[64];
-    const auto sz = *(uint32_t*)data; data += 4;
+    uint8_t sz;
+    memcpy( &sz, data, 1 ); data++;
     assert( sz <= 64 );
-    for( uint32_t i=0; i<sz; i++ )
+    for( uint8_t i=0; i<sz; i++ )
     {
-        uint32_t sz;
+        uint16_t sz;
         CallstackFrame cf;
         memcpy( &cf.line, data, 4 ); data += 4;
-        memcpy( &sz, data, 4 ); data += 4;
+        memcpy( &sz, data, 2 ); data += 2;
         cf.name = StoreString( data, sz ).idx; data += sz;
-        memcpy( &sz, data, 4 ); data += 4;
+        memcpy( &sz, data, 2 ); data += 2;
         cf.file = StoreString( data, sz ).idx; data += sz;
         cf.symAddr = 0;
         CallstackFrameData cfd = { &cf, 1 };

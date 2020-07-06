@@ -2595,16 +2595,9 @@ void View::DrawZones()
                         }
                     }
                     TextFocused( "Zone count:", RealToString( v->count ) );
-                    //TextFocused( "Top-level zones:", RealToString( v->timeline.size() ) );
                     if( isMultithreaded )
                     {
                         TextFocused( "Timestamp accuracy:", TimeToString( v->period ) );
-                    }
-                    else
-                    {
-                        TextDisabledUnformatted( "Query accuracy bits:" );
-                        ImGui::SameLine();
-                        ImGui::Text( "%i", v->accuracyBits );
                     }
                     ImGui::EndTooltip();
                 }

@@ -562,7 +562,6 @@ struct GpuCtxData
     int64_t timeDiff;
     uint64_t thread;
     uint64_t count;
-    uint8_t accuracyBits;
     float period;
     GpuContextType type;
     bool hasPeriod;

@@ -923,13 +923,15 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto ctx = m_slab.AllocInit<GpuCtxData>();
+        // TODO remove
+        uint8_t accuracy;
         if( fileVer >= FileVersion( 0, 6, 14 ) )
         {
-            f.Read5( ctx->thread, ctx->accuracyBits, ctx->count, ctx->period, ctx->type );
+            f.Read5( ctx->thread, accuracy, ctx->count, ctx->period, ctx->type );
         }
         else
         {
-            f.Read4( ctx->thread, ctx->accuracyBits, ctx->count, ctx->period );
+            f.Read4( ctx->thread, accuracy, ctx->count, ctx->period );
             ctx->type = ctx->thread == 0 ? GpuContextType::Vulkan : GpuContextType::OpenGl;
         }
         ctx->hasPeriod = ctx->period != 1.f;
@@ -4890,7 +4892,6 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
     memset( gpu->query, 0, sizeof( gpu->query ) );
     gpu->timeDiff = TscTime( ev.cpuTime - m_data.baseTime ) - gpuTime;
     gpu->thread = ev.thread;
-    gpu->accuracyBits = ev.accuracyBits;
     gpu->period = ev.period;
     gpu->count = 0;
     gpu->type = ev.type;
@@ -6575,7 +6576,9 @@ void Worker::Write( FileWrite& f )
     for( auto& ctx : m_data.gpuData )
     {
         f.Write( &ctx->thread, sizeof( ctx->thread ) );
-        f.Write( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
+        // TODO remove
+        uint8_t zero = 0;
+        f.Write( &zero, sizeof( zero ) );
         f.Write( &ctx->count, sizeof( ctx->count ) );
         f.Write( &ctx->period, sizeof( ctx->period ) );
         f.Write( &ctx->type, sizeof( ctx->type ) );

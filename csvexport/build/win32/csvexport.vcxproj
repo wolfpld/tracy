@@ -35,3 +35,4 @@
 <ClCompile Include="..\..\..\zstd\zstd_ldm.c" />
 <ClCompile Include="..\..\..\zstd\zstd_opt.c" />
 <ClCompile Include="..\..\src\csvexport.cpp" />
+<ClCompile Include="..\..\..\getopt\getopt.c" />

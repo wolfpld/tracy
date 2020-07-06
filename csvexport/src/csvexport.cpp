@@ -11,12 +11,28 @@
 
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyWorker.hpp"
-#include "cxxopts.hpp"
+#include "getopt.h"
+
+void print_usage_exit(int e)
+{
+    fprintf(stderr, "Extract statistics from a trace to a CSV format\n");
+    fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "  extract [OPTION...] <trace file>\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  -h, --help        Print usage\n");
+    fprintf(stderr, "  -f, --filter arg  Filter zone names (default: "")\n");
+    fprintf(stderr, "  -s, --sep arg     CSV separator (default: ,)\n");
+    fprintf(stderr, "  -c, --case        Case sensitive filtering\n");
+    fprintf(stderr, "  -e, --self        Get self times\n");
+    fprintf(stderr, "  -u, --unwrap      Report each zone event\n");
+
+    exit(e);
+}
 
 struct Args {
-    std::string filter;
-    std::string separator;
-    std::string trace_file;
+    const char* filter;
+    const char* separator;
+    const char* trace_file;
     bool case_sensitive;
     bool self_time;
     bool unwrap;
@@ -24,61 +40,69 @@ struct Args {
 
 Args parse_args(int argc, char** argv)
 {
-    cxxopts::Options options(
-        "extract",
-        "Extract statistics from a trace to a CSV format"
-    );
-
-    std::string filter;
-    std::string separator;
-    std::string trace_file;
-    bool case_sensitive = false;
-    bool self_time = false;
-    bool unwrap = false;
-
-	options.add_options()
-        ("h,help", "Print usage")
-        ("f,filter", "Filter zone names",
-            cxxopts::value(filter)->default_value(""))
-        ("s,separator", "CSV separator",
-            cxxopts::value(separator)->default_value(","))
-        ("t,trace", "same as <trace file>",
-            cxxopts::value(trace_file))
-        ("case", "Case sensitive filtering",
-            cxxopts::value(case_sensitive))
-        ("self", "Get self times",
-            cxxopts::value(self_time))
-        ("unwrap", "Report each zone event",
-            cxxopts::value(unwrap))
-    ;
-
-    options.positional_help("<trace file>");
-    options.parse_positional("trace");
-    auto result = options.parse(argc, argv);
-    if (result.count("help"))
+    if (argc == 1)
     {
-        fprintf(stderr, "%s\n", options.help().data());
-        exit(0);
+        print_usage_exit(1);
     }
 
-    if (result.count("trace") == 0)
-    {
-        fprintf(stderr, "Requires a trace file");
-        exit(1);
-    }
+    Args args = { "", ",", "", false, false, false };
 
-    return Args {
-        filter, separator, trace_file, case_sensitive, self_time, unwrap
+    struct option long_opts[] = {
+        { "help", no_argument, NULL, 'h' },
+        { "filter", optional_argument, NULL, 'f' },
+        { "sep", optional_argument, NULL, 's' },
+        { "case", no_argument, NULL, 'c' },
+        { "self", no_argument, NULL, 'e' },
+        { "unwrap", no_argument, NULL, 'u' },
+        { NULL, 0, NULL, 0 }
     };
+
+    int c;
+    while ((c = getopt_long(argc, argv, "hf:s:ceu", long_opts, NULL)) != -1)
+    {
+        switch (c)
+        {
+        case 'h':
+            print_usage_exit(0);
+            break;
+        case 'f':
+            args.filter = optarg;
+            break;
+        case 's':
+            args.separator = optarg;
+            break;
+        case 'c':
+            args.case_sensitive = true;
+            break;
+        case 'e':
+            args.self_time = true;
+            break;
+        case 'u':
+            args.unwrap = true;
+            break;
+        default:
+            print_usage_exit(1);
+            break;
+        }
+    }
+
+    if (argc != optind + 1)
+    {
+        print_usage_exit(1);
+    }
+
+    args.trace_file = argv[optind];
+
+    return args;
 }
 
 bool is_substring(
-    const std::string term,
-    const std::string s,
+    const char* term,
+    const char* s,
     bool case_sensitive = false
 ){
-    std::string new_term = term;
-    std::string new_s = s;
+    auto new_term = std::string(term);
+    auto new_s = std::string(s);
 
     if (!case_sensitive) {
         std::transform(
@@ -106,7 +130,7 @@ const char* get_name(int32_t id, const tracy::Worker& worker)
 }
 
 template <typename T>
-std::string join(const T& v, std::string sep) {
+std::string join(const T& v, const char* sep) {
     std::ostringstream s;
     for (const auto& i : v) {
         if (&i != &v[0]) {
@@ -152,11 +176,11 @@ int main(int argc, char** argv)
     Args args = parse_args(argc, argv);
 
     auto f = std::unique_ptr<tracy::FileRead>(
-        tracy::FileRead::Open(args.trace_file.data())
+        tracy::FileRead::Open(args.trace_file)
     );
     if (!f)
     {
-        fprintf(stderr, "Could not open file %s\n", args.trace_file.data());
+        fprintf(stderr, "Could not open file %s\n", args.trace_file);
         return 1;
     }
 
@@ -177,7 +201,7 @@ int main(int argc, char** argv)
         if(it->second.total != 0)
         {
             ++total_cnt;
-            if(args.filter.empty())
+            if(args.filter[0] == '\0')
             {
                 slz_selected.push_back_no_space_check(it);
             }

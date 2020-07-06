@@ -171,7 +171,7 @@
     <ClCompile Include="..\..\..\zstd\zstd_ldm.c" />
     <ClCompile Include="..\..\..\zstd\zstd_opt.c" />
     <ClCompile Include="..\..\src\capture.cpp" />
-    <ClCompile Include="..\..\src\getopt.c" />
+    <ClCompile Include="..\..\..\getopt\getopt.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\TracyAlign.hpp" />
@@ -227,7 +227,7 @@
     <ClInclude Include="..\..\..\zstd\zstd_lazy.h" />
     <ClInclude Include="..\..\..\zstd\zstd_ldm.h" />
     <ClInclude Include="..\..\..\zstd\zstd_opt.h" />
-    <ClInclude Include="..\..\src\getopt.h" />
+    <ClCompile Include="..\..\..\getopt\getopt.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

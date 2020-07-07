@@ -102,21 +102,56 @@ public:
         vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
         vkQueueWaitIdle( queue );
 
-        vkBeginCommandBuffer( cmdbuf, &beginInfo );
-        vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_query, 0 );
-        vkEndCommandBuffer( cmdbuf );
-        vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
-        vkQueueWaitIdle( queue );
+        int64_t tcpu, tgpu;
+        if( m_timeDomain == VK_TIME_DOMAIN_DEVICE_EXT )
+        {
+            vkBeginCommandBuffer( cmdbuf, &beginInfo );
+            vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_query, 0 );
+            vkEndCommandBuffer( cmdbuf );
+            vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
+            vkQueueWaitIdle( queue );
 
-        int64_t tcpu = Profiler::GetTime();
-        int64_t tgpu;
-        vkGetQueryPoolResults( device, m_query, 0, 1, sizeof( tgpu ), &tgpu, sizeof( tgpu ), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT );
+            tcpu = Profiler::GetTime();
+            vkGetQueryPoolResults( device, m_query, 0, 1, sizeof( tgpu ), &tgpu, sizeof( tgpu ), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT );
 
-        vkBeginCommandBuffer( cmdbuf, &beginInfo );
-        vkCmdResetQueryPool( cmdbuf, m_query, 0, 1 );
-        vkEndCommandBuffer( cmdbuf );
-        vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
-        vkQueueWaitIdle( queue );
+            vkBeginCommandBuffer( cmdbuf, &beginInfo );
+            vkCmdResetQueryPool( cmdbuf, m_query, 0, 1 );
+            vkEndCommandBuffer( cmdbuf );
+            vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
+            vkQueueWaitIdle( queue );
+        }
+        else
+        {
+            enum { NumProbes = 32 };
+
+            VkCalibratedTimestampInfoEXT spec[2] = {
+                { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, VK_TIME_DOMAIN_DEVICE_EXT },
+                { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, m_timeDomain },
+            };
+            uint64_t ts[2];
+            uint64_t deviation[NumProbes];
+            for( int i=0; i<NumProbes; i++ )
+            {
+                _vkGetCalibratedTimestampsEXT( device, 2, spec, ts, deviation+i );
+            }
+            uint64_t minDeviation = deviation[0];
+            for( int i=1; i<NumProbes; i++ )
+            {
+                if( minDeviation > deviation[i] )
+                {
+                    minDeviation = deviation[i];
+                }
+            }
+            m_deviation = minDeviation * 3 / 2;
+
+            m_qpcToNs = int64_t( 1000000000. / GetFrequencyQpc() );
+
+            Calibrate( device, m_prevCalibration, tgpu );
+            tcpu = Profiler::GetTime();
+        }
+
+        uint8_t flags = 0;
+        if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) flags |= GpuContextCalibration;
 
         auto item = Profiler::QueueSerial();
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
@@ -125,7 +160,7 @@ public:
         memset( &item->gpuNewContext.thread, 0, sizeof( item->gpuNewContext.thread ) );
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
-        MemWrite( &item->gpuNewContext.accuracyBits, uint8_t( 0 ) );
+        MemWrite( &item->gpuNewContext.flags, flags );
         MemWrite( &item->gpuNewContext.type, GpuContextType::Vulkan );
 
 #ifdef TRACY_ON_DEMAND
@@ -153,6 +188,8 @@ public:
         {
             vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount );
             m_head = m_tail = 0;
+            int64_t tgpu;
+            if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT ) Calibrate( m_device, m_prevCalibration, tgpu );
             return;
         }
 #endif
@@ -182,6 +219,25 @@ public:
             MemWrite( &item->gpuTime.queryId, uint16_t( m_tail + idx ) );
             MemWrite( &item->gpuTime.context, m_context );
             Profiler::QueueSerialFinish();
+        }
+
+        if( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT )
+        {
+            int64_t tgpu, tcpu;
+            Calibrate( m_device, tcpu, tgpu );
+            const auto refCpu = Profiler::GetTime();
+            const auto delta = tcpu - m_prevCalibration;
+            if( delta > 0 )
+            {
+                m_prevCalibration = tcpu;
+                auto item = Profiler::QueueSerial();
+                MemWrite( &item->hdr.type, QueueType::GpuCalibration );
+                MemWrite( &item->gpuCalibration.gpuTime, tgpu );
+                MemWrite( &item->gpuCalibration.cpuTime, refCpu );
+                MemWrite( &item->gpuCalibration.cpuDelta, delta );
+                MemWrite( &item->gpuCalibration.context, m_context );
+                Profiler::QueueSerialFinish();
+            }
         }
 
         vkCmdResetQueryPool( cmdbuf, m_query, m_tail, cnt );

@@ -3957,6 +3957,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::GpuTime:
         ProcessGpuTime( ev.gpuTime );
         break;
+    case QueueType::GpuCalibration:
+        ProcessGpuCalibration( ev.gpuCalibration );
+        break;
     case QueueType::MemAlloc:
         ProcessMemAlloc( ev.memAlloc );
         break;
@@ -5059,6 +5062,11 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
         zone->SetGpuEnd( time );
         if( m_data.lastTime < time ) m_data.lastTime = time;
     }
+}
+
+void Worker::ProcessGpuCalibration( const QueueGpuCalibration& ev )
+{
+
 }
 
 void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )

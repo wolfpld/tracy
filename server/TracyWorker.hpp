@@ -643,6 +643,7 @@ private:
     tracy_force_inline void ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev, bool serial );
     tracy_force_inline void ProcessGpuZoneEnd( const QueueGpuZoneEnd& ev, bool serial );
     tracy_force_inline void ProcessGpuTime( const QueueGpuTime& ev );
+    tracy_force_inline void ProcessGpuCalibration( const QueueGpuCalibration& ev );
     tracy_force_inline void ProcessMemAlloc( const QueueMemAlloc& ev );
     tracy_force_inline bool ProcessMemFree( const QueueMemFree& ev );
     tracy_force_inline void ProcessMemAllocCallstack( const QueueMemAlloc& ev );

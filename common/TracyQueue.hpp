@@ -56,6 +56,7 @@ enum class QueueType : uint8_t
     Terminate,
     KeepAlive,
     ThreadContext,
+    GpuCalibration,
     Crash,
     CrashReport,
     ZoneValidation,
@@ -268,6 +269,11 @@ enum class GpuContextType : uint8_t
     Direct3D12
 };
 
+enum GpuContextFlags : uint8_t
+{
+    GpuContextCalibration   = 1 << 0
+};
+
 struct QueueGpuNewContext
 {
     int64_t cpuTime;
@@ -275,7 +281,7 @@ struct QueueGpuNewContext
     uint64_t thread;
     float period;
     uint8_t context;
-    uint8_t accuracyBits;
+    GpuContextFlags flags;
     GpuContextType type;
 };
 
@@ -300,6 +306,14 @@ struct QueueGpuTime
 {
     int64_t gpuTime;
     uint16_t queryId;
+    uint8_t context;
+};
+
+struct QueueGpuCalibration
+{
+    int64_t gpuTime;
+    int64_t cpuTime;
+    int64_t cpuDelta;
     uint8_t context;
 };
 
@@ -477,6 +491,7 @@ struct QueueItem
         QueueGpuZoneBegin gpuZoneBegin;
         QueueGpuZoneEnd gpuZoneEnd;
         QueueGpuTime gpuTime;
+        QueueGpuCalibration gpuCalibration;
         QueueMemAlloc memAlloc;
         QueueMemFree memFree;
         QueueCallstackMemory callstackMemory;
@@ -553,6 +568,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
     sizeof( QueueHeader ) + sizeof( QueueThreadContext ),
+    sizeof( QueueHeader ) + sizeof( QueueGpuCalibration ),
     sizeof( QueueHeader ),                                  // crash
     sizeof( QueueHeader ) + sizeof( QueueCrashReport ),
     sizeof( QueueHeader ) + sizeof( QueueZoneValidation ),

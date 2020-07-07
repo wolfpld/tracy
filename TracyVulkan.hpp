@@ -45,13 +45,33 @@ class VkCtx
 public:
     VkCtx( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, PFN_vkGetCalibratedTimestampsEXT _vkGetCalibratedTimestampsEXT )
         : m_device( device )
+        , m_timeDomain( VK_TIME_DOMAIN_DEVICE_EXT )
         , m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
         , m_head( 0 )
         , m_tail( 0 )
         , m_oldCnt( 0 )
         , m_queryCount( QueryCount )
+        , m_vkGetCalibratedTimestampsEXT( _vkGetCalibratedTimestampsEXT )
     {
         assert( m_context != 255 );
+
+        if( _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT && _vkGetCalibratedTimestampsEXT )
+        {
+            uint32_t num;
+            _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT( physdev, &num, nullptr );
+            if( num > 4 ) num = 4;
+            VkTimeDomainEXT data[4];
+            _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT( physdev, &num, data );
+            for( uint32_t i=0; i<num; i++ )
+            {
+                // TODO VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_EXT
+                if( data[i] == VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_EXT )
+                {
+                    m_timeDomain = data[i];
+                    break;
+                }
+            }
+        }
 
         VkPhysicalDeviceProperties prop;
         vkGetPhysicalDeviceProperties( physdev, &prop );
@@ -186,6 +206,8 @@ private:
 
     VkDevice m_device;
     VkQueryPool m_query;
+    VkTimeDomainEXT m_timeDomain;
+    uint64_t m_deviation;
     uint8_t m_context;
 
     unsigned int m_head;
@@ -194,6 +216,8 @@ private:
     unsigned int m_queryCount;
 
     int64_t* m_res;
+
+    PFN_vkGetCalibratedTimestampsEXT m_vkGetCalibratedTimestampsEXT;
 };
 
 class VkCtxScope

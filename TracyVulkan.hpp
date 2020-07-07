@@ -4,6 +4,7 @@
 #if !defined TRACY_ENABLE
 
 #define TracyVkContext(x,y,z,w) nullptr
+#define TracyVkContextCalibrated(x,y,z,w,a,b) nullptr
 #define TracyVkDestroy(x)
 #define TracyVkNamedZone(c,x,y,z,w)
 #define TracyVkNamedZoneC(c,x,y,z,w,a)
@@ -42,7 +43,7 @@ class VkCtx
     enum { QueryCount = 64 * 1024 };
 
 public:
-    VkCtx( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf )
+    VkCtx( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT _vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, PFN_vkGetCalibratedTimestampsEXT _vkGetCalibratedTimestampsEXT )
         : m_device( device )
         , m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
         , m_head( 0 )
@@ -271,11 +272,11 @@ private:
     VkCtx* m_ctx;
 };
 
-static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf )
+static inline VkCtx* CreateVkContext( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf, PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT gpdctd, PFN_vkGetCalibratedTimestampsEXT gct )
 {
     InitRPMallocThread();
     auto ctx = (VkCtx*)tracy_malloc( sizeof( VkCtx ) );
-    new(ctx) VkCtx( physdev, device, queue, cmdbuf );
+    new(ctx) VkCtx( physdev, device, queue, cmdbuf, gpdctd, gct );
     return ctx;
 }
 
@@ -289,7 +290,8 @@ static inline void DestroyVkContext( VkCtx* ctx )
 
 using TracyVkCtx = tracy::VkCtx*;
 
-#define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::CreateVkContext( physdev, device, queue, cmdbuf );
+#define TracyVkContext( physdev, device, queue, cmdbuf ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, nullptr, nullptr );
+#define TracyVkContextCalibrated( physdev, device, queue, cmdbuf, gpdctd, gct ) tracy::CreateVkContext( physdev, device, queue, cmdbuf, gpdctd, gct );
 #define TracyVkDestroy( ctx ) tracy::DestroyVkContext( ctx );
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyVkNamedZone( ctx, varname, cmdbuf, name, active ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::VkCtxScope varname( ctx, &TracyConcat(__tracy_gpu_source_location,__LINE__), cmdbuf, TRACY_CALLSTACK, active );

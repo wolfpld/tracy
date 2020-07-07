@@ -41,6 +41,10 @@
 
 namespace tracy
 {
+#ifdef TRACY_MANUAL_LIFETIME
+void startupProfiler();
+void shutdownProfiler();
+#endif
 
 class GpuCtx;
 class Profiler;
@@ -117,6 +121,8 @@ class Profiler
 public:
     Profiler();
     ~Profiler();
+
+    void SpawnWorkerThreads();
 
     static tracy_force_inline int64_t GetTime()
     {

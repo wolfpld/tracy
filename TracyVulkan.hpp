@@ -204,10 +204,35 @@ private:
         return m_context;
     }
 
+    tracy_force_inline void Calibrate( VkDevice device, int64_t& tCpu, int64_t& tGpu )
+    {
+        assert( m_timeDomain != VK_TIME_DOMAIN_DEVICE_EXT );
+        VkCalibratedTimestampInfoEXT spec[2] = {
+            { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, VK_TIME_DOMAIN_DEVICE_EXT },
+            { VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT, nullptr, m_timeDomain },
+        };
+        uint64_t ts[2];
+        uint64_t deviation;
+        do
+        {
+            m_vkGetCalibratedTimestampsEXT( device, 2, spec, ts, &deviation );
+        }
+        while( deviation > m_deviation );
+
+#if defined _WIN32 || defined __CYGWIN__
+        tGpu = ts[0];
+        tCpu = ts[1] * m_qpcToNs;
+#else
+        assert( false );
+#endif
+    }
+
     VkDevice m_device;
     VkQueryPool m_query;
     VkTimeDomainEXT m_timeDomain;
     uint64_t m_deviation;
+    int64_t m_qpcToNs;
+    int64_t m_prevCalibration;
     uint8_t m_context;
 
     unsigned int m_head;

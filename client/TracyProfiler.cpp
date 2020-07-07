@@ -873,6 +873,17 @@ static Thread* s_sysTraceThread = nullptr;
 
 TRACY_API bool ProfilerAvailable() { return s_instance != nullptr; }
 
+TRACY_API int64_t GetFrequencyQpc()
+{
+#if defined _WIN32 || defined __CYGWIN__
+    LARGE_INTEGER t;
+    QueryPerformanceFrequency( &t );
+    return t.QuadPart;
+#else
+    return 0;
+#endif
+}
+
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();

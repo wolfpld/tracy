@@ -42,8 +42,8 @@
 namespace tracy
 {
 #ifdef TRACY_MANUAL_LIFETIME
-void startupProfiler();
-void shutdownProfiler();
+void StartupProfiler();
+void ShutdownProfiler();
 #endif
 
 class GpuCtx;

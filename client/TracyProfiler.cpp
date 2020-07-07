@@ -915,7 +915,7 @@ struct ProfilerThreadData
 
 #ifdef TRACY_MANUAL_LIFETIME
 ProfilerData* s_profilerData = nullptr;
-TRACY_API void startupProfiler()
+TRACY_API void StartupProfiler()
 {
     s_profilerData = new ProfilerData;
     s_profilerData->profiler.SpawnWorkerThreads();
@@ -925,7 +925,7 @@ static ProfilerData& GetProfilerData()
     while (!s_profilerData);
     return *s_profilerData;
 }
-TRACY_API void shutdownProfiler()
+TRACY_API void ShutdownProfiler()
 {
 	delete s_profilerData;
     s_profilerData = nullptr;
@@ -1025,11 +1025,11 @@ thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 #ifdef TRACY_MANUAL_LIFETIME
 Profiler* s_profiler = nullptr;
 
-TRACY_API void startupProfiler()
+TRACY_API void StartupProfiler()
 {
     s_profiler = new Profiler;
 }
-TRACY_API void shutdownProfiler()
+TRACY_API void ShutdownProfiler()
 {
     delete s_profiler;
     s_profiler = nullptr;

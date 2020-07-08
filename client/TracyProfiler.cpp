@@ -929,6 +929,7 @@ TRACY_API void ShutdownProfiler()
 {
 	delete s_profilerData;
     s_profilerData = nullptr;
+    rpmalloc_finalize();
 }
 #  else
 static std::atomic<int> profilerDataLock { 0 };
@@ -1033,6 +1034,7 @@ TRACY_API void ShutdownProfiler()
 {
     delete s_profiler;
     s_profiler = nullptr;
+    rpmalloc_finalize();
 }
 TRACY_API Profiler& GetProfiler() { return *s_profiler; }
 #  else
@@ -1213,11 +1215,24 @@ bool Profiler::ShouldExit()
     return s_instance->m_shutdown.load( std::memory_order_relaxed );
 }
 
+class ThreadExitHandler
+{
+public:
+    ~ThreadExitHandler()
+    {
+#ifdef TRACY_MANUAL_LIFETIME
+        rpmalloc_thread_finalize();
+#endif
+    }
+};
+
 void Profiler::Worker()
 {
 #ifdef __linux__
     s_profilerTid = syscall( SYS_gettid );
 #endif
+
+    ThreadExitHandler threadExitHandler;
 
     SetThreadName( "Tracy Profiler" );
 
@@ -1639,6 +1654,8 @@ void Profiler::Worker()
 
 void Profiler::CompressWorker()
 {
+    ThreadExitHandler threadExitHandler;
+
     SetThreadName( "Tracy DXT1" );
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     rpmalloc_thread_initialize();

@@ -927,7 +927,7 @@ static ProfilerData& GetProfilerData()
 }
 TRACY_API void ShutdownProfiler()
 {
-	delete s_profilerData;
+    delete s_profilerData;
     s_profilerData = nullptr;
     rpmalloc_finalize();
 }

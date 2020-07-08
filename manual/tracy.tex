@@ -1229,6 +1229,8 @@ Using GPU zones is the same as the Vulkan implementation, where the \texttt{Trac
 
 The macro \texttt{TracyD3D12NewFrame(ctx)} is used to mark a new frame, and should appear before or after recording command lists, similar to \texttt{FrameMark}. This macro is a key component that enables automatic query data synchronization, so the user doesn't have to worry about synchronizing GPU execution before invoking a collection. Event data can then be collected and sent to the profiler using the \texttt{TracyD3D12Collect(ctx)} macro.
 
+Note that due to artifacts from dynamic frequency scaling, GPU profiling may be slightly inaccurate. To counter this, \texttt{ID3D12Device::SetStablePowerState()} can be used to enable accurate profiling, at the expense of some performance. If the machine is not in developer mode, the device will be removed upon calling. Do not use this in shipping code.
+
 \subsubsection{OpenCL}
 
 OpenCL support is achieved by including the \texttt{tracy/TracyOpenCL.hpp} header file. Tracing OpenCL requires the creation of a Tracy OpenCL context using the macro \texttt{TracyCLContext(context, device)}, which will return an instance of \texttt{TracyCLCtx} object that must be used when creating zones. The specified \texttt{device} must be part of the \texttt{context}. Cleanup is performed using the \texttt{TracyCLDestroy(ctx)} macro. Although not common, it is possible to create multiple OpenCL contexts for the same application.

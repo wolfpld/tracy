@@ -156,7 +156,7 @@ namespace tracy
 			memset(&item->gpuNewContext.thread, 0, sizeof(item->gpuNewContext.thread));
 			MemWrite(&item->gpuNewContext.period, 1E+09f / static_cast<float>(timestampFrequency));
 			MemWrite(&item->gpuNewContext.context, m_context);
-			MemWrite(&item->gpuNewContext.flags, uint8_t{ 0 });
+			MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
 			MemWrite(&item->gpuNewContext.type, GpuContextType::Direct3D12);
 
 #ifdef TRACY_ON_DEMAND

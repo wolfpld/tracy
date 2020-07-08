@@ -913,7 +913,7 @@ struct ProfilerThreadData
 #  endif
 };
 
-#ifdef TRACY_MANUAL_LIFETIME
+#  ifdef TRACY_MANUAL_LIFETIME
 ProfilerData* s_profilerData = nullptr;
 TRACY_API void StartupProfiler()
 {
@@ -930,7 +930,7 @@ TRACY_API void ShutdownProfiler()
 	delete s_profilerData;
     s_profilerData = nullptr;
 }
-#else
+#  else
 static std::atomic<int> profilerDataLock { 0 };
 static std::atomic<ProfilerData*> profilerData { nullptr };
 
@@ -952,7 +952,7 @@ static ProfilerData& GetProfilerData()
     }
     return *ptr;
 }
-#endif
+#  endif
 
 static ProfilerThreadData& GetProfilerThreadData()
 {
@@ -974,13 +974,13 @@ std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().thr
 TRACY_API LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
 #  endif
 
-#ifdef TRACY_MANUAL_LIFETIME
-#else
+#  ifdef TRACY_MANUAL_LIFETIME
+#  else
 namespace
 {
     const auto& __profiler_init = GetProfiler();
 }
-#endif
+#  endif
 
 #else
 TRACY_API void InitRPMallocThread()
@@ -1022,7 +1022,7 @@ std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
 thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 #  endif
 
-#ifdef TRACY_MANUAL_LIFETIME
+#  ifdef TRACY_MANUAL_LIFETIME
 Profiler* s_profiler = nullptr;
 
 TRACY_API void StartupProfiler()
@@ -1035,10 +1035,10 @@ TRACY_API void ShutdownProfiler()
     s_profiler = nullptr;
 }
 TRACY_API Profiler& GetProfiler() { return *s_profiler; }
-#else
+#  else
 static Profiler init_order(105) s_profiler;
 TRACY_API Profiler& GetProfiler() { return s_profiler; }
-#endif
+#  endif
 
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }

@@ -1920,9 +1920,8 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 \draw (0.6, -0.7) node[anchor=north west] {Frames: 364};
 \draw[rounded corners=5pt] (2.8, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretRight};
 \draw[rounded corners=5pt] (3.3, -0.7) rectangle+(0.5, -0.5) node [midway] {\faCaretDown};
-\draw[rounded corners=5pt] (3.9, -0.7) rectangle+(0.5, -0.5) node [midway] {\faCrosshairs};
-\draw (4.5, -0.65) node[anchor=north west] {\faEye~52.7 ms \hspace{5pt} \faDatabase~6.06 s \hspace{5pt} \faMemory~195.2 MB};
-\draw[dashed] (10.6, -0.75) rectangle+(3.2, -0.4) node[midway] {Notification area};
+\draw (4, -0.65) node[anchor=north west] {\faEye~52.7 ms \hspace{5pt} \faDatabase~6.06 s \hspace{5pt} \faMemory~195.2 MB};
+\draw[dashed] (10.1, -0.75) rectangle+(3.2, -0.4) node[midway] {Notification area};
 
 \draw (0.1, -1.3) rectangle+(15.3, -1) node [midway] {Frame time graph};
 \draw (0.1, -2.4) rectangle+(15.3, -3) node [midway] {Timeline view};
@@ -1957,7 +1956,7 @@ The control menu (top row of buttons) provides access to various features of the
 \end{itemize}
 \end{itemize}
 
-The frame information block consists of four elements: the current frame set name along with the number of captured frames, the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to a another frame set\footnote{See section~\ref{framesets} for another way to change the active frame set.}. The \emph{\faCrosshairs{}~Go to frame} button allows zooming the timeline view on the specified frame. For more information about marking frames, see section~\ref{markingframes}.
+The frame information block consists of four elements: the current frame set name along with the number of captured frames (click on it with the \LMB{}~left mouse button to go to a specified frame), the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to a another frame set\footnote{See section~\ref{framesets} for another way to change the active frame set.}. For more information about marking frames, see section~\ref{markingframes}.
 
 The next three items show the \emph{\faEye{}~view time range}, the \emph{\faDatabase{}~time span} of the whole capture (clicking on it with the \MMB{} middle mouse button will set the view range to the entire capture), and the \emph{\faMemory{}~memory usage} of the profiler.
 

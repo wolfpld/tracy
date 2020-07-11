@@ -33,9 +33,6 @@
     <ClCompile Include="..\..\..\server\TracyWorker.cpp">
       <Filter>server</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\capture.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp">
       <Filter>common</Filter>
     </ClCompile>
@@ -131,6 +128,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\getopt\getopt.c">
       <Filter>getopt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\csvexport.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

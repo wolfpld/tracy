@@ -29,6 +29,8 @@ jobs:
       run: make -j -C update/build/unix debug release
     - name: Capture utility
       run: make -j -C capture/build/unix debug release
+    - name: Csvexport utility
+      run: make -j -C csvexport/build/unix debug release
     - name: Import-chrome utility
       run: make -j -C import-chrome/build/unix debug release
     - name: Library

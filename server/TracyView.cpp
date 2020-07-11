@@ -616,6 +616,7 @@ bool View::DrawImpl()
         {
             ImGui::PopStyleColor();
         }
+        if( ImGui::IsItemClicked() ) ImGui::OpenPopup( "GoToFramePopup" );
     }
     ImGui::SameLine();
     if( ImGui::SmallButton( " " ICON_FA_CARET_RIGHT " " ) ) ZoomToNextFrame();
@@ -638,14 +639,6 @@ bool View::DrawImpl()
             ImGui::TextDisabled( "(%s)", RealToString( fd->frames.size() ) );
         }
         ImGui::EndCombo();
-    }
-    ImGui::SameLine();
-    if( ImGui::Button( ICON_FA_CROSSHAIRS ) ) ImGui::OpenPopup( "GoToFramePopup" );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        ImGui::TextUnformatted( "Go to frame" );
-        ImGui::EndTooltip();
     }
     if( ImGui::BeginPopup( "GoToFramePopup" ) )
     {

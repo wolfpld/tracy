@@ -21,6 +21,8 @@ v0.7.1 (xxxx-xx-xx)
 - Zones in find zones menu can be now grouped by zone name.
 - Vulkan and D3D12 GPU contexts can be now calibrated.
 - Added CSV export utility.
+- "Go to frame" popup no longer has a dedicated button. To show it, click on
+  the frame counter.
 
 v0.7 (2020-06-11)
 -----------------

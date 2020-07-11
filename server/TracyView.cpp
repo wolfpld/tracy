@@ -691,6 +691,10 @@ bool View::DrawImpl()
             ImGui::BeginTooltip();
             ImGui::Text( "Time span" );
             ImGui::EndTooltip();
+            if( ImGui::IsItemClicked( 2 ) )
+            {
+                ZoomToRange( 0, m_worker.GetLastTime() );
+            }
         }
         ImGui::SameLine();
         dx = ImGui::GetCursorPosX() - cx;

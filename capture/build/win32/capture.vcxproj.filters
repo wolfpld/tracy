@@ -13,6 +13,9 @@
     <Filter Include="zstd">
       <UniqueIdentifier>{043ecb94-f240-4986-94b0-bc5bbd415a82}</UniqueIdentifier>
     </Filter>
+    <Filter Include="getopt">
+      <UniqueIdentifier>{ee9737d2-69c7-44da-b9c7-539d18f9d4b4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp">
@@ -31,9 +34,6 @@
       <Filter>server</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\capture.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\getopt.c">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp">
@@ -129,6 +129,9 @@
     <ClCompile Include="..\..\..\server\TracyTextureCompression.cpp">
       <Filter>server</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\getopt\getopt.c">
+      <Filter>getopt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
@@ -178,9 +181,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyWorker.hpp">
       <Filter>server</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\src\getopt.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\common\TracyAlign.hpp">
       <Filter>common</Filter>
@@ -292,6 +292,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyTextureCompression.hpp">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\getopt\getopt.h">
+      <Filter>getopt</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

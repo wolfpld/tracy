@@ -138,6 +138,7 @@
     <ClCompile Include="..\..\..\common\TracySystem.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp" />
+    <ClCompile Include="..\..\..\getopt\getopt.c" />
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
     <ClCompile Include="..\..\..\server\TracyMmap.cpp" />
     <ClCompile Include="..\..\..\server\TracyPrint.cpp" />
@@ -171,7 +172,6 @@
     <ClCompile Include="..\..\..\zstd\zstd_ldm.c" />
     <ClCompile Include="..\..\..\zstd\zstd_opt.c" />
     <ClCompile Include="..\..\src\capture.cpp" />
-    <ClCompile Include="..\..\..\getopt\getopt.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\common\TracyAlign.hpp" />
@@ -184,6 +184,7 @@
     <ClInclude Include="..\..\..\common\TracySystem.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp" />
+    <ClInclude Include="..\..\..\getopt\getopt.h" />
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp" />
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileRead.hpp" />
@@ -227,7 +228,6 @@
     <ClInclude Include="..\..\..\zstd\zstd_lazy.h" />
     <ClInclude Include="..\..\..\zstd\zstd_ldm.h" />
     <ClInclude Include="..\..\..\zstd\zstd_opt.h" />
-    <ClCompile Include="..\..\..\getopt\getopt.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

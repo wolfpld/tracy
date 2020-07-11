@@ -1,3 +1,7 @@
+#ifdef _WIN32
+#  include <windows.h>
+#endif
+
 #include <algorithm>
 #include <cctype>
 #include <fstream>
@@ -11,7 +15,7 @@
 
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyWorker.hpp"
-#include "getopt.h"
+#include "../../getopt/getopt.h"
 
 void print_usage_exit(int e)
 {
@@ -173,6 +177,14 @@ int64_t GetZoneChildTimeFast(
 
 int main(int argc, char** argv)
 {
+#ifdef _WIN32
+    if (!AttachConsole(ATTACH_PARENT_PROCESS))
+    {
+        AllocConsole();
+        SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), 0x07);
+    }
+#endif
+
     Args args = parse_args(argc, argv);
 
     auto f = std::unique_ptr<tracy::FileRead>(

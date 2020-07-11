@@ -1,0 +1,300 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{729c80ee-4d26-4a5e-8f1f-6c075783eb56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="server">
+      <UniqueIdentifier>{cf23ef7b-7694-4154-830b-00cf053350ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{e39d3623-47cd-4752-8da9-3ea324f964c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="zstd">
+      <UniqueIdentifier>{043ecb94-f240-4986-94b0-bc5bbd415a82}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="getopt">
+      <UniqueIdentifier>{ee9737d2-69c7-44da-b9c7-539d18f9d4b4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\common\tracy_lz4.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TracySocket.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\TracySystem.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyMemory.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyWorker.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyPrint.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyThreadCompress.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyTaskDispatch.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\debug.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\entropy_common.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\error_private.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\fse_compress.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\fse_decompress.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\hist.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\huf_compress.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\huf_decompress.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\pool.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\threading.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\xxhash.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_common.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_compress.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_compress_literals.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_compress_sequences.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_compress_superblock.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_ddict.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_decompress.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_decompress_block.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_double_fast.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_fast.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_lazy.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_ldm.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstd_opt.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\zstd\zstdmt_compress.c">
+      <Filter>zstd</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyMmap.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\server\TracyTextureCompression.cpp">
+      <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\getopt\getopt.c">
+      <Filter>getopt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\csvexport.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\common\tracy_lz4.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyAlloc.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyColor.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyForceInline.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyProtocol.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyQueue.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracySocket.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracySystem.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyCharUtil.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyEvent.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyFileWrite.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyMemory.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyPopcnt.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracySlab.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyVector.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyWorker.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\TracyAlign.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp">
+      <Filter>common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyPrint.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyThreadCompress.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyTaskDispatch.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\bitstream.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\compiler.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\cpu.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\debug.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\error_private.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\fse.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\hist.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\huf.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\mem.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\pool.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\threading.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\xxhash.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_compress_internal.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_compress_literals.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_compress_sequences.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_compress_superblock.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_cwksp.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_ddict.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_decompress_block.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_decompress_internal.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_double_fast.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_errors.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_fast.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_internal.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_lazy.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_ldm.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstd_opt.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\zstd\zstdmt_compress.h">
+      <Filter>zstd</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyFileRead.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyMmap.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\server\TracyTextureCompression.hpp">
+      <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\getopt\getopt.h">
+      <Filter>getopt</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -8715,7 +8715,16 @@ void View::DrawMessages()
         ImGui::TextDisabled( "(%s)", RealToString( tid ) );
         ImGui::NextColumn();
         ImGui::PushStyleColor( ImGuiCol_Text, v->color );
-        ImGui::TextWrapped( "%s", text );
+        const auto cw = ImGui::GetContentRegionAvail().x;
+        const auto tw = ImGui::CalcTextSize( text ).x;
+        ImGui::TextUnformatted( text );
+        if( tw > cw && ImGui::IsItemHovered() )
+        {
+            ImGui::SetNextWindowSize( ImVec2( 1000, 0 ) );
+            ImGui::BeginTooltip();
+            ImGui::TextWrapped( "%s", text );
+            ImGui::EndTooltip();
+        }
         ImGui::PopStyleColor();
         ImGui::NextColumn();
         if( hasCallstack )

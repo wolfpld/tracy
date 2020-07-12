@@ -922,7 +922,7 @@ TRACY_API void StartupProfiler()
 }
 static ProfilerData& GetProfilerData()
 {
-    while (!s_profilerData);
+    assert(s_profilerData);
     return *s_profilerData;
 }
 TRACY_API void ShutdownProfiler()
@@ -975,8 +975,7 @@ std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().thr
 TRACY_API LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
 #  endif
 
-#  ifdef TRACY_MANUAL_LIFETIME
-#  else
+#  ifndef TRACY_MANUAL_LIFETIME
 namespace
 {
     const auto& __profiler_init = GetProfiler();
@@ -1023,27 +1022,11 @@ std::atomic<ThreadNameData*>& s_threadNameData = s_threadNameDataInstance;
 thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 #  endif
 
-#  ifdef TRACY_MANUAL_LIFETIME
-Profiler* s_profiler = nullptr;
-
-TRACY_API void StartupProfiler()
-{
-    s_profiler = new Profiler;
-}
-TRACY_API void ShutdownProfiler()
-{
-    delete s_profiler;
-    s_profiler = nullptr;
-    rpmalloc_finalize();
-}
-TRACY_API Profiler& GetProfiler() { return *s_profiler; }
-#  else
 static Profiler init_order(105) s_profiler;
-TRACY_API Profiler& GetProfiler() { return s_profiler; }
-#  endif
 
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
+TRACY_API Profiler& GetProfiler() { return s_profiler; }
 TRACY_API int64_t GetInitTime() { return s_initTime.val; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
@@ -1122,8 +1105,7 @@ Profiler::Profiler()
         m_userPort = atoi( userPort );
     }
 
-#ifdef TRACY_MANUAL_LIFETIME
-#else
+#if !defined(TRACY_DELAYED_INIT) || !defined(TRACY_NONSTATIC_PROFILER)
     SpawnWorkerThreads();
 #endif
 }

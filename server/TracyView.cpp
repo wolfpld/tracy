@@ -8527,11 +8527,14 @@ void View::DrawMessages()
     size_t tsz = 0;
     for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
 
-    m_messageFilter.Draw( ICON_FA_FILTER " Filter messages", 200 );
+    const bool msgsChanged = msgs.size() != m_prevMessages;
+    if( msgsChanged ) m_prevMessages = msgs.size();
+    bool filterChanged = m_messageFilter.Draw( ICON_FA_FILTER " Filter messages", 200 );
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
     {
         m_messageFilter.Clear();
+        filterChanged = true;
     }
     ImGui::SameLine();
     ImGui::Spacing();
@@ -8549,6 +8552,7 @@ void View::DrawMessages()
         ImGui::Checkbox( ICON_FA_IMAGE " Show frame images", &m_showMessageImages );
     }
 
+    bool threadsChanged = false;
     auto expand = ImGui::TreeNode( ICON_FA_RANDOM " Visible threads:" );
     ImGui::SameLine();
     ImGui::TextDisabled( "(%zu)", tsz );
@@ -8563,6 +8567,7 @@ void View::DrawMessages()
             {
                 VisibleMsgThread( t->id ) = true;
             }
+            threadsChanged = true;
         }
         ImGui::SameLine();
         if( ImGui::SmallButton( "Unselect all" ) )
@@ -8571,6 +8576,7 @@ void View::DrawMessages()
             {
                 VisibleMsgThread( t->id ) = false;
             }
+            threadsChanged = true;
         }
 
         int idx = 0;
@@ -8581,7 +8587,10 @@ void View::DrawMessages()
             const auto threadColor = GetThreadColor( t->id, 0 );
             SmallColorBox( threadColor );
             ImGui::SameLine();
-            SmallCheckbox( m_worker.GetThreadName( t->id ), &VisibleMsgThread( t->id ) );
+            if( SmallCheckbox( m_worker.GetThreadName( t->id ), &VisibleMsgThread( t->id ) ) )
+            {
+                threadsChanged = true;
+            }
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", RealToString( t->messages.size() ) );
@@ -8594,38 +8603,40 @@ void View::DrawMessages()
         ImGui::TreePop();
     }
 
-    static Vector<uint32_t> msgList;
-    msgList.reserve( msgs.size() );
-    msgList.clear();
-    if( m_messageFilter.IsActive() )
+    if( msgsChanged || filterChanged || threadsChanged )
     {
-        for( size_t i=0; i<msgs.size(); i++ )
+        m_msgList.reserve( msgs.size() );
+        m_msgList.clear();
+        if( m_messageFilter.IsActive() )
         {
-            const auto& v = msgs[i];
-            const auto tid = m_worker.DecompressThread( v->thread );
-            if( VisibleMsgThread( tid ) )
+            for( size_t i=0; i<msgs.size(); i++ )
             {
-                const auto text = m_worker.GetString( msgs[i]->ref );
-                if( m_messageFilter.PassFilter( text ) )
+                const auto& v = msgs[i];
+                const auto tid = m_worker.DecompressThread( v->thread );
+                if( VisibleMsgThread( tid ) )
                 {
-                    msgList.push_back_no_space_check( uint32_t( i ) );
+                    const auto text = m_worker.GetString( msgs[i]->ref );
+                    if( m_messageFilter.PassFilter( text ) )
+                    {
+                        m_msgList.push_back_no_space_check( uint32_t( i ) );
+                    }
                 }
             }
         }
-    }
-    else
-    {
-        for( size_t i=0; i<msgs.size(); i++ )
+        else
         {
-            const auto& v = msgs[i];
-            const auto tid = m_worker.DecompressThread( v->thread );
-            if( VisibleMsgThread( tid ) )
+            for( size_t i=0; i<msgs.size(); i++ )
             {
-                msgList.push_back_no_space_check( uint32_t( i ) );
+                const auto& v = msgs[i];
+                const auto tid = m_worker.DecompressThread( v->thread );
+                if( VisibleMsgThread( tid ) )
+                {
+                    m_msgList.push_back_no_space_check( uint32_t( i ) );
+                }
             }
         }
+        m_visibleMessages = m_msgList.size();
     }
-    m_visibleMessages = msgList.size();
 
     bool hasCallstack = m_worker.GetCallstackFrameCount() != 0;
     ImGui::Separator();
@@ -8663,19 +8674,19 @@ void View::DrawMessages()
     int idx = 0;
     if( m_msgToFocus )
     {
-        for( const auto& msgIdx : msgList )
+        for( const auto& msgIdx : m_msgList )
         {
             DrawMessageLine( *msgs[msgIdx], hasCallstack, idx );
         }
     }
     else
     {
-        ImGuiListClipper clipper( msgList.size() );
+        ImGuiListClipper clipper( m_msgList.size() );
         while( clipper.Step() )
         {
             for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
             {
-                DrawMessageLine( *msgs[i], hasCallstack, idx );
+                DrawMessageLine( *msgs[m_msgList[i]], hasCallstack, idx );
             }
         }
     }

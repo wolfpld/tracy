@@ -330,6 +330,8 @@ private:
     bool m_showMessageImages = false;
     ImGuiTextFilter m_statisticsFilter;
     int m_visibleMessages = 0;
+    size_t m_prevMessages = 0;
+    Vector<uint32_t> m_msgList;
     bool m_disconnectIssued = false;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
     DecayValue<uint64_t> m_drawThreadHighlight = 0;

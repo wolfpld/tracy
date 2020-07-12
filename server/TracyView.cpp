@@ -8661,9 +8661,23 @@ void View::DrawMessages()
     ImGui::Separator();
 
     int idx = 0;
-    for( const auto& msgIdx : msgList )
+    if( m_msgToFocus )
     {
-        DrawMessageLine( *msgs[msgIdx], hasCallstack, idx );
+        for( const auto& msgIdx : msgList )
+        {
+            DrawMessageLine( *msgs[msgIdx], hasCallstack, idx );
+        }
+    }
+    else
+    {
+        ImGuiListClipper clipper( msgList.size() );
+        while( clipper.Step() )
+        {
+            for( auto i=clipper.DisplayStart; i<clipper.DisplayEnd; i++ )
+            {
+                DrawMessageLine( *msgs[i], hasCallstack, idx );
+            }
+        }
     }
 
     if( m_worker.IsConnected() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )

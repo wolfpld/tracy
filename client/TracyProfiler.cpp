@@ -962,8 +962,8 @@ static ProfilerThreadData& GetProfilerThreadData()
 }
 
 TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetProfilerThreadData().token.ptr; }
-TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return GetProfilerData().queue; }
 TRACY_API Profiler& GetProfiler() { return GetProfilerData().profiler; }
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return GetProfilerData().queue; }
 TRACY_API int64_t GetInitTime() { return GetProfilerData().initTime; }
 TRACY_API std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }

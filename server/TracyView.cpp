@@ -8663,81 +8663,7 @@ void View::DrawMessages()
     int idx = 0;
     for( const auto& msgIdx : msgList )
     {
-        const auto& v = msgs[msgIdx];
-        const auto text = m_worker.GetString( v->ref );
-        const auto tid = m_worker.DecompressThread( v->thread );
-        ImGui::PushID( v );
-        if( ImGui::Selectable( TimeToStringExact( v->time ), m_msgHighlight == v, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap ) )
-        {
-            CenterAtTime( v->time );
-        }
-        if( ImGui::IsItemHovered() )
-        {
-            m_msgHighlight = v;
-
-            if( m_showMessageImages )
-            {
-                const auto frameIdx = m_worker.GetFrameRange( *m_frames, v->time, v->time ).first;
-                auto fi = m_worker.GetFrameImage( *m_frames, frameIdx );
-                if( fi )
-                {
-                    ImGui::BeginTooltip();
-                    if( fi != m_frameTexturePtr )
-                    {
-                        if( !m_frameTexture ) m_frameTexture = MakeTexture();
-                        UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
-                        m_frameTexturePtr = fi;
-                    }
-                    if( fi->flip )
-                    {
-                        ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
-                    }
-                    else
-                    {
-                        ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
-                    }
-                    ImGui::EndTooltip();
-                }
-            }
-        }
-        if( m_msgToFocus == v )
-        {
-            ImGui::SetScrollHereY();
-            m_msgToFocus.Decay( nullptr );
-            m_messagesScrollBottom = false;
-        }
-        ImGui::PopID();
-        ImGui::NextColumn();
-        SmallColorBox( GetThreadColor( tid, 0 ) );
-        ImGui::SameLine();
-        ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", RealToString( tid ) );
-        ImGui::NextColumn();
-        ImGui::PushStyleColor( ImGuiCol_Text, v->color );
-        const auto cw = ImGui::GetContentRegionAvail().x;
-        const auto tw = ImGui::CalcTextSize( text ).x;
-        ImGui::TextUnformatted( text );
-        if( tw > cw && ImGui::IsItemHovered() )
-        {
-            ImGui::SetNextWindowSize( ImVec2( 1000, 0 ) );
-            ImGui::BeginTooltip();
-            ImGui::TextWrapped( "%s", text );
-            ImGui::EndTooltip();
-        }
-        ImGui::PopStyleColor();
-        ImGui::NextColumn();
-        if( hasCallstack )
-        {
-            const auto cs = v->callstack.Val();
-            if( cs != 0 )
-            {
-                SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
-                ImGui::SameLine();
-                DrawCallstackCalls( cs, 4 );
-            }
-            ImGui::NextColumn();
-        }
+        DrawMessageLine( *msgs[msgIdx], hasCallstack, idx );
     }
 
     if( m_worker.IsConnected() && ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
@@ -8748,6 +8674,84 @@ void View::DrawMessages()
     ImGui::EndColumns();
     ImGui::EndChild();
     ImGui::End();
+}
+
+void View::DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx )
+{
+    const auto text = m_worker.GetString( msg.ref );
+    const auto tid = m_worker.DecompressThread( msg.thread );
+    ImGui::PushID( &msg );
+    if( ImGui::Selectable( TimeToStringExact( msg.time ), m_msgHighlight == &msg, ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap ) )
+    {
+        CenterAtTime( msg.time );
+    }
+    if( ImGui::IsItemHovered() )
+    {
+        m_msgHighlight = &msg;
+
+        if( m_showMessageImages )
+        {
+            const auto frameIdx = m_worker.GetFrameRange( *m_frames, msg.time, msg.time ).first;
+            auto fi = m_worker.GetFrameImage( *m_frames, frameIdx );
+            if( fi )
+            {
+                ImGui::BeginTooltip();
+                if( fi != m_frameTexturePtr )
+                {
+                    if( !m_frameTexture ) m_frameTexture = MakeTexture();
+                    UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
+                    m_frameTexturePtr = fi;
+                }
+                if( fi->flip )
+                {
+                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                }
+                else
+                {
+                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+                }
+                ImGui::EndTooltip();
+            }
+        }
+    }
+    if( m_msgToFocus == &msg )
+    {
+        ImGui::SetScrollHereY();
+        m_msgToFocus.Decay( nullptr );
+        m_messagesScrollBottom = false;
+    }
+    ImGui::PopID();
+    ImGui::NextColumn();
+    SmallColorBox( GetThreadColor( tid, 0 ) );
+    ImGui::SameLine();
+    ImGui::TextUnformatted( m_worker.GetThreadName( tid ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "(%s)", RealToString( tid ) );
+    ImGui::NextColumn();
+    ImGui::PushStyleColor( ImGuiCol_Text, msg.color );
+    const auto cw = ImGui::GetContentRegionAvail().x;
+    const auto tw = ImGui::CalcTextSize( text ).x;
+    ImGui::TextUnformatted( text );
+    if( tw > cw && ImGui::IsItemHovered() )
+    {
+        ImGui::SetNextWindowSize( ImVec2( 1000, 0 ) );
+        ImGui::BeginTooltip();
+        ImGui::TextWrapped( "%s", text );
+        ImGui::EndTooltip();
+    }
+    ImGui::PopStyleColor();
+    ImGui::NextColumn();
+    if( hasCallstack )
+    {
+        const auto cs = msg.callstack.Val();
+        if( cs != 0 )
+        {
+            SmallCallstackButton( ICON_FA_ALIGN_JUSTIFY, cs, idx );
+            ImGui::SameLine();
+            DrawCallstackCalls( cs, 4 );
+        }
+        ImGui::NextColumn();
+    }
 }
 
 uint64_t View::GetSelectionTarget( const Worker::ZoneThreadData& ev, FindZone::GroupBy groupBy ) const

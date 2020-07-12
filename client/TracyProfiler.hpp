@@ -41,7 +41,7 @@
 
 namespace tracy
 {
-#if defined(TRACY_DELAYED_INIT) && defined(TRACY_NONSTATIC_PROFILER)
+#if defined(TRACY_DELAYED_INIT) && defined(TRACY_MANUAL_LIFETIME)
 void StartupProfiler();
 void ShutdownProfiler();
 #endif

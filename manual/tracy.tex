@@ -104,6 +104,7 @@ Hello and welcome to the Tracy Profiler user manual! Here you will find all the 
 \item Chapter~\ref{client}, \emph{\nameref{client}}, provides information on how to instrument your application, in order to retrieve useful profiling data.
 \item Chapter~\ref{capturing}, \emph{\nameref{capturing}}, goes into more detail on how the profiling information can be captured and stored on disk.
 \item Chapter~\ref{analyzingdata}, \emph{\nameref{analyzingdata}}, guides you through the graphical user interface of the profiler.
+\item Chapter~\ref{csvexport}, \emph{\nameref{csvexport}}, explains how to export some zone timing statistics into a CSV format.
 \item Chapter~\ref{importingdata}, \emph{\nameref{importingdata}}, documents how to import data from other profilers.
 \item Chapter~\ref{configurationfiles}, \emph{\nameref{configurationfiles}}, gives information on the profiler settings.
 \end{itemize}
@@ -1184,7 +1185,7 @@ This requirement is relaxed in the on-demand mode (section~\ref{ondemand}), beca
 
 Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 12 and OpenCL execution time on GPU.
 
-Note that the CPU and GPU timers may be not synchronized. You can correct the resulting desynchronization in the profiler's options (section~\ref{options}).
+Note that the CPU and GPU timers may be not synchronized, unless a calibrated context is created. Since availability of calibrated contexts is limited, you can correct the desynchronization of uncalibrated contexts in the profiler's options (section~\ref{options}).
 
 \subsubsection{OpenGL}
 
@@ -1217,6 +1218,12 @@ To mark a GPU zone use the \texttt{TracyVkZone(ctx, cmdbuf, name)} macro, where 
 
 You also need to periodically collect the GPU events using the \texttt{TracyVkCollect(ctx, cmdbuf)} macro\footnote{It is considerably faster than the OpenGL's \texttt{TracyGpuCollect}.}. The provided command buffer must be in the recording state and outside of a render pass instance.
 
+\subparagraph{Calibrated context}
+
+In order to maintain synchronization between CPU and GPU time domains, you will need to enable the \texttt{VK\_EXT\_calibrated\_timestamps} device extension and retrieve the following function pointers: \texttt{vkGetPhysicalDeviceCalibrateableTimeDomainsEXT} and \texttt{vkGetCalibratedTimestampsEXT}.
+
+To enable calibrated context, replace the macro \texttt{TracyVkContext} with \texttt{TracyVkContextCalibrated} and pass the two functions as additional parameters, in the order specified above.
+
 \subsubsection{Direct3D 12}
 
 To enable Direct3D 12 support, include the \texttt{tracy/TracyD3D12.hpp} header file. Tracing Direct3D 12 queues is nearly on par with the Vulkan implementation, where a \texttt{TracyD3D12Ctx} is returned from a call to \texttt{TracyD3D12Context(device, queue)}, which should be later cleaned up with the \texttt{TracyD3D12Destroy(ctx)} macro. Multiple contexts can be created, each with any queue type.
@@ -1226,6 +1233,10 @@ The queue must have been created through the specified device, however a command
 Using GPU zones is the same as the Vulkan implementation, where the \texttt{TracyD3D12Zone(ctx, cmdList, name)} macro is used, with \texttt{name} as a string literal. \texttt{TracyD3D12ZoneC(ctx, cmdList, name, color)} can be used to create a custom-colored zone. The given command list must be in an open state.
 
 The macro \texttt{TracyD3D12NewFrame(ctx)} is used to mark a new frame, and should appear before or after recording command lists, similar to \texttt{FrameMark}. This macro is a key component that enables automatic query data synchronization, so the user doesn't have to worry about synchronizing GPU execution before invoking a collection. Event data can then be collected and sent to the profiler using the \texttt{TracyD3D12Collect(ctx)} macro.
+
+Note that due to artifacts from dynamic frequency scaling, GPU profiling may be slightly inaccurate. To counter this, \texttt{ID3D12Device::SetStablePowerState()} can be used to enable accurate profiling, at the expense of some performance. If the machine is not in developer mode, the device will be removed upon calling. Do not use this in shipping code.
+
+Direct3D 12 contexts are always calibrated.
 
 \subsubsection{OpenCL}
 
@@ -1913,9 +1924,8 @@ The main profiler window is split into three sections, as seen on figure~\ref{ma
 \draw (0.6, -0.7) node[anchor=north west] {Frames: 364};
 \draw[rounded corners=5pt] (2.8, -0.7) rectangle+(0.4, -0.5) node [midway] {\faCaretRight};
 \draw[rounded corners=5pt] (3.3, -0.7) rectangle+(0.5, -0.5) node [midway] {\faCaretDown};
-\draw[rounded corners=5pt] (3.9, -0.7) rectangle+(0.5, -0.5) node [midway] {\faCrosshairs};
-\draw (4.5, -0.65) node[anchor=north west] {\faEye~52.7 ms \hspace{5pt} \faDatabase~6.06 s \hspace{5pt} \faMemory~195.2 MB};
-\draw[dashed] (10.6, -0.75) rectangle+(3.2, -0.4) node[midway] {Notification area};
+\draw (4, -0.65) node[anchor=north west] {\faEye~52.7 ms \hspace{5pt} \faDatabase~6.06 s \hspace{5pt} \faMemory~195.2 MB};
+\draw[dashed] (10.1, -0.75) rectangle+(3.2, -0.4) node[midway] {Notification area};
 
 \draw (0.1, -1.3) rectangle+(15.3, -1) node [midway] {Frame time graph};
 \draw (0.1, -2.4) rectangle+(15.3, -3) node [midway] {Timeline view};
@@ -1950,9 +1960,9 @@ The control menu (top row of buttons) provides access to various features of the
 \end{itemize}
 \end{itemize}
 
-The frame information block consists of four elements: the current frame set name along with the number of captured frames, the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to a another frame set\footnote{See section~\ref{framesets} for another way to change the active frame set.}. The \emph{\faCrosshairs{}~Go to frame} button allows zooming the timeline view on the specified frame. For more information about marking frames, see section~\ref{markingframes}.
+The frame information block consists of four elements: the current frame set name along with the number of captured frames (click on it with the \LMB{}~left mouse button to go to a specified frame), the two navigational buttons \faCaretLeft{} and \faCaretRight{}, which allow you to focus the timeline view on the previous or next frame, and the frame set selection button \faCaretDown{}, which is used to switch to a another frame set\footnote{See section~\ref{framesets} for another way to change the active frame set.}. For more information about marking frames, see section~\ref{markingframes}.
 
-The next three items show the \emph{\faEye{}~view time range}, the \emph{\faDatabase{}~time span} of the whole capture, and the \emph{\faMemory{}~memory usage} of the profiler.
+The next three items show the \emph{\faEye{}~view time range}, the \emph{\faDatabase{}~time span} of the whole capture (clicking on it with the \MMB{} middle mouse button will set the view range to the entire capture), and the \emph{\faMemory{}~memory usage} of the profiler.
 
 \paragraph{Notification area}
 
@@ -2366,7 +2376,7 @@ In this window you can set various trace-related options. The timeline view migh
 \begin{itemize}
 \item \emph{\faSignature{} Draw CPU usage graph} -- You can disable drawing of the CPU usage graph here.
 \end{itemize}
-\item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan/Direct3D/OpenCL zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
+\item \emph{\faEye{} Draw GPU zones} -- Allows disabling display of OpenGL/Vulkan/Direct3D/OpenCL zones. The \emph{GPU zones} drop-down allows disabling individual GPU contexts and setting CPU/GPU drift offsets of uncalibrated contexts (see section~\ref{gpuprofiling} for more information). The \emph{\faRobot~Auto} button automatically measures the GPU drift value\footnote{There is an assumption that drift is linear. Automated measurement calculates and removes change over time in delay-to-execution of GPU zones. Resulting value may still be incorrect.}.
 \item \emph{\faMicrochip{} Draw CPU zones} -- Determines whether CPU zones are displayed.
 \begin{itemize}
 \item \emph{\faGhost{} Draw ghost zones} -- Controls if ghost zones should be displayed in threads which don't have any instrumented zones available.
@@ -3010,6 +3020,37 @@ This window lists all annotations marked on the timeline. Each annotation is pre
 \caption{Annotation list entry}
 \label{figannlist}
 \end{figure}
+
+\section{Exporting zone statistics to CSV}
+\label{csvexport}
+
+You can use a command-line utility in the \texttt{csvexport} directory to export basic zone statistics from a saved trace into a CSV format.
+The tool requires a single .tracy file as an argument and prints results into the standard output (stdout) from where you can redirect it into a file or use it as an input into another tool.
+By default, the utility will list all zones with the following columns:
+
+\begin{itemize}
+  \item \texttt{name} -- Zone name
+  \item \texttt{src\_file} -- Source file where the zone was set
+  \item \texttt{src\_line} -- Line in the source file where the zone was set
+  \item \texttt{total\_ns} -- Total zone time in nanoseconds
+  \item \texttt{total\_perc} -- Total zone time as a percentage of the program's execution time
+  \item \texttt{counts} -- Zone count
+  \item \texttt{mean\_ns} -- Mean zone time (equivalent in MPTC in the profiler GUI) in nanoseconds
+  \item \texttt{min\_ns} -- Minimum zone time in nanoseconds
+  \item \texttt{max\_ns} -- Maximum zone time in nanoseconds
+  \item \texttt{std\_ns} -- Standard deviation of the zone time in nanoseconds
+\end{itemize}
+
+You can customize the output with the following command line options:
+
+\begin{itemize}
+  \item \texttt{-h, -\hspace{-1.25ex} -help} -- display a help message
+  \item \texttt{-f, -\hspace{-1.25ex} -filter <name>} -- filter the zone names
+  \item \texttt{-c, -\hspace{-1.25ex} -case} -- make the name filtering case sensitive
+  \item \texttt{-s, -\hspace{-1.25ex} -sep <separator>} -- customize the CSV separator (default is ``\texttt{,}'')
+  \item \texttt{-e, -\hspace{-1.25ex} -self} -- use self time (equivalent to the ``Self time'' toggle in the profiler GUI)
+  \item \texttt{-u, -\hspace{-1.25ex} -unwrap} -- report each zone individually; this will discard the statistics columns and instead reports for each zone entry its timestamp and the duration of the zone entry.
+\end{itemize}
 
 \section{Importing external profiling data}
 \label{importingdata}

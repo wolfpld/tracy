@@ -64,6 +64,7 @@ TRACY_API GpuCtxWrapper& GetGpuCtx();
 TRACY_API uint64_t GetThreadHandle();
 TRACY_API void InitRPMallocThread();
 TRACY_API bool ProfilerAvailable();
+TRACY_API int64_t GetFrequencyQpc();
 
 struct SourceLocationData
 {

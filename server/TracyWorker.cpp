@@ -923,14 +923,25 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     for( uint64_t i=0; i<sz; i++ )
     {
         auto ctx = m_slab.AllocInit<GpuCtxData>();
-        if( fileVer >= FileVersion( 0, 6, 14 ) )
+        if( fileVer >= FileVersion( 0, 7, 1 ) )
         {
-            f.Read5( ctx->thread, ctx->accuracyBits, ctx->count, ctx->period, ctx->type );
+            uint8_t calibration;
+            f.Read5( ctx->thread, calibration, ctx->count, ctx->period, ctx->type );
+            ctx->hasCalibration = calibration;
         }
         else
         {
-            f.Read4( ctx->thread, ctx->accuracyBits, ctx->count, ctx->period );
-            ctx->type = ctx->thread == 0 ? GpuContextType::Vulkan : GpuContextType::OpenGl;
+            uint8_t accuracy;
+            if( fileVer >= FileVersion( 0, 6, 14 ) )
+            {
+                f.Read5( ctx->thread, accuracy, ctx->count, ctx->period, ctx->type );
+            }
+            else
+            {
+                f.Read4( ctx->thread, accuracy, ctx->count, ctx->period );
+                ctx->type = ctx->thread == 0 ? GpuContextType::Vulkan : GpuContextType::OpenGl;
+            }
+            ctx->hasCalibration = false;
         }
         ctx->hasPeriod = ctx->period != 1.f;
         m_data.gpuCnt += ctx->count;
@@ -3955,6 +3966,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::GpuTime:
         ProcessGpuTime( ev.gpuTime );
         break;
+    case QueueType::GpuCalibration:
+        ProcessGpuCalibration( ev.gpuCalibration );
+        break;
     case QueueType::MemAlloc:
         ProcessMemAlloc( ev.memAlloc );
         break;
@@ -4886,15 +4900,19 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
         gpuTime = int64_t( double( ev.period ) * ev.gpuTime );      // precision loss
     }
 
+    const auto cpuTime = TscTime( ev.cpuTime - m_data.baseTime );
     auto gpu = m_slab.AllocInit<GpuCtxData>();
     memset( gpu->query, 0, sizeof( gpu->query ) );
-    gpu->timeDiff = TscTime( ev.cpuTime - m_data.baseTime ) - gpuTime;
+    gpu->timeDiff = cpuTime - gpuTime;
     gpu->thread = ev.thread;
-    gpu->accuracyBits = ev.accuracyBits;
     gpu->period = ev.period;
     gpu->count = 0;
     gpu->type = ev.type;
     gpu->hasPeriod = ev.period != 1.f;
+    gpu->hasCalibration = ev.flags & GpuContextCalibration;
+    gpu->calibratedGpuTime = gpuTime;
+    gpu->calibratedCpuTime = cpuTime;
+    gpu->calibrationMod = 1.;
     m_data.gpuData.push_back( gpu );
     m_gpuCtxMap[ev.context] = gpu;
 }
@@ -5028,11 +5046,25 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
     int64_t gpuTime;
     if( !ctx->hasPeriod )
     {
-        gpuTime = t;
+        if( !ctx->hasCalibration )
+        {
+            gpuTime = t + ctx->timeDiff;
+        }
+        else
+        {
+            gpuTime = int64_t( ( t - ctx->calibratedGpuTime ) * ctx->calibrationMod + ctx->calibratedCpuTime );
+        }
     }
     else
     {
-        gpuTime = int64_t( double( ctx->period ) * t );      // precision loss
+        if( !ctx->hasCalibration )
+        {
+            gpuTime = int64_t( double( ctx->period ) * t ) + ctx->timeDiff;      // precision loss
+        }
+        else
+        {
+            gpuTime = int64_t( ( double( ctx->period ) * t - ctx->calibratedGpuTime ) * ctx->calibrationMod + ctx->calibratedCpuTime );
+        }
     }
 
     auto zone = ctx->query[ev.queryId];
@@ -5041,23 +5073,44 @@ void Worker::ProcessGpuTime( const QueueGpuTime& ev )
 
     if( zone->GpuStart() < 0 )
     {
-        const auto time = ctx->timeDiff + gpuTime;
-        zone->SetGpuStart( time );
-        if( m_data.lastTime < time ) m_data.lastTime = time;
+        zone->SetGpuStart( gpuTime );
+        if( m_data.lastTime < gpuTime ) m_data.lastTime = gpuTime;
         ctx->count++;
     }
     else
     {
-        auto time = ctx->timeDiff + gpuTime;
-        if( time < zone->GpuStart() )
+        if( gpuTime < zone->GpuStart() )
         {
             auto tmp = zone->GpuStart();
-            std::swap( time, tmp );
+            std::swap( gpuTime, tmp );
             zone->SetGpuStart( tmp );
         }
-        zone->SetGpuEnd( time );
-        if( m_data.lastTime < time ) m_data.lastTime = time;
+        zone->SetGpuEnd( gpuTime );
+        if( m_data.lastTime < gpuTime ) m_data.lastTime = gpuTime;
     }
+}
+
+void Worker::ProcessGpuCalibration( const QueueGpuCalibration& ev )
+{
+    auto ctx = m_gpuCtxMap[ev.context];
+    assert( ctx );
+    assert( ctx->hasCalibration );
+
+    int64_t gpuTime;
+    if( !ctx->hasPeriod )
+    {
+        gpuTime = ev.gpuTime;
+    }
+    else
+    {
+        gpuTime = int64_t( double( ctx->period ) * ev.gpuTime );      // precision loss
+    }
+
+    const auto cpuDelta = ev.cpuDelta;
+    const auto gpuDelta = gpuTime - ctx->calibratedGpuTime;
+    ctx->calibrationMod = double( cpuDelta ) / gpuDelta;
+    ctx->calibratedGpuTime = gpuTime;
+    ctx->calibratedCpuTime = TscTime( ev.cpuTime - m_data.baseTime );
 }
 
 void Worker::ProcessMemAlloc( const QueueMemAlloc& ev )
@@ -6575,7 +6628,8 @@ void Worker::Write( FileWrite& f )
     for( auto& ctx : m_data.gpuData )
     {
         f.Write( &ctx->thread, sizeof( ctx->thread ) );
-        f.Write( &ctx->accuracyBits, sizeof( ctx->accuracyBits ) );
+        uint8_t calibration = ctx->hasCalibration;
+        f.Write( &calibration, sizeof( calibration ) );
         f.Write( &ctx->count, sizeof( ctx->count ) );
         f.Write( &ctx->period, sizeof( ctx->period ) );
         f.Write( &ctx->type, sizeof( ctx->type ) );

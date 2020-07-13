@@ -155,6 +155,7 @@ private:
     int DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax );
     void DrawOptions();
     void DrawMessages();
+    void DrawMessageLine( const MessageData& msg, bool hasCallstack, int& idx );
     void DrawFindZone();
     void DrawStatistics();
     void DrawMemory();
@@ -329,6 +330,8 @@ private:
     bool m_showMessageImages = false;
     ImGuiTextFilter m_statisticsFilter;
     int m_visibleMessages = 0;
+    size_t m_prevMessages = 0;
+    Vector<uint32_t> m_msgList;
     bool m_disconnectIssued = false;
     DecayValue<uint64_t> m_drawThreadMigrations = 0;
     DecayValue<uint64_t> m_drawThreadHighlight = 0;

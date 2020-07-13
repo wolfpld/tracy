@@ -30,6 +30,10 @@ jobs:
       run: msbuild .\capture\build\win32\capture.vcxproj /property:Configuration=Debug /property:Platform=x64
     - name: Capture utility Release
       run: msbuild .\capture\build\win32\capture.vcxproj /property:Configuration=Release /property:Platform=x64
+    - name: Csvexport utility Debug
+      run: msbuild .\csvexport\build\win32\csvexport.vcxproj /property:Configuration=Debug /property:Platform=x64
+    - name: Csvexport utility Release
+      run: msbuild .\csvexport\build\win32\csvexport.vcxproj /property:Configuration=Release /property:Platform=x64
     - name: Import-chrome utility Debug
       run: msbuild .\import-chrome\build\win32\import-chrome.vcxproj /property:Configuration=Debug /property:Platform=x64
     - name: Import-chrome utility Release

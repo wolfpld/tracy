@@ -50,8 +50,8 @@ namespace tracy
 
 		bool m_initialized = false;
 
-		ID3D12Device* m_device;
-		ID3D12CommandQueue* m_queue;
+		ID3D12Device* m_device = nullptr;
+		ID3D12CommandQueue* m_queue = nullptr;
 		uint8_t m_context;
 		Microsoft::WRL::ComPtr<ID3D12QueryHeap> m_queryHeap;
 		Microsoft::WRL::ComPtr<ID3D12Resource> m_readbackBuffer;
@@ -64,6 +64,9 @@ namespace tracy
 		uint32_t m_activePayload = 0;
 		Microsoft::WRL::ComPtr<ID3D12Fence> m_payloadFence;
 		std::queue<D3D12QueryPayload> m_payloadQueue;
+
+		int64_t m_prevCalibration = 0;
+		int64_t m_qpcToNs = int64_t{ 1000000000 / GetFrequencyQpc() };
 
 	public:
 		D3D12QueueCtx(ID3D12Device* device, ID3D12CommandQueue* queue)
@@ -97,6 +100,9 @@ namespace tracy
 			{
 				assert(false && "Failed to get queue clock calibration.");
 			}
+
+			// Save the device cpu timestamp, not the profiler's timestamp.
+			m_prevCalibration = cpuTimestamp * m_qpcToNs;
 
 			cpuTimestamp = Profiler::GetTime();
 
@@ -150,7 +156,7 @@ namespace tracy
 			memset(&item->gpuNewContext.thread, 0, sizeof(item->gpuNewContext.thread));
 			MemWrite(&item->gpuNewContext.period, 1E+09f / static_cast<float>(timestampFrequency));
 			MemWrite(&item->gpuNewContext.context, m_context);
-			MemWrite(&item->gpuNewContext.accuracyBits, uint8_t{ 0 });
+			MemWrite(&item->gpuNewContext.flags, GpuContextCalibration);
 			MemWrite(&item->gpuNewContext.type, GpuContextType::Direct3D12);
 
 #ifdef TRACY_ON_DEMAND
@@ -233,6 +239,34 @@ namespace tracy
 			}
 
 			m_readbackBuffer->Unmap(0, nullptr);
+
+			// Recalibrate to account for drift.
+
+			uint64_t cpuTimestamp;
+			uint64_t gpuTimestamp;
+
+			if (FAILED(m_queue->GetClockCalibration(&gpuTimestamp, &cpuTimestamp)))
+			{
+				assert(false && "Failed to get queue clock calibration.");
+			}
+
+			cpuTimestamp *= m_qpcToNs;
+
+			const auto cpuDelta = cpuTimestamp - m_prevCalibration;
+			if (cpuDelta > 0)
+			{
+				m_prevCalibration = cpuTimestamp;
+				cpuTimestamp = Profiler::GetTime();
+
+				auto* item = Profiler::QueueSerial();
+				MemWrite(&item->hdr.type, QueueType::GpuCalibration);
+				MemWrite(&item->gpuCalibration.gpuTime, gpuTimestamp);
+				MemWrite(&item->gpuCalibration.cpuTime, cpuTimestamp);
+				MemWrite(&item->gpuCalibration.cpuDelta, cpuDelta);
+				MemWrite(&item->gpuCalibration.context, m_context);
+
+				Profiler::QueueSerialFinish();
+			}
 		}
 
 	private:

@@ -562,10 +562,13 @@ struct GpuCtxData
     int64_t timeDiff;
     uint64_t thread;
     uint64_t count;
-    uint8_t accuracyBits;
     float period;
     GpuContextType type;
     bool hasPeriod;
+    bool hasCalibration;
+    int64_t calibratedGpuTime;
+    int64_t calibratedCpuTime;
+    double calibrationMod;
     unordered_flat_map<uint64_t, GpuCtxThreadData> threadData;
     short_ptr<GpuEvent> query[64*1024];
 };

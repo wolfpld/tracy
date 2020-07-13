@@ -15,7 +15,7 @@
 #include "../../server/TracyMemory.hpp"
 #include "../../server/TracyPrint.hpp"
 #include "../../server/TracyWorker.hpp"
-#include "getopt.h"
+#include "../../getopt/getopt.h"
 
 
 bool disconnect = false;

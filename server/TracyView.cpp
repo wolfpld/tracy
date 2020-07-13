@@ -8527,8 +8527,6 @@ void View::DrawMessages()
     size_t tsz = 0;
     for( const auto& t : m_threadOrder ) if( !t->messages.empty() ) tsz++;
 
-    const bool msgsChanged = msgs.size() != m_prevMessages;
-    if( msgsChanged ) m_prevMessages = msgs.size();
     bool filterChanged = m_messageFilter.Draw( ICON_FA_FILTER " Filter messages", 200 );
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
@@ -8603,7 +8601,8 @@ void View::DrawMessages()
         ImGui::TreePop();
     }
 
-    if( msgsChanged || filterChanged || threadsChanged )
+    const bool msgsChanged = msgs.size() != m_prevMessages;
+    if( filterChanged || threadsChanged )
     {
         m_msgList.reserve( msgs.size() );
         m_msgList.clear();
@@ -8636,6 +8635,42 @@ void View::DrawMessages()
             }
         }
         m_visibleMessages = m_msgList.size();
+        if( msgsChanged ) m_prevMessages = msgs.size();
+    }
+    else if( msgsChanged )
+    {
+        assert( m_prevMessages < msgs.size() );
+        m_msgList.reserve( msgs.size() );
+        if( m_messageFilter.IsActive() )
+        {
+            for( size_t i=m_prevMessages; i<msgs.size(); i++ )
+            {
+                const auto& v = msgs[i];
+                const auto tid = m_worker.DecompressThread( v->thread );
+                if( VisibleMsgThread( tid ) )
+                {
+                    const auto text = m_worker.GetString( msgs[i]->ref );
+                    if( m_messageFilter.PassFilter( text ) )
+                    {
+                        m_msgList.push_back_no_space_check( uint32_t( i ) );
+                    }
+                }
+            }
+        }
+        else
+        {
+            for( size_t i=m_prevMessages; i<msgs.size(); i++ )
+            {
+                const auto& v = msgs[i];
+                const auto tid = m_worker.DecompressThread( v->thread );
+                if( VisibleMsgThread( tid ) )
+                {
+                    m_msgList.push_back_no_space_check( uint32_t( i ) );
+                }
+            }
+        }
+        m_visibleMessages = m_msgList.size();
+        m_prevMessages = msgs.size();
     }
 
     bool hasCallstack = m_worker.GetCallstackFrameCount() != 0;

@@ -426,6 +426,10 @@ For that you need a \emph{profiler DLL} to which your executable and the other D
 
 If you are targeting Windows with Microsoft Visual Studio or MinGW, add the \texttt{TRACY\_IMPORTS} define to your application.
 
+If you are experiencing crashes or freezes when manually loading/unloading a separate DLL with Tracy integration, you might want to try defining both \texttt{TRACY\_DELAYED\_INIT} and \texttt{TRACY\_MANUAL\_LIFETIME} macros.
+
+\texttt{TRACY\_DELAYED\_INIT} enables a path where profiler data is gathered into one structure and initialized on the first request rather than statically at the DLL load at the expense of atomic load on each request to the profiler data. \texttt{TRACY\_MANUAL\_LIFETIME} flag augments this behavior to provide manual \texttt{StartupProfiler} and \texttt{ShutdownProfiler} functions that allow you to manually create and destroy the profiler data, removing the need to do an atomic load on each call, as well as letting you define an appropriate place to free the resources.
+
 \subsubsection{Problematic platforms}
 
 Some OS vendors think that \emph{they} own and control the devices \emph{you} have paid for. This results in restricting usage of APIs that might 'confuse' you, or denying you access to information about what your computer is doing.

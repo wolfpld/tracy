@@ -961,6 +961,8 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
     {
         TextFocused( ICON_FA_PUZZLE_PIECE " Symbol:", worker.GetString( sym->name ) );
     }
+    ImGui::SameLine();
+    TextDisabledUnformatted( worker.GetString( sym->imageName ) );
 
     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
     if( inlineList )

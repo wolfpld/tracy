@@ -1057,8 +1057,8 @@ Profiler::Profiler()
     , m_fiQueue( 16 )
     , m_fiDequeue( 16 )
     , m_frameCount( 0 )
-#ifdef TRACY_ON_DEMAND
     , m_isConnected( false )
+#ifdef TRACY_ON_DEMAND
     , m_connectionId( 0 )
     , m_deferredQueue( 64*1024 )
 #endif
@@ -1391,8 +1391,8 @@ void Profiler::Worker()
         const auto currentTime = GetTime();
         ClearQueues( token );
         m_connectionId.fetch_add( 1, std::memory_order_release );
-        m_isConnected.store( true, std::memory_order_release );
 #endif
+        m_isConnected.store( true, std::memory_order_release );
 
         HandshakeStatus handshake = HandshakeWelcome;
         m_sock->Send( &handshake, sizeof( handshake ) );
@@ -1482,8 +1482,8 @@ void Profiler::Worker()
         }
         if( ShouldExit() ) break;
 
-#ifdef TRACY_ON_DEMAND
         m_isConnected.store( false, std::memory_order_release );
+#ifdef TRACY_ON_DEMAND
         m_bufferOffset = 0;
         m_bufferStart = 0;
 #endif

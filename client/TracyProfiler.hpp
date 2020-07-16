@@ -451,12 +451,12 @@ public:
 
     static bool ShouldExit();
 
-#ifdef TRACY_ON_DEMAND
     tracy_force_inline bool IsConnected() const
     {
         return m_isConnected.load( std::memory_order_acquire );
     }
 
+#ifdef TRACY_ON_DEMAND
     tracy_force_inline uint64_t ConnectionId() const
     {
         return m_connectionId.load( std::memory_order_acquire );
@@ -667,8 +667,8 @@ private:
     TracyMutex m_fiLock;
 
     std::atomic<uint64_t> m_frameCount;
-#ifdef TRACY_ON_DEMAND
     std::atomic<bool> m_isConnected;
+#ifdef TRACY_ON_DEMAND
     std::atomic<uint64_t> m_connectionId;
 
     TracyMutex m_deferredLock;

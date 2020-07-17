@@ -1258,6 +1258,10 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
             const auto fisz = w * h / 2;
             f.Skip( fisz + sizeof( FrameImage::flip ) );
         }
+        for( auto& v : m_data.framesBase->frames )
+        {
+            v.frameImage = -1;
+        }
     }
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );

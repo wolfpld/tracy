@@ -29,6 +29,9 @@ void Usage()
     printf( "  -h: enable LZ4HC compression\n" );
     printf( "  -e: enable extreme LZ4HC compression (very slow)\n" );
     printf( "  -z level: use Zstd compression with given compression level\n" );
+    printf( "  -s flags: strip selected data from capture:\n" );
+    printf( "      l: locks, m: messages, p: plots, M: memory, i: frame images\n" );
+    printf( "      c: context switches, s: sampling data, C: symbol code, S: source cache\n" );
     exit( 1 );
 }
 
@@ -43,10 +46,10 @@ int main( int argc, char** argv )
 #endif
 
     tracy::FileWrite::Compression clev = tracy::FileWrite::Compression::Fast;
-
+    uint32_t events = tracy::EventType::All;
     int zstdLevel = 1;
     int c;
-    while( ( c = getopt( argc, argv, "hez:" ) ) != -1 )
+    while( ( c = getopt( argc, argv, "hez:s:" ) ) != -1 )
     {
         switch( c )
         {
@@ -65,6 +68,48 @@ int main( int argc, char** argv )
                 exit( 1 );
             }
             break;
+        case 's':
+        {
+            auto ptr = optarg;
+            do
+            {
+                switch( *optarg )
+                {
+                case 'l':
+                    events &= ~tracy::EventType::Locks;
+                    break;
+                case 'm':
+                    events &= ~tracy::EventType::Messages;
+                    break;
+                case 'p':
+                    events &= ~tracy::EventType::Plots;
+                    break;
+                case 'M':
+                    events &= ~tracy::EventType::Memory;
+                    break;
+                case 'i':
+                    events &= ~tracy::EventType::FrameImages;
+                    break;
+                case 'c':
+                    events &= ~tracy::EventType::ContextSwitches;
+                    break;
+                case 's':
+                    events &= ~tracy::EventType::Samples;
+                    break;
+                case 'C':
+                    events &= ~tracy::EventType::SymbolCode;
+                    break;
+                case 'S':
+                    events &= ~tracy::EventType::SourceCache;
+                    break;
+                default:
+                    Usage();
+                    break;
+                }
+            }
+            while( *++optarg != '\0' );
+            break;
+        }
         default:
             Usage();
             break;
@@ -91,7 +136,7 @@ int main( int argc, char** argv )
         int inVer;
         {
             const auto t0 = std::chrono::high_resolution_clock::now();
-            tracy::Worker worker( *f, tracy::EventType::All, false );
+            tracy::Worker worker( *f, (tracy::EventType::Type)events, false );
 
 #ifndef TRACY_NO_STATISTICS
             while( !worker.AreSourceLocationZonesReady() ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );

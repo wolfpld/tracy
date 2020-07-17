@@ -13,6 +13,7 @@
 #include "../../server/TracyVersion.hpp"
 #include "../../server/TracyWorker.hpp"
 #include "../../zstd/zstd.h"
+#include "../../getopt/getopt.h"
 
 #ifdef __CYGWIN__
 #  define ftello64(x) ftello(x)
@@ -24,10 +25,10 @@
 
 void Usage()
 {
-    printf( "Usage: update [--hc|--extreme] input.tracy output.tracy\n\n" );
-    printf( "  --hc: enable LZ4HC compression\n" );
-    printf( "  --extreme: enable extreme LZ4HC compression (very slow)\n" );
-    printf( "  --zstd level: use Zstd compression with given compression level\n" );
+    printf( "Usage: update [options] input.tracy output.tracy\n\n" );
+    printf( "  -h: enable LZ4HC compression\n" );
+    printf( "  -e: enable extreme LZ4HC compression (very slow)\n" );
+    printf( "  -z level: use Zstd compression with given compression level\n" );
     exit( 1 );
 }
 
@@ -44,38 +45,35 @@ int main( int argc, char** argv )
     tracy::FileWrite::Compression clev = tracy::FileWrite::Compression::Fast;
 
     int zstdLevel = 1;
-    if( argc != 3 && argc != 4 && argc != 5 ) Usage();
-    if( argc == 4 )
+    int c;
+    while( ( c = getopt( argc, argv, "hez:" ) ) != -1 )
     {
-        if( strcmp( argv[1], "--hc" ) == 0 )
+        switch( c )
         {
+        case 'h':
             clev = tracy::FileWrite::Compression::Slow;
-        }
-        else if( strcmp( argv[1], "--extreme" ) == 0 )
-        {
+            break;
+        case 'e':
             clev = tracy::FileWrite::Compression::Extreme;
-        }
-        else
-        {
+            break;
+        case 'z':
+            clev = tracy::FileWrite::Compression::Zstd;
+            zstdLevel = atoi( optarg );
+            if( zstdLevel > ZSTD_maxCLevel() || zstdLevel < ZSTD_minCLevel() )
+            {
+                printf( "Available Zstd compression levels range: %i - %i\n", ZSTD_minCLevel(), ZSTD_maxCLevel() );
+                exit( 1 );
+            }
+            break;
+        default:
             Usage();
+            break;
         }
-        argv++;
     }
-    if( argc == 5 )
-    {
-        if( strcmp( argv[1], "--zstd" ) != 0 ) Usage();
-        clev = tracy::FileWrite::Compression::Zstd;
-        zstdLevel = atoi( argv[2] );
-        if( zstdLevel > ZSTD_maxCLevel() || zstdLevel < ZSTD_minCLevel() )
-        {
-            printf( "Available Zstd compression levels range: %i - %i\n", ZSTD_minCLevel(), ZSTD_maxCLevel() );
-            exit( 1 );
-        }
-        argv += 2;
-    }
+    if( argc - optind != 2 ) Usage();
 
-    const char* input = argv[1];
-    const char* output = argv[2];
+    const char* input = argv[optind];
+    const char* output = argv[optind+1];
 
     printf( "Loading...\r" );
     fflush( stdout );

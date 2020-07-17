@@ -138,6 +138,7 @@
     <ClCompile Include="..\..\..\common\TracySystem.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp" />
     <ClCompile Include="..\..\..\common\tracy_lz4hc.cpp" />
+    <ClCompile Include="..\..\..\getopt\getopt.c" />
     <ClCompile Include="..\..\..\server\TracyMemory.cpp" />
     <ClCompile Include="..\..\..\server\TracyMmap.cpp" />
     <ClCompile Include="..\..\..\server\TracyPrint.cpp" />
@@ -183,6 +184,7 @@
     <ClInclude Include="..\..\..\common\TracySystem.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4.hpp" />
     <ClInclude Include="..\..\..\common\tracy_lz4hc.hpp" />
+    <ClInclude Include="..\..\..\getopt\getopt.h" />
     <ClInclude Include="..\..\..\server\TracyCharUtil.hpp" />
     <ClInclude Include="..\..\..\server\TracyEvent.hpp" />
     <ClInclude Include="..\..\..\server\TracyFileRead.hpp" />

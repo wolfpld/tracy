@@ -13,6 +13,9 @@
     <Filter Include="zstd">
       <UniqueIdentifier>{2ec8dc96-8501-481f-8620-7f33bd8b2164}</UniqueIdentifier>
     </Filter>
+    <Filter Include="getopt">
+      <UniqueIdentifier>{74a14f40-f52d-41c1-8b19-1f8bf2a7c9c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\common\tracy_lz4.cpp">
@@ -125,6 +128,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\server\TracyTextureCompression.cpp">
       <Filter>server</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\getopt\getopt.c">
+      <Filter>getopt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -286,6 +292,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\server\TracyTextureCompression.hpp">
       <Filter>server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\getopt\getopt.h">
+      <Filter>getopt</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

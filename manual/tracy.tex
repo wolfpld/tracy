@@ -1183,6 +1183,24 @@ Tracy provides bindings for profiling OpenGL, Vulkan, Direct3D 12 and OpenCL exe
 
 Note that the CPU and GPU timers may be not synchronized, unless a calibrated context is created. Since availability of calibrated contexts is limited, you can correct the desynchronization of uncalibrated contexts in the profiler's options (section~\ref{options}).
 
+\begin{bclogo}[
+noborder=true,
+couleur=black!5,
+logo=\bclampe
+]{Check the scope}
+If the graphic API you are using requires explicitly stating that you start and finish recording of command buffers, remember that the instrumentation macros requirements have to be satisfied both during the construction and destruction of the zone. For example, in the following code the zone destructor will be executed after buffer recording has ended, which is an error.
+
+\begin{lstlisting}
+{
+    vkBeginCommandBuffer(cmd, &beginInfo);
+    TracyVkZone(ctx, cmd, "Render");
+    vkEndCommandBuffer(cmd);
+}
+\end{lstlisting}
+
+To fix such issues, add a nested scope, encompassing the command buffer recording section.
+\end{bclogo}
+
 \subsubsection{OpenGL}
 
 You will need to include the \texttt{tracy/TracyOpenGL.hpp} header file and declare each of your rendering contexts using the \texttt{TracyGpuContext} macro (typically you will only have one context). Tracy expects no more than one context per thread and no context migration.

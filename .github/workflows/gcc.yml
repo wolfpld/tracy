@@ -40,3 +40,5 @@ jobs:
         make -j -C test
         make -j -C test clean
         make -j -C test TRACYFLAGS=-DTRACY_ON_DEMAND
+        make -j -C test clean
+        make -j -C test TRACYFLAGS="-DTRACY_DELAYED_INIT -DTRACY_MANUAL_LIFETIME"

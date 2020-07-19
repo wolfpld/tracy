@@ -924,6 +924,25 @@ struct ProfilerThreadData
 #  endif
 };
 
+#  ifdef TRACY_MANUAL_LIFETIME
+ProfilerData* s_profilerData = nullptr;
+TRACY_API void StartupProfiler()
+{
+    s_profilerData = new ProfilerData;
+    s_profilerData->profiler.SpawnWorkerThreads();
+}
+static ProfilerData& GetProfilerData()
+{
+    assert(s_profilerData);
+    return *s_profilerData;
+}
+TRACY_API void ShutdownProfiler()
+{
+    delete s_profilerData;
+    s_profilerData = nullptr;
+    rpmalloc_finalize();
+}
+#  else
 static std::atomic<int> profilerDataLock { 0 };
 static std::atomic<ProfilerData*> profilerData { nullptr };
 
@@ -945,6 +964,7 @@ static ProfilerData& GetProfilerData()
     }
     return *ptr;
 }
+#  endif
 
 static ProfilerThreadData& GetProfilerThreadData()
 {
@@ -966,10 +986,12 @@ std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().thr
 TRACY_API LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
 #  endif
 
+#  ifndef TRACY_MANUAL_LIFETIME
 namespace
 {
     const auto& __profiler_init = GetProfiler();
 }
+#  endif
 
 #else
 TRACY_API void InitRPMallocThread()
@@ -1094,6 +1116,13 @@ Profiler::Profiler()
         m_userPort = atoi( userPort );
     }
 
+#if !defined(TRACY_DELAYED_INIT) || !defined(TRACY_MANUAL_LIFETIME)
+    SpawnWorkerThreads();
+#endif
+}
+
+void Profiler::SpawnWorkerThreads()
+{
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
 
@@ -1184,6 +1213,8 @@ void Profiler::Worker()
 #ifdef __linux__
     s_profilerTid = syscall( SYS_gettid );
 #endif
+
+    ThreadExitHandler threadExitHandler;
 
     SetThreadName( "Tracy Profiler" );
 
@@ -1605,6 +1636,8 @@ void Profiler::Worker()
 
 void Profiler::CompressWorker()
 {
+    ThreadExitHandler threadExitHandler;
+
     SetThreadName( "Tracy DXT1" );
     while( m_timeBegin.load( std::memory_order_relaxed ) == 0 ) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
     rpmalloc_thread_initialize();

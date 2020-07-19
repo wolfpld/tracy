@@ -349,6 +349,8 @@ int main( int argc, char** argv )
         }
     }
 
+    if( loadThread.joinable() ) loadThread.join();
+
     {
         FILE* f = fopen( winPosFile.c_str(), "wb" );
         if( f )

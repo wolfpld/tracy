@@ -1208,17 +1208,6 @@ bool Profiler::ShouldExit()
     return s_instance->m_shutdown.load( std::memory_order_relaxed );
 }
 
-class ThreadExitHandler
-{
-public:
-    ~ThreadExitHandler()
-    {
-#ifdef TRACY_MANUAL_LIFETIME
-        rpmalloc_thread_finalize();
-#endif
-    }
-};
-
 void Profiler::Worker()
 {
 #ifdef __linux__

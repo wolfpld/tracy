@@ -321,6 +321,7 @@ static void SetupVsync()
 
     s_threadVsync = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_threadVsync) Thread( [] (void*) {
+        ThreadExitHandler threadExitHandler;
         SetThreadName( "Tracy Vsync" );
         ProcessTrace( &s_traceHandleVsync2, 1, nullptr, nullptr );
     }, nullptr );
@@ -455,6 +456,7 @@ void SysTraceStop()
 
 void SysTraceWorker( void* ptr )
 {
+    ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy SysTrace" );
     ProcessTrace( &s_traceHandle2, 1, 0, 0 );
     ControlTrace( 0, KERNEL_LOGGER_NAME, s_prop, EVENT_TRACE_CONTROL_STOP );
@@ -955,6 +957,7 @@ static void ProcessTraceLines( int fd )
 
 void SysTraceWorker( void* ptr )
 {
+    ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy SysTrace" );
     int pipefd[2];
     if( pipe( pipefd ) == 0 )
@@ -1028,6 +1031,7 @@ static void ProcessTraceLines( int fd )
 
 void SysTraceWorker( void* ptr )
 {
+    ThreadExitHandler threadExitHandler;
     SetThreadName( "Tracy SysTrace" );
     char tmp[256];
     memcpy( tmp, BasePath, sizeof( BasePath ) - 1 );

@@ -350,6 +350,7 @@ int main( int argc, char** argv )
     }
 
     if( loadThread.joinable() ) loadThread.join();
+    view.reset();
 
     {
         FILE* f = fopen( winPosFile.c_str(), "wb" );

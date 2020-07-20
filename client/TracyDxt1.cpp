@@ -172,6 +172,12 @@ static tracy_force_inline uint64_t ProcessRGB( const uint8_t* src )
         return uint64_t( to565( src[0], src[1], src[2] ) ) << 16;
     }
 
+    __m128i amask = _mm_set1_epi32( 0xFFFFFF );
+    px0 = _mm_and_si128( px0, amask );
+    px1 = _mm_and_si128( px1, amask );
+    px2 = _mm_and_si128( px2, amask );
+    px3 = _mm_and_si128( px3, amask );
+
     __m128i min0 = _mm_min_epu8( px0, px1 );
     __m128i min1 = _mm_min_epu8( px2, px3 );
     __m128i min2 = _mm_min_epu8( min0, min1 );
@@ -491,6 +497,12 @@ static tracy_force_inline void ProcessRGB_AVX( const uint8_t* src, char*& dst )
         dst += 16;
         return;
     }
+
+    __m256i amask = _mm256_set1_epi32( 0xFFFFFF );
+    px0 = _mm256_and_si256( px0, amask );
+    px1 = _mm256_and_si256( px1, amask );
+    px2 = _mm256_and_si256( px2, amask );
+    px3 = _mm256_and_si256( px3, amask );
 
     __m256i min0 = _mm256_min_epu8( px0, px1 );
     __m256i min1 = _mm256_min_epu8( px2, px3 );

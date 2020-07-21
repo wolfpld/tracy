@@ -2212,7 +2212,7 @@ bool Profiler::SendData( const char* data, size_t len )
     return m_sock->Send( m_lz4Buf, lz4sz + sizeof( lz4sz_t ) ) != -1;
 }
 
-void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
+void Profiler::SendString( uint64_t str, const char* ptr, size_t len, QueueType type )
 {
     assert( type == QueueType::StringData ||
             type == QueueType::ThreadName ||
@@ -2226,7 +2226,6 @@ void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     MemWrite( &item.hdr.type, type );
     MemWrite( &item.stringTransfer.ptr, str );
 
-    auto len = strlen( ptr );
     assert( len <= std::numeric_limits<uint16_t>::max() );
     auto l16 = uint16_t( len );
 

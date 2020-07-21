@@ -150,9 +150,9 @@ static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
     const char* func[64];
     uint32_t fsz[64];
     uint32_t ssz[64];
-    uint16_t spaceNeeded = 2;     // cnt
 
     uint8_t cnt;
+    uint16_t spaceNeeded = sizeof( cnt );
     for( cnt=0; cnt<depth; cnt++ )
     {
         if( lua_getstack( L, cnt+1, dbg+cnt ) == 0 ) break;

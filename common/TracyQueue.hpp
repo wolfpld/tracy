@@ -170,6 +170,11 @@ struct QueueZoneText
     uint64_t text;      // ptr
 };
 
+struct QueueZoneTextFat : public QueueZoneText
+{
+    uint16_t size;
+};
+
 enum class LockType : uint8_t
 {
     Lockable,
@@ -477,6 +482,7 @@ struct QueueItem
         QueueFrameImage frameImageLean;
         QueueSourceLocation srcloc;
         QueueZoneText zoneText;
+        QueueZoneTextFat zoneTextFat;
         QueueLockAnnounce lockAnnounce;
         QueueLockTerminate lockTerminate;
         QueueLockWait lockWait;

@@ -1,6 +1,7 @@
 #ifndef __TRACYSCOPED_HPP__
 #define __TRACYSCOPED_HPP__
 
+#include <limits>
 #include <stdint.h>
 #include <string.h>
 
@@ -64,29 +65,31 @@ public:
 
     tracy_force_inline void Text( const char* txt, size_t size )
     {
+        assert( size < std::numeric_limits<uint16_t>::max() );
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
-        auto ptr = (char*)tracy_malloc( size+1 );
+        auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
-        ptr[size] = '\0';
         TracyLfqPrepare( QueueType::ZoneText );
-        MemWrite( &item->zoneText.text, (uint64_t)ptr );
+        MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+        MemWrite( &item->zoneTextFat.size, (uint16_t)size );
         TracyLfqCommit;
     }
 
     tracy_force_inline void Name( const char* txt, size_t size )
     {
+        assert( size < std::numeric_limits<uint16_t>::max() );
         if( !m_active ) return;
 #ifdef TRACY_ON_DEMAND
         if( GetProfiler().ConnectionId() != m_connectionId ) return;
 #endif
-        auto ptr = (char*)tracy_malloc( size+1 );
+        auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
-        ptr[size] = '\0';
         TracyLfqPrepare( QueueType::ZoneName );
-        MemWrite( &item->zoneText.text, (uint64_t)ptr );
+        MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+        MemWrite( &item->zoneTextFat.size, (uint16_t)size );
         TracyLfqCommit;
     }
 

@@ -1825,6 +1825,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
             while( sz-- > 0 )
             {
                 uint64_t ptr;
+                uint16_t size;
                 auto idx = MemRead<uint8_t>( &item->hdr.idx );
                 if( idx < (int)QueueType::Terminate )
                 {
@@ -1832,8 +1833,9 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     {
                     case QueueType::ZoneText:
                     case QueueType::ZoneName:
-                        ptr = MemRead<uint64_t>( &item->zoneText.text );
-                        SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                        ptr = MemRead<uint64_t>( &item->zoneTextFat.text );
+                        size = MemRead<uint16_t>( &item->zoneTextFat.size );
+                        SendString( ptr, (const char*)ptr, size, QueueType::CustomStringData );
                         tracy_free( (void*)ptr );
                         break;
                     case QueueType::Message:
@@ -3046,10 +3048,10 @@ TRACY_API void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 
 TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
+    assert( size < std::numeric_limits<uint16_t>::max() );
     if( !ctx.active ) return;
-    auto ptr = (char*)tracy::tracy_malloc( size+1 );
+    auto ptr = (char*)tracy::tracy_malloc( size );
     memcpy( ptr, txt, size );
-    ptr[size] = '\0';
 #ifndef TRACY_NO_VERIFY
     {
         TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
@@ -3059,17 +3061,18 @@ TRACY_API void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size
 #endif
     {
         TracyLfqPrepareC( tracy::QueueType::ZoneText );
-        tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
+        tracy::MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+        tracy::MemWrite( &item->zoneTextFat.size, (uint16_t)size );
         TracyLfqCommitC;
     }
 }
 
 TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
+    assert( size < std::numeric_limits<uint16_t>::max() );
     if( !ctx.active ) return;
-    auto ptr = (char*)tracy::tracy_malloc( size+1 );
+    auto ptr = (char*)tracy::tracy_malloc( size );
     memcpy( ptr, txt, size );
-    ptr[size] = '\0';
 #ifndef TRACY_NO_VERIFY
     {
         TracyLfqPrepareC( tracy::QueueType::ZoneValidation );
@@ -3079,7 +3082,8 @@ TRACY_API void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size
 #endif
     {
         TracyLfqPrepareC( tracy::QueueType::ZoneName );
-        tracy::MemWrite( &item->zoneText.text, (uint64_t)ptr );
+        tracy::MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+        tracy::MemWrite( &item->zoneTextFat.size, (uint16_t)size );
         TracyLfqCommitC;
     }
 }

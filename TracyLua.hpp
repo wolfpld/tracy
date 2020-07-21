@@ -125,6 +125,7 @@ static inline void LuaRemove( char* script )
 #else
 
 #include <assert.h>
+#include <limits>
 
 #include "common/TracyColor.hpp"
 #include "common/TracyAlign.hpp"
@@ -328,12 +329,13 @@ static inline int LuaZoneText( lua_State* L )
 
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
+    assert( size < std::numeric_limits<uint16_t>::max() );
 
-    auto ptr = (char*)tracy_malloc( size+1 );
+    auto ptr = (char*)tracy_malloc( size );
     memcpy( ptr, txt, size );
-    ptr[size] = '\0';
     TracyLfqPrepare( QueueType::ZoneText );
-    MemWrite( &item->zoneText.text, (uint64_t)ptr );
+    MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+    MemWrite( &item->zoneTextFat.size, (uint16_t)size );
     TracyLfqCommit;
     return 0;
 }
@@ -351,12 +353,13 @@ static inline int LuaZoneName( lua_State* L )
 
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
+    assert( size < std::numeric_limits<uint16_t>::max() );
 
-    auto ptr = (char*)tracy_malloc( size+1 );
+    auto ptr = (char*)tracy_malloc( size );
     memcpy( ptr, txt, size );
-    ptr[size] = '\0';
     TracyLfqPrepare( QueueType::ZoneName );
-    MemWrite( &item->zoneText.text, (uint64_t)ptr );
+    MemWrite( &item->zoneTextFat.text, (uint64_t)ptr );
+    MemWrite( &item->zoneTextFat.size, (uint16_t)size );
     TracyLfqCommit;
     return 0;
 }

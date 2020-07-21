@@ -481,7 +481,7 @@ void SysTraceSendExternalName( uint64_t thread )
             auto ret = wcstombs( buf, tmp, 256 );
             if( ret != 0 )
             {
-                GetProfiler().SendString( thread, buf, QueueType::ExternalThreadName );
+                GetProfiler().SendString( thread, buf, ret, QueueType::ExternalThreadName );
                 threadSent = true;
             }
         }
@@ -509,9 +509,10 @@ void SysTraceSendExternalName( uint64_t thread )
                                 if( (uint64_t)ptr >= (uint64_t)info.lpBaseOfDll && (uint64_t)ptr <= (uint64_t)info.lpBaseOfDll + (uint64_t)info.SizeOfImage )
                                 {
                                     char buf2[1024];
-                                    if( _GetModuleBaseNameA( phnd, modules[i], buf2, 1024 ) != 0 )
+                                    const auto modlen = _GetModuleBaseNameA( phnd, modules[i], buf2, 1024 );
+                                    if( modlen != 0 )
                                     {
-                                        GetProfiler().SendString( thread, buf2, QueueType::ExternalThreadName );
+                                        GetProfiler().SendString( thread, buf2, modlen, QueueType::ExternalThreadName );
                                         threadSent = true;
                                     }
                                 }
@@ -525,7 +526,7 @@ void SysTraceSendExternalName( uint64_t thread )
         CloseHandle( hnd );
         if( !threadSent )
         {
-            GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+            GetProfiler().SendString( thread, "???", 3, QueueType::ExternalThreadName );
             threadSent = true;
         }
         if( pid != 0 )
@@ -539,7 +540,7 @@ void SysTraceSendExternalName( uint64_t thread )
             }
             if( pid == 4 )
             {
-                GetProfiler().SendString( thread, "System", QueueType::ExternalName );
+                GetProfiler().SendString( thread, "System", 6, QueueType::ExternalName );
                 return;
             }
             else
@@ -565,9 +566,9 @@ void SysTraceSendExternalName( uint64_t thread )
 
     if( !threadSent )
     {
-        GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalThreadName );
     }
-    GetProfiler().SendString( thread, "???", QueueType::ExternalName );
+    GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
 }
 
 }
@@ -1060,7 +1061,7 @@ void SysTraceSendExternalName( uint64_t thread )
     }
     else
     {
-        GetProfiler().SendString( thread, "???", QueueType::ExternalThreadName );
+        GetProfiler().SendString( thread, "???", 3, QueueType::ExternalThreadName );
     }
 
     sprintf( fn, "/proc/%" PRIu64 "/status", thread );
@@ -1104,7 +1105,7 @@ void SysTraceSendExternalName( uint64_t thread )
             }
         }
     }
-    GetProfiler().SendString( thread, "???", QueueType::ExternalName );
+    GetProfiler().SendString( thread, "???", 3, QueueType::ExternalName );
 }
 
 }

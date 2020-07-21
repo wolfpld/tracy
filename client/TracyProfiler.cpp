@@ -2429,7 +2429,7 @@ bool Profiler::HandleServerQuery()
     case ServerQueryThreadString:
         if( ptr == m_mainThread )
         {
-            SendString( ptr, "Main thread", QueueType::ThreadName );
+            SendString( ptr, "Main thread", 11, QueueType::ThreadName );
         }
         else
         {

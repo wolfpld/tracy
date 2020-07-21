@@ -277,15 +277,16 @@ public:
 
     static tracy_force_inline void Message( const char* txt, size_t size, int callstack )
     {
+        assert( size < std::numeric_limits<uint16_t>::max() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
         TracyLfqPrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
-        auto ptr = (char*)tracy_malloc( size+1 );
+        auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
-        ptr[size] = '\0';
-        MemWrite( &item->message.time, GetTime() );
-        MemWrite( &item->message.text, (uint64_t)ptr );
+        MemWrite( &item->messageFat.time, GetTime() );
+        MemWrite( &item->messageFat.text, (uint64_t)ptr );
+        MemWrite( &item->messageFat.size, (uint16_t)size );
         TracyLfqCommit;
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
@@ -306,18 +307,19 @@ public:
 
     static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int callstack )
     {
+        assert( size < std::numeric_limits<uint16_t>::max() );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
         TracyLfqPrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
-        auto ptr = (char*)tracy_malloc( size+1 );
+        auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
-        ptr[size] = '\0';
-        MemWrite( &item->messageColor.time, GetTime() );
-        MemWrite( &item->messageColor.text, (uint64_t)ptr );
-        MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
-        MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
-        MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        MemWrite( &item->messageColorFat.time, GetTime() );
+        MemWrite( &item->messageColorFat.text, (uint64_t)ptr );
+        MemWrite( &item->messageColorFat.r, uint8_t( ( color       ) & 0xFF ) );
+        MemWrite( &item->messageColorFat.g, uint8_t( ( color >> 8  ) & 0xFF ) );
+        MemWrite( &item->messageColorFat.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        MemWrite( &item->messageColorFat.size, (uint16_t)size );
         TracyLfqCommit;
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );

@@ -264,6 +264,16 @@ struct QueueMessageColor : public QueueMessage
     uint8_t b;
 };
 
+struct QueueMessageFat : public QueueMessage
+{
+    uint16_t size;
+};
+
+struct QueueMessageColorFat : public QueueMessageColor
+{
+    uint16_t size;
+};
+
 // Don't change order, only add new entries at the end, this is also used on trace dumps!
 enum class GpuContextType : uint8_t
 {
@@ -493,6 +503,8 @@ struct QueueItem
         QueuePlotData plotData;
         QueueMessage message;
         QueueMessageColor messageColor;
+        QueueMessageFat messageFat;
+        QueueMessageColorFat messageColorFat;
         QueueGpuNewContext gpuNewContext;
         QueueGpuZoneBegin gpuZoneBegin;
         QueueGpuZoneEnd gpuZoneEnd;

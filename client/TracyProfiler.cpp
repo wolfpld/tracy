@@ -1839,11 +1839,17 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         tracy_free( (void*)ptr );
                         break;
                     case QueueType::Message:
-                    case QueueType::MessageColor:
                     case QueueType::MessageCallstack:
+                        ptr = MemRead<uint64_t>( &item->messageFat.text );
+                        size = MemRead<uint16_t>( &item->messageFat.size );
+                        SendString( ptr, (const char*)ptr, size, QueueType::CustomStringData );
+                        tracy_free( (void*)ptr );
+                        break;
+                    case QueueType::MessageColor:
                     case QueueType::MessageColorCallstack:
-                        ptr = MemRead<uint64_t>( &item->message.text );
-                        SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                        ptr = MemRead<uint64_t>( &item->messageColorFat.text );
+                        size = MemRead<uint16_t>( &item->messageColorFat.size );
+                        SendString( ptr, (const char*)ptr, size, QueueType::CustomStringData );
                         tracy_free( (void*)ptr );
                         break;
                     case QueueType::MessageAppInfo:

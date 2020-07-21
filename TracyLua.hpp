@@ -372,13 +372,14 @@ static inline int LuaMessage( lua_State* L )
 
     auto txt = lua_tostring( L, 1 );
     const auto size = strlen( txt );
+    assert( size < std::numeric_limits<uint16_t>::max() );
 
     TracyLfqPrepare( QueueType::Message );
-    auto ptr = (char*)tracy_malloc( size+1 );
+    auto ptr = (char*)tracy_malloc( size );
     memcpy( ptr, txt, size );
-    ptr[size] = '\0';
-    MemWrite( &item->message.time, Profiler::GetTime() );
-    MemWrite( &item->message.text, (uint64_t)ptr );
+    MemWrite( &item->messageFat.time, Profiler::GetTime() );
+    MemWrite( &item->messageFat.text, (uint64_t)ptr );
+    MemWrite( &item->messageFat.size, (uint16_t)size );
     TracyLfqCommit;
     return 0;
 }

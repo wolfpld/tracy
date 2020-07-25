@@ -1457,8 +1457,9 @@ void Profiler::Worker()
                 SendSingleString( (const char*)ptr, size );
                 break;
             case QueueType::LockName:
-                ptr = MemRead<uint64_t>( &item.lockName.name );
-                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                ptr = MemRead<uint64_t>( &item.lockNameFat.name );
+                size = MemRead<uint16_t>( &item.lockNameFat.size );
+                SendSingleString( (const char*)ptr, size );
                 break;
             default:
                 break;
@@ -1754,7 +1755,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
         break;
 #ifndef TRACY_ON_DEMAND
     case QueueType::LockName:
-        ptr = MemRead<uint64_t>( &item.lockName.name );
+        ptr = MemRead<uint64_t>( &item.lockNameFat.name );
         tracy_free( (void*)ptr );
         break;
 #endif
@@ -1940,8 +1941,9 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         break;
                     }
                     case QueueType::LockName:
-                        ptr = MemRead<uint64_t>( &item->lockName.name );
-                        SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                        ptr = MemRead<uint64_t>( &item->lockNameFat.name );
+                        size = MemRead<uint16_t>( &item->lockNameFat.size );
+                        SendSingleString( (const char*)ptr, size );
 #ifndef TRACY_ON_DEMAND
                         tracy_free( (void*)ptr );
 #endif

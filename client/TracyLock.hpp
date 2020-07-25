@@ -155,12 +155,13 @@ public:
 
     tracy_force_inline void CustomName( const char* name, size_t size )
     {
-        auto ptr = (char*)tracy_malloc( size+1 );
+        assert( size < std::numeric_limits<uint16_t>::max() );
+        auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, name, size );
-        ptr[size] = '\0';
         TracyLfqPrepare( QueueType::LockName );
-        MemWrite( &item->lockName.id, m_id );
-        MemWrite( &item->lockName.name, (uint64_t)ptr );
+        MemWrite( &item->lockNameFat.id, m_id );
+        MemWrite( &item->lockNameFat.name, (uint64_t)ptr );
+        MemWrite( &item->lockNameFat.size, (uint16_t)size );
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );
 #endif
@@ -455,12 +456,13 @@ public:
 
     tracy_force_inline void CustomName( const char* name, size_t size )
     {
-        auto ptr = (char*)tracy_malloc( size+1 );
+        assert( size < std::numeric_limits<uint16_t>::max() );
+        auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, name, size );
-        ptr[size] = '\0';
         TracyLfqPrepare( QueueType::LockName );
-        MemWrite( &item->lockName.id, m_id );
-        MemWrite( &item->lockName.name, (uint64_t)ptr );
+        MemWrite( &item->lockNameFat.id, m_id );
+        MemWrite( &item->lockNameFat.name, (uint64_t)ptr );
+        MemWrite( &item->lockNameFat.size, (uint16_t)size );
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );
 #endif

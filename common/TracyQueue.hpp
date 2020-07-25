@@ -225,7 +225,12 @@ struct QueueLockMark
 struct QueueLockName
 {
     uint32_t id;
+};
+
+struct QueueLockNameFat : public QueueLockName
+{
     uint64_t name;      // ptr
+    uint16_t size;
 };
 
 enum class PlotDataType : uint8_t
@@ -503,6 +508,7 @@ struct QueueItem
         QueueLockRelease lockRelease;
         QueueLockMark lockMark;
         QueueLockName lockName;
+        QueueLockNameFat lockNameFat;
         QueuePlotData plotData;
         QueueMessage message;
         QueueMessageColor messageColor;

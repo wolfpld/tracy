@@ -4755,10 +4755,7 @@ void Worker::ProcessLockName( const QueueLockName& ev )
 {
     auto lit = m_data.lockMap.find( ev.id );
     assert( lit != m_data.lockMap.end() );
-    auto it = m_pendingCustomStrings.find( ev.name );
-    assert( it != m_pendingCustomStrings.end() );
-    lit->second->customName = StringIdx( it->second.idx );
-    m_pendingCustomStrings.erase( it );
+    lit->second->customName = StringIdx( GetSingleStringIdx() );
 }
 
 void Worker::ProcessPlotData( const QueuePlotData& ev )

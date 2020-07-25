@@ -5455,9 +5455,7 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
 
         if( ev.symAddr != 0 && m_data.symbolMap.find( ev.symAddr ) == m_data.symbolMap.end() && m_pendingSymbols.find( ev.symAddr ) == m_pendingSymbols.end() )
         {
-            uint32_t size = 0;
-            memcpy( &size, ev.symLen, 3 );
-            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName, file, ev.line, size, idx < m_callstackFrameStaging->size - 1 } );
+            m_pendingSymbols.emplace( ev.symAddr, SymbolPending { name, m_callstackFrameStaging->imageName, file, ev.line, ev.symLen, idx < m_callstackFrameStaging->size - 1 } );
             Query( ServerQuerySymbol, ev.symAddr );
         }
 

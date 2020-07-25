@@ -166,13 +166,9 @@ struct QueueSourceLocation
     uint8_t b;
 };
 
-struct QueueZoneText
+struct QueueZoneTextFat
 {
     uint64_t text;      // ptr
-};
-
-struct QueueZoneTextFat : public QueueZoneText
-{
     uint16_t size;
 };
 
@@ -488,7 +484,6 @@ struct QueueItem
         QueueFrameImage frameImage;
         QueueFrameImage frameImageLean;
         QueueSourceLocation srcloc;
-        QueueZoneText zoneText;
         QueueZoneTextFat zoneTextFat;
         QueueLockAnnounce lockAnnounce;
         QueueLockTerminate lockTerminate;
@@ -534,8 +529,8 @@ struct QueueItem
 enum { QueueItemSize = sizeof( QueueItem ) };
 
 static constexpr size_t QueueDataSize[] = {
-    sizeof( QueueHeader ) + sizeof( QueueZoneText ),
-    sizeof( QueueHeader ) + sizeof( QueueZoneText ),        // zone name
+    sizeof( QueueHeader ),                                  // zone text
+    sizeof( QueueHeader ),                                  // zone name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // callstack

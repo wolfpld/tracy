@@ -3899,10 +3899,10 @@ bool Worker::Process( const QueueItem& ev )
         m_serverQuerySpaceLeft++;
         break;
     case QueueType::ZoneText:
-        ProcessZoneText( ev.zoneText );
+        ProcessZoneText();
         break;
     case QueueType::ZoneName:
-        ProcessZoneName( ev.zoneText );
+        ProcessZoneName();
         break;
     case QueueType::ZoneValue:
         ProcessZoneValue( ev.zoneValue );
@@ -4462,7 +4462,7 @@ void Worker::ProcessFrameImage( const QueueFrameImageLean& ev )
     }
 }
 
-void Worker::ProcessZoneText( const QueueZoneText& ev )
+void Worker::ProcessZoneText()
 {
     auto td = RetrieveThread( m_threadCtx );
     if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
@@ -4471,20 +4471,21 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
         return;
     }
 
+    const auto ptr = m_pendingSingleString.ptr;
+    const auto idx = GetSingleStringIdx();
+
     td->nextZoneId = 0;
     auto& stack = td->stack;
     auto zone = stack.back();
-    auto it = m_pendingCustomStrings.find( ev.text );
-    assert( it != m_pendingCustomStrings.end() );
     auto& extra = RequestZoneExtra( *zone );
     if( !extra.text.Active() )
     {
-        extra.text = StringIdx( it->second.idx );
+        extra.text = StringIdx( idx );
     }
     else
     {
         const auto str0 = GetString( extra.text );
-        const auto str1 = it->second.ptr;
+        const auto str1 = ptr;
         const auto len0 = strlen( str0 );
         const auto len1 = strlen( str1 );
         const auto bsz = len0+len1+1;
@@ -4500,10 +4501,9 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
         memcpy( buf+len0+1, str1, len1 );
         extra.text = StringIdx( StoreString( buf, bsz ).idx );
     }
-    m_pendingCustomStrings.erase( it );
 }
 
-void Worker::ProcessZoneName( const QueueZoneText& ev )
+void Worker::ProcessZoneName()
 {
     auto td = RetrieveThread( m_threadCtx );
     if( !td || td->stack.empty() || td->nextZoneId != td->zoneIdStack.back() )
@@ -4515,11 +4515,8 @@ void Worker::ProcessZoneName( const QueueZoneText& ev )
     td->nextZoneId = 0;
     auto& stack = td->stack;
     auto zone = stack.back();
-    auto it = m_pendingCustomStrings.find( ev.text );
-    assert( it != m_pendingCustomStrings.end() );
     auto& extra = RequestZoneExtra( *zone );
-    extra.name = StringIdx( it->second.idx );
-    m_pendingCustomStrings.erase( it );
+    extra.name = StringIdx( GetSingleStringIdx() );
 }
 
 void Worker::ProcessZoneValue( const QueueZoneValue& ev )

@@ -1710,7 +1710,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
     {
     case QueueType::ZoneText:
     case QueueType::ZoneName:
-        ptr = MemRead<uint64_t>( &item.zoneText.text );
+        ptr = MemRead<uint64_t>( &item.zoneTextFat.text );
         tracy_free( (void*)ptr );
         break;
     case QueueType::Message:
@@ -1835,7 +1835,7 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     case QueueType::ZoneName:
                         ptr = MemRead<uint64_t>( &item->zoneTextFat.text );
                         size = MemRead<uint16_t>( &item->zoneTextFat.size );
-                        SendString( ptr, (const char*)ptr, size, QueueType::CustomStringData );
+                        SendSingleString( (const char*)ptr, size );
                         tracy_free( (void*)ptr );
                         break;
                     case QueueType::Message:

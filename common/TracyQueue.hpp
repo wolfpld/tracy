@@ -393,7 +393,6 @@ struct QueueCallstackFrame
 
 struct QueueSymbolInformation
 {
-    uint64_t file;
     uint32_t line;
     uint64_t symAddr;
 };

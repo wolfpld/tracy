@@ -2873,11 +2873,10 @@ void Profiler::HandleSymbolQuery( uint64_t symbol )
 #ifdef TRACY_HAS_CALLSTACK
     const auto sym = DecodeSymbolAddress( symbol );
 
-    SendString( uint64_t( sym.file ), sym.file, QueueType::CustomStringData );
+    SendSingleString( sym.file );
 
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::SymbolInformation );
-    MemWrite( &item.symbolInformation.file, uint64_t( sym.file ) );
     MemWrite( &item.symbolInformation.line, sym.line );
     MemWrite( &item.symbolInformation.symAddr, symbol );
 

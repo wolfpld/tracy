@@ -5503,12 +5503,13 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     auto it = m_pendingSymbols.find( ev.symAddr );
     assert( it != m_pendingSymbols.end() );
 
-    auto fit = m_pendingCustomStrings.find( ev.file );
-    assert( fit != m_pendingCustomStrings.end() );
+    assert( m_pendingSingleString.ptr != nullptr );
+    const auto idx = m_pendingSingleString.idx;
+    m_pendingSingleString.ptr = nullptr;
 
     SymbolData sd;
     sd.name = it->second.name;
-    sd.file = StringIdx( fit->second.idx );
+    sd.file = StringIdx( idx );
     sd.line = ev.line;
     sd.imageName = it->second.imageName;
     sd.callFile = it->second.file;
@@ -5535,12 +5536,11 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
         m_data.symbolLocInline.push_back( ev.symAddr );
     }
 
-    StringRef ref( StringRef::Idx, fit->second.idx );
+    StringRef ref( StringRef::Idx, idx );
     auto cit = m_checkedFileStrings.find( ref );
     if( cit == m_checkedFileStrings.end() ) CacheSource( ref );
 
     m_pendingSymbols.erase( it );
-    m_pendingCustomStrings.erase( fit );
 }
 
 void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )

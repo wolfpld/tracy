@@ -3826,6 +3826,14 @@ void Worker::HandlePostponedGhostZones()
 }
 #endif
 
+uint32_t Worker::GetSingleStringIdx()
+{
+    assert( m_pendingSingleString.ptr != nullptr );
+    const auto idx = m_pendingSingleString.idx;
+    m_pendingSingleString.ptr = nullptr;
+    return idx;
+}
+
 StringLocation Worker::StoreString( const char* str, size_t sz )
 {
     StringLocation ret;
@@ -5503,9 +5511,7 @@ void Worker::ProcessSymbolInformation( const QueueSymbolInformation& ev )
     auto it = m_pendingSymbols.find( ev.symAddr );
     assert( it != m_pendingSymbols.end() );
 
-    assert( m_pendingSingleString.ptr != nullptr );
-    const auto idx = m_pendingSingleString.idx;
-    m_pendingSingleString.ptr = nullptr;
+    const auto idx = GetSingleStringIdx();
 
     SymbolData sd;
     sd.name = it->second.name;
@@ -5548,9 +5554,7 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
     assert( m_pendingCodeInformation > 0 );
     m_pendingCodeInformation--;
 
-    assert( m_pendingSingleString.ptr != nullptr );
-    const auto idx = m_pendingSingleString.idx;
-    m_pendingSingleString.ptr = nullptr;
+    const auto idx = GetSingleStringIdx();
 
     if( ev.line != 0 )
     {

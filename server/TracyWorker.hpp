@@ -761,6 +761,7 @@ private:
     void HandleFailure( const char* ptr, const char* end );
     void DispatchFailure( const QueueItem& ev, const char*& ptr );
 
+    uint32_t GetSingleStringIdx();
     StringLocation StoreString( const char* str, size_t sz );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 

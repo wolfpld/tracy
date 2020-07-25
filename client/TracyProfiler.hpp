@@ -484,6 +484,8 @@ public:
 
     void SendString( uint64_t str, const char* ptr, QueueType type ) { SendString( str, ptr, strlen( ptr ), type ); }
     void SendString( uint64_t str, const char* ptr, size_t len, QueueType type );
+    void SendSingleString( const char* ptr ) { SendSingleString( ptr, strlen( ptr ) ); }
+    void SendSingleString( const char* ptr, size_t len );
 
 
     // Allocated source location data layout:

@@ -83,6 +83,7 @@ enum class QueueType : uint8_t
     ParamSetup,
     ParamPingback,
     CpuTopology,
+    SingleStringData,
     StringData,
     ThreadName,
     CustomStringData,
@@ -613,6 +614,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
     sizeof( QueueHeader ),                                  // param pingback
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
+    sizeof( QueueHeader ),                                  // single string data
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

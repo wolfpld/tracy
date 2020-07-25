@@ -2672,7 +2672,7 @@ void Worker::Exec()
                 !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
                 m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr ||
                 !m_pendingSymbols.empty() || !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 ||
-                !m_serverQueryQueue.empty() || m_pendingSourceLocationPayload != 0 )
+                !m_serverQueryQueue.empty() || m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr )
             {
                 continue;
             }
@@ -2939,6 +2939,16 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             }
             ptr += sz;
         }
+        return true;
+    }
+    else if( ev.hdr.type == QueueType::SingleStringData )
+    {
+        ptr += sizeof( QueueHeader );
+        uint16_t sz;
+        memcpy( &sz, ptr, sizeof( sz ) );
+        ptr += sizeof( sz );
+        AddSingleString( ptr, sz );
+        ptr += sz;
         return true;
     }
     else
@@ -3348,6 +3358,12 @@ void Worker::AddCustomString( uint64_t ptr, const char* str, size_t sz )
 {
     assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
+}
+
+void Worker::AddSingleString( const char* str, size_t sz )
+{
+    assert( m_pendingSingleString.ptr == nullptr );
+    m_pendingSingleString = StoreString( str, sz );
 }
 
 void Worker::AddExternalName( uint64_t ptr, const char* str, size_t sz )

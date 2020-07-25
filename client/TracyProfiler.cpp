@@ -2244,6 +2244,21 @@ void Profiler::SendString( uint64_t str, const char* ptr, size_t len, QueueType 
     AppendDataUnsafe( ptr, l16 );
 }
 
+void Profiler::SendSingleString( const char* ptr, size_t len )
+{
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::SingleStringData );
+
+    assert( len <= std::numeric_limits<uint16_t>::max() );
+    auto l16 = uint16_t( len );
+
+    NeedDataSize( QueueDataSize[(int)QueueType::SingleStringData] + sizeof( l16 ) + l16 );
+
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::SingleStringData] );
+    AppendDataUnsafe( &l16, sizeof( l16 ) );
+    AppendDataUnsafe( ptr, l16 );
+}
+
 void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueType type )
 {
     assert( type == QueueType::FrameImageData ||

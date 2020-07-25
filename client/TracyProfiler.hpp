@@ -298,8 +298,8 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
-        MemWrite( &item->message.time, GetTime() );
-        MemWrite( &item->message.text, (uint64_t)txt );
+        MemWrite( &item->messageLiteral.time, GetTime() );
+        MemWrite( &item->messageLiteral.text, (uint64_t)txt );
         TracyLfqCommit;
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
@@ -331,11 +331,11 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
-        MemWrite( &item->messageColor.time, GetTime() );
-        MemWrite( &item->messageColor.text, (uint64_t)txt );
-        MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
-        MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
-        MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        MemWrite( &item->messageColorLiteral.time, GetTime() );
+        MemWrite( &item->messageColorLiteral.text, (uint64_t)txt );
+        MemWrite( &item->messageColorLiteral.r, uint8_t( ( color       ) & 0xFF ) );
+        MemWrite( &item->messageColorLiteral.g, uint8_t( ( color >> 8  ) & 0xFF ) );
+        MemWrite( &item->messageColorLiteral.b, uint8_t( ( color >> 16 ) & 0xFF ) );
         TracyLfqCommit;
 
         if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
@@ -343,13 +343,14 @@ public:
 
     static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )
     {
+        assert( size < std::numeric_limits<uint16_t>::max() );
         InitRPMallocThread();
-        auto ptr = (char*)tracy_malloc( size+1 );
+        auto ptr = (char*)tracy_malloc( size );
         memcpy( ptr, txt, size );
-        ptr[size] = '\0';
         TracyLfqPrepare( QueueType::MessageAppInfo );
-        MemWrite( &item->message.time, GetTime() );
-        MemWrite( &item->message.text, (uint64_t)ptr );
+        MemWrite( &item->messageFat.time, GetTime() );
+        MemWrite( &item->messageFat.text, (uint64_t)ptr );
+        MemWrite( &item->messageFat.size, (uint16_t)size );
 
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );

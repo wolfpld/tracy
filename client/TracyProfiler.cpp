@@ -1447,12 +1447,14 @@ void Profiler::Worker()
         for( auto& item : m_deferredQueue )
         {
             uint64_t ptr;
+            uint16_t size;
             const auto idx = MemRead<uint8_t>( &item.hdr.idx );
             switch( (QueueType)idx )
             {
             case QueueType::MessageAppInfo:
-                ptr = MemRead<uint64_t>( &item.message.text );
-                SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                ptr = MemRead<uint64_t>( &item.messageFat.text );
+                size = MemRead<uint16_t>( &item.messageFat.size );
+                SendSingleString( (const char*)ptr, size );
                 break;
             case QueueType::LockName:
                 ptr = MemRead<uint64_t>( &item.lockName.name );
@@ -1720,7 +1722,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
 #ifndef TRACY_ON_DEMAND
     case QueueType::MessageAppInfo:
 #endif
-        ptr = MemRead<uint64_t>( &item.message.text );
+        ptr = MemRead<uint64_t>( &item.messageFat.text );
         tracy_free( (void*)ptr );
         break;
     case QueueType::ZoneBeginAllocSrcLoc:
@@ -1842,19 +1844,20 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     case QueueType::MessageCallstack:
                         ptr = MemRead<uint64_t>( &item->messageFat.text );
                         size = MemRead<uint16_t>( &item->messageFat.size );
-                        SendString( ptr, (const char*)ptr, size, QueueType::CustomStringData );
+                        SendSingleString( (const char*)ptr, size );
                         tracy_free( (void*)ptr );
                         break;
                     case QueueType::MessageColor:
                     case QueueType::MessageColorCallstack:
                         ptr = MemRead<uint64_t>( &item->messageColorFat.text );
                         size = MemRead<uint16_t>( &item->messageColorFat.size );
-                        SendString( ptr, (const char*)ptr, size, QueueType::CustomStringData );
+                        SendSingleString( (const char*)ptr, size );
                         tracy_free( (void*)ptr );
                         break;
                     case QueueType::MessageAppInfo:
-                        ptr = MemRead<uint64_t>( &item->message.text );
-                        SendString( ptr, (const char*)ptr, QueueType::CustomStringData );
+                        ptr = MemRead<uint64_t>( &item->messageFat.text );
+                        size = MemRead<uint16_t>( &item->messageFat.size );
+                        SendSingleString( (const char*)ptr, size );
 #ifndef TRACY_ON_DEMAND
                         tracy_free( (void*)ptr );
 #endif

@@ -3947,25 +3947,25 @@ bool Worker::Process( const QueueItem& ev )
         ProcessMessage( ev.message );
         break;
     case QueueType::MessageLiteral:
-        ProcessMessageLiteral( ev.message );
+        ProcessMessageLiteral( ev.messageLiteral );
         break;
     case QueueType::MessageColor:
         ProcessMessageColor( ev.messageColor );
         break;
     case QueueType::MessageLiteralColor:
-        ProcessMessageLiteralColor( ev.messageColor );
+        ProcessMessageLiteralColor( ev.messageColorLiteral );
         break;
     case QueueType::MessageCallstack:
         ProcessMessageCallstack( ev.message );
         break;
     case QueueType::MessageLiteralCallstack:
-        ProcessMessageLiteralCallstack( ev.message );
+        ProcessMessageLiteralCallstack( ev.messageLiteral );
         break;
     case QueueType::MessageColorCallstack:
         ProcessMessageColorCallstack( ev.messageColor );
         break;
     case QueueType::MessageLiteralColorCallstack:
-        ProcessMessageLiteralColorCallstack( ev.messageColor );
+        ProcessMessageLiteralColorCallstack( ev.messageColorLiteral );
         break;
     case QueueType::MessageAppInfo:
         ProcessMessageAppInfo( ev.message );
@@ -4810,21 +4810,18 @@ void Worker::ProcessPlotConfig( const QueuePlotConfig& ev )
 
 void Worker::ProcessMessage( const QueueMessage& ev )
 {
-    auto it = m_pendingCustomStrings.find( ev.text );
-    assert( it != m_pendingCustomStrings.end() );
     auto msg = m_slab.Alloc<MessageData>();
     const auto time = TscTime( ev.time - m_data.baseTime );
     msg->time = time;
-    msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
+    msg->ref = StringRef( StringRef::Type::Idx, GetSingleStringIdx() );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFFFFFFFF;
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
-    m_pendingCustomStrings.erase( it );
 }
 
-void Worker::ProcessMessageLiteral( const QueueMessage& ev )
+void Worker::ProcessMessageLiteral( const QueueMessageLiteral& ev )
 {
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
@@ -4840,21 +4837,18 @@ void Worker::ProcessMessageLiteral( const QueueMessage& ev )
 
 void Worker::ProcessMessageColor( const QueueMessageColor& ev )
 {
-    auto it = m_pendingCustomStrings.find( ev.text );
-    assert( it != m_pendingCustomStrings.end() );
     auto msg = m_slab.Alloc<MessageData>();
     const auto time = TscTime( ev.time - m_data.baseTime );
     msg->time = time;
-    msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
+    msg->ref = StringRef( StringRef::Type::Idx, GetSingleStringIdx() );
     msg->thread = CompressThread( m_threadCtx );
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     msg->callstack.SetVal( 0 );
     if( m_data.lastTime < time ) m_data.lastTime = time;
     InsertMessageData( msg );
-    m_pendingCustomStrings.erase( it );
 }
 
-void Worker::ProcessMessageLiteralColor( const QueueMessageColor& ev )
+void Worker::ProcessMessageLiteralColor( const QueueMessageColorLiteral& ev )
 {
     CheckString( ev.text );
     auto msg = m_slab.Alloc<MessageData>();
@@ -4876,7 +4870,7 @@ void Worker::ProcessMessageCallstack( const QueueMessage& ev )
     next.type = NextCallstackType::Message;
 }
 
-void Worker::ProcessMessageLiteralCallstack( const QueueMessage& ev )
+void Worker::ProcessMessageLiteralCallstack( const QueueMessageLiteral& ev )
 {
     ProcessMessageLiteral( ev );
 
@@ -4892,7 +4886,7 @@ void Worker::ProcessMessageColorCallstack( const QueueMessageColor& ev )
     next.type = NextCallstackType::Message;
 }
 
-void Worker::ProcessMessageLiteralColorCallstack( const QueueMessageColor& ev )
+void Worker::ProcessMessageLiteralColorCallstack( const QueueMessageColorLiteral& ev )
 {
     ProcessMessageLiteralColor( ev );
 
@@ -4902,12 +4896,9 @@ void Worker::ProcessMessageLiteralColorCallstack( const QueueMessageColor& ev )
 
 void Worker::ProcessMessageAppInfo( const QueueMessage& ev )
 {
-    auto it = m_pendingCustomStrings.find( ev.text );
-    assert( it != m_pendingCustomStrings.end() );
-    m_data.appInfo.push_back( StringRef( StringRef::Type::Idx, it->second.idx ) );
+    m_data.appInfo.push_back( StringRef( StringRef::Type::Idx, GetSingleStringIdx() ) );
     const auto time = TscTime( ev.time - m_data.baseTime );
     if( m_data.lastTime < time ) m_data.lastTime = time;
-    m_pendingCustomStrings.erase( it );
 }
 
 void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )

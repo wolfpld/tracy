@@ -251,7 +251,6 @@ struct QueuePlotData
 struct QueueMessage
 {
     int64_t time;
-    uint64_t text;      // ptr
 };
 
 struct QueueMessageColor : public QueueMessage
@@ -261,13 +260,25 @@ struct QueueMessageColor : public QueueMessage
     uint8_t b;
 };
 
+struct QueueMessageLiteral : public QueueMessage
+{
+    uint64_t text;      // ptr
+};
+
+struct QueueMessageColorLiteral : public QueueMessageColor
+{
+    uint64_t text;      // ptr
+};
+
 struct QueueMessageFat : public QueueMessage
 {
+    uint64_t text;      // ptr
     uint16_t size;
 };
 
 struct QueueMessageColorFat : public QueueMessageColor
 {
+    uint64_t text;      // ptr
     uint16_t size;
 };
 
@@ -495,6 +506,8 @@ struct QueueItem
         QueuePlotData plotData;
         QueueMessage message;
         QueueMessageColor messageColor;
+        QueueMessageLiteral messageLiteral;
+        QueueMessageColorLiteral messageColorLiteral;
         QueueMessageFat messageFat;
         QueueMessageColorFat messageColorFat;
         QueueGpuNewContext gpuNewContext;
@@ -590,10 +603,10 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockAnnounce ),
     sizeof( QueueHeader ) + sizeof( QueueLockTerminate ),
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
-    sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
-    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // literal
-    sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal, callstack
-    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // literal, callstack
+    sizeof( QueueHeader ) + sizeof( QueueMessageLiteral ),
+    sizeof( QueueHeader ) + sizeof( QueueMessageColorLiteral ),
+    sizeof( QueueHeader ) + sizeof( QueueMessageLiteral ),  // callstack
+    sizeof( QueueHeader ) + sizeof( QueueMessageColorLiteral ), // callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),

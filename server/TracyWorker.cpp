@@ -5435,10 +5435,7 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
 {
     assert( m_pendingCallstackSubframes > 0 );
 
-    auto nit = m_pendingCustomStrings.find( ev.name );
-    assert( nit != m_pendingCustomStrings.end() );
-    const auto nitidx = nit->second.idx;
-    m_pendingCustomStrings.erase( nit );
+    const auto nitidx = GetSingleStringIdx();
 
     auto fit = m_pendingCustomStrings.find( ev.file );
     assert( fit != m_pendingCustomStrings.end() );

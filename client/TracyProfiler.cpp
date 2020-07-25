@@ -2404,12 +2404,11 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
     {
         const auto& frame = frameData.data[i];
 
-        SendString( uint64_t( frame.name ), frame.name, QueueType::CustomStringData );
+        SendSingleString( frame.name );
         SendString( uint64_t( frame.file ), frame.file, QueueType::CustomStringData );
 
         QueueItem item;
         MemWrite( &item.hdr.type, QueueType::CallstackFrame );
-        MemWrite( &item.callstackFrame.name, (uint64_t)frame.name );
         MemWrite( &item.callstackFrame.file, (uint64_t)frame.file );
         MemWrite( &item.callstackFrame.line, frame.line );
         MemWrite( &item.callstackFrame.symAddr, frame.symAddr );

@@ -383,7 +383,6 @@ struct QueueCallstackFrameSize
 
 struct QueueCallstackFrame
 {
-    uint64_t name;
     uint64_t file;
     uint32_t line;
     uint64_t symAddr;

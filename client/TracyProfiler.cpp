@@ -2264,6 +2264,21 @@ void Profiler::SendSingleString( const char* ptr, size_t len )
     AppendDataUnsafe( ptr, l16 );
 }
 
+void Profiler::SendSecondString( const char* ptr, size_t len )
+{
+    QueueItem item;
+    MemWrite( &item.hdr.type, QueueType::SecondStringData );
+
+    assert( len <= std::numeric_limits<uint16_t>::max() );
+    auto l16 = uint16_t( len );
+
+    NeedDataSize( QueueDataSize[(int)QueueType::SecondStringData] + sizeof( l16 ) + l16 );
+
+    AppendDataUnsafe( &item, QueueDataSize[(int)QueueType::SecondStringData] );
+    AppendDataUnsafe( &l16, sizeof( l16 ) );
+    AppendDataUnsafe( ptr, l16 );
+}
+
 void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueType type )
 {
     assert( type == QueueType::FrameImageData ||
@@ -2410,11 +2425,10 @@ void Profiler::SendCallstackFrame( uint64_t ptr )
         const auto& frame = frameData.data[i];
 
         SendSingleString( frame.name );
-        SendString( uint64_t( frame.file ), frame.file, QueueType::CustomStringData );
+        SendSecondString( frame.file );
 
         QueueItem item;
         MemWrite( &item.hdr.type, QueueType::CallstackFrame );
-        MemWrite( &item.callstackFrame.file, (uint64_t)frame.file );
         MemWrite( &item.callstackFrame.line, frame.line );
         MemWrite( &item.callstackFrame.symAddr, frame.symAddr );
         MemWrite( &item.callstackFrame.symLen, frame.symLen );

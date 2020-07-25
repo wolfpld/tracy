@@ -2672,7 +2672,8 @@ void Worker::Exec()
                 !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
                 m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr ||
                 !m_pendingSymbols.empty() || !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 ||
-                !m_serverQueryQueue.empty() || m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr )
+                !m_serverQueryQueue.empty() || m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr ||
+                m_pendingSecondString.ptr != nullptr )
             {
                 continue;
             }
@@ -2941,20 +2942,29 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
         }
         return true;
     }
-    else if( ev.hdr.type == QueueType::SingleStringData )
-    {
-        ptr += sizeof( QueueHeader );
-        uint16_t sz;
-        memcpy( &sz, ptr, sizeof( sz ) );
-        ptr += sizeof( sz );
-        AddSingleString( ptr, sz );
-        ptr += sz;
-        return true;
-    }
     else
     {
-        ptr += QueueDataSize[ev.hdr.idx];
-        return Process( ev );
+        uint16_t sz;
+        switch( ev.hdr.type )
+        {
+        case QueueType::SingleStringData:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            AddSingleString( ptr, sz );
+            ptr += sz;
+            return true;
+        case QueueType::SecondStringData:
+            ptr += sizeof( QueueHeader );
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            AddSecondString( ptr, sz );
+            ptr += sz;
+            return true;
+        default:
+            ptr += QueueDataSize[ev.hdr.idx];
+            return Process( ev );
+        }
     }
 }
 
@@ -3364,6 +3374,12 @@ void Worker::AddSingleString( const char* str, size_t sz )
 {
     assert( m_pendingSingleString.ptr == nullptr );
     m_pendingSingleString = StoreString( str, sz );
+}
+
+void Worker::AddSecondString( const char* str, size_t sz )
+{
+    assert( m_pendingSecondString.ptr == nullptr );
+    m_pendingSecondString = StoreString( str, sz );
 }
 
 void Worker::AddExternalName( uint64_t ptr, const char* str, size_t sz )
@@ -3831,6 +3847,14 @@ uint32_t Worker::GetSingleStringIdx()
     assert( m_pendingSingleString.ptr != nullptr );
     const auto idx = m_pendingSingleString.idx;
     m_pendingSingleString.ptr = nullptr;
+    return idx;
+}
+
+uint32_t Worker::GetSecondStringIdx()
+{
+    assert( m_pendingSecondString.ptr != nullptr );
+    const auto idx = m_pendingSecondString.idx;
+    m_pendingSecondString.ptr = nullptr;
     return idx;
 }
 
@@ -5421,11 +5445,7 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
     assert( m_pendingCallstackSubframes > 0 );
 
     const auto nitidx = GetSingleStringIdx();
-
-    auto fit = m_pendingCustomStrings.find( ev.file );
-    assert( fit != m_pendingCustomStrings.end() );
-    const auto fitidx = fit->second.idx;
-    m_pendingCustomStrings.erase( fit );
+    const auto fitidx = GetSecondStringIdx();
 
     if( m_callstackFrameStaging )
     {

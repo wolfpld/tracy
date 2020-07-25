@@ -739,6 +739,7 @@ private:
     void AddThreadString( uint64_t id, const char* str, size_t sz );
     void AddCustomString( uint64_t ptr, const char* str, size_t sz );
     void AddSingleString( const char* str, size_t sz );
+    void AddSecondString( const char* str, size_t sz );
     void AddExternalName( uint64_t ptr, const char* str, size_t sz );
     void AddExternalThreadName( uint64_t ptr, const char* str, size_t sz );
     void AddFrameImageData( uint64_t ptr, const char* data, size_t sz );
@@ -762,6 +763,7 @@ private:
     void DispatchFailure( const QueueItem& ev, const char*& ptr );
 
     uint32_t GetSingleStringIdx();
+    uint32_t GetSecondStringIdx();
     StringLocation StoreString( const char* str, size_t sz );
     const ContextSwitch* const GetContextSwitchDataImpl( uint64_t thread );
 
@@ -859,6 +861,7 @@ private:
     unordered_flat_set<StringRef, StringRefHasher, StringRefComparator> m_pendingFileStrings;
     unordered_flat_set<StringRef, StringRefHasher, StringRefComparator> m_checkedFileStrings;
     StringLocation m_pendingSingleString = {};
+    StringLocation m_pendingSecondString = {};
 
     uint32_t m_pendingStrings;
     uint32_t m_pendingThreads;

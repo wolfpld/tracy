@@ -84,6 +84,7 @@ enum class QueueType : uint8_t
     ParamPingback,
     CpuTopology,
     SingleStringData,
+    SecondStringData,
     StringData,
     ThreadName,
     CustomStringData,
@@ -395,7 +396,6 @@ struct QueueCallstackFrameSize
 
 struct QueueCallstackFrame
 {
-    uint64_t file;
     uint32_t line;
     uint64_t symAddr;
     uint32_t symLen;
@@ -625,6 +625,7 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ),                                  // param pingback
     sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     sizeof( QueueHeader ),                                  // single string data
+    sizeof( QueueHeader ),                                  // second string data
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name

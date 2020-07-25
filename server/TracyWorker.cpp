@@ -5416,8 +5416,7 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
     m_data.newFramesWereReceived = true;
 #endif
 
-    auto iit = m_pendingCustomStrings.find( ev.imageName );
-    assert( iit != m_pendingCustomStrings.end() );
+    const auto idx = GetSingleStringIdx();
 
     // Frames may be duplicated due to recursion
     auto fmit = m_data.callstackFrameMap.find( PackPointer( ev.ptr ) );
@@ -5426,12 +5425,10 @@ void Worker::ProcessCallstackFrameSize( const QueueCallstackFrameSize& ev )
         m_callstackFrameStaging = m_slab.Alloc<CallstackFrameData>();
         m_callstackFrameStaging->size = ev.size;
         m_callstackFrameStaging->data = m_slab.Alloc<CallstackFrame>( ev.size );
-        m_callstackFrameStaging->imageName = StringIdx( iit->second.idx );
+        m_callstackFrameStaging->imageName = StringIdx( idx );
 
         m_callstackFrameStagingPtr = ev.ptr;
     }
-
-    m_pendingCustomStrings.erase( iit );
 }
 
 void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )

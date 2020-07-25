@@ -379,7 +379,6 @@ struct QueueCallstackFrameSize
 {
     uint64_t ptr;
     uint8_t size;
-    uint64_t imageName;
 };
 
 struct QueueCallstackFrame

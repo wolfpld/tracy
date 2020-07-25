@@ -737,7 +737,6 @@ private:
 
     void AddString( uint64_t ptr, const char* str, size_t sz );
     void AddThreadString( uint64_t id, const char* str, size_t sz );
-    void AddCustomString( uint64_t ptr, const char* str, size_t sz );
     void AddSingleString( const char* str, size_t sz );
     void AddSecondString( const char* str, size_t sz );
     void AddExternalName( uint64_t ptr, const char* str, size_t sz );
@@ -847,7 +846,6 @@ private:
     bool m_ignoreMemFreeFaults;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
-    unordered_flat_map<uint64_t, StringLocation> m_pendingCustomStrings;
     uint64_t m_pendingCallstackPtr = 0;
     uint32_t m_pendingCallstackId;
     int16_t m_pendingSourceLocationPayload = 0;

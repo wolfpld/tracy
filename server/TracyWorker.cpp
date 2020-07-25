@@ -2669,11 +2669,10 @@ void Worker::Exec()
         if( m_terminate )
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
-                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
-                m_pendingExternalNames != 0 || m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr ||
-                !m_pendingSymbols.empty() || !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 ||
-                !m_serverQueryQueue.empty() || m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr ||
-                m_pendingSecondString.ptr != nullptr )
+                m_data.plots.IsPending() || m_pendingCallstackPtr != 0 || m_pendingExternalNames != 0 ||
+                m_pendingCallstackSubframes != 0 || m_pendingFrameImageData.image != nullptr || !m_pendingSymbols.empty() ||
+                !m_pendingSymbolCode.empty() || m_pendingCodeInformation != 0 || !m_serverQueryQueue.empty() ||
+                m_pendingSourceLocationPayload != 0 || m_pendingSingleString.ptr != nullptr || m_pendingSecondString.ptr != nullptr )
             {
                 continue;
             }
@@ -2899,9 +2898,6 @@ bool Worker::DispatchProcess( const QueueItem& ev, const char*& ptr )
             ptr += sizeof( sz );
             switch( ev.hdr.type )
             {
-            case QueueType::CustomStringData:
-                AddCustomString( ev.stringTransfer.ptr, ptr, sz );
-                break;
             case QueueType::StringData:
                 AddString( ev.stringTransfer.ptr, ptr, sz );
                 m_serverQuerySpaceLeft++;
@@ -3362,12 +3358,6 @@ void Worker::AddThreadString( uint64_t id, const char* str, size_t sz )
     assert( it != m_data.threadNames.end() && strcmp( it->second, "???" ) == 0 );
     const auto sl = StoreString( str, sz );
     it->second = sl.ptr;
-}
-
-void Worker::AddCustomString( uint64_t ptr, const char* str, size_t sz )
-{
-    assert( m_pendingCustomStrings.find( ptr ) == m_pendingCustomStrings.end() );
-    m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
 }
 
 void Worker::AddSingleString( const char* str, size_t sz )

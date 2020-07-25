@@ -2229,7 +2229,6 @@ void Profiler::SendString( uint64_t str, const char* ptr, size_t len, QueueType 
 {
     assert( type == QueueType::StringData ||
             type == QueueType::ThreadName ||
-            type == QueueType::CustomStringData ||
             type == QueueType::PlotName ||
             type == QueueType::FrameName ||
             type == QueueType::ExternalName ||

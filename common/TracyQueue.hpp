@@ -87,7 +87,6 @@ enum class QueueType : uint8_t
     SecondStringData,
     StringData,
     ThreadName,
-    CustomStringData,
     PlotName,
     SourceLocationPayload,
     CallstackPayload,
@@ -629,7 +628,6 @@ static constexpr size_t QueueDataSize[] = {
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name
-    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // custom string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // plot name
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // allocated source location payload
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // callstack payload

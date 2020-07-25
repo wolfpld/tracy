@@ -2897,12 +2897,11 @@ void Profiler::SendCodeLocation( uint64_t ptr )
 #ifdef TRACY_HAS_CALLSTACK
     const auto sym = DecodeCodeAddress( ptr );
 
-    SendString( uint64_t( sym.file ), sym.file, QueueType::CustomStringData );
+    SendSingleString( sym.file );
 
     QueueItem item;
     MemWrite( &item.hdr.type, QueueType::CodeInformation );
     MemWrite( &item.codeInformation.ptr, ptr );
-    MemWrite( &item.codeInformation.file, uint64_t( sym.file ) );
     MemWrite( &item.codeInformation.line, sym.line );
 
     AppendData( &item, QueueDataSize[(int)QueueType::CodeInformation] );

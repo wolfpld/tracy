@@ -401,7 +401,6 @@ struct QueueSymbolInformation
 struct QueueCodeInformation
 {
     uint64_t ptr;
-    uint64_t file;
     uint32_t line;
 };
 

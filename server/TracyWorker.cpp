@@ -5548,13 +5548,14 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
     assert( m_pendingCodeInformation > 0 );
     m_pendingCodeInformation--;
 
-    auto fit = m_pendingCustomStrings.find( ev.file );
-    assert( fit != m_pendingCustomStrings.end() );
+    assert( m_pendingSingleString.ptr != nullptr );
+    const auto idx = m_pendingSingleString.idx;
+    m_pendingSingleString.ptr = nullptr;
 
     if( ev.line != 0 )
     {
         assert( m_data.codeAddressToLocation.find( ev.ptr ) == m_data.codeAddressToLocation.end() );
-        const auto packed = PackFileLine( fit->second.idx, ev.line );
+        const auto packed = PackFileLine( idx, ev.line );
         m_data.codeAddressToLocation.emplace( ev.ptr, packed );
 
         auto lit = m_data.locationCodeAddressList.find( packed );
@@ -5569,12 +5570,10 @@ void Worker::ProcessCodeInformation( const QueueCodeInformation& ev )
             if( needSort ) pdqsort_branchless( lit->second.begin(), lit->second.end() );
         }
 
-        StringRef ref( StringRef::Idx, fit->second.idx );
+        StringRef ref( StringRef::Idx, idx );
         auto cit = m_checkedFileStrings.find( ref );
         if( cit == m_checkedFileStrings.end() ) CacheSource( ref );
     }
-
-    m_pendingCustomStrings.erase( fit );
 }
 
 void Worker::ProcessCrashReport( const QueueCrashReport& ev )

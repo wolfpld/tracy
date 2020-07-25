@@ -890,7 +890,7 @@ while(!m_fiQueue.empty())
     glDeleteSync(m_fiFence[fiIdx]);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, m_fiPbo[fiIdx]);
     auto ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, 320*180*4, GL_MAP_READ_BIT);
-    FrameImage(ptr, 320, 180, m_fiQueue.size());
+    FrameImage(ptr, 320, 180, m_fiQueue.size(), true);
     glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
     m_fiQueue.erase(m_fiQueue.begin());
 }

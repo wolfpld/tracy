@@ -4023,10 +4023,10 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MemFreeCallstack:
         ProcessMemFreeCallstack( ev.memFree );
         break;
-    case QueueType::CallstackMemoryLean:
+    case QueueType::CallstackMemory:
         ProcessCallstackMemory();
         break;
-    case QueueType::CallstackLean:
+    case QueueType::Callstack:
         ProcessCallstack();
         break;
     case QueueType::CallstackAllocLean:

@@ -20,9 +20,7 @@ enum class QueueType : uint8_t
     ZoneBeginAllocSrcLocCallstack,
     ZoneBeginAllocSrcLocCallstackLean,
     CallstackMemory,
-    CallstackMemoryLean,
     Callstack,
-    CallstackLean,
     CallstackAlloc,
     CallstackAllocLean,
     CallstackSample,
@@ -358,12 +356,7 @@ struct QueueMemFree
     uint64_t ptr;
 };
 
-struct QueueCallstackMemory
-{
-    uint64_t ptr;
-};
-
-struct QueueCallstack
+struct QueueCallstackFat
 {
     uint64_t ptr;
 };
@@ -520,8 +513,7 @@ struct QueueItem
         QueueGpuCalibration gpuCalibration;
         QueueMemAlloc memAlloc;
         QueueMemFree memFree;
-        QueueCallstackMemory callstackMemory;
-        QueueCallstack callstack;
+        QueueCallstackFat callstackFat;
         QueueCallstackAlloc callstackAlloc;
         QueueCallstackSample callstackSample;
         QueueCallstackSampleLean callstackSampleLean;
@@ -556,10 +548,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // lean allocated source location
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location, callstack, not for network transfer
     sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // lean allocated source location, callstack
-    sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ), // not for network transfer
-    sizeof( QueueHeader ),                                  // lean callstack memory
-    sizeof( QueueHeader ) + sizeof( QueueCallstack ),       // not for network transfer
-    sizeof( QueueHeader ),                                  // lean callstack
+    sizeof( QueueHeader ),                                  // callstack memory
+    sizeof( QueueHeader ),                                  // callstack
     sizeof( QueueHeader ) + sizeof( QueueCallstackAlloc ),  // not for network transfer
     sizeof( QueueHeader ),                                  // lean callstack alloc
     sizeof( QueueHeader ) + sizeof( QueueCallstackSample ), // not for network transfer

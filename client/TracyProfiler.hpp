@@ -435,7 +435,7 @@ public:
 #ifdef TRACY_HAS_CALLSTACK
         auto ptr = Callstack( depth );
         TracyLfqPrepare( QueueType::Callstack );
-        MemWrite( &item->callstack.ptr, (uint64_t)ptr );
+        MemWrite( &item->callstackFat.ptr, (uint64_t)ptr );
         TracyLfqCommit;
 #endif
     }
@@ -602,7 +602,7 @@ private:
 #ifdef TRACY_HAS_CALLSTACK
         auto item = GetProfiler().m_serialQueue.prepare_next();
         MemWrite( &item->hdr.type, QueueType::CallstackMemory );
-        MemWrite( &item->callstackMemory.ptr, (uint64_t)ptr );
+        MemWrite( &item->callstackFat.ptr, (uint64_t)ptr );
         GetProfiler().m_serialQueue.commit_next();
 #endif
     }

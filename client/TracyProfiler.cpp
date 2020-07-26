@@ -1732,11 +1732,8 @@ static void FreeAssociatedMemory( const QueueItem& item )
         tracy_free( (void*)ptr );
         break;
     case QueueType::CallstackMemory:
-        ptr = MemRead<uint64_t>( &item.callstackMemory.ptr );
-        tracy_free( (void*)ptr );
-        break;
     case QueueType::Callstack:
-        ptr = MemRead<uint64_t>( &item.callstack.ptr );
+        ptr = MemRead<uint64_t>( &item.callstackFat.ptr );
         tracy_free( (void*)ptr );
         break;
     case QueueType::CallstackAlloc:
@@ -1878,11 +1875,9 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         break;
                     }
                     case QueueType::Callstack:
-                        ptr = MemRead<uint64_t>( &item->callstack.ptr );
+                        ptr = MemRead<uint64_t>( &item->callstackFat.ptr );
                         SendCallstackPayload( ptr );
                         tracy_free( (void*)ptr );
-                        idx++;
-                        MemWrite( &item->hdr.idx, idx );
                         break;
                     case QueueType::CallstackAlloc:
                         ptr = MemRead<uint64_t>( &item->callstackAlloc.nativePtr );
@@ -2107,11 +2102,9 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 switch( (QueueType)idx )
                 {
                 case QueueType::CallstackMemory:
-                    ptr = MemRead<uint64_t>( &item->callstackMemory.ptr );
+                    ptr = MemRead<uint64_t>( &item->callstackFat.ptr );
                     SendCallstackPayload( ptr );
                     tracy_free( (void*)ptr );
-                    idx++;
-                    MemWrite( &item->hdr.idx, idx );
                     break;
                 case QueueType::LockWait:
                 case QueueType::LockSharedWait:
@@ -2818,7 +2811,7 @@ void Profiler::SendCallstack( int depth, const char* skipBefore )
     CutCallstack( ptr, skipBefore );
 
     TracyLfqPrepare( QueueType::Callstack );
-    MemWrite( &item->callstack.ptr, (uint64_t)ptr );
+    MemWrite( &item->callstackFat.ptr, (uint64_t)ptr );
     TracyLfqCommit;
 #endif
 }

@@ -1680,12 +1680,12 @@ void Profiler::CompressWorker()
                 tracy_free( fi->image );
 
                 TracyLfqPrepare( QueueType::FrameImage );
-                MemWrite( &item->frameImage.image, (uint64_t)etc1buf );
-                MemWrite( &item->frameImage.frame, fi->frame );
-                MemWrite( &item->frameImage.w, w );
-                MemWrite( &item->frameImage.h, h );
+                MemWrite( &item->frameImageFat.image, (uint64_t)etc1buf );
+                MemWrite( &item->frameImageFat.frame, fi->frame );
+                MemWrite( &item->frameImageFat.w, w );
+                MemWrite( &item->frameImageFat.h, h );
                 uint8_t flip = fi->flip;
-                MemWrite( &item->frameImage.flip, flip );
+                MemWrite( &item->frameImageFat.flip, flip );
                 TracyLfqCommit;
 
                 fi++;
@@ -1747,7 +1747,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
         tracy_free( (void*)ptr );
         break;
     case QueueType::FrameImage:
-        ptr = MemRead<uint64_t>( &item.frameImage.image );
+        ptr = MemRead<uint64_t>( &item.frameImageFat.image );
         tracy_free( (void*)ptr );
         break;
 #ifndef TRACY_ON_DEMAND
@@ -1908,14 +1908,12 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     }
                     case QueueType::FrameImage:
                     {
-                        ptr = MemRead<uint64_t>( &item->frameImage.image );
-                        const auto w = MemRead<uint16_t>( &item->frameImage.w );
-                        const auto h = MemRead<uint16_t>( &item->frameImage.h );
+                        ptr = MemRead<uint64_t>( &item->frameImageFat.image );
+                        const auto w = MemRead<uint16_t>( &item->frameImageFat.w );
+                        const auto h = MemRead<uint16_t>( &item->frameImageFat.h );
                         const auto csz = size_t( w * h / 2 );
                         SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
                         tracy_free( (void*)ptr );
-                        idx++;
-                        MemWrite( &item->hdr.idx, idx );
                         break;
                     }
                     case QueueType::ZoneBegin:

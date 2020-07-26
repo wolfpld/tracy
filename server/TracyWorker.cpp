@@ -3905,8 +3905,8 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::FrameMarkMsgEnd:
         ProcessFrameMarkEnd( ev.frameMark );
         break;
-    case QueueType::FrameImageLean:
-        ProcessFrameImage( ev.frameImageLean );
+    case QueueType::FrameImage:
+        ProcessFrameImage( ev.frameImage );
         break;
     case QueueType::SourceLocation:
         AddSourceLocation( ev.srcloc );
@@ -4428,7 +4428,7 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
 #endif
 }
 
-void Worker::ProcessFrameImage( const QueueFrameImageLean& ev )
+void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 {
     assert( m_pendingFrameImageData.image != nullptr );
 

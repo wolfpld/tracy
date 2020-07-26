@@ -44,7 +44,6 @@ public:
         MemWrite( &item->hdr.type, QueueType::LockTerminate );
         MemWrite( &item->lockTerminate.id, m_id );
         MemWrite( &item->lockTerminate.time, Profiler::GetTime() );
-        MemWrite( &item->lockTerminate.type, LockType::Lockable );
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );
 #endif
@@ -71,7 +70,6 @@ public:
         MemWrite( &item->lockWait.thread, GetThreadHandle() );
         MemWrite( &item->lockWait.id, m_id );
         MemWrite( &item->lockWait.time, Profiler::GetTime() );
-        MemWrite( &item->lockWait.type, LockType::Lockable );
         Profiler::QueueSerialFinish();
         return true;
     }
@@ -261,7 +259,6 @@ public:
         MemWrite( &item->hdr.type, QueueType::LockTerminate );
         MemWrite( &item->lockTerminate.id, m_id );
         MemWrite( &item->lockTerminate.time, Profiler::GetTime() );
-        MemWrite( &item->lockTerminate.type, LockType::SharedLockable );
 #ifdef TRACY_ON_DEMAND
         GetProfiler().DeferItem( *item );
 #endif
@@ -288,7 +285,6 @@ public:
         MemWrite( &item->lockWait.thread, GetThreadHandle() );
         MemWrite( &item->lockWait.id, m_id );
         MemWrite( &item->lockWait.time, Profiler::GetTime() );
-        MemWrite( &item->lockWait.type, LockType::SharedLockable );
         Profiler::QueueSerialFinish();
         return true;
     }
@@ -371,7 +367,6 @@ public:
         MemWrite( &item->lockWait.thread, GetThreadHandle() );
         MemWrite( &item->lockWait.id, m_id );
         MemWrite( &item->lockWait.time, Profiler::GetTime() );
-        MemWrite( &item->lockWait.type, LockType::SharedLockable );
         Profiler::QueueSerialFinish();
         return true;
     }

@@ -4575,62 +4575,32 @@ void Worker::ProcessZoneValue( const QueueZoneValue& ev )
 void Worker::ProcessLockAnnounce( const QueueLockAnnounce& ev )
 {
     auto it = m_data.lockMap.find( ev.id );
-    if( it == m_data.lockMap.end() )
-    {
-        auto lm = m_slab.AllocInit<LockMap>();
-        lm->srcloc = ShrinkSourceLocation( ev.lckloc );
-        lm->type = ev.type;
-        lm->timeAnnounce = TscTime( ev.time - m_data.baseTime );
-        lm->timeTerminate = 0;
-        lm->valid = true;
-        lm->isContended = false;
-        m_data.lockMap.emplace( ev.id, lm );
-    }
-    else
-    {
-        it->second->srcloc = ShrinkSourceLocation( ev.lckloc );
-        assert( it->second->type == ev.type );
-        it->second->timeAnnounce = TscTime( ev.time - m_data.baseTime );
-        it->second->valid = true;
-    }
+    assert( it == m_data.lockMap.end() );
+    auto lm = m_slab.AllocInit<LockMap>();
+    lm->srcloc = ShrinkSourceLocation( ev.lckloc );
+    lm->type = ev.type;
+    lm->timeAnnounce = TscTime( ev.time - m_data.baseTime );
+    lm->timeTerminate = 0;
+    lm->valid = true;
+    lm->isContended = false;
+    m_data.lockMap.emplace( ev.id, lm );
     CheckSourceLocation( ev.lckloc );
 }
 
 void Worker::ProcessLockTerminate( const QueueLockTerminate& ev )
 {
     auto it = m_data.lockMap.find( ev.id );
-    if( it == m_data.lockMap.end() )
-    {
-        auto lm = m_slab.AllocInit<LockMap>();
-        lm->type = ev.type;
-        lm->timeAnnounce = 0;
-        lm->timeTerminate = TscTime( ev.time - m_data.baseTime );
-        lm->valid = false;
-        lm->isContended = false;
-        m_data.lockMap.emplace( ev.id, lm );
-    }
-    else
-    {
-        assert( it->second->type == ev.type );
-        it->second->timeTerminate = TscTime( ev.time - m_data.baseTime );
-    }
+    assert( it != m_data.lockMap.end() );
+    it->second->timeTerminate = TscTime( ev.time - m_data.baseTime );
 }
 
 void Worker::ProcessLockWait( const QueueLockWait& ev )
 {
     auto it = m_data.lockMap.find( ev.id );
-    if( it == m_data.lockMap.end() )
-    {
-        auto lm = m_slab.AllocInit<LockMap>();
-        lm->timeAnnounce = 0;
-        lm->timeTerminate = 0;
-        lm->valid = false;
-        lm->type = ev.type;
-        lm->isContended = false;
-        it = m_data.lockMap.emplace( ev.id, lm ).first;
-    }
+    assert( it != m_data.lockMap.end() );
+    auto& lock = *it->second;
 
-    auto lev = ev.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
+    auto lev = lock.type == LockType::Lockable ? m_slab.Alloc<LockEvent>() : m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
     const auto time = TscTime( refTime - m_data.baseTime );
@@ -4638,7 +4608,7 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::Wait;
 
-    InsertLockEvent( *it->second, lev, ev.thread, time );
+    InsertLockEvent( lock, lev, ev.thread, time );
 }
 
 void Worker::ProcessLockObtain( const QueueLockObtain& ev )
@@ -4678,16 +4648,10 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
 void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
 {
     auto it = m_data.lockMap.find( ev.id );
-    if( it == m_data.lockMap.end() )
-    {
-        auto lm = m_slab.AllocInit<LockMap>();
-        lm->valid = false;
-        lm->type = ev.type;
-        lm->isContended = false;
-        it = m_data.lockMap.emplace( ev.id, lm ).first;
-    }
+    assert( it != m_data.lockMap.end() );
+    auto& lock = *it->second;
 
-    assert( ev.type == LockType::SharedLockable );
+    assert( lock.type == LockType::SharedLockable );
     auto lev = m_slab.Alloc<LockEventShared>();
     const auto refTime = m_refTimeSerial + ev.time;
     m_refTimeSerial = refTime;
@@ -4696,7 +4660,7 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
     lev->SetSrcLoc( 0 );
     lev->type = LockEvent::Type::WaitShared;
 
-    InsertLockEvent( *it->second, lev, ev.thread, time );
+    InsertLockEvent( lock, lev, ev.thread, time );
 }
 
 void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )

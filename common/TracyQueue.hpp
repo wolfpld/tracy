@@ -190,7 +190,6 @@ struct QueueLockTerminate
 {
     uint32_t id;
     int64_t time;
-    LockType type;
 };
 
 struct QueueLockWait
@@ -198,7 +197,6 @@ struct QueueLockWait
     uint64_t thread;
     uint32_t id;
     int64_t time;
-    LockType type;
 };
 
 struct QueueLockObtain

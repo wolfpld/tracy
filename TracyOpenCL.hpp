@@ -3,18 +3,23 @@
 
 #if !defined TRACY_ENABLE
 
-#define TracyCLContext(x, y) nullptr
-#define TracyCLDestroy(x)
-#define TracyCLNamedZone(c, x, y, z, w)
-#define TracyCLNamedZoneC(c, x, y, z, w, a)
-#define TracyCLZone(c, x, y)
-#define TracyCLZoneC(c, x, y, z)
-#define TracyCLCollect(c)
+#define TracyCLContext(c, x) nullptr
+#define TracyCLDestroy(c)
 
-#define TracyCLNamedZoneS(c, x, y, z, w, a)
-#define TracyCLNamedZoneCS(c, x, y, z, w, v, a)
-#define TracyCLZoneS(c, x, y, z)
-#define TracyCLZoneCS(c, x, y, z, w)
+#define TracyCLNamedZone(c, x, y, z)
+#define TracyCLNamedZoneC(c, x, y, z, w)
+#define TracyCLZone(c, x)
+#define TracyCLZoneC(c, x, y)
+
+#define TracyCLNamedZoneS(c, x, y, z, w)
+#define TracyCLNamedZoneCS(c, x, y, z, w, v)
+#define TracyCLZoneS(c, x, y)
+#define TracyCLZoneCS(c, x, y, z)
+
+#define TracyCLNamedZoneSetEvent(x, e)
+#define TracyCLZoneSetEvent(e)
+
+#define TracyCLCollect(c)
 
 namespace tracy
 {

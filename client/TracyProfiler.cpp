@@ -1940,14 +1940,6 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         MemWrite( &item->zoneEnd.time, dt );
                         break;
                     }
-                    case QueueType::LockName:
-                        ptr = MemRead<uint64_t>( &item->lockNameFat.name );
-                        size = MemRead<uint16_t>( &item->lockNameFat.size );
-                        SendSingleString( (const char*)ptr, size );
-#ifndef TRACY_ON_DEMAND
-                        tracy_free( (void*)ptr );
-#endif
-                        break;
                     case QueueType::GpuZoneBegin:
                     case QueueType::GpuZoneBeginCallstack:
                     {
@@ -2146,6 +2138,16 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     int64_t dt = t - refSerial;
                     refSerial = t;
                     MemWrite( &item->lockRelease.time, dt );
+                    break;
+                }
+                case QueueType::LockName:
+                {
+                    ptr = MemRead<uint64_t>( &item->lockNameFat.name );
+                    uint16_t size = MemRead<uint16_t>( &item->lockNameFat.size );
+                    SendSingleString( (const char*)ptr, size );
+#ifndef TRACY_ON_DEMAND
+                    tracy_free( (void*)ptr );
+#endif
                     break;
                 }
                 case QueueType::MemAlloc:

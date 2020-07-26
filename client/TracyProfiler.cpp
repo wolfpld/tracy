@@ -1743,7 +1743,7 @@ static void FreeAssociatedMemory( const QueueItem& item )
         tracy_free( (void*)ptr );
         break;
     case QueueType::CallstackSample:
-        ptr = MemRead<uint64_t>( &item.callstackSample.ptr );
+        ptr = MemRead<uint64_t>( &item.callstackSampleFat.ptr );
         tracy_free( (void*)ptr );
         break;
     case QueueType::FrameImage:
@@ -1893,15 +1893,13 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                         break;
                     case QueueType::CallstackSample:
                     {
-                        ptr = MemRead<uint64_t>( &item->callstackSample.ptr );
+                        ptr = MemRead<uint64_t>( &item->callstackSampleFat.ptr );
                         SendCallstackPayload64( ptr );
                         tracy_free( (void*)ptr );
-                        int64_t t = MemRead<int64_t>( &item->callstackSample.time );
+                        int64_t t = MemRead<int64_t>( &item->callstackSampleFat.time );
                         int64_t dt = t - refCtx;
                         refCtx = t;
-                        MemWrite( &item->callstackSample.time, dt );
-                        idx++;
-                        MemWrite( &item->hdr.idx, idx );
+                        MemWrite( &item->callstackSampleFat.time, dt );
                         break;
                     }
                     case QueueType::FrameImage:

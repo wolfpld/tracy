@@ -186,9 +186,9 @@ void WINAPI EventRecordCallback( PEVENT_RECORD record )
                     memcpy( trace, &sz, sizeof( uint64_t ) );
                     memcpy( trace+1, sw->stack, sizeof( uint64_t ) * sz );
                     TracyLfqPrepare( QueueType::CallstackSample );
-                    MemWrite( &item->callstackSample.time, sw->eventTimeStamp );
-                    MemWrite( &item->callstackSample.thread, (uint64_t)sw->stackThread );
-                    MemWrite( &item->callstackSample.ptr, (uint64_t)trace );
+                    MemWrite( &item->callstackSampleFat.time, sw->eventTimeStamp );
+                    MemWrite( &item->callstackSampleFat.thread, (uint64_t)sw->stackThread );
+                    MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
                     TracyLfqCommit;
                 }
             }

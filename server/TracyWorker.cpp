@@ -4029,7 +4029,7 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::Callstack:
         ProcessCallstack();
         break;
-    case QueueType::CallstackAllocLean:
+    case QueueType::CallstackAlloc:
         ProcessCallstackAlloc();
         break;
     case QueueType::CallstackSampleLean:

@@ -183,8 +183,8 @@ static tracy_force_inline void SendLuaCallstack( lua_State* L, uint32_t depth )
     assert( dst - ptr == spaceNeeded + 2 );
 
     TracyLfqPrepare( QueueType::CallstackAlloc );
-    MemWrite( &item->callstackAlloc.ptr, (uint64_t)ptr );
-    MemWrite( &item->callstackAlloc.nativePtr, (uint64_t)Callstack( depth ) );
+    MemWrite( &item->callstackAllocFat.ptr, (uint64_t)ptr );
+    MemWrite( &item->callstackAllocFat.nativePtr, (uint64_t)Callstack( depth ) );
     TracyLfqCommit;
 }
 

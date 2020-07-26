@@ -112,7 +112,7 @@ class Profiler
     struct FrameImageQueueItem
     {
         void* image;
-        uint64_t frame;
+        uint32_t frame;
         uint16_t w;
         uint16_t h;
         uint8_t offset;
@@ -205,6 +205,7 @@ public:
     static tracy_force_inline void SendFrameImage( const void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip )
     {
         auto& profiler = GetProfiler();
+        assert( profiler.m_frameCount.load( std::memory_order_relaxed ) < std::numeric_limits<uint32_t>::max() );
 #ifdef TRACY_ON_DEMAND
         if( !profiler.IsConnected() ) return;
 #endif
@@ -215,7 +216,7 @@ public:
         profiler.m_fiLock.lock();
         auto fi = profiler.m_fiQueue.prepare_next();
         fi->image = ptr;
-        fi->frame = profiler.m_frameCount.load( std::memory_order_relaxed ) - offset;
+        fi->frame = uint32_t( profiler.m_frameCount.load( std::memory_order_relaxed ) - offset );
         fi->w = w;
         fi->h = h;
         fi->flip = flip;

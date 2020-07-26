@@ -16,9 +16,7 @@ enum class QueueType : uint8_t
     MessageColorCallstack,
     MessageAppInfo,
     ZoneBeginAllocSrcLoc,
-    ZoneBeginAllocSrcLocLean,
     ZoneBeginAllocSrcLocCallstack,
-    ZoneBeginAllocSrcLocCallstackLean,
     CallstackMemory,
     Callstack,
     CallstackAlloc,
@@ -541,10 +539,8 @@ static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // app info
-    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location, not for network transfer
-    sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // lean allocated source location
-    sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location, callstack, not for network transfer
-    sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // lean allocated source location, callstack
+    sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // allocated source location
+    sizeof( QueueHeader ) + sizeof( QueueZoneBeginLean ),   // allocated source location, callstack
     sizeof( QueueHeader ),                                  // callstack memory
     sizeof( QueueHeader ),                                  // callstack
     sizeof( QueueHeader ),                                  // callstack alloc

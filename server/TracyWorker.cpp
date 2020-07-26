@@ -3884,10 +3884,10 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::ZoneBeginCallstack:
         ProcessZoneBeginCallstack( ev.zoneBegin );
         break;
-    case QueueType::ZoneBeginAllocSrcLocLean:
+    case QueueType::ZoneBeginAllocSrcLoc:
         ProcessZoneBeginAllocSrcLoc( ev.zoneBeginLean );
         break;
-    case QueueType::ZoneBeginAllocSrcLocCallstackLean:
+    case QueueType::ZoneBeginAllocSrcLocCallstack:
         ProcessZoneBeginAllocSrcLocCallstack( ev.zoneBeginLean );
         break;
     case QueueType::ZoneEnd:

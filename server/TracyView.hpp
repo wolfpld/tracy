@@ -56,6 +56,12 @@ class View
         uint64_t count;
     };
 
+    struct Range
+    {
+        int64_t min, max;
+        bool active = false;
+    };
+
 public:
     struct VisData
     {
@@ -487,8 +493,7 @@ private:
         int minBinVal = 1;
         int64_t tmin, tmax;
         bool showZoneInFrames = false;
-        bool limitRange = false;
-        int64_t rangeMin, rangeMax;
+        Range range;
 
         struct
         {
@@ -543,7 +548,7 @@ private:
         void ShowZone( int16_t srcloc, const char* name )
         {
             show = true;
-            limitRange = false;
+            range.active = false;
             Reset();
             match.emplace_back( srcloc );
             strcpy( pattern, name );
@@ -553,9 +558,9 @@ private:
         {
             assert( limitMin <= limitMax );
             show = true;
-            limitRange = true;
-            rangeMin = limitMin;
-            rangeMax = limitMax;
+            range.active = true;
+            range.min = limitMin;
+            range.max = limitMax;
             Reset();
             match.emplace_back( srcloc );
             strcpy( pattern, name );

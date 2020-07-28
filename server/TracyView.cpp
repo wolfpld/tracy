@@ -3077,10 +3077,10 @@ void View::DrawZones()
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
 
-    if( m_findZone.show && m_findZone.limitRange )
+    if( m_findZone.show && m_findZone.range.active )
     {
-        const auto px0 = ( m_findZone.rangeMin - m_vd.zvStart ) * pxns;
-        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_findZone.rangeMax - m_vd.zvStart ) * pxns );
+        const auto px0 = ( m_findZone.range.min - m_vd.zvStart ) * pxns;
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_findZone.range.max - m_vd.zvStart ) * pxns );
         draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x1188DDDD );
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x2288DDDD );
     }
@@ -8906,30 +8906,30 @@ void View::DrawFindZone()
     ImGui::SameLine();
     ImGui::Checkbox( "Ignore case", &m_findZone.ignoreCase );
     ImGui::SameLine();
-    if( ImGui::Checkbox( "Limit range", &m_findZone.limitRange ) )
+    if( ImGui::Checkbox( "Limit range", &m_findZone.range.active ) )
     {
         m_findZone.ResetMatch();
-        if( m_findZone.limitRange )
+        if( m_findZone.range.active )
         {
-            m_findZone.rangeMin = m_vd.zvStart;
-            m_findZone.rangeMax = m_vd.zvEnd;
+            m_findZone.range.min = m_vd.zvStart;
+            m_findZone.range.max = m_vd.zvEnd;
         }
     }
-    if( m_findZone.limitRange )
+    if( m_findZone.range.active )
     {
         ImGui::TextUnformatted( ICON_FA_LOCK );
         ImGui::SameLine();
-        TextFocused( "Zone time range:", TimeToStringExact( m_findZone.rangeMin ) );
+        TextFocused( "Zone time range:", TimeToStringExact( m_findZone.range.min ) );
         ImGui::SameLine();
-        TextFocused( "-", TimeToStringExact( m_findZone.rangeMax ) );
+        TextFocused( "-", TimeToStringExact( m_findZone.range.max ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", TimeToString( m_findZone.rangeMax - m_findZone.rangeMin ) );
+        ImGui::TextDisabled( "(%s)", TimeToString( m_findZone.range.max - m_findZone.range.min ) );
         ImGui::SameLine();
         if( ImGui::SmallButton( "Limit to view" ) )
         {
             m_findZone.ResetMatch();
-            m_findZone.rangeMin = m_vd.zvStart;
-            m_findZone.rangeMax = m_vd.zvEnd;
+            m_findZone.range.min = m_vd.zvStart;
+            m_findZone.range.max = m_vd.zvEnd;
         }
     }
 
@@ -8941,8 +8941,8 @@ void View::DrawFindZone()
 
     if( !m_findZone.match.empty() )
     {
-        const auto rangeMin = m_findZone.rangeMin;
-        const auto rangeMax = m_findZone.rangeMax;
+        const auto rangeMin = m_findZone.range.min;
+        const auto rangeMax = m_findZone.range.max;
 
         ImGui::Separator();
         ImGui::BeginChild( "##findzone" );
@@ -9021,7 +9021,7 @@ void View::DrawFindZone()
                 size_t i;
                 if( m_findZone.runningTime )
                 {
-                    if( m_findZone.limitRange )
+                    if( m_findZone.range.active )
                     {
                         for( i=m_findZone.sortedNum; i<zsz; i++ )
                         {
@@ -9060,7 +9060,7 @@ void View::DrawFindZone()
                 {
                     tmin = zoneData.selfMin;
                     tmax = zoneData.selfMax;
-                    if( m_findZone.limitRange )
+                    if( m_findZone.range.active )
                     {
                         for( i=m_findZone.sortedNum; i<zsz; i++ )
                         {
@@ -9089,7 +9089,7 @@ void View::DrawFindZone()
                 {
                     tmin = zoneData.min;
                     tmax = zoneData.max;
-                    if( m_findZone.limitRange )
+                    if( m_findZone.range.active )
                     {
                         for( i=m_findZone.sortedNum; i<zsz; i++ )
                         {
@@ -9147,7 +9147,7 @@ void View::DrawFindZone()
                     int64_t total = m_findZone.selTotal;
                     if( m_findZone.runningTime )
                     {
-                        if( m_findZone.limitRange )
+                        if( m_findZone.range.active )
                         {
                             for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                             {
@@ -9185,7 +9185,7 @@ void View::DrawFindZone()
                     }
                     else if( m_findZone.selfTime )
                     {
-                        if( m_findZone.limitRange )
+                        if( m_findZone.range.active )
                         {
                             for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                             {
@@ -9217,7 +9217,7 @@ void View::DrawFindZone()
                     }
                     else
                     {
-                        if( m_findZone.limitRange )
+                        if( m_findZone.range.active )
                         {
                             for( size_t i=m_findZone.selSortNum; i<m_findZone.sortedNum; i++ )
                             {
@@ -9322,7 +9322,7 @@ void View::DrawFindZone()
                         auto sortedEnd = sorted.end();
                         while( sortedBegin != sortedEnd && *sortedBegin == 0 ) ++sortedBegin;
 
-                        if( m_findZone.minBinVal > 1 || m_findZone.limitRange )
+                        if( m_findZone.minBinVal > 1 || m_findZone.range.active )
                         {
                             if( m_findZone.logTime )
                             {
@@ -9556,7 +9556,7 @@ void View::DrawFindZone()
                             }
                             TextFocused( "Mode:", TimeToString( ( t0 + t1 ) / 2 ) );
                         }
-                        if( !m_findZone.limitRange && m_findZone.sorted.size() > 1 )
+                        if( !m_findZone.range.active && m_findZone.sorted.size() > 1 )
                         {
                             const auto sz = m_findZone.sorted.size();
                             const auto avg = m_findZone.average;
@@ -10010,7 +10010,7 @@ void View::DrawFindZone()
         const auto hmax = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
         const auto groupBy = m_findZone.groupBy;
         const auto highlightActive = m_findZone.highlight.active;
-        const auto limitRange = m_findZone.limitRange;
+        const auto limitRange = m_findZone.range.active;
         FindZone::Group* group = nullptr;
         uint64_t lastGid = std::numeric_limits<uint64_t>::max() - 1;
         auto zptr = zones.data() + m_findZone.processed;

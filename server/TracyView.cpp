@@ -2406,7 +2406,7 @@ void View::DrawZones()
 
     const auto winpos = ImGui::GetWindowPos();
     const auto winsize = ImGui::GetWindowSize();
-    const bool drawMouseLine = ImGui::IsMouseHoveringRect( winpos, winpos + winsize, false );
+    const bool drawMouseLine = ImGui::IsWindowHovered( ImGuiHoveredFlags_ChildWindows | ImGuiHoveredFlags_AllowWhenBlockedByActiveItem ) && ImGui::IsMouseHoveringRect( winpos, winpos + winsize, false );
     if( drawMouseLine )
     {
         HandleRange( m_findZone.range, timespan, ImGui::GetCursorScreenPos(), w );

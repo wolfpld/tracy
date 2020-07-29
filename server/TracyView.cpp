@@ -1679,6 +1679,81 @@ void View::DrawFrames()
     draw->AddLine( wpos + ImVec2( 0, round( Height - Height * BestTime / MaxFrameTime ) ), wpos + ImVec2( w, round( Height - Height * BestTime / MaxFrameTime ) ), 0x44DD9900 );
 }
 
+void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w )
+{
+    if( !ImGui::IsMouseDown( 0 ) ) range.modMin = range.modMax = false;
+    if( !range.active ) return;
+    auto& io = ImGui::GetIO();
+
+    if( range.modMin )
+    {
+        const auto nspx = double( timespan ) / w;
+        range.min = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        range.hiMin = true;
+        io.MouseDown[0] = false;
+        if( range.min > range.max )
+        {
+            std::swap( range.min, range.max );
+            std::swap( range.hiMin, range.hiMax );
+            std::swap( range.modMin, range.modMax );
+        }
+    }
+    else if( range.modMax )
+    {
+        const auto nspx = double( timespan ) / w;
+        range.max = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
+        range.hiMax = true;
+        io.MouseDown[0] = false;
+        if( range.min > range.max )
+        {
+            std::swap( range.min, range.max );
+            std::swap( range.hiMin, range.hiMax );
+            std::swap( range.modMin, range.modMax );
+        }
+    }
+    else
+    {
+        const auto pxns = w / double( timespan );
+        const auto px0 = ( range.min - m_vd.zvStart ) * pxns;
+        if( abs( px0 - ( io.MousePos.x - wpos.x ) ) < 3 )
+        {
+            range.hiMin = true;
+            if( ImGui::IsMouseClicked( 0 ) )
+            {
+                range.modMin = true;
+                range.min = m_vd.zvStart + ( io.MousePos.x - wpos.x ) / pxns;
+                io.MouseDown[0] = false;
+                if( range.min > range.max )
+                {
+                    std::swap( range.min, range.max );
+                    std::swap( range.hiMin, range.hiMax );
+                    std::swap( range.modMin, range.modMax );
+                }
+            }
+        }
+        else
+        {
+            const auto px1 = ( range.max - m_vd.zvStart ) * pxns;
+            if( abs( px1 - ( io.MousePos.x - wpos.x ) ) < 3 )
+            {
+                range.hiMax = true;
+                if( ImGui::IsMouseClicked( 0 ) )
+                {
+                    range.modMax = true;
+                    range.max = m_vd.zvStart + ( io.MousePos.x - wpos.x ) / pxns;
+                    io.MouseDown[0] = false;
+                    if( range.min > range.max )
+                    {
+                        std::swap( range.min, range.max );
+                        std::swap( range.hiMin, range.hiMax );
+                        std::swap( range.modMin, range.modMax );
+                    }
+                }
+            }
+        }
+    }
+}
+
 void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns )
 {
     assert( timespan > 0 );
@@ -2330,6 +2405,7 @@ void View::DrawZones()
     const bool drawMouseLine = ImGui::IsMouseHoveringRect( winpos, winpos + winsize, false );
     if( drawMouseLine )
     {
+        HandleRange( m_findZone.range, timespan, ImGui::GetCursorScreenPos(), w );
         HandleZoneViewMouse( timespan, ImGui::GetCursorScreenPos(), w, pxns );
     }
 

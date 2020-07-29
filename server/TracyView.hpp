@@ -64,6 +64,8 @@ class View
         bool active = false;
         bool hiMin = false;
         bool hiMax = false;
+        bool modMin = false;
+        bool modMax = false;
     };
 
 public:
@@ -199,6 +201,7 @@ private:
     template<typename Adapter, typename V>
     void DrawGpuInfoChildren( const V& children, int64_t ztime );
 
+    void HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w );
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
     uint32_t GetThreadColor( uint64_t thread, int depth );

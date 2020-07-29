@@ -25,8 +25,14 @@ else
 	LIBS += $(shell pkg-config --libs gtk+-2.0) -lGL
 endif
 
-TBB := $(shell ld -ltbb -o /dev/null 2>/dev/null; echo $$?)
-ifeq ($(TBB),0)
+# Tracy does not use TBB directly, but the implementation of parallel algorithms
+# in some versions of libstdc++ depends on TBB. When it does, you must
+# explicitly link against -ltbb.
+#
+# Some distributions have pgk-config files for TBB, others don't.
+ifeq (0,$(shell pkg-config --libs tbb >/dev/null 2>&1; echo $$?))
+	LIBS += $(shell pkg-config --libs tbb)
+else ifeq (0,$(shell ld -ltbb -o /dev/null 2>/dev/null; echo $$?))
 	LIBS += -ltbb
 endif
 

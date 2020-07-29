@@ -58,8 +58,12 @@ class View
 
     struct Range
     {
+        void StartFrame() { hiMin = hiMax = false; }
+
         int64_t min, max;
         bool active = false;
+        bool hiMin = false;
+        bool hiMax = false;
     };
 
 public:

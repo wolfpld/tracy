@@ -1691,6 +1691,7 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
         range.min = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
         range.hiMin = true;
         io.MouseDown[0] = false;
+        ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
         if( range.min > range.max )
         {
             std::swap( range.min, range.max );
@@ -1704,6 +1705,7 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
         range.max = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
         range.hiMax = true;
         io.MouseDown[0] = false;
+        ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
         if( range.min > range.max )
         {
             std::swap( range.min, range.max );
@@ -1718,6 +1720,7 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
         if( abs( px0 - ( io.MousePos.x - wpos.x ) ) < 3 )
         {
             range.hiMin = true;
+            ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
             if( ImGui::IsMouseClicked( 0 ) )
             {
                 range.modMin = true;
@@ -1737,6 +1740,7 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
             if( abs( px1 - ( io.MousePos.x - wpos.x ) ) < 3 )
             {
                 range.hiMax = true;
+                ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
                     range.modMax = true;

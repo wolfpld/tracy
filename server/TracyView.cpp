@@ -1838,7 +1838,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     }
 
     const auto hwheel_delta = io.MouseWheelH * 100.f;
-    if( ImGui::IsMouseDragging( 1, 0 ) ||  hwheel_delta != 0 )
+    if( ImGui::IsMouseDragging( 1, 0 ) || hwheel_delta != 0 )
     {
         m_pause = true;
         m_zoomAnim.active = false;

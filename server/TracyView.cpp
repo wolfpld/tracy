@@ -1876,7 +1876,7 @@ const char* View::GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint
     return buf;
 }
 
-bool View::DrawZoneFramesHeader()
+void View::DrawZoneFramesHeader()
 {
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
@@ -1887,12 +1887,9 @@ bool View::DrawZoneFramesHeader()
     const auto ty05 = round( ty * 0.5f );
 
     ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty * 1.5f ) );
-    bool hover = ImGui::IsItemHovered();
 
     auto timespan = m_vd.zvEnd - m_vd.zvStart;
     auto pxns = w / double( timespan );
-
-    if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
 
     {
         const auto nspx = 1.0 / pxns;
@@ -1944,8 +1941,6 @@ bool View::DrawZoneFramesHeader()
             tt += step;
         }
     }
-
-    return hover;
 }
 
 static uint32_t DarkenColor( uint32_t color )
@@ -2016,7 +2011,7 @@ static uint32_t GetColorMuted( uint32_t color, bool active )
     }
 }
 
-bool View::DrawZoneFrames( const FrameData& frames )
+void View::DrawZoneFrames( const FrameData& frames )
 {
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto w = ImGui::GetWindowContentRegionWidth() - ImGui::GetStyle().ScrollbarSize;
@@ -2032,12 +2027,10 @@ bool View::DrawZoneFrames( const FrameData& frames )
     auto timespan = m_vd.zvEnd - m_vd.zvStart;
     auto pxns = w / double( timespan );
 
-    if( hover ) HandleZoneViewMouse( timespan, wpos, w, pxns );
-
     const auto nspx = 1.0 / pxns;
 
     const std::pair <int, int> zrange = m_worker.GetFrameRange( frames, m_vd.zvStart, m_vd.zvEnd );
-    if( zrange.first < 0 ) return hover;
+    if( zrange.first < 0 ) return;
 
     int64_t prev = -1;
     int64_t prevEnd = -1;
@@ -2248,8 +2241,6 @@ bool View::DrawZoneFrames( const FrameData& frames )
             m_frames = &frames;
         }
     }
-
-    return hover;
 }
 
 static float AdjustThreadPosition( View::VisData& vis, float wy, int& offset )
@@ -2333,13 +2324,21 @@ void View::DrawZones()
         }
     }
 
-    bool drawMouseLine = DrawZoneFramesHeader();
+    const auto winpos = ImGui::GetWindowPos();
+    const auto winsize = ImGui::GetWindowSize();
+    const bool drawMouseLine = ImGui::IsMouseHoveringRect( winpos, winpos + winsize, false );
+    if( drawMouseLine )
+    {
+        HandleZoneViewMouse( timespan, ImGui::GetCursorScreenPos(), w, pxns );
+    }
+
+    DrawZoneFramesHeader();
     auto& frames = m_worker.GetFrames();
     for( auto fd : frames )
     {
         if( Vis( fd ).visible )
         {
-            drawMouseLine |= DrawZoneFrames( *fd );
+            DrawZoneFrames( *fd );
         }
     }
 
@@ -2354,12 +2353,6 @@ void View::DrawZones()
     ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
     bool hover = ImGui::IsItemHovered();
     draw = ImGui::GetWindowDrawList();
-
-    if( hover )
-    {
-        drawMouseLine = true;
-        HandleZoneViewMouse( timespan, wpos, w, pxns );
-    }
 
     const auto nspx = 1.0 / pxns;
 

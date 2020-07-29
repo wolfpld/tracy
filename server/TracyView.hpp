@@ -133,8 +133,8 @@ private:
     void DrawNotificationArea();
     bool DrawConnection();
     void DrawFrames();
-    bool DrawZoneFramesHeader();
-    bool DrawZoneFrames( const FrameData& frames );
+    void DrawZoneFramesHeader();
+    void DrawZoneFrames( const FrameData& frames );
     void DrawZones();
     void DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset );
     void DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset );

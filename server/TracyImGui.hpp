@@ -5,6 +5,8 @@
 #  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data 
 #endif
 
+#include <algorithm>
+#include <assert.h>
 #include <stdint.h>
 
 #include "../imgui/imgui.h"
@@ -141,6 +143,39 @@ namespace tracy
         ImGui::PopID();
         ImGui::PopStyleColor( 5 );
         return res;
+    }
+
+    static void DrawStripedRect( ImDrawList* draw, double x0, double y0, double x1, double y1, double sw, uint32_t color )
+    {
+        assert( x1 >= x0 );
+        assert( y1 >= y0 );
+        assert( sw > 0 );
+
+        const auto ww = ImGui::GetItemRectSize().x;
+        if( x0 > ww || x1 < 0 ) return;
+
+        if( x1 - x0 > ww )
+        {
+            x0 = std::max<double>( 0, x0 );
+            x1 = std::min<double>( ww, x1 );
+        }
+
+        ImGui::PushClipRect( ImVec2( x0, y0 ), ImVec2( x1, y1 ), true );
+
+        const auto rw = x1 - x0;
+        const auto rh = y1 - y0;
+        const auto v0 = ImVec2( x0, y0 - rw );
+        const auto cnt = int( ( rh + rw + sw*2 ) / ( sw*2 ) );
+        for( int i=0; i<cnt; i++ )
+        {
+            draw->PathLineTo( v0 + ImVec2( 0, i*sw*2 ) );
+            draw->PathLineTo( v0 + ImVec2( rw, i*sw*2 + rw ) );
+            draw->PathLineTo( v0 + ImVec2( rw, i*sw*2 + rw + sw ) );
+            draw->PathLineTo( v0 + ImVec2( 0, i*sw*2 + sw ) );
+            draw->PathFillConvex( color );
+        }
+
+        ImGui::PopClipRect();
     }
 
 }

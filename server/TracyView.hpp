@@ -454,6 +454,9 @@ private:
     void* m_frameTexture = nullptr;
     const void* m_frameTexturePtr = nullptr;
 
+    void* m_frameTextureConn = nullptr;
+    const void* m_frameTextureConnPtr = nullptr;
+
     std::vector<std::unique_ptr<Annotation>> m_annotations;
     UserData m_userData;
 

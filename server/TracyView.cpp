@@ -1115,6 +1115,29 @@ bool View::DrawConnection()
         }
     }
 
+    const auto& fis = m_worker.GetFrameImages();
+    if( !fis.empty() )
+    {
+        const auto scale = ImGui::GetTextLineHeight() / 15.f * 0.5f;
+        const auto& fi = fis.back();
+        if( fi != m_frameTextureConnPtr )
+        {
+            if( !m_frameTextureConn ) m_frameTextureConn = MakeTexture();
+            UpdateTexture( m_frameTextureConn, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h );
+            m_frameTextureConnPtr = fi;
+        }
+        ImGui::Separator();
+        if( fi->flip )
+        {
+            ImGui::Image( m_frameTextureConn, ImVec2( fi->w * scale, fi->h * scale ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+        }
+        else
+        {
+            ImGui::Image( m_frameTextureConn, ImVec2( fi->w * scale, fi->h * scale ) );
+        }
+    }
+
+    ImGui::Separator();
     if( ImGui::Button( ICON_FA_SAVE " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
     {
 #ifndef TRACY_NO_FILESELECTOR

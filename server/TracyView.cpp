@@ -3081,8 +3081,8 @@ void View::DrawZones()
     {
         const auto px0 = ( m_findZone.range.min - m_vd.zvStart ) * pxns;
         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_findZone.range.max - m_vd.zvStart ) * pxns );
-        draw->AddRectFilled( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x1188DDDD );
-        draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x2288DDDD );
+        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x2288DDDD );
+        draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x3388DDDD );
     }
 
     if( m_highlight.active && m_highlight.start != m_highlight.end )

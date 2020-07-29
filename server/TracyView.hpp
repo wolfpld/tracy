@@ -68,6 +68,15 @@ class View
         bool modMax = false;
     };
 
+    struct RangeSlim
+    {
+        bool operator==( const Range& other ) const { return other.active == active && other.min == min && other.max == max; }
+        void operator=( const Range& other ) { active = other.active; min = other.min; max = other.max; }
+
+        int64_t min, max;
+        bool active = false;
+    };
+
 public:
     struct VisData
     {
@@ -501,6 +510,7 @@ private:
         int64_t tmin, tmax;
         bool showZoneInFrames = false;
         Range range;
+        RangeSlim rangeSlim;
 
         struct
         {

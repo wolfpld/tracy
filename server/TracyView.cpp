@@ -8979,7 +8979,6 @@ void View::DrawFindZone()
     ImGui::SameLine();
     if( ImGui::Checkbox( "Limit range", &m_findZone.range.active ) )
     {
-        m_findZone.ResetMatch();
         if( m_findZone.range.active )
         {
             m_findZone.range.min = m_vd.zvStart;
@@ -9000,10 +8999,15 @@ void View::DrawFindZone()
         ImGui::SameLine();
         if( ImGui::SmallButton( "Limit to view" ) )
         {
-            m_findZone.ResetMatch();
             m_findZone.range.min = m_vd.zvStart;
             m_findZone.range.max = m_vd.zvEnd;
         }
+    }
+
+    if( m_findZone.rangeSlim != m_findZone.range )
+    {
+        m_findZone.ResetMatch();
+        m_findZone.rangeSlim = m_findZone.range;
     }
 
     if( findClicked )

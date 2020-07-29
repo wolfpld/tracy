@@ -8917,6 +8917,8 @@ void View::DrawFindZone()
     }
     if( m_findZone.range.active )
     {
+        ImGui::SameLine();
+        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
         ImGui::TextUnformatted( ICON_FA_LOCK );
         ImGui::SameLine();
         TextFocused( "Zone time range:", TimeToStringExact( m_findZone.range.min ) );
@@ -12871,6 +12873,11 @@ void View::DrawInfo()
             ImGui::PopStyleVar();
             ImGui::SameLine();
             SmallCheckbox( "Limit to view", &m_frameSortData.limitToView );
+            if( m_frameSortData.limitToView )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+            }
 
             const auto frameRange = m_worker.GetFrameRange( *m_frames, m_vd.zvStart, m_vd.zvEnd );
             if( m_frameSortData.frameSet != m_frames || ( m_frameSortData.limitToView && m_frameSortData.limitRange != frameRange ) || ( !m_frameSortData.limitToView && m_frameSortData.limitRange.first != -1 ) )

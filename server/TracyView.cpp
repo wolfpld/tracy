@@ -14168,6 +14168,12 @@ void View::DrawAnnotationList()
         {
             remove = idx;
         }
+        if( !ctrl && ImGui::IsItemHovered() )
+        {
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Press ctrl key to enable removal" );
+            ImGui::EndTooltip();
+        }
         ImGui::SameLine();
         ImGui::ColorButton( "c", ImGui::ColorConvertU32ToFloat4( ann->color ), ImGuiColorEditFlags_NoTooltip );
         ImGui::SameLine();

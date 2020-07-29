@@ -26,6 +26,7 @@ v0.7.1 (xxxx-xx-xx)
 - Added macro for checking if profiler is connected.
 - Implemented optional data removal from traces in the update utility.
 - Allow manual management of profiler lifetime.
+- Find zone range limit can be now adjusted using the mouse.
 
 v0.7 (2020-06-11)
 -----------------

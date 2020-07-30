@@ -270,6 +270,7 @@ static const char* GetProcessName()
     return processName;
 }
 
+#if defined __linux__ && defined __ARM_ARCH
 static uint32_t GetHex( char*& ptr, int skip )
 {
     uint32_t ret;
@@ -287,6 +288,7 @@ static uint32_t GetHex( char*& ptr, int skip )
     ptr = end;
     return ret;
 }
+#endif
 
 static const char* GetHostInfo()
 {

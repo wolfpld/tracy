@@ -37,6 +37,10 @@
 #  include <sys/sysctl.h>
 #endif
 
+#if defined __APPLE__
+#  include "TargetConditionals.h"
+#endif
+
 #include <algorithm>
 #include <assert.h>
 #include <atomic>
@@ -92,9 +96,6 @@ extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PR
 #else
 #  include <unistd.h>
 #  include <limits.h>
-#endif
-#if defined __APPLE__
-#  include "TargetConditionals.h"
 #endif
 #if defined __linux__
 #  include <sys/sysinfo.h>

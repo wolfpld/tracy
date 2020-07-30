@@ -1,9 +1,7 @@
-#ifdef _MSC_VER
-#  pragma warning(disable:4996)
-#endif
-
 namespace tracy
 {
+
+#if defined __linux__ && defined __ARM_ARCH
 
 static const char* DecodeArmImplementer( uint32_t v )
 {
@@ -212,6 +210,8 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
     return buf;
 }
 
+#elif defined __APPLE__ && TARGET_OS_IPHONE == 1
+
 static const char* DecodeIosDevice( const char* id )
 {
     static const char* DeviceTable[] = {
@@ -324,5 +324,7 @@ static const char* DecodeIosDevice( const char* id )
     }
     return id;
 }
+
+#endif
 
 }

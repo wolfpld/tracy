@@ -2607,7 +2607,7 @@ void Profiler::CalibrateTimer()
 
 void Profiler::CalibrateDelay()
 {
-    enum { Iterations = 50000 };
+    constexpr int Iterations = 50000;
 
     auto mindiff = std::numeric_limits<int64_t>::max();
     for( int i=0; i<Iterations * 10; i++ )
@@ -2622,7 +2622,7 @@ void Profiler::CalibrateDelay()
 #ifdef TRACY_DELAYED_INIT
     m_delay = m_resolution;
 #else
-    enum { Events = Iterations * 2 };   // start + end
+    constexpr int Events = Iterations * 2;   // start + end
     static_assert( Events < QueuePrealloc, "Delay calibration loop will allocate memory in queue" );
 
     static const tracy::SourceLocationData __tracy_source_location { nullptr, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 };

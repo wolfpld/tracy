@@ -14633,6 +14633,8 @@ void View::DrawRanges()
         TextFocused( "-", TimeToStringExact( m_findZone.range.max ) );
         ImGui::SameLine();
         ImGui::TextDisabled( "(%s)", TimeToString( m_findZone.range.max - m_findZone.range.min ) );
+        if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( m_findZone.range.min, m_findZone.range.max );
+        ImGui::SameLine();
         if( SmallButtonDisablable( ICON_FA_STICKY_NOTE " Set from annotation", m_annotations.empty() ) ) ImGui::OpenPopup( "RangeFindZoneCopyFrom" );
         if( ImGui::BeginPopup( "RangeFindZoneCopyFrom" ) )
         {

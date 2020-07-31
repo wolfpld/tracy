@@ -7,6 +7,7 @@ Release
 Debug
 *.d
 *.o
+*.so
 *.swp
 imgui.ini
 test/tracy_test

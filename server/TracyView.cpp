@@ -3979,6 +3979,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ) ) )
             {
+                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { ev.Start(), rend, true };
                 if( num > 1 )
                 {
                     ImGui::BeginTooltip();
@@ -4114,6 +4115,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
             {
                 ZoneTooltip( ev );
+                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { ev.Start(), m_worker.GetZoneEnd( ev ), true };
 
                 if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
                 {

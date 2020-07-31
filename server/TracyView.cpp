@@ -9006,7 +9006,7 @@ void View::DrawFindZone()
     ImGui::SameLine();
     if( ImGui::Checkbox( "Limit range", &m_findZone.range.active ) )
     {
-        if( m_findZone.range.active )
+        if( m_findZone.range.active && m_findZone.range.min == 0 && m_findZone.range.max == 0 )
         {
             m_findZone.range.min = m_vd.zvStart;
             m_findZone.range.max = m_vd.zvEnd;

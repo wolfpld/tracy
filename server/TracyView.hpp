@@ -60,7 +60,8 @@ class View
     {
         void StartFrame() { hiMin = hiMax = false; }
 
-        int64_t min, max;
+        int64_t min = 0;
+        int64_t max = 0;
         bool active = false;
         bool hiMin = false;
         bool hiMax = false;

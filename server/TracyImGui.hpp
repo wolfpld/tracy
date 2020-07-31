@@ -100,6 +100,25 @@ namespace tracy
         }
     }
 
+    static inline bool SmallButtonDisablable( const char* label, bool disabled )
+    {
+        if( disabled )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
+            ImGuiContext& g = *GImGui;
+            float backup_padding_y = g.Style.FramePadding.y;
+            g.Style.FramePadding.y = 0.0f;
+            ImGui::ButtonEx( label, ImVec2( 0, 0 ), ImGuiButtonFlags_Disabled | ImGuiButtonFlags_AlignTextBaseLine );
+            g.Style.FramePadding.y = backup_padding_y;
+            ImGui::PopStyleColor( 1 );
+            return false;
+        }
+        else
+        {
+            return ImGui::SmallButton( label );
+        }
+    }
+
     static inline void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text )
     {
         draw->AddText( pos + ImVec2( 1, 1 ), 0xAA000000, text );

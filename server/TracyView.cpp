@@ -582,6 +582,8 @@ bool View::DrawImpl()
     ImGui::SameLine();
     ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
     ImGui::SameLine();
+    ToggleButton( ICON_FA_RULER, m_showRanges );
+    ImGui::SameLine();
     if( ImGui::Button( ICON_FA_TOOLS ) ) ImGui::OpenPopup( "ToolsPopup" );
     if( ImGui::BeginPopup( "ToolsPopup" ) )
     {
@@ -762,6 +764,7 @@ bool View::DrawImpl()
     if( m_selectedAnnotation ) DrawSelectedAnnotation();
     if( m_showAnnotationList ) DrawAnnotationList();
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
+    if( m_showRanges ) DrawRanges();
 
     if( m_zoomAnim.active )
     {
@@ -9016,19 +9019,6 @@ void View::DrawFindZone()
     {
         ImGui::SameLine();
         TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
-        ImGui::TextUnformatted( ICON_FA_LOCK );
-        ImGui::SameLine();
-        TextFocused( "Zone time range:", TimeToStringExact( m_findZone.range.min ) );
-        ImGui::SameLine();
-        TextFocused( "-", TimeToStringExact( m_findZone.range.max ) );
-        ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", TimeToString( m_findZone.range.max - m_findZone.range.min ) );
-        ImGui::SameLine();
-        if( ImGui::SmallButton( "Limit to view" ) )
-        {
-            m_findZone.range.min = m_vd.zvStart;
-            m_findZone.range.max = m_vd.zvEnd;
-        }
     }
 
     if( m_findZone.rangeSlim != m_findZone.range )
@@ -14590,6 +14580,57 @@ void View::DrawSampleParents()
     {
         m_sampleParents.symAddr = 0;
     }
+}
+
+void View::DrawRanges()
+{
+    ImGui::SetNextWindowSize( ImVec2( 400, 100 ), ImGuiCond_FirstUseEver );
+    ImGui::Begin( "Time range limits", &m_showRanges );
+    if( SmallCheckbox( "Find zone", &m_findZone.range.active ) )
+    {
+        if( m_findZone.range.active && m_findZone.range.min == 0 && m_findZone.range.max == 0 )
+        {
+            m_findZone.range.min = m_vd.zvStart;
+            m_findZone.range.max = m_vd.zvEnd;
+        }
+    }
+    if( m_findZone.range.active )
+    {
+        ImGui::SameLine();
+        if( ImGui::SmallButton( "Limit to view" ) )
+        {
+            m_findZone.range.min = m_vd.zvStart;
+            m_findZone.range.max = m_vd.zvEnd;
+        }
+        if( !m_findZone.show )
+        {
+            ImGui::SameLine();
+            TextDisabledUnformatted( ICON_FA_EXCLAMATION_TRIANGLE " Open find zone to show overlay" );
+        }
+        TextFocused( "Time range:", TimeToStringExact( m_findZone.range.min ) );
+        ImGui::SameLine();
+        TextFocused( "-", TimeToStringExact( m_findZone.range.max ) );
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%s)", TimeToString( m_findZone.range.max - m_findZone.range.min ) );
+        if( SmallButtonDisablable( ICON_FA_STICKY_NOTE " Set from annotation", m_annotations.empty() ) ) ImGui::OpenPopup( "RangeFindZoneCopyFrom" );
+        if( ImGui::BeginPopup( "RangeFindZoneCopyFrom" ) )
+        {
+            for( auto& v : m_annotations )
+            {
+                SmallColorBox( v->color );
+                ImGui::SameLine();
+                if( ImGui::Selectable( v->text.c_str() ) )
+                {
+                    m_findZone.range.min = v->start;
+                    m_findZone.range.max = v->end;
+                }
+                ImGui::SameLine();
+                ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->start ), TimeToStringExact( v->end ), TimeToString( v->end - v->start ) );
+            }
+            ImGui::EndPopup();
+        }
+    }
+    ImGui::End();
 }
 
 void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id, int64_t startTime )

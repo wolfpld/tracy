@@ -194,6 +194,7 @@ private:
     void DrawSelectedAnnotation();
     void DrawAnnotationList();
     void DrawSampleParents();
+    void DrawRanges();
 
     void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
 
@@ -377,6 +378,7 @@ private:
     bool m_showPlayback = false;
     bool m_showCpuDataWindow = false;
     bool m_showAnnotationList = false;
+    bool m_showRanges = false;
 
     enum class CpuDataSortBy
     {

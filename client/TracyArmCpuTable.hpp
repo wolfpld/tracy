@@ -14,6 +14,7 @@ static const char* DecodeArmImplementer( uint32_t v )
     case 0x44: return "DEC";
     case 0x46: return "Fujitsu";
     case 0x48: return "HiSilicon";
+    case 0x49: return "Infineon";
     case 0x4d: return "Motorola";
     case 0x4e: return "Nvidia";
     case 0x50: return "Applied Micro";
@@ -25,6 +26,7 @@ static const char* DecodeArmImplementer( uint32_t v )
     case 0x66: return "Faraday";
     case 0x68: return "HXT";
     case 0x69: return "Intel";
+    case 0xc0: return "Ampere Computing";
     default: break;
     }
     sprintf( buf, "0x%x", v );
@@ -73,6 +75,7 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xc60: return " Cortex-M0+";
         case 0xd00: return " AArch64 simulator";
         case 0xd01: return " Cortex-A32";
+        case 0xd02: return " Cortex-A34";
         case 0xd03: return " Cortex-A53";
         case 0xd04: return " Cortex-A35";
         case 0xd05: return " Cortex-A55";
@@ -89,6 +92,10 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xd13: return " Cortex-R52";
         case 0xd20: return " Cortex-M23";
         case 0xd21: return " Cortex-M33";
+        case 0xd40: return " Zeus";
+        case 0xd41: return " Cortex-A78";
+        case 0xd43: return " Cortex-A65AE";
+        case 0xd44: return " Cortex-X1";
         case 0xd4a: return " Neoverse E1";
         default: break;
         }
@@ -108,6 +115,13 @@ static const char* DecodeArmPart( uint32_t impl, uint32_t part )
         case 0xa2: return " ThunderX 81XX";
         case 0xa3: return " ThunderX 83XX";
         case 0xaf: return " ThunderX2 99xx";
+        case 0xb0: return " OcteonTX2";
+        case 0xb1: return " OcteonTX2 T98";
+        case 0xb2: return " OcteonTX2 T96";
+        case 0xb3: return " OcteonTX2 F95";
+        case 0xb4: return " OcteonTX2 F95N";
+        case 0xb5: return " OcteonTX2 F95MM";
+        case 0xb8: return " ThunderX3 T110";
         default: break;
         }
     case 0x44:

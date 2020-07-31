@@ -1414,7 +1414,7 @@ void View::DrawFrames()
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / f );
 
-                    if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { m_worker.GetFrameTime( *m_frames, sel ), m_worker.GetFrameTime( *m_frames, sel + g - 1 ), true };
+                    if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { m_worker.GetFrameTime( *m_frames, sel ), m_worker.GetFrameTime( *m_frames, sel + g - 1 ), true };
                 }
                 else
                 {
@@ -1520,7 +1520,7 @@ void View::DrawFrames()
                     }
                 }
 
-                if( io.KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { m_worker.GetFrameBegin( *m_frames, sel ), m_worker.GetFrameEnd( *m_frames, sel + group - 1 ), true };
+                if( io.KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { m_worker.GetFrameBegin( *m_frames, sel ), m_worker.GetFrameEnd( *m_frames, sel + group - 1 ), true };
             }
 
             if( m_pause && wheel != 0 )
@@ -2183,7 +2183,7 @@ void View::DrawZoneFrames( const FrameData& frames )
             if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x0, 0 ), wpos + ImVec2( x1, ty ) ) )
             {
                 tooltipDisplayed = true;
-                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { fbegin, fend, true };
+                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { fbegin, fend, true };
 
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
@@ -3979,7 +3979,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ) ) )
             {
-                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { ev.Start(), rend, true };
+                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), rend, true };
                 if( num > 1 )
                 {
                     ImGui::BeginTooltip();
@@ -4115,7 +4115,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
             {
                 ZoneTooltip( ev );
-                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { ev.Start(), m_worker.GetZoneEnd( ev ), true };
+                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), m_worker.GetZoneEnd( ev ), true };
 
                 if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
                 {

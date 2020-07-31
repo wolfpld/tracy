@@ -3198,7 +3198,7 @@ void View::DrawZones()
         draw->AddRect( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), 0x4488DD88 );
     }
 
-    if( m_findZone.show && m_findZone.range.active )
+    if( m_findZone.range.active && ( m_findZone.show || m_showRanges ) )
     {
         const auto px0 = ( m_findZone.range.min - m_vd.zvStart ) * pxns;
         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_findZone.range.max - m_vd.zvStart ) * pxns );
@@ -14622,11 +14622,6 @@ void View::DrawRanges()
         {
             m_findZone.range.min = m_vd.zvStart;
             m_findZone.range.max = m_vd.zvEnd;
-        }
-        if( !m_findZone.show )
-        {
-            ImGui::SameLine();
-            TextDisabledUnformatted( ICON_FA_EXCLAMATION_TRIANGLE " Open find zone to show overlay" );
         }
         TextFocused( "Time range:", TimeToStringExact( m_findZone.range.min ) );
         ImGui::SameLine();

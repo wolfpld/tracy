@@ -14607,6 +14607,8 @@ void View::DrawRanges()
 {
     ImGui::SetNextWindowSize( ImVec2( 400, 100 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Time range limits", &m_showRanges );
+    SmallColorBox( 0x4488DDDD );
+    ImGui::SameLine();
     if( SmallCheckbox( "Find zone", &m_findZone.range.active ) )
     {
         if( m_findZone.range.active && m_findZone.range.min == 0 && m_findZone.range.max == 0 )

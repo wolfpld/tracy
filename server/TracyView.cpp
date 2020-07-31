@@ -766,6 +766,22 @@ bool View::DrawImpl()
     if( m_sampleParents.symAddr != 0 ) DrawSampleParents();
     if( m_showRanges ) DrawRanges();
 
+    if( m_setRangePopup.active )
+    {
+        m_setRangePopup.active = false;
+        ImGui::OpenPopup( "SetZoneRange" );
+    }
+    if( ImGui::BeginPopup( "SetZoneRange" ) )
+    {
+        if( ImGui::Selectable( ICON_FA_SEARCH " Limit find zone time range" ) )
+        {
+            m_findZone.range.active = true;
+            m_findZone.range.min = m_setRangePopup.min;
+            m_findZone.range.max = m_setRangePopup.max;
+        }
+        ImGui::EndPopup();
+    }
+
     if( m_zoomAnim.active )
     {
         m_zoomAnim.progress += io.DeltaTime * 3.33f;
@@ -1397,6 +1413,8 @@ void View::DrawFrames()
                     TextFocused( "Max frame time:", TimeToString( f ) );
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / f );
+
+                    if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { m_worker.GetFrameTime( *m_frames, sel ), m_worker.GetFrameTime( *m_frames, sel + g - 1 ), true };
                 }
                 else
                 {
@@ -1501,6 +1519,8 @@ void View::DrawFrames()
                         ZoomToRange( t0, t1 );
                     }
                 }
+
+                if( io.KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { m_worker.GetFrameBegin( *m_frames, sel ), m_worker.GetFrameEnd( *m_frames, sel + group - 1 ), true };
             }
 
             if( m_pause && wheel != 0 )
@@ -2163,6 +2183,7 @@ void View::DrawZoneFrames( const FrameData& frames )
             if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x0, 0 ), wpos + ImVec2( x1, ty ) ) )
             {
                 tooltipDisplayed = true;
+                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = { fbegin, fend, true };
 
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );

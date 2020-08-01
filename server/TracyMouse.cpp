@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "TracyMouse.hpp"
 
 #include "../imgui/imgui_internal.h"
@@ -6,16 +8,19 @@ namespace tracy
 {
 
 static constexpr int MouseButtons = IM_ARRAYSIZE( ImGuiContext::IO.MouseDown );
+static constexpr float MouseDragTreshold = 2;
 
 struct Mouse
 {
     bool mouseDown[MouseButtons];
     bool mouseClicked[MouseButtons];
+    bool mouseReleased[MouseButtons];
     bool mouseDragging[MouseButtons];
     ImVec2 mouseDragDelta[MouseButtons];
+    bool mousePotentialClickRelease[MouseButtons];
 };
 
-static Mouse s_mouse;
+static Mouse s_mouse = {};
 
 void MouseFrame()
 {
@@ -23,8 +28,24 @@ void MouseFrame()
     {
         s_mouse.mouseDown[i] = ImGui::IsMouseDown( i );
         s_mouse.mouseClicked[i] = ImGui::IsMouseClicked( i );
+        s_mouse.mouseReleased[i] = ImGui::IsMouseReleased( i );
         s_mouse.mouseDragging[i] = ImGui::IsMouseDragging( i, 0 );
         s_mouse.mouseDragDelta[i] = ImGui::GetMouseDragDelta( i, 0 );
+
+        if( s_mouse.mouseDragging[i] )
+        {
+            if( s_mouse.mouseClicked[i] || s_mouse.mousePotentialClickRelease[i] )
+            {
+                if( std::abs( s_mouse.mouseDragDelta[i].x ) < MouseDragTreshold && std::abs( s_mouse.mouseDragDelta[i].y ) < MouseDragTreshold )
+                {
+                    s_mouse.mouseDragging[i] = false;
+                }
+                else
+                {
+                    s_mouse.mousePotentialClickRelease[i] = false;
+                }
+            }
+        }
     }
 }
 
@@ -54,6 +75,13 @@ void ConsumeMouseEvents( ImGuiMouseButton button )
     s_mouse.mouseClicked[button] = false;
     s_mouse.mouseDragging[button] = false;
     s_mouse.mouseDragDelta[button] = ImVec2( 0, 0 );
+}
+
+bool IsMouseClickReleased( ImGuiMouseButton button )
+{
+    if( s_mouse.mouseReleased[button] && s_mouse.mousePotentialClickRelease[button] ) return true;
+    if( s_mouse.mouseClicked[button] ) s_mouse.mousePotentialClickRelease[button] = true;
+    return false;
 }
 
 }

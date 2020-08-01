@@ -14,6 +14,7 @@ bool IsMouseDragging( ImGuiMouseButton button );
 ImVec2 GetMouseDragDelta( ImGuiMouseButton button );
 
 void ConsumeMouseEvents( ImGuiMouseButton button );
+bool IsMouseClickReleased( ImGuiMouseButton button );
 
 }
 

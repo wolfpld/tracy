@@ -6,6 +6,8 @@
 namespace tracy
 {
 
+void MouseFrame();
+
 bool IsMouseDown( ImGuiMouseButton button );
 bool IsMouseClicked( ImGuiMouseButton button );
 bool IsMouseDragging( ImGuiMouseButton button, float lock_threshold = -1.f );

@@ -46,6 +46,10 @@ void MouseFrame()
                 }
             }
         }
+        else if( !s_mouse.mouseDown[i] && !s_mouse.mouseReleased[i] )
+        {
+            s_mouse.mousePotentialClickRelease[i] = false;
+        }
     }
 }
 

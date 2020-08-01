@@ -8,7 +8,7 @@ namespace tracy
 {
 
 static constexpr int MouseButtons = IM_ARRAYSIZE( ImGuiContext::IO.MouseDown );
-static constexpr float MouseDragTreshold = 2;
+static constexpr float MouseDragThreshold = 2;
 
 struct Mouse
 {
@@ -36,7 +36,7 @@ void MouseFrame()
         {
             if( s_mouse.mouseClicked[i] || s_mouse.mousePotentialClickRelease[i] )
             {
-                if( std::abs( s_mouse.mouseDragDelta[i].x ) < MouseDragTreshold && std::abs( s_mouse.mouseDragDelta[i].y ) < MouseDragTreshold )
+                if( std::abs( s_mouse.mouseDragDelta[i].x ) < MouseDragThreshold && std::abs( s_mouse.mouseDragDelta[i].y ) < MouseDragThreshold )
                 {
                     s_mouse.mouseDragging[i] = false;
                 }

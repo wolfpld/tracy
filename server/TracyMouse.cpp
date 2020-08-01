@@ -74,7 +74,6 @@ void ConsumeMouseEvents( ImGuiMouseButton button )
     s_mouse.mouseDown[button] = false;
     s_mouse.mouseClicked[button] = false;
     s_mouse.mouseDragging[button] = false;
-    s_mouse.mouseDragDelta[button] = ImVec2( 0, 0 );
 }
 
 bool IsMouseClickReleased( ImGuiMouseButton button )

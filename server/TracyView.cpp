@@ -31,6 +31,7 @@
 #include "TracyFileRead.hpp"
 #include "TracyFileWrite.hpp"
 #include "TracyFilesystem.hpp"
+#include "TracyMouse.hpp"
 #include "TracyPopcnt.hpp"
 #include "TracyPrint.hpp"
 #include "TracySort.hpp"
@@ -910,11 +911,11 @@ void View::DrawNotificationArea()
         if( ImGui::IsItemHovered() )
         {
             CrashTooltip();
-            if( ImGui::IsMouseClicked( 0 ) )
+            if( IsMouseClicked( 0 ) )
             {
                 m_showInfo = true;
             }
-            if( ImGui::IsMouseClicked( 2 ) )
+            if( IsMouseClicked( 2 ) )
             {
                 CenterAtTime( crash.time );
             }
@@ -929,7 +930,7 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "Displaying empty labels." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawEmptyLabels = false;
+            if( IsMouseClicked( 0 ) ) m_vd.drawEmptyLabels = false;
         }
     }
     if( !m_vd.drawContextSwitches )
@@ -941,7 +942,7 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "Context switches are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawContextSwitches = true;
+            if( IsMouseClicked( 0 ) ) m_vd.drawContextSwitches = true;
         }
     }
     if( !m_vd.drawCpuData )
@@ -953,7 +954,7 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "CPU data is hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawCpuData = true;
+            if( IsMouseClicked( 0 ) ) m_vd.drawCpuData = true;
         }
     }
     if( !m_vd.drawGpuZones )
@@ -965,7 +966,7 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "GPU zones are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawGpuZones = true;
+            if( IsMouseClicked( 0 ) ) m_vd.drawGpuZones = true;
         }
     }
     if( !m_vd.drawZones )
@@ -977,7 +978,7 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "CPU zones are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawZones = true;
+            if( IsMouseClicked( 0 ) ) m_vd.drawZones = true;
         }
     }
 #ifndef TRACY_NO_STATISTICS
@@ -990,7 +991,7 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "Ghost zones are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_vd.ghostZones = true;
+            if( IsMouseClicked( 0 ) ) m_vd.ghostZones = true;
         }
     }
 #endif
@@ -1003,7 +1004,7 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "Locks are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawLocks = true;
+            if( IsMouseClicked( 0 ) ) m_vd.drawLocks = true;
         }
     }
     if( !m_vd.drawPlots )
@@ -1015,7 +1016,7 @@ void View::DrawNotificationArea()
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( "Plots are hidden." );
             ImGui::EndTooltip();
-            if( ImGui::IsMouseClicked( 0 ) ) m_vd.drawPlots = true;
+            if( IsMouseClicked( 0 ) ) m_vd.drawPlots = true;
         }
     }
     {
@@ -1037,7 +1038,7 @@ void View::DrawNotificationArea()
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( "Some timeline entries are hidden." );
                 ImGui::EndTooltip();
-                if( ImGui::IsMouseClicked( 0 ) ) m_showOptions = true;
+                if( IsMouseClicked( 0 ) ) m_showOptions = true;
             }
         }
     }
@@ -1375,10 +1376,10 @@ void View::DrawFrames()
 
     if( hover )
     {
-        if( ImGui::IsMouseDragging( 1, 0 ) )
+        if( IsMouseDragging( 1, 0 ) )
         {
             m_pause = true;
-            const auto delta = ImGui::GetMouseDragDelta( 1, 0 ).x;
+            const auto delta = GetMouseDragDelta( 1, 0 ).x;
             if( abs( delta ) >= fwidth )
             {
                 const auto d = (int)delta / fwidth;
@@ -1414,7 +1415,7 @@ void View::DrawFrames()
                     ImGui::SameLine();
                     ImGui::TextDisabled( "(%.1f FPS)", 1000000000.0 / f );
 
-                    if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { m_worker.GetFrameTime( *m_frames, sel ), m_worker.GetFrameTime( *m_frames, sel + g - 1 ), true };
+                    if( ImGui::GetIO().KeyCtrl && IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { m_worker.GetFrameTime( *m_frames, sel ), m_worker.GetFrameTime( *m_frames, sel + g - 1 ), true };
                 }
                 else
                 {
@@ -1494,7 +1495,7 @@ void View::DrawFrames()
 
                 if( io.KeyCtrl )
                 {
-                    if( fi && ImGui::IsMouseDown( 0 ) )
+                    if( fi && IsMouseDown( 0 ) )
                     {
                         m_showPlayback = true;
                         m_playback.pause = true;
@@ -1503,7 +1504,7 @@ void View::DrawFrames()
                 }
                 else
                 {
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         m_pause = true;
                         m_zoomAnim.active = false;
@@ -1512,7 +1513,7 @@ void View::DrawFrames()
                         m_vd.zvEnd = m_worker.GetFrameEnd( *m_frames, sel + group - 1 );
                         if( m_vd.zvStart == m_vd.zvEnd ) m_vd.zvStart--;
                     }
-                    else if( ImGui::IsMouseDragging( 0 ) )
+                    else if( IsMouseDragging( 0 ) )
                     {
                         const auto t0 = std::min( m_vd.zvStart, m_worker.GetFrameBegin( *m_frames, sel ) );
                         const auto t1 = std::max( m_vd.zvEnd, m_worker.GetFrameEnd( *m_frames, sel + group - 1 ) );
@@ -1520,7 +1521,7 @@ void View::DrawFrames()
                     }
                 }
 
-                if( io.KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { m_worker.GetFrameBegin( *m_frames, sel ), m_worker.GetFrameEnd( *m_frames, sel + group - 1 ), true };
+                if( io.KeyCtrl && IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { m_worker.GetFrameBegin( *m_frames, sel ), m_worker.GetFrameEnd( *m_frames, sel + group - 1 ), true };
             }
 
             if( m_pause && wheel != 0 )
@@ -1727,7 +1728,7 @@ void View::DrawFrames()
 
 void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, float w )
 {
-    if( !ImGui::IsMouseDown( 0 ) ) range.modMin = range.modMax = false;
+    if( !IsMouseDown( 0 ) ) range.modMin = range.modMax = false;
     if( !range.active ) return;
     auto& io = ImGui::GetIO();
 
@@ -1767,7 +1768,7 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
         {
             range.hiMin = true;
             ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
-            if( ImGui::IsMouseClicked( 0 ) )
+            if( IsMouseClicked( 0 ) )
             {
                 range.modMin = true;
                 range.min = m_vd.zvStart + ( io.MousePos.x - wpos.x ) / pxns;
@@ -1787,7 +1788,7 @@ void View::HandleRange( Range& range, int64_t timespan, const ImVec2& wpos, floa
             {
                 range.hiMax = true;
                 ImGui::SetMouseCursor( ImGuiMouseCursor_ResizeEW );
-                if( ImGui::IsMouseClicked( 0 ) )
+                if( IsMouseClicked( 0 ) )
                 {
                     range.modMax = true;
                     range.max = m_vd.zvStart + ( io.MousePos.x - wpos.x ) / pxns;
@@ -1811,12 +1812,12 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
 
     const auto nspx = double( timespan ) / w;
 
-    if( ImGui::IsMouseClicked( 0 ) )
+    if( IsMouseClicked( 0 ) )
     {
         m_highlight.active = true;
         m_highlight.start = m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
-    else if( ImGui::IsMouseDragging( 0, 0 ) )
+    else if( IsMouseDragging( 0, 0 ) )
     {
         m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
@@ -1837,12 +1838,12 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
         m_highlight.active = false;
     }
 
-    if( ImGui::IsMouseClicked( 2 ) )
+    if( IsMouseClicked( 2 ) )
     {
         m_highlightZoom.active = true;
         m_highlightZoom.start = m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
-    else if( ImGui::IsMouseDragging( 2, 0 ) )
+    else if( IsMouseDragging( 2, 0 ) )
     {
         m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
@@ -1884,12 +1885,12 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     }
 
     const auto hwheel_delta = io.MouseWheelH * 100.f;
-    if( ImGui::IsMouseDragging( 1, 0 ) || hwheel_delta != 0 )
+    if( IsMouseDragging( 1, 0 ) || hwheel_delta != 0 )
     {
         m_pause = true;
         m_zoomAnim.active = false;
         if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
-        const auto delta = ImGui::GetMouseDragDelta( 1, 0 );
+        const auto delta = GetMouseDragDelta( 1, 0 );
         const auto dpx = int64_t( (delta.x * nspx) + (hwheel_delta * nspx));
         if( dpx != 0 )
         {
@@ -2183,7 +2184,7 @@ void View::DrawZoneFrames( const FrameData& frames )
             if( ImGui::IsMouseHoveringRect( wpos + ImVec2( x0, 0 ), wpos + ImVec2( x1, ty ) ) )
             {
                 tooltipDisplayed = true;
-                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { fbegin, fend, true };
+                if( ImGui::GetIO().KeyCtrl && IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { fbegin, fend, true };
 
                 ImGui::BeginTooltip();
                 ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
@@ -2210,7 +2211,7 @@ void View::DrawZoneFrames( const FrameData& frames )
                         ImGui::Image( m_frameTexture, ImVec2( fi->w * scale, fi->h * scale ) );
                     }
 
-                    if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 0 ) )
+                    if( ImGui::GetIO().KeyCtrl && IsMouseClicked( 0 ) )
                     {
                         m_showPlayback = true;
                         m_playback.pause = true;
@@ -2219,7 +2220,7 @@ void View::DrawZoneFrames( const FrameData& frames )
                 }
                 ImGui::EndTooltip();
 
-                if( ImGui::IsMouseClicked( 2 ) )
+                if( IsMouseClicked( 2 ) )
                 {
                     ZoomToRange( fbegin, fend );
                 }
@@ -2362,7 +2363,7 @@ void View::DrawZoneFrames( const FrameData& frames )
             ImGui::TextUnformatted( frames.name == 0 ? "Frames" : m_worker.GetString( frames.name ) );
             ImGui::EndTooltip();
         }
-        if( ImGui::IsMouseClicked( 0 ) )
+        if( IsMouseClicked( 0 ) )
         {
             m_frames = &frames;
         }
@@ -2609,11 +2610,11 @@ void View::DrawZones()
 
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, oldOffset + ty ) ) )
                 {
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         showFull = !showFull;
                     }
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         int64_t t0 = std::numeric_limits<int64_t>::max();
                         int64_t t1 = std::numeric_limits<int64_t>::min();
@@ -2900,12 +2901,12 @@ void View::DrawZones()
                         ImGui::EndTooltip();
                         m_msgHighlight = *msgit;
 
-                        if( ImGui::IsMouseClicked( 0 ) )
+                        if( IsMouseClicked( 0 ) )
                         {
                             m_showMessages = true;
                             m_msgToFocus = *msgit;
                         }
-                        if( ImGui::IsMouseClicked( 2 ) )
+                        if( IsMouseClicked( 2 ) )
                         {
                             CenterAtTime( (*msgit)->time );
                         }
@@ -2927,11 +2928,11 @@ void View::DrawZones()
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) ) )
                     {
                         CrashTooltip();
-                        if( ImGui::IsMouseClicked( 0 ) )
+                        if( IsMouseClicked( 0 ) )
                         {
                             m_showInfo = true;
                         }
-                        if( ImGui::IsMouseClicked( 2 ) )
+                        if( IsMouseClicked( 2 ) )
                         {
                             CenterAtTime( crash.time );
                         }
@@ -2978,7 +2979,7 @@ void View::DrawZones()
 #ifndef TRACY_NO_STATISTICS
                 if( hasGhostZones && !v->timeline.empty() && ImGui::IsMouseHoveringRect( wpos + ImVec2( 1.5f * ty + txtsz.x, oldOffset ), wpos + ImVec2( 1.5f * ty + txtsz.x + ghostSz, oldOffset + ty ) ) )
                 {
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         auto& vis = Vis( v );
                         vis.ghost = !vis.ghost;
@@ -3095,11 +3096,11 @@ void View::DrawZones()
                     }
                     ImGui::EndTooltip();
 
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         Vis( v ).showFull = !showFull;
                     }
-                    if( last >= 0 && ImGui::IsMouseClicked( 2 ) )
+                    if( last >= 0 && IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( first, last );
                     }
@@ -3160,7 +3161,7 @@ void View::DrawZones()
             {
                 draw->AddCircleFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0x88AABB22 );
                 draw->AddCircle( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0xAAAABB22 );
-                if( drawMouseLine && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th, th ), linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 3, th * 3 ) ) )
+                if( drawMouseLine && IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th, th ), linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 3, th * 3 ) ) )
                 {
                     m_selectedAnnotation = ann.get();
                 }
@@ -3428,7 +3429,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     TextDisabledUnformatted( DecodeContextSwitchState( pit->State() ) );
                     ImGui::EndTooltip();
 
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( pit->End(), ev.WakeupVal() );
                     }
@@ -3439,7 +3440,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     TextFocused( "Thread is", "waking up" );
                     TextFocused( "Scheduling delay:", TimeToString( ev.Start() - ev.WakeupVal() ) );
                     TextFocused( "CPU:", RealToString( ev.Cpu() ) );
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( pit->End(), ev.WakeupVal() );
                     }
@@ -3483,7 +3484,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     TextFocused( "CPU:", RealToString( ev.Cpu() ) );
                     ImGui::EndTooltip();
 
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( ev.Start(), rend );
                     }
@@ -3500,7 +3501,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                     TextFocused( "Time:", TimeToString( rend - ev.Start() ) );
                     ImGui::EndTooltip();
 
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( ev.Start(), rend );
                     }
@@ -3521,7 +3522,7 @@ void View::DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxn
                 TextFocused( "CPU:", RealToString( ev.Cpu() ) );
                 ImGui::EndTooltip();
 
-                if( ImGui::IsMouseClicked( 2 ) )
+                if( IsMouseClicked( 2 ) )
                 {
                     ZoomToRange( ev.Start(), end );
                 }
@@ -3584,7 +3585,7 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
             {
                 tooltipDisplayed = true;
                 CallstackTooltip( it->callstack.Val() );
-                if( ImGui::IsMouseClicked( 0 ) )
+                if( IsMouseClicked( 0 ) )
                 {
                     m_callstackInfoWindow = it->callstack.Val();
                 }
@@ -3600,7 +3601,7 @@ void View::DrawSamples( const Vector<SampleData>& vec, bool hover, double pxns, 
                 TextFocused( "Number of samples:", RealToString( num ) );
                 ImGui::EndTooltip();
 
-                if( ImGui::IsMouseClicked( 2 ) )
+                if( IsMouseClicked( 2 ) )
                 {
                     const auto prev = next-1;
                     ZoomToRange( it->time.Val(), prev->time.Val() + 1 );
@@ -3684,7 +3685,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                 TextFocused( "Execution time:", TimeToString( rend - ev.start.Val() ) );
                 ImGui::EndTooltip();
 
-                if( ImGui::IsMouseClicked( 2 ) && rend - ev.start.Val() > 0 )
+                if( IsMouseClicked( 2 ) && rend - ev.start.Val() > 0 )
                 {
                     ZoomToRange( ev.start.Val(), rend );
                 }
@@ -3745,7 +3746,7 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                     ImGui::Separator();
                     TextFocused( "Execution time:", TimeToString( ev.end.Val() - ev.start.Val() ) );
                     ImGui::EndTooltip();
-                    if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
+                    if( !m_zoomAnim.active && IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( ev.start.Val(), ev.end.Val() );
                     }
@@ -3815,11 +3816,11 @@ int View::DrawGhostLevel( const Vector<GhostZone>& vec, bool hover, double pxns,
                     TextFocused( "Execution time:", TimeToString( ev.end.Val() - ev.start.Val() ) );
                     ImGui::EndTooltip();
 
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         ViewDispatch( file, line, sym.symAddr );
                     }
-                    else if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
+                    else if( !m_zoomAnim.active && IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( ev.start.Val(), ev.end.Val() );
                     }
@@ -3979,7 +3980,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             DrawZigZag( draw, wpos + ImVec2( 0, offset + ty/2 ), std::max( px0, -10.0 ), std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), ty/4, DarkenColor( color ) );
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( std::max( px1, px0+MinVisSize ), double( w + 10 ) ), offset + ty ) ) )
             {
-                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), rend, true };
+                if( ImGui::GetIO().KeyCtrl && IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), rend, true };
                 if( num > 1 )
                 {
                     ImGui::BeginTooltip();
@@ -3988,7 +3989,7 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                     TextFocused( "Execution time:", TimeToString( rend - ev.Start() ) );
                     ImGui::EndTooltip();
 
-                    if( ImGui::IsMouseClicked( 2 ) && rend - ev.Start() > 0 )
+                    if( IsMouseClicked( 2 ) && rend - ev.Start() > 0 )
                     {
                         ZoomToRange( ev.Start(), rend );
                     }
@@ -3997,11 +3998,11 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
                 {
                     ZoneTooltip( ev );
 
-                    if( ImGui::IsMouseClicked( 2 ) && rend - ev.Start() > 0 )
+                    if( IsMouseClicked( 2 ) && rend - ev.Start() > 0 )
                     {
                         ZoomToZone( ev );
                     }
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         if( ImGui::GetIO().KeyCtrl )
                         {
@@ -4115,13 +4116,13 @@ int View::DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, co
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ) ) )
             {
                 ZoneTooltip( ev );
-                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), m_worker.GetZoneEnd( ev ), true };
+                if( ImGui::GetIO().KeyCtrl && IsMouseClicked( 1 ) ) m_setRangePopup = RangeSlim { ev.Start(), m_worker.GetZoneEnd( ev ), true };
 
-                if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
+                if( !m_zoomAnim.active && IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( ev );
                 }
-                if( ImGui::IsMouseClicked( 0 ) )
+                if( IsMouseClicked( 0 ) )
                 {
                     if( ImGui::GetIO().KeyCtrl )
                     {
@@ -4297,7 +4298,7 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                     TextFocused( "Execution time:", TimeToString( rend - start ) );
                     ImGui::EndTooltip();
 
-                    if( ImGui::IsMouseClicked( 2 ) && rend - start > 0 )
+                    if( IsMouseClicked( 2 ) && rend - start > 0 )
                     {
                         ZoomToRange( start, rend );
                     }
@@ -4307,11 +4308,11 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                     const auto zoneThread = thread != 0 ? thread : m_worker.DecompressThread( ev.Thread() );
                     ZoneTooltip( ev );
 
-                    if( ImGui::IsMouseClicked( 2 ) && rend - start > 0 )
+                    if( IsMouseClicked( 2 ) && rend - start > 0 )
                     {
                         ZoomToZone( ev );
                     }
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         ShowZoneInfo( ev, zoneThread );
                     }
@@ -4376,11 +4377,11 @@ int View::DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx,
                 const auto zoneThread = thread != 0 ? thread : m_worker.DecompressThread( ev.Thread() );
                 ZoneTooltip( ev );
 
-                if( !m_zoomAnim.active && ImGui::IsMouseClicked( 2 ) )
+                if( !m_zoomAnim.active && IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( ev );
                 }
-                if( ImGui::IsMouseClicked( 0 ) )
+                if( IsMouseClicked( 0 ) )
                 {
                     ShowZoneInfo( ev, zoneThread );
                 }
@@ -4749,11 +4750,11 @@ void View::DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLoca
             TextFocused( "Lock events:", RealToString( lockmap.timeline.size() ) );
             ImGui::EndTooltip();
 
-            if( ImGui::IsMouseClicked( 0 ) )
+            if( IsMouseClicked( 0 ) )
             {
                 m_lockInfoWindow = id;
             }
-            if( ImGui::IsMouseClicked( 2 ) )
+            if( IsMouseClicked( 2 ) )
             {
                 ZoomToRange( range.start, range.end );
             }
@@ -4955,11 +4956,11 @@ int View::DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, 
                 bool itemHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( std::max( px0, -10.0 ), offset ), wpos + ImVec2( std::min( pxend, double( w + 10 ) ), offset + ty ) );
                 if( itemHovered )
                 {
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         m_lockInfoWindow = v.first;
                     }
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         ZoomToRange( t0, t1 );
                     }
@@ -5378,7 +5379,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
         DrawTextContrast( draw, wpos + ImVec2( ty, offset ), showFull ? 0xFFDD88DD : 0xFF6E446E, "CPU data" );
         draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x66DD88DD );
 
-        if( hover && ImGui::IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
+        if( hover && IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
         {
             showFull = !showFull;
         }
@@ -5565,7 +5566,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     ImGui::EndTooltip();
                                     ImGui::PushFont( m_smallFont );
 
-                                    if( ImGui::IsMouseClicked( 2 ) )
+                                    if( IsMouseClicked( 2 ) )
                                     {
                                         ZoomToRange( start, rend );
                                     }
@@ -5687,7 +5688,7 @@ int View::DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, 
                                     ImGui::EndTooltip();
                                     ImGui::PushFont( m_smallFont );
 
-                                    if( ImGui::IsMouseClicked( 2 ) )
+                                    if( IsMouseClicked( 2 ) )
                                     {
                                         ZoomToRange( start, end );
                                     }
@@ -5879,11 +5880,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                 }
                 ImGui::EndTooltip();
 
-                if( ImGui::IsMouseClicked( 0 ) )
+                if( IsMouseClicked( 0 ) )
                 {
                     showFull = !showFull;
                 }
-                if( ImGui::IsMouseClicked( 2 ) )
+                if( IsMouseClicked( 2 ) )
                 {
                     ZoomToRange( first, last );
                 }
@@ -6244,7 +6245,7 @@ void View::DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint
 
                     m_memoryAllocHover = std::distance( mem.data.begin(), ev );
                     m_memoryAllocHoverWait = 2;
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         m_memoryAllocInfoWindow = m_memoryAllocHover;
                     }
@@ -7175,7 +7176,7 @@ void View::DrawZoneInfoWindow()
         if( hover )
         {
             m_zoneHighlight = v;
-            if( ImGui::IsMouseClicked( 2 ) )
+            if( IsMouseClicked( 2 ) )
             {
                 ZoomToZone( *v );
             }
@@ -7391,7 +7392,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                 if( ImGui::IsItemHovered() )
                 {
                     m_zoneHighlight = &cev;
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         ZoomToZone( cev );
                     }
@@ -7459,7 +7460,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                         if( ImGui::IsItemHovered() )
                         {
                             m_zoneHighlight = &cev;
-                            if( ImGui::IsMouseClicked( 2 ) )
+                            if( IsMouseClicked( 2 ) )
                             {
                                 ZoomToZone( cev );
                             }
@@ -7522,7 +7523,7 @@ void View::DrawZoneInfoChildren( const V& children, int64_t ztime )
                 if( ImGui::IsItemHovered() )
                 {
                     m_zoneHighlight = &cev;
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         ZoomToZone( cev );
                     }
@@ -7723,7 +7724,7 @@ void View::DrawGpuInfoWindow()
         if( hover )
         {
             m_gpuHighlight = v;
-            if( ImGui::IsMouseClicked( 2 ) )
+            if( IsMouseClicked( 2 ) )
             {
                 ZoomToZone( *v );
             }
@@ -7833,7 +7834,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                 if( ImGui::IsItemHovered() )
                 {
                     m_gpuHighlight = &cev;
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         ZoomToZone( cev );
                     }
@@ -7896,7 +7897,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
                     if( ImGui::IsItemHovered() )
                     {
                         m_gpuHighlight = &cev;
-                        if( ImGui::IsMouseClicked( 2 ) )
+                        if( IsMouseClicked( 2 ) )
                         {
                             ZoomToZone( cev );
                         }
@@ -7953,7 +7954,7 @@ void View::DrawGpuInfoChildren( const V& children, int64_t ztime )
             if( ImGui::IsItemHovered() )
             {
                 m_gpuHighlight = &cev;
-                if( ImGui::IsMouseClicked( 2 ) )
+                if( IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( cev );
                 }
@@ -8540,11 +8541,11 @@ void View::DrawOptions()
                     ImGui::BeginTooltip();
                     ImGui::TextUnformatted( "Crashed" );
                     ImGui::EndTooltip();
-                    if( ImGui::IsMouseClicked( 0 ) )
+                    if( IsMouseClicked( 0 ) )
                     {
                         m_showInfo = true;
                     }
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         CenterAtTime( crash.time );
                     }
@@ -10000,12 +10001,12 @@ void View::DrawFindZone()
                             TextFocused( "Time spent in the right bins:", TimeToString( tAfter ) );
                             ImGui::EndTooltip();
 
-                            if( ImGui::IsMouseClicked( 1 ) )
+                            if( IsMouseClicked( 1 ) )
                             {
                                 m_findZone.highlight.active = false;
                                 m_findZone.ResetGroups();
                             }
-                            else if( ImGui::IsMouseClicked( 0 ) )
+                            else if( IsMouseClicked( 0 ) )
                             {
                                 m_findZone.highlight.active = true;
                                 m_findZone.highlight.start = t0;
@@ -10013,7 +10014,7 @@ void View::DrawFindZone()
                                 m_findZone.hlOrig_t0 = t0;
                                 m_findZone.hlOrig_t1 = t1;
                             }
-                            else if( ImGui::IsMouseDragging( 0, 0 ) )
+                            else if( IsMouseDragging( 0, 0 ) )
                             {
                                 if( t0 < m_findZone.hlOrig_t0 )
                                 {
@@ -10449,7 +10450,7 @@ void View::DrawFindZone()
             }
         }
         ImGui::EndChild();
-        if( ImGui::IsItemHovered() && ImGui::IsMouseClicked( 1 ) )
+        if( ImGui::IsItemHovered() && IsMouseClicked( 1 ) )
         {
             m_findZone.selGroup = m_findZone.Unselected;
             m_findZone.ResetSelection();
@@ -10556,7 +10557,7 @@ void View::DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones )
             if( ImGui::IsItemHovered() )
             {
                 m_zoneHighlight = ev;
-                if( ImGui::IsMouseClicked( 2 ) )
+                if( IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( *ev );
                 }
@@ -12719,7 +12720,7 @@ void View::DrawMemoryAllocWindow()
         if( hover )
         {
             m_zoneHighlight = zoneAlloc;
-            if( ImGui::IsMouseClicked( 2 ) )
+            if( IsMouseClicked( 2 ) )
             {
                 ZoomToZone( *zoneAlloc );
             }
@@ -12744,7 +12745,7 @@ void View::DrawMemoryAllocWindow()
             if( hover )
             {
                 m_zoneHighlight = zoneFree;
-                if( ImGui::IsMouseClicked( 2 ) )
+                if( IsMouseClicked( 2 ) )
                 {
                     ZoomToZone( *zoneFree );
                 }
@@ -14826,7 +14827,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
                 if( hover )
                 {
                     m_zoneHighlight = zone;
-                    if( ImGui::IsMouseClicked( 2 ) )
+                    if( IsMouseClicked( 2 ) )
                     {
                         ZoomToZone( *zone );
                     }
@@ -14870,7 +14871,7 @@ void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(co
                     if( hover )
                     {
                         m_zoneHighlight = zoneFree;
-                        if( ImGui::IsMouseClicked( 2 ) )
+                        if( IsMouseClicked( 2 ) )
                         {
                             ZoomToZone( *zoneFree );
                         }

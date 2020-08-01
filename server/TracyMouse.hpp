@@ -10,8 +10,8 @@ void MouseFrame();
 
 bool IsMouseDown( ImGuiMouseButton button );
 bool IsMouseClicked( ImGuiMouseButton button );
-bool IsMouseDragging( ImGuiMouseButton button, float lock_threshold = -1.f );
-ImVec2 GetMouseDragDelta( ImGuiMouseButton button, float lock_threshold = -1.f );
+bool IsMouseDragging( ImGuiMouseButton button );
+ImVec2 GetMouseDragDelta( ImGuiMouseButton button );
 
 }
 

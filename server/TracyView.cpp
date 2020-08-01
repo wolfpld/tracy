@@ -1376,10 +1376,10 @@ void View::DrawFrames()
 
     if( hover )
     {
-        if( IsMouseDragging( 1, 0 ) )
+        if( IsMouseDragging( 1 ) )
         {
             m_pause = true;
-            const auto delta = GetMouseDragDelta( 1, 0 ).x;
+            const auto delta = GetMouseDragDelta( 1 ).x;
             if( abs( delta ) >= fwidth )
             {
                 const auto d = (int)delta / fwidth;
@@ -1817,7 +1817,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
         m_highlight.active = true;
         m_highlight.start = m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
-    else if( IsMouseDragging( 0, 0 ) )
+    else if( IsMouseDragging( 0 ) )
     {
         m_highlight.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
@@ -1843,7 +1843,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
         m_highlightZoom.active = true;
         m_highlightZoom.start = m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
-    else if( IsMouseDragging( 2, 0 ) )
+    else if( IsMouseDragging( 2 ) )
     {
         m_highlightZoom.end = m_vd.zvStart + ( io.MousePos.x - wpos.x ) * nspx;
     }
@@ -1885,12 +1885,12 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     }
 
     const auto hwheel_delta = io.MouseWheelH * 100.f;
-    if( IsMouseDragging( 1, 0 ) || hwheel_delta != 0 )
+    if( IsMouseDragging( 1 ) || hwheel_delta != 0 )
     {
         m_pause = true;
         m_zoomAnim.active = false;
         if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
-        const auto delta = GetMouseDragDelta( 1, 0 );
+        const auto delta = GetMouseDragDelta( 1 );
         const auto dpx = int64_t( (delta.x * nspx) + (hwheel_delta * nspx));
         if( dpx != 0 )
         {
@@ -10014,7 +10014,7 @@ void View::DrawFindZone()
                                 m_findZone.hlOrig_t0 = t0;
                                 m_findZone.hlOrig_t1 = t1;
                             }
-                            else if( IsMouseDragging( 0, 0 ) )
+                            else if( IsMouseDragging( 0 ) )
                             {
                                 if( t0 < m_findZone.hlOrig_t0 )
                                 {

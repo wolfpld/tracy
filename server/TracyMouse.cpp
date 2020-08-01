@@ -38,12 +38,12 @@ bool IsMouseClicked( ImGuiMouseButton button )
     return s_mouse.mouseClicked[button];
 }
 
-bool IsMouseDragging( ImGuiMouseButton button, float lock_threshold )
+bool IsMouseDragging( ImGuiMouseButton button )
 {
     return s_mouse.mouseDragging[button];
 }
 
-ImVec2 GetMouseDragDelta( ImGuiMouseButton button, float lock_threshold )
+ImVec2 GetMouseDragDelta( ImGuiMouseButton button )
 {
     return s_mouse.mouseDragDelta[button];
 }

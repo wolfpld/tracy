@@ -168,6 +168,10 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 #define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
 #define TracyCAppInfo( txt, color ) ___tracy_emit_message_appinfo( txt, color );
 
+TRACY_API void ___tracy_set_thread_name( const char* name );
+
+#define TracyCSetThreadName( name ) ___tracy_set_thread_name( name );
+
 
 #ifdef TRACY_HAS_CALLSTACK
 #  define TracyCZoneS( ctx, depth, active ) static const struct ___tracy_source_location_data TracyConcat(__tracy_source_location,__LINE__) = { NULL, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; TracyCZoneCtx ctx = ___tracy_emit_zone_begin_callstack( &TracyConcat(__tracy_source_location,__LINE__), depth, active );

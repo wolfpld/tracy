@@ -237,3 +237,13 @@ TRACY_API const char* GetThreadName( uint64_t id )
 }
 
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+TRACY_API void ___tracy_set_thread_name( const char* name ) { tracy::SetThreadName( name ); }
+
+#ifdef __cplusplus
+}
+#endif

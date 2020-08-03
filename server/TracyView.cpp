@@ -583,8 +583,6 @@ bool View::DrawImpl()
     ImGui::SameLine();
     ToggleButton( ICON_FA_FINGERPRINT " Info", m_showInfo );
     ImGui::SameLine();
-    ToggleButton( ICON_FA_RULER, m_showRanges );
-    ImGui::SameLine();
     if( ImGui::Button( ICON_FA_TOOLS ) ) ImGui::OpenPopup( "ToolsPopup" );
     if( ImGui::BeginPopup( "ToolsPopup" ) )
     {
@@ -603,6 +601,7 @@ bool View::DrawImpl()
         {
             m_showAnnotationList = true;
         }
+        ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
         ImGui::EndPopup();
     }
     ImGui::SameLine();

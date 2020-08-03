@@ -9042,6 +9042,8 @@ void View::DrawFindZone()
     {
         ImGui::SameLine();
         TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::SameLine();
+        ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
     }
 
     if( m_findZone.rangeSlim != m_findZone.range )

@@ -11606,6 +11606,10 @@ void View::DrawStatistics()
             ImGui::SameLine();
             ImGui::Spacing();
             ImGui::SameLine();
+            ImGui::SeparatorEx( ImGuiSeparatorFlags_Vertical );
+            ImGui::SameLine();
+            ImGui::Spacing();
+            ImGui::SameLine();
         }
     }
 
@@ -11619,13 +11623,6 @@ void View::DrawStatistics()
             DrawWaitingDots( s_time );
             ImGui::End();
             return;
-        }
-
-        m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
-        ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
-        {
-            m_statisticsFilter.Clear();
         }
 
         const auto filterActive = m_statisticsFilter.IsActive();
@@ -11684,9 +11681,6 @@ void View::DrawStatistics()
             break;
         }
 
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
         TextFocused( "Total zone count:", RealToString( slzcnt ) );
         ImGui::SameLine();
         ImGui::Spacing();
@@ -11696,6 +11690,16 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
+
+        ImGui::Separator();
+        TextDisabledUnformatted( "Filter results" );
+        ImGui::SameLine();
+        m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
+        ImGui::SameLine();
+        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
+        {
+            m_statisticsFilter.Clear();
+        }
 
         ImGui::Separator();
 
@@ -11782,7 +11786,6 @@ void View::DrawStatistics()
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( TimeToString( ( m_statSelf ? v->second.selfTotal : v->second.total ) / v->second.zones.size() ) );
                 ImGui::NextColumn();
-
                 ImGui::PopID();
             }
             ImGui::EndColumns();
@@ -11791,15 +11794,6 @@ void View::DrawStatistics()
     }
     else
     {
-        m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
-        ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
-        {
-            m_statisticsFilter.Clear();
-        }
-        ImGui::SameLine();
-        ImGui::Spacing();
-        ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
@@ -11817,6 +11811,17 @@ void View::DrawStatistics()
         const char* locationTable = "Entry\0Sample\0Smart\0";
         ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Sample" ).x + ImGui::GetTextLineHeight() * 2 );
         ImGui::Combo( "##location", &m_statSampleLocation, locationTable );
+
+        ImGui::Separator();
+        TextDisabledUnformatted( "Filter results" );
+        ImGui::SameLine();
+        m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
+        ImGui::SameLine();
+        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
+        {
+            m_statisticsFilter.Clear();
+        }
+
         ImGui::Separator();
 
         const auto& symMap = m_worker.GetSymbolMap();

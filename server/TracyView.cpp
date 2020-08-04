@@ -779,6 +779,12 @@ bool View::DrawImpl()
             m_findZone.range.min = m_setRangePopup.min;
             m_findZone.range.max = m_setRangePopup.max;
         }
+        if( ImGui::Selectable( ICON_FA_SORT_AMOUNT_UP " Limit statistics time range" ) )
+        {
+            m_statRange.active = true;
+            m_statRange.min = m_setRangePopup.min;
+            m_statRange.max = m_setRangePopup.max;
+        }
         ImGui::EndPopup();
     }
 
@@ -2421,6 +2427,7 @@ void View::DrawZones()
     m_zoneHover = nullptr;
     m_zoneHover2.Decay( nullptr );
     m_findZone.range.StartFrame();
+    m_statRange.StartFrame();
 
     if( m_vd.zvStart == m_vd.zvEnd ) return;
     assert( m_vd.zvStart < m_vd.zvEnd );
@@ -2457,6 +2464,7 @@ void View::DrawZones()
     if( drawMouseLine )
     {
         HandleRange( m_findZone.range, timespan, ImGui::GetCursorScreenPos(), w );
+        HandleRange( m_statRange, timespan, ImGui::GetCursorScreenPos(), w );
         HandleZoneViewMouse( timespan, ImGui::GetCursorScreenPos(), w, pxns );
     }
 
@@ -3205,6 +3213,15 @@ void View::DrawZones()
         DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x2288DD88 );
         draw->AddLine( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px0, linepos.y + lineh ), m_findZone.range.hiMin ? 0x9988DD88 : 0x3388DD88, m_findZone.range.hiMin ? 2 : 1 );
         draw->AddLine( ImVec2( wpos.x + px1, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), m_findZone.range.hiMax ? 0x9988DD88 : 0x3388DD88, m_findZone.range.hiMax ? 2 : 1 );
+    }
+
+    if( m_statRange.active && ( m_showStatistics || m_showRanges ) )
+    {
+        const auto px0 = ( m_statRange.min - m_vd.zvStart ) * pxns;
+        const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_statRange.max - m_vd.zvStart ) * pxns );
+        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x228888EE );
+        draw->AddLine( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px0, linepos.y + lineh ), m_statRange.hiMin ? 0x998888EE : 0x338888EE, m_statRange.hiMin ? 2 : 1 );
+        draw->AddLine( ImVec2( wpos.x + px1, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), m_statRange.hiMax ? 0x998888EE : 0x338888EE, m_statRange.hiMax ? 2 : 1 );
     }
 
     if( m_highlight.active && m_highlight.start != m_highlight.end )
@@ -14635,6 +14652,7 @@ void View::DrawRanges()
     ImGui::SetNextWindowSize( ImVec2( 400, 100 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Time range limits", &m_showRanges );
     DrawRangeEntry( m_findZone.range, "Find zone", 0x4488DD88, "RangeFindZoneCopyFrom" );
+    DrawRangeEntry( m_statRange, "Statistics", 0x448888EE, "RangeStatisticsCopyFrom" );
     ImGui::End();
 }
 

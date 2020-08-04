@@ -790,6 +790,7 @@ bool View::DrawImpl()
             auto ann = std::make_unique<Annotation>();
             const auto s = std::min( m_setRangePopup.min, m_setRangePopup.max );
             const auto e = std::max( m_setRangePopup.min, m_setRangePopup.max );
+            ann->range.active = true;
             ann->range.min = s;
             ann->range.max = e;
             ann->color = 0x888888;
@@ -2470,6 +2471,11 @@ void View::DrawZones()
     {
         HandleRange( m_findZone.range, timespan, ImGui::GetCursorScreenPos(), w );
         HandleRange( m_statRange, timespan, ImGui::GetCursorScreenPos(), w );
+        for( auto& v : m_annotations )
+        {
+            v->range.StartFrame();
+            HandleRange( v->range, timespan, ImGui::GetCursorScreenPos(), w );
+        }
         HandleZoneViewMouse( timespan, ImGui::GetCursorScreenPos(), w, pxns );
     }
 
@@ -3149,8 +3155,10 @@ void View::DrawZones()
         {
             uint32_t c0 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x44000000 : 0x22000000 );
             uint32_t c1 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x66000000 : 0x44000000 );
+            uint32_t c2 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0xCC000000 : 0xAA000000 );
             draw->AddRectFilled( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ), c0 );
-            draw->AddRect( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ), c1 );
+            draw->AddLine( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, lineh ), ann->range.hiMin ? c2 : c1, ann->range.hiMin ? 2 : 1 );
+            draw->AddLine( linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ), ann->range.hiMax ? c2 : c1, ann->range.hiMax ? 2 : 1 );
             if( drawMouseLine && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ) ) )
             {
                 ImGui::BeginTooltip();

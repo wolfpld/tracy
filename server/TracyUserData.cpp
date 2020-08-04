@@ -187,6 +187,7 @@ void UserData::LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data )
                 fread( &ann->range.min, 1, sizeof( ann->range.min ), f );
                 fread( &ann->range.max, 1, sizeof( ann->range.max ), f );
                 fread( &ann->color, 1, sizeof( ann->color ), f );
+                ann->range.active = true;
 
                 data.emplace_back( std::move( ann ) );
             }

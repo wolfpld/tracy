@@ -58,8 +58,7 @@ struct ViewData
 struct Annotation
 {
     std::string text;
-    int64_t start;
-    int64_t end;
+    Range range;
     uint32_t color;
 };
 

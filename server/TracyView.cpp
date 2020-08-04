@@ -790,12 +790,12 @@ bool View::DrawImpl()
             auto ann = std::make_unique<Annotation>();
             const auto s = std::min( m_setRangePopup.min, m_setRangePopup.max );
             const auto e = std::max( m_setRangePopup.min, m_setRangePopup.max );
-            ann->start = s;
-            ann->end = e;
+            ann->range.min = s;
+            ann->range.max = e;
             ann->color = 0x888888;
             m_selectedAnnotation = ann.get();
             m_annotations.emplace_back( std::move( ann ) );
-            pdqsort_branchless( m_annotations.begin(), m_annotations.end(), []( const auto& lhs, const auto& rhs ) { return lhs->start < rhs->start; } );
+            pdqsort_branchless( m_annotations.begin(), m_annotations.end(), []( const auto& lhs, const auto& rhs ) { return lhs->range.min < rhs->range.min; } );
         }
         ImGui::EndPopup();
     }
@@ -3145,13 +3145,13 @@ void View::DrawZones()
 
     for( auto& ann : m_annotations )
     {
-        if( ann->start < m_vd.zvEnd && ann->end > m_vd.zvStart )
+        if( ann->range.min < m_vd.zvEnd && ann->range.max > m_vd.zvStart )
         {
             uint32_t c0 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x44000000 : 0x22000000 );
             uint32_t c1 = ( ann->color & 0xFFFFFF ) | ( m_selectedAnnotation == ann.get() ? 0x66000000 : 0x44000000 );
-            draw->AddRectFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), c0 );
-            draw->AddRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), c1 );
-            if( drawMouseLine && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ) ) )
+            draw->AddRectFilled( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ), c0 );
+            draw->AddRect( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ), c1 );
+            if( drawMouseLine && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ) ) )
             {
                 ImGui::BeginTooltip();
                 if( ann->text.empty() )
@@ -3163,17 +3163,17 @@ void View::DrawZones()
                     ImGui::TextUnformatted( ann->text.c_str() );
                 }
                 ImGui::Separator();
-                TextFocused( "Annotation begin:", TimeToString( ann->start ) );
-                TextFocused( "Annotation end:", TimeToString( ann->end ) );
-                TextFocused( "Annotation length:", TimeToString( ann->end - ann->start ) );
+                TextFocused( "Annotation begin:", TimeToString( ann->range.min ) );
+                TextFocused( "Annotation end:", TimeToString( ann->range.max ) );
+                TextFocused( "Annotation length:", TimeToString( ann->range.max - ann->range.min ) );
                 ImGui::EndTooltip();
             }
-            const auto aw = ( ann->end - ann->start ) * pxns;
+            const auto aw = ( ann->range.max - ann->range.min ) * pxns;
             if( aw > th * 4 )
             {
-                draw->AddCircleFilled( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0x88AABB22 );
-                draw->AddCircle( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0xAAAABB22 );
-                if( drawMouseLine && IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th, th ), linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 3, th * 3 ) ) )
+                draw->AddCircleFilled( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0x88AABB22 );
+                draw->AddCircle( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 2, th * 2 ), th, 0xAAAABB22 );
+                if( drawMouseLine && IsMouseClicked( 0 ) && ImGui::IsMouseHoveringRect( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th, th ), linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 3, th * 3 ) ) )
                 {
                     m_selectedAnnotation = ann.get();
                 }
@@ -3183,12 +3183,12 @@ void View::DrawZones()
                     const auto tw = ImGui::CalcTextSize( ann->text.c_str() ).x;
                     if( aw - th*4 > tw )
                     {
-                        draw->AddText( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 4, th * 0.5 ), 0xFFFFFFFF, ann->text.c_str() );
+                        draw->AddText( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 4, th * 0.5 ), 0xFFFFFFFF, ann->text.c_str() );
                     }
                     else
                     {
-                        draw->PushClipRect( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->end - m_vd.zvStart ) * pxns, lineh ), true );
-                        draw->AddText( linepos + ImVec2( ( ann->start - m_vd.zvStart ) * pxns + th * 4, th * 0.5 ), 0xFFFFFFFF, ann->text.c_str() );
+                        draw->PushClipRect( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns, 0 ), linepos + ImVec2( ( ann->range.max - m_vd.zvStart ) * pxns, lineh ), true );
+                        draw->AddText( linepos + ImVec2( ( ann->range.min - m_vd.zvStart ) * pxns + th * 4, th * 0.5 ), 0xFFFFFFFF, ann->text.c_str() );
                         draw->PopClipRect();
                     }
                 }
@@ -14265,7 +14265,7 @@ void View::DrawSelectedAnnotation()
     ImGui::Begin( "Annotation", &show, ImGuiWindowFlags_AlwaysAutoResize );
     if( ImGui::Button( ICON_FA_MICROSCOPE " Zoom to annotation" ) )
     {
-        ZoomToRange( m_selectedAnnotation->start, m_selectedAnnotation->end );
+        ZoomToRange( m_selectedAnnotation->range.min, m_selectedAnnotation->range.max );
     }
     ImGui::SameLine();
     if( ImGui::Button( ICON_FA_TRASH_ALT " Remove" ) )
@@ -14298,9 +14298,9 @@ void View::DrawSelectedAnnotation()
     ImGui::ColorEdit3( "Color", &col.x );
     m_selectedAnnotation->color = ImGui::ColorConvertFloat4ToU32( col );
     ImGui::Separator();
-    TextFocused( "Annotation begin:", TimeToString( m_selectedAnnotation->start ) );
-    TextFocused( "Annotation end:", TimeToString( m_selectedAnnotation->end ) );
-    TextFocused( "Annotation length:", TimeToString( m_selectedAnnotation->end - m_selectedAnnotation->start ) );
+    TextFocused( "Annotation begin:", TimeToString( m_selectedAnnotation->range.min ) );
+    TextFocused( "Annotation end:", TimeToString( m_selectedAnnotation->range.max ) );
+    TextFocused( "Annotation length:", TimeToString( m_selectedAnnotation->range.max - m_selectedAnnotation->range.min ) );
     ImGui::End();
     if( !show ) m_selectedAnnotation = nullptr;
 }
@@ -14334,7 +14334,7 @@ void View::DrawAnnotationList()
         ImGui::SameLine();
         if( ImGui::Button( ICON_FA_MICROSCOPE ) )
         {
-            ZoomToRange( ann->start, ann->end );
+            ZoomToRange( ann->range.min, ann->range.max );
         }
         ImGui::SameLine();
         if( ButtonDisablable( ICON_FA_TRASH_ALT, !ctrl ) )
@@ -14708,11 +14708,11 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
                 ImGui::SameLine();
                 if( ImGui::Selectable( v->text.c_str() ) )
                 {
-                    range.min = v->start;
-                    range.max = v->end;
+                    range.min = v->range.min;
+                    range.max = v->range.max;
                 }
                 ImGui::SameLine();
-                ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->start ), TimeToStringExact( v->end ), TimeToString( v->end - v->start ) );
+                ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
             }
             ImGui::EndPopup();
         }

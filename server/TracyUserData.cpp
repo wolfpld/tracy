@@ -184,8 +184,8 @@ void UserData::LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data )
                     fread( buf, 1, tsz, f );
                     ann->text.assign( buf, tsz );
                 }
-                fread( &ann->start, 1, sizeof( ann->start ), f );
-                fread( &ann->end, 1, sizeof( ann->end ), f );
+                fread( &ann->range.min, 1, sizeof( ann->range.min ), f );
+                fread( &ann->range.max, 1, sizeof( ann->range.max ), f );
                 fread( &ann->color, 1, sizeof( ann->color ), f );
 
                 data.emplace_back( std::move( ann ) );
@@ -219,8 +219,8 @@ void UserData::SaveAnnotations( const std::vector<std::unique_ptr<Annotation>>& 
             {
                 fwrite( ann->text.c_str(), 1, sz, f );
             }
-            fwrite( &ann->start, 1, sizeof( ann->start ), f );
-            fwrite( &ann->end, 1, sizeof( ann->end ), f );
+            fwrite( &ann->range.min, 1, sizeof( ann->range.min ), f );
+            fwrite( &ann->range.max, 1, sizeof( ann->range.max ), f );
             fwrite( &ann->color, 1, sizeof( ann->color ), f );
         }
         fclose( f );

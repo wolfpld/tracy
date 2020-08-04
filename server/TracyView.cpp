@@ -11615,6 +11615,9 @@ void View::DrawStatistics()
         }
     }
 
+    auto& slz = m_worker.GetSourceLocationZones();
+    Vector<decltype(slz.begin())> srcloc;
+
     if( m_statMode == 0 )
     {
         if( !m_worker.AreSourceLocationZonesReady() )
@@ -11629,8 +11632,6 @@ void View::DrawStatistics()
         }
 
         const auto filterActive = m_statisticsFilter.IsActive();
-        auto& slz = m_worker.GetSourceLocationZones();
-        Vector<decltype(slz.begin())> srcloc;
         srcloc.reserve( slz.size() );
         uint32_t slzcnt = 0;
         for( auto it = slz.begin(); it != slz.end(); ++it )
@@ -11693,20 +11694,43 @@ void View::DrawStatistics()
         ImGui::Spacing();
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
-
-        ImGui::Separator();
-        TextDisabledUnformatted( "Filter results" );
+    }
+    else
+    {
+        ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
         ImGui::SameLine();
-        m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
+        ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
         ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
-        {
-            m_statisticsFilter.Clear();
-        }
+        ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
+        ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_PUZZLE_PIECE " Show all", &m_showAllSymbols );
+        ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_SITEMAP " Inlines", &m_statSeparateInlines );
+        ImGui::SameLine();
+        ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( "Location:" );
+        ImGui::SameLine();
+        const char* locationTable = "Entry\0Sample\0Smart\0";
+        ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Sample" ).x + ImGui::GetTextLineHeight() * 2 );
+        ImGui::Combo( "##location", &m_statSampleLocation, locationTable );
+    }
 
-        ImGui::Separator();
-        ImGui::PopStyleVar();
+    ImGui::Separator();
+    TextDisabledUnformatted( "Filter results" );
+    ImGui::SameLine();
+    m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
+    ImGui::SameLine();
+    if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
+    {
+        m_statisticsFilter.Clear();
+    }
 
+    ImGui::Separator();
+    ImGui::PopStyleVar();
+
+    if( m_statMode == 0 )
+    {
         if( srcloc.empty() )
         {
             ImGui::TextUnformatted( "No entries to be displayed." );
@@ -11798,37 +11822,6 @@ void View::DrawStatistics()
     }
     else
     {
-        ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
-        ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
-        ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
-        ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_PUZZLE_PIECE " Show all", &m_showAllSymbols );
-        ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_SITEMAP " Inlines", &m_statSeparateInlines );
-        ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_AT " Address", &m_statShowAddress );
-        ImGui::SameLine();
-        ImGui::TextUnformatted( "Location:" );
-        ImGui::SameLine();
-        const char* locationTable = "Entry\0Sample\0Smart\0";
-        ImGui::SetNextItemWidth( ImGui::CalcTextSize( "Sample" ).x + ImGui::GetTextLineHeight() * 2 );
-        ImGui::Combo( "##location", &m_statSampleLocation, locationTable );
-
-        ImGui::Separator();
-        TextDisabledUnformatted( "Filter results" );
-        ImGui::SameLine();
-        m_statisticsFilter.Draw( ICON_FA_FILTER, 200 );
-        ImGui::SameLine();
-        if( ImGui::Button( ICON_FA_BACKSPACE " Clear" ) )
-        {
-            m_statisticsFilter.Clear();
-        }
-
-        ImGui::Separator();
-        ImGui::PopStyleVar();
-
         const auto& symMap = m_worker.GetSymbolMap();
         const auto& symStat = m_worker.GetSymbolStats();
 

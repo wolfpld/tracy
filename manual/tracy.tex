@@ -101,7 +101,7 @@ Hello and welcome to the Tracy Profiler user manual! Here you will find all the 
 \begin{itemize}
 \item Chapter~\ref{quicklook}, \emph{\nameref{quicklook}}, gives a short description of what Tracy is and how it works.
 \item Chapter~\ref{firststeps}, \emph{\nameref{firststeps}}, shows how the profiler can be integrated into your application, and how to build the graphical user interface (section~\ref{buildingserver}). At this point you will be able to establish a connection from the profiler to your application.
-\item Chapter~\ref{client}, \emph{\nameref{client}}, provides information on how to instrument your application, in order to retrieve useful profiling data.
+\item Chapter~\ref{client}, \emph{\nameref{client}}, provides information on how to instrument your application, in order to retrieve useful profiling data. This includes description of the C API (section~\ref{capi}), which enables usage of Tracy in any programming language.
 \item Chapter~\ref{capturing}, \emph{\nameref{capturing}}, goes into more detail on how the profiling information can be captured and stored on disk.
 \item Chapter~\ref{analyzingdata}, \emph{\nameref{analyzingdata}}, guides you through the graphical user interface of the profiler.
 \item Chapter~\ref{csvexport}, \emph{\nameref{csvexport}}, explains how to export some zone timing statistics into a CSV format.
@@ -670,8 +670,9 @@ The following defines may be of interest:
 \end{itemize}
 
 \subsection{Naming threads}
+\label{namingthreads}
 
-Remember to set thread names for proper identification of threads. You must use the functions exposed in the \texttt{tracy/common/TracySystem.hpp} header to do so, as the system facilities typically have limited functionality.
+Remember to set thread names for proper identification of threads. You should do so by using the function \texttt{tracy::SetThreadName(name)} exposed in the \texttt{tracy/common/TracySystem.hpp} header, as the system facilities typically have limited functionality.
 
 If context switch capture is active, Tracy will try to capture thread names through operating system data. This is only a fallback mechanism and it shouldn't be relied upon.
 
@@ -1447,6 +1448,10 @@ logo=\bcattention
 ]{Caveats}
 If you are using MSVC, you will need to disable the \emph{Edit And Continue} feature, for the C API to work\footnote{There's no such requirement for C++ API.}. To do so, open the project properties and go to \emph{C/C++\textrightarrow General\textrightarrow Debug Information Format} and make sure \emph{Program Database for Edit And Continue (/ZI)} is \emph{not} selected.
 \end{bclogo}
+
+\subsubsection{Setting thread names}
+
+To set thread names (section~\ref{namingthreads}) using the C API you should use the \texttt{TracyCSetThreadName(name)} macro.
 
 \subsubsection{Frame markup}
 

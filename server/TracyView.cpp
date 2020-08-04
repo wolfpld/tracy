@@ -11585,6 +11585,8 @@ void View::DrawStatistics()
         return;
     }
 
+    ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 2, 2 ) );
+
     if( m_worker.AreCallstackSamplesReady() )
     {
         const auto hasSamples = m_worker.GetCallstackSampleCount() > 0;
@@ -11619,6 +11621,7 @@ void View::DrawStatistics()
         {
             ImGui::Spacing();
             ImGui::Separator();
+            ImGui::PopStyleVar();
             ImGui::TextWrapped( "Please wait, computing data..." );
             DrawWaitingDots( s_time );
             ImGui::End();
@@ -11702,6 +11705,7 @@ void View::DrawStatistics()
         }
 
         ImGui::Separator();
+        ImGui::PopStyleVar();
 
         if( srcloc.empty() )
         {
@@ -11823,6 +11827,7 @@ void View::DrawStatistics()
         }
 
         ImGui::Separator();
+        ImGui::PopStyleVar();
 
         const auto& symMap = m_worker.GetSymbolMap();
         const auto& symStat = m_worker.GetSymbolStats();

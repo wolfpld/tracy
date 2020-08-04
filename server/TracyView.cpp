@@ -785,6 +785,18 @@ bool View::DrawImpl()
             m_statRange.min = m_setRangePopup.min;
             m_statRange.max = m_setRangePopup.max;
         }
+        if( ImGui::Selectable( ICON_FA_STICKY_NOTE " Add annotation" ) )
+        {
+            auto ann = std::make_unique<Annotation>();
+            const auto s = std::min( m_setRangePopup.min, m_setRangePopup.max );
+            const auto e = std::max( m_setRangePopup.min, m_setRangePopup.max );
+            ann->start = s;
+            ann->end = e;
+            ann->color = 0x888888;
+            m_selectedAnnotation = ann.get();
+            m_annotations.emplace_back( std::move( ann ) );
+            pdqsort_branchless( m_annotations.begin(), m_annotations.end(), []( const auto& lhs, const auto& rhs ) { return lhs->start < rhs->start; } );
+        }
         ImGui::EndPopup();
     }
 
@@ -1830,15 +1842,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
     {
         if( ImGui::GetIO().KeyCtrl && m_highlight.start != m_highlight.end )
         {
-            auto ann = std::make_unique<Annotation>();
-            const auto s = std::min( m_highlight.start, m_highlight.end );
-            const auto e = std::max( m_highlight.start, m_highlight.end );
-            ann->start = s;
-            ann->end = e;
-            ann->color = 0x888888;
-            m_selectedAnnotation = ann.get();
-            m_annotations.emplace_back( std::move( ann ) );
-            pdqsort_branchless( m_annotations.begin(), m_annotations.end(), []( const auto& lhs, const auto& rhs ) { return lhs->start < rhs->start; } );
+            m_setRangePopup = RangeSlim { m_highlight.start, m_highlight.end, true };
         }
         m_highlight.active = false;
     }

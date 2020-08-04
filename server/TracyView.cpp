@@ -9030,6 +9030,8 @@ void View::DrawFindZone()
     ImGui::SameLine();
     ImGui::Checkbox( "Ignore case", &m_findZone.ignoreCase );
     ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
     if( ImGui::Checkbox( "Limit range", &m_findZone.range.active ) )
     {
         if( m_findZone.range.active && m_findZone.range.min == 0 && m_findZone.range.max == 0 )

@@ -3171,8 +3171,8 @@ void View::DrawZones()
                     ImGui::TextUnformatted( ann->text.c_str() );
                 }
                 ImGui::Separator();
-                TextFocused( "Annotation begin:", TimeToString( ann->range.min ) );
-                TextFocused( "Annotation end:", TimeToString( ann->range.max ) );
+                TextFocused( "Annotation begin:", TimeToStringExact( ann->range.min ) );
+                TextFocused( "Annotation end:", TimeToStringExact( ann->range.max ) );
                 TextFocused( "Annotation length:", TimeToString( ann->range.max - ann->range.min ) );
                 ImGui::EndTooltip();
             }
@@ -14306,8 +14306,8 @@ void View::DrawSelectedAnnotation()
     ImGui::ColorEdit3( "Color", &col.x );
     m_selectedAnnotation->color = ImGui::ColorConvertFloat4ToU32( col );
     ImGui::Separator();
-    TextFocused( "Annotation begin:", TimeToString( m_selectedAnnotation->range.min ) );
-    TextFocused( "Annotation end:", TimeToString( m_selectedAnnotation->range.max ) );
+    TextFocused( "Annotation begin:", TimeToStringExact( m_selectedAnnotation->range.min ) );
+    TextFocused( "Annotation end:", TimeToStringExact( m_selectedAnnotation->range.max ) );
     TextFocused( "Annotation length:", TimeToString( m_selectedAnnotation->range.max - m_selectedAnnotation->range.min ) );
     ImGui::End();
     if( !show ) m_selectedAnnotation = nullptr;

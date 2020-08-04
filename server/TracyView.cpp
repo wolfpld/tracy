@@ -14315,7 +14315,7 @@ void View::DrawSelectedAnnotation()
 
 void View::DrawAnnotationList()
 {
-    ImGui::SetNextWindowSize( ImVec2( 500, 300 ), ImGuiCond_FirstUseEver );
+    ImGui::SetNextWindowSize( ImVec2( 600, 300 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Annotation list", &m_showAnnotationList );
     if( m_annotations.empty() )
     {
@@ -14364,6 +14364,10 @@ void View::DrawAnnotationList()
         {
             ImGui::TextUnformatted( ann->text.c_str() );
         }
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( ann->range.min ), TimeToStringExact( ann->range.max ), TimeToString( ann->range.max - ann->range.min ) );
         ImGui::PopID();
         idx++;
     }
@@ -14717,6 +14721,8 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
                     range.min = v->range.min;
                     range.max = v->range.max;
                 }
+                ImGui::SameLine();
+                ImGui::Spacing();
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->range.min ), TimeToStringExact( v->range.max ), TimeToString( v->range.max - v->range.min ) );
             }

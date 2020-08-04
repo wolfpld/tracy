@@ -3202,9 +3202,9 @@ void View::DrawZones()
     {
         const auto px0 = ( m_findZone.range.min - m_vd.zvStart ) * pxns;
         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_findZone.range.max - m_vd.zvStart ) * pxns );
-        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x2288DDDD );
-        draw->AddLine( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px0, linepos.y + lineh ), m_findZone.range.hiMin ? 0x9988DDDD : 0x3388DDDD, m_findZone.range.hiMin ? 2 : 1 );
-        draw->AddLine( ImVec2( wpos.x + px1, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), m_findZone.range.hiMax ? 0x9988DDDD : 0x3388DDDD, m_findZone.range.hiMax ? 2 : 1 );
+        DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x2288DD88 );
+        draw->AddLine( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px0, linepos.y + lineh ), m_findZone.range.hiMin ? 0x9988DD88 : 0x3388DD88, m_findZone.range.hiMin ? 2 : 1 );
+        draw->AddLine( ImVec2( wpos.x + px1, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), m_findZone.range.hiMax ? 0x9988DD88 : 0x3388DD88, m_findZone.range.hiMax ? 2 : 1 );
     }
 
     if( m_highlight.active && m_highlight.start != m_highlight.end )
@@ -14634,7 +14634,7 @@ void View::DrawRanges()
 {
     ImGui::SetNextWindowSize( ImVec2( 400, 100 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Time range limits", &m_showRanges );
-    DrawRangeEntry( m_findZone.range, "Find zone", 0x4488DDDD, "RangeFindZoneCopyFrom" );
+    DrawRangeEntry( m_findZone.range, "Find zone", 0x4488DD88, "RangeFindZoneCopyFrom" );
     ImGui::End();
 }
 

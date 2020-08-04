@@ -353,7 +353,6 @@ private:
     bool m_messagesScrollBottom;
     ImGuiTextFilter m_messageFilter;
     bool m_showMessageImages = false;
-    ImGuiTextFilter m_statisticsFilter;
     int m_visibleMessages = 0;
     size_t m_prevMessages = 0;
     Vector<uint32_t> m_msgList;
@@ -362,6 +361,10 @@ private:
     DecayValue<uint64_t> m_drawThreadHighlight = 0;
     Annotation* m_selectedAnnotation = nullptr;
     bool m_reactToCrash = false;
+
+    ImGuiTextFilter m_statisticsFilter;
+    Range m_statRange;
+    RangeSlim m_statRangeSlim;
 
     Region m_highlight;
     Region m_highlightZoom;

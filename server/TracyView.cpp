@@ -11727,6 +11727,24 @@ void View::DrawStatistics()
     {
         m_statisticsFilter.Clear();
     }
+    ImGui::SameLine();
+    ImGui::Spacing();
+    ImGui::SameLine();
+    if( ImGui::Checkbox( "Limit range", &m_statRange.active ) )
+    {
+        if( m_statRange.active && m_statRange.min == 0 && m_statRange.max == 0 )
+        {
+            m_statRange.min = m_vd.zvStart;
+            m_statRange.max = m_vd.zvEnd;
+        }
+    }
+    if( m_statRange.active )
+    {
+        ImGui::SameLine();
+        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+        ImGui::SameLine();
+        ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+    }
 
     ImGui::Separator();
     ImGui::PopStyleVar();

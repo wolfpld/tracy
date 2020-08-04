@@ -14325,8 +14325,6 @@ void View::DrawAnnotationList()
     }
 
     TextFocused( "Annotations:", RealToString( m_annotations.size() ) );
-    ImGui::SameLine();
-    DrawHelpMarker( "Press ctrl to unlock removal" );
     ImGui::Separator();
     ImGui::BeginChild( "##annotationList" );
     const bool ctrl = ImGui::GetIO().KeyCtrl;

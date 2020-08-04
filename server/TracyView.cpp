@@ -14634,33 +14634,39 @@ void View::DrawRanges()
 {
     ImGui::SetNextWindowSize( ImVec2( 400, 100 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Time range limits", &m_showRanges );
-    SmallColorBox( 0x4488DDDD );
+    DrawRangeEntry( m_findZone.range, "Find zone", 0x4488DDDD, "RangeFindZoneCopyFrom" );
+    ImGui::End();
+}
+
+void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel )
+{
+    SmallColorBox( color );
     ImGui::SameLine();
-    if( SmallCheckbox( "Find zone", &m_findZone.range.active ) )
+    if( SmallCheckbox( label, &range.active ) )
     {
-        if( m_findZone.range.active && m_findZone.range.min == 0 && m_findZone.range.max == 0 )
+        if( range.active && range.min == 0 && range.max == 0 )
         {
-            m_findZone.range.min = m_vd.zvStart;
-            m_findZone.range.max = m_vd.zvEnd;
+            range.min = m_vd.zvStart;
+            range.max = m_vd.zvEnd;
         }
     }
-    if( m_findZone.range.active )
+    if( range.active )
     {
         ImGui::SameLine();
         if( ImGui::SmallButton( "Limit to view" ) )
         {
-            m_findZone.range.min = m_vd.zvStart;
-            m_findZone.range.max = m_vd.zvEnd;
+            range.min = m_vd.zvStart;
+            range.max = m_vd.zvEnd;
         }
-        TextFocused( "Time range:", TimeToStringExact( m_findZone.range.min ) );
+        TextFocused( "Time range:", TimeToStringExact( range.min ) );
         ImGui::SameLine();
-        TextFocused( "-", TimeToStringExact( m_findZone.range.max ) );
+        TextFocused( "-", TimeToStringExact( range.max ) );
         ImGui::SameLine();
-        ImGui::TextDisabled( "(%s)", TimeToString( m_findZone.range.max - m_findZone.range.min ) );
-        if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( m_findZone.range.min, m_findZone.range.max );
+        ImGui::TextDisabled( "(%s)", TimeToString( range.max - range.min ) );
+        if( ImGui::SmallButton( ICON_FA_MICROSCOPE " Focus" ) ) ZoomToRange( range.min, range.max );
         ImGui::SameLine();
-        if( SmallButtonDisablable( ICON_FA_STICKY_NOTE " Set from annotation", m_annotations.empty() ) ) ImGui::OpenPopup( "RangeFindZoneCopyFrom" );
-        if( ImGui::BeginPopup( "RangeFindZoneCopyFrom" ) )
+        if( SmallButtonDisablable( ICON_FA_STICKY_NOTE " Set from annotation", m_annotations.empty() ) ) ImGui::OpenPopup( popupLabel );
+        if( ImGui::BeginPopup( popupLabel ) )
         {
             for( auto& v : m_annotations )
             {
@@ -14668,8 +14674,8 @@ void View::DrawRanges()
                 ImGui::SameLine();
                 if( ImGui::Selectable( v->text.c_str() ) )
                 {
-                    m_findZone.range.min = v->start;
-                    m_findZone.range.max = v->end;
+                    range.min = v->start;
+                    range.max = v->end;
                 }
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->start ), TimeToStringExact( v->end ), TimeToString( v->end - v->start ) );
@@ -14677,7 +14683,6 @@ void View::DrawRanges()
             ImGui::EndPopup();
         }
     }
-    ImGui::End();
 }
 
 void View::ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id, int64_t startTime )

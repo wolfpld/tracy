@@ -14667,8 +14667,8 @@ void View::DrawRanges()
 {
     ImGui::SetNextWindowSize( ImVec2( 400, 100 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Time range limits", &m_showRanges );
-    DrawRangeEntry( m_findZone.range, "Find zone", 0x4488DD88, "RangeFindZoneCopyFrom" );
-    DrawRangeEntry( m_statRange, "Statistics", 0x448888EE, "RangeStatisticsCopyFrom" );
+    DrawRangeEntry( m_findZone.range, ICON_FA_SEARCH " Find zone", 0x4488DD88, "RangeFindZoneCopyFrom", 0 );
+    DrawRangeEntry( m_statRange, ICON_FA_SORT_AMOUNT_UP " Statistics", 0x448888EE, "RangeStatisticsCopyFrom", 1 );
     ImGui::End();
 }
 

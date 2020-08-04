@@ -14672,7 +14672,7 @@ void View::DrawRanges()
     ImGui::End();
 }
 
-void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel )
+void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel, int id )
 {
     SmallColorBox( color );
     ImGui::SameLine();
@@ -14715,6 +14715,16 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
                 ImGui::TextDisabled( "%s - %s (%s)", TimeToStringExact( v->start ), TimeToStringExact( v->end ), TimeToString( v->end - v->start ) );
             }
             ImGui::EndPopup();
+        }
+        if( id != 0 )
+        {
+            ImGui::SameLine();
+            if( SmallButtonDisablable( ICON_FA_SEARCH " Copy from find zone", m_findZone.range.min == 0 && m_findZone.range.max == 0 ) ) range = m_findZone.range;
+        }
+        if( id != 1 )
+        {
+            ImGui::SameLine();
+            if( SmallButtonDisablable( ICON_FA_SORT_AMOUNT_UP " Copy from statistics", m_statRange.min == 0 && m_statRange.max == 0 ) ) range = m_findZone.range;
         }
     }
 }

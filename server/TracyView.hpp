@@ -195,7 +195,7 @@ private:
     void DrawAnnotationList();
     void DrawSampleParents();
     void DrawRanges();
-    void DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel );
+    void DrawRangeEntry( Range& range, const char* label, uint32_t color, const char* popupLabel, int id );
 
     void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
 

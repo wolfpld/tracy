@@ -11,6 +11,11 @@
 extern "C" {
 #endif
 
+TRACY_API void ___tracy_set_thread_name( const char* name );
+
+#define TracyCSetThreadName( name ) ___tracy_set_thread_name( name );
+
+
 #ifndef TRACY_ENABLE
 
 typedef const void* TracyCZoneCtx;
@@ -167,10 +172,6 @@ TRACY_API void ___tracy_emit_message_appinfo( const char* txt, size_t size );
 
 #define TracyCPlot( name, val ) ___tracy_emit_plot( name, val );
 #define TracyCAppInfo( txt, color ) ___tracy_emit_message_appinfo( txt, color );
-
-TRACY_API void ___tracy_set_thread_name( const char* name );
-
-#define TracyCSetThreadName( name ) ___tracy_set_thread_name( name );
 
 
 #ifdef TRACY_HAS_CALLSTACK

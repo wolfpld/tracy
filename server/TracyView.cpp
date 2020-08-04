@@ -799,6 +799,7 @@ bool View::DrawImpl()
         }
         ImGui::EndPopup();
     }
+    m_setRangePopupOpen = ImGui::IsPopupOpen( "SetZoneRange" );
 
     if( m_zoomAnim.active )
     {
@@ -3226,6 +3227,14 @@ void View::DrawZones()
         DrawStripedRect( draw, wpos.x + px0, linepos.y, wpos.x + px1, linepos.y + lineh, 10 * ImGui::GetTextLineHeight() / 15.f, 0x228888EE );
         draw->AddLine( ImVec2( wpos.x + px0, linepos.y ), ImVec2( wpos.x + px0, linepos.y + lineh ), m_statRange.hiMin ? 0x998888EE : 0x338888EE, m_statRange.hiMin ? 2 : 1 );
         draw->AddLine( ImVec2( wpos.x + px1, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), m_statRange.hiMax ? 0x998888EE : 0x338888EE, m_statRange.hiMax ? 2 : 1 );
+    }
+
+    if( m_setRangePopup.active || m_setRangePopupOpen )
+    {
+        const auto s = std::min( m_setRangePopup.min, m_setRangePopup.max );
+        const auto e = std::max( m_setRangePopup.min, m_setRangePopup.max );
+        DrawStripedRect( draw, wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y, wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh, 5 * ImGui::GetTextLineHeight() / 15.f, 0x55DD8888 );
+        draw->AddRect( ImVec2( wpos.x + ( s - m_vd.zvStart ) * pxns, linepos.y ), ImVec2( wpos.x + ( e - m_vd.zvStart ) * pxns, linepos.y + lineh ), 0x77DD8888 );
     }
 
     if( m_highlight.active && m_highlight.start != m_highlight.end )

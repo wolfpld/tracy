@@ -474,6 +474,7 @@ private:
     bool m_sourceRegexValid = true;
 
     RangeSlim m_setRangePopup;
+    bool m_setRangePopupOpen = false;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };

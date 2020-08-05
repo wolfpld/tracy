@@ -1902,6 +1902,7 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
         m_zoomAnim.active = false;
         if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
         const auto delta = GetMouseDragDelta( 1 );
+        m_yDelta = delta.y;
         const auto dpx = int64_t( (delta.x * nspx) + (hwheel_delta * nspx));
         if( dpx != 0 )
         {
@@ -1921,12 +1922,6 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
                 m_vd.zvEnd = 1000ll * 1000 * 1000 * 60 * 60 * 24 * 5;
                 m_vd.zvStart = m_vd.zvEnd - range;
             }
-        }
-        if( delta.y != 0 )
-        {
-            auto y = ImGui::GetScrollY();
-            ImGui::SetScrollY( y - delta.y );
-            io.MouseClickedPos[1].y = io.MousePos.y;
         }
     }
 
@@ -2434,6 +2429,7 @@ void View::DrawZones()
     m_zoneHover2.Decay( nullptr );
     m_findZone.range.StartFrame();
     m_statRange.StartFrame();
+    m_yDelta = 0;
 
     if( m_vd.zvStart == m_vd.zvEnd ) return;
     assert( m_vd.zvStart < m_vd.zvEnd );
@@ -2493,6 +2489,14 @@ void View::DrawZones()
     const auto yMax = linepos.y + lineh;
 
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
+
+    if( m_yDelta != 0 )
+    {
+        auto& io = ImGui::GetIO();
+        auto y = ImGui::GetScrollY();
+        ImGui::SetScrollY( y - m_yDelta );
+        io.MouseClickedPos[1].y = io.MousePos.y;
+    }
 
     const auto wpos = ImGui::GetCursorScreenPos();
     const auto h = std::max<float>( m_vd.zvHeight, ImGui::GetContentRegionAvail().y - 4 );    // magic border value

@@ -446,6 +446,7 @@ private:
 
     bool m_reconnectRequested = false;
     int m_firstFrame = 10;
+    float m_yDelta;
 
     std::vector<SourceRegex> m_sourceSubstitutions;
     bool m_sourceRegexValid = true;

@@ -322,6 +322,7 @@ static void SetupVsync()
     s_threadVsync = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_threadVsync) Thread( [] (void*) {
         ThreadExitHandler threadExitHandler;
+        SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL );
         SetThreadName( "Tracy Vsync" );
         ProcessTrace( &s_traceHandleVsync2, 1, nullptr, nullptr );
     }, nullptr );
@@ -457,6 +458,7 @@ void SysTraceStop()
 void SysTraceWorker( void* ptr )
 {
     ThreadExitHandler threadExitHandler;
+    SetThreadPriority( GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL );
     SetThreadName( "Tracy SysTrace" );
     ProcessTrace( &s_traceHandle2, 1, 0, 0 );
     ControlTrace( 0, KERNEL_LOGGER_NAME, s_prop, EVENT_TRACE_CONTROL_STOP );

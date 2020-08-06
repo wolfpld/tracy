@@ -2010,6 +2010,7 @@ The control menu (top row of buttons) provides access to various features of the
 \item \emph{\faPlay{}~Playback} -- If frame images were captured (section~\ref{frameimages}), you will have option to open frame image playback window, described in chapter~\ref{playback}.
 \item \emph{\faSlidersH{}~CPU~data} -- If context switch data was captured (section~\ref{contextswitches}), this button will allow inspecting what was the processor load during the capture, as described in section~\ref{cpudata}.
 \item \emph{\faStickyNote{}~Annotations} -- If annotations have been made (section~\ref{annotatingtrace}), you can open a list of all annotations, described in chapter~\ref{annotationlist}.
+\item \emph{\faRuler{}~Limits} -- Displays time range limits window (section~\ref{timeranges}).
 \end{itemize}
 \end{itemize}
 
@@ -2387,18 +2388,37 @@ Another plot that is automatically provided by Tracy is the \emph{\faTachometer*
 
 Hovering the \faMousePointer{} mouse pointer over the timeline view will display a vertical line that can be used to visually line-up events in multiple threads. Dragging the \LMB{} left mouse button will display time measurement of the selected region.
 
-The timeline view may be scrolled both vertically and horizontally by dragging the \RMB{} right mouse button. Note that only the zones, locks and plots scroll vertically, while the time scale and frame sets always stay in place.
+The timeline view may be scrolled both vertically and horizontally by dragging the \RMB{} right mouse button. Note that only the zones, locks and plots scroll vertically, while the time scale and frame sets always stay on the top.
 
 You can zoom in and out the timeline view by using the \Scroll{} mouse scroll. You can select a range to which you want to zoom-in by dragging the \MMB{} middle mouse button. Dragging the \MMB{} middle mouse button while the \keys{\ctrl} key is pressed will zoom-out.
+
+\subsection{Time ranges}
+\label{timeranges}
+
+Sometimes you may want to specify a time range, for example to limit some statistics to a specific part of your program execution, or to mark interesting places.
+
+To define a time range, drag the \LMB{}~left mouse button over the timeline view, while holding the \keys{\ctrl} key. When the mouse key is released, the selected time extent will be marked with a blue striped pattern and a context menu will be displayed with the following options:
+
+\begin{itemize}
+\item \emph{\faSearch{}~Limit find zone time range} -- this will limit find zone results. See chapter~\ref{findzone} for more details.
+\item \emph{\faSortAmountUp{}~Limit statistics time range} -- selecting this option will limit statistics results. See chapter~\ref{statistics} for more details.
+\item \emph{\faStickyNote{}~Add annotation} -- use to annotate regions of interest, as described in chapter~\ref{annotatingtrace}.
+\end{itemize}
+
+Alternatively, you may specify the time range by clicking the \RMB{}~right mouse button on a zone or a frame. The resulting time extent will match the selected item.
+
+In order to reduce clutter, time ranges limiting the find zone\footnote{Marked with green striped pattern.} or statistics\footnote{Marked with red striped pattern.} results are only displayed if the find zone or statistics windows are open, or if the time range limits control window is open (section~\ref{timerangelimits}). Time range limits window can be accessed through the \emph{\faTools{} Tools} button on the control menu.
+
+Each time range can be freely adjusted on the timeline by clicking the \LMB{}~left mouse button on the range's edge and dragging the mouse.
 
 \subsubsection{Annotating the trace}
 \label{annotatingtrace}
 
-Sometimes you may want to add notes to a trace. For example, you may want to mark a region to ignore, because the application was out-of-focus, or a region where a new user was connecting to the game, which resulted in a frame drop that needs to be investigated.
+Tracy allows adding custom notes to the trace. For example, you may want to mark a region to ignore, because the application was out-of-focus, or a region where a new user was connecting to the game, which resulted in a frame drop that needs to be investigated.
 
-To add an annotation, drag the \LMB{}~left mouse button over the timeline view, while holding the \keys{\ctrl} key. When the mouse key is released, a new annotation region will be added and a settings window will open (section~\ref{annotationsettings}), allowing you to enter a description.
+Methods of specifying the annotation region are described in section~\ref{timeranges}. When a new annotation is added a settings window is displayed (section~\ref{annotationsettings}), allowing you to enter a description.
 
-Annotations are displayed on the timeline, as presented on figure~\ref{annotation}. Clicking on the circle next to the text description will open the annotation settings window, in which you can modify or remove the region.
+Annotations are displayed on the timeline, as presented on figure~\ref{annotation}. Clicking on the circle next to the text description will open the annotation settings window, in which you can modify or remove the region. List of all annotations in the trace is available in the annotations list window described in section~\ref{annotationlist}, which is accessible through the \emph{\faTools{} Tools} button on the control menu.
 
 \begin{figure}[h]
 \centering\begin{tikzpicture}
@@ -2489,6 +2509,8 @@ Clicking the \LMB{} left mouse button on a zone will open the individual zone st
 
 You can filter the displayed list of zones by matching the zone name to the expression in the \emph{\faFilter{}~Filter zones} entry field. Refer to section~\ref{messages} for a more detailed description of the expression syntax.
 
+To limit the statistics to a specific time extent, you may enable the \emph{Limit range} option (chapter~\ref{timeranges}). The inclusion region will be marked with a red striped pattern. Note that a zone must be fully inside the region to be counted. More options can be accessed through the \emph{\faRuler{}~Limits} button, which will open the time range limits window, described in section~\ref{timerangelimits}.
+
 \subsubsection{Sampling mode}
 \label{statisticssampling}
 
@@ -2508,7 +2530,7 @@ The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Sh
 
 The last column, \emph{Code size}, displays the size of symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol, and displayed as 'less than'. In some cases this data won't be available.
 
-Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case, and the exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only call stack samples, but also all other symbols collected during the profiling process (this is enabled by default, if no sampling was performed).
+Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case, and the exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch. Limiting the time range is also available, but is restricted to self time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only call stack samples, but also all other symbols collected during the profiling process (this is enabled by default, if no sampling was performed).
 
 \subsection{Find zone window}
 \label{findzone}
@@ -2655,7 +2677,7 @@ The frame time graph (section~\ref{frametimegraph}) behavior is altered when a z
 
 Each bar is drawn in gray color, with the white part accounting for the zone time. If the execution time is greater than the frame time (this is possible if more than one thread was executing the same zone), the overflow will be displayed using red color.
 
-Enabling \emph{Self time} option has an effect on the displayed values.
+Enabling \emph{Self time} option has an effect on the displayed values, but \emph{Running time} has not.
 
 \begin{bclogo}[
 noborder=true,
@@ -2667,7 +2689,7 @@ The displayed data might not be calculated correctly and some zones may not be i
 
 \subsubsection{Limiting zone time range}
 
-If the \emph{limit range} option is selected, only the zones within the specified time range will be included in the data. To indicate that the display is locked to a subset of all zones, a \faLock{}~lock icon will be displayed, and a yellow highlight matching the specified range will be present on the timeline view.
+If the \emph{Limit range} option is selected, only the zones within the specified time range (chapter~\ref{timeranges}) will be included in the data. The inclusion region will be marked with a green striped pattern. Note that a zone must be fully inside the region to be counted. More options can be accessed through the \emph{\faRuler{}~Limits} button, which will open the time range limits window, described in section~\ref{timerangelimits}.
 
 \subsection{Compare traces window}
 \label{compare}
@@ -3073,6 +3095,21 @@ This window lists all annotations marked on the timeline. Each annotation is pre
 \caption{Annotation list entry}
 \label{figannlist}
 \end{figure}
+
+\subsection{Time range limits}
+\label{timerangelimits}
+
+This window displays information about time range limits (section~\ref{timeranges}) for find zone (section~\ref{findzone}) and statistics (section~\ref{statistics}) results. Each limit can be enabled or disabled and adjusted through the following options:
+
+\begin{itemize}
+\item \emph{Limit to view} -- Set the time range limit to current view.
+\item \emph{\faMicroscope{}~Focus} -- Set the timeline view to the time range extent.
+\item \emph{\faStickyNote{}~Set from annotation} -- Allows using the annotation region for limiting purposes.
+\item \emph{\faSortAmountUp{}~Copy from statistics} -- Copies the statistics time range limit.
+\item \emph{\faSearch{}~Copy from find zone} -- Copies the find zone time range limit.
+\end{itemize}
+
+Note that ranges displayed in the window have color hints that match color of the striped regions on the timeline.
 
 \section{Exporting zone statistics to CSV}
 \label{csvexport}

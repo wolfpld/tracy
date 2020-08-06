@@ -14748,7 +14748,7 @@ void View::DrawRangeEntry( Range& range, const char* label, uint32_t color, cons
         if( id != 1 )
         {
             ImGui::SameLine();
-            if( SmallButtonDisablable( ICON_FA_SORT_AMOUNT_UP " Copy from statistics", m_statRange.min == 0 && m_statRange.max == 0 ) ) range = m_findZone.range;
+            if( SmallButtonDisablable( ICON_FA_SORT_AMOUNT_UP " Copy from statistics", m_statRange.min == 0 && m_statRange.max == 0 ) ) range = m_statRange;
         }
     }
 }

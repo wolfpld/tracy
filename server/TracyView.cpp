@@ -773,23 +773,23 @@ bool View::DrawImpl()
     }
     if( ImGui::BeginPopup( "SetZoneRange" ) )
     {
+        const auto s = std::min( m_setRangePopup.min, m_setRangePopup.max );
+        const auto e = std::max( m_setRangePopup.min, m_setRangePopup.max );
         if( ImGui::Selectable( ICON_FA_SEARCH " Limit find zone time range" ) )
         {
             m_findZone.range.active = true;
-            m_findZone.range.min = m_setRangePopup.min;
-            m_findZone.range.max = m_setRangePopup.max;
+            m_findZone.range.min = s;
+            m_findZone.range.max = e;
         }
         if( ImGui::Selectable( ICON_FA_SORT_AMOUNT_UP " Limit statistics time range" ) )
         {
             m_statRange.active = true;
-            m_statRange.min = m_setRangePopup.min;
-            m_statRange.max = m_setRangePopup.max;
+            m_statRange.min = s;
+            m_statRange.max = e;
         }
         if( ImGui::Selectable( ICON_FA_STICKY_NOTE " Add annotation" ) )
         {
             auto ann = std::make_unique<Annotation>();
-            const auto s = std::min( m_setRangePopup.min, m_setRangePopup.max );
-            const auto e = std::max( m_setRangePopup.min, m_setRangePopup.max );
             ann->range.active = true;
             ann->range.min = s;
             ann->range.max = e;

@@ -11822,7 +11822,25 @@ void View::DrawStatistics()
     {
         ImGui::Checkbox( ICON_FA_STOPWATCH " Show time", &m_statSampleTime );
         ImGui::SameLine();
-        ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
+        if( m_statRange.active )
+        {
+            ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
+            ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
+            bool val = true;
+            ImGui::Checkbox( ICON_FA_CLOCK " Self time", &val );
+            ImGui::PopItemFlag();
+            ImGui::PopStyleVar();
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Time range limits are only available for self time" );
+                ImGui::EndTooltip();
+            }
+        }
+        else
+        {
+            ImGui::Checkbox( ICON_FA_CLOCK " Self time", &m_statSelf );
+        }
         ImGui::SameLine();
         ImGui::Checkbox( ICON_FA_EYE_SLASH " Hide unknown", &m_statHideUnknown );
         ImGui::SameLine();

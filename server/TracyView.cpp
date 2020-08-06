@@ -11689,22 +11689,90 @@ void View::DrawStatistics()
         auto& slz = m_worker.GetSourceLocationZones();
         srcloc.reserve( slz.size() );
         uint32_t slzcnt = 0;
-        for( auto it = slz.begin(); it != slz.end(); ++it )
+        if( m_statRange.active )
         {
-            if( it->second.total != 0 )
+            const auto min = m_statRange.min;
+            const auto max = m_statRange.max;
+            const auto st = max - min;
+            for( auto it = slz.begin(); it != slz.end(); ++it )
             {
-                slzcnt++;
-                if( !filterActive )
+                if( it->second.total != 0 && it->second.min <= st )
                 {
-                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, it->second.zones.size(), it->second.total, it->second.selfTotal } );
+                    if( !filterActive )
+                    {
+                        size_t cnt = 0;
+                        int64_t total = 0;
+                        int64_t selfTotal = 0;
+                        for( auto& v : it->second.zones )
+                        {
+                            auto& z = *v.Zone();
+                            const auto start = z.Start();
+                            const auto end = z.End();
+                            if( start >= min && end <= max )
+                            {
+                                const auto zt = end - start;
+                                total += zt;
+                                if( m_statSelf ) selfTotal += zt - GetZoneChildTimeFast( z );
+                                cnt++;
+                            }
+                        }
+                        if( cnt != 0 )
+                        {
+                            slzcnt++;
+                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total, selfTotal } );
+                        }
+                    }
+                    else
+                    {
+                        slzcnt++;
+                        auto& sl = m_worker.GetSourceLocation( it->first );
+                        auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
+                        if( m_statisticsFilter.PassFilter( name ) )
+                        {
+                            size_t cnt = 0;
+                            int64_t total = 0;
+                            int64_t selfTotal = 0;
+                            for( auto& v : it->second.zones )
+                            {
+                                auto& z = *v.Zone();
+                                const auto start = z.Start();
+                                const auto end = z.End();
+                                if( start >= min && end <= max )
+                                {
+                                    const auto zt = end - start;
+                                    total += zt;
+                                    if( m_statSelf ) selfTotal += zt - GetZoneChildTimeFast( z );
+                                    cnt++;
+                                }
+                            }
+                            if( cnt != 0 )
+                            {
+                                srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, cnt, total, selfTotal } );
+                            }
+                        }
+                    }
                 }
-                else
+            }
+        }
+        else
+        {
+            for( auto it = slz.begin(); it != slz.end(); ++it )
+            {
+                if( it->second.total != 0 )
                 {
-                    auto& sl = m_worker.GetSourceLocation( it->first );
-                    auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
-                    if( m_statisticsFilter.PassFilter( name ) )
+                    slzcnt++;
+                    if( !filterActive )
                     {
                         srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, it->second.zones.size(), it->second.total, it->second.selfTotal } );
+                    }
+                    else
+                    {
+                        auto& sl = m_worker.GetSourceLocation( it->first );
+                        auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
+                        if( m_statisticsFilter.PassFilter( name ) )
+                        {
+                            srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, it->second.zones.size(), it->second.total, it->second.selfTotal } );
+                        }
                     }
                 }
             }

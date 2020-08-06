@@ -11616,6 +11616,14 @@ void View::DrawCompare()
     ImGui::End();
 }
 
+struct SrcLocZonesSlim
+{
+    int16_t srcloc;
+    size_t numZones;
+    int64_t total;
+    int64_t selfTotal;
+};
+
 void View::DrawStatistics()
 {
     ImGui::SetNextWindowSize( ImVec2( 1400, 600 ), ImGuiCond_FirstUseEver );
@@ -11662,8 +11670,7 @@ void View::DrawStatistics()
         }
     }
 
-    auto& slz = m_worker.GetSourceLocationZones();
-    Vector<decltype(slz.begin())> srcloc;
+    Vector<SrcLocZonesSlim> srcloc;
 
     if( m_statMode == 0 )
     {
@@ -11679,6 +11686,7 @@ void View::DrawStatistics()
         }
 
         const auto filterActive = m_statisticsFilter.IsActive();
+        auto& slz = m_worker.GetSourceLocationZones();
         srcloc.reserve( slz.size() );
         uint32_t slzcnt = 0;
         for( auto it = slz.begin(); it != slz.end(); ++it )
@@ -11688,7 +11696,7 @@ void View::DrawStatistics()
                 slzcnt++;
                 if( !filterActive )
                 {
-                    srcloc.push_back_no_space_check( it );
+                    srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, it->second.zones.size(), it->second.total, it->second.selfTotal } );
                 }
                 else
                 {
@@ -11696,7 +11704,7 @@ void View::DrawStatistics()
                     auto name = m_worker.GetString( sl.name.active ? sl.name : sl.function );
                     if( m_statisticsFilter.PassFilter( name ) )
                     {
-                        srcloc.push_back_no_space_check( it );
+                        srcloc.push_back_no_space_check( SrcLocZonesSlim { it->first, it->second.zones.size(), it->second.total, it->second.selfTotal } );
                     }
                 }
             }
@@ -11707,24 +11715,24 @@ void View::DrawStatistics()
         case 0:
             if( m_statSelf )
             {
-                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.selfTotal > rhs->second.selfTotal; } );
+                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal > rhs.selfTotal; } );
             }
             else
             {
-                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total > rhs->second.total; } );
+                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total > rhs.total; } );
             }
             break;
         case 1:
-            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.zones.size() > rhs->second.zones.size(); } );
+            pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.numZones > rhs.numZones; } );
             break;
         case 2:
             if( m_statSelf )
             {
-                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.selfTotal / lhs->second.zones.size() > rhs->second.selfTotal / rhs->second.zones.size(); } );
+                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.selfTotal / lhs.numZones > rhs.selfTotal / rhs.numZones; } );
             }
             else
             {
-                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second.total / lhs->second.zones.size() > rhs->second.total / rhs->second.zones.size(); } );
+                pdqsort_branchless( srcloc.begin(), srcloc.end(), []( const auto& lhs, const auto& rhs ) { return lhs.total / lhs.numZones > rhs.total / rhs.numZones; } );
             }
             break;
         default:
@@ -11832,18 +11840,18 @@ void View::DrawStatistics()
             const auto lastTime = m_worker.GetLastTime();
             for( auto& v : srcloc )
             {
-                ImGui::PushID( v->first );
-                auto& srcloc = m_worker.GetSourceLocation( v->first );
+                ImGui::PushID( v.srcloc );
+                auto& srcloc = m_worker.GetSourceLocation( v.srcloc );
                 auto name = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
                 SmallColorBox( GetSrcLocColor( srcloc, 0 ) );
                 ImGui::SameLine();
-                if( ImGui::Selectable( name, m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == v->first, ImGuiSelectableFlags_SpanAllColumns ) )
+                if( ImGui::Selectable( name, m_findZone.show && !m_findZone.match.empty() && m_findZone.match[m_findZone.selMatch] == v.srcloc, ImGuiSelectableFlags_SpanAllColumns ) )
                 {
-                    m_findZone.ShowZone( v->first, name );
+                    m_findZone.ShowZone( v.srcloc, name );
                 }
                 ImGui::NextColumn();
                 float indentVal = 0.f;
-                if( m_statBuzzAnim.Match( v->first ) )
+                if( m_statBuzzAnim.Match( v.srcloc ) )
                 {
                     const auto time = m_statBuzzAnim.Time();
                     indentVal = sin( time * 60.f ) * 10.f * time;
@@ -11860,7 +11868,7 @@ void View::DrawStatistics()
                     }
                     else
                     {
-                        m_statBuzzAnim.Enable( v->first, 0.5f );
+                        m_statBuzzAnim.Enable( v.srcloc, 0.5f );
                     }
                 }
                 if( indentVal != 0.f )
@@ -11868,16 +11876,16 @@ void View::DrawStatistics()
                     ImGui::Unindent( indentVal );
                 }
                 ImGui::NextColumn();
-                const auto time = m_statSelf ? v->second.selfTotal : v->second.total;
+                const auto time = m_statSelf ? v.selfTotal : v.total;
                 ImGui::TextUnformatted( TimeToString( time ) );
                 ImGui::SameLine();
                 char buf[64];
                 PrintStringPercent( buf, 100. * time / lastTime );
                 TextDisabledUnformatted( buf );
                 ImGui::NextColumn();
-                ImGui::TextUnformatted( RealToString( v->second.zones.size() ) );
+                ImGui::TextUnformatted( RealToString( v.numZones ) );
                 ImGui::NextColumn();
-                ImGui::TextUnformatted( TimeToString( ( m_statSelf ? v->second.selfTotal : v->second.total ) / v->second.zones.size() ) );
+                ImGui::TextUnformatted( TimeToString( ( m_statSelf ? v.selfTotal : v.total ) / v.numZones ) );
                 ImGui::NextColumn();
                 ImGui::PopID();
             }

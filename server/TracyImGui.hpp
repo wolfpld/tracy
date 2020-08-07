@@ -183,6 +183,7 @@ namespace tracy
 
         const auto rw = x1 - x0;
         const auto rh = y1 - y0;
+        const auto cnt = int((rh + rw + sw * 2) / (sw * 2));
         auto v0 = ImVec2( x0, y0 - rw);
 
         if (fix_stripes_in_screen_space)
@@ -199,7 +200,6 @@ namespace tracy
             v0.y = window_width - corrected_flipped_v0y - double(inverted * sw);
         }
 
-        const auto cnt = int( ( rh + rw + 2*sw*2 ) / ( sw*2 ) );
         for( int i=0; i<cnt; i++ )
         {
             draw->PathLineTo( v0 + ImVec2( 0, i*sw*2 ) );

@@ -11826,6 +11826,7 @@ void View::DrawStatistics()
         {
             ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
             ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
+            m_statSelf = true;
             bool val = true;
             ImGui::Checkbox( ICON_FA_CLOCK " Self time", &val );
             ImGui::PopItemFlag();

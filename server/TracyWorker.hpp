@@ -502,6 +502,7 @@ public:
 #ifndef TRACY_NO_STATISTICS
     const VarArray<CallstackFrameId>& GetParentCallstack( uint32_t idx ) const { return *m_data.parentCallstackPayload[idx]; }
     const CallstackFrameData* GetParentCallstackFrame( const CallstackFrameId& ptr ) const;
+    const Vector<Int48>* GetSamplesForSymbol( uint64_t symAddr ) const;
 #endif
 
     const CrashEvent& GetCrashEvent() const { return m_data.crashEvent; }

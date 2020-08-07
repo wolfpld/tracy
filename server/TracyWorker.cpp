@@ -2057,6 +2057,14 @@ const CallstackFrameData* Worker::GetParentCallstackFrame( const CallstackFrameI
         return it->second;
     }
 }
+
+const Vector<Int48>* Worker::GetSamplesForSymbol( uint64_t symAddr ) const
+{
+    assert( m_data.symbolSamplesReady );
+    auto it = m_data.symbolSamples.find( symAddr );
+    if( it == m_data.symbolSamples.end() ) return nullptr;
+    return &it->second;
+}
 #endif
 
 const SymbolData* Worker::GetSymbolData( uint64_t sym ) const

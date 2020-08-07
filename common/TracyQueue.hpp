@@ -302,7 +302,8 @@ enum class GpuContextType : uint8_t
     OpenGl,
     Vulkan,
     OpenCL,
-    Direct3D12
+    Direct3D12,
+    Direct3D11
 };
 
 enum GpuContextFlags : uint8_t

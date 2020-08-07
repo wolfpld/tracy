@@ -12042,7 +12042,32 @@ void View::DrawStatistics()
                         }
                         else
                         {
-                            data.push_back_no_space_check( SymList { v.first, it->second.incl, it->second.excl } );
+                            if( m_statRange.active )
+                            {
+                                auto samples = m_worker.GetSamplesForSymbol( v.first );
+                                if( samples )
+                                {
+                                    auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                    if( it != samples->end() )
+                                    {
+                                        auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                        const auto count = uint32_t( end - it );
+                                        data.push_back_no_space_check( SymList { v.first, 0, count } );
+                                    }
+                                    else
+                                    {
+                                        data.push_back_no_space_check( SymList { v.first, 0, 0 } );
+                                    }
+                                }
+                                else
+                                {
+                                    data.push_back_no_space_check( SymList { v.first, 0, 0 } );
+                                }
+                            }
+                            else
+                            {
+                                data.push_back_no_space_check( SymList { v.first, it->second.incl, it->second.excl } );
+                            }
                         }
                     }
                 }
@@ -12058,7 +12083,32 @@ void View::DrawStatistics()
                     }
                     else
                     {
-                        data.push_back_no_space_check( SymList { v.first, it->second.incl, it->second.excl } );
+                        if( m_statRange.active )
+                        {
+                            auto samples = m_worker.GetSamplesForSymbol( v.first );
+                            if( samples )
+                            {
+                                auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                if( it != samples->end() )
+                                {
+                                    auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                    const auto count = uint32_t( end - it );
+                                    data.push_back_no_space_check( SymList { v.first, 0, count } );
+                                }
+                                else
+                                {
+                                    data.push_back_no_space_check( SymList { v.first, 0, 0 } );
+                                }
+                            }
+                            else
+                            {
+                                data.push_back_no_space_check( SymList { v.first, 0, 0 } );
+                            }
+                        }
+                        else
+                        {
+                            data.push_back_no_space_check( SymList { v.first, it->second.incl, it->second.excl } );
+                        }
                     }
                 }
             }
@@ -12090,16 +12140,53 @@ void View::DrawStatistics()
                         }
                         if( pass )
                         {
-                            data.push_back_no_space_check( SymList { v.first, v.second.incl, v.second.excl } );
+                            if( m_statRange.active )
+                            {
+                                auto samples = m_worker.GetSamplesForSymbol( v.first );
+                                if( samples )
+                                {
+                                    auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                    if( it != samples->end() )
+                                    {
+                                        auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                        const auto count = uint32_t( end - it );
+                                        data.push_back_no_space_check( SymList { v.first, 0, count } );
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                data.push_back_no_space_check( SymList { v.first, v.second.incl, v.second.excl } );
+                            }
                         }
                     }
                 }
             }
             else
             {
-                for( auto& v : symStat )
+                if( m_statRange.active )
                 {
-                    data.push_back_no_space_check( SymList { v.first, v.second.incl, v.second.excl } );
+                    for( auto& v : symStat )
+                    {
+                        auto samples = m_worker.GetSamplesForSymbol( v.first );
+                        if( samples )
+                        {
+                            auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                            if( it != samples->end() )
+                            {
+                                auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                const auto count = uint32_t( end - it );
+                                data.push_back_no_space_check( SymList { v.first, 0, count } );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    for( auto& v : symStat )
+                    {
+                        data.push_back_no_space_check( SymList { v.first, v.second.incl, v.second.excl } );
+                    }
                 }
             }
         }

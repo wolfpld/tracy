@@ -188,16 +188,16 @@ namespace tracy
 
         if (fix_stripes_in_screen_space)
         {
-            const auto window_width = double(ImGui::GetWindowHeight());
+            const auto window_width = double( ImGui::GetWindowHeight() );
             const auto flipped_v0y = window_width - v0.y; //we transform into a y-is-up coordinate space to achieve upper-left to lower-right stripes. If we didn't, we would calculate values for lower-left to upper-right
 
             const auto manhatten_distance = x0 + flipped_v0y;
-            const auto in_multiples_of_2_times_sw = int(manhatten_distance / (sw * 2));
+            const auto in_multiples_of_2_times_sw = int( manhatten_distance / ( sw*2 ) );
         
-            const auto floored_manhatten_distance = double(in_multiples_of_2_times_sw * sw * 2); //floor in terms of 2 * stripe width
+            const auto floored_manhatten_distance = double( in_multiples_of_2_times_sw*sw*2 ); //floor in terms of 2 * stripe width
 
-            const auto corrected_flipped_v0y = (floored_manhatten_distance - x0); //we transform back into y-is-down imgui space
-            v0.y = window_width - corrected_flipped_v0y - double(inverted * sw);
+            const auto corrected_flipped_v0y = ( floored_manhatten_distance - x0 ); //the corrected (floored) y respects the position of the stripes
+            v0.y = window_width - corrected_flipped_v0y - double( inverted*sw ); //transform back into y-is-down imgui space
         }
 
         for( int i=0; i<cnt; i++ )

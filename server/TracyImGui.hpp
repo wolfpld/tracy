@@ -164,7 +164,7 @@ namespace tracy
         return res;
     }
 
-    static void DrawStripedRect( ImDrawList* draw, double x0, double y0, double x1, double y1, double sw, uint32_t color )
+    static void DrawStripedRect( ImDrawList* draw, double x0, double y0, double x1, double y1, double sw, uint32_t color, bool fix_stripes_in_screen_space, bool inverted )
     {
         assert( x1 >= x0 );
         assert( y1 >= y0 );
@@ -183,8 +183,23 @@ namespace tracy
 
         const auto rw = x1 - x0;
         const auto rh = y1 - y0;
-        const auto v0 = ImVec2( x0, y0 - rw );
         const auto cnt = int( ( rh + rw + sw*2 ) / ( sw*2 ) );
+        auto v0 = ImVec2( x0, y0 - rw );
+
+        if ( fix_stripes_in_screen_space )
+        {
+            const auto window_height = double( ImGui::GetWindowHeight() );
+            const auto flipped_v0y = window_height - v0.y; //we transform into a y-is-up coordinate space to achieve upper-left to lower-right stripes. If we didn't, we would calculate values for lower-left to upper-right
+
+            const auto manhatten_distance = x0 + flipped_v0y;
+            const auto in_multiples_of_2_times_sw = int( manhatten_distance / ( sw*2 ) );
+        
+            const auto floored_manhatten_distance = double( in_multiples_of_2_times_sw*sw*2 ); //floor in terms of 2 * stripe width
+
+            const auto corrected_flipped_v0y = ( floored_manhatten_distance - x0 ); //the corrected (floored) y respects the position of the stripes
+            v0.y = window_height - corrected_flipped_v0y - double( inverted*sw ); //transform back into y-is-down imgui space
+        }
+
         for( int i=0; i<cnt; i++ )
         {
             draw->PathLineTo( v0 + ImVec2( 0, i*sw*2 ) );

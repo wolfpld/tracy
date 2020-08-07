@@ -292,6 +292,7 @@ private:
         bool callstackSamplesReady = false;
         bool ghostZonesReady = false;
         bool ghostZonesPostponed = false;
+        bool symbolSamplesReady = false;
 #endif
 
         unordered_flat_map<uint32_t, LockMap*> lockMap;
@@ -552,6 +553,7 @@ public:
     const unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare>* GetSymbolInstructionPointers( uint64_t symAddr ) const;
     bool AreCallstackSamplesReady() const { return m_data.callstackSamplesReady; }
     bool AreGhostZonesReady() const { return m_data.ghostZonesReady; }
+    bool AreSymbolSamplesReady() const { return m_data.symbolSamplesReady; }
 #endif
 
     tracy_force_inline uint16_t CompressThread( uint64_t thread ) { return m_data.localThreadCompress.CompressThread( thread ); }

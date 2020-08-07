@@ -11869,20 +11869,39 @@ void View::DrawStatistics()
     ImGui::SameLine();
     ImGui::Spacing();
     ImGui::SameLine();
-    if( ImGui::Checkbox( "Limit range", &m_statRange.active ) )
+    if( m_statMode == 1 && !m_worker.AreSymbolSamplesReady() )
     {
-        if( m_statRange.active && m_statRange.min == 0 && m_statRange.max == 0 )
+        m_statRange.active = false;
+        bool val = false;
+        ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
+        ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
+        ImGui::Checkbox( "Limit range", &val );
+        ImGui::PopItemFlag();
+        ImGui::PopStyleVar();
+        if( ImGui::IsItemHovered() )
         {
-            m_statRange.min = m_vd.zvStart;
-            m_statRange.max = m_vd.zvEnd;
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted( "Waiting for background tasks to finish" );
+            ImGui::EndTooltip();
         }
     }
-    if( m_statRange.active )
+    else
     {
-        ImGui::SameLine();
-        TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
-        ImGui::SameLine();
-        ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+        if( ImGui::Checkbox( "Limit range", &m_statRange.active ) )
+        {
+            if( m_statRange.active && m_statRange.min == 0 && m_statRange.max == 0 )
+            {
+                m_statRange.min = m_vd.zvStart;
+                m_statRange.max = m_vd.zvEnd;
+            }
+        }
+        if( m_statRange.active )
+        {
+            ImGui::SameLine();
+            TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+            ImGui::SameLine();
+            ToggleButton( ICON_FA_RULER " Limits", m_showRanges );
+        }
     }
 
     ImGui::Separator();

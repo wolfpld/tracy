@@ -264,6 +264,7 @@ Worker::Worker( const char* addr, int port )
     m_data.callstackSamplesReady = true;
     m_data.ghostZonesReady = true;
     m_data.ctxUsageReady = true;
+    m_data.symbolSamplesReady = true;
 #endif
 
     m_thread = std::thread( [this] { SetThreadName( "Tracy Worker" ); Exec(); } );

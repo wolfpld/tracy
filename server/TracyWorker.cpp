@@ -1670,6 +1670,39 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                     m_data.ghostZonesReady = true;
                     m_data.ghostCnt = gcnt;
                 } ) );
+
+                jobs.emplace_back( std::thread( [this] {
+                    for( auto& t : m_data.threads )
+                    {
+                        for( auto& v : t->samples )
+                        {
+                            const auto& time = v.time;
+                            const auto cs = v.callstack.Val();
+                            const auto& callstack = GetCallstack( cs );
+                            auto& ip = callstack[0];
+                            auto frame = GetCallstackFrame( ip );
+                            if( frame )
+                            {
+                                const auto symAddr = frame->data[0].symAddr;
+                                auto it = m_data.symbolSamples.find( symAddr );
+                                if( it == m_data.symbolSamples.end() )
+                                {
+                                    m_data.symbolSamples.emplace( symAddr, Vector<Int48>( time ) );
+                                }
+                                else
+                                {
+                                    it->second.push_back( time );
+                                }
+                            }
+                        }
+                    }
+                    for( auto& v : m_data.symbolSamples )
+                    {
+                        pdqsort_branchless( v.second.begin(), v.second.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs.Val(); } );
+                    }
+                    std::lock_guard<std::shared_mutex> lock( m_data.lock );
+                    m_data.symbolSamplesReady = true;
+                } ) );
             }
 
             for( auto& job : jobs ) job.join();

@@ -184,9 +184,9 @@ namespace tracy
         const auto rw = x1 - x0;
         const auto rh = y1 - y0;
         const auto cnt = int( ( rh + rw + sw*2 ) / ( sw*2 ) );
-        auto v0 = ImVec2( x0, y0 - rw);
+        auto v0 = ImVec2( x0, y0 - rw );
 
-        if (fix_stripes_in_screen_space)
+        if ( fix_stripes_in_screen_space )
         {
             const auto window_width = double( ImGui::GetWindowHeight() );
             const auto flipped_v0y = window_width - v0.y; //we transform into a y-is-up coordinate space to achieve upper-left to lower-right stripes. If we didn't, we would calculate values for lower-left to upper-right

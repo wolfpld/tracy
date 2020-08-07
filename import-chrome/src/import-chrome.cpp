@@ -105,7 +105,7 @@ int main( int argc, char** argv )
         {
             const auto tid = v["tid"].get<uint64_t>();
             const auto ts0 = uint64_t( v["ts"].get<double>() * 1000. );
-            const auto ts1 = v["dur"].is_object() ? ts0 + uint64_t( v["dur"].get<double>() * 1000. ) : ts0;
+            const auto ts1 = ts0 + uint64_t( v["dur"].get<double>() * 1000. );
             const auto name = v["name"].get<std::string>();
             timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts0, name, std::move(zoneText), false } );
             timeline.emplace_back( tracy::Worker::ImportEventTimeline { tid, ts1, "", "", true } );

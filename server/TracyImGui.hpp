@@ -183,7 +183,7 @@ namespace tracy
 
         const auto rw = x1 - x0;
         const auto rh = y1 - y0;
-        const auto cnt = int( (rh + rw + sw * 2) / (sw * 2) );
+        const auto cnt = int( ( rh + rw + sw*2 ) / ( sw*2 ) );
         auto v0 = ImVec2( x0, y0 - rw);
 
         if (fix_stripes_in_screen_space)

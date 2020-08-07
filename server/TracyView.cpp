@@ -12191,6 +12191,8 @@ void View::DrawStatistics()
             }
         }
 
+        static unordered_flat_map<uint64_t, SymList> inlineMap;
+        assert( inlineMap.empty() );
         if( !m_statSeparateInlines )
         {
             static unordered_flat_map<uint64_t, SymList> baseMap;
@@ -12212,6 +12214,7 @@ void View::DrawStatistics()
                     it->second.count++;
                 }
             }
+            for( auto& v : data ) inlineMap.emplace( v.symAddr, SymList { v.symAddr, v.incl, v.excl, v.count } );
             data.clear();
             for( auto& v : baseMap )
             {
@@ -12355,8 +12358,8 @@ void View::DrawStatistics()
                     }
                     else
                     {
-                        auto it = symStat.find( v.symAddr );
-                        excl = it != symStat.end() ? it->second.excl : 0;
+                        auto it = inlineMap.find( v.symAddr );
+                        excl = it != inlineMap.end() ? it->second.excl : 0;
                     }
                     if( v.symAddr == 0 || excl == 0 )
                     {
@@ -12470,8 +12473,8 @@ void View::DrawStatistics()
                         Vector<SymList> inSymList;
                         while( *inSym < symEnd )
                         {
-                            auto sit = symStat.find( *inSym );
-                            if( sit != symStat.end() )
+                            auto sit = inlineMap.find( *inSym );
+                            if( sit != inlineMap.end() )
                             {
                                 inSymList.push_back( SymList { *inSym, sit->second.incl, sit->second.excl } );
                             }
@@ -12481,8 +12484,8 @@ void View::DrawStatistics()
                             }
                             inSym++;
                         }
-                        auto statIt = symStat.find( v.symAddr );
-                        if( statIt != symStat.end() )
+                        auto statIt = inlineMap.find( v.symAddr );
+                        if( statIt != inlineMap.end() )
                         {
                             inSymList.push_back( SymList { v.symAddr, statIt->second.incl, statIt->second.excl } );
                         }
@@ -12623,6 +12626,8 @@ void View::DrawStatistics()
             }
             ImGui::EndColumns();
             ImGui::EndChild();
+
+            inlineMap.clear();
         }
     }
 #endif

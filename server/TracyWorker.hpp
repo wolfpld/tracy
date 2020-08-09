@@ -289,6 +289,7 @@ private:
         unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> pendingInstructionPointers;
         unordered_flat_map<uint64_t, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare>> instructionPointersMap;
         unordered_flat_map<uint64_t, Vector<Int48>> symbolSamples;
+        unordered_flat_map<CallstackFrameId, Vector<Int48>, CallstackFrameIdHash, CallstackFrameIdCompare> pendingSymbolSamples;
         bool newFramesWereReceived = false;
         bool callstackSamplesReady = false;
         bool ghostZonesReady = false;

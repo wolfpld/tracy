@@ -5358,7 +5358,7 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
 #ifndef TRACY_NO_STATISTICS
     const auto& cs = GetCallstack( m_pendingCallstackId );
     {
-        auto& ip = cs[0];
+        const auto& ip = cs[0];
         auto frame = GetCallstackFrame( ip );
         if( frame )
         {
@@ -5380,6 +5380,23 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
                     fit->second++;
                 }
             }
+            auto sit = m_data.symbolSamples.find( symAddr );
+            if( sit == m_data.symbolSamples.end() )
+            {
+                m_data.symbolSamples.emplace( symAddr, Vector<Int48>( sd.time ) );
+            }
+            else
+            {
+                if( sit->second.back().Val() <= sd.time.Val() )
+                {
+                    sit->second.push_back_non_empty( sd.time );
+                }
+                else
+                {
+                    auto iit = std::upper_bound( sit->second.begin(), sit->second.end(), sd.time.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.Val(); } );
+                    sit->second.insert( iit, sd.time );
+                }
+            }
         }
         else
         {
@@ -5392,11 +5409,19 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
             {
                 it->second++;
             }
+            auto sit = m_data.pendingSymbolSamples.find( ip );
+            if( sit == m_data.pendingSymbolSamples.end() )
+            {
+                m_data.pendingSymbolSamples.emplace( ip, Vector<Int48>( sd.time ) );
+            }
+            else
+            {
+                sit->second.push_back_non_empty( sd.time );
+            }
         }
     }
 
     const auto framesKnown = UpdateSampleStatistics( m_pendingCallstackId, 1, true );
-
     assert( td->samples.size() > td->ghostIdx );
     if( framesKnown && td->ghostIdx + 1 == td->samples.size() )
     {
@@ -5483,6 +5508,35 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
                 }
             }
             m_data.pendingInstructionPointers.erase( it );
+        }
+        auto pit = m_data.pendingSymbolSamples.find( frameId );
+        if( pit != m_data.pendingSymbolSamples.end() )
+        {
+            if( ev.symAddr != 0 )
+            {
+                auto sit = m_data.symbolSamples.find( ev.symAddr );
+                if( sit == m_data.symbolSamples.end() )
+                {
+                    pdqsort_branchless( pit->second.begin(), pit->second.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs.Val(); } );
+                    m_data.symbolSamples.emplace( ev.symAddr, std::move( pit->second ) );
+                }
+                else
+                {
+                    for( auto& v : pit->second )
+                    {
+                        if( sit->second.back().Val() <= v.Val() )
+                        {
+                            sit->second.push_back_non_empty( v );
+                        }
+                        else
+                        {
+                            auto iit = std::upper_bound( sit->second.begin(), sit->second.end(), v.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.Val(); } );
+                            sit->second.insert( iit, v );
+                        }
+                    }
+                }
+            }
+            m_data.pendingSymbolSamples.erase( pit );
         }
 #endif
 

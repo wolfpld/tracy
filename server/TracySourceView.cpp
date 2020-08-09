@@ -1106,7 +1106,6 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
     {
         ImGui::RadioButton( "Assembly", &m_displayMode, DisplayAsm );
     }
-    ImGui::PopStyleVar();
 
     if( !m_asm.empty() )
     {
@@ -1148,8 +1147,47 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         ImGui::Spacing();
         ImGui::SameLine();
         TextFocused( ICON_FA_EYE_DROPPER " Samples:", RealToString( iptotalAsm ) );
+        ImGui::SameLine();
+        ImGui::Spacing();
+        ImGui::SameLine();
+        if( !worker.AreSymbolSamplesReady() )
+        {
+            view.m_statRange.active = false;
+            bool val = false;
+            ImGui::PushItemFlag( ImGuiItemFlags_Disabled, true );
+            ImGui::PushStyleVar( ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f );
+            ImGui::Checkbox( "Limit range", &val );
+            ImGui::PopItemFlag();
+            ImGui::PopStyleVar();
+            if( ImGui::IsItemHovered() )
+            {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted( "Waiting for background tasks to finish" );
+                ImGui::EndTooltip();
+            }
+        }
+        else
+        {
+            if( ImGui::Checkbox( "Limit range", &view.m_statRange.active ) )
+            {
+                if( view.m_statRange.active && view.m_statRange.min == 0 && view.m_statRange.max == 0 )
+                {
+                    const auto& vd = view.GetViewData();
+                    view.m_statRange.min = vd.zvStart;
+                    view.m_statRange.max = vd.zvEnd;
+                }
+            }
+            if( view.m_statRange.active )
+            {
+                ImGui::SameLine();
+                TextColoredUnformatted( 0xFF00FFFF, ICON_FA_EXCLAMATION_TRIANGLE );
+                ImGui::SameLine();
+                ToggleButton( ICON_FA_RULER " Limits", view.m_showRanges );
+            }
+        }
     }
 
+    ImGui::PopStyleVar();
     ImGui::Separator();
 
     uint64_t jumpOut = 0;

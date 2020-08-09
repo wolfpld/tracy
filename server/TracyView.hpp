@@ -94,6 +94,11 @@ public:
     const char* SourceSubstitution( const char* srcFile ) const;
 
     void ShowSampleParents( uint64_t symAddr ) { m_sampleParents.symAddr = symAddr; m_sampleParents.sel = 0; }
+    const ViewData& GetViewData() const { return m_vd; }
+
+
+    bool m_showRanges = false;
+    Range m_statRange;
 
 private:
     enum class Namespace : uint8_t
@@ -341,8 +346,6 @@ private:
     bool m_reactToCrash = false;
 
     ImGuiTextFilter m_statisticsFilter;
-    Range m_statRange;
-    RangeSlim m_statRangeSlim;
 
     Region m_highlight;
     Region m_highlightZoom;
@@ -359,7 +362,6 @@ private:
     bool m_showPlayback = false;
     bool m_showCpuDataWindow = false;
     bool m_showAnnotationList = false;
-    bool m_showRanges = false;
 
     enum class CpuDataSortBy
     {

@@ -1691,7 +1691,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                 }
                                 else
                                 {
-                                    it->second.push_back( time );
+                                    it->second.push_back_non_empty( time );
                                 }
                             }
                         }

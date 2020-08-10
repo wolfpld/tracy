@@ -3232,7 +3232,7 @@ void View::DrawZones()
         draw->AddLine( ImVec2( wpos.x + px1, linepos.y ), ImVec2( wpos.x + px1, linepos.y + lineh ), m_findZone.range.hiMax ? 0x9988DD88 : 0x3388DD88, m_findZone.range.hiMax ? 2 : 1 );
     }
 
-    if( m_statRange.active && ( m_showStatistics || m_showRanges ) )
+    if( m_statRange.active && ( m_showStatistics || m_showRanges || ( m_sourceViewFile && m_sourceView->IsSymbolView() ) ) )
     {
         const auto px0 = ( m_statRange.min - m_vd.zvStart ) * pxns;
         const auto px1 = std::max( px0 + std::max( 1.0, pxns * 0.5 ), ( m_statRange.max - m_vd.zvStart ) * pxns );

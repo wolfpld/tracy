@@ -12048,10 +12048,10 @@ void View::DrawStatistics()
                                 auto samples = m_worker.GetSamplesForSymbol( v.first );
                                 if( samples )
                                 {
-                                    auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                    auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                                     if( it != samples->end() )
                                     {
-                                        auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                        auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                                         const auto count = uint32_t( end - it );
                                         data.push_back_no_space_check( SymList { v.first, 0, count } );
                                     }
@@ -12089,10 +12089,10 @@ void View::DrawStatistics()
                             auto samples = m_worker.GetSamplesForSymbol( v.first );
                             if( samples )
                             {
-                                auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                                 if( it != samples->end() )
                                 {
-                                    auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                    auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                                     const auto count = uint32_t( end - it );
                                     data.push_back_no_space_check( SymList { v.first, 0, count } );
                                 }
@@ -12146,10 +12146,10 @@ void View::DrawStatistics()
                                 auto samples = m_worker.GetSamplesForSymbol( v.first );
                                 if( samples )
                                 {
-                                    auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                    auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                                     if( it != samples->end() )
                                     {
-                                        auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                        auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                                         const auto count = uint32_t( end - it );
                                         data.push_back_no_space_check( SymList { v.first, 0, count } );
                                     }
@@ -12172,10 +12172,10 @@ void View::DrawStatistics()
                         auto samples = m_worker.GetSamplesForSymbol( v.first );
                         if( samples )
                         {
-                            auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                            auto it = std::lower_bound( samples->begin(), samples->end(), m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                             if( it != samples->end() )
                             {
-                                auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs; } );
+                                auto end = std::lower_bound( it, samples->end(), m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
                                 const auto count = uint32_t( end - it );
                                 data.push_back_no_space_check( SymList { v.first, 0, count } );
                             }

@@ -212,6 +212,25 @@ struct ZoneExtra
 enum { ZoneExtraSize = sizeof( ZoneExtra ) };
 
 
+// This union exploits the fact that the current implementations of x64 and arm64 do not provide
+// full 64 bit address space. The high bits must be bit-extended, so 0x80... is an invalid pointer.
+// This allows using the highest bit as a selector between a native pointer and a table index here.
+union CallstackFrameId
+{
+    struct
+    {
+        uint64_t idx : 62;
+        uint64_t sel : 1;
+        uint64_t custom : 1;
+    };
+    uint64_t data;
+};
+
+enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
+
+static tracy_force_inline bool operator==( const CallstackFrameId& lhs, const CallstackFrameId& rhs ) { return lhs.data == rhs.data; }
+
+
 struct SampleData
 {
     Int48 time;
@@ -219,6 +238,15 @@ struct SampleData
 };
 
 enum { SampleDataSize = sizeof( SampleData ) };
+
+
+struct SampleDataRange
+{
+    Int48 time;
+    CallstackFrameId ip;
+};
+
+enum { SampleDataRangeSize = sizeof( SampleDataRange ) };
 
 
 struct LockEvent
@@ -367,24 +395,6 @@ struct CallstackFrameData
 };
 
 enum { CallstackFrameDataSize = sizeof( CallstackFrameData ) };
-
-// This union exploits the fact that the current implementations of x64 and arm64 do not provide
-// full 64 bit address space. The high bits must be bit-extended, so 0x80... is an invalid pointer.
-// This allows using the highest bit as a selector between a native pointer and a table index here.
-union CallstackFrameId
-{
-    struct
-    {
-        uint64_t idx : 62;
-        uint64_t sel : 1;
-        uint64_t custom : 1;
-    };
-    uint64_t data;
-};
-
-enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
-
-static tracy_force_inline bool operator==( const CallstackFrameId& lhs, const CallstackFrameId& rhs ) { return lhs.data == rhs.data; }
 
 
 struct CallstackFrameTree

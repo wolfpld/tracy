@@ -288,8 +288,8 @@ private:
         unordered_flat_map<uint32_t, uint32_t> postponedSamples;
         unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare> pendingInstructionPointers;
         unordered_flat_map<uint64_t, unordered_flat_map<CallstackFrameId, uint32_t, CallstackFrameIdHash, CallstackFrameIdCompare>> instructionPointersMap;
-        unordered_flat_map<uint64_t, Vector<Int48>> symbolSamples;
-        unordered_flat_map<CallstackFrameId, Vector<Int48>, CallstackFrameIdHash, CallstackFrameIdCompare> pendingSymbolSamples;
+        unordered_flat_map<uint64_t, Vector<SampleDataRange>> symbolSamples;
+        unordered_flat_map<CallstackFrameId, Vector<SampleDataRange>, CallstackFrameIdHash, CallstackFrameIdCompare> pendingSymbolSamples;
         bool newFramesWereReceived = false;
         bool callstackSamplesReady = false;
         bool ghostZonesReady = false;
@@ -503,7 +503,7 @@ public:
 #ifndef TRACY_NO_STATISTICS
     const VarArray<CallstackFrameId>& GetParentCallstack( uint32_t idx ) const { return *m_data.parentCallstackPayload[idx]; }
     const CallstackFrameData* GetParentCallstackFrame( const CallstackFrameId& ptr ) const;
-    const Vector<Int48>* GetSamplesForSymbol( uint64_t symAddr ) const;
+    const Vector<SampleDataRange>* GetSamplesForSymbol( uint64_t symAddr ) const;
 #endif
 
     const CrashEvent& GetCrashEvent() const { return m_data.crashEvent; }

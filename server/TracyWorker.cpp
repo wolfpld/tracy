@@ -1687,18 +1687,18 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
                                 auto it = m_data.symbolSamples.find( symAddr );
                                 if( it == m_data.symbolSamples.end() )
                                 {
-                                    m_data.symbolSamples.emplace( symAddr, Vector<Int48>( time ) );
+                                    m_data.symbolSamples.emplace( symAddr, Vector<SampleDataRange>( SampleDataRange { time, ip } ) );
                                 }
                                 else
                                 {
-                                    it->second.push_back_non_empty( time );
+                                    it->second.push_back_non_empty( SampleDataRange { time, ip } );
                                 }
                             }
                         }
                     }
                     for( auto& v : m_data.symbolSamples )
                     {
-                        pdqsort_branchless( v.second.begin(), v.second.end(), []( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs.Val(); } );
+                        pdqsort_branchless( v.second.begin(), v.second.end(), []( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
                     }
                     std::lock_guard<std::shared_mutex> lock( m_data.lock );
                     m_data.symbolSamplesReady = true;
@@ -2058,7 +2058,7 @@ const CallstackFrameData* Worker::GetParentCallstackFrame( const CallstackFrameI
     }
 }
 
-const Vector<Int48>* Worker::GetSamplesForSymbol( uint64_t symAddr ) const
+const Vector<SampleDataRange>* Worker::GetSamplesForSymbol( uint64_t symAddr ) const
 {
     assert( m_data.symbolSamplesReady );
     auto it = m_data.symbolSamples.find( symAddr );
@@ -5383,18 +5383,18 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
             auto sit = m_data.symbolSamples.find( symAddr );
             if( sit == m_data.symbolSamples.end() )
             {
-                m_data.symbolSamples.emplace( symAddr, Vector<Int48>( sd.time ) );
+                m_data.symbolSamples.emplace( symAddr, Vector<SampleDataRange>( SampleDataRange { sd.time, ip } ) );
             }
             else
             {
-                if( sit->second.back().Val() <= sd.time.Val() )
+                if( sit->second.back().time.Val() <= sd.time.Val() )
                 {
-                    sit->second.push_back_non_empty( sd.time );
+                    sit->second.push_back_non_empty( SampleDataRange { sd.time, ip } );
                 }
                 else
                 {
-                    auto iit = std::upper_bound( sit->second.begin(), sit->second.end(), sd.time.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.Val(); } );
-                    sit->second.insert( iit, sd.time );
+                    auto iit = std::upper_bound( sit->second.begin(), sit->second.end(), sd.time.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.time.Val(); } );
+                    sit->second.insert( iit, SampleDataRange { sd.time, ip } );
                 }
             }
         }
@@ -5412,11 +5412,11 @@ void Worker::ProcessCallstackSample( const QueueCallstackSample& ev )
             auto sit = m_data.pendingSymbolSamples.find( ip );
             if( sit == m_data.pendingSymbolSamples.end() )
             {
-                m_data.pendingSymbolSamples.emplace( ip, Vector<Int48>( sd.time ) );
+                m_data.pendingSymbolSamples.emplace( ip, Vector<SampleDataRange>( SampleDataRange { sd.time, ip } ) );
             }
             else
             {
-                sit->second.push_back_non_empty( sd.time );
+                sit->second.push_back_non_empty( SampleDataRange { sd.time, ip } );
             }
         }
     }
@@ -5517,20 +5517,20 @@ void Worker::ProcessCallstackFrame( const QueueCallstackFrame& ev )
                 auto sit = m_data.symbolSamples.find( ev.symAddr );
                 if( sit == m_data.symbolSamples.end() )
                 {
-                    pdqsort_branchless( pit->second.begin(), pit->second.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.Val() < rhs.Val(); } );
+                    pdqsort_branchless( pit->second.begin(), pit->second.end(), [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs.time.Val(); } );
                     m_data.symbolSamples.emplace( ev.symAddr, std::move( pit->second ) );
                 }
                 else
                 {
                     for( auto& v : pit->second )
                     {
-                        if( sit->second.back().Val() <= v.Val() )
+                        if( sit->second.back().time.Val() <= v.time.Val() )
                         {
                             sit->second.push_back_non_empty( v );
                         }
                         else
                         {
-                            auto iit = std::upper_bound( sit->second.begin(), sit->second.end(), v.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.Val(); } );
+                            auto iit = std::upper_bound( sit->second.begin(), sit->second.end(), v.time.Val(), [] ( const auto& lhs, const auto& rhs ) { return lhs < rhs.time.Val(); } );
                             sit->second.insert( iit, v );
                         }
                     }

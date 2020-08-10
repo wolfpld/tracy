@@ -1115,23 +1115,24 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         TextFocused( ICON_FA_WEIGHT_HANGING " Code size:", MemSizeToString( m_codeLen ) );
     }
 
+    const bool limitView = view.m_statRange.active;
     uint32_t iptotalSrc = 0, iptotalAsm = 0;
     uint32_t ipmaxSrc = 0, ipmaxAsm = 0;
     unordered_flat_map<uint64_t, uint32_t> ipcountSrc, ipcountAsm;
     if( m_calcInlineStats )
     {
-        GatherIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker );
+        GatherIpStats( m_symAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
     }
     else
     {
-        GatherIpStats( m_baseAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker );
+        GatherIpStats( m_baseAddr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
         auto iptr = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
         if( iptr )
         {
             const auto symEnd = m_baseAddr + m_codeLen;
             while( *iptr < symEnd )
             {
-                GatherIpStats( *iptr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker );
+                GatherIpStats( *iptr, iptotalSrc, iptotalAsm, ipcountSrc, ipcountAsm, ipmaxSrc, ipmaxAsm, worker, limitView, view );
                 iptr++;
             }
         }
@@ -3060,43 +3061,99 @@ void SourceView::SelectAsmLinesHover( uint32_t file, uint32_t line, const Worker
     }
 }
 
-void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, uint32_t& ipmaxSrc, uint32_t& ipmaxAsm, const Worker& worker )
+void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& iptotalAsm, unordered_flat_map<uint64_t, uint32_t>& ipcountSrc, unordered_flat_map<uint64_t, uint32_t>& ipcountAsm, uint32_t& ipmaxSrc, uint32_t& ipmaxAsm, const Worker& worker, bool limitView, const View& view )
 {
-    auto ipmap = worker.GetSymbolInstructionPointers( addr );
-    if( !ipmap ) return;
-    for( auto& ip : *ipmap )
+    if( limitView )
     {
-        if( m_file )
+        auto vec = worker.GetSamplesForSymbol( addr );
+        if( !vec ) return;
+        auto it = std::lower_bound( vec->begin(), vec->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        if( it == vec->end() ) return;
+        auto end = std::lower_bound( it, vec->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        iptotalAsm += end - it;
+        while( it != end )
         {
-            auto frame = worker.GetCallstackFrame( ip.first );
-            if( frame )
+            if( m_file )
             {
-                auto ffn = worker.GetString( frame->data[0].file );
-                if( strcmp( ffn, m_file ) == 0 )
+                auto frame = worker.GetCallstackFrame( it->ip );
+                if( frame )
                 {
-                    const auto line = frame->data[0].line;
-                    auto it = ipcountSrc.find( line );
-                    if( it == ipcountSrc.end() )
+                    auto ffn = worker.GetString( frame->data[0].file );
+                    if( strcmp( ffn, m_file ) == 0 )
                     {
-                        ipcountSrc.emplace( line, ip.second );
-                        if( ipmaxSrc < ip.second ) ipmaxSrc = ip.second;
+                        const auto line = frame->data[0].line;
+                        auto sit = ipcountSrc.find( line );
+                        if( sit == ipcountSrc.end() )
+                        {
+                            ipcountSrc.emplace( line, 1 );
+                            if( ipmaxSrc < 1 ) ipmaxSrc = 1;
+                        }
+                        else
+                        {
+                            const auto sum = sit->second + 1;
+                            sit->second = sum;
+                            if( ipmaxSrc < sum ) ipmaxSrc = sum;
+                        }
+                        iptotalSrc++;
                     }
-                    else
-                    {
-                        const auto sum = it->second + ip.second;
-                        it->second = sum;
-                        if( ipmaxSrc < sum ) ipmaxSrc = sum;
-                    }
-                    iptotalSrc += ip.second;
                 }
             }
-        }
 
-        auto addr = worker.GetCanonicalPointer( ip.first );
-        assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
-        ipcountAsm.emplace( addr, ip.second );
-        iptotalAsm += ip.second;
-        if( ipmaxAsm < ip.second ) ipmaxAsm = ip.second;
+            auto addr = worker.GetCanonicalPointer( it->ip );
+            auto sit = ipcountAsm.find( addr );
+            if( sit == ipcountAsm.end() )
+            {
+                ipcountAsm.emplace( addr, 1 );
+                if( ipmaxAsm < 1 ) ipmaxAsm = 1;
+            }
+            else
+            {
+                const auto sum = sit->second + 1;
+                sit->second = sum;
+                if( ipmaxAsm < sum ) ipmaxAsm = sum;
+            }
+
+            ++it;
+        }
+    }
+    else
+    {
+        auto ipmap = worker.GetSymbolInstructionPointers( addr );
+        if( !ipmap ) return;
+        for( auto& ip : *ipmap )
+        {
+            if( m_file )
+            {
+                auto frame = worker.GetCallstackFrame( ip.first );
+                if( frame )
+                {
+                    auto ffn = worker.GetString( frame->data[0].file );
+                    if( strcmp( ffn, m_file ) == 0 )
+                    {
+                        const auto line = frame->data[0].line;
+                        auto it = ipcountSrc.find( line );
+                        if( it == ipcountSrc.end() )
+                        {
+                            ipcountSrc.emplace( line, ip.second );
+                            if( ipmaxSrc < ip.second ) ipmaxSrc = ip.second;
+                        }
+                        else
+                        {
+                            const auto sum = it->second + ip.second;
+                            it->second = sum;
+                            if( ipmaxSrc < sum ) ipmaxSrc = sum;
+                        }
+                        iptotalSrc += ip.second;
+                    }
+                }
+            }
+
+            auto addr = worker.GetCanonicalPointer( ip.first );
+            assert( ipcountAsm.find( addr ) == ipcountAsm.end() );
+            ipcountAsm.emplace( addr, ip.second );
+            iptotalAsm += ip.second;
+            if( ipmaxAsm < ip.second ) ipmaxAsm = ip.second;
+        }
     }
 }
 

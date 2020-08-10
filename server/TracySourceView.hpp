@@ -139,6 +139,7 @@ public:
     void Render( const Worker& worker, View& view );
 
     void CalcInlineStats( bool val ) { m_calcInlineStats = val; }
+    bool IsSymbolView() const { return !m_asm.empty(); }
 
 private:
     void ParseSource( const char* fileName, const Worker& worker, const View& view );

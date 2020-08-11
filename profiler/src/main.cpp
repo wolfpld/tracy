@@ -76,7 +76,9 @@ static bool s_customTitle = false;
 static void SetWindowTitleCallback( const char* title )
 {
     assert( s_glfwWindow );
-    glfwSetWindowTitle( s_glfwWindow, title );
+    char tmp[1024];
+    sprintf( tmp, "%s - Tracy Profiler %i.%i.%i", title, tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+    glfwSetWindowTitle( s_glfwWindow, tmp );
     s_customTitle = true;
 }
 

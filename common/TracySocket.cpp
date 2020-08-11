@@ -566,8 +566,10 @@ IpAddress::~IpAddress()
 
 void IpAddress::Set( const struct sockaddr& addr )
 {
-#if __MINGW32__
-    auto ai = (struct sockaddr_in*)&addr;
+#if defined _WIN32 && ( !defined NTDDI_WIN10 || NTDDI_VERSION < NTDDI_WIN10 )
+    struct sockaddr_in tmp;
+    memcpy( &tmp, &addr, sizeof( tmp ) );
+    auto ai = &tmp;
 #else
     auto ai = (const struct sockaddr_in*)&addr;
 #endif

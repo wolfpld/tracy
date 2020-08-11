@@ -2419,7 +2419,6 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                 else if( ImGui::IsMouseClicked( 2 ) )
                 {
                     const auto cfi = worker.PackPointer( line.addr );
-                    const auto& symStat = worker.GetSymbolStats();
                     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
                     if( inlineList )
                     {

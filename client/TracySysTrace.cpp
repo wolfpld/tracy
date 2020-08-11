@@ -974,6 +974,8 @@ void SysTraceWorker( void* ptr )
             if( dup2( pipefd[1], STDOUT_FILENO ) >= 0 )
             {
                 close( pipefd[1] );
+                sched_param sp = { 4 };
+                pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
 #if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
                 execlp( "su", "su", "-c", "/data/tracy_systrace", (char*)nullptr );
 #endif
@@ -985,6 +987,8 @@ void SysTraceWorker( void* ptr )
         {
             // parent
             close( pipefd[1] );
+            sched_param sp = { 5 };
+            pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
             ProcessTraceLines( pipefd[0] );
             close( pipefd[0] );
         }
@@ -1042,6 +1046,8 @@ void SysTraceWorker( void* ptr )
 
     int fd = open( tmp, O_RDONLY );
     if( fd < 0 ) return;
+    sched_param sp = { 5 };
+    pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
     ProcessTraceLines( fd );
     close( fd );
 }

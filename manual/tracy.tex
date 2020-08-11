@@ -3038,7 +3038,7 @@ Instruction timings can be viewed as a group. To begin constructing such group, 
 
 Clicking the \MMB{}~middle mouse button on the percentage value of an assembly instruction will display call stack parents of the selected sample (see chapter~\ref{sampleparents}). This functionality is only available for instructions that have collected sampling data, and only in the assembly view, as the source code may be inlined multiple times, which would result in ambiguous location data.
 
-Sample data source is controlled by the \emph{\faSitemap{}~Function} control, in the window header. If this option is disabled, the sample data represents the whole symbol. If it is enabled, then the sample data will only include the selected function.
+Sample data source is controlled by the \emph{\faSitemap{}~Function} control, in the window header. If this option should be disabled, sample data will represent the whole symbol. If it is enabled, then the sample data will only include the selected function. The currently selected function can be changed by opening the drop-down box, which includes time statistics. The time percentage values of each contributing function are calculated relative to total number of samples collected within the symbol.
 
 Selecting the \emph{Limit range} option will restrict counted samples to the time extent shared with the statistics view (displayed as a red striped region on the timeline). See section~\ref{timeranges} for more detail.
 

@@ -964,6 +964,7 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
     ImGui::SameLine();
     TextDisabledUnformatted( worker.GetString( sym->imageName ) );
 
+    const bool limitView = view.m_statRange.active;
     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );
     if( inlineList )
     {
@@ -974,33 +975,49 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         const auto currSymName = m_symAddr == m_baseAddr ? "[ - self - ]" : worker.GetString( sym->name );
         if( ImGui::BeginCombo( "##functionList", currSymName, ImGuiComboFlags_HeightLarge ) )
         {
-            uint32_t totalSamples = 0;
-            const auto& symStat = worker.GetSymbolStats();
             const auto symEnd = m_baseAddr + m_codeLen;
+            unordered_flat_map<uint64_t, uint32_t> symStat;
+            if( limitView )
+            {
+                symStat.emplace( m_baseAddr, CountAsmIpStats( m_baseAddr, worker, true, view ) );
+                auto ptr = inlineList;
+                while( *ptr < symEnd )
+                {
+                    symStat.emplace( *ptr, CountAsmIpStats( *ptr, worker, true, view ) );
+                    ptr++;
+                }
+            }
+            else
+            {
+                const auto& ss = worker.GetSymbolStats();
+                for( auto& v : ss ) symStat.emplace( v.first, v.second.excl );
+            }
+
+            uint32_t totalSamples = 0;
             Vector<std::pair<uint64_t, uint32_t>> symInline;
             auto baseStatIt = symStat.find( m_baseAddr );
-            if( baseStatIt == symStat.end() || baseStatIt->second.excl == 0 )
+            if( baseStatIt == symStat.end() || baseStatIt->second == 0 )
             {
                 symInline.push_back( std::make_pair( m_baseAddr, 0 ) );
             }
             else
             {
-                symInline.push_back( std::make_pair( m_baseAddr, baseStatIt->second.excl ) );
-                totalSamples += baseStatIt->second.excl;
+                symInline.push_back( std::make_pair( m_baseAddr, baseStatIt->second ) );
+                totalSamples += baseStatIt->second;
             }
             while( *inlineList < symEnd )
             {
                 if( *inlineList != m_baseAddr )
                 {
                     auto statIt = symStat.find( *inlineList );
-                    if( statIt == symStat.end() || statIt->second.excl == 0 )
+                    if( statIt == symStat.end() || statIt->second == 0 )
                     {
                         symInline.push_back_non_empty( std::make_pair( *inlineList, 0 ) );
                     }
                     else
                     {
-                        symInline.push_back_non_empty( std::make_pair( *inlineList, statIt->second.excl ) );
-                        totalSamples += statIt->second.excl;
+                        symInline.push_back_non_empty( std::make_pair( *inlineList, statIt->second ) );
+                        totalSamples += statIt->second;
                     }
                 }
                 inlineList++;
@@ -1115,7 +1132,6 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
         TextFocused( ICON_FA_WEIGHT_HANGING " Code size:", MemSizeToString( m_codeLen ) );
     }
 
-    const bool limitView = view.m_statRange.active;
     uint32_t iptotalSrc = 0, iptotalAsm = 0;
     uint32_t ipmaxSrc = 0, ipmaxAsm = 0;
     unordered_flat_map<uint64_t, uint32_t> ipcountSrc, ipcountAsm;

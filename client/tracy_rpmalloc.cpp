@@ -1372,7 +1372,7 @@ _memory_allocate_heap(void) {
 		heap = (heap_t*)_memory_map((1 + (sizeof(heap_t) >> _memory_page_size_shift)) * _memory_page_size, &align_offset);
 		if (!heap)
 			return heap;
-		memset(heap, 0, sizeof(heap_t));
+		memset((char*)heap, 0, sizeof(heap_t));
 		heap->align_offset = align_offset;
 
 		//Get a new heap ID

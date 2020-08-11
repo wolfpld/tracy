@@ -11908,6 +11908,17 @@ void View::DrawStatistics()
     ImGui::Separator();
     ImGui::PopStyleVar();
 
+    int64_t timeRange;
+    if( m_statRange.active )
+    {
+        const auto st = m_statRange.max - m_statRange.min;
+        timeRange = st == 0 ? 1 : st;
+    }
+    else
+    {
+        timeRange = m_worker.GetLastTime();
+    }
+
     if( m_statMode == 0 )
     {
         if( srcloc.empty() )
@@ -11943,7 +11954,6 @@ void View::DrawStatistics()
             ImGui::NextColumn();
             ImGui::Separator();
 
-            const auto lastTime = m_worker.GetLastTime();
             for( auto& v : srcloc )
             {
                 ImGui::PushID( v.srcloc );
@@ -11986,7 +11996,7 @@ void View::DrawStatistics()
                 ImGui::TextUnformatted( TimeToString( time ) );
                 ImGui::SameLine();
                 char buf[64];
-                PrintStringPercent( buf, 100. * time / lastTime );
+                PrintStringPercent( buf, 100. * time / timeRange );
                 TextDisabledUnformatted( buf );
                 ImGui::NextColumn();
                 ImGui::TextUnformatted( RealToString( v.numZones ) );

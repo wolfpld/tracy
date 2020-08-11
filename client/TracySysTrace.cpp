@@ -1078,7 +1078,7 @@ void SysTraceSendExternalName( uint64_t thread )
     {
         int pid = -1;
         size_t lsz = 1024;
-        auto line = (char*)malloc( lsz );
+        auto line = (char*)tracy_malloc( lsz );
         for(;;)
         {
             auto rd = getline( &line, &lsz, f );
@@ -1089,7 +1089,7 @@ void SysTraceSendExternalName( uint64_t thread )
                 break;
             }
         }
-        free( line );
+        tracy_free( line );
         fclose( f );
         if( pid >= 0 )
         {

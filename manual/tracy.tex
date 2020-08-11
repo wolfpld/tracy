@@ -2534,7 +2534,7 @@ The location data is complemented by the originating executable image name, cont
 
 Some function locations may not be found, due to insufficient debugging data available on the client side. To filter out such entries, use the \emph{\faEyeSlash{}~Hide unknown} option.
 
-The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Show time} option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format.
+The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Show time} option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format. Note that the percentage value of time is calculated relative to the wall-clock time, and the percentage value of sample counts is relative to total number of collected samples.
 
 The last column, \emph{Code size}, displays the size of symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol, and displayed as 'less than'. In some cases this data won't be available.
 

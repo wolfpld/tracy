@@ -699,7 +699,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #endif
     if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
     if( !TraceWrite( SchedWakeup, sizeof( SchedWakeup ), "1", 2 ) ) return false;
-    if( !TraceWrite( BufferSizeKb, sizeof( BufferSizeKb ), "512", 4 ) ) return false;
+    if( !TraceWrite( BufferSizeKb, sizeof( BufferSizeKb ), "4096", 5 ) ) return false;
 
 #if defined __ANDROID__ && ( defined __aarch64__ || defined __ARM_ARCH )
     SysTraceInjectPayload();

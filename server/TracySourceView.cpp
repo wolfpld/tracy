@@ -3156,6 +3156,31 @@ void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& i
     }
 }
 
+uint32_t SourceView::CountAsmIpStats( uint64_t addr, const Worker& worker, bool limitView, const View& view )
+{
+    if( limitView )
+    {
+        auto vec = worker.GetSamplesForSymbol( addr );
+        if( !vec ) return 0;
+        auto it = std::lower_bound( vec->begin(), vec->end(), view.m_statRange.min, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        if( it == vec->end() ) return 0;
+        auto end = std::lower_bound( it, vec->end(), view.m_statRange.max, [] ( const auto& lhs, const auto& rhs ) { return lhs.time.Val() < rhs; } );
+        return end - it;
+    }
+    else
+    {
+        uint32_t cnt = 0;
+        auto ipmap = worker.GetSymbolInstructionPointers( addr );
+        if( !ipmap ) return 0;
+        for( auto& ip : *ipmap )
+        {
+            auto addr = worker.GetCanonicalPointer( ip.first );
+            cnt += ip.second;
+        }
+        return cnt;
+    }
+}
+
 namespace {
 static unordered_flat_set<const char*, charutil::Hasher, charutil::Comparator> GetKeywords()
 {

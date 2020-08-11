@@ -12274,6 +12274,18 @@ void View::DrawStatistics()
             ImGui::NextColumn();
             ImGui::Separator();
 
+            double revSampleCount100;
+            if( m_statRange.active )
+            {
+                const auto st = m_statRange.max - m_statRange.min;
+                const auto cnt = st / m_worker.GetSamplingPeriod();
+                revSampleCount100 = 100. / cnt;
+            }
+            else
+            {
+                revSampleCount100 = 100. / m_worker.GetCallstackSampleCount();
+            }
+
             const bool showAll = m_showAllSymbols;
             const auto period = m_worker.GetSamplingPeriod();
             int idx = 0;
@@ -12449,16 +12461,18 @@ void View::DrawStatistics()
                     ImGui::NextColumn();
                     if( cnt > 0 )
                     {
+                        char buf[64];
                         if( m_statSampleTime )
                         {
-                            ImGui::TextUnformatted( TimeToString( cnt * period ) );
+                            const auto t = cnt * period;
+                            ImGui::TextUnformatted( TimeToString( t ) );
+                            PrintStringPercent( buf, 100. * t / timeRange );
                         }
                         else
                         {
                             ImGui::TextUnformatted( RealToString( cnt ) );
+                            PrintStringPercent( buf, cnt * revSampleCount100 );
                         }
-                        char buf[64];
-                        PrintStringPercent( buf, 100. * cnt / m_worker.GetCallstackSampleCount() );
                         ImGui::SameLine();
                         TextDisabledUnformatted( buf );
                     }
@@ -12613,16 +12627,18 @@ void View::DrawStatistics()
                                 ImGui::NextColumn();
                                 if( cnt > 0 )
                                 {
+                                    char buf[64];
                                     if( m_statSampleTime )
                                     {
-                                        ImGui::TextUnformatted( TimeToString( cnt * period ) );
+                                        const auto t = cnt * period;
+                                        ImGui::TextUnformatted( TimeToString( t ) );
+                                        PrintStringPercent( buf, 100. * t / timeRange );
                                     }
                                     else
                                     {
                                         ImGui::TextUnformatted( RealToString( cnt ) );
+                                        PrintStringPercent( buf, cnt * revSampleCount100 );
                                     }
-                                    char buf[64];
-                                    PrintStringPercent( buf, 100. * cnt / m_worker.GetCallstackSampleCount() );
                                     ImGui::SameLine();
                                     TextDisabledUnformatted( buf );
                                 }

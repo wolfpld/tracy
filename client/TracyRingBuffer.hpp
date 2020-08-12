@@ -81,6 +81,20 @@ public:
         StoreTail( m_metadata->data_tail + cnt );
     }
 
+    bool CheckTscCaps() const
+    {
+        return m_metadata->cap_user_time_zero;
+    }
+
+    int64_t ConvertTimeToTsc( int64_t timestamp ) const
+    {
+        assert( m_metadata->cap_user_time_zero );
+        const auto time = timestamp - m_metadata->time_zero;
+        const auto quot = time / m_metadata->time_mult;
+        const auto rem = time % m_metadata->time_mult;
+        return ( quot << m_metadata->time_shift ) + ( rem << m_metadata->time_shift ) / m_metadata->time_mult;
+    }
+
 private:
     uint64_t LoadHead() const
     {

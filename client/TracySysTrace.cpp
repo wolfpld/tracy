@@ -627,6 +627,10 @@ static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu
 
 static void SetupSampling( int64_t& samplingPeriod )
 {
+#ifndef CLOCK_MONOTONIC_RAW
+    return;
+#endif
+
     samplingPeriod = 100*1000;
 
     s_numCpus = (int)std::thread::hardware_concurrency();
@@ -645,8 +649,8 @@ static void SetupSampling( int64_t& samplingPeriod )
 
     pe.disabled = 1;
     pe.freq = 1;
+#if !defined TRACY_HW_TIMER || !( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
     pe.use_clockid = 1;
-#ifdef CLOCK_MONOTONIC_RAW
     pe.clockid = CLOCK_MONOTONIC_RAW;
 #endif
 
@@ -669,6 +673,19 @@ static void SetupSampling( int64_t& samplingPeriod )
         sched_param sp = { 5 };
         pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
         uint32_t currentPid = (uint32_t)getpid();
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+        for( int i=0; i<s_numCpus; i++ )
+        {
+            if( !s_ring[i].CheckTscCaps() )
+            {
+                for( int j=0; j<s_numCpus; j++ ) s_ring[j].~RingBuffer();
+                tracy_free( s_ring );
+                const char* err = "Tracy Profiler: sampling is disabled due to non-native scheduler clock. Are you running under a VM?";
+                Profiler::MessageAppInfo( err, strlen( err ) );
+                return;
+            }
+        }
+#endif
         for( int i=0; i<s_numCpus; i++ ) s_ring[i].Enable();
         for(;;)
         {
@@ -720,6 +737,10 @@ static void SetupSampling( int64_t& samplingPeriod )
                                 memmove( trace+1, trace+1+j, sizeof( uint64_t ) * cnt );
                             }
                             memcpy( trace, &cnt, sizeof( uint64_t ) );
+
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+                            t0 = s_ring[i].ConvertTimeToTsc( t0 );
+#endif
 
                             TracyLfqPrepare( QueueType::CallstackSample );
                             MemWrite( &item->callstackSampleFat.time, t0 );
@@ -827,7 +848,11 @@ bool SysTraceStart( int64_t& samplingPeriod )
     TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-tgid", 14 );
     TraceWrite( TraceOptions, sizeof( TraceOptions ), "noirq-info", 11 );
     TraceWrite( TraceOptions, sizeof( TraceOptions ), "noannotate", 11 );
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+    if( !TraceWrite( TraceClock, sizeof( TraceClock ), "x86-tsc", 8 ) ) return false;
+#else
     if( !TraceWrite( TraceClock, sizeof( TraceClock ), "mono_raw", 9 ) ) return false;
+#endif
     if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
     if( !TraceWrite( SchedWakeup, sizeof( SchedWakeup ), "1", 2 ) ) return false;
     if( !TraceWrite( BufferSizeKb, sizeof( BufferSizeKb ), "4096", 5 ) ) return false;
@@ -971,10 +996,14 @@ static void HandleTraceLine( const char* line )
     line++;      // ']'
     while( *line == ' ' ) line++;
 
+#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
+    const auto time = ReadNumber( line );
+#else
     const auto ts = ReadNumber( line );
     line++;      // '.'
     const auto tus = ReadNumber( line );
     const auto time = ts * 1000000000ll + tus * 1000ll;
+#endif
 
     line += 2;   // ': '
     if( memcmp( line, "sched_switch", 12 ) == 0 )

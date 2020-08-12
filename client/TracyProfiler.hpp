@@ -25,7 +25,7 @@
 #  include <mach/mach_time.h>
 #endif
 
-#if defined _WIN32 || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __linux__ ) || ( defined TARGET_OS_IOS && TARGET_OS_IOS == 1 )
+#if defined _WIN32 || defined __CYGWIN__ || ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) || ( defined TARGET_OS_IOS && TARGET_OS_IOS == 1 )
 #  define TRACY_HW_TIMER
 #endif
 

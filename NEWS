@@ -31,6 +31,7 @@ v0.7.1 (xxxx-xx-xx)
 - Limiting time range for find zone functionality has been significantly
   improved.
 - Added time range limits for statistics and symbol view.
+- Implemented call stack sampling on Linux.
 
 v0.7 (2020-06-11)
 -----------------

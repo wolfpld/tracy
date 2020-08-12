@@ -827,11 +827,7 @@ bool SysTraceStart( int64_t& samplingPeriod )
     TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-tgid", 14 );
     TraceWrite( TraceOptions, sizeof( TraceOptions ), "noirq-info", 11 );
     TraceWrite( TraceOptions, sizeof( TraceOptions ), "noannotate", 11 );
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-    if( !TraceWrite( TraceClock, sizeof( TraceClock ), "x86-tsc", 8 ) ) return false;
-#elif __ARM_ARCH >= 6
     if( !TraceWrite( TraceClock, sizeof( TraceClock ), "mono_raw", 9 ) ) return false;
-#endif
     if( !TraceWrite( SchedSwitch, sizeof( SchedSwitch ), "1", 2 ) ) return false;
     if( !TraceWrite( SchedWakeup, sizeof( SchedWakeup ), "1", 2 ) ) return false;
     if( !TraceWrite( BufferSizeKb, sizeof( BufferSizeKb ), "4096", 5 ) ) return false;
@@ -975,14 +971,10 @@ static void HandleTraceLine( const char* line )
     line++;      // ']'
     while( *line == ' ' ) line++;
 
-#if defined TRACY_HW_TIMER && ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 )
-    const auto time = ReadNumber( line );
-#elif __ARM_ARCH >= 6
     const auto ts = ReadNumber( line );
     line++;      // '.'
     const auto tus = ReadNumber( line );
     const auto time = ts * 1000000000ll + tus * 1000ll;
-#endif
 
     line += 2;   // ': '
     if( memcmp( line, "sched_switch", 12 ) == 0 )

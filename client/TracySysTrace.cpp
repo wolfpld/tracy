@@ -627,7 +627,7 @@ static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu
 
 static void SetupSampling( int64_t& samplingPeriod )
 {
-    samplingPeriod = 1000*1000;
+    samplingPeriod = 100*1000;
 
     s_numCpus = (int)std::thread::hardware_concurrency();
     s_ring = (RingBuffer*)tracy_malloc( sizeof( RingBuffer ) * s_numCpus );
@@ -638,7 +638,7 @@ static void SetupSampling( int64_t& samplingPeriod )
     pe.size = sizeof( perf_event_attr );
     pe.config = PERF_COUNT_SW_CPU_CLOCK;
 
-    pe.sample_freq = 1000;
+    pe.sample_freq = 10000;
     pe.sample_type = PERF_SAMPLE_TID | PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN;
     pe.sample_max_stack = 127;
     pe.exclude_callchain_kernel = 1;

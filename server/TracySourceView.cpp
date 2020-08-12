@@ -415,6 +415,11 @@ void SourceView::OpenSymbol( const char* fileName, int line, uint64_t baseAddr, 
     Disassemble( baseAddr, worker );
     SelectLine( line, &worker, true, symAddr );
 
+    SelectViewMode();
+}
+
+void SourceView::SelectViewMode()
+{
     if( !m_lines.empty() )
     {
         if( !m_asm.empty() )
@@ -453,40 +458,49 @@ void SourceView::ParseSource( const char* fileName, const Worker& worker, const 
             else
             {
                 FILE* f = fopen( view.SourceSubstitution( fileName ), "rb" );
-                assert( f );
-                fseek( f, 0, SEEK_END );
-                sz = ftell( f );
-                fseek( f, 0, SEEK_SET );
-                if( sz > m_dataSize )
+                if( f )
                 {
-                    delete[] m_dataBuf;
-                    m_dataBuf = new char[sz];
-                    m_dataSize = sz;
+                    fseek( f, 0, SEEK_END );
+                    sz = ftell( f );
+                    fseek( f, 0, SEEK_SET );
+                    if( sz > m_dataSize )
+                    {
+                        delete[] m_dataBuf;
+                        m_dataBuf = new char[sz];
+                        m_dataSize = sz;
+                    }
+                    fread( m_dataBuf, 1, sz, f );
+                    m_data = m_dataBuf;
+                    fclose( f );
                 }
-                fread( m_dataBuf, 1, sz, f );
-                m_data = m_dataBuf;
-                fclose( f );
+                else
+                {
+                    m_file = nullptr;
+                }
             }
 
-            m_tokenizer.Reset();
-            auto txt = m_data;
-            for(;;)
+            if( m_file )
             {
-                auto end = txt;
-                while( *end != '\n' && *end != '\r' && end - m_data < sz ) end++;
-                m_lines.emplace_back( Line { txt, end, Tokenize( txt, end ) } );
-                if( *end == '\n' )
+                m_tokenizer.Reset();
+                auto txt = m_data;
+                for(;;)
                 {
-                    end++;
-                    if( end - m_data < sz && *end == '\r' ) end++;
+                    auto end = txt;
+                    while( *end != '\n' && *end != '\r' && end - m_data < sz ) end++;
+                    m_lines.emplace_back( Line { txt, end, Tokenize( txt, end ) } );
+                    if( *end == '\n' )
+                    {
+                        end++;
+                        if( end - m_data < sz && *end == '\r' ) end++;
+                    }
+                    else if( *end == '\r' )
+                    {
+                        end++;
+                        if( end - m_data < sz && *end == '\n' ) end++;
+                    }
+                    if( end - m_data == sz ) break;
+                    txt = end;
                 }
-                else if( *end == '\r' )
-                {
-                    end++;
-                    if( end - m_data < sz && *end == '\n' ) end++;
-                }
-                if( end - m_data == sz ) break;
-                txt = end;
             }
         }
     }
@@ -1093,6 +1107,7 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
                     ParseSource( file, worker, view );
                     m_targetLine = line;
                     SelectLine( line, &worker, true );
+                    SelectViewMode();
                 }
                 ImGui::PopID();
                 ImGui::NextColumn();
@@ -2552,7 +2567,7 @@ void SourceView::RenderAsmLine( AsmLine& line, uint32_t ipcnt, uint32_t iptotal,
                         ParseSource( fileName, worker, view );
                         m_targetLine = srcline;
                         SelectLine( srcline, &worker, false );
-                        m_displayMode = DisplayMixed;
+                        SelectViewMode();
                     }
                     else
                     {

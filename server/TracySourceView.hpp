@@ -145,6 +145,8 @@ private:
     void ParseSource( const char* fileName, const Worker& worker, const View& view );
     bool Disassemble( uint64_t symAddr, const Worker& worker );
 
+    void SelectViewMode();
+
     void RenderSimpleSourceView();
     void RenderSymbolView( const Worker& worker, View& view );
 

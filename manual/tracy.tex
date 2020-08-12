@@ -467,9 +467,10 @@ To workaround this limitation, you will need to have a rooted device. Execute th
 \begin{lstlisting}[language=sh]
 setenforce 0
 mount -o remount,hidepid=0 /proc
+echo 0 > /proc/sys/kernel/perf_event_paranoid
 \end{lstlisting}
 
-The first command will allow access to system CPU statistics. The second one will allow inspection of foreign processes (which is required for context switch capture). \emph{Be sure that you are fully aware of the consequences of making these changes.}
+The first command will allow access to system CPU statistics. The second one will allow inspection of foreign processes (which is required for context switch capture). The last one will lower restrictions on access to performance counters. \emph{Be sure that you are fully aware of the consequences of making these changes.}
 
 \paragraph{Cloud service providers}
 
@@ -722,7 +723,7 @@ Crash handling & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes
 CPU usage probing & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck & \faCheck \\
 Context switches & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 CPU topology information & \faCheck & \faCheck & \faCheck & \faTimes & \faTimes & \faTimes \\
-Call stack sampling & \faCheck & \faTimes & \faTimes & \faTimes & \faPoo & \faTimes \\
+Call stack sampling & \faCheck & \faCheck & \faCheck & \faTimes & \faPoo & \faTimes \\
 \end{tabular}
 
 \vspace{1em}

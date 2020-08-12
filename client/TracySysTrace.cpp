@@ -589,8 +589,14 @@ void SysTraceSendExternalName( uint64_t thread )
 #    include <string.h>
 #    include <unistd.h>
 #    include <atomic>
+#    include <thread>
+#    include <linux/perf_event.h>
+#    include <sys/mman.h>
+#    include <sys/ioctl.h>
 
 #    include "TracyProfiler.hpp"
+#    include "TracyRingBuffer.hpp"
+#    include "TracyThread.hpp"
 
 #    ifdef __ANDROID__
 #      include "TracySysTracePayload.hpp"
@@ -610,6 +616,131 @@ static const char BufferSizeKb[] = "buffer_size_kb";
 static const char TracePipe[] = "trace_pipe";
 
 static std::atomic<bool> traceActive { false };
+static Thread* s_threadSampling = nullptr;
+static int s_numCpus = 0;
+static RingBuffer* s_ring = nullptr;
+
+static int perf_event_open( struct perf_event_attr* hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags )
+{
+    return syscall( __NR_perf_event_open, hw_event, pid, cpu, group_fd, flags );
+}
+
+static void SetupSampling( int64_t& samplingPeriod )
+{
+    samplingPeriod = 1000*1000;
+
+    s_numCpus = (int)std::thread::hardware_concurrency();
+    s_ring = (RingBuffer*)tracy_malloc( sizeof( RingBuffer ) * s_numCpus );
+
+    perf_event_attr pe = {};
+
+    pe.type = PERF_TYPE_SOFTWARE;
+    pe.size = sizeof( perf_event_attr );
+    pe.config = PERF_COUNT_SW_CPU_CLOCK;
+
+    pe.sample_freq = 1000;
+    pe.sample_type = PERF_SAMPLE_TID | PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN;
+    pe.sample_max_stack = 127;
+    pe.exclude_callchain_kernel = 1;
+
+    pe.disabled = 1;
+    pe.freq = 1;
+    pe.use_clockid = 1;
+#ifdef CLOCK_MONOTONIC_RAW
+    pe.clockid = CLOCK_MONOTONIC_RAW;
+#endif
+
+    for( int i=0; i<s_numCpus; i++ )
+    {
+        const int fd = perf_event_open( &pe, -1, i, -1, 0 );
+        if( fd == -1 )
+        {
+            for( int j=0; j<i; j++ ) s_ring[j].~RingBuffer();
+            tracy_free( s_ring );
+            return;
+        }
+        new( s_ring+i ) RingBuffer( 1024*1024, fd );
+    }
+
+    s_threadSampling = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_threadSampling) Thread( [] (void*) {
+        ThreadExitHandler threadExitHandler;
+        SetThreadName( "Tracy Sampling" );
+        sched_param sp = { 5 };
+        pthread_setschedparam( pthread_self(), SCHED_FIFO, &sp );
+        uint32_t currentPid = (uint32_t)getpid();
+        for( int i=0; i<s_numCpus; i++ ) s_ring[i].Enable();
+        for(;;)
+        {
+            bool hadData = false;
+            for( int i=0; i<s_numCpus; i++ )
+            {
+                if( !traceActive.load( std::memory_order_relaxed ) ) break;
+                if( !s_ring[i].HasData() ) continue;
+                hadData = true;
+
+                perf_event_header hdr;
+                s_ring[i].Read( &hdr, 0, sizeof( perf_event_header ) );
+                if( hdr.type == PERF_RECORD_SAMPLE )
+                {
+                    uint32_t pid, tid;
+                    uint64_t t0;
+                    uint64_t cnt;
+
+                    auto offset = sizeof( perf_event_header );
+                    s_ring[i].Read( &pid, offset, sizeof( uint32_t ) );
+                    if( pid == currentPid )
+                    {
+                        offset += sizeof( uint32_t );
+                        s_ring[i].Read( &tid, offset, sizeof( uint32_t ) );
+                        offset += sizeof( uint32_t );
+                        s_ring[i].Read( &t0, offset, sizeof( uint64_t ) );
+                        offset += sizeof( uint64_t );
+                        s_ring[i].Read( &cnt, offset, sizeof( uint64_t ) );
+                        offset += sizeof( uint64_t );
+
+                        auto trace = (uint64_t*)tracy_malloc( ( 1 + cnt ) * sizeof( uint64_t ) );
+                        s_ring[i].Read( trace+1, offset, sizeof( uint64_t ) * cnt );
+
+                        // skip kernel frames
+                        uint64_t j;
+                        for( j=0; j<cnt; j++ )
+                        {
+                            if( (int64_t)trace[j+1] >= 0 ) break;
+                        }
+                        if( j == cnt )
+                        {
+                            tracy_free( trace );
+                        }
+                        else
+                        {
+                            if( j > 0 )
+                            {
+                                cnt -= j;
+                                memmove( trace+1, trace+1+j, sizeof( uint64_t ) * cnt );
+                            }
+                            memcpy( trace, &cnt, sizeof( uint64_t ) );
+
+                            TracyLfqPrepare( QueueType::CallstackSample );
+                            MemWrite( &item->callstackSampleFat.time, t0 );
+                            MemWrite( &item->callstackSampleFat.thread, (uint64_t)tid );
+                            MemWrite( &item->callstackSampleFat.ptr, (uint64_t)trace );
+                            TracyLfqCommit;
+                        }
+                    }
+                }
+                s_ring[i].Advance( hdr.size );
+            }
+            if( !hadData )
+            {
+                std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+            }
+        }
+
+        for( int i=0; i<s_numCpus; i++ ) s_ring[i].~RingBuffer();
+        tracy_free( s_ring );
+    }, nullptr );
+}
 
 #ifdef __ANDROID__
 static bool TraceWrite( const char* path, size_t psz, const char* val, size_t vsz )
@@ -686,6 +817,10 @@ void SysTraceInjectPayload()
 
 bool SysTraceStart( int64_t& samplingPeriod )
 {
+#ifndef CLOCK_MONOTONIC_RAW
+    return false;
+#endif
+
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 ) ) return false;
     if( !TraceWrite( CurrentTracer, sizeof( CurrentTracer ), "nop", 4 ) ) return false;
     TraceWrite( TraceOptions, sizeof( TraceOptions ), "norecord-cmd", 13 );
@@ -708,6 +843,8 @@ bool SysTraceStart( int64_t& samplingPeriod )
     if( !TraceWrite( TracingOn, sizeof( TracingOn ), "1", 2 ) ) return false;
     traceActive.store( true, std::memory_order_relaxed );
 
+    SetupSampling( samplingPeriod );
+
     return true;
 }
 
@@ -715,6 +852,11 @@ void SysTraceStop()
 {
     TraceWrite( TracingOn, sizeof( TracingOn ), "0", 2 );
     traceActive.store( false, std::memory_order_relaxed );
+    if( s_threadSampling )
+    {
+        s_threadSampling->~Thread();
+        tracy_free( s_threadSampling );
+    }
 }
 
 static uint64_t ReadNumber( const char*& ptr )

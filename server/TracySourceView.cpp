@@ -3112,19 +3112,22 @@ void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& i
                     if( strcmp( ffn, m_file ) == 0 )
                     {
                         const auto line = frame->data[0].line;
-                        auto sit = ipcountSrc.find( line );
-                        if( sit == ipcountSrc.end() )
+                        if( line != 0 )
                         {
-                            ipcountSrc.emplace( line, 1 );
-                            if( ipmaxSrc < 1 ) ipmaxSrc = 1;
+                            auto sit = ipcountSrc.find( line );
+                            if( sit == ipcountSrc.end() )
+                            {
+                                ipcountSrc.emplace( line, 1 );
+                                if( ipmaxSrc < 1 ) ipmaxSrc = 1;
+                            }
+                            else
+                            {
+                                const auto sum = sit->second + 1;
+                                sit->second = sum;
+                                if( ipmaxSrc < sum ) ipmaxSrc = sum;
+                            }
+                            iptotalSrc++;
                         }
-                        else
-                        {
-                            const auto sum = sit->second + 1;
-                            sit->second = sum;
-                            if( ipmaxSrc < sum ) ipmaxSrc = sum;
-                        }
-                        iptotalSrc++;
                     }
                 }
             }
@@ -3161,19 +3164,22 @@ void SourceView::GatherIpStats( uint64_t addr, uint32_t& iptotalSrc, uint32_t& i
                     if( strcmp( ffn, m_file ) == 0 )
                     {
                         const auto line = frame->data[0].line;
-                        auto it = ipcountSrc.find( line );
-                        if( it == ipcountSrc.end() )
+                        if( line != 0 )
                         {
-                            ipcountSrc.emplace( line, ip.second );
-                            if( ipmaxSrc < ip.second ) ipmaxSrc = ip.second;
+                            auto it = ipcountSrc.find( line );
+                            if( it == ipcountSrc.end() )
+                            {
+                                ipcountSrc.emplace( line, ip.second );
+                                if( ipmaxSrc < ip.second ) ipmaxSrc = ip.second;
+                            }
+                            else
+                            {
+                                const auto sum = it->second + ip.second;
+                                it->second = sum;
+                                if( ipmaxSrc < sum ) ipmaxSrc = sum;
+                            }
+                            iptotalSrc += ip.second;
                         }
-                        else
-                        {
-                            const auto sum = it->second + ip.second;
-                            it->second = sum;
-                            if( ipmaxSrc < sum ) ipmaxSrc = sum;
-                        }
-                        iptotalSrc += ip.second;
                     }
                 }
             }

@@ -659,7 +659,7 @@ static void SetupSampling( int64_t& samplingPeriod )
             tracy_free( s_ring );
             return;
         }
-        new( s_ring+i ) RingBuffer( 1024*1024, fd );
+        new( s_ring+i ) RingBuffer( 64*1024, fd );
     }
 
     s_threadSampling = (Thread*)tracy_malloc( sizeof( Thread ) );

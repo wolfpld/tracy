@@ -472,9 +472,16 @@ echo 0 > /proc/sys/kernel/perf_event_paranoid
 
 The first command will allow access to system CPU statistics. The second one will allow inspection of foreign processes (which is required for context switch capture). The last one will lower restrictions on access to performance counters. \emph{Be sure that you are fully aware of the consequences of making these changes.}
 
-\paragraph{Cloud service providers}
+\paragraph{Virtual machines}
 
-In some cases you actually don't own the hardware, but lend it from someone else. In such circumstances you might be running inside a virtual machine, which may be configured to prohibit you from using the bare metal facilities needed by Tracy\footnote{Or you might just be using a quite old CPU, which doesn't have support for required features.}. One example of such limitation would be lack of access to a reliable time stamp register readings, which will prevent the application from starting with either 'CPU doesn't support RDTSC instruction' or 'CPU doesn't support invariant TSC' error message. If you are using Windows, you may workaround this issue by rebuilding the profiled application with the \texttt{TRACY\_TIMER\_QPC} macro, but be aware that it will severely lower the resolution of timer readings.
+The best way to run Tracy is on bare metal. Avoid profiling applications in virtualized environments, including services provided in the cloud. Virtualization interferes with the critical facilities needed for the profiler to work, which will influence the results you get. Possible problems may vary, depending on the configuration of the VM, and include:
+
+\begin{itemize}
+\item Reduced precision of time stamps.
+\item Inability to obtain precise time stamps, resulting in error messages such as \emph{CPU doesn't support RDTSC instruction}, or \emph{CPU doesn't support invariant TSC}. On Windows this can be worked around by rebuilding the profiled application with the \texttt{TRACY\_TIMER\_QPC} define, which severely lowers resolution of time readings.
+\item Frequency of call stack sampling may be reduced.
+\item Call stack sampling might not be possible at all.
+\end{itemize}
 
 \subsubsection{Changing network port}
 

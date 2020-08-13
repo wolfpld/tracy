@@ -493,6 +493,7 @@ public:
     CallstackFrameId PackPointer( uint64_t ptr ) const;
     uint64_t GetCanonicalPointer( const CallstackFrameId& id ) const;
     const SymbolData* GetSymbolData( uint64_t sym ) const;
+    bool HasSymbolCode( uint64_t sym ) const;
     const char* GetSymbolCode( uint64_t sym, uint32_t& len ) const;
     uint64_t GetSymbolForAddress( uint64_t address ) const;
     uint64_t GetSymbolForAddress( uint64_t address, uint32_t& offset ) const;

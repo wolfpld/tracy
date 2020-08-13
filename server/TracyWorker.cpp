@@ -2080,6 +2080,11 @@ const SymbolData* Worker::GetSymbolData( uint64_t sym ) const
     }
 }
 
+bool Worker::HasSymbolCode( uint64_t sym ) const
+{
+    return m_data.symbolCode.find( sym ) != m_data.symbolCode.end();
+}
+
 const char* Worker::GetSymbolCode( uint64_t sym, uint32_t& len ) const
 {
     auto it = m_data.symbolCode.find( sym );

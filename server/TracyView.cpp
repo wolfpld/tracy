@@ -12479,6 +12479,11 @@ void View::DrawStatistics()
                     ImGui::NextColumn();
                     if( symlen != 0 )
                     {
+                        if( m_worker.HasSymbolCode( codeAddr ) )
+                        {
+                            TextDisabledUnformatted( ICON_FA_DATABASE );
+                            ImGui::SameLine();
+                        }
                         if( isInline )
                         {
                             TextDisabledUnformatted( "<" );

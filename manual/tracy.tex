@@ -2544,7 +2544,7 @@ Some function locations may not be found, due to insufficient debugging data ava
 
 The \emph{Time} or \emph{Count} column (depending on the \emph{\faStopwatch{}~Show time} option selection) shows number of taken samples, either as a raw count, or in an easier to understand time format. Note that the percentage value of time is calculated relative to the wall-clock time, and the percentage value of sample counts is relative to total number of collected samples.
 
-The last column, \emph{Code size}, displays the size of symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol, and displayed as 'less than'. In some cases this data won't be available.
+The last column, \emph{Code size}, displays the size of symbol in the executable image of the program. Since inlined routines are directly embedded into other functions, their symbol size will be based on the parent symbol, and displayed as 'less than'. In some cases this data won't be available. If the symbol code has been retrieved\footnote{Symbols larger than 64~KB are not captured.}, symbol size will be prepend with the \texttt{\faDatabase}~icon, and clicking the \RMB{}~right mouse button on the location column entry will open symbol view window (section~\ref{symbolview}).
 
 Finally, the list can be filtered using the \emph{\faFilter{}~Filter symbols} entry field, just like in the instrumentation mode case, and the exclusive/inclusive time counting mode can be switched using the \emph{\faClock{}~Self time} switch. Limiting the time range is also available, but is restricted to self time. If the \emph{\faPuzzlePiece{}~Show all} option is selected, the list will include not only call stack samples, but also all other symbols collected during the profiling process (this is enabled by default, if no sampling was performed).
 
@@ -2955,6 +2955,7 @@ Source file view depends on local files you have on your disk, as the profiled a
 \end{bclogo}
 
 \subsubsection{Symbol view}
+\label{symbolview}
 
 If the inspected source location has an associated symbol context (i.e. if it comes from a call stack capture, from call stack sampling, etc.), a much more capable symbol view is available. A symbol is an unit of machine code, basically a callable function. It may be generated using multiple source files and may consist of multiple inlined functions. A list of all captured symbols is available in the statistics window, as described in chapter~\ref{statisticssampling}.
 

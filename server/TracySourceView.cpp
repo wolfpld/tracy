@@ -977,6 +977,8 @@ void SourceView::RenderSymbolView( const Worker& worker, View& view )
     }
     ImGui::SameLine();
     TextDisabledUnformatted( worker.GetString( sym->imageName ) );
+    ImGui::SameLine();
+    ImGui::TextDisabled( "0x%" PRIx64, m_baseAddr );
 
     const bool limitView = view.m_statRange.active;
     auto inlineList = worker.GetInlineSymbolList( m_baseAddr, m_codeLen );

@@ -67,7 +67,7 @@
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ws2_32.lib;opengl32.lib;freetyped.lib;glfw3.lib;libpng16d.lib;zlibd.lib;bz2d.lib;capstone.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>brotlicommon-static.lib;brotlidec-static.lib;ws2_32.lib;opengl32.lib;freetyped.lib;glfw3.lib;libpng16d.lib;zlibd.lib;bz2d.lib;capstone.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>..\..\..\vcpkg\vcpkg\installed\x64-windows-static\debug\lib</AdditionalLibraryDirectories>
     </Link>
@@ -94,7 +94,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ws2_32.lib;opengl32.lib;freetype.lib;glfw3.lib;libpng16.lib;zlib.lib;bz2.lib;capstone.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>brotlicommon-static.lib;brotlidec-static.lib;ws2_32.lib;opengl32.lib;freetype.lib;glfw3.lib;libpng16.lib;zlib.lib;bz2.lib;capstone.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>..\..\..\vcpkg\vcpkg\installed\x64-windows-static\lib</AdditionalLibraryDirectories>
     </Link>

@@ -380,6 +380,8 @@ bool SysTraceStart( int64_t& samplingPeriod )
 #endif
     s_prop->Wnode.Guid = SystemTraceControlGuid;
     s_prop->BufferSize = 1024;
+    s_prop->MinimumBuffers = std::thread::hardware_concurrency() * 4;
+    s_prop->MaximumBuffers = std::thread::hardware_concurrency() * 6;
     s_prop->LoggerNameOffset = sizeof( EVENT_TRACE_PROPERTIES );
     memcpy( ((char*)s_prop) + sizeof( EVENT_TRACE_PROPERTIES ), KERNEL_LOGGER_NAME, sizeof( KERNEL_LOGGER_NAME ) );
 

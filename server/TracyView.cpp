@@ -242,21 +242,23 @@ bool View::ViewDispatch( const char* fileName, int line, uint64_t symAddr )
     }
     else
     {
-        const auto& symMap = m_worker.GetSymbolMap();
-        auto sit = symMap.find( symAddr );
-        auto baseAddr = symAddr;
-        uint32_t symlen = 0;
-        if( sit != symMap.end() ) symlen = sit->second.size.Val();
-        if( symlen == 0 )
+        uint64_t baseAddr = 0;
+        if( m_worker.HasSymbolCode( symAddr ) )
+        {
+            baseAddr = symAddr;
+        }
+        else
         {
             const auto parentAddr = m_worker.GetSymbolForAddress( symAddr );
             if( parentAddr != 0 )
             {
-                auto pit = symMap.find( parentAddr );
-                if( pit != symMap.end() ) baseAddr = parentAddr;
+                if( m_worker.HasSymbolCode( parentAddr ) )
+                {
+                    baseAddr = parentAddr;
+                }
             }
         }
-        if( symlen != 0 || line != 0 )
+        if( baseAddr != 0 || line != 0 )
         {
             ViewSymbol( fileName, line, baseAddr, symAddr );
             return true;

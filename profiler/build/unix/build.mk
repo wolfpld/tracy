@@ -15,8 +15,8 @@ ifeq ($(UNAME),Darwin)
 	LIBS +=  -framework CoreFoundation -framework AppKit
 else
 	SRC2 += ../../../nfd/nfd_gtk.c
-	INCLUDES += $(shell pkg-config --cflags gtk+-2.0)
-	LIBS += $(shell pkg-config --libs gtk+-2.0) -lGL
+	INCLUDES += $(shell pkg-config --cflags gtk+-3.0)
+	LIBS += $(shell pkg-config --libs gtk+-3.0) -lGL
 endif
 
 include ../../../common/unix.mk

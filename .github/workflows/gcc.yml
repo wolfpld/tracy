@@ -19,7 +19,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install linux libraries
       if: ${{ matrix.os == 'ubuntu-20.04' }}
-      run: sudo apt-get update && sudo apt-get -y install libglfw3-dev libgtk2.0-dev libcapstone-dev libtbb-dev
+      run: sudo apt-get update && sudo apt-get -y install libglfw3-dev libgtk-3-dev libcapstone-dev libtbb-dev
     - name: Install macos libraries
       if: ${{ matrix.os == 'macOS-latest' }}
       run: brew install capstone tbb pkg-config glfw

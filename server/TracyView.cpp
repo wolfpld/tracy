@@ -2020,60 +2020,63 @@ void View::DrawZoneFramesHeader()
     const auto ty0375 = round( ty * 0.375f );
     const auto ty05 = round( ty * 0.5f );
 
+    const auto timespan = m_vd.zvEnd - m_vd.zvStart;
+    const auto pxns = w / double( timespan );
+    const auto nspx = 1.0 / pxns;
+    const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
+    const auto step = pow( 10, scale );
+
     ImGui::InvisibleButton( "##zoneFrames", ImVec2( w, ty * 1.5f ) );
-
-    auto timespan = m_vd.zvEnd - m_vd.zvStart;
-    auto pxns = w / double( timespan );
-
+    if( ImGui::IsItemHovered() )
     {
-        const auto nspx = 1.0 / pxns;
-        const auto scale = std::max( 0.0, round( log10( nspx ) + 2 ) );
-        const auto step = pow( 10, scale );
+        ImGui::BeginTooltip();
+        ImGui::TextUnformatted( TimeToStringExact( m_vd.zvStart + ( ImGui::GetIO().MousePos.x - wpos.x ) * nspx ) );
+        ImGui::EndTooltip();
+    }
 
-        const auto dx = step * pxns;
-        double x = 0;
-        int tw = 0;
-        int tx = 0;
-        int64_t tt = 0;
-        while( x < w )
+    const auto dx = step * pxns;
+    double x = 0;
+    int tw = 0;
+    int tx = 0;
+    int64_t tt = 0;
+    while( x < w )
+    {
+        draw->AddLine( wpos + ImVec2( x, 0 ), wpos + ImVec2( x, ty05 ), 0x66FFFFFF );
+        if( tw == 0 )
         {
-            draw->AddLine( wpos + ImVec2( x, 0 ), wpos + ImVec2( x, ty05 ), 0x66FFFFFF );
-            if( tw == 0 )
+            char buf[128];
+            auto txt = TimeToStringExact( m_vd.zvStart );
+            if( m_vd.zvStart >= 0 )
             {
-                char buf[128];
-                auto txt = TimeToStringExact( m_vd.zvStart );
-                if( m_vd.zvStart >= 0 )
-                {
-                    sprintf( buf, "+%s", txt );
-                    txt = buf;
-                }
-                draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
-                tw = ImGui::CalcTextSize( txt ).x;
+                sprintf( buf, "+%s", txt );
+                txt = buf;
             }
-            else if( x > tx + tw + ty * 2 )
-            {
-                tx = x;
-                auto txt = TimeToString( tt );
-                draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
-                tw = ImGui::CalcTextSize( txt ).x;
-            }
-
-            if( scale != 0 )
-            {
-                for( int i=1; i<5; i++ )
-                {
-                    draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, ty025 ), 0x33FFFFFF );
-                }
-                draw->AddLine( wpos + ImVec2( x + 5 * dx / 10, 0 ), wpos + ImVec2( x + 5 * dx / 10, ty0375 ), 0x33FFFFFF );
-                for( int i=6; i<10; i++ )
-                {
-                    draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, ty025 ), 0x33FFFFFF );
-                }
-            }
-
-            x += dx;
-            tt += step;
+            draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
+            tw = ImGui::CalcTextSize( txt ).x;
         }
+        else if( x > tx + tw + ty * 2 )
+        {
+            tx = x;
+            auto txt = TimeToString( tt );
+            draw->AddText( wpos + ImVec2( x, ty05 ), 0x66FFFFFF, txt );
+            tw = ImGui::CalcTextSize( txt ).x;
+        }
+
+        if( scale != 0 )
+        {
+            for( int i=1; i<5; i++ )
+            {
+                draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, ty025 ), 0x33FFFFFF );
+            }
+            draw->AddLine( wpos + ImVec2( x + 5 * dx / 10, 0 ), wpos + ImVec2( x + 5 * dx / 10, ty0375 ), 0x33FFFFFF );
+            for( int i=6; i<10; i++ )
+            {
+                draw->AddLine( wpos + ImVec2( x + i * dx / 10, 0 ), wpos + ImVec2( x + i * dx / 10, ty025 ), 0x33FFFFFF );
+            }
+        }
+
+        x += dx;
+        tt += step;
     }
 }
 

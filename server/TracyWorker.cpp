@@ -257,7 +257,7 @@ Worker::Worker( const char* addr, int port )
     m_data.callstackPayload.push_back( nullptr );
     m_data.zoneExtra.push_back( ZoneExtra {} );
 
-    memset( m_gpuCtxMap, 0, sizeof( m_gpuCtxMap ) );
+    memset( (char*)m_gpuCtxMap, 0, sizeof( m_gpuCtxMap ) );
 
 #ifndef TRACY_NO_STATISTICS
     m_data.sourceLocationZonesReady = true;
@@ -833,7 +833,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
     f.Read( sz );
     m_data.zoneChildren.reserve_exact( sz, m_slab );
-    memset( m_data.zoneChildren.data(), 0, sizeof( Vector<short_ptr<ZoneEvent>> ) * sz );
+    memset( (char*)m_data.zoneChildren.data(), 0, sizeof( Vector<short_ptr<ZoneEvent>> ) * sz );
     int32_t childIdx = 0;
     f.Read( sz );
     m_data.threads.reserve_exact( sz, m_slab );
@@ -917,7 +917,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask, bool bgTasks )
     s_loadProgress.subProgress.store( 0, std::memory_order_relaxed );
     f.Read( sz );
     m_data.gpuChildren.reserve_exact( sz, m_slab );
-    memset( m_data.gpuChildren.data(), 0, sizeof( Vector<short_ptr<GpuEvent>> ) * sz );
+    memset( (char*)m_data.gpuChildren.data(), 0, sizeof( Vector<short_ptr<GpuEvent>> ) * sz );
     childIdx = 0;
     f.Read( sz );
     m_data.gpuData.reserve_exact( sz, m_slab );
@@ -4940,7 +4940,7 @@ void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
 
     const auto cpuTime = TscTime( ev.cpuTime - m_data.baseTime );
     auto gpu = m_slab.AllocInit<GpuCtxData>();
-    memset( gpu->query, 0, sizeof( gpu->query ) );
+    memset( (char*)gpu->query, 0, sizeof( gpu->query ) );
     gpu->timeDiff = cpuTime - gpuTime;
     gpu->thread = ev.thread;
     gpu->period = ev.period;
@@ -7050,7 +7050,7 @@ ZoneExtra& Worker::AllocZoneExtra( ZoneEvent& ev )
     assert( ev.extra == 0 );
     ev.extra = uint32_t( m_data.zoneExtra.size() );
     auto& extra = m_data.zoneExtra.push_next();
-    memset( &extra, 0, sizeof( extra ) );
+    memset( (char*)&extra, 0, sizeof( extra ) );
     return extra;
 }
 

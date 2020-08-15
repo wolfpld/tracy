@@ -31,14 +31,14 @@ public:
 
     tracy_force_inline Vector()
     {
-        memset( this, 0, sizeof( Vector<T> ) );
+        memset( (char*)this, 0, sizeof( Vector<T> ) );
     }
 
     Vector( const Vector& ) = delete;
     tracy_force_inline Vector( Vector&& src ) noexcept
     {
-        memcpy( this, &src, sizeof( Vector<T> ) );
-        memset( &src, 0, sizeof( Vector<T> ) );
+        memcpy( (char*)this, &src, sizeof( Vector<T> ) );
+        memset( (char*)&src, 0, sizeof( Vector<T> ) );
     }
 
     tracy_force_inline Vector( const T& value )
@@ -68,17 +68,17 @@ public:
             memUsage -= Capacity() * sizeof( T );
             free( m_ptr );
         }
-        memcpy( this, &src, sizeof( Vector<T> ) );
-        memset( &src, 0, sizeof( Vector<T> ) );
+        memcpy( (char*)this, &src, sizeof( Vector<T> ) );
+        memset( (char*)&src, 0, sizeof( Vector<T> ) );
         return *this;
     }
 
     tracy_force_inline void swap( Vector& other )
     {
         uint8_t tmp[sizeof( Vector<T> )];
-        memcpy( tmp, &other, sizeof( Vector<T> ) );
-        memcpy( &other, this, sizeof( Vector<T> ) );
-        memcpy( this, tmp, sizeof( Vector<T> ) );
+        memcpy( (char*)tmp, &other, sizeof( Vector<T> ) );
+        memcpy( (char*)&other, this, sizeof( Vector<T> ) );
+        memcpy( (char*)this, tmp, sizeof( Vector<T> ) );
     }
 
     tracy_force_inline bool empty() const { return m_size == 0; }
@@ -310,7 +310,7 @@ private:
         {
             if( std::is_trivially_copyable<T>() )
             {
-                memcpy( ptr, m_ptr, m_size * sizeof( T ) );
+                memcpy( (char*)ptr, m_ptr, m_size * sizeof( T ) );
             }
             else
             {

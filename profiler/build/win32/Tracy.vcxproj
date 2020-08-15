@@ -160,6 +160,7 @@
     <ClCompile Include="..\..\src\imgui_impl_glfw.cpp" />
     <ClCompile Include="..\..\src\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
+    <ClCompile Include="..\..\src\NativeWindow.cpp" />
     <ClCompile Include="..\..\src\ResolvService.cpp" />
     <ClCompile Include="..\..\src\winmain.cpp">
       <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotSet</EnableEnhancedInstructionSet>

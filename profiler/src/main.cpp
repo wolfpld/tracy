@@ -22,8 +22,6 @@
 #ifdef _WIN32
 #  include <windows.h>
 #  include <shellapi.h>
-#  define GLFW_EXPOSE_NATIVE_WIN32
-#  include <GLFW/glfw3native.h>
 #endif
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -50,6 +48,7 @@
 #include "FontAwesomeSolid.hpp"
 #include "icon.hpp"
 #include "ResolvService.hpp"
+#include "NativeWindow.hpp"
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -71,7 +70,7 @@ static void OpenWebpage( const char* url )
 #endif
 }
 
-static GLFWwindow* s_glfwWindow = nullptr;
+GLFWwindow* s_glfwWindow = nullptr;
 static bool s_customTitle = false;
 static void SetWindowTitleCallback( const char* title )
 {
@@ -86,15 +85,6 @@ static void DrawContents();
 static void WindowRefreshCallback( GLFWwindow* window )
 {
     DrawContents();
-}
-
-void* GetMainWindowNative()
-{
-#ifdef _WIN32
-    return (void*)glfwGetWin32Window( s_glfwWindow );
-#else
-    return nullptr;
-#endif
 }
 
 std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildConnectionHistory( const std::unordered_map<std::string, uint64_t>& connHistMap )

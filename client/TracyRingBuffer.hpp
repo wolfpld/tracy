@@ -12,21 +12,21 @@ public:
         assert( Size >= pageSize );
         assert( __builtin_popcount( Size ) == 1 );
         m_mapSize = Size + pageSize;
-        m_mapAddr = mmap( nullptr, m_mapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
-        if( !m_mapAddr )
+        auto mapAddr = mmap( nullptr, m_mapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 );
+        if( !mapAddr )
         {
             m_fd = 0;
             close( fd );
             return;
         }
-        m_metadata = (perf_event_mmap_page*)m_mapAddr;
+        m_metadata = (perf_event_mmap_page*)mapAddr;
         assert( m_metadata->data_offset == pageSize );
-        m_buffer = ((char*)m_mapAddr) + pageSize;
+        m_buffer = ((char*)mapAddr) + pageSize;
     }
 
     ~RingBuffer()
     {
-        if( m_mapAddr ) munmap( m_mapAddr, m_mapSize );
+        if( m_metadata ) munmap( m_metadata, m_mapSize );
         if( m_fd ) close( m_fd );
     }
 
@@ -36,19 +36,19 @@ public:
     RingBuffer( RingBuffer&& other )
     {
         memcpy( (char*)&other, (char*)this, sizeof( RingBuffer ) );
-        m_mapAddr = nullptr;
+        m_metadata = nullptr;
         m_fd = 0;
     }
 
     RingBuffer& operator=( RingBuffer&& other )
     {
         memcpy( (char*)&other, (char*)this, sizeof( RingBuffer ) );
-        m_mapAddr = nullptr;
+        m_metadata = nullptr;
         m_fd = 0;
         return *this;
     }
 
-    bool IsValid() const { return m_mapAddr != nullptr; }
+    bool IsValid() const { return m_metadata != nullptr; }
 
     void Enable()
     {
@@ -106,12 +106,10 @@ private:
         std::atomic_store_explicit( (volatile std::atomic<uint64_t>*)&m_metadata->data_tail, tail, std::memory_order_release );
     }
 
-    size_t m_mapSize;
-    void* m_mapAddr;
-
     perf_event_mmap_page* m_metadata;
     char* m_buffer;
 
+    size_t m_mapSize;
     int m_fd;
 };
 

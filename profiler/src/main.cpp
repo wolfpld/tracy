@@ -465,6 +465,8 @@ static void DrawContents()
     ImGui::NewFrame();
     tracy::MouseFrame();
 
+    setlocale( LC_NUMERIC, "C" );
+
     if( !view )
     {
         if( s_customTitle )
@@ -546,7 +548,6 @@ static void DrawContents()
             }
         }
 
-        setlocale( LC_NUMERIC, "C" );
         auto& style = ImGui::GetStyle();
         style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
         ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize );

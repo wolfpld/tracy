@@ -1686,7 +1686,9 @@ This feature requires privilege elevation, as described in chapter~\ref{contexts
 
 To enable deep insight into program execution, Tracy will capture small chunks of the executable image during profiling. The retrieved code can be subsequently disassembled to be inspected in detail. This functionality will be performed only for functions that are no larger than 64 KB and only if symbol information is present.
 
-You should be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace.
+Discovery of previously unseen executable code may result in reduced performance of real-time capture. This is especially true when the profiling session had just started. Such behavior is expected and will go back to normal after a couple of moments.
+
+You should be extra careful when working with non-public code, as parts of your program will be embedded in the captured trace. Disabling collection of program code can be achieved by compiling the profiled application with the \texttt{TRACY\_NO\_CODE\_TRANSFER} define.
 
 \begin{bclogo}[
 noborder=true,

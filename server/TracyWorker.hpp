@@ -850,6 +850,7 @@ private:
     int m_bufferOffset;
     bool m_onDemand;
     bool m_ignoreMemFreeFaults;
+    bool m_codeTransfer;
 
     short_ptr<GpuCtxData> m_gpuCtxMap[256];
     uint64_t m_pendingCallstackPtr = 0;

@@ -1265,6 +1265,12 @@ void Profiler::Worker()
     uint8_t cpuArch = CpuArchUnknown;
 #endif
 
+#ifdef TRACY_NO_CODE_TRANSFER
+    uint8_t codeTransfer = 0;
+#else
+    uint8_t codeTransfer = 1;
+#endif
+
 #if defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
     uint32_t regs[4];
     char manufacturer[12];
@@ -1292,6 +1298,7 @@ void Profiler::Worker()
     MemWrite( &welcome.onDemand, onDemand );
     MemWrite( &welcome.isApple, isApple );
     MemWrite( &welcome.cpuArch, cpuArch );
+    MemWrite( &welcome.codeTransfer, codeTransfer );
     memcpy( welcome.cpuManufacturer, manufacturer, 12 );
     MemWrite( &welcome.cpuId, cpuId );
     memcpy( welcome.programName, procname, pnsz );
@@ -2481,9 +2488,11 @@ bool Profiler::HandleServerQuery()
     case ServerQuerySymbol:
         HandleSymbolQuery( ptr );
         break;
+#ifndef TRACY_NO_CODE_TRANSFER
     case ServerQuerySymbolCode:
         HandleSymbolCodeQuery( ptr, extra );
         break;
+#endif
     case ServerQueryCodeLocation:
         SendCodeLocation( ptr );
         break;
